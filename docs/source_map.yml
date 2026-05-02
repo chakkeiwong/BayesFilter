@@ -473,8 +473,29 @@ phase_gates:
     status: passed
     evidence: Chapter-level provenance, exclusions, duplicate groups, and bibliography candidates are listed.
   phase_2_literature:
-    status: setup_only
-    evidence: ResearchAssistant workspace initialized and seed list created; approved source summaries not yet available.
+    status: partial_review
+    evidence: >
+      Phase 2B ingested exact arXiv source packages for HMC, NUTS, NeuTra,
+      Matrix Backprop/SVD differentiation, Kitagawa Kalman score/Hessian, and
+      differentiable PF via OT. Several metadata/download mismatches were
+      explicitly rejected. See
+      docs/plans/bayesfilter-phase2b-literature-gate-result-2026-05-02.md.
+    passed_claim_groups:
+      - hmc_foundations
+      - nuts_diagnostics
+      - svd_eigen_differentiation_risk
+    partial_claim_groups:
+      - analytic_kalman_score_hessian
+      - neutra_transport_geometry
+      - differentiable_pf_ot
+    blocked_claim_groups:
+      - pmcmc_pseudo_marginal_primary_sources
+      - julier_uhlmann_sigma_point_primary_sources
+      - industrial_scale_svd_hmc_safety
   content_migration:
-    status: blocked
-    reason: Literature-heavy and claim-heavy chapters should not be drafted until Phase 2B review is passed or explicitly scoped down.
+    status: partially_unblocked
+    reason: >
+      Foundational HMC/NUTS and SVD differentiation-risk material can be
+      drafted with citations. Analytic Kalman formulas, particle-filter
+      material, and industrial-scale HMC safety claims remain gated by
+      derivation/code audits and additional primary-source review.

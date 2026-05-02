@@ -294,3 +294,119 @@ Generated but intentionally uncommitted:
 - `docs/main.pdf`
 - LaTeX build byproducts (`.aux`, `.log`, `.toc`, `.bbl`, `.blg`,
   `.fdb_latexmk`, `.fls`, `.out`)
+
+## Phase 2B: User decision and conservative literature gate
+
+User decision on 2026-05-02:
+- Proceed with Phase 2B literature ingestion and review.
+- Permission granted to fetch and ingest papers.
+- Use a conservative publication/peer-review standard.
+- Prefer detailed derivations and MathDevMCP verification wherever possible.
+- Commit and push completed work.
+- Do not commit generated PDFs.
+
+Phase 2B plan:
+- Create a persistent but Git-ignored ResearchAssistant workspace under
+  `/home/chakwong/BayesFilter/.research/ra-bayesfilter-monograph`.
+- Fetch/ingest a bounded first core paper set covering:
+  Kalman filtering, analytic Kalman derivatives, sigma-point filters,
+  SVD/eigen differentiability risk, particle/pseudo-marginal methods,
+  HMC/NUTS/geometry, and transport/surrogate methods.
+- Write durable committed claim-support notes under `docs/plans`.
+- Keep source PDFs, extraction artifacts, and RA caches uncommitted.
+- Update `docs/source_map.yml` gate status based on the evidence obtained.
+
+## Phase 2B: Literature ingestion and conservative claim gate
+
+Phase plan:
+- Ingest a bounded first set of core papers with ResearchAssistant.
+- Prefer exact arXiv source packages over fuzzy PDF metadata.
+- Reject metadata/download mismatches explicitly.
+- Use MathDevMCP on local derivation material wherever it can give useful
+  diagnostics.
+- Write a durable committed result note and update the source-map phase gates.
+
+Execution results:
+- Persistent ignored workspace used:
+  `/home/chakwong/BayesFilter/.research/ra-bayesfilter-monograph`.
+- Exact arXiv source packages fetched and inspected:
+  - Betancourt HMC, arXiv `1701.02434`, paper id
+    `betancourt2017conceptual_hmc`.
+  - Hoffman-Gelman NUTS, arXiv `1111.4246`, paper id
+    `hoffman_gelman2014_nuts`.
+  - Hoffman et al. NeuTra, arXiv `1903.03704`, paper id
+    `hoffman2019neutra`.
+  - Ionescu et al. Matrix Backprop, arXiv `1509.07838`, paper id
+    `ionescu2015_matrix_backprop`.
+  - Kitagawa Kalman score/Hessian, arXiv `2011.09638`, paper id
+    `kitagawa2020_kalman_score_hessian`.
+  - Corenflos et al. differentiable PF via OT, arXiv `2102.07850`, paper id
+    `corenflos2021differentiable_pf_ot`.
+  - Jacob-Chopin-Robert PMCMC discussion/commentary, arXiv `0911.0985`,
+    paper id `pmcmc_discussion_comments_candidate`.
+- Rejected mismatches:
+  - Betancourt HMC PDF queries returned a rank-normalized R-hat paper.
+  - PMCMC title and DOI queries returned *Sequential Monte Carlo Methods in
+    Practice*, not Andrieu-Doucet-Holenstein.
+  - Julier-Uhlmann UKF query returned an ensemble Kalman/unscented-transform
+    paper.
+  - Pseudo-marginal candidate arXiv `1011.0419` was unrelated.
+  - Kitagawa PDF metadata was low confidence, so exact arXiv source is the
+    authority.
+- Added durable result note:
+  `docs/plans/bayesfilter-phase2b-literature-gate-result-2026-05-02.md`.
+- Updated `docs/source_map.yml` so Phase 2 literature is `partial_review` and
+  content migration is only `partially_unblocked`.
+
+MathDevMCP results:
+- `search-latex` found the MacroFinance solve-form likelihood, score, and
+  Hessian material, including `eq:solve_score_proved` and
+  `eq:first_w_derivative`.
+- `audit-derivation-label` on those labels returned `inconclusive`, not
+  verified, because the matrix-calculus obligations were outside the bounded
+  backend.
+- `audit-kalman-recursion` extracted a rich AST operation graph from
+  `filters/solve_differentiated_kalman.py`, including Cholesky solves, trace-like
+  operations, log determinant via Cholesky diagonals, Kalman updates, gradients,
+  and Hessians. The strict required-operation query reported a mismatch because
+  the tool records `np.linalg.solve` as `inverse_or_solve` and did not detect
+  explicit shape/covariance guards.
+
+Test results:
+- Literature artifacts are under `.research/`, which is Git-ignored.
+- Generated PDF and LaTeX byproducts remain ignored.
+- `docs/source_map.yml` parses successfully with `yaml.safe_load`.
+- The LaTeX skeleton remains buildable with `latexmk`; the current generated
+  PDF was already up to date.
+
+Audit:
+- Phase 2B is useful but partial.
+- HMC, NUTS, and SVD/eigen differentiation-risk foundations are now supported
+  well enough for careful drafting.
+- Analytic Kalman score/Hessian material is promising but not certified.
+- PMCMC/pseudo-marginal and Julier-Uhlmann sigma-point primary-source support
+  remain open.
+- No RA paper downloads or generated PDFs should be committed.
+
+Interpretation:
+- The next phase is justified, but it should not be broad content migration.
+- The next phase should be a focused analytic-gradient/filter-contract audit:
+  formalize BayesFilter notation, cross-check Kitagawa and MacroFinance, add or
+  require shape/SPD/finite-value guards, and define the custom-gradient policy
+  before industrial-scale SVD/HMC claims are drafted.
+
+Next hypotheses:
+- H1: Analytic/custom-gradient filtering will be more robust for HMC than raw
+  tape gradients through spectral decompositions when singular values or
+  eigenvalues are close.
+- H2: A solve-form or square-root linear Gaussian backend can be certified first
+  and used as the regression oracle for nonlinear filters.
+- H3: SVD sigma-point filtering requires gradient-path safeguards or custom
+  derivatives before it is safe for NAWM-scale HMC.
+- H4: NeuTra and related transport maps should be treated as geometry
+  accelerators, not as correctness substitutes.
+
+Final pre-commit status:
+- Phase 2B result note, source-map gate update, `.gitignore`, and this reset
+  memo are ready to commit.
+- `.research/` and `docs/main.pdf` remain intentionally uncommitted.
