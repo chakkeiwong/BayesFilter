@@ -1,5 +1,37 @@
 \chapter{XLA and JIT Compilation}
 \label{ch:bf-xla-jit}
 
-Placeholder.
+BayesFilter uses JIT compilation as a production tool, not as a correctness
+argument.  A sampler is not fully compiled merely because an outer function is
+wrapped in \texttt{tf.function}.  The complete value-and-gradient path must be
+inside the compiled region, with static shapes and compatible device placement.
 
+\section{Full-Pipeline Requirement}
+\label{sec:bf-full-pipeline-jit}
+
+For HMC, the compiled path includes:
+\begin{itemize}
+  \item parameter transform;
+  \item model-provider maps;
+  \item filtering likelihood;
+  \item custom or autodiff gradient path;
+  \item invalid-region branch;
+  \item leapfrog transition or equivalent integrator.
+\end{itemize}
+If any component falls back to Python, retraces dynamically, or executes an
+opaque noncompiled kernel, the implementation should be described as partially
+compiled.
+
+\section{Device and Shape Constraints}
+\label{sec:bf-xla-device-shape}
+
+The DSGE XLA source notes emphasize two lessons that carry over to
+BayesFilter.  First, XLA compiles a function for a target platform, so mixing
+CPU-only custom calls with GPU-targeted operations inside one JIT block can
+fail.  Second, XLA requires static shapes.  Dynamic metadata should be encoded
+as values or opaque compile-time metadata, not as changing tensor ranks.
+
+The practical policy is phase separation: solve or model-construction phases
+may be compiled separately from the filtering/HMC phase if they have different
+device requirements.  A monolithic JIT block is valuable only when it actually
+contains compatible operations.

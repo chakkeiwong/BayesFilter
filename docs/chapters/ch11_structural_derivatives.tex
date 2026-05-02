@@ -1,5 +1,25 @@
 \chapter{Structural Derivatives}
 \label{ch:bf-structural-derivatives}
 
-Placeholder.
+Kalman derivative recursions assume that the derivatives of the state-space
+objects are already available.  Structural derivatives are the upstream layer:
+they map model parameters into
+\[
+  c_\theta,\ F_\theta,\ Q_\theta,\ a_\theta,\ H_\theta,\ R_\theta
+\]
+and their first and second derivatives.
 
+For BayesFilter, a derivative provider must declare:
+\begin{itemize}
+  \item parameter order and units;
+  \item shape of every first and second derivative tensor;
+  \item whether derivatives are analytic, autodiff, finite-difference, or
+    unavailable;
+  \item which parameters affect which reduced-form objects;
+  \item whether cross-derivatives are implemented or intentionally zero.
+\end{itemize}
+
+The MacroFinance large-scale derivative-provider tests check derivative shapes,
+finite-difference parity by object type, reduced-form rank diagnostics, and
+parameter-unit rescaling.  BayesFilter should preserve these as public contract
+tests before a structural model is allowed to feed an HMC target.

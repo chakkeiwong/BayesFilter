@@ -1,5 +1,86 @@
 \chapter{Prediction-Error Decomposition}
 \label{ch:bf-prediction-error-decomposition}
 
-Placeholder.
+The linear Gaussian model is the first BayesFilter reference target because its
+likelihood is exact and its derivative recursions can be audited against code
+and automatic-differentiation tests.  This chapter records the value-only
+likelihood spine; score and Hessian recursions are deferred to
+Chapters~\ref{ch:bf-kalman-score}--\ref{ch:bf-kalman-hessian}.
 
+\section{Linear Gaussian Specialization}
+\label{sec:bf-lgssm-specialization}
+
+Under the contract in Definition~\ref{def:bf-ssm-contract}, the linear Gaussian
+specialization is
+\begin{align}
+  x_{t+1} &= c(\theta) + F(\theta)x_t + u_{t+1},
+  & u_{t+1} &\sim \calN(0,Q(\theta)), \label{eq:bf-lgssm-state} \\
+  y_t &= a(\theta) + H(\theta)x_t + \varepsilon_t,
+  & \varepsilon_t &\sim \calN(0,R(\theta)). \label{eq:bf-lgssm-observation}
+\end{align}
+For the exact likelihood backend, $Q(\theta)\succeq 0$ and
+$R(\theta)\succ 0$ are required at every accepted target evaluation.  The
+initial moments are denoted $m_{0|0}$ and $P_{0|0}$.
+
+\section{Kalman Recursion}
+\label{sec:bf-kalman-recursion}
+
+Let
+\[
+  m_{t|s}=\E[x_t\mid y_{1:s}], \qquad
+  P_{t|s}=\Var(x_t\mid y_{1:s}).
+\]
+The prediction step is
+\begin{align}
+  m_{t|t-1} &= c + Fm_{t-1|t-1}, \label{eq:bf-kalman-pred-mean}\\
+  P_{t|t-1} &= FP_{t-1|t-1}F^\top + Q. \label{eq:bf-kalman-pred-cov}
+\end{align}
+The innovation and innovation covariance are
+\begin{align}
+  v_t &= y_t-a-Hm_{t|t-1}, \label{eq:bf-innovation}\\
+  S_t &= HP_{t|t-1}H^\top + R. \label{eq:bf-innovation-cov}
+\end{align}
+When $S_t\succ 0$, the Kalman gain and filtered moments are
+\begin{align}
+  K_t &= P_{t|t-1}H^\top S_t^{-1}, \label{eq:bf-kalman-gain}\\
+  m_{t|t} &= m_{t|t-1}+K_tv_t, \label{eq:bf-kalman-update-mean}\\
+  P_{t|t} &= (I-K_tH)P_{t|t-1}. \label{eq:bf-kalman-update-cov}
+\end{align}
+Production square-root implementations may update an algebraically equivalent
+factor rather than materializing \eqref{eq:bf-kalman-update-cov}.
+
+\section{Log Likelihood}
+\label{sec:bf-ped-loglik}
+
+The prediction-error decomposition gives
+\begin{equation}
+\label{eq:bf-ped-loglik}
+  \ell(\theta)
+  =
+  -\frac{1}{2}\sum_{t=1}^T
+  \left[
+    \log\det S_t
+    + v_t^\top S_t^{-1}v_t
+    + n_{y,t}\log(2\pi)
+  \right],
+\end{equation}
+where $n_{y,t}$ is the number of observed components at time $t$.  In a dense
+panel, $n_{y,t}=n_y$.  In a masked panel, the same formula applies after
+selecting the observed components and the corresponding rows and columns of the
+observation objects.
+
+Equation~\eqref{eq:bf-ped-loglik} is the exact likelihood for
+\eqref{eq:bf-lgssm-state}--\eqref{eq:bf-lgssm-observation}.  It is also the
+reference value against which approximate nonlinear filters and alternative
+linear algebra backends should be tested whenever a controlled linear Gaussian
+case is available.
+
+\section{Initialization}
+\label{sec:bf-kalman-initialization}
+
+Initial moments are part of the model contract.  If $m_{0|0}$ and $P_{0|0}$ are
+fixed by design, derivative initial conditions in later chapters are zero.  If
+$P_{0|0}$ is the stationary covariance, then its derivatives are governed by
+the derivative Lyapunov equations for the transition system.  BayesFilter must
+record which initialization policy defines the target, because changing it
+changes the likelihood.

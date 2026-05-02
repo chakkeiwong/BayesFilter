@@ -1,5 +1,64 @@
 \chapter{BayesFilter API Design}
 \label{ch:bf-api-design}
 
-Placeholder.
+The monograph is not an API reference, but its mathematical contracts should be
+precise enough that an implementation can be audited against them.  The API
+shape below is therefore a documentation contract rather than a final Python
+interface.
 
+\section{Core Objects}
+\label{sec:bf-api-core-objects}
+
+A BayesFilter implementation should expose four separable objects:
+\begin{itemize}
+  \item a parameter transform from sampler coordinates $u$ to model parameters
+    $\theta$;
+  \item a model provider that builds state-space objects from $\theta$;
+  \item a filter backend that returns log likelihood and diagnostics;
+  \item a derivative provider or autodiff policy that returns the score and,
+    when needed, curvature information.
+\end{itemize}
+
+For a linear Gaussian model, the model provider returns
+\[
+  (c,F,Q,a,H,R,m_0,P_0)
+\]
+and optionally their first and second derivatives with respect to $\theta$.
+For a nonlinear model, it returns transition and observation maps together with
+the sigma-point, linearization, or simulation policy required by the selected
+backend.
+
+\section{Return Contract}
+\label{sec:bf-api-return-contract}
+
+The minimum likelihood return is
+\[
+  (\ell,\ d),
+\]
+where $\ell$ is a scalar log likelihood and $d$ is a diagnostics record.  A
+gradient-capable backend returns
+\[
+  (\ell,\ \nabla_\theta \ell,\ d),
+\]
+and a curvature backend returns
+\[
+  (\ell,\ \nabla_\theta \ell,\ \nabla^2_{\theta\theta}\ell,\ d).
+\]
+Diagnostics should include enough information to decide whether the result is a
+valid target evaluation, a finite invalid-region return, or a numerical warning
+that should influence sampler adaptation or backend selection.
+
+\section{Backend Promotion}
+\label{sec:bf-api-backend-promotion}
+
+BayesFilter should promote a backend through stages:
+\begin{enumerate}[label=(\roman*)]
+  \item value-only likelihood evaluation;
+  \item gradient validation on small problems;
+  \item compiled value-and-gradient execution;
+  \item stress tests under masks, boundaries, and near-singular covariances;
+  \item HMC diagnostics on controlled targets;
+  \item application case studies.
+\end{enumerate}
+No backend should skip directly from value-only likelihood tests to industrial
+HMC use.

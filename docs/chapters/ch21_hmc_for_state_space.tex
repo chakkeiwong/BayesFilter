@@ -1,5 +1,65 @@
 \chapter{HMC for State-Space Likelihoods}
 \label{ch:bf-hmc-for-state-space}
 
-Placeholder.
+This chapter will develop Hamiltonian Monte Carlo and NUTS for filtering-based
+posterior targets. The mathematical foundations are supported by the Phase 2B
+literature gate, but implementation claims remain gated by BayesFilter's target,
+gradient, and compilation contracts.
 
+\section{Target Contract}
+\label{sec:bf-hmc-target-contract}
+
+For BayesFilter, an HMC transition is valid only relative to the target in
+Definition~\ref{def:bf-filtering-target}.  The sampler needs the scalar log
+target and its gradient in the coordinates used by the integrator.  If the
+filter supplies a custom score, that score must correspond to the same log
+likelihood value used in the Metropolis correction.
+
+The HMC chapter therefore depends on the earlier derivative chapters.  A
+filtering backend that can evaluate $\ell(\theta)$ but has no declared gradient
+policy is value-only evidence.  It can be used for optimization, diagnostics,
+or likelihood comparison, but it should not be promoted to HMC production use.
+
+\section{Implementation Position}
+\label{sec:bf-nuts-implementation-position}
+
+TensorFlow Probability provides useful reference implementations of HMC and
+NUTS, but BayesFilter should not treat TFP NUTS as the strategic production
+backend. This is a project implementation decision, not a mathematical
+criticism of NUTS. The decision is recorded in the source map and reset memo and
+is supported by the minimal Gaussian benchmark in
+\texttt{docs/benchmarks/benchmark\_tfp\_nuts\_gaussian.py}.
+
+The reasons to keep TFP NUTS as a reference rather than the default production
+path are:
+
+\begin{itemize}
+  \item full-trajectory NUTS control flow is hard to keep reliably XLA-compiled
+    across model-specific likelihoods, adaptation logic, and diagnostics;
+  \item nested TensorFlow Probability kernels can obscure whether the complete
+    value-and-gradient pipeline is compiled or only partially traced;
+  \item debugging numerical failures inside TFP kernel internals is slower than
+    debugging a small BayesFilter-owned HMC/NUTS transition;
+  \item large DSGE targets require explicit policies for finite log density,
+    finite gradients, static shapes, filter failure handling, and custom
+    derivative backends.
+\end{itemize}
+
+Consequently, this chapter will consolidate NUTS foundations from the approved
+literature sources while treating TFP NUTS as a reference and diagnostic
+baseline. BayesFilter's production direction is a small, inspectable HMC layer
+whose contracts are designed around filtering likelihoods, analytic/custom
+gradients, and XLA/JIT discipline. Any future NUTS implementation should satisfy
+the same filter-aware contracts before it is promoted beyond diagnostic use.
+
+\section{Diagnostic Use of NUTS}
+\label{sec:bf-nuts-diagnostic-use}
+
+NUTS remains valuable as an algorithmic reference and as a diagnostic sampler
+on small controlled targets.  The bounded BayesFilter decision is narrower: the
+project should not treat TFP NUTS as the default answer to every convergence,
+geometry, or compilation problem.  The Gaussian benchmark shows that TFP NUTS
+can XLA-compile on a toy target, but it is still materially heavier than
+fixed-step HMC there.  Larger filtering targets add the hard parts omitted by
+that benchmark: spectral derivative risk, missing-data branches, model-specific
+invalid regions, and backend fallbacks.

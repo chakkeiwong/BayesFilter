@@ -1,5 +1,64 @@
 \chapter{Production Checklist}
 \label{ch:bf-production-checklist}
 
-Placeholder.
+This checklist is the operating definition of BayesFilter production readiness.
+It is intentionally stricter than a successful smoke test.
 
+\section{Target and Source}
+\label{sec:bf-production-target-source}
+
+Before HMC:
+\begin{enumerate}[label=(\roman*)]
+  \item the scalar log target is defined in writing;
+  \item every formula has provenance in source notes, local code/tests, or
+    reviewed literature;
+  \item parameter transforms and Jacobian terms are included;
+  \item invalid structural regions return documented finite values;
+  \item approximate filters are labeled as target-defining approximations or
+    corrected surrogates.
+\end{enumerate}
+
+\section{Derivative and Filter}
+\label{sec:bf-production-derivative-filter}
+
+The filter backend must provide:
+\begin{enumerate}[label=(\roman*)]
+  \item shape, dtype, mask, and static-compilation contracts;
+  \item finite value and finite gradient checks;
+  \item derivative parity against finite differences or autodiff on controlled
+    cases;
+  \item backend parity where multiple linear algebra forms exist;
+  \item factor, solve, condition-number, and spectral-gap diagnostics;
+  \item an explicit custom-gradient policy when raw autodiff is not the final
+    production path.
+\end{enumerate}
+
+\section{Sampler and JIT}
+\label{sec:bf-production-sampler-jit}
+
+The sampler must report:
+\begin{enumerate}[label=(\roman*)]
+  \item whether the complete value-and-gradient path is compiled;
+  \item eager/compiled parity on small targets;
+  \item mass-matrix source and conditioning;
+  \item acceptance rate, divergences, E-BFMI or equivalent energy diagnostics,
+    R-hat, ESS, MCSE/SD, and runtime;
+  \item saved JSON and chain artifacts for medium and strict runs;
+  \item sidecar capture artifacts only for bounded debugging, not for every
+    production transition.
+\end{enumerate}
+
+\section{Claim Discipline}
+\label{sec:bf-production-claim-discipline}
+
+Use the narrowest honest label:
+\begin{description}
+  \item[value-valid] the likelihood value is finite and reference-checked;
+  \item[gradient-valid] the derivative matches the target value and passes
+    parity checks;
+  \item[sampler-usable] finite HMC diagnostics justify the next experiment;
+  \item[converged] strict multi-chain diagnostics pass and artifacts are saved;
+  \item[production-ready] all preceding gates pass under the intended model,
+    data, hardware, and compilation policy.
+\end{description}
+Anything less should stay in the reset memo as a gap, not disappear into prose.

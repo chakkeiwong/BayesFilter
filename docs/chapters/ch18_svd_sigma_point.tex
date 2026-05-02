@@ -1,5 +1,93 @@
 \chapter{SVD Sigma-Point Filters}
 \label{ch:bf-svd-sigma-point}
 
-Placeholder.
+The SVD sigma-point filter is the most important nonlinear-filtering lesson
+from the recent source-project debugging work.  It improved value-side
+robustness by using spectral covariance factors and explicit finite-arithmetic
+guards, but it also exposed why raw autodiff through spectral decompositions is
+not a comfortable industrial HMC default.  BayesFilter should preserve both
+lessons.
 
+\section{What the Source Audit Established}
+\label{sec:bf-svd-audit-established}
+
+The math/code audit recorded in
+the source-project SVD filter audit result from 2026-04-25
+established the following bounded facts:
+\begin{itemize}
+  \item the linear SVD Kalman path uses a Joseph-style covariance update;
+  \item the nonlinear sigma-point path uses the simplified update
+    \[
+      P^+ = P^- - K P_{zz} K^\top ;
+    \]
+  \item PSD projection occurs after the candidate covariance is formed, so it
+    cannot prevent overflow or non-finite values during the formation of
+    $P^+$;
+  \item the conditioning guard with threshold
+    \texttt{\_SVD\_CONDITIONING\_MAX\_ABS = 1e100} is an engineering
+    finite-arithmetic guard, not a mathematically derived posterior threshold;
+  \item prior short HMC diagnostics were numerical-path regressions, not
+    convergence evidence.
+\end{itemize}
+These are implementation facts, not general theorems about SVD filtering.
+BayesFilter should cite them as project evidence and should avoid converting
+them into unsupported production-readiness claims.
+
+\section{Spectral Differentiation Risk}
+\label{sec:bf-svd-spectral-risk}
+
+The Phase 2B literature gate accepted the Matrix Backprop source for the
+bounded claim that gradients through SVD or eigendecomposition contain terms
+with denominators involving singular-value or eigenvalue gaps.  When two
+singular values or eigenvalues are equal, the decomposition is not uniquely
+differentiable; when they are merely close, derivative terms can become large
+and numerically unstable.
+
+This is directly relevant to HMC.  A large DSGE or NAWM-sized model can visit
+parameter regions where covariance factors are ill conditioned, nearly rank
+deficient, or spectrally clustered.  A value-side SVD factor may still return a
+finite covariance approximation, while the tape gradient through the spectral
+basis becomes noisy, discontinuous, or non-finite.  Larger dimensions make
+close spectral gaps more likely in practice, so BayesFilter should require
+gap telemetry and derivative validation before using SVD sigma-point gradients
+inside production HMC.
+
+\section{Status Labels for SVD-HMC}
+\label{sec:bf-svd-status-labels}
+
+The SVD/HMC gap-closure plan introduced four labels that BayesFilter should
+reuse:
+\begin{description}
+  \item[filter-correct] the likelihood and gradients agree with a reference
+    behavior on controlled cases;
+  \item[sampler-usable] short or medium HMC runs produce finite chains and
+    useful diagnostics;
+  \item[converged] strict multi-chain posterior diagnostics pass on the
+    intended target;
+  \item[production-XLA-gated] fixed-solution, full-solve, boundary rejection,
+    gradient, and tiny HMC paths compile and run under the production
+    compilation policy.
+\end{description}
+These labels prevent a recurring mistake: a clean smoke run is not a
+convergence result, and a finite likelihood is not a validated HMC gradient.
+
+\section{BayesFilter Policy}
+\label{sec:bf-svd-policy}
+
+BayesFilter may use SVD sigma-point filters as robust approximate likelihood
+infrastructure and as a diagnostic backend.  To use them as HMC production
+targets, the project must additionally provide:
+\begin{enumerate}[label=(\roman*)]
+  \item affine-Gaussian recovery against the exact Kalman backend;
+  \item nonlinear controlled recovery against dense quadrature or a trusted
+    reference;
+  \item finite value and finite gradient stress tests across invalid and
+    near-boundary parameter proposals;
+  \item eigenvalue or singular-value gap telemetry during HMC;
+  \item eager/compiled parity for the complete value-and-gradient path;
+  \item a custom-gradient or analytic-gradient policy if raw spectral autodiff
+    fails the preceding checks.
+\end{enumerate}
+For industrial-size models, the conservative default is prevention rather than
+debugging: certify a derivative path before relying on SVD-tape gradients in a
+long HMC run.

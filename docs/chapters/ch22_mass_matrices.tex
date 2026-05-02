@@ -1,5 +1,34 @@
 \chapter{Mass Matrices and Local Geometry}
 \label{ch:bf-mass-matrices}
 
-Placeholder.
+Mass matrices translate derivative information into sampler geometry.  In a
+linear Gaussian validation problem, a local posterior Hessian or observed
+information matrix can be a useful preconditioner.  In a nonlinear or weakly
+identified model, the same matrix can be misleading unless it is regularized and
+checked against diagnostics.
 
+\section{Sources of Curvature}
+\label{sec:bf-curvature-sources}
+
+BayesFilter recognizes several curvature sources:
+\begin{itemize}
+  \item analytic likelihood Hessian plus prior curvature;
+  \item observed-information or expected-information approximations;
+  \item finite-difference Hessian diagnostics at a MAP point;
+  \item empirical covariance from warmup draws;
+  \item diagonal fallbacks when dense curvature is unstable.
+\end{itemize}
+The source must be recorded because each source has a different failure mode.
+MacroFinance mass-matrix tests check eigenvalue regularization, dense versus
+diagonal choices, whitening finiteness, and covariance construction from
+Hessian helpers.  These are geometry utilities; they are not identification
+proofs.
+
+\section{Regularization Policy}
+\label{sec:bf-mass-regularization}
+
+A mass matrix used by HMC must be symmetric positive definite.  If a curvature
+estimate is indefinite or ill-conditioned, BayesFilter should regularize it,
+record the regularization, and expose the eigenvalue diagnostics.  Silently
+using an indefinite curvature matrix as if it were a covariance is a target
+geometry error.

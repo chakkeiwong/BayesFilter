@@ -1,5 +1,55 @@
 \chapter{Stable Linear Filtering}
 \label{ch:bf-stable-linear-filtering}
 
-Placeholder.
+The covariance-form equations in Chapter~\ref{ch:bf-prediction-error-decomposition}
+are algebraically correct, but they are not always the best production
+primitive.  Large panels, nearly collinear observations, low measurement noise,
+and repeated covariance updates can turn small roundoff differences into large
+differences in precision matrices and Hessian contractions.
 
+\section{Backend Ladder}
+\label{sec:bf-linear-backend-ladder}
+
+BayesFilter uses a backend ladder rather than a single Kalman implementation:
+\begin{enumerate}[label=(\roman*)]
+  \item covariance-form recursion for clarity and small reference problems;
+  \item solve-form likelihood evaluation using factored innovation covariances;
+  \item Cholesky square-root propagation where positive pivots are reliable;
+  \item QR square-root propagation when reconstruction and solve diagnostics are
+    needed;
+  \item SVD or spectral fallbacks only with explicit diagnostic labels.
+\end{enumerate}
+The ladder is a production policy, not a mathematical change to the likelihood.
+All exact linear Gaussian backends must agree with
+\eqref{eq:bf-ped-loglik} within documented tolerances.
+
+\section{Solve Form}
+\label{sec:bf-solve-form-likelihood}
+
+Let $S_t=L_tL_t^\top$ and define $z_t=L_t^{-1}v_t$.  Then
+\[
+  \log\det S_t = 2\sum_k \log L_{t,kk},
+  \qquad
+  v_t^\top S_t^{-1}v_t = z_t^\top z_t.
+\]
+The likelihood can therefore be evaluated with triangular solves and log
+diagonal pivots rather than by explicitly forming $S_t^{-1}$.  This is the
+preferred reference form for implementation because the same solves appear in
+the analytic score and Hessian recursions.
+
+\section{Diagnostics}
+\label{sec:bf-stable-linear-diagnostics}
+
+Stable filtering backends should return diagnostics, not only a scalar
+likelihood.  The MacroFinance large-scale backend ladder tests track:
+\begin{itemize}
+  \item minimum factor pivots;
+  \item reconstruction errors for prediction, innovation, and filtered factors;
+  \item solve residual norms;
+  \item finite log likelihood, gradient, and Hessian values;
+  \item backend deltas against the solve-form reference.
+\end{itemize}
+Those tests classify SVD fallback triggers as no trigger, candidate trigger, or
+confirmed trigger.  BayesFilter should preserve that caution: a spectral
+fallback is a diagnostic event, not evidence that the HMC gradient path is
+automatically safe.

@@ -1,5 +1,44 @@
 \chapter{Large-Scale Linear Gaussian State-Space Models}
 \label{ch:bf-large-scale-lgssm}
 
-Placeholder.
+Large linear Gaussian models are the bridge between textbook Kalman filtering
+and industrial Bayesian state-space inference.  They are still exact, but their
+dimension exposes the numerical and compilation issues that small examples can
+hide.
 
+\section{Scale Targets}
+\label{sec:bf-lgssm-scale-targets}
+
+A BayesFilter scale target should record:
+\begin{itemize}
+  \item state dimension $n_x$;
+  \item observation dimension $n_y$;
+  \item time length $T$;
+  \item parameter dimension $d_\theta$;
+  \item dense or sparse observation policy;
+  \item backend ladder and fallback rules;
+  \item memory layout and compilation policy.
+\end{itemize}
+The MacroFinance large-scale LGSSM tests include scenarios such as
+\texttt{baseline\_10x3x5}, low-measurement-noise collinearity,
+ill-conditioned process noise, and near-rank-loss candidates.  BayesFilter
+uses these as infrastructure evidence, not as a claim that every NAWM-sized
+model is already solved.
+
+\section{Readiness Criteria}
+\label{sec:bf-lgssm-readiness}
+
+A large-scale LGSSM backend is ready for HMC experiments only after:
+\begin{enumerate}[label=(\roman*)]
+  \item the value backend matches a solve-form or covariance-form oracle;
+  \item gradient and Hessian backends match finite differences or autodiff on
+    small controlled cases;
+  \item square-root or QR backends match the solve-form backend within stated
+    tolerances on dimension-scaled cases;
+  \item diagnostics remain finite under stress scenarios;
+  \item shape and compilation behavior are documented.
+\end{enumerate}
+
+The current evidence supports this ladder as a validation design.  It does not
+remove the need to rerun the ladder for each new model family, parameterization,
+or missing-data policy.

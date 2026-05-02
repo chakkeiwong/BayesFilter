@@ -88,6 +88,18 @@ Passed for foundational drafting:
 - NUTS algorithm and adaptation foundations.
 - SVD/eigen differentiation pathology and the need for eigen-gap safeguards.
 
+Implementation caveat for NUTS:
+- TFP NUTS should be discussed as a reference implementation and historical
+  lesson, not as BayesFilter's strategic production backend. The project has
+  already encountered practical difficulties around full-pipeline XLA
+  compilation, nested TFP kernel opacity, adaptation/control-flow debugging, and
+  model-specific failure handling. BayesFilter should therefore plan for a
+  small, inspectable HMC/NUTS layer with explicit filtering-target contracts.
+- On 2026-05-03, a minimal Gaussian TFP HMC/NUTS benchmark was added under
+  `docs/benchmarks/`. Its purpose is to make this decision reproducible and to
+  prevent NUTS from being repeatedly proposed as a generic fix without checking
+  compile time, warm runtime, transparency, and filter-aware failure policies.
+
 Partially unblocked:
 - Analytic Kalman score/Hessian: literature source and local implementation
   source exist, but the BayesFilter monograph must not present final formulas as

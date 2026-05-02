@@ -383,6 +383,28 @@ Audit:
 - Phase 2B is useful but partial.
 - HMC, NUTS, and SVD/eigen differentiation-risk foundations are now supported
   well enough for careful drafting.
+- The NUTS section must explicitly record the strategic implementation decision:
+  TFP NUTS is a useful reference and historical lesson, but BayesFilter should
+  not use it as the production backend because prior work exposed practical
+  issues with full-pipeline XLA compilation, nested-kernel opacity,
+  adaptation/control-flow debugging, and model-specific failure handling.
+- 2026-05-03 update: the NUTS decision should be documented with a tiny
+  reproducible Gaussian timing benchmark, not just project memory. Benchmark
+  script: `docs/benchmarks/benchmark_tfp_nuts_gaussian.py`. Result note:
+  `docs/benchmarks/tfp_nuts_gaussian_benchmark_2026-05-03.md`. The benchmark is
+  intentionally simple so that any observed TFP NUTS overhead is not blamed on
+  DSGE or SVD-filter complexity.
+- Recorded benchmark result: TFP NUTS did XLA-compile on the Gaussian target,
+  so the claim is not "NUTS cannot compile." The measured issue is that even on
+  this toy target NUTS was materially slower than fixed-step HMC: warm per-draw
+  ratios were about 23.4x in eager mode, 24.3x in graph mode, and 14.6x in XLA
+  mode. This supports treating TFP NUTS as a diagnostic/reference backend, not
+  as the default fix hypothesis for BayesFilter filtering-target failures.
+- Quick rerun validation: `python docs/benchmarks/benchmark_tfp_nuts_gaussian.py
+  --num-results 4 --num-burnin-steps 2 --repeats 2 --output
+  /tmp/tfp_nuts_gaussian_smoke.json` completed successfully. The small default
+  profile is suitable as a fast agent guardrail; the fuller JSON under
+  `docs/benchmarks/` remains the recorded evidence artifact.
 - Analytic Kalman score/Hessian material is promising but not certified.
 - PMCMC/pseudo-marginal and Julier-Uhlmann sigma-point primary-source support
   remain open.
@@ -410,3 +432,543 @@ Final pre-commit status:
 - Phase 2B result note, source-map gate update, `.gitignore`, and this reset
   memo are ready to commit.
 - `.research/` and `docs/main.pdf` remain intentionally uncommitted.
+
+## 2026-05-03 Writing Continuation Plan
+
+User request:
+- With the NUTS implementation decision benchmarked and documented, create a
+  plan to continue writing the BayesFilter monograph.
+
+Execution result:
+- Added
+  `docs/plans/bayesfilter-monograph-writing-continuation-plan-2026-05-03.md`.
+
+Plan summary:
+- Continue from the current scaffold by executing:
+  - W0 hygiene and baseline checkpoint.
+  - W1 notation, contracts, and reader map.
+  - W2 linear Gaussian likelihood spine.
+  - W3 analytic derivatives and custom-gradient policy.
+  - W4 HMC-safe filtering policy, including the settled TFP NUTS benchmark.
+  - W5 nonlinear filtering and SVD sigma-point lessons.
+  - W6 transport, surrogates, and geometry.
+  - W7 industrial case studies.
+  - W8 literature and citation completion.
+  - W9 release-quality audit.
+
+Interpretation:
+- The immediate next writing action should be W0 followed by W1 only. This
+  gives the monograph stable notation, source-backed scope, and API contracts
+  before moving into derivative-heavy or SVD/HMC-heavy chapters.
+- The plan preserves the consolidation boundary: original documents remain
+  read-only, and no new material should be drafted without explicit provenance
+  from source docs, reviewed literature, code, tests, benchmarks, or recorded
+  project decisions.
+
+## 2026-05-03 Autonomous Writing Pass Started
+
+User request:
+- Update this reset memo.
+- Audit the writing continuation plan as another developer.
+- Execute each phase with a plan/execute/test/audit/tidy/update-memo cycle.
+- After each phase, record results, interpretation, and whether the next phase
+  is justified.
+- Pay special attention to math and derivation audits against original tests.
+- Commit the modified files when the pass finishes.
+
+Baseline state before execution:
+- Current HEAD: `799352a Record BayesFilter literature gate`.
+- Uncommitted intended work already present:
+  - TFP NUTS benchmark files under `docs/benchmarks/`.
+  - NUTS implementation-position updates in Chapter 21, source map, Phase 2B
+    note, and this memo.
+  - Writing continuation plan under `docs/plans/`.
+- Ignored generated artifacts remain:
+  - `.research/`
+  - LaTeX byproducts.
+  - `docs/main.pdf`.
+
+Plan audit:
+- The continuation plan is sound if interpreted as a first conservative
+  consolidation pass.
+- The audit addendum now states that W2 can include exact likelihood formulas,
+  W3 must keep derivation claims tied to source labels/code/tests, W4--W7 should
+  draft policy and case-study structure rather than final production claims, and
+  W8 may remain a blocker register.
+- Proceeding to W0 is justified.
+
+### W0: Hygiene and Baseline Checkpoint
+
+Phase plan:
+- Verify source-map YAML.
+- Verify benchmark JSON.
+- Build the monograph.
+- Check diff hygiene.
+- Record dirty state before drafting.
+
+Execution and test results:
+- `docs/source_map.yml` parsed successfully with `yaml.safe_load`.
+- `docs/benchmarks/tfp_nuts_gaussian_benchmark_2026-05-03.json` validated:
+  benchmark id present, six result rows, all rows status `ok`.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- `git diff --check` passed.
+
+Audit:
+- W0 pass criteria are met.
+- The current dirty state is understood and consists of intended BayesFilter
+  documentation/benchmark work plus ignored generated artifacts.
+
+Interpretation:
+- W1 is justified.
+
+### W1: Notation, Contracts, and Reader Map
+
+Phase plan:
+- Draft Part I scope and contracts without introducing new derivations.
+- Establish notation, shape conventions, target contracts, backend roles, and
+  source-map discipline.
+- Keep original source documents read-only.
+
+Execution results:
+- Drafted `docs/chapters/ch01_introduction.tex`.
+- Drafted `docs/chapters/ch02_state_space_contracts.tex`.
+- Drafted `docs/chapters/ch03_hmc_target_requirements.tex`.
+- Drafted `docs/chapters/ch04_bayesfilter_api.tex`.
+- Drafted `docs/appendices/app_a_notation.tex`.
+- Drafted `docs/appendices/app_f_source_map.tex`.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W1 files returned no matches.
+- Targeted label-namespace search over W1 files returned no violations.
+- `git diff --check` passed.
+
+Audit:
+- W1 is infrastructure prose and definitions only; no unsupported derivation was
+  introduced.
+- DSGE, CIP, AFNS, and NAWM material is framed as downstream application
+  context, not BayesFilter core.
+- The target chapter explicitly requires value, derivative, finite-failure, and
+  compilation policies before HMC use.
+
+Interpretation:
+- W2 is justified.
+
+### W2: Linear Gaussian Likelihood Spine
+
+Phase plan:
+- Draft the value-only exact linear Gaussian likelihood spine.
+- Use the MacroFinance analytic derivative note as the authoritative source for
+  formulas and MacroFinance tests as implementation evidence.
+- Avoid writing score/Hessian formulas before W3.
+
+Execution results:
+- Drafted `docs/chapters/ch05_prediction_error_decomposition.tex`.
+- Drafted `docs/chapters/ch06_stable_linear_filtering.tex`.
+- Drafted `docs/chapters/ch07_missing_data_mixed_frequency.tex`.
+- Drafted `docs/chapters/ch08_large_scale_lgssm.tex`.
+
+Source/test comparison:
+- The LGSSM state, observation, Kalman recursion, innovation covariance, and
+  log-likelihood formulas were consolidated from
+  `/home/chakwong/MacroFinance/analytic_kalman_derivatives.tex`, especially the
+  linear Gaussian state-space and prediction-error decomposition sections.
+- Backend ladder and large-scale diagnostics were cross-checked against
+  `/home/chakwong/MacroFinance/tests/test_large_scale_lgssm_backend_ladder.py`.
+- Missing-data policy was cross-checked against
+  `/home/chakwong/MacroFinance/tests/test_large_scale_lgssm_missing_data_policy.py`.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W2 files returned no matches.
+- `git diff --check` passed.
+
+Audit:
+- W2 includes exact likelihood formulas but no new derivative formulas.
+- Mentions of score, Hessian, and gradient are restricted to forward references
+  and validation/readiness criteria.
+- The missing-data chapter states that unsupported masks must fail explicitly,
+  matching the MacroFinance test policy.
+
+Interpretation:
+- W3 is justified, but derivative drafting must remain source-label and
+  test-backed.
+
+### W3: Analytic Derivatives and Custom Gradient Policy
+
+Phase plan:
+- Draft analytic derivative chapters conservatively.
+- Include only source-backed derivative formulas.
+- Use MathDevMCP and MacroFinance tests to distinguish provenance,
+  structural-code evidence, and numerical parity evidence.
+
+Execution results:
+- Drafted `docs/chapters/ch09_kalman_score.tex`.
+- Drafted `docs/chapters/ch10_kalman_hessian.tex`.
+- Drafted `docs/chapters/ch11_structural_derivatives.tex`.
+- Drafted `docs/chapters/ch12_factor_derivatives.tex`.
+- Drafted `docs/chapters/ch13_custom_gradient_wrappers.tex`.
+- Drafted `docs/chapters/ch14_derivative_validation.tex`.
+- Drafted `docs/appendices/app_b_matrix_calculus.tex`.
+- Drafted `docs/appendices/app_c_factor_derivative_proofs.tex`.
+- Drafted `docs/appendices/app_d_mathdevmcp_workflows.tex`.
+
+Math/source audit:
+- Extracted source context for:
+  - `eq:score_note`.
+  - `eq:solve_score_proved`.
+  - `eq:solve_hessian_proved`.
+- Ran `MathDevMCP audit-kalman-recursion` on
+  `/home/chakwong/MacroFinance/filters/solve_differentiated_kalman.py`.
+- The MathDevMCP result found solve/cholesky, prediction/update,
+  quadratic-form, gradient, and Hessian-recursion structure, but returned
+  `mismatch` for strict required operations `logdet` and `trace`, and reported
+  missing explicit shape/covariance guards.
+
+Original test comparison:
+- Cross-checked W3 evidence statements against
+  `/home/chakwong/MacroFinance/tests/test_generic_lgssm_autodiff_validation.py`.
+- The tests compare solve, square-root, QR square-root, TensorFlow autodiff,
+  finite-difference, eager, and compiled paths on controlled LGSSM cases.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W3 files returned no matches.
+- Risky-claim search found only cautionary language around proof,
+  certification, and production readiness.
+- `git diff --check` passed.
+
+Audit:
+- W3 does not claim peer-review-ready derivations.
+- The score formula is source-backed by `eq:score_note` and
+  `eq:solve_score_proved`.
+- The Hessian chapter records `eq:solve_hessian_proved` as a source-backed
+  contract and explicitly distinguishes it from a fully certified proof.
+- The missing shape/covariance guard finding is preserved as a
+  production-readiness gap.
+
+Interpretation:
+- W4 is justified.
+
+### W4: HMC-Safe Filtering Policy
+
+Phase plan:
+- Draft HMC, mass-matrix, boundary, JIT, and diagnostics policy.
+- Use the Phase 2B HMC/NUTS literature gate and the TFP NUTS Gaussian benchmark.
+- Preserve the distinction between HMC/NUTS mathematical foundations and the
+  project-specific implementation decision not to use TFP NUTS as production
+  default.
+
+Execution results:
+- Expanded `docs/chapters/ch21_hmc_for_state_space.tex`.
+- Drafted `docs/chapters/ch22_mass_matrices.tex`.
+- Drafted `docs/chapters/ch23_boundary_gradients.tex`.
+- Drafted `docs/chapters/ch24_xla_jit.tex`.
+- Drafted `docs/chapters/ch25_diagnostics.tex`.
+
+Source/test comparison:
+- NUTS implementation stance was cross-checked against
+  `docs/benchmarks/tfp_nuts_gaussian_benchmark_2026-05-03.md`.
+- XLA/JIT policy was cross-checked against
+  `/home/chakwong/python/docs/chapters/ch16_xla_ops.tex`.
+- Mass-matrix and HMC-diagnostic helper claims were cross-checked against
+  MacroFinance HMC regression tests.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W4 files returned no matches.
+- Search for NUTS-as-universal-solution patterns returned no bad matches.
+- `git diff --check` passed.
+
+Audit:
+- The chapter states that TFP NUTS can XLA-compile on the toy benchmark, but
+  remains too heavy and opaque to be the default production fix.
+- The JIT chapter distinguishes full-pipeline compilation from an outer
+  `tf.function` wrapper.
+- Diagnostics are framed as warning/evidence, not convergence proof.
+
+Interpretation:
+- W5 is justified, but particle-filter and UKF claims must keep blocked-source
+  status where the literature gate is incomplete.
+
+### W5: Nonlinear Filtering and SVD Sigma-Point Lessons
+
+Phase plan:
+- Draft EKF, sigma-point, square-root sigma-point, SVD sigma-point, particle
+  filter, and filter-choice chapters as a conservative policy pass.
+- Use the source-project nonlinear-filter chapters only as motivation and
+  implementation provenance.
+- Anchor SVD claims in the 2026-04-25 SVD math/code audit and the 2026-04-27
+  SVD-HMC gap-closure plan.
+- Preserve the Phase 2B gates: Julier-Uhlmann UKF primary support and PMCMC /
+  pseudo-marginal support remain blocked.
+
+Execution results:
+- Drafted `docs/chapters/ch15_ekf.tex`.
+- Drafted `docs/chapters/ch16_sigma_point_filters.tex`.
+- Drafted `docs/chapters/ch17_square_root_sigma_point.tex`.
+- Drafted `docs/chapters/ch18_svd_sigma_point.tex`.
+- Drafted `docs/chapters/ch19_particle_filters.tex`.
+- Drafted `docs/chapters/ch20_filter_choice.tex`.
+
+Source/test comparison:
+- EKF and sigma-point material was cross-checked against
+  `/home/chakwong/latex/CIP_monograph/chapters/ch17_nonlinear_filtering.tex`
+  and `/home/chakwong/python/docs/chapters/ch09_sr_ukf.tex`, but rewritten as
+  BayesFilter approximate-likelihood policy rather than imported as a final
+  DSGE result.
+- SVD material was cross-checked against
+  `/home/chakwong/python/docs/chapters/ch09b_svd_filters.tex`,
+  `/home/chakwong/python/docs/plans/svd-filter-math-code-audit-result-2026-04-25.md`,
+  and `/home/chakwong/python/docs/plans/svd-hmc-gap-closure-plan-2026-04-27.md`.
+- Particle-filter text was limited to the Phase 2B accepted differentiable-PF
+  frontier status and avoided PMCMC correctness claims because the primary
+  PMCMC gate remains blocked.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W5 files returned no matches.
+- `git diff --check` passed.
+- The W5 risky-claim scan found only intended cautionary uses of terms such as
+  exact, convergence, unbiased, industrial, safe, certify, and proof.
+
+Audit:
+- W5 does not claim that EKF, UKF, CKF, SVD, or particle filters are exact
+  nonlinear likelihoods in general.
+- The SVD chapter explicitly distinguishes value-side robustness from HMC
+  gradient robustness.
+- The SVD chapter records that close or repeated spectral values are a
+  derivative-risk mechanism and requires eigen/singular-gap telemetry before
+  SVD-HMC production claims.
+- The filter-choice chapter recommends analytic/custom derivative paths for
+  NAWM-sized or industrial targets and treats raw tape gradients through
+  spectral decompositions as diagnostic/small-case tools unless stress evidence
+  survives the intended regime.
+
+Interpretation:
+- W5 pass criteria are met.
+- W6 is justified because transport and surrogate methods can now be drafted as
+  downstream geometry aids whose validity depends on the target and derivative
+  contracts already written.
+
+### W6: Transport, Surrogates, and Geometry
+
+Phase plan:
+- Draft `docs/chapters/ch26_transport_surrogates.tex` as a geometry and
+  surrogate-policy chapter.
+- Use the Phase 2B NeuTra gate only for bounded transport support.
+- Make correction requirements explicit whenever a surrogate changes the target.
+
+Execution results:
+- Drafted transported-target notation with the Jacobian-corrected potential.
+- Recorded NeuTra as a geometry accelerator, not a correctness guarantee.
+- Added a surrogate-status register distinguishing diagnostic, corrected, and
+  target-defining surrogates.
+- Added transport diagnostics for finite transformed targets, log-Jacobian
+  checks, tail probes, reconstruction residuals, and sampler performance.
+
+Source/test comparison:
+- Cross-checked transport-map formulas and warnings against
+  `/home/chakwong/python/docs/chapters/ch16_transport_foundations.tex`.
+- Cross-checked NeuTra/reverse-KL positioning against
+  `/home/chakwong/python/docs/chapters/ch18_transport_training.tex` and the
+  Phase 2B accepted NeuTra source status.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over Chapter 26 returned no matches.
+- `git diff --check` passed.
+- The targeted risky-claim scan found only intended cautions: transport is not
+  a correctness substitute and should not be proposed as a fix for filter-layer
+  derivative or compilation failures.
+
+Audit:
+- W6 does not market NeuTra or transport maps as a universal HMC solution.
+- The chapter states that exact transported HMC requires evaluating the
+  Jacobian-corrected transformed target.
+- Surrogates are not allowed to silently change the sampled posterior.
+
+Interpretation:
+- W6 pass criteria are met.
+- W7 is justified because the core contracts, nonlinear-filter cautions, and
+  transport policy now exist and can be applied to case-study structure without
+  claiming completed industrial validation.
+
+### W7: Industrial Case Studies and Production Checklist
+
+Phase plan:
+- Draft the LGSSM, nonlinear SSM, NK SVD, CIP/AFNS, NAWM, and production
+  checklist chapters as evidence maps and readiness checklists.
+- Preserve project boundaries: BayesFilter gets filtering lessons, not
+  application economics.
+- Do not claim completed NK, DSGE, or NAWM convergence.
+
+Execution results:
+- Drafted `docs/chapters/ch27_lgssm_validation.tex`.
+- Drafted `docs/chapters/ch28_nonlinear_ssm_validation.tex`.
+- Drafted `docs/chapters/ch29_nk_svd_case_study.tex`.
+- Drafted `docs/chapters/ch30_cip_afns_case_study.tex`.
+- Drafted `docs/chapters/ch31_nawm_design_target.tex`.
+- Drafted `docs/chapters/ch32_production_checklist.tex`.
+
+Source/test comparison:
+- LGSSM validation evidence was cross-checked against MacroFinance Kalman
+  backend, missing-data, QR/square-root, large-scale, and HMC diagnostic tests.
+- Nonlinear SSM and NK SVD ladders were cross-checked against
+  `/home/chakwong/python/docs/plans/hmc-svd-filter-convergence-validation-plan-2026-04-26.md`
+  and
+  `/home/chakwong/python/docs/plans/nk-hmc-svd-postrefactor-reset-memo-2026-04-26.md`.
+- CIP/AFNS scope was cross-checked against the CIP monograph AFNS and
+  state-space material, but only filtering interface lessons were imported.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W7 files returned no matches.
+- `git diff --check` passed.
+- The W7 risky-claim scan found only intended contexts: exact LGSSM,
+  blocked NK convergence, NAWM design target, and production-readiness label
+  definitions.
+
+Audit:
+- W7 treats LGSSM as the exact regression oracle.
+- W7 treats nonlinear SSM as the required bridge before DSGE/NK.
+- W7 explicitly states that NK SVD has useful production-XLA/smoke evidence but
+  is not a converged case study.
+- W7 treats NAWM as a design target and hypothesis source, not completed
+  evidence.
+- The production checklist enforces narrow claim labels rather than hiding
+  gaps.
+
+Interpretation:
+- W7 pass criteria are met.
+- W8 is justified as a literature/workflow and blocker-register pass, not as a
+  claim-completion pass.
+
+### W8: Literature Workflow and Blocker Register
+
+Phase plan:
+- Do not pretend the bibliography gate is complete.
+- Draft the ResearchAssistant workflow appendix.
+- Add a durable blocker register for remaining primary-source and
+  derivation/code-audit gaps.
+
+Execution results:
+- Drafted `docs/appendices/app_e_researchassistant_workflows.tex`.
+- Added
+  `docs/plans/bayesfilter-literature-blocker-register-2026-05-03.md`.
+
+Source/provenance comparison:
+- The appendix and blocker register were cross-checked against:
+  - `docs/plans/bayesfilter-literature-seed-list-2026-05-02.md`.
+  - `docs/plans/bayesfilter-phase2b-literature-gate-result-2026-05-02.md`.
+  - `docs/source_map.yml`.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted placeholder search over W8 files returned no matches.
+- `git diff --check` passed.
+
+Audit:
+- No new bibliography entries were merged in W8 because the remaining
+  primary-source gates are not closed.
+- The blocker register preserves unresolved UKF, PMCMC/pseudo-marginal,
+  square-root filtering bibliography, analytic Kalman derivative certification,
+  and industrial SVD-HMC safety gaps.
+- The ResearchAssistant workflow states that raw `.bib` entries, downloaded
+  PDFs, and search results are not claim support.
+
+Interpretation:
+- W8 pass criteria are met as a blocker-register phase.
+- W9 release-quality audit is justified.
+
+### W9: Release-Quality Audit
+
+Phase plan:
+- Run the full monograph build.
+- Parse `docs/source_map.yml`.
+- Validate the TFP NUTS Gaussian benchmark JSON.
+- Run `git diff --check`.
+- Search for unresolved placeholders and risky claims.
+- Audit label namespace discipline.
+- Confirm generated PDFs and LaTeX byproducts are ignored, not staged.
+
+Execution results:
+- Filled the remaining appendix placeholder in
+  `docs/appendices/app_g_experiment_templates.tex` with reusable experiment
+  templates for filter references, HMC smoke runs, medium recovery, and strict
+  convergence.
+- Removed the temporary empty `.codex_write_check` directory created only to
+  verify write access under the sandbox.
+
+Test results:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- `docs/source_map.yml` parsed successfully with `yaml.safe_load`.
+- `docs/benchmarks/tfp_nuts_gaussian_benchmark_2026-05-03.json` validated
+  against its actual schema:
+  - benchmark `tfp_hmc_nuts_gaussian`;
+  - six result rows;
+  - samplers `{hmc, nuts}`;
+  - modes `{eager, graph, xla}`;
+  - all statuses `ok`.
+- `git diff --check` passed.
+- Placeholder search over `docs` found no content placeholders. Remaining
+  matches are in plan text that quotes the audit command itself or describes
+  Phase 0 placeholder policy.
+- Risky-claim search found intended cautionary or definitional contexts:
+  blocked NK convergence, exact LGSSM statements, production-readiness label
+  definitions, literature blockers, and SVD-HMC safety warnings.
+- Label audit found BayesFilter namespaced labels. The only nonstandard prefix
+  is `asm:bf-shape-value-contract`, which is still namespaced and corresponds
+  to the assumption environment.
+
+Audit:
+- No generated PDF or LaTeX byproduct is staged.
+- `.research/` remains ignored.
+- The monograph still has expected bibliography warnings because citations are
+  deliberately gated and most references have not yet been inserted into prose.
+- One small overfull hbox remains in Chapter 24 around `tf.function`; the build
+  succeeds and the warning is cosmetic.
+- The current pass is a conservative first writing pass, not a final
+  peer-review certification.
+
+Interpretation:
+- W9 pass criteria are met.
+- The modified files are ready to commit.
+
+## Completion summary for this writing pass
+
+Completed W0--W9 as a first conservative consolidation pass:
+- W0 baseline, build, YAML, benchmark, and diff hygiene.
+- W1 notation, state-space contracts, target contracts, API, and source-map
+  appendix.
+- W2 exact linear Gaussian likelihood spine.
+- W3 analytic derivative and custom-gradient policy with honest audit limits.
+- W4 HMC, mass matrix, boundary, XLA/JIT, diagnostics, and TFP NUTS decision.
+- W5 nonlinear filters, SVD sigma-point lessons, particle-filter caution, and
+  filter-choice policy.
+- W6 transport, NeuTra, and surrogate geometry policy.
+- W7 LGSSM, nonlinear SSM, NK SVD, CIP/AFNS, NAWM, and production checklist
+  case-study structure.
+- W8 ResearchAssistant workflow and literature blocker register.
+- W9 release-quality audit and final placeholder cleanup.
+
+Main remaining work:
+- close primary-source blockers for UKF, PMCMC/pseudo-marginal methods, and
+  square-root filtering literature;
+- complete a dedicated derivation/code audit before marking Kalman score and
+  Hessian formulas peer-review ready;
+- run strict LGSSM and nonlinear SSM HMC recovery;
+- clear the NK SVD clean stress gate before any NK convergence claim;
+- add model-specific production-XLA, clean-stress, and convergence gates before
+  EZ, SGU, Rotemberg, or NAWM are promoted.
+
+Next hypotheses to test:
+- H1: analytic/custom filtering gradients will be more robust than raw tape
+  gradients through spectral decompositions for high-dimensional HMC targets.
+- H2: exact or controlled LGSSM backends should serve as the regression oracle
+  for every nonlinear BayesFilter backend.
+- H3: SVD sigma-point filters are useful robust approximate value backends, but
+  production HMC use requires eigen/singular-gap telemetry and derivative
+  validation.
+- H4: transport and NeuTra-like maps can improve geometry only after the target
+  and gradient contracts are correct.

@@ -1,5 +1,64 @@
 \chapter{Posterior Targets and HMC Requirements}
 \label{ch:bf-hmc-target-requirements}
 
-Placeholder.
+HMC samples an unconstrained or transformed parameter vector by integrating
+Hamiltonian dynamics for a log target.  In BayesFilter, that log target usually
+contains a filtering likelihood.  The target contract must therefore be stated
+before discussing sampler tuning.
 
+\begin{definition}[Filtering posterior target]
+\label{def:bf-filtering-target}
+Let $u \in \R^{d_u}$ denote the coordinates used by the sampler and let
+$\theta = T(u)$ be the model parameter transform.  A filtering posterior target
+has the form
+\[
+  \log \pi(u \mid y_{1:T})
+  =
+  \log p(T(u))
+  + \ell(T(u); y_{1:T})
+  + \log\left|\det DT(u)\right|,
+\]
+where $\ell$ is the log likelihood returned by the chosen filtering backend.
+\end{definition}
+
+For HMC, the value alone is not enough.  The backend and transform jointly
+define the gradient seen by the sampler.  If a custom gradient is used, it must
+be the gradient of the same scalar target value, not the gradient of a nearby
+surrogate unless the sampler is explicitly corrected for that surrogate.
+
+\section{Finite Failure Policy}
+\label{sec:bf-finite-failure-policy}
+
+Invalid parameters are ordinary events during HMC warmup and exploration.  A
+BayesFilter target must decide how to handle them.  The preferred policy is to
+return a deterministic low log density and finite fallback gradient for known
+invalid regions, while separately recording diagnostics for the reason.  A
+linear-algebra failure that aborts the process is not an HMC-compatible failure
+mode.
+
+The policy must be explicit for:
+\begin{itemize}
+  \item parameter transforms and prior support;
+  \item stationarity or determinacy restrictions;
+  \item covariance positive-definiteness checks;
+  \item failed factorizations or solve residuals;
+  \item non-finite likelihood or gradient values.
+\end{itemize}
+
+\section{Compilation and Differentiability}
+\label{sec:bf-hmc-target-compilation}
+
+When a backend is advertised as JIT or XLA compatible, the claim refers to the
+complete value-and-gradient path needed by the sampler.  Partial tracing of an
+outer function is not enough if the filter, derivative provider, or failure
+branch executes outside the compiled region.
+
+The derivative policy should be one of:
+\begin{itemize}
+  \item analytic score or Hessian recursion;
+  \item custom gradient wrapping a certified analytic derivative;
+  \item autodiff through smooth primitive operations;
+  \item stopped-gradient approximation used only with an explicit correction or
+    diagnostic label;
+  \item not HMC-safe.
+\end{itemize}

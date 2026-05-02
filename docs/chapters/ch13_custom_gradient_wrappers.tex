@@ -1,5 +1,22 @@
 \chapter{Custom-Gradient Wrappers for HMC}
 \label{ch:bf-custom-gradient-wrappers}
 
-Placeholder.
+A custom gradient is safe for HMC only if it returns the derivative of the same
+scalar log target used in the Metropolis correction.  A fast gradient of a
+nearby surrogate changes the dynamics and can bias the chain unless the sampler
+is explicitly corrected.
 
+BayesFilter's custom-gradient wrapper policy is:
+\begin{enumerate}[label=(\roman*)]
+  \item compute the primal log likelihood with the production backend;
+  \item return an analytic score that has been validated against the same
+    primal value on controlled cases;
+  \item expose diagnostics for finite failures and backend fallbacks;
+  \item keep tensor shapes static inside compiled sampler paths;
+  \item use Hessians for mass matrices or diagnostics, not inside every HMC
+    leapfrog step unless explicitly justified.
+\end{enumerate}
+
+This policy reflects the MacroFinance motivation: nested tape Hessians through
+full Kalman scans are useful as small-model validation oracles, but they are not
+the intended large-model production path.

@@ -1,5 +1,63 @@
 \chapter{Notation and Shape Conventions}
 \label{app:bf-notation}
 
-Placeholder.
+This appendix fixes the notation used throughout BayesFilter.  Source projects
+use overlapping but not identical symbols; this monograph uses the following
+conventions unless a chapter states otherwise.
 
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
+\midrule
+$t=1,\ldots,T$ & observation time index \\
+$x_t \in \R^{n_x}$ & latent state \\
+$y_t \in \R^{n_y}$ & observation vector before masking \\
+$\theta \in \R^{d_\theta}$ & model parameter vector \\
+$u \in \R^{d_u}$ & unconstrained sampler coordinate \\
+$c,F,Q$ & linear Gaussian transition offset, matrix, covariance \\
+$a,H,R$ & linear Gaussian observation offset, matrix, covariance \\
+$m_{t|s},P_{t|s}$ & conditional state mean and covariance \\
+$v_t,S_t$ & innovation and innovation covariance \\
+$K_t$ & Kalman gain \\
+$\ell(\theta)$ & filtering log likelihood \\
+$g(\theta)$ & likelihood score $\nabla_\theta \ell(\theta)$ \\
+$G(\theta)$ & likelihood Hessian $\nabla^2_{\theta\theta}\ell(\theta)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Matrix transposes are written with ${}^\top$.  Positive definiteness and
+positive semidefiniteness are written $A \succ 0$ and $A \succeq 0$.  The
+operator $\tr(\cdot)$ denotes trace, and $\diag(\cdot)$ forms or extracts a
+diagonal depending on context.
+
+\section{Derivative Shapes}
+\label{sec:bf-derivative-shapes}
+
+For a parameter-dependent vector $b(\theta)\in\R^n$, first derivatives have
+shape $d_\theta \times n$ and second derivatives have shape
+$d_\theta \times d_\theta \times n$.  For a matrix
+$A(\theta)\in\R^{m\times n}$, first derivatives have shape
+$d_\theta \times m \times n$ and second derivatives have shape
+$d_\theta \times d_\theta \times m \times n$.
+
+This convention matches the MacroFinance derivative-provider layout used as the
+current implementation reference.  Chapters that discuss TensorFlow or JAX
+execution may store tensors differently for performance, but must state the
+mathematical shape convention before changing memory layout.
+
+\section{Label Namespace}
+\label{sec:bf-label-namespace}
+
+New labels use a BayesFilter namespace:
+\[
+  \texttt{ch:bf-*},\quad
+  \texttt{sec:bf-*},\quad
+  \texttt{def:bf-*},\quad
+  \texttt{asm:bf-*},\quad
+  \texttt{eq:bf-*},\quad
+  \texttt{tab:bf-*}.
+\]
+Source-project labels should not be copied verbatim.  When a source label is
+important for provenance, it should be recorded in the reset memo or source map.

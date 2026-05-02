@@ -1,5 +1,68 @@
 \chapter{ResearchAssistant Workflows}
 \label{app:bf-researchassistant-workflows}
 
-Placeholder.
+ResearchAssistant is the literature-ingestion sidecar for this monograph.  It
+should be used when a chapter needs primary-source support rather than local
+implementation provenance.  It is not a replacement for reading the source and
+checking whether the cited paper supports the exact BayesFilter claim.
 
+\section{Workspace Policy}
+\label{sec:bf-ra-workspace-policy}
+
+Use a persistent, ignored workspace under the BayesFilter tree:
+\[
+  \texttt{/home/chakwong/BayesFilter/.research/ra-bayesfilter-monograph}.
+\]
+Downloaded papers, source packages, extracted text, and inbox files stay out of
+Git.  Durable decisions belong in `docs/plans' result notes, the reset memo, and
+the source map.
+
+\section{Ingestion Workflow}
+\label{sec:bf-ra-ingestion-workflow}
+
+The standard workflow is:
+\begin{enumerate}[label=(\roman*)]
+  \item search or fetch the primary source;
+  \item verify metadata against title, authors, venue, DOI or arXiv id;
+  \item reject mismatches explicitly;
+  \item extract the citation neighborhood or source labels relevant to the
+    BayesFilter claim;
+  \item write a short result note stating supported claims and limits;
+  \item only then add or use a bibliography entry.
+\end{enumerate}
+The Phase 2B result note is the model: it accepted exact arXiv source packages
+for HMC, NUTS, NeuTra, Matrix Backprop, Kitagawa score/Hessian material, and
+the differentiable particle-filter frontier, while rejecting several metadata
+mismatches.
+
+\section{Claim Gate}
+\label{sec:bf-ra-claim-gate}
+
+A literature-heavy paragraph is draftable only when one of the following is
+true:
+\begin{itemize}
+  \item an accepted ResearchAssistant note supports the claim and records its
+    limits;
+  \item a local source document plus code/test audit supports the claim;
+  \item the paragraph is explicitly labeled as a project decision or an open
+    hypothesis.
+\end{itemize}
+Raw `.bib' entries, downloaded PDFs, and search results are not claim support.
+
+\section{Current Blockers}
+\label{sec:bf-ra-current-blockers}
+
+The current blockers are:
+\begin{itemize}
+  \item primary Julier--Uhlmann or equivalent UKF support for detailed
+    sigma-point literature claims;
+  \item primary PMCMC and pseudo-marginal support before particle-filter
+    correctness claims;
+  \item square-root filtering primary sources if final square-root
+    bibliographic prose is expanded;
+  \item a dedicated derivation/code audit before Kalman score and Hessian
+    formulas are marked peer-review ready;
+  \item industrial-scale SVD-HMC safety evidence before NAWM-scale claims.
+\end{itemize}
+Until these blockers are closed, the monograph should keep the conservative
+wording used in the current draft.

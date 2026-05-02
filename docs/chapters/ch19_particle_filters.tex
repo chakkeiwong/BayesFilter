@@ -1,5 +1,59 @@
 \chapter{Particle Filters}
 \label{ch:bf-particle-filters}
 
-Placeholder.
+Particle filters approximate the filtering distribution with weighted
+particles rather than a Gaussian moment closure.  They are important for
+nonlinear and non-Gaussian state-space models, but they occupy a different
+place in BayesFilter's HMC program than EKF or sigma-point filters.  Standard
+resampling is discrete, and differentiating a particle-filter likelihood is
+not the same problem as differentiating a Kalman recursion.
 
+\section{Separation of Roles}
+\label{sec:bf-pf-separation}
+
+BayesFilter should separate three roles:
+\begin{enumerate}[label=(\roman*)]
+  \item a particle filter as a likelihood estimator for likelihood comparison
+    or particle MCMC;
+  \item a differentiable particle filter as an approximate differentiable
+    filtering backend;
+  \item a particle method as a simulation-based diagnostic for nonlinear
+    filters.
+\end{enumerate}
+These roles have different validity conditions.  A stochastic likelihood
+estimator may be useful for pseudo-marginal methods, but BayesFilter does not
+yet have accepted primary-source support in this monograph pass for strong
+pseudo-marginal HMC claims.  A differentiable resampling relaxation may support
+gradients, but it generally changes the filtering approximation and needs its
+own bias and convergence assumptions.
+
+\section{Differentiable Frontier}
+\label{sec:bf-differentiable-pf-frontier}
+
+The Phase 2B literature gate accepted the entropy-regularized optimal-transport
+particle-filter source only as frontier support.  It justifies discussing
+differentiable particle filters under their stated assumptions.  It does not
+certify arbitrary differentiable resampling, and it does not make particle
+filters a drop-in HMC backend for BayesFilter.
+
+Therefore this chapter should remain conservative until the literature gate is
+completed:
+\begin{itemize}
+  \item do not claim generic unbiased differentiable likelihood gradients;
+  \item do not claim pseudo-marginal HMC correctness without primary PMCMC and
+    pseudo-marginal support;
+  \item do not replace the linear Gaussian derivative spine with a particle
+    approximation when exact or controlled approximate filters are available;
+  \item use particle methods as reference diagnostics only when the Monte Carlo
+    error is measured and reported.
+\end{itemize}
+
+\section{Validation Requirements}
+\label{sec:bf-pf-validation-requirements}
+
+A BayesFilter particle backend needs diagnostics beyond sampler summaries:
+effective sample size, log-likelihood estimator variance, resampling counts,
+random-seed reproducibility policy, particle degeneracy warnings, and
+comparison to exact or dense-reference cases where possible.  If a relaxed
+resampling method is used, the validation report must state the relaxed target
+being differentiated and how it differs from the intended filtering target.

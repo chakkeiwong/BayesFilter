@@ -1,5 +1,34 @@
 \chapter{Derivative Validation}
 \label{ch:bf-derivative-validation}
 
-Placeholder.
+Derivative validation is a ladder.  Passing one rung is useful evidence, but it
+does not certify the whole industrial target.
 
+\section{Validation Ladder}
+\label{sec:bf-derivative-validation-ladder}
+
+BayesFilter derivative providers should pass:
+\begin{enumerate}[label=(\roman*)]
+  \item shape and finite-value checks;
+  \item finite-difference checks on scalar or tiny LGSSMs;
+  \item autodiff parity on small models where tape Hessians are feasible;
+  \item backend parity among covariance, solve, Cholesky, and QR variants;
+  \item factor reconstruction and solve-residual diagnostics;
+  \item compiled/eager parity for TensorFlow backends;
+  \item stress tests for low noise, collinearity, near rank loss, and masks.
+\end{enumerate}
+
+MacroFinance currently supplies examples of these tests, including QR
+square-root parity against autodiff and finite differences, solve backend
+agreement with the existing differentiated backend, TensorFlow eager/compiled
+parity, and large-scale backend ladder diagnostics.  BayesFilter should import
+the testing discipline before importing any claim of production readiness.
+
+\section{Audit Record}
+\label{sec:bf-derivative-audit-record}
+
+Each derivative chapter should record the source labels, code files, and tests
+that support it.  If a tool audit is inconclusive, the monograph should say so.
+An inconclusive symbolic audit can still be valuable: it identifies which
+guards, shapes, or noncommutative matrix steps need manual proof before a
+formula is promoted to peer-review-ready status.

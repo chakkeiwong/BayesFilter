@@ -1,5 +1,51 @@
 \chapter{LGSSM Validation Ladder}
 \label{ch:bf-lgssm-validation}
 
-Placeholder.
+The linear Gaussian state-space model is the first validation target for
+BayesFilter because it supplies an exact likelihood, controlled derivatives,
+and tractable regression tests.  Every nonlinear or DSGE backend should be
+reduced to an LGSSM special case before it is trusted in HMC.
 
+\section{Evidence Already Available}
+\label{sec:bf-lgssm-evidence}
+
+The MacroFinance project provides the strongest local evidence stream:
+\begin{itemize}
+  \item exact prediction-error likelihood formulas and analytic derivative
+    notes;
+  \item covariance, solve, Cholesky square-root, QR square-root, TensorFlow, and
+    SVD-flavored backends;
+  \item finite-difference and autodiff parity tests on small models;
+  \item large-scale backend-ladder tests that report reconstruction errors,
+    solve residuals, QR pivots, and finite derivative deltas;
+  \item missing-data policy tests that fail unsupported sparse panels before
+    the likelihood silently changes meaning.
+\end{itemize}
+This evidence justifies using the LGSSM as BayesFilter's regression oracle.  It
+does not yet replace the BayesFilter-specific packaging and public API tests
+that will be needed when the code is moved into this project.
+
+\section{Validation Rungs}
+\label{sec:bf-lgssm-rungs}
+
+The LGSSM ladder is:
+\begin{enumerate}[label=(\roman*)]
+  \item fixed-parameter likelihood agreement against an independent Kalman
+    implementation;
+  \item score agreement against finite differences and small-model autodiff;
+  \item Hessian agreement where the backend claims observed-information
+    support;
+  \item backend parity among solve, Cholesky, QR, and TensorFlow paths;
+  \item mask and mixed-frequency parity against dense special cases;
+  \item compiled/eager parity for the full value-and-gradient target;
+  \item short HMC plumbing checks with finite diagnostics;
+  \item medium and strict HMC runs only after the preceding rungs pass.
+\end{enumerate}
+
+\section{Interpretation}
+\label{sec:bf-lgssm-interpretation}
+
+Passing the LGSSM ladder means the sampler interface, derivative convention,
+and linear algebra backends are coherent on an exact target.  It does not prove
+that a nonlinear approximation is accurate, and it does not prove that a DSGE
+posterior has good HMC geometry.  It is the floor, not the ceiling.

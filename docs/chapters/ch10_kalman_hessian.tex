@@ -1,5 +1,57 @@
 \chapter{Kalman Hessian and Observed Information}
 \label{ch:bf-kalman-hessian}
 
-Placeholder.
+The Hessian layer is necessary for observed-information diagnostics, local
+identification, and mass-matrix construction, but it is also the easiest place
+to overstate the state of the mathematics.  BayesFilter therefore records the
+Hessian as a source-backed contract and validation target, not as a finished
+proof for every backend.
 
+For second derivatives, write
+\[
+  \ddot z^{(ij)}
+  =
+  \frac{\partial^2 z}{\partial\theta_i\partial\theta_j}.
+\]
+The MacroFinance note expands the second-order prediction, innovation, and gain
+recursions by product rule.  In solve form, the source introduces
+\[
+  \dot w_t^{(j)}
+  =
+  \mathcal{S}_{S_t}\left(\dot v_t^{(j)}-\dot S_t^{(j)}w_t\right),
+\]
+where $\mathcal{S}_{S_t}(b)$ denotes solving $S_tx=b$.  It then decomposes the
+per-time Hessian contribution into log-determinant, innovation-linear, and
+quadratic terms:
+\[
+  \frac{\partial^2\ell_t}{\partial\theta_i\partial\theta_j}
+  =
+  -\frac{1}{2}
+  \left[
+    T_{ij}^{\log\det}+T_{ij}^{v}-T_{ij}^{S}
+  \right].
+\]
+This statement is consolidated from source label
+\texttt{eq:solve\_hessian\_proved}.
+
+\section{Evidence Status}
+\label{sec:bf-hessian-evidence-status}
+
+The source derivation is detailed, but BayesFilter should keep three evidence
+levels distinct:
+\begin{itemize}
+  \item formula provenance from the MacroFinance analytic derivative note;
+  \item structural code evidence from MathDevMCP AST audits;
+  \item numerical parity evidence from tests against autodiff and finite
+    differences.
+\end{itemize}
+
+The current MathDevMCP audit of the MacroFinance solve differentiated Kalman
+backend found the Kalman operation graph and solve structure but reported a
+mismatch for a strict \texttt{logdet}/\texttt{trace} operation query and missing
+explicit shape and covariance guards.  This should be treated as a
+production-readiness prompt, not as a proof failure.  The generic LGSSM
+autodiff-validation tests are the stronger mathematical check for the current
+implementation because they compare likelihood, gradient, and Hessian against
+solve backends, TensorFlow autodiff, and finite differences on controlled
+small-dimensional models.

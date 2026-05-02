@@ -1,5 +1,30 @@
 \chapter{Matrix Calculus Identities}
 \label{app:bf-matrix-calculus}
 
-Placeholder.
+The derivative chapters repeatedly use a small set of matrix identities.  This
+appendix records them as proof obligations to be checked against the source
+derivations.
 
+For an invertible matrix $S(\theta)$,
+\[
+  \partial_i S^{-1}
+  =
+  -S^{-1}(\partial_i S)S^{-1}.
+\]
+For a symmetric positive definite matrix $S(\theta)$,
+\[
+  \partial_i \log\det S
+  =
+  \tr(S^{-1}\partial_i S).
+\]
+For $q=v^\top S^{-1}v$ and $S w=v$,
+\[
+  \partial_i q
+  =
+  2(\partial_i v)^\top w
+  -w^\top(\partial_i S)w.
+\]
+These identities are the local algebra behind the solve-form score in
+Chapter~\ref{ch:bf-kalman-score}.  Second-order formulas should be expanded
+only with explicit source labels or proof notes because the noncommutative
+matrix products are easy to reorder incorrectly.

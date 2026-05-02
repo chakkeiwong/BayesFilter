@@ -1,5 +1,82 @@
 \chapter{Extended Kalman Filtering}
 \label{ch:bf-ekf}
 
-Placeholder.
+The extended Kalman filter is the most direct nonlinear extension of the
+linear Gaussian spine in Chapter~\ref{ch:bf-prediction-error-decomposition}.
+It replaces nonlinear transition and observation maps by local linear
+approximations and then applies the same prediction-error likelihood form to
+the resulting Gaussian approximation.  In BayesFilter this is an approximate
+likelihood backend, not an exact replacement for the Kalman filter except in
+the affine-Gaussian special case.
 
+\section{Local Linearization}
+\label{sec:bf-ekf-local-linearization}
+
+Consider the nonlinear contract
+\begin{align}
+  x_{t+1} &= f_\theta(x_t) + u_{t+1},
+  & u_{t+1} &\sim \calN(0,Q_\theta), \label{eq:bf-ekf-transition}\\
+  y_t &= h_\theta(x_t) + \varepsilon_t,
+  & \varepsilon_t &\sim \calN(0,R_\theta). \label{eq:bf-ekf-observation}
+\end{align}
+Let
+\[
+  F_t =
+  \left.\frac{\partial f_\theta(x)}{\partial x^\top}
+  \right|_{x=m_{t-1|t-1}},
+  \qquad
+  H_t =
+  \left.\frac{\partial h_\theta(x)}{\partial x^\top}
+  \right|_{x=m_{t|t-1}} .
+\]
+The EKF prediction and update are
+\begin{align}
+  m_{t|t-1} &= f_\theta(m_{t-1|t-1}), \\
+  P_{t|t-1} &= F_tP_{t-1|t-1}F_t^\top+Q_\theta, \\
+  v_t &= y_t-h_\theta(m_{t|t-1}), \\
+  S_t &= H_tP_{t|t-1}H_t^\top+R_\theta, \\
+  K_t &= P_{t|t-1}H_t^\top S_t^{-1}, \\
+  m_{t|t} &= m_{t|t-1}+K_tv_t .
+\end{align}
+The covariance may be updated in simplified form or in a Joseph-style
+linearized form.  The backend must state which form defines the numerical
+recursion, because this choice affects finite-arithmetic behavior even when the
+first-order algebra is equivalent.
+
+\section{Likelihood Status}
+\label{sec:bf-ekf-likelihood-status}
+
+The EKF log likelihood uses the same innovation expression as
+\eqref{eq:bf-ped-loglik}, but the innovations and innovation covariances come
+from local linearization.  Therefore the EKF target is an approximate target
+unless $f_\theta$ and $h_\theta$ are affine on the region reached by the
+filter.  An HMC chain using the EKF samples from the posterior induced by that
+approximate likelihood and prior, not from the exact nonlinear state-space
+posterior.
+
+For BayesFilter documentation and tests, the EKF should be used in three roles:
+\begin{enumerate}[label=(\roman*)]
+  \item a baseline nonlinear Gaussian approximation;
+  \item a regression oracle in cases where the nonlinear maps collapse to
+    affine maps and the exact Kalman likelihood is available;
+  \item a diagnostic comparison for sigma-point and particle backends.
+\end{enumerate}
+
+\section{HMC Contract}
+\label{sec:bf-ekf-hmc-contract}
+
+An EKF backend is HMC-eligible only after it declares:
+\begin{itemize}
+  \item how the Jacobians $F_t$ and $H_t$ are computed;
+  \item whether gradients with respect to $\theta$ are tape-based, analytic, or
+    custom;
+  \item what happens when $S_t$ is singular, non-finite, or numerically
+    indefinite;
+  \item whether all loop lengths, masks, and state dimensions remain static
+    under compilation;
+  \item which parity tests compare the EKF to exact linear Gaussian cases.
+\end{itemize}
+The older nonlinear-filtering chapters in the source projects motivate this
+contract, but BayesFilter tightens it for HMC: differentiability and finite
+failure behavior are part of the target definition, not implementation
+afterthoughts.

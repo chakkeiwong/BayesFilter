@@ -455,6 +455,19 @@ duplicate_groups:
       - /home/chakwong/latex/CIP_monograph/chapters/ch20_hmc.tex
       - /home/chakwong/latex/CIP_monograph/chapters/ch21_advanced_hmc.tex
     resolution: Rewrite a single BayesFilter HMC chapter focused on filtering targets.
+    implementation_decision: >
+      Discuss TFP HMC/NUTS as a reference and historical lesson, not as the
+      strategic production backend. BayesFilter should own an inspectable
+      HMC/NUTS layer because previous TFP work exposed full-pipeline XLA
+      compilation, nested-kernel opacity, adaptation/control-flow debugging, and
+      model-specific failure-handling difficulties.
+    local_benchmark:
+      path: docs/benchmarks/benchmark_tfp_nuts_gaussian.py
+      result_note: docs/benchmarks/tfp_nuts_gaussian_benchmark_2026-05-03.md
+      reason: >
+        Minimal Gaussian HMC/NUTS timing benchmark used to prevent unsupported
+        "try NUTS" recommendations from replacing filter-aware compilation and
+        debugging evidence.
   - topic: Nonlinear Gaussian filters
     sources:
       - /home/chakwong/python/docs/chapters/ch09_sr_ukf.tex

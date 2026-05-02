@@ -1,5 +1,46 @@
 \chapter{Nonlinear SSM Validation Ladder}
 \label{ch:bf-nonlinear-ssm-validation}
 
-Placeholder.
+The nonlinear SSM ladder tests whether approximate nonlinear filtering can be
+used inside HMC before DSGE perturbation solvers and economic boundaries enter
+the picture.  It should use small synthetic models with known parameters and
+independent references, not large application models.
 
+\section{Controlled Models}
+\label{sec:bf-nonlinear-controlled-models}
+
+The source SVD-HMC validation plan recommends two simple cases:
+\begin{enumerate}[label=(\roman*)]
+  \item a linear Gaussian model, which must collapse to the exact Kalman
+    reference;
+  \item a scalar nonlinear model, such as an AR(1) latent state with a
+    quadratic observation equation, where dense quadrature or a trusted long
+    run can provide a reference.
+\end{enumerate}
+These cases isolate the sigma-point approximation, transition hook, filter
+diagnostics, and HMC wrapper from DSGE-specific adjoints.
+
+\section{Required Outputs}
+\label{sec:bf-nonlinear-required-outputs}
+
+A nonlinear SSM HMC validation run should write:
+\begin{itemize}
+  \item JSON diagnostics with chain counts, warmup/draw counts, step sizes,
+    acceptance rate, divergence counts, R-hat, ESS, MCSE/SD, and runtime;
+  \item NPZ chain artifacts for independent audit;
+  \item true-parameter coverage when synthetic truth exists;
+  \item filter failure counts, conditioning-guard counts, and finite-gradient
+    failures.
+\end{itemize}
+Medium runs are sampler-usability evidence.  Strict runs require at least four
+chains, finite log targets, zero or justified divergences, R-hat below 1.01,
+bulk and tail ESS above the planned thresholds, and saved artifacts.
+
+\section{Stop Rules}
+\label{sec:bf-nonlinear-stop-rules}
+
+If the LGSSM rung fails, the nonlinear rung should not start.  If the nonlinear
+SSM rung fails while LGSSM passes, the failure should be attributed first to
+the approximation, nonlinear target geometry, transition hook, or derivative
+path.  DSGE/NK debugging should wait until this simpler explanation is ruled
+out.

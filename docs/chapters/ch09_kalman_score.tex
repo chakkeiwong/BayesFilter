@@ -1,5 +1,67 @@
 \chapter{Kalman Score Recursions}
 \label{ch:bf-kalman-score}
 
-Placeholder.
+The score recursion differentiates the prediction-error decomposition from
+Chapter~\ref{ch:bf-prediction-error-decomposition}.  In BayesFilter this is the
+first derivative contract for exact linear Gaussian HMC targets.
 
+For parameter component $\theta_i$, write
+\[
+  \dot z^{(i)} = \frac{\partial z}{\partial \theta_i}.
+\]
+The source note derives the innovation derivatives
+\[
+  \dot v_t^{(i)}
+  =
+  -\dot a^{(i)}
+  -\dot H^{(i)}m_{t|t-1}
+  -H\dot m_{t|t-1}^{(i)}
+\]
+and
+\[
+  \dot S_t^{(i)}
+  =
+  \dot H^{(i)}P_{t|t-1}H^\top
+  +H\dot P_{t|t-1}^{(i)}H^\top
+  +HP_{t|t-1}\dot H^{(i)\top}
+  +\dot R^{(i)}.
+\]
+Using $\partial_i S^{-1}=-S^{-1}\dot S^{(i)}S^{-1}$, the per-time score
+contribution is
+\begin{equation}
+\label{eq:bf-kalman-score-contribution}
+  \frac{\partial \ell_t}{\partial \theta_i}
+  =
+  -\frac{1}{2}
+  \left[
+    \tr(S_t^{-1}\dot S_t^{(i)})
+    +2\dot v_t^{(i)\top}S_t^{-1}v_t
+    -v_t^\top S_t^{-1}\dot S_t^{(i)}S_t^{-1}v_t
+  \right].
+\end{equation}
+This is consolidated from source label \texttt{eq:score\_note} in the
+MacroFinance analytic Kalman derivative note.
+
+\section{Solve-Form Score}
+\label{sec:bf-solve-form-score}
+
+For production code, BayesFilter prefers the solve form.  Let $S_tw_t=v_t$.
+Then the same score can be written as
+\begin{equation}
+\label{eq:bf-solve-score}
+  \frac{\partial \ell_t}{\partial \theta_i}
+  =
+  -\frac{1}{2}
+  \left[
+    \tr(S_t^{-1}\dot S_t^{(i)})
+    +2\dot v_t^{(i)\top}w_t
+    -w_t^\top\dot S_t^{(i)}w_t
+  \right].
+\end{equation}
+This is source label \texttt{eq:solve\_score\_proved}.  The implementation
+reference is the MacroFinance solve differentiated Kalman backend.
+The current MathDevMCP AST audit identifies Cholesky/solve, prediction, update,
+quadratic-form, and derivative-recursion structure in that file, but it does
+not by itself certify the algebra.  The stronger evidence is the
+MacroFinance test suite comparing solve, QR square-root, autodiff, and finite
+difference results on controlled LGSSMs.

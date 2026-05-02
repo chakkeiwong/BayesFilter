@@ -1,5 +1,47 @@
 \chapter{NAWM-Scale Design Target}
 \label{ch:bf-nawm-design-target}
 
-Placeholder.
+NAWM-scale models define the industrial target for BayesFilter.  They should
+not be presented as completed evidence in this monograph pass.  Instead, they
+set the design requirements for robust filtering and HMC on high-dimensional
+state-space systems.
 
+\section{Why NAWM Changes the Standard}
+\label{sec:bf-nawm-standard}
+
+As state dimension, parameter dimension, and observation dimension grow, several
+risks become routine rather than exceptional:
+\begin{itemize}
+  \item covariance spectra become clustered or nearly singular;
+  \item HMC proposals visit invalid or barely valid structural regions;
+  \item raw autodiff through eigendecompositions or SVDs becomes fragile;
+  \item compile boundaries and dynamic branches become performance bottlenecks;
+  \item short smoke runs become less informative about long-chain behavior.
+\end{itemize}
+This is why BayesFilter should prefer analytic or custom derivative paths for
+production filtering wherever feasible.
+
+\section{Design Requirements}
+\label{sec:bf-nawm-requirements}
+
+A NAWM-grade BayesFilter backend needs:
+\begin{enumerate}[label=(\roman*)]
+  \item a fixed, documented target contract and parameter transform;
+  \item explicit state-space shape contracts;
+  \item finite invalid-region returns and finite gradients where HMC moves;
+  \item analytic/custom gradients for exact or controlled approximate
+    likelihoods;
+  \item spectral-gap and factor diagnostics for any spectral backend;
+  \item full-pipeline JIT evidence, not only outer-wrapper tracing;
+  \item reproducible diagnostics and reset memos for every long experiment.
+\end{enumerate}
+
+\section{Hypothesis}
+\label{sec:bf-nawm-hypothesis}
+
+The working hypothesis is that NAWM-scale HMC will be more robust with
+source-backed analytic or custom filtering gradients than with raw tape
+gradients through spectral decompositions.  This is not yet a theorem or a
+completed benchmark.  It is the prevention-first design target motivated by the
+SVD debugging history and by the derivative risks documented in the Phase 2B
+literature gate.

@@ -1,5 +1,56 @@
 \chapter{NK SVD Case Study}
 \label{ch:bf-nk-svd-case-study}
 
-Placeholder.
+The NK SVD case study is a warning label with useful engineering evidence.  It
+shows how far a numerically hardened SVD sigma-point path can get, and it also
+shows why BayesFilter should not equate bounded HMC output with convergence or
+industrial readiness.
 
+\section{What Passed}
+\label{sec:bf-nk-svd-passed}
+
+The source reset memos record several meaningful passes:
+\begin{itemize}
+  \item focused SVD, target-boundary, adjoint, and generic nonlinear SSM
+    contracts passed during the post-refactor work;
+  \item generic SSM SVD likelihoods and gradients compile under production XLA;
+  \item NK SVD fixed-solution and full-solve likelihood/gradient paths compile
+    under XLA with explicit opt-in;
+  \item tiny NK SVD production-XLA HMC smoke tests run to completion with finite
+    output;
+  \item generic nonlinear SSM medium HMC writes diagnostics with finite chains
+    and zero divergences under tuned short-run defaults.
+\end{itemize}
+These results are valuable sampler-usability and compilation evidence.
+
+\section{What Remains Blocked}
+\label{sec:bf-nk-svd-blocked}
+
+The same reset memos record why NK convergence remains blocked.  Earlier
+bounded stress runs produced nonfinite adjoint and lam1 inputs, SVD conditioning
+guard activations, nonfinite intermediate arrays, and extreme but finite
+transformed-theta states.  The later production-XLA smoke gates do not erase
+that artifact history, because they are tiny runs and not clean stress
+experiments.
+
+Therefore the next NK claim must be a clean stress gate, not a convergence
+claim.  A valid clean gate requires no checked-nonfinite adjoint captures, no
+nonfinite lam1 inputs, no nonfinite SVD-filter captures, no unexplained
+transformed-theta scale explosion, and zero or separately justified divergences.
+
+\section{Lesson for BayesFilter}
+\label{sec:bf-nk-svd-lesson}
+
+The case study separates four statuses:
+\begin{description}
+  \item[filter-correct] likelihood and gradients agree with controlled
+    references;
+  \item[sampler-usable] bounded HMC runs produce finite chains and useful
+    diagnostics;
+  \item[converged] strict multi-chain diagnostics pass on the intended target;
+  \item[production-XLA-gated] the full value-and-gradient path compiles and runs
+    under the declared production policy.
+\end{description}
+NK SVD has meaningful production-XLA and smoke evidence, but it is not yet a
+converged case study.  That distinction should stay visible in every future
+BayesFilter report.

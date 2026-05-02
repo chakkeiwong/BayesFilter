@@ -1,5 +1,77 @@
 \chapter{Filter Choice}
 \label{ch:bf-filter-choice}
 
-Placeholder.
+Filter choice is a target-definition decision, not only a speed decision.  For
+HMC, the selected backend determines the log likelihood, the derivative path,
+the finite-failure policy, and the compilation surface.  BayesFilter should
+choose the simplest backend that gives the required target fidelity and a
+validated gradient.
 
+\section{Decision Register}
+\label{sec:bf-filter-choice-register}
+
+The backend decision should be recorded in a short register:
+\begin{description}
+  \item[Exact Kalman, solve, or square-root LGSSM]
+  Best for linear Gaussian likelihoods and regression oracles.  The main risks
+  are SPD failures, mask handling, and large-scale factor failures.  The HMC
+  gate is analytic/custom score parity plus compiled value-gradient parity.
+
+  \item[EKF]
+  Best as a cheap nonlinear baseline and affine recovery check.  The main risks
+  are linearization bias and Jacobian fragility.  The HMC gate is affine Kalman
+  recovery plus finite-gradient stress tests.
+
+  \item[Sigma-point]
+  Best for moderate nonlinear Gaussian approximations.  The main risks are an
+  approximate target and covariance-update instability.  The HMC gate is
+  reference recovery, static sigma-point shapes, and derivative parity.
+
+  \item[Square-root sigma-point]
+  Best for value-side robustness under near-singular covariance.  The main risk
+  is false confidence when the implementation reconstructs covariance matrices
+  internally.  The HMC gate is factor reconstruction, finite gradients, and
+  compiled parity.
+
+  \item[SVD sigma-point]
+  Best for robust approximate value paths and spectral diagnostics.  The main
+  risks are close or repeated spectral values and raw autodiff instability.  The
+  HMC gate is eigen-gap telemetry, stress gates, and a custom-gradient fallback.
+
+  \item[Particle or differentiable particle filter]
+  Best for non-Gaussian diagnostics and frontier approximations.  The main
+  risks are Monte Carlo variance, resampling non-differentiability, and relaxed
+  target bias.  The HMC gate is an estimator-variance report and a source-backed
+  correction policy.
+\end{description}
+
+\section{Recommended Order}
+\label{sec:bf-filter-choice-order}
+
+For a new model, BayesFilter should proceed in this order:
+\begin{enumerate}[label=(\roman*)]
+  \item reduce to an LGSSM or affine test case and validate the exact Kalman
+    likelihood and derivatives;
+  \item add masks, missing-data patterns, and mixed-frequency timing while
+    retaining exact references;
+  \item test EKF or sigma-point approximations on low-dimensional nonlinear
+    examples with dense or trusted references;
+  \item only then attempt DSGE-scale SVD sigma-point HMC;
+  \item treat particle methods and transport methods as separate evidence
+    streams unless a correction policy makes them target-preserving.
+\end{enumerate}
+
+\section{Industrial Default}
+\label{sec:bf-filter-choice-industrial-default}
+
+For NAWM-sized or industrial applications, the default should be an exact or
+controlled approximate likelihood with an analytic or custom derivative path.
+Raw tape gradients through spectral decompositions are acceptable as
+diagnostic tools and small-case oracles, but they should not be the final
+production plan unless spectral-gap, finite-gradient, and compiled parity
+evidence survives the intended stress regime.
+
+This policy is intentionally conservative.  The SVD sigma-point debugging work
+showed that value robustness and HMC-gradient robustness are different
+problems.  The next implementation phases should close that gap deliberately
+instead of discovering it during long chains.

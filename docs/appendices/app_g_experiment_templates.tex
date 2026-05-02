@@ -1,5 +1,68 @@
 \chapter{Experiment Templates}
 \label{app:bf-experiment-templates}
 
-Placeholder.
+This appendix gives reusable experiment templates for future BayesFilter
+implementation work.  The templates are intentionally short.  Each experiment
+should write a reset-memo entry with commands, artifacts, interpretation, and
+the next justified phase.
 
+\section{Filter Reference Template}
+\label{sec:bf-filter-reference-template}
+
+Use this template before HMC:
+\begin{enumerate}[label=(\roman*)]
+  \item define the model, parameter transform, data seed, and fixed structural
+    parameters;
+  \item compute a reference likelihood from an independent exact, dense, or
+    trusted implementation;
+  \item compare the BayesFilter backend value to the reference;
+  \item compare gradients by finite differences or small-model autodiff;
+  \item record finite-value, factor, solve, mask, and failure-code diagnostics;
+  \item save the command and tolerance rationale.
+\end{enumerate}
+Passing this template earns value-valid or gradient-valid status, depending on
+which checks are included.  It does not earn sampler-usability status.
+
+\section{HMC Smoke Template}
+\label{sec:bf-hmc-smoke-template}
+
+Use this template to test sampler plumbing:
+\begin{enumerate}[label=(\roman*)]
+  \item use a small model and static shapes;
+  \item run one or two short chains with deliberately small draw counts;
+  \item require finite chains, finite log targets, and no unhandled exceptions;
+  \item record acceptance rate, divergence count, step size, runtime, and
+    whether the complete value-gradient path was compiled;
+  \item state explicitly that the run is not convergence evidence.
+\end{enumerate}
+Smoke runs justify the next experiment only when the failure taxonomy is clean.
+
+\section{Medium Recovery Template}
+\label{sec:bf-medium-recovery-template}
+
+Use this template for controlled posterior recovery:
+\begin{enumerate}[label=(\roman*)]
+  \item run at least four chains when feasible;
+  \item save JSON diagnostics and NPZ chain artifacts;
+  \item report R-hat, bulk ESS, tail ESS, MCSE/SD, divergences, acceptance, and
+    runtime;
+  \item compare posterior intervals to synthetic truth or a trusted reference;
+  \item classify the result as sampler-usable or not sampler-usable.
+\end{enumerate}
+Medium recovery is allowed to have looser thresholds than strict convergence,
+but the looseness must be stated in the result note.
+
+\section{Strict Convergence Template}
+\label{sec:bf-strict-convergence-template}
+
+Use this template only after the preceding gates pass:
+\begin{enumerate}[label=(\roman*)]
+  \item run at least four chains with planned warmup and draw counts;
+  \item require finite log targets and finite gradients throughout accepted
+    trajectories;
+  \item require zero divergences unless a bounded exception is justified;
+  \item require the planned R-hat, ESS, and MCSE/SD thresholds;
+  \item audit saved artifacts before writing a convergence claim.
+\end{enumerate}
+If any required diagnostic fails, the reset memo should name the blocker and
+the next diagnostic hypothesis instead of weakening the claim label.

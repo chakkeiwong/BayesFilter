@@ -1,0 +1,105 @@
+{
+  "benchmark": "tfp_hmc_nuts_gaussian",
+  "config": {
+    "chains": 2,
+    "dim": 4,
+    "hmc_leapfrog_steps": 3,
+    "num_burnin_steps": 64,
+    "num_results": 128,
+    "nuts_max_tree_depth": 4,
+    "repeats": 4,
+    "seed": 20260503,
+    "step_size": 0.25
+  },
+  "environment": {
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      },
+      {
+        "device_type": "GPU",
+        "name": "/device:GPU:0"
+      }
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0",
+    "xla_note": "First XLA call includes tracing and compilation; later calls reuse the compiled executable for the same static shape."
+  },
+  "results": [
+    {
+      "acceptance_rate": 0.994140625,
+      "error": null,
+      "first_call_seconds": 4.222735780989751,
+      "mean_repeat_seconds": 3.1096829953603446,
+      "mode": "eager",
+      "sample_mean": 0.01911427080631256,
+      "sampler": "hmc",
+      "second_call_seconds": 2.961738926009275,
+      "seconds_per_draw": 0.012147199200626346,
+      "status": "ok"
+    },
+    {
+      "acceptance_rate": 0.994140625,
+      "error": null,
+      "first_call_seconds": 0.9044655800098553,
+      "mean_repeat_seconds": 0.6467721506487578,
+      "mode": "graph",
+      "sample_mean": 0.01911427080631256,
+      "sampler": "hmc",
+      "second_call_seconds": 0.5933398649794981,
+      "seconds_per_draw": 0.00252645371347171,
+      "status": "ok"
+    },
+    {
+      "acceptance_rate": 0.9921875,
+      "error": null,
+      "first_call_seconds": 1.5425206739455462,
+      "mean_repeat_seconds": 0.06951175463230659,
+      "mode": "xla",
+      "sample_mean": -0.05998994782567024,
+      "sampler": "hmc",
+      "second_call_seconds": 0.07820275099948049,
+      "seconds_per_draw": 0.0002715302915324476,
+      "status": "ok"
+    },
+    {
+      "acceptance_rate": 1.0,
+      "error": null,
+      "first_call_seconds": 66.83237868896686,
+      "mean_repeat_seconds": 72.86772210993028,
+      "mode": "eager",
+      "sample_mean": -0.014229957479983568,
+      "sampler": "nuts",
+      "second_call_seconds": 69.67383220791817,
+      "seconds_per_draw": 0.28463953949191517,
+      "status": "ok"
+    },
+    {
+      "acceptance_rate": 1.0,
+      "error": null,
+      "first_call_seconds": 14.837031294009648,
+      "mean_repeat_seconds": 15.704055916362753,
+      "mode": "graph",
+      "sample_mean": -0.014229957479983568,
+      "sampler": "nuts",
+      "second_call_seconds": 15.136212217039429,
+      "seconds_per_draw": 0.061343968423292004,
+      "status": "ok"
+    },
+    {
+      "acceptance_rate": 1.0,
+      "error": null,
+      "first_call_seconds": 3.822683515958488,
+      "mean_repeat_seconds": 1.012588078621775,
+      "mode": "xla",
+      "sample_mean": -0.0031996890902519226,
+      "sampler": "nuts",
+      "second_call_seconds": 0.8985926719615236,
+      "seconds_per_draw": 0.003955422182116308,
+      "status": "ok"
+    }
+  ]
+}

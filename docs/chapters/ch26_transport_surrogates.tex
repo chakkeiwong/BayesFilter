@@ -1,5 +1,104 @@
 \chapter{Transport Maps and Surrogate Geometry}
 \label{ch:bf-transport-surrogates}
 
-Placeholder.
+Transport maps and surrogates are downstream geometry tools.  They can make an
+HMC target easier to explore, but they cannot repair an invalid likelihood,
+an inconsistent custom gradient, or a non-finite filter boundary.  This chapter
+therefore depends on the target, derivative, and diagnostics contracts already
+defined in the earlier chapters.
 
+\section{Transported Targets}
+\label{sec:bf-transported-targets}
+
+Let $q\in\R^d$ denote the original unconstrained parameter and let
+\[
+  q = T_\psi(z)
+\]
+be an invertible differentiable map from transported coordinates $z$ to the
+original coordinates.  If the original target density is
+\[
+  \pi_Q(q) \propto \exp[-U_Q(q)],
+\]
+then the transported target is
+\begin{equation}
+\label{eq:bf-transported-potential}
+  U_Z(z)
+  =
+  U_Q(T_\psi(z))
+  -
+  \log\left|\det J_{T_\psi}(z)\right| .
+\end{equation}
+Running HMC in $z$-space is target-preserving only when the sampler evaluates
+\eqref{eq:bf-transported-potential} and its gradient.  The Jacobian term is not
+optional.  A learned map that is imperfect can still be useful as a
+preconditioner, but omitting the change-of-variables correction changes the
+target.
+
+\section{NeuTra Position}
+\label{sec:bf-neutra-position}
+
+The Phase 2B literature gate accepted NeuTra only as transport and geometry
+support.  That is exactly the right status for BayesFilter.  A NeuTra-like map
+can improve posterior geometry by making the transformed target closer to a
+simple reference distribution.  It is not a correctness guarantee, and it is
+not a substitute for a valid filtering likelihood or a derivative provider
+that matches the Metropolis value.
+
+The strategic use is:
+\begin{enumerate}[label=(\roman*)]
+  \item certify the filtering target and gradient first;
+  \item train or choose a transport map to improve geometry;
+  \item run HMC on the Jacobian-corrected transported target;
+  \item compare diagnostics and effective sample size per unit time to the
+    untransported or affine baseline.
+\end{enumerate}
+If the map has poor tail behavior, bad inverse stability, or large Jacobian
+curvature, it can make sampling worse even when it improves a training loss.
+
+\section{Surrogate Targets}
+\label{sec:bf-surrogate-targets}
+
+A surrogate likelihood or surrogate Hamiltonian is a different object from a
+transport map.  If the surrogate changes the scalar log target used in the
+Metropolis correction, the Markov chain targets the surrogate posterior unless
+a correction mechanism is added.  BayesFilter should record one of three
+statuses for every surrogate:
+\begin{description}
+  \item[diagnostic surrogate] used only for exploration, initialization, or
+    comparison; no posterior correctness claim is made;
+  \item[corrected surrogate] used inside a delayed-acceptance or
+    Metropolis-corrected scheme that evaluates the intended target before a
+    sample is accepted;
+  \item[target-defining surrogate] deliberately defines the approximate
+    posterior being sampled, with approximation error documented separately.
+\end{description}
+This distinction prevents a common failure mode: using a fast approximate
+filter or neural surrogate for gradients and then interpreting the resulting
+chain as if it sampled the exact filtering posterior.
+
+\section{Diagnostics}
+\label{sec:bf-transport-diagnostics}
+
+Transport diagnostics should be tied to sampler performance and target
+integrity:
+\begin{itemize}
+  \item transformed-target finite value and finite gradient checks;
+  \item log-Jacobian finite checks and inverse/forward reconstruction residuals;
+  \item tail probes for large $\|z\|$;
+  \item acceptance rate, divergences, E-BFMI, and effective sample size per
+    second relative to an affine baseline;
+  \item shell-level Hessian or force diagnostics where available.
+\end{itemize}
+These diagnostics explain why a map helps or fails.  They do not override a
+failed target contract.
+
+\section{BayesFilter Policy}
+\label{sec:bf-transport-policy}
+
+Transport and surrogate methods should enter BayesFilter after the exact or
+controlled approximate likelihood path has been validated.  They are valuable
+for large models because geometry can dominate HMC cost, but they sit on top of
+the filter contract rather than underneath it.  In particular, they should not
+be proposed as a fix for SVD spectral-gradient instability, missing derivative
+guards, or partial XLA compilation.  Those problems must be solved at the
+filter and sampler-contract layer first.

@@ -1,5 +1,86 @@
 \chapter{Sigma-Point Filters}
 \label{ch:bf-sigma-point-filters}
 
-Placeholder.
+Sigma-point filters replace local linearization with deterministic quadrature.
+They propagate a finite set of points through nonlinear maps and reconstruct
+approximate Gaussian moments from weighted averages.  This makes them more
+accurate than the EKF for some nonlinear transformations, while preserving the
+Gaussian filtering closure used by the prediction-error likelihood.  The price
+is that the likelihood remains approximate and the derivative path becomes
+more complicated.
 
+\section{Moment-Matching Interface}
+\label{sec:bf-sigma-point-interface}
+
+At each time step, a sigma-point backend starts from a Gaussian approximation
+\[
+  x_t \mid y_{1:t-1}
+  \approx \calN(m_{t|t-1},P_{t|t-1}).
+\]
+A deterministic rule constructs points
+$\chi^{(j)}_{t|t-1}$ and weights $w_j^{(m)},w_j^{(c)}$.  Passing the points
+through the observation map gives
+\[
+  z_t^{(j)}=h_\theta(\chi^{(j)}_{t|t-1}).
+\]
+The backend then forms approximate predicted observations, innovation
+covariances, and cross covariances:
+\begin{align}
+  \bar z_t &= \sum_j w_j^{(m)}z_t^{(j)}, \\
+  P_{zz,t} &= \sum_j w_j^{(c)}
+    (z_t^{(j)}-\bar z_t)(z_t^{(j)}-\bar z_t)^\top + R_\theta, \\
+  P_{xz,t} &= \sum_j w_j^{(c)}
+    (\chi^{(j)}_{t|t-1}-m_{t|t-1})
+    (z_t^{(j)}-\bar z_t)^\top .
+\end{align}
+The gain is $K_t=P_{xz,t}P_{zz,t}^{-1}$ and the innovation is
+$v_t=y_t-\bar z_t$.  The same Gaussian innovation likelihood formula is then
+used, with $P_{zz,t}$ replacing $S_t$.
+
+\section{Approximation Boundary}
+\label{sec:bf-sigma-point-approximation-boundary}
+
+BayesFilter should label sigma-point filters as approximate likelihood
+backends unless a special model structure supplies an exactness argument.
+The source SR-UKF material contains model-specific claims about quadratic
+observation equations and pruned DSGE structure.  Those claims are useful
+case-study material, but they should not be promoted to a general BayesFilter
+theorem without a separate derivation in BayesFilter notation and a regression
+test against an exact reference.
+
+For HMC, this distinction matters.  If the sigma-point likelihood is used in
+the target, the chain targets the sigma-point posterior.  If the sigma-point
+filter is only a surrogate for an exact nonlinear likelihood, then a correction
+or delayed-acceptance policy is needed before exact-posterior claims are made.
+
+\section{Derivative and Compilation Requirements}
+\label{sec:bf-sigma-point-derivative-requirements}
+
+Sigma-point HMC requires differentiating through:
+\begin{itemize}
+  \item the covariance factor used to generate points;
+  \item the nonlinear transition and observation maps;
+  \item the weighted covariance assembly;
+  \item linear solves or factorizations for $P_{zz,t}$;
+  \item any PSD projection, jitter, clipping, or fallback branch.
+\end{itemize}
+The derivative provider must return the derivative of the same approximate log
+likelihood that supplies the Metropolis value.  Static shapes are also
+non-negotiable: the number of sigma points, state dimension, observed-data
+mask shape, and scan length must not vary inside the compiled transition.
+
+\section{Evidence Ladder}
+\label{sec:bf-sigma-point-evidence-ladder}
+
+The minimum evidence ladder for a sigma-point backend is:
+\begin{enumerate}[label=(\roman*)]
+  \item exact recovery on affine Gaussian systems against the Kalman backend;
+  \item finite value and finite gradient on controlled nonlinear systems;
+  \item eager/compiled parity where a compiled sampler is claimed;
+  \item comparison to a denser quadrature, long simulation, or trusted
+    reference on low-dimensional nonlinear examples;
+  \item HMC diagnostics that remain explicitly separated from convergence
+    proof.
+\end{enumerate}
+This ladder is the consolidation of the source-project SVD/HMC validation
+plans, not a completed BayesFilter certification result.

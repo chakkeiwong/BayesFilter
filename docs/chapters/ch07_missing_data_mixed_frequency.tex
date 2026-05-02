@@ -1,5 +1,46 @@
 \chapter{Missing Data and Mixed Frequency}
 \label{ch:bf-missing-data-mixed-frequency}
 
-Placeholder.
+Real macro-finance panels are rarely dense.  Missing observations,
+mixed-frequency releases, publication lags, and ragged starts must be handled
+as part of the filtering contract rather than as ad hoc data cleaning outside
+the likelihood.
 
+\section{Selection Form}
+\label{sec:bf-missing-selection-form}
+
+Let $M_t$ be a deterministic selection matrix that extracts the observed
+components of $y_t$.  The dense observation equation
+\[
+  y_t=a+Hx_t+\varepsilon_t,\qquad \varepsilon_t\sim\calN(0,R)
+\]
+becomes
+\[
+  M_ty_t = M_ta + M_tHx_t + M_t\varepsilon_t,
+  \qquad
+  M_t\varepsilon_t\sim\calN(0,M_tRM_t^\top).
+\]
+The prediction-error likelihood in \eqref{eq:bf-ped-loglik} then uses the
+selected innovation and selected innovation covariance.  If no components are
+observed at time $t$, the filter performs prediction without a measurement
+update.
+
+\section{Implementation Policy}
+\label{sec:bf-missing-implementation-policy}
+
+The public backend must state whether it supports sparse panels.  A dense-only
+backend should fail before likelihood evaluation if the observations contain
+NaNs, infinities, or masks that imply unsupported missing-data behavior.  The
+MacroFinance missing-data policy tests explicitly check that unsupported sparse
+observation masks raise a named pending-support error rather than leaking NaNs
+into the Kalman recursion.
+
+For compiled likelihoods, there are two viable policies:
+\begin{itemize}
+  \item group time steps by mask pattern and keep each compiled path static;
+  \item keep a fixed dense shape and use selection or masking operations whose
+    shape is known at trace time.
+\end{itemize}
+Either policy is acceptable if the likelihood value and derivative contract are
+unchanged and the diagnostics identify which observations contributed to each
+time step.

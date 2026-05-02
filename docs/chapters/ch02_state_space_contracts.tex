@@ -1,5 +1,75 @@
 \chapter{State-Space Model Contracts}
 \label{ch:bf-state-space-contracts}
 
-Placeholder.
+BayesFilter treats a state-space model as a contract between a structural model
+and a filtering backend.  The structural model may be a DSGE perturbation
+solver, an affine term-structure model, a macro-finance system, or a synthetic
+validation problem.  The filter should not need to know that origin; it should
+receive typed maps with stable shapes and declared derivative policies.
 
+\begin{definition}[BayesFilter state-space contract]
+\label{def:bf-ssm-contract}
+For parameter vector $\theta \in \Theta \subseteq \R^{d_\theta}$, a
+BayesFilter state-space contract supplies latent states $x_t \in \R^{n_x}$,
+observations $y_t \in \R^{n_y}$, transition law
+\[
+  p_\theta(x_{t+1}\mid x_t),
+\]
+observation law
+\[
+  p_\theta(y_t\mid x_t),
+\]
+initial law $p_\theta(x_0)$, and an observation mask or selection rule when the
+available components of $y_t$ vary over time.  A linear Gaussian specialization
+supplies matrices and vectors
+\[
+  c_\theta,\quad F_\theta,\quad Q_\theta,\quad
+  a_\theta,\quad H_\theta,\quad R_\theta,
+\]
+with dimensions fixed by the model instance.
+\end{definition}
+
+\begin{assumption}[Shape and value contract]
+\label{asm:bf-shape-value-contract}
+For a fixed model instance, tensor ranks and leading dimensions are static
+throughout a compiled likelihood evaluation.  Parameter-dependent covariance
+objects are symmetric positive semidefinite or positive definite as required by
+the backend, and invalid parameter values are reported through an explicit
+finite-failure policy rather than accidental linear-algebra exceptions.
+\end{assumption}
+
+The contract separates model maps from filter maps.  A model map builds
+state-space objects from $\theta$.  A filter map consumes those objects and the
+data.  A derivative provider supplies first or second derivatives of the
+state-space objects, or declares that a backend relies on autodiff through
+primitive operations.  This distinction is essential for large models: the
+derivative of a structural solver and the derivative of a Kalman or sigma-point
+recursion are different mathematical layers.
+
+\section{Masks and Mixed Frequency}
+\label{sec:bf-masks-mixed-frequency-contract}
+
+A sparse panel should be represented by a deterministic mask or selection
+operator, not by changing the model definition at each time.  At time $t$, the
+filter may work with the observed subvector $y_{t,\mathcal{O}_t}$ and the
+corresponding selected observation map.  The public contract must state whether
+an all-missing time step performs only prediction, whether ragged panels are
+batched by pattern, and whether the implementation keeps static shapes for JIT
+compilation.
+
+\section{Backend Classes}
+\label{sec:bf-backend-classes}
+
+BayesFilter distinguishes the following backend roles:
+\begin{itemize}
+  \item exact linear Gaussian likelihood backends;
+  \item square-root or solve-form variants of exact linear Gaussian backends;
+  \item approximate nonlinear Gaussian filters such as EKF, UKF, CKF, and
+    SVD-factored sigma-point filters;
+  \item particle-filter or simulation-based likelihood estimators;
+  \item diagnostic or surrogate backends that do not define the final HMC
+    target without an explicit correction policy.
+\end{itemize}
+The same model can be evaluated by more than one backend, but the monograph
+must state which backend defines the posterior target and which backends are
+only diagnostic approximations.

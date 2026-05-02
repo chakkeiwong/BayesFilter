@@ -1,5 +1,31 @@
 \chapter{Source Map}
 \label{app:bf-source-map}
 
-Placeholder.
+The machine-readable source map is
+\[
+  \texttt{docs/source\_map.yml}.
+\]
+It records which source project, chapter, reset memo, code file, or test file
+supports each BayesFilter chapter.  The source map is part of the monograph's
+quality-control system, not merely an index.
 
+Each imported item should move through explicit states:
+\begin{itemize}
+  \item \texttt{candidate}: relevant but not yet drafted;
+  \item \texttt{drafted}: consolidated into BayesFilter prose;
+  \item \texttt{audited}: checked against source math, code, tests, or reviewed
+    literature;
+  \item \texttt{superseded}: replaced by another source;
+  \item \texttt{excluded}: intentionally outside BayesFilter scope.
+\end{itemize}
+
+The source map also records duplicate source groups.  For example, Kalman
+likelihood material appears in the DSGE monograph, CIP monograph, and the
+MacroFinance analytic derivative note.  BayesFilter treats the MacroFinance
+note and associated tests as the derivative spine while using the monographs as
+expository sources.
+
+Generated artifacts, paper caches, and local PDFs are not provenance by
+themselves.  A claim becomes monograph-ready only when the relevant source or
+test has been summarized in a committed note, mapped in the source map, or
+explicitly cited in the chapter.

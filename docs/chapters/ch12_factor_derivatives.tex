@@ -1,5 +1,22 @@
 \chapter{QR and Cholesky Factor Derivatives}
 \label{ch:bf-factor-derivatives}
 
-Placeholder.
+Square-root filters propagate factors rather than covariance matrices.  Their
+derivative contract is therefore not only a Kalman contract; it is also a factor
+calculus contract.
 
+BayesFilter uses three levels of factor evidence:
+\begin{enumerate}[label=(\roman*)]
+  \item Cholesky or QR identities stated in the source derivation;
+  \item reconstruction diagnostics proving that differentiated factors
+    reconstruct the differentiated covariance objects;
+  \item backend parity against solve-form likelihood, score, and Hessian.
+\end{enumerate}
+
+The QR square-root tests in MacroFinance require prediction, innovation, and
+filtered factor derivative reconstruction errors below tight tolerances on
+small-dimensional parameter grids, and they compare QR likelihood, gradient,
+and Hessian against the solve-form backend.  Those tests are currently the
+right standard for BayesFilter factor-derivative chapters: a factor formula is
+not production-ready until both reconstruction and end-to-end likelihood
+parity pass.

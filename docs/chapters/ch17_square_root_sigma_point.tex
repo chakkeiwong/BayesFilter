@@ -1,5 +1,61 @@
 \chapter{Square-Root Sigma-Point Filters}
 \label{ch:bf-square-root-sigma-point}
 
-Placeholder.
+Square-root sigma-point filters propagate a factor of the covariance rather
+than the covariance matrix itself.  Their purpose is numerical: avoid avoidable
+loss of symmetry and positive semi-definiteness, reduce solve instability, and
+make the filtering recursion easier to monitor.  In BayesFilter, square-root
+bookkeeping is a backend discipline.  It does not by itself make an
+approximate likelihood exact or an autodiff gradient safe for HMC.
 
+\section{Backend Contract}
+\label{sec:bf-square-root-contract}
+
+A square-root backend stores a factor $C_t$ such that
+$P_t=C_tC_t^\top$ or an equivalent factorization.  The factor may be Cholesky,
+QR-derived, SVD/eigen-derived, or another auditable representation.  The
+backend contract must state:
+\begin{itemize}
+  \item the factor orientation and reconstruction identity;
+  \item the predict update and measurement update used for the factor;
+  \item whether covariance matrices are ever reconstructed;
+  \item how rank loss, jitter, and PSD projection are handled;
+  \item which operations define the differentiable target path.
+\end{itemize}
+
+The source SR-UKF material is useful here precisely because it exposed a
+maintenance risk: a method can be called square-root while still reconstructing
+full covariances and applying simplified covariance updates internally.  The
+BayesFilter monograph should therefore describe the actual implemented
+recursion, not only the label attached to the filter.
+
+\section{HMC-Relevant Risks}
+\label{sec:bf-square-root-hmc-risks}
+
+For HMC, the relevant question is not only whether the factor recursion keeps
+$P_t$ positive semi-definite in floating point.  The sampler also needs a
+stable derivative of the scalar log target.  Cholesky, QR, and SVD factors have
+different derivative behavior near rank loss or repeated singular values.  A
+backend that is robust for value evaluation can still be fragile as a raw
+tape-gradient path.
+
+BayesFilter should therefore classify square-root sigma-point evidence in two
+columns:
+\begin{enumerate}[label=(\roman*)]
+  \item value-recursion evidence, such as finite likelihoods, factor
+    reconstruction residuals, and affine-Gaussian parity;
+  \item derivative evidence, such as finite gradients, AD/custom-gradient
+    parity, spectral-gap telemetry, and HMC leapfrog stability.
+\end{enumerate}
+Only the second column is directly relevant to HMC production readiness.
+
+\section{When to Prefer Square-Root Forms}
+\label{sec:bf-square-root-choice}
+
+Square-root forms are natural when observation noise is small, latent
+covariances are nearly singular, or long scans accumulate asymmetry.  They are
+also useful for large LGSSMs where factor diagnostics expose numerical problems
+earlier than a final log likelihood does.  They should not be treated as a
+universal answer to nonlinear filtering: if the moment closure is poor, the
+filter is still approximating the wrong target; if the derivative of the
+factorization is unstable, HMC can still fail.

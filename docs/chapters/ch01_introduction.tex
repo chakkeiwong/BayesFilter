@@ -2,7 +2,57 @@
 \label{ch:bf-introduction}
 
 BayesFilter is the reusable filtering and HMC-safe likelihood layer extracted
-from the DSGE, macro-finance, and analytic Kalman derivative work.  This
-skeleton chapter records the intended scope; substantive content will be
-migrated only after the source map and literature gates are complete.
+from the DSGE, macro-finance, and analytic Kalman derivative work.  Its purpose
+is narrower than the source monographs: it owns the numerical contracts for
+state-space likelihoods, derivatives, diagnostics, and compiled Bayesian
+sampling.  The economics of NK, EZ, SGU, CIP, AFNS, and future NAWM-scale
+applications remain downstream case studies.
 
+The organizing premise is that filtering is not a small implementation detail
+inside Bayesian state-space inference.  For Hamiltonian Monte Carlo, the filter
+is part of the posterior target: it supplies the log likelihood, the gradient
+path, the invalid-parameter behavior, and much of the geometry seen by the
+sampler.  A filtering backend that is adequate for point likelihood evaluation
+may still be unsuitable for HMC if it has hidden non-finite branches, unstable
+spectral derivatives, dynamic shapes, or opaque compilation behavior.
+
+This monograph separates four layers:
+\begin{enumerate}[label=(\roman*)]
+  \item the state-space model contract;
+  \item the likelihood and derivative backend;
+  \item the HMC target and diagnostic policy;
+  \item application case studies that stress the generic contracts.
+\end{enumerate}
+The separation lets the linear Gaussian and analytic derivative spine be
+audited before nonlinear sigma-point filters, particle filters, transport maps,
+or DSGE-specific experiments are used as evidence.
+
+\section{Provenance and Claim Discipline}
+\label{sec:bf-intro-provenance}
+
+The source documents for this project are read-only inputs.  BayesFilter
+consolidates them into one notation system and one production-readiness policy,
+but it does not treat old prose as automatically authoritative.  Every
+substantive claim should be traceable to one of four sources: a local source
+chapter or reset memo listed in \texttt{docs/source\_map.yml}, a reviewed
+literature artifact, a code/test reference, or an explicitly recorded project
+decision such as the TensorFlow Probability NUTS benchmark.
+
+The most important negative rule is equally simple: no backend is described as
+HMC-safe merely because it returns a finite likelihood on a smoke test.  HMC
+safety requires a target contract, a derivative policy, finite failure handling,
+static-shape or compilation discipline where compilation is claimed, and
+diagnostics that can reveal when the sampler is exploring a numerically fragile
+region.
+
+\section{Reader Map}
+\label{sec:bf-reader-map}
+
+The book is written from the stable core outward.  Part~I fixes notation and
+interfaces.  Part~II develops the exact linear Gaussian likelihood because it is
+the regression oracle for more complicated filters.  Part~III records analytic
+derivative and custom-gradient policy before nonlinear filters are promoted into
+HMC experiments.  Part~IV discusses nonlinear filters and spectral risks with
+those derivative requirements already in place.  Part~V states the HMC, JIT,
+and diagnostic contracts.  The case studies appear last so they can be judged
+against the generic BayesFilter checklist rather than driving the definitions.

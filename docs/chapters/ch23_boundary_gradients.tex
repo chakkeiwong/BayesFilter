@@ -1,5 +1,30 @@
 \chapter{Boundary Handling and Safe Gradients}
 \label{ch:bf-boundary-gradients}
 
-Placeholder.
+Boundary handling is part of the posterior target.  Parameters can leave the
+stationary, positive-definite, or economically admissible region during HMC
+warmup.  A robust implementation must handle those proposals without crashing
+the chain or returning non-finite gradients.
 
+\section{Finite Invalid Returns}
+\label{sec:bf-finite-invalid-returns}
+
+The preferred policy is:
+\begin{enumerate}[label=(\roman*)]
+  \item detect invalid regions before fragile factorizations where possible;
+  \item return a deterministic low log density;
+  \item return a finite fallback gradient compatible with rejection;
+  \item record the invalid reason in diagnostics;
+  \item keep the behavior stable under JIT compilation.
+\end{enumerate}
+
+This policy is not a mathematical trick to make an invalid model valid.  It is
+an engineering rule that keeps sampler control flow alive long enough for HMC
+to reject bad proposals and continue exploring the admissible region.
+
+\section{Boundary Checklist}
+\label{sec:bf-boundary-checklist}
+
+Every HMC target should state its policy for prior support, parameter
+transforms, stationarity or determinacy restrictions, covariance pivots, solve
+residuals, non-finite likelihoods, and non-finite gradients.
