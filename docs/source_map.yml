@@ -1,0 +1,480 @@
+version: 1
+date: 2026-05-02
+
+policy:
+  original_sources_read_only: true
+  output_root: /home/chakwong/BayesFilter/docs
+  label_namespace: "bf"
+  import_status_values:
+    - candidate
+    - drafted
+    - audited
+    - superseded
+    - excluded
+  import_rule: >
+    Rewrite source material into BayesFilter notation. Do not copy labels,
+    preambles, bibliographies, or project-specific economics wholesale.
+  citation_rule: >
+    Bibliography entries from source projects must pass a key-conflict and
+    claim-support audit before being merged into docs/references.bib.
+
+sources:
+  - id: dsge_hmc_monograph
+    project: dsge_hmc
+    root: /home/chakwong/python/docs
+    entrypoint: /home/chakwong/python/docs/monograph.tex
+    bibliography: /home/chakwong/python/docs/references.bib
+    status: candidate
+    role: DSGE/HMC filtering, SVD sigma-point, XLA, and transport source material.
+  - id: cip_monograph
+    project: CIP_monograph
+    root: /home/chakwong/latex/CIP_monograph
+    entrypoint: /home/chakwong/latex/CIP_monograph/main.tex
+    bibliography: /home/chakwong/latex/CIP_monograph/references.bib
+    status: candidate
+    role: Macro-finance state-space, mixed-frequency, particle-filter, and pipeline source material.
+  - id: macrofinance_analytic_kalman
+    project: MacroFinance
+    root: /home/chakwong/MacroFinance
+    entrypoint: /home/chakwong/MacroFinance/analytic_kalman_derivatives.tex
+    bibliography: /home/chakwong/MacroFinance/analytic_kalman_derivatives.bib
+    status: candidate
+    role: Primary analytic Kalman score/Hessian and structural derivative source.
+  - id: dsge_svd_reset_notes
+    project: dsge_hmc
+    root: /home/chakwong/python/docs/plans
+    status: candidate
+    role: SVD filter debugging history, HMC convergence gates, and failure taxonomy.
+  - id: macrofinance_code
+    project: MacroFinance
+    root: /home/chakwong/MacroFinance
+    status: candidate
+    role: Implementation and validation reference for differentiated Kalman filters.
+
+index_artifacts:
+  - command: "PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli index-latex /home/chakwong/python/docs --output /tmp/bayesfilter-dsge-latex-index.json"
+    result: "3615 blocks, 1065 labels"
+    keep: false
+  - command: "PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli index-latex /home/chakwong/latex/CIP_monograph --output /tmp/bayesfilter-cip-latex-index.json"
+    result: "2607 blocks, 1016 labels"
+    keep: false
+  - command: "PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli index-latex /home/chakwong/MacroFinance --output /tmp/bayesfilter-mf-latex-index.json"
+    result: "225 blocks, 140 labels"
+    keep: false
+
+chapter_mappings:
+  dsge_hmc_monograph:
+    - source_file: monograph.tex
+      destination: docs/main.tex
+      import_status: candidate
+      reason: Use only for top-level ordering; BayesFilter has its own book structure.
+    - source_file: chapters/ch01_introduction.tex
+      destination: docs/chapters/ch01_introduction.tex
+      import_status: candidate
+      reason: Reframe motivation around generic HMC-safe filtering infrastructure.
+    - source_file: chapters/ch02_math_prelim.tex
+      destination: docs/appendices/app_a_notation.tex; docs/appendices/app_b_matrix_calculus.tex
+      import_status: candidate
+      reason: Reuse only notation and matrix-calculus pieces after namespace rewrite.
+    - source_file: chapters/ch03_nk_model.tex
+      destination: docs/chapters/ch29_nk_svd_case_study.tex
+      import_status: candidate
+      reason: Compact NK case study only; do not import model-theory chapter wholesale.
+    - source_file: chapters/ch04_ez_model.tex
+      destination: docs/chapters/ch31_nawm_design_target.tex
+      import_status: excluded
+      reason: EZ economics is downstream application material, not BayesFilter core.
+    - source_file: chapters/ch05_sgu_model.tex
+      destination: docs/chapters/ch31_nawm_design_target.tex
+      import_status: excluded
+      reason: SGU economics is downstream application material; retain only future stress-test references.
+    - source_file: chapters/ch06_perturbation.tex
+      destination: docs/chapters/ch02_state_space_contracts.tex
+      import_status: candidate
+      reason: Extract only the state-space interface contract produced by model solvers.
+    - source_file: chapters/ch07_neural_solvers.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: excluded
+      reason: Neural DSGE solver internals are not a filtering backend; revisit only for surrogate appendix.
+    - source_file: chapters/ch08_kalman_filter.tex
+      destination: docs/chapters/ch05_prediction_error_decomposition.tex; docs/chapters/ch06_stable_linear_filtering.tex
+      import_status: candidate
+      reason: Secondary Kalman source; MacroFinance analytic note is authoritative for derivatives.
+    - source_file: chapters/ch09_sr_ukf.tex
+      destination: docs/chapters/ch16_sigma_point_filters.tex; docs/chapters/ch17_square_root_sigma_point.tex
+      import_status: candidate
+      reason: Reuse pruned SR-UKF lessons after removing DSGE-specific timing assumptions.
+    - source_file: chapters/ch09b_svd_filters.tex
+      destination: docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Primary SVD sigma-point source; must add eigen-gap derivative caution before HMC claims.
+    - source_file: chapters/ch10_stationarity.tex
+      destination: docs/chapters/ch23_boundary_gradients.tex
+      import_status: candidate
+      reason: Use only finite-target and stationarity-boundary policy.
+    - source_file: chapters/ch11_transforms.tex
+      destination: docs/chapters/ch03_hmc_target_requirements.tex; docs/chapters/ch23_boundary_gradients.tex
+      import_status: candidate
+      reason: Parameter-transform material is useful for finite HMC targets.
+    - source_file: chapters/ch12_map_estimation.tex
+      destination: docs/chapters/ch22_mass_matrices.tex
+      import_status: candidate
+      reason: Use only MAP-to-curvature workflow and diagnostics.
+    - source_file: chapters/ch13_mass_matrix.tex
+      destination: docs/chapters/ch22_mass_matrices.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Important HMC geometry and FD-on-gradient lessons.
+    - source_file: chapters/ch14_hmc.tex
+      destination: docs/chapters/ch21_hmc_for_state_space.tex
+      import_status: candidate
+      reason: General HMC material can be rewritten for filtering likelihoods.
+    - source_file: chapters/ch15_advanced_hmc.tex
+      destination: docs/chapters/ch21_hmc_for_state_space.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Use diagnostics and convergence cautions; avoid smoke-test claims.
+    - source_file: chapters/ch15b_position_dependent_geometry.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: candidate
+      reason: Geometry motivation for large state-space posteriors.
+    - source_file: chapters/ch16_transport_foundations.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: candidate
+      reason: Generic transport foundations; literature support required.
+    - source_file: chapters/ch16_transport_maps.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: superseded
+      reason: Overlaps newer transport foundation/training chapters; inspect for unique examples only.
+    - source_file: chapters/ch16_xla_ops.tex
+      destination: docs/chapters/ch24_xla_jit.tex
+      import_status: candidate
+      reason: Primary source for XLA/JIT implementation discipline.
+    - source_file: chapters/ch17_experiments.tex
+      destination: docs/chapters/ch27_lgssm_validation.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/chapters/ch29_nk_svd_case_study.tex
+      import_status: candidate
+      reason: Use only as experiment templates and case-study evidence.
+    - source_file: chapters/ch17_transport_literature.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: candidate
+      reason: Literature-heavy; blocked until Phase 2 literature workspace has approved summaries.
+    - source_file: chapters/ch18_transport_training.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: candidate
+      reason: Training workflow material; requires code-document consistency check.
+    - source_file: chapters/app_a_code_xref.tex
+      destination: docs/appendices/app_f_source_map.tex
+      import_status: candidate
+      reason: Convert into BayesFilter provenance map, not copied code cross-reference.
+    - source_file: chapters/app_b_pitfalls.tex
+      destination: docs/chapters/ch25_diagnostics.tex; docs/appendices/app_g_experiment_templates.tex
+      import_status: candidate
+      reason: Useful failure taxonomy after deduplication.
+    - source_file: chapters/app_c_code_docs.tex
+      destination: docs/appendices/app_f_source_map.tex
+      import_status: candidate
+      reason: Source for code-document traceability conventions.
+    - source_file: chapters/app_d_numerical_stability.tex
+      destination: docs/chapters/ch23_boundary_gradients.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Important numerical stability appendix; must rewrite labels and examples.
+
+  dsge_svd_reset_notes:
+    - source_file: hmc-svd-filter-convergence-validation-plan-2026-04-26.md
+      destination: docs/chapters/ch27_lgssm_validation.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/chapters/ch29_nk_svd_case_study.tex
+      import_status: candidate
+      reason: Validation ladder and convergence-test requirements.
+    - source_file: nk-hmc-svd-postrefactor-plan-2026-04-26.md
+      destination: docs/chapters/ch29_nk_svd_case_study.tex
+      import_status: candidate
+      reason: NK-specific post-refactor HMC/SVD plan.
+    - source_file: nk-hmc-svd-postrefactor-reset-memo-2026-04-26.md
+      destination: docs/chapters/ch29_nk_svd_case_study.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Debugging evidence and failure taxonomy.
+    - source_file: svd-filter-math-code-audit-result-2026-04-25.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex; docs/appendices/app_d_mathdevmcp_workflows.tex
+      import_status: candidate
+      reason: Math/code audit evidence for the SVD filter.
+    - source_file: svd-generic-sigma-point-refactor-reset-memo-2026-04-26.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex
+      import_status: candidate
+      reason: Generic sigma-point refactor provenance.
+    - source_file: svd-hmc-gap-closure-plan-2026-04-27.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Remaining SVD/HMC safety gaps and diagnostics.
+
+  cip_monograph:
+    - source_file: main.tex
+      destination: docs/main.tex
+      import_status: candidate
+      reason: Use only as a source-order comparison.
+    - source_file: chapters/ch01_introduction.tex
+      destination: docs/chapters/ch01_introduction.tex
+      import_status: candidate
+      reason: Macro-finance scale motivation; remove CIP-specific exposition.
+    - source_file: chapters/ch02_cip_condition.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Economic content belongs in source project; BayesFilter may cite only as application context.
+    - source_file: chapters/ch03_theoretical_foundations.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Asset-pricing theory is application-specific.
+    - source_file: chapters/ch04_sdf_framework.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: SDF framework is not generic filtering infrastructure.
+    - source_file: chapters/ch05_paradoxes.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Economic paradox material is outside BayesFilter scope.
+    - source_file: chapters/ch06_literature.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Literature claims require Phase 2 re-ingestion; do not import as authority.
+    - source_file: chapters/ch07_state_dynamics_sdf.tex
+      destination: docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: candidate
+      reason: Extract state-space representation ideas only.
+    - source_file: chapters/ch08_afns_yield_curves.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: candidate
+      reason: Case-study example for large LGSSM/macro-finance measurements.
+    - source_file: chapters/ch09_fx_basis.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: FX-basis economics is application-specific.
+    - source_file: chapters/ch10_equity_credit.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Asset-class economics is application-specific.
+    - source_file: chapters/ch10b_mortgage_mbs.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Mortgage/MBS application content is outside BayesFilter scope.
+    - source_file: chapters/ch11_state_space_recursions.tex
+      destination: docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch05_prediction_error_decomposition.tex
+      import_status: candidate
+      reason: Useful state-space recursions after removing CIP notation.
+    - source_file: chapters/ch12_identification.tex
+      destination: docs/chapters/ch03_hmc_target_requirements.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Identification diagnostics connect to HMC pathologies.
+    - source_file: chapters/ch13_nonlinear_dynamics.tex
+      destination: docs/chapters/ch15_ekf.tex; docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: Use only generic nonlinear SSM pieces.
+    - source_file: chapters/ch13b_stationarity.tex
+      destination: docs/chapters/ch23_boundary_gradients.tex
+      import_status: candidate
+      reason: Boundary and stationarity policies are reusable.
+    - source_file: chapters/ch14_neural_solvers.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: excluded
+      reason: Model-solver internals are not generic filtering backend content.
+    - source_file: chapters/ch15_nonlinear_pricing.tex
+      destination: docs/chapters/ch16_sigma_point_filters.tex; docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: Use as nonlinear observation motivation only.
+    - source_file: chapters/ch16_kalman_filter.tex
+      destination: docs/chapters/ch05_prediction_error_decomposition.tex; docs/chapters/ch06_stable_linear_filtering.tex; docs/chapters/ch07_missing_data_mixed_frequency.tex
+      import_status: candidate
+      reason: Secondary Kalman source; reconcile with MacroFinance derivative note.
+    - source_file: chapters/ch17_nonlinear_filtering.tex
+      destination: docs/chapters/ch15_ekf.tex; docs/chapters/ch16_sigma_point_filters.tex; docs/chapters/ch19_particle_filters.tex; docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: Generic nonlinear filtering chapter; literature claims require Phase 2.
+    - source_file: chapters/ch18_mixed_frequency.tex
+      destination: docs/chapters/ch07_missing_data_mixed_frequency.tex; docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: Important missing-data/mixed-frequency material after notation rewrite.
+    - source_file: chapters/ch19_priors_gibbs.tex
+      destination: docs/chapters/ch03_hmc_target_requirements.tex
+      import_status: candidate
+      reason: Reuse priors/target requirements only; Gibbs material is not central.
+    - source_file: chapters/ch20_hmc.tex
+      destination: docs/chapters/ch21_hmc_for_state_space.tex
+      import_status: candidate
+      reason: HMC basics for state-space likelihoods.
+    - source_file: chapters/ch21_advanced_hmc.tex
+      destination: docs/chapters/ch21_hmc_for_state_space.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Diagnostics and computational budget material; must re-audit quantitative claims.
+    - source_file: chapters/ch22_macro_augmentation.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Application-specific macro augmentation.
+    - source_file: chapters/ch23_multi_country.tex
+      destination: docs/chapters/ch31_nawm_design_target.tex
+      import_status: candidate
+      reason: Large-system motivation only; not core algorithm text.
+    - source_file: chapters/ch24_empirical.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Empirical application remains in CIP project.
+    - source_file: chapters/ch25_conclusion.tex
+      destination: docs/chapters/ch01_introduction.tex
+      import_status: excluded
+      reason: Not a reusable technical source.
+    - source_file: chapters/ch26_differentiable_pf.tex
+      destination: docs/chapters/ch19_particle_filters.tex
+      import_status: candidate
+      reason: Particle-filter frontier; literature-heavy and Phase 2 gated.
+    - source_file: chapters/ch27_ledh_pfpf_neural_ot.tex
+      destination: docs/chapters/ch19_particle_filters.tex; docs/chapters/ch26_transport_surrogates.tex
+      import_status: candidate
+      reason: Advanced particle-flow material; requires claim-support audit.
+    - source_file: chapters/ch28_macro_finance_endpoints.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Application endpoint content, not BayesFilter core.
+    - source_file: chapters/ch29_zlb_shadow_rate.tex
+      destination: docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: ZLB example is useful only for filter-choice failure modes.
+    - source_file: chapters/ch30_cointegration.tex
+      destination: docs/chapters/ch07_missing_data_mixed_frequency.tex; docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: Use only state augmentation and filtering implications.
+    - source_file: chapters/ch30b_hybrid_cointegrated_nonlinear.tex
+      destination: docs/chapters/ch20_filter_choice.tex
+      import_status: candidate
+      reason: Hybrid nonlinear example for decision rules.
+    - source_file: chapters/ch31_llm_agent.tex
+      destination: docs/appendices/app_d_mathdevmcp_workflows.tex; docs/appendices/app_e_researchassistant_workflows.tex
+      import_status: excluded
+      reason: Agent workflow belongs in tool docs, not the mathematical monograph.
+    - source_file: chapters/ch32_diff_resampling_neural_ot.tex
+      destination: docs/chapters/ch19_particle_filters.tex
+      import_status: candidate
+      reason: Differentiable resampling frontier; literature-heavy and Phase 2 gated.
+    - source_file: chapters/ch33_analytical_validation.tex
+      destination: docs/chapters/ch14_derivative_validation.tex; docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: candidate
+      reason: Validation methodology for analytic derivatives.
+    - source_file: chapters/ch34_hnn_surrogate.tex
+      destination: docs/chapters/ch26_transport_surrogates.tex
+      import_status: candidate
+      reason: Surrogate geometry material; requires claim-support audit.
+    - source_file: chapters/ch35_pipeline_synthesis.tex
+      destination: docs/chapters/ch20_filter_choice.tex; docs/chapters/ch31_nawm_design_target.tex; docs/chapters/ch32_production_checklist.tex
+      import_status: candidate
+      reason: Decision framework source; quantitative claims must be re-audited.
+    - source_file: chapters/app_a_notation.tex
+      destination: docs/appendices/app_a_notation.tex
+      import_status: candidate
+      reason: Notation reference after BayesFilter namespace rewrite.
+    - source_file: chapters/app_b_derivations.tex
+      destination: docs/appendices/app_b_matrix_calculus.tex; docs/appendices/app_c_factor_derivative_proofs.tex
+      import_status: candidate
+      reason: Derivation source; must reconcile with MacroFinance analytic note.
+    - source_file: chapters/app_c_code_xref.tex
+      destination: docs/appendices/app_f_source_map.tex
+      import_status: candidate
+      reason: Convert to BayesFilter traceability conventions.
+    - source_file: chapters/app_d_affine_computation.tex
+      destination: docs/chapters/ch30_cip_afns_case_study.tex
+      import_status: excluded
+      reason: Application-specific affine computation.
+    - source_file: chapters/app_e_tf_tfp_design.tex
+      destination: docs/chapters/ch24_xla_jit.tex
+      import_status: candidate
+      reason: TensorFlow/TFP implementation discipline is reusable.
+    - source_file: chapters/app_f_mcp_cookbook.tex
+      destination: docs/appendices/app_d_mathdevmcp_workflows.tex
+      import_status: candidate
+      reason: Tool workflow source after update for MathDevMCP.
+    - source_file: chapters/app_g_practical_identification.tex
+      destination: docs/chapters/ch25_diagnostics.tex
+      import_status: candidate
+      reason: Practical identification diagnostics.
+
+  macrofinance_analytic_kalman:
+    - source_file: analytic_kalman_derivatives.tex
+      destination: docs/chapters/ch05_prediction_error_decomposition.tex; docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex; docs/chapters/ch11_structural_derivatives.tex; docs/chapters/ch12_factor_derivatives.tex; docs/chapters/ch13_custom_gradient_wrappers.tex; docs/chapters/ch14_derivative_validation.tex
+      import_status: candidate
+      reason: Mathematical spine for analytic likelihood derivatives.
+    - source_file: analytic_kalman_derivatives.bib
+      destination: docs/references.bib
+      import_status: candidate
+      reason: Bibliography candidate; merge only after key-conflict audit.
+
+  macrofinance_code:
+    - source_file: filters/differentiated_kalman.py
+      destination: docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex; docs/chapters/ch14_derivative_validation.tex
+      import_status: candidate
+      reason: Implementation reference for covariance-form differentiated recursions.
+    - source_file: filters/solve_differentiated_kalman.py
+      destination: docs/chapters/ch06_stable_linear_filtering.tex; docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex
+      import_status: candidate
+      reason: Solve-form likelihood/score/Hessian implementation reference.
+    - source_file: filters/qr_sqrt_differentiated_kalman.py
+      destination: docs/chapters/ch06_stable_linear_filtering.tex; docs/chapters/ch12_factor_derivatives.tex
+      import_status: candidate
+      reason: QR square-root derivative implementation reference.
+    - source_file: filters/tf_qr_sqrt_differentiated_kalman.py
+      destination: docs/chapters/ch13_custom_gradient_wrappers.tex; docs/chapters/ch24_xla_jit.tex
+      import_status: candidate
+      reason: TensorFlow/XLA implementation reference for custom-gradient policy.
+    - source_file: filters/masked_*kalman*.py
+      destination: docs/chapters/ch07_missing_data_mixed_frequency.tex
+      import_status: candidate
+      reason: Missing-data and ragged-panel implementation reference.
+    - source_file: filters/tf_svd_kalman.py
+      destination: docs/chapters/ch06_stable_linear_filtering.tex; docs/chapters/ch18_svd_sigma_point.tex
+      import_status: candidate
+      reason: SVD Kalman backend reference; distinguish linear SVD factorization from nonlinear SVD sigma-point HMC path.
+    - source_file: tests/test_*differentiated_kalman*.py
+      destination: docs/chapters/ch14_derivative_validation.tex
+      import_status: candidate
+      reason: Validation tests for analytic derivative parity and invariants.
+    - source_file: tests/test_large_scale_lgssm*.py
+      destination: docs/chapters/ch08_large_scale_lgssm.tex; docs/chapters/ch27_lgssm_validation.tex; docs/chapters/ch32_production_checklist.tex
+      import_status: candidate
+      reason: Large-scale LGSSM validation ladder and production gates.
+    - source_file: perf_ad_vs_analytic_kalman_gradient.py
+      destination: docs/chapters/ch13_custom_gradient_wrappers.tex; docs/chapters/ch32_production_checklist.tex
+      import_status: candidate
+      reason: Evidence for analytic-gradient performance motivation.
+    - source_file: perf_large_scale_lgssm_*.py
+      destination: docs/chapters/ch08_large_scale_lgssm.tex; docs/chapters/ch31_nawm_design_target.tex
+      import_status: candidate
+      reason: Scale-target evidence; quantitative claims require reproducible benchmark notes.
+
+duplicate_groups:
+  - topic: Kalman likelihood basics
+    sources:
+      - /home/chakwong/python/docs/chapters/ch08_kalman_filter.tex
+      - /home/chakwong/latex/CIP_monograph/chapters/ch16_kalman_filter.tex
+      - /home/chakwong/MacroFinance/analytic_kalman_derivatives.tex
+    resolution: MacroFinance analytic note is authoritative for derivatives; source monographs provide exposition only.
+  - topic: HMC foundations and diagnostics
+    sources:
+      - /home/chakwong/python/docs/chapters/ch14_hmc.tex
+      - /home/chakwong/python/docs/chapters/ch15_advanced_hmc.tex
+      - /home/chakwong/latex/CIP_monograph/chapters/ch20_hmc.tex
+      - /home/chakwong/latex/CIP_monograph/chapters/ch21_advanced_hmc.tex
+    resolution: Rewrite a single BayesFilter HMC chapter focused on filtering targets.
+  - topic: Nonlinear Gaussian filters
+    sources:
+      - /home/chakwong/python/docs/chapters/ch09_sr_ukf.tex
+      - /home/chakwong/python/docs/chapters/ch09b_svd_filters.tex
+      - /home/chakwong/latex/CIP_monograph/chapters/ch17_nonlinear_filtering.tex
+    resolution: Split into EKF, sigma-point, square-root, SVD, and decision-rule chapters.
+  - topic: Particle-filter frontier
+    sources:
+      - /home/chakwong/latex/CIP_monograph/chapters/ch26_differentiable_pf.tex
+      - /home/chakwong/latex/CIP_monograph/chapters/ch27_ledh_pfpf_neural_ot.tex
+      - /home/chakwong/latex/CIP_monograph/chapters/ch32_diff_resampling_neural_ot.tex
+    resolution: Literature-gated; do not draft claims until ResearchAssistant summaries exist.
+
+phase_gates:
+  phase_1_source_map:
+    status: passed
+    evidence: Chapter-level provenance, exclusions, duplicate groups, and bibliography candidates are listed.
+  phase_2_literature:
+    status: setup_only
+    evidence: ResearchAssistant workspace initialized and seed list created; approved source summaries not yet available.
+  content_migration:
+    status: blocked
+    reason: Literature-heavy and claim-heavy chapters should not be drafted until Phase 2B review is passed or explicitly scoped down.
