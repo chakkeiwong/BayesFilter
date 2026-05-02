@@ -266,13 +266,17 @@ Results:
 Completion state:
 - Completed: plan audit, Phase 0, Phase 1, Phase 2 setup.
 - Stopped by design before content migration.
-- Initial commit for this work was `6bafcc5` and was amended to include this
-  final reset-memo state.
+- Initial scaffold commit for this work was `6bafcc5`, then amended during
+  reset-memo finalization.
 
-## Final commit
+## Commit checkpoint
 
-Commit:
-- `5f219bb` (`Scaffold BayesFilter monograph`)
+Scaffold commit before the final reset-memo correction:
+- `373bb8e` (`Scaffold BayesFilter monograph`)
+
+Note:
+- A later commit may update only this reset memo. Use
+  `git log --oneline -2` to inspect the exact final repository state.
 
 Committed files:
 - `.gitignore`
