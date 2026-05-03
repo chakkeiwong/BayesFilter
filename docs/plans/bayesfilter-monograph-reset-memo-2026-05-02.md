@@ -1537,3 +1537,326 @@ Next justified work:
   derivative, sigma-point moment derivative, spectral-factor derivative or
   non-spectral custom-gradient policy, mixed Hessian terms, and numerical
   parity tests.
+
+## 2026-05-04 update: six-step structural filtering closure plan
+
+User asked for an explicit plan covering the six remaining workstreams:
+
+1. audit before implementation;
+2. analytic Kalman derivatives;
+3. structural filtering implementation;
+4. SVD sigma-point structural filter;
+5. validation ladder;
+6. literature and monograph completion.
+
+Planning artifact:
+- Added
+  `docs/plans/bayesfilter-six-step-structural-filtering-closure-plan-2026-05-04.md`.
+
+Current baseline discovered during this pass:
+- Latest committed documentation commit is
+  `466de70 Strengthen BayesFilter linear Gaussian likelihood spine`.
+- The working tree contains an untracked candidate BayesFilter package and
+  tests:
+  - `bayesfilter/structural.py`;
+  - `bayesfilter/filters/kalman.py`;
+  - `bayesfilter/filters/sigma_points.py`;
+  - `bayesfilter/filters/particles.py`;
+  - `bayesfilter/testing/structural_fixtures.py`;
+  - `tests/test_*.py`.
+- The working tree also contains
+  `docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md`.
+
+Phase C0: baseline and audit of existing work
+
+Phase plan:
+- Inspect dirty/untracked state.
+- Read the untracked structural source/code audit note.
+- Read the candidate BayesFilter package and tests.
+- Run the candidate tests.
+
+Execution:
+- `git status --short` showed:
+  - modified `.gitignore`;
+  - untracked `bayesfilter/`;
+  - untracked `tests/`;
+  - untracked
+    `docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md`.
+- Candidate package files were inspected and found to implement:
+  - structural state partition metadata;
+  - structural filter configuration validation;
+  - filter run metadata;
+  - covariance-form Kalman reference;
+  - structural SVD/cubature sigma-point reference;
+  - particle-filter fail-closed placeholder;
+  - AR(2) and nonlinear accumulation fixtures.
+- `pytest -q` passed with 15 tests.  The only warning was a sandbox-related
+  inability to write `.pytest_cache`.
+
+Audit:
+- The untracked package appears coherent and directly related to the structural
+  filtering plan.
+- It should be treated as current candidate implementation state, not ignored
+  or duplicated by a later agent.
+- It is still an early reference implementation, not a derivative-safe or
+  HMC-ready backend.
+- The six-step closure plan should therefore distinguish "already candidate
+  implemented" from "still blocked".
+
+Interpretation:
+- A master closure plan is justified and can reference the candidate package.
+- The next phase remains justified: write and audit a durable plan.
+
+Phase C1: write and audit master closure plan
+
+Phase plan:
+- Write a detailed plan under `docs/plans`.
+- Include motivation, implementation instructions, tests, pass gates, stop
+  rules, current baseline, and execution order.
+- Audit the plan as another developer and apply modifications.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-six-step-structural-filtering-closure-plan-2026-05-04.md`.
+- The plan covers:
+  - Workstream A: audit before implementation;
+  - Workstream B: analytic Kalman derivatives;
+  - Workstream C: structural filtering implementation;
+  - Workstream D: SVD sigma-point structural filter;
+  - Workstream E: validation ladder;
+  - Workstream F: literature and monograph completion.
+
+Independent audit:
+- The plan is sensible because it preserves the exact LGSSM likelihood as the
+  oracle and blocks derivative/HMC promotion until parity tests pass.
+- The plan explicitly accounts for the candidate package and tests already
+  present in the working tree, so a later agent should not duplicate them.
+- The plan separates common BayesFilter infrastructure from DSGE and
+  MacroFinance client logic.
+- The plan keeps particle filtering fail-closed until a separate audit exists.
+- The plan uses ResearchAssistant and MathDevMCP as provenance and obligation
+  tools, not automatic proof engines.
+
+Audit modifications applied:
+- Added a current-baseline section.
+- Added package-metadata task before external package use.
+- Added model-family-specific validation labels.
+- Added global stop rules for artificial noise on deterministic coordinates,
+  unlabeled full-state integration, and derivative parity failures.
+
+Interpretation:
+- The plan is ready to serve as the next-session master handoff.
+- Final mechanical checks and commit are justified.
+
+Phase C2: final checks, tidy, and commit
+
+Phase plan:
+- Run package tests and documentation checks.
+- Confirm risky-claim hits are explanatory or historical only.
+- Commit the coherent handoff set, including the candidate structural core
+  because it passes tests and is now part of the documented current baseline.
+
+Execution and tests:
+- `pytest -q` passed: 15 tests passed.  The only warning was a sandbox
+  `.pytest_cache` write warning.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8')); print('source_map yaml ok')"` passed.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` reported the
+  monograph up to date.
+- Risky-claim scan over the new plan, reset memo, and source/code audit found
+  only historical reset-memo cautions and the audit command text itself.
+
+Audit:
+- No original source project was edited.
+- The candidate package is dependency-light NumPy reference code and tests,
+  not client-specific DSGE or MacroFinance logic.
+- Particle filtering remains fail-closed.
+- Analytic derivatives and HMC promotion remain explicitly blocked behind
+  future gates.
+- The plan does not claim NK/NAWM convergence or SVD-gradient safety.
+
+Interpretation:
+- The six-step master plan is complete.
+- The current candidate structural core is safe to commit as an early tested
+  baseline, not as a final HMC-ready backend.
+- The next phase should start with Workstream A from the new plan: ratify the
+  source/code audit and then decide whether to keep extending the candidate
+  package or adjust it before derivative and adapter work.
+
+Completion summary:
+- Added the six-step structural filtering closure plan.
+- Recorded and tested the candidate BayesFilter structural core.
+- Committed the source/code audit note as the current audit baseline.
+- Preserved fail-closed particle-filter semantics.
+- Preserved derivative/HMC gates.
+
+Next hypotheses to test:
+- H1: The candidate structural metadata contract is sufficient to represent
+  AR(p), mixed-frequency auxiliaries, and DSGE-style stochastic/deterministic
+  state partitions without inferring roles from covariance matrices alone.
+- H2: The covariance-form Kalman reference can serve as the exact value oracle
+  for singular-`Q` LGSSM tests while richer solve/square-root backends are
+  developed.
+- H3: The structural SVD/cubature sigma-point backend recovers exact LGSSM
+  likelihoods in linear cases and remains a clearly labeled Gaussian-closure
+  approximation in nonlinear cases.
+- H4: MacroFinance analytic score/Hessian formulas can be reconciled with the
+  Chapter 5 likelihood without changing the value contract.
+- H5: DSGE Rotemberg, SGU, EZ, and NAWM adapters will remain blocked until each
+  model supplies explicit structural maps and deterministic-completion tests.
+
+## 2026-05-04 update: structural state partition core implementation pass
+
+User requested execution of the canonical structural state partition core plan
+with a phase-by-phase cycle: plan, audit math, audit code, execute, test, audit,
+tidy, update reset memo, continue unless the next phase is not justified, then
+commit.
+
+Canonical plan:
+- `docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md`
+
+New audit artifact:
+- `docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md`
+
+### Phase 0: repository and dependency inventory
+
+Execution:
+- BayesFilter initially had no `bayesfilter/` package and no `tests/` tree.
+- Client scans identified candidate DSGE paths in
+  `/home/chakwong/python/src/dsge_hmc/filters`, model adapters, and tests.
+- MacroFinance scans identified reusable LGSSM dataclasses and Kalman,
+  differentiated Kalman, QR/square-root, SVD, masked, and TensorFlow paths.
+
+Audit:
+- Phase 0 passes.
+- Candidate code paths and derivation sources are recorded in the audit note.
+- Phase 1 remained justified.
+
+### Phase 1: mathematical source audit and derivation reconciliation
+
+Execution:
+- Read relevant DSGE and MacroFinance monograph/code context.
+- Used ResearchAssistant and MathDevMCP, but both were limited for this pass:
+  local ResearchAssistant searches had no reviewed matching summaries, and
+  MathDevMCP label extraction/search on the large monograph roots errored.
+- Recorded those tool limitations explicitly instead of treating them as proof.
+
+Audit:
+- Exact/collapsed LGSSM Kalman likelihood is sufficiently supported for a
+  BayesFilter-local reference backend.
+- Structural nonlinear DSGE completion is not sufficiently derived for
+  Rotemberg, SGU, EZ, or NAWM adapters yet.
+- Particle-filter semantics remain blocked.
+- Phase 2 remained justified for code audit and local-core reuse decisions.
+
+### Phase 2: code audit and migration decision
+
+Execution:
+- Classified candidate paths in the audit note.
+- Decision: implement BayesFilter-local metadata, exact covariance-form Kalman
+  reference, AR(2)/toy nonlinear fixtures, and an approximate structural
+  sigma-point backend.
+- Decision: do not copy DSGE TensorFlow/MKL SVD code or MacroFinance
+  differentiated Kalman code in this phase.
+
+Audit:
+- Phase 2 passes for local BayesFilter core implementation.
+- Client adapter pilots and HMC gates are not yet justified as correctness
+  claims.
+- Phase 3/4/5/6/7 local implementation work remained justified.
+
+### Phases 3--7: local contracts, fixtures, SVD sigma-point, and degenerate Kalman
+
+Execution:
+- Added package skeleton:
+  - `bayesfilter/__init__.py`
+  - `bayesfilter/structural.py`
+  - `bayesfilter/filters/kalman.py`
+  - `bayesfilter/filters/sigma_points.py`
+  - `bayesfilter/filters/particles.py`
+  - `bayesfilter/testing/structural_fixtures.py`
+- Added tests:
+  - `tests/test_structural_partition.py`
+  - `tests/test_filter_metadata.py`
+  - `tests/test_degenerate_kalman.py`
+  - `tests/test_structural_ar_p.py`
+  - `tests/test_structural_sigma_points.py`
+  - `tests/test_derivative_validation_smoke.py`
+- Added `tests/conftest.py` for local import path.
+- Added `__pycache__/` and `*.py[cod]` to `.gitignore`.
+- Updated `docs/source_map.yml` with the audit and local implementation status.
+
+Test:
+- `pytest -q tests/test_structural_partition.py tests/test_filter_metadata.py tests/test_degenerate_kalman.py tests/test_structural_ar_p.py tests/test_structural_sigma_points.py tests/test_derivative_validation_smoke.py`
+  passed: 15 tests.
+
+Audit:
+- Structural partition validation rejects overlaps, missing coverage, and
+  unlabeled mixed full-state approximation.
+- AR(2) exact Kalman likelihood with singular process covariance is finite.
+- Structural sigma-point filtering recovers the linear AR(2) Kalman likelihood
+  and preserves the lag-shift identity pointwise.
+- Nonlinear toy structural sigma likelihood is finite and close to a dense
+  quadrature reference for a one-step case.
+- Particle filtering fails closed through an explicit placeholder.
+- The sigma-point backend is intentionally labeled as an approximate Gaussian
+  closure, not a certified nonlinear exact likelihood.
+
+Interpretation:
+- BayesFilter now has a tested local structural contract and toy backend
+  scaffold.
+- This is enough to support follow-on MacroFinance and DSGE adapter planning.
+- It is not enough to promote DSGE mixed-state nonlinear filtering, SVD/eigen
+  gradients, or particle-filter HMC claims.
+
+### Phase 8: MacroFinance adapter pilot gate
+
+Gate decision:
+- Stop before implementing a MacroFinance adapter in this pass.
+
+Reason:
+- MacroFinance derivative migration requires a dedicated derivation/code audit
+  of score, Hessian, QR/square-root factor derivatives, SVD fallback telemetry,
+  TensorFlow parity, and reference fixtures.
+- The next justified MacroFinance step is an adapter design/audit note plus a
+  minimal wrapper around the already generic LGSSM dataclasses, not wholesale
+  code import.
+
+### Phase 9: DSGE adapter pilot gate
+
+Gate decision:
+- Stop before implementing a DSGE adapter in this pass.
+
+Reason:
+- SmallNK may be all-exogenous enough for a low-risk adapter, but Rotemberg,
+  SGU, EZ, and NAWM-style models need explicit exogenous/endogenous structural
+  maps and deterministic completion tests before nonlinear BayesFilter routing
+  is justified.
+- The existing DSGE SVD sigma-point default adapter remains a candidate source
+  and regression reference, not a BayesFilter structural backend.
+
+### Phase 10: HMC readiness gate
+
+Gate decision:
+- Not run.
+
+Reason:
+- HMC readiness requires validated gradients, eager/compiled parity, and
+  model-specific structural adapters.  The current pass deliberately provides
+  only value-side local references and finite-difference smoke coverage.
+
+Next hypotheses:
+- H1: The BayesFilter `StatePartition` contract is sufficient to express AR(p)
+  lag stacks, mixed-frequency accumulators, and DSGE exogenous/endogenous
+  timing without inferring structure from `Q` alone.
+- H2: A MacroFinance LGSSM adapter can wrap existing generic dataclasses and
+  exact Kalman references with minimal code movement if derivative migration is
+  kept as a separate audited phase.
+- H3: A SmallNK structural adapter should recover existing exact Kalman and SVD
+  generic-SSM behavior, while Rotemberg/SGU should fail closed until structural
+  completion maps are declared.
+- H4: SVD/eigen sigma-point gradients will need a custom-gradient or
+  non-spectral derivative policy before production HMC promotion.
+- H5: Particle filters should enter BayesFilter only after a proposal,
+  resampling, estimator-variance, and target-correction audit.

@@ -31,6 +31,18 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
     status: drafted
     role: Bounded execution plan for reframing the monograph around Bayesian estimation for structural state-space models.
+  - id: bayesfilter_structural_source_code_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md
+    status: drafted
+    role: Phase 0--2 audit note for structural state partition math/code reconciliation and reuse decisions.
+  - id: bayesfilter_six_step_structural_filtering_closure_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-six-step-structural-filtering-closure-plan-2026-05-04.md
+    status: drafted
+    role: Master closure plan for audit gates, analytic Kalman derivatives, structural filtering, SVD sigma-point filtering, validation ladder, and monograph/literature completion.
   - id: bayesfilter_linear_gaussian_spine_plan
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -92,6 +104,18 @@ chapter_mappings:
       destination: docs/chapters/ch01_introduction.tex; docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch04_bayesfilter_api.tex
       import_status: drafted
       reason: Execution plan for reframing the monograph as Bayesian estimation for structural state-space models.
+
+  bayesfilter_structural_source_code_audit:
+    - source_file: bayesfilter-structural-source-code-audit-2026-05-04.md
+      destination: bayesfilter/structural.py; bayesfilter/filters/kalman.py; bayesfilter/filters/sigma_points.py; bayesfilter/filters/particles.py; bayesfilter/testing/structural_fixtures.py; tests/test_structural_partition.py; tests/test_structural_ar_p.py; tests/test_structural_sigma_points.py; tests/test_degenerate_kalman.py; tests/test_filter_metadata.py; tests/test_derivative_validation_smoke.py
+      import_status: drafted
+      reason: Supports the first BayesFilter-local structural metadata, exact LGSSM reference, toy fixtures, and approximate structural sigma-point backend.
+
+  bayesfilter_six_step_structural_filtering_closure_plan:
+    - source_file: bayesfilter-six-step-structural-filtering-closure-plan-2026-05-04.md
+      destination: docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md; bayesfilter/structural.py; bayesfilter/filters/kalman.py; bayesfilter/filters/sigma_points.py; docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex; docs/chapters/ch14_derivative_validation.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch27_lgssm_validation.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/chapters/ch29_nk_svd_case_study.tex
+      import_status: drafted
+      reason: Defines the next gated roadmap across audit, analytic derivatives, structural filtering, SVD sigma-point filtering, validation ladder, and monograph/literature completion.
 
   bayesfilter_linear_gaussian_spine_plan:
     - source_file: bayesfilter-linear-gaussian-spine-writing-plan-2026-05-04.md
@@ -564,3 +588,10 @@ phase_gates:
       drafted with citations. Analytic Kalman formulas, particle-filter
       material, and industrial-scale HMC safety claims remain gated by
       derivation/code audits and additional primary-source review.
+  structural_state_partition_core:
+    status: local_core_passed
+    evidence: >
+      Phase 0--2 audit note exists, BayesFilter-local structural metadata and
+      toy reference backends are implemented, and the focused pytest ladder
+      passed on 2026-05-04. Client adapter pilots remain gated by model-specific
+      structural maps and derivative/code audits.
