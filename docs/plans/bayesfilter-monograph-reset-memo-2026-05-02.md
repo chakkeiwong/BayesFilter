@@ -53,6 +53,241 @@ as part of this monograph consolidation. Work should happen inside
 This memo starts the execution pass. The plan audit and Phase 0 scaffold are
 next.
 
+## 2026-05-03 update: DSGE structural deterministic dynamics warning
+
+User raised a serious modeling-design issue: nonlinear DSGE filters must
+separate shock-driven exogenous states from endogenous/predetermined or
+accounting states that are deterministic conditional on lagged states and
+current shocks.  The source DSGE SVD sigma-point adapter separates pruned
+first-order and second-order components, but it does not expose an explicit
+exogenous/endogenous state partition inside the first-order block.  This is
+mostly harmless for the smallest NK model whose state vector is only
+exogenous shocks, but it is a structural filtering bug/risk for Rotemberg NK,
+SGU, EZ, and NAWM-class models when using nonlinear sigma-point or particle
+filters.
+
+Documentation action:
+- Added a dedicated monograph chapter:
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`.
+- Added the chapter to `docs/main.tex` after the SVD sigma-point chapter.
+- Added a state-space contract cross-reference in
+  `docs/chapters/ch02_state_space_contracts.tex`.
+- Added bibliography entries for Herbst--Schorfheide, An--Schorfheide,
+  Kim--Kim--Schaumburg--Sims, Andreasen--Fernandez-Villaverde--Rubio-Ramirez,
+  Gordon--Salmond--Smith, and Doucet--de Freitas--Gordon.
+- Updated `docs/source_map.yml` with provenance for this chapter.
+
+Interpretation:
+- This is not a minor numerical patch issue.  It is a release-gating design
+  contract issue for BayesFilter DSGE backends.
+- Next implementation work should add explicit structural DSGE transition
+  metadata and tests before any nonlinear DSGE filter is promoted as an HMC
+  target.
+
+Follow-up planning action:
+- Added `docs/plans/dsge-structural-filtering-refactor-plan-2026-05-03.md`.
+- The plan requires re-deriving the DSGE filtering equations with explicit
+  exogenous/endogenous state separation before any filter rewrite.
+- The plan then audits all filtering paths, introduces a structural filtering
+  contract, rewrites or gates unsafe nonlinear DSGE paths, and adds tests for
+  metadata, manifold preservation, linear recovery, toy nonlinear DSGE
+  behavior, Rotemberg NK, SGU, XLA, gradients, and HMC smoke gates.
+
+## 2026-05-04 update: structural state-space monograph pass starts
+
+User reframed the documentation goal as a monograph on Bayesian estimation for
+structural state-space models.  This is the right scope: SVD sigma-point
+filtering and DSGE HMC are important chapters, but the common object is the
+filtering and derivative infrastructure for structural state-space likelihoods
+with stochastic, deterministic, auxiliary, lag, and accounting state blocks.
+
+New planning artifacts:
+- Added canonical BayesFilter implementation plan:
+  `docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md`.
+- Added bounded writing/execution plan:
+  `docs/plans/bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md`.
+- Updated the DSGE-side plan in `/home/chakwong/python/docs/plans` so it is an
+  adapter/integration handoff, not the generic filter implementation source of
+  truth.
+
+Independent plan audit:
+- The pass plan is sensible only if interpreted as a first consolidation pass,
+  not a finished manuscript.
+- The main missing risk in prior plans was source-of-truth ambiguity between
+  BayesFilter and `dsge_hmc`.  The new plan fixes that: BayesFilter owns
+  structural filtering; DSGE and MacroFinance own structural maps and adapters.
+- The plan correctly postpones final derivative, SVD-gradient, and HMC
+  convergence claims.
+- No phase should edit original source projects.
+
+### Phase S0: hygiene baseline
+
+Phase plan:
+- Record dirty state.
+- Parse `docs/source_map.yml`.
+- Run `git diff --check`.
+- Build the monograph with `latexmk`.
+
+Execution:
+- `git status --short` showed existing modified files:
+  `docs/chapters/ch02_state_space_contracts.tex`, `docs/main.tex`,
+  this reset memo, `docs/references.bib`, and `docs/source_map.yml`.
+- Existing untracked files:
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`,
+  `docs/plans/bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md`,
+  `docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md`,
+  `docs/plans/dsge-structural-filtering-refactor-plan-2026-05-03.md`, and
+  `docs/plans/svd-sigma-point-derivative-tool-field-test-2026-05-03.md`.
+- `python -c "import yaml; ..."` returned `source_map yaml ok`.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` from
+  `docs/` reported all targets up to date.
+
+Audit:
+- Phase S0 passes.
+- Dirty state is understood and contains BayesFilter documentation work only.
+- Phase S1 remains justified.
+
+### Phase S1: title and framing
+
+Phase plan:
+- Reframe the monograph title around Bayesian estimation for structural
+  state-space models.
+- Update the introduction so HMC-safe filtering is the production discipline,
+  not the whole subject.
+- State the central design thesis: model projects own structural maps, while
+  BayesFilter owns reusable filters and derivative/diagnostic contracts.
+
+Execution:
+- Updated `docs/main.tex` title to:
+  `Bayesian Estimation for Structural State-Space Models`.
+- Updated `docs/chapters/ch01_introduction.tex` to define structural state
+  roles such as stochastic shocks, deterministic lags, accounting identities,
+  endogenous completions, auxiliary variables, and measurement-only summaries.
+- Added a `Central Design Thesis` section.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed
+  successfully and produced an 85-page PDF.
+- A targeted claim search found only the intended cautionary phrase
+  `HMC-safe` in the introduction.
+
+Audit:
+- The first page now matches the intended monograph scope.
+- No new HMC convergence or derivative-certification claim was introduced.
+- Phase S2 remains justified because Part I now needs to make the structural
+  partition contract precise.
+
+### Phase S2: structural contracts and API
+
+Phase plan:
+- Extend the state-space contract chapter with a structural state partition.
+- Add AR(p)/lag-stack material as the simplest generic example of a degenerate
+  transition.
+- Extend the API chapter with a structural model protocol, filter run metadata,
+  and a client adapter boundary.
+
+Execution:
+- Updated `docs/chapters/ch02_state_space_contracts.tex` with:
+  - definition of a structural state partition;
+  - the rule that partition metadata is not inferred only from a covariance
+    matrix;
+  - AR(2) companion-form/lag-stack example with singular transition
+    covariance;
+  - a structural nonlinear transition contract;
+  - approximation-labeling assumption.
+- Updated `docs/chapters/ch04_bayesfilter_api.tex` with:
+  - five core objects including a structural state partition;
+  - structural model protocol;
+  - filter run metadata;
+  - strict adapter boundary between BayesFilter and client projects.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed
+  successfully and produced an 88-page PDF.
+- Targeted claim search found only expected uses of `exact` for exact linear
+  Kalman filtering and no unsupported convergence/production claim.
+
+Audit:
+- Part I now gives implementation agents a stable contract vocabulary for
+  BayesFilter structural filtering.
+- The AR(2) example confirms that the endogenous/deterministic-state issue is
+  generic and not DSGE-only.
+- Only minor LaTeX overfull/underfull warnings remain; they are not blockers.
+- Phase S3 remains justified.
+
+### Phase S3: provenance and reset updates
+
+Phase plan:
+- Update `docs/source_map.yml` with the new BayesFilter structural-state
+  partition core plan and this monograph consolidation pass.
+- Keep provenance explicit: the new contract prose is based on local planning
+  artifacts and documented source-project audits, not on a new literature
+  claim.
+- Update this reset memo so a rebooted agent can identify the canonical next
+  work.
+
+Execution:
+- Added source-map entries for:
+  - `bayesfilter_structural_state_partition_core_plan`;
+  - `bayesfilter_structural_ssm_monograph_pass`.
+- Added chapter mappings from those plans to:
+  - `docs/chapters/ch01_introduction.tex`;
+  - `docs/chapters/ch02_state_space_contracts.tex`;
+  - `docs/chapters/ch04_bayesfilter_api.tex`;
+  - `docs/chapters/ch18b_structural_deterministic_dynamics.tex`;
+  - `docs/chapters/ch32_production_checklist.tex`.
+- Re-affirmed that BayesFilter is the generic structural filtering source of
+  truth, while `dsge_hmc` and MacroFinance should provide adapters and
+  structural maps.
+
+Tests:
+- `python -c "import yaml; yaml.safe_load(...)"` returned
+  `source_map yaml ok`.
+
+Audit:
+- Provenance is now explicit enough for another agent to continue after a
+  reboot.
+- This phase did not add new mathematical claims beyond local planning and
+  source-code audit provenance.
+- Phase S4 remains justified.
+
+### Phase S4: final build, audit, and commit preparation
+
+Phase plan:
+- Run final source-map parse, whitespace check, LaTeX build, and risky-claim
+  search.
+- Stage only BayesFilter documentation files related to the structural
+  state-space monograph pass.
+- Commit after this reset memo records completion status.
+
+Execution and tests:
+- `python -c "import yaml; yaml.safe_load(...)"` returned
+  `source_map yaml ok`.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` reported
+  `All targets (main.pdf) are up-to-date`.
+- Risky-claim search over the touched chapters found one expected cautionary
+  use of `production-ready` in
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`, where the text
+  says no future BayesFilter report should claim nonlinear DSGE filtering is
+  correct or production-ready unless the listed tests pass.
+
+Audit:
+- The monograph now has a clearer organizing thesis: Bayesian estimation for
+  structural state-space models.
+- Part I now defines structural state partitions, degenerate transitions,
+  approximation labels, structural model protocols, run metadata, and client
+  adapter boundaries.
+- The work remains a first consolidation pass, not a completed manuscript.
+- Remaining warnings are typographic LaTeX overfull/underfull warnings and are
+  not blockers.
+
+Interpretation:
+- The pass is complete and ready to commit.
+- Next writing work should proceed to the exact linear Gaussian likelihood
+  spine and analytic Kalman derivative consolidation.
+
 ## Plan audit
 
 Plan audited:
@@ -972,3 +1207,75 @@ Next hypotheses to test:
   validation.
 - H4: transport and NeuTra-like maps can improve geometry only after the target
   and gradient contracts are correct.
+
+## 2026-05-03 update: SVD derivative tool field test
+
+User asked whether the old MathDevMCP Kalman Hessian agent guide should be
+deleted and whether the rewritten MathDevMCP and ResearchAssistant tools can
+help with the analytical gradient/Hessian derivation for the SVD sigma-point
+filter.
+
+Cleanup action:
+- Deleted stale file:
+  `/home/chakwong/MathDevMCP/docs/kalman-hessian-agent-guide.md`.
+- A reference sweep found no active current-doc dependency on that guide.  One
+  historical reset-memo mention remains in MathDevMCP as provenance only.
+
+Tool status:
+- `codex mcp list` shows both `mathdevmcp` and `research-assistant` enabled.
+- MathDevMCP benchmark gate passed 41/41 cases with failed count 0.
+- MathDevMCP doctor is usable: LaTeXML, Pandoc, Sage, SymPy, and LeanDojo
+  import are available; direct Lean executable version check failed because it
+  attempted a download.
+- ResearchAssistant doctor under the BayesFilter research workspace reports
+  status ok, offline/provider-disabled mode, and local PDF/source inspection
+  readiness.
+
+Field test:
+- Added durable report:
+  `docs/plans/svd-sigma-point-derivative-tool-field-test-2026-05-03.md`.
+- Used a scratch LaTeX fixture under `/tmp/bayesfilter_svd_field_test` with
+  labeled equations for the one-step sigma-point Gaussian likelihood,
+  innovation covariance, score differential, solve derivative, and mixed
+  Hessian.
+- ResearchAssistant successfully retrieved Matrix Backprop source labels,
+  including `prop:svd`, `eqn:svd_dS`, `eqn:svd_dV`, `eqn:dLdX`, and `svd_K`.
+  The `svd_K` source equation exposes the spectral-gap denominator
+  `1 / (sigma_i^2 - sigma_j^2)`, supporting the SVD/eigen derivative risk
+  warning.
+- MathDevMCP `search-latex` and `extract-latex-neighborhood` found and
+  extracted the scratch labels cleanly.
+- MathDevMCP `audit-derivation-v2-label` correctly refused to certify the
+  score differential and mixed Hessian, returning `unverified` with actions for
+  SPD/invertibility, conformability, trace-square constraints, split
+  derivation rows, solve residuals, and conditioning diagnostics.
+- MathDevMCP `derive-label-step` is not yet reliable for matrix differential
+  identities.  It reported `mismatch` on the standard inverse-solve
+  differential pattern because current tokenization does not preserve products
+  such as `dS S^{-1}` well enough.
+
+Interpretation:
+- The user's skepticism about AI-token math derivations is justified.
+- Current tools are useful as guardrails: source lookup, provenance, missing
+  assumption detection, abstention, and audit packaging.
+- Current tools are not sufficient to certify the analytical gradient or
+  Hessian of an SVD sigma-point filter.
+- SVD sigma-point derivative work must be done as small labeled derivation
+  steps with human mathematical review, MathDevMCP abstention audits, and
+  independent numerical parity tests.
+
+Planning action:
+- Updated
+  `docs/plans/dsge-structural-filtering-refactor-plan-2026-05-03.md` with a
+  derivative-audit gate requiring ResearchAssistant primary-source lookup,
+  MathDevMCP v2 audit, and finite-difference/autodiff/JVP/VJP/compiled/stress
+  tests before SVD sigma-point gradients are used inside HMC.
+
+Next justified work:
+- Improve MathDevMCP matrix-differential parsing and obligation extraction
+  before treating it as a serious checker for SVD Hessians.
+- Write the BayesFilter SVD derivative derivation as a proof-obligation ladder:
+  likelihood differential, solve differential, innovation covariance
+  derivative, sigma-point moment derivative, spectral-factor derivative or
+  non-spectral custom-gradient policy, mixed Hessian terms, and numerical
+  parity tests.

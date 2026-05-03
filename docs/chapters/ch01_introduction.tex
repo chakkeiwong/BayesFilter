@@ -1,12 +1,21 @@
 \chapter{Introduction}
 \label{ch:bf-introduction}
 
-BayesFilter is the reusable filtering and HMC-safe likelihood layer extracted
-from the DSGE, macro-finance, and analytic Kalman derivative work.  Its purpose
-is narrower than the source monographs: it owns the numerical contracts for
-state-space likelihoods, derivatives, diagnostics, and compiled Bayesian
-sampling.  The economics of NK, EZ, SGU, CIP, AFNS, and future NAWM-scale
-applications remain downstream case studies.
+BayesFilter is a monograph and software-design project for Bayesian estimation
+of structural state-space models.  The word structural is important.  The
+latent state is not merely an anonymous vector passed to a numerical routine:
+its coordinates may be stochastic shocks, deterministic lags, accounting
+identities, endogenous completions, auxiliary variables, or measurement-only
+summaries.  A filtering backend that ignores those roles can evaluate the
+wrong likelihood, produce the wrong gradient, or make a sampler explore states
+the model never generates.
+
+The project was extracted from DSGE, macro-finance, and analytic Kalman
+derivative work, but its purpose is broader and cleaner than any one source
+project.  BayesFilter owns the reusable contracts for state-space likelihoods,
+derivatives, diagnostics, and compiled Bayesian sampling.  The economics of NK,
+EZ, SGU, CIP, AFNS, and future NAWM-scale applications remain downstream case
+studies that stress those contracts.
 
 The organizing premise is that filtering is not a small implementation detail
 inside Bayesian state-space inference.  For Hamiltonian Monte Carlo, the filter
@@ -14,11 +23,12 @@ is part of the posterior target: it supplies the log likelihood, the gradient
 path, the invalid-parameter behavior, and much of the geometry seen by the
 sampler.  A filtering backend that is adequate for point likelihood evaluation
 may still be unsuitable for HMC if it has hidden non-finite branches, unstable
-spectral derivatives, dynamic shapes, or opaque compilation behavior.
+spectral derivatives, dynamic shapes, structural state violations, or opaque
+compilation behavior.
 
 This monograph separates four layers:
 \begin{enumerate}[label=(\roman*)]
-  \item the state-space model contract;
+  \item the structural state-space model contract;
   \item the likelihood and derivative backend;
   \item the HMC target and diagnostic policy;
   \item application case studies that stress the generic contracts.
@@ -26,6 +36,25 @@ This monograph separates four layers:
 The separation lets the linear Gaussian and analytic derivative spine be
 audited before nonlinear sigma-point filters, particle filters, transport maps,
 or DSGE-specific experiments are used as evidence.
+
+\section{Central Design Thesis}
+\label{sec:bf-intro-design-thesis}
+
+BayesFilter follows one design thesis:
+\[
+  \text{model projects own structural maps, and BayesFilter owns filters.}
+\]
+For an autoregression, the structural map may be a companion-form lag shift.
+For a macro-finance model, it may be an affine no-arbitrage state recursion
+with masked yields.  For a DSGE model, it may be a perturbation solution that
+separates exogenous shocks from endogenous predetermined variables.  These maps
+belong to the model project.  The common filtering machinery, derivative
+validation, diagnostics, and HMC target discipline belong to BayesFilter.
+
+This separation prevents each application project from rediscovering the same
+numerical failure modes.  It also prevents a successful linear Gaussian
+implementation from being misused as a nonlinear structural filter simply
+because both expose a state vector and covariance matrix.
 
 \section{Provenance and Claim Discipline}
 \label{sec:bf-intro-provenance}
@@ -49,10 +78,11 @@ region.
 \label{sec:bf-reader-map}
 
 The book is written from the stable core outward.  Part~I fixes notation and
-interfaces.  Part~II develops the exact linear Gaussian likelihood because it is
-the regression oracle for more complicated filters.  Part~III records analytic
-derivative and custom-gradient policy before nonlinear filters are promoted into
-HMC experiments.  Part~IV discusses nonlinear filters and spectral risks with
+interfaces, including structural state partitions.  Part~II develops the exact
+linear Gaussian likelihood because it is the regression oracle for more
+complicated filters.  Part~III records analytic derivative and custom-gradient
+policy before nonlinear filters are promoted into HMC experiments.  Part~IV
+discusses nonlinear filters, deterministic completions, and spectral risks with
 those derivative requirements already in place.  Part~V states the HMC, JIT,
 and diagnostic contracts.  The case studies appear last so they can be judged
 against the generic BayesFilter checklist rather than driving the definitions.

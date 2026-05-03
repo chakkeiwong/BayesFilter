@@ -9,10 +9,12 @@ interface.
 \section{Core Objects}
 \label{sec:bf-api-core-objects}
 
-A BayesFilter implementation should expose four separable objects:
+A BayesFilter implementation should expose five separable objects:
 \begin{itemize}
   \item a parameter transform from sampler coordinates $u$ to model parameters
     $\theta$;
+  \item a structural state partition describing stochastic, deterministic, and
+    auxiliary coordinates;
   \item a model provider that builds state-space objects from $\theta$;
   \item a filter backend that returns log likelihood and diagnostics;
   \item a derivative provider or autodiff policy that returns the score and,
@@ -27,6 +29,53 @@ and optionally their first and second derivatives with respect to $\theta$.
 For a nonlinear model, it returns transition and observation maps together with
 the sigma-point, linearization, or simulation policy required by the selected
 backend.
+
+\section{Structural Model Protocol}
+\label{sec:bf-api-structural-model-protocol}
+
+The exact software interface may change, but implementations should be
+auditable against the following documentation contract:
+\begin{align*}
+  \texttt{partition} &:\quad \text{state names, role indices, innovation dimension},\\
+  \texttt{initial\_law} &:\quad (m_0,P_0)\ \text{or a sampling rule},\\
+  \texttt{innovation\_law} &:\quad \Sigma_\varepsilon\ \text{or an innovation sampler},\\
+  \texttt{unpack\_state},\ \texttt{pack\_state} &:\quad
+    x \leftrightarrow (s,d,a),\\
+  \texttt{propagate\_stochastic} &:\quad
+    (s_{t-1},\varepsilon_t,\theta) \mapsto s_t,\\
+  \texttt{complete\_deterministic} &:\quad
+    (d_{t-1},s_{t-1},s_t,\theta) \mapsto d_t,\\
+  \texttt{observe} &:\quad
+    x_t \mapsto p_\theta(y_t\mid x_t).
+\end{align*}
+Here $s_t$ denotes the declared stochastic block, $d_t$ the deterministic
+completion block, and $a_t$ any auxiliary or backend-specific block.  A model
+with no deterministic block can set $d_t$ empty; a linear Gaussian companion
+form can still expose the partition even if the exact Kalman backend consumes
+only the collapsed matrices.
+
+DSGE, MacroFinance, and other application projects should implement this
+protocol through adapters.  BayesFilter should not require those projects to
+copy filter internals, and those projects should not define private
+near-duplicates of BayesFilter filters.
+
+\section{Filter Run Metadata}
+\label{sec:bf-api-filter-run-metadata}
+
+Every backend should return metadata that records what target was actually
+evaluated.  At minimum, diagnostics should include:
+\begin{itemize}
+  \item backend name and version;
+  \item structural partition summary;
+  \item integration space: innovation, stochastic-state, or full-state;
+  \item deterministic-completion policy;
+  \item approximation label, if any;
+  \item derivative policy;
+  \item compiled/eager execution status when relevant;
+  \item finite-failure or warning codes.
+\end{itemize}
+This metadata prevents a collapsed approximation, a diagnostic surrogate, or a
+partially compiled run from being misreported as a structural HMC target.
 
 \section{Return Contract}
 \label{sec:bf-api-return-contract}
@@ -62,3 +111,28 @@ BayesFilter should promote a backend through stages:
 \end{enumerate}
 No backend should skip directly from value-only likelihood tests to industrial
 HMC use.
+
+\section{Client Adapter Boundary}
+\label{sec:bf-api-client-adapter-boundary}
+
+The adapter boundary is intentionally strict.  A client project owns:
+\begin{itemize}
+  \item structural equations and timing;
+  \item parameter transformations and priors;
+  \item model-specific observation equations;
+  \item perturbation, no-arbitrage, or equilibrium solution objects;
+  \item application-level HMC targets and case-study data.
+\end{itemize}
+BayesFilter owns:
+\begin{itemize}
+  \item generic filter recursions;
+  \item structural partition validation;
+  \item square-root and SVD numerical backends;
+  \item derivative validation ladders;
+  \item finite-failure and diagnostic conventions;
+  \item backend promotion gates.
+\end{itemize}
+The boundary is a maintenance device.  It lets MacroFinance reuse analytic
+Kalman derivatives, DSGE reuse structural nonlinear filtering, and future
+large models reuse the same validation ladder without forking the numerical
+core.

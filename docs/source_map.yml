@@ -19,6 +19,18 @@ policy:
     claim-support audit before being merged into docs/references.bib.
 
 sources:
+  - id: bayesfilter_structural_state_partition_core_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md
+    status: drafted
+    role: Canonical implementation plan for generic structural state partition and filtering core.
+  - id: bayesfilter_structural_ssm_monograph_pass
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
+    status: drafted
+    role: Bounded execution plan for reframing the monograph around Bayesian estimation for structural state-space models.
   - id: dsge_hmc_monograph
     project: dsge_hmc
     root: /home/chakwong/python/docs
@@ -63,6 +75,18 @@ index_artifacts:
     keep: false
 
 chapter_mappings:
+  bayesfilter_structural_state_partition_core_plan:
+    - source_file: bayesfilter-structural-state-partition-core-plan-2026-05-04.md
+      destination: docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch04_bayesfilter_api.tex; docs/chapters/ch18b_structural_deterministic_dynamics.tex; docs/chapters/ch32_production_checklist.tex
+      import_status: drafted
+      reason: Canonical BayesFilter plan defining structural partitions, deterministic completion, AR(p) examples, MacroFinance/DSGE adapters, and test ladder.
+
+  bayesfilter_structural_ssm_monograph_pass:
+    - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
+      destination: docs/chapters/ch01_introduction.tex; docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch04_bayesfilter_api.tex
+      import_status: drafted
+      reason: Execution plan for reframing the monograph as Bayesian estimation for structural state-space models.
+
   dsge_hmc_monograph:
     - source_file: monograph.tex
       destination: docs/main.tex
@@ -447,6 +471,22 @@ duplicate_groups:
       - /home/chakwong/python/docs/chapters/ch08_kalman_filter.tex
       - /home/chakwong/latex/CIP_monograph/chapters/ch16_kalman_filter.tex
       - /home/chakwong/MacroFinance/analytic_kalman_derivatives.tex
+    structural_deterministic_dynamics:
+      destination: docs/chapters/ch18b_structural_deterministic_dynamics.tex
+      reason: >
+        Documents the serious DSGE filtering design issue that nonlinear
+        filters must respect exogenous shock-driven state blocks and
+        deterministic endogenous/accounting state transitions rather than
+        treating all state coordinates as exchangeable noisy Gaussian
+        coordinates.
+      source_files:
+        - /home/chakwong/python/src/dsge_hmc/filters/_svd_filters.py
+        - /home/chakwong/python/src/dsge_hmc/models/base.py
+        - /home/chakwong/python/src/dsge_hmc/models/canonical.py
+        - /home/chakwong/python/src/dsge_hmc/models/rotemberg_nk.py
+        - /home/chakwong/python/docs/chapters/ch08_kalman_filter.tex
+        - /home/chakwong/python/docs/chapters/ch09b_svd_filters.tex
+        - /home/chakwong/python/docs/archive/neural_solver_gradient_consistency.tex
     resolution: MacroFinance analytic note is authoritative for derivatives; source monographs provide exposition only.
   - topic: HMC foundations and diagnostics
     sources:

@@ -29,6 +29,26 @@ supplies matrices and vectors
 with dimensions fixed by the model instance.
 \end{definition}
 
+\begin{definition}[Structural state partition]
+\label{def:bf-structural-state-partition}
+A structural state partition is model metadata that decomposes the latent state
+coordinates into declared roles.  The minimal BayesFilter partition records
+\[
+  x_t = \operatorname{pack}(s_t,d_t,a_t),
+\]
+where $s_t$ is the stochastic block receiving current innovations directly or
+through a declared stochastic transition, $d_t$ is a deterministic-completion
+block, and $a_t$ is an optional auxiliary block used for lags, bookkeeping, or
+backend-specific summaries.  The partition also records the innovation
+dimension and the pack/unpack order.
+\end{definition}
+
+The partition is part of the model contract.  It should not be inferred only
+from a covariance matrix.  A zero row of a shock-impact matrix is a useful
+diagnostic, but it is not a complete timing declaration.  Conversely, a small
+positive nugget inserted for numerical regularization does not turn a
+deterministic identity into a structural source of randomness.
+
 \begin{assumption}[Shape and value contract]
 \label{asm:bf-shape-value-contract}
 For a fixed model instance, tensor ranks and leading dimensions are static
@@ -45,6 +65,74 @@ state-space objects, or declares that a backend relies on autodiff through
 primitive operations.  This distinction is essential for large models: the
 derivative of a structural solver and the derivative of a Kalman or sigma-point
 recursion are different mathematical layers.
+
+\begin{remark}[Structural deterministic dynamics are part of the contract]
+\label{rem:bf-structural-deterministic-contract}
+For DSGE models, the state-space contract must not hide the distinction between
+shock-driven exogenous states and endogenous or accounting states that are
+deterministic conditional on lagged states and current shocks.  A collapsed
+linear transition may be sufficient for an exact Kalman filter, but nonlinear
+sigma-point and particle filters need the structural transition map.  This is a
+release-gating issue; see
+Chapter~\ref{ch:bf-structural-deterministic-dynamics}.
+\end{remark}
+
+\section{Degenerate Transitions and Lag Stacks}
+\label{sec:bf-degenerate-transitions-lag-stacks}
+
+Structural deterministic coordinates are not special to DSGE models.  An
+autoregression of order two already has the same issue.  One companion-form
+representation is
+\begin{align}
+  m_t &= \phi_1 m_{t-1} + \phi_2 \ell_{t-1} + \sigma\varepsilon_t,\\
+  \ell_t &= m_{t-1},\\
+  x_t &= (m_t,\ell_t).
+\end{align}
+The lag coordinate $\ell_t$ is deterministic conditional on the previous
+state.  In an exact linear Kalman backend, the corresponding transition
+covariance is singular:
+\[
+  Q =
+  \begin{bmatrix}
+    \sigma^2 & 0\\
+    0 & 0
+  \end{bmatrix}.
+\]
+That singularity is structural information, not an implementation failure.
+For nonlinear sigma-point or particle filters, quadrature or simulation should
+be applied to the innovation or stochastic block and then lifted through the
+lag-shift map.
+
+The same contract covers accumulated sums, stock-flow identities,
+mixed-frequency aggregation states, and deterministic no-arbitrage recursions.
+BayesFilter should therefore test degenerate transitions directly rather than
+only through full-rank synthetic examples.
+
+\section{Structural Nonlinear Transition Contract}
+\label{sec:bf-structural-nonlinear-transition-contract}
+
+For a nonlinear structural model, a backend should know whether it integrates
+over innovations, stochastic states, or the full latent state.  A convenient
+contract is
+\begin{align}
+  s_t &= T_s(s_{t-1},\varepsilon_t;\theta),\\
+  d_t &= T_d(d_{t-1},s_{t-1},s_t;\theta),\\
+  x_t &= \operatorname{pack}(s_t,d_t,a_t),\\
+  y_t &\sim p_\theta(y_t\mid x_t).
+\end{align}
+When a mixed structural model is evaluated by a full-state Gaussian
+approximation, the result must be labeled as an approximation.  The default
+nonlinear filter for a mixed structural model should preserve deterministic
+identities pointwise for propagated sigma points or particles.
+
+\begin{assumption}[Approximation labeling]
+\label{asm:bf-approximation-labeling}
+If a backend integrates over a larger stochastic space than the declared model
+transition, or injects artificial noise into deterministic coordinates, the
+run metadata must record an approximation label.  The label is part of the
+likelihood provenance and must be visible to HMC diagnostics and case-study
+reports.
+\end{assumption}
 
 \section{Masks and Mixed Frequency}
 \label{sec:bf-masks-mixed-frequency-contract}
