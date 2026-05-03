@@ -15,6 +15,55 @@ Canonical design and implementation plan for:
 The DSGE-side plan in `/home/chakwong/python/docs/plans` should be treated as
 an adapter/integration handoff, not the source of truth.
 
+## Non-negotiable execution rules
+
+These rules are mandatory.  They are written to prevent shortcutting,
+misclassification of mathematically distinct cases, accidental greenfield
+rewrites of already-implemented machinery, and silent approximation creep.
+
+1. Math audit before implementation.
+   No BayesFilter implementation work may begin until the relevant DSGE and
+   MacroFinance derivations have been audited and reconciled against the
+   proposed BayesFilter contract.
+
+2. Reuse only after audit.
+   Existing filtering, square-root, Kalman, derivative, and adapter machinery in
+   `/home/chakwong/python` and `/home/chakwong/MacroFinance` should be treated
+   as candidate source material, not as automatically correct code and not as
+   disposable code to be reimplemented casually.
+
+3. No silent approximation promotion.
+   If an existing implementation is exact only for linear-Gaussian collapsed
+   moments, it must stay labeled as such.  It must not be presented as a
+   structural nonlinear filter for mixed-state models.
+
+4. Shared API does not mean identical propagation algorithm.
+   BayesFilter should present a common likelihood/filtering contract to client
+   projects, but it may and should dispatch to different mathematically valid
+   backends depending on whether the model is:
+   - pure linear Gaussian / collapsed LGSSM;
+   - nonlinear but fully stochastic;
+   - nonlinear with stochastic plus deterministic-completion states.
+
+5. Prefer extraction/wrapping of audited common machinery over greenfield
+   rewrites.
+   Reimplementation is allowed only when the existing code fails the audit,
+   cannot be disentangled from client-specific logic, or cannot satisfy the
+   BayesFilter contract and tests.
+
+6. Fail closed when metadata or derivations are missing.
+   If a model does not yet provide the structural partition or deterministic
+   completion maps required for nonlinear structural filtering, BayesFilter must
+   refuse the structural nonlinear path rather than guess.
+
+7. Tooling is advisory for provenance and obligation checking, not a substitute
+   for mathematical judgment.
+   ResearchAssistant should be used for source retrieval and citation
+   verification.  MathDevMCP should be used for obligation-level audit and
+   assumption surfacing.  Neither tool should be treated as an automatic proof
+   certificate for the full filter unless the generated evidence actually
+   supports that claim.
+
 ## Motivation
 
 BayesFilter should own the common filtering machinery for state-space models
@@ -80,6 +129,138 @@ DSGE, MacroFinance, and any future model project should supply:
 BayesFilter should not contain DSGE economics or MacroFinance financial-model
 logic.  It should contain reusable filtering abstractions and tested numerical
 backends.
+
+## Common API versus backend semantics
+
+To avoid ambiguity: the goal is a common estimator-facing API, not a claim that
+all models should use the same internal propagation algorithm.
+
+The common API should allow downstream code to call a single family of
+likelihood, filtering, derivative, and HMC-target functions across model
+projects.  Internally, BayesFilter should dispatch according to mathematically
+validated structure:
+
+- Pure linear-Gaussian or collapsed LGSSM models may use exact or square-root
+  Kalman backends.
+- Nonlinear models whose full state is genuinely stochastic may use nonlinear
+  sigma-point or particle backends over the declared stochastic state.
+- Mixed structural models with deterministic-completion coordinates must use
+  integration over innovation or stochastic-state space plus deterministic
+  completion.
+
+Therefore “same filter” in this project means the same BayesFilter contract and
+higher-level estimation API, not necessarily the same quadrature/sampling space
+or the same transition parameterization in every model class.
+
+## Mandatory mathematical source audit
+
+Before any implementation phase that changes BayesFilter code, write a
+mathematical audit note under `docs/plans` that reconciles the relevant source
+material with the BayesFilter contract.
+
+Primary source sets:
+
+- DSGE monograph root:
+
+  ```text
+  /home/chakwong/python/docs/monograph.tex
+  ```
+
+  Relevant included chapters should cover at least DSGE model timing,
+  perturbation structure, Kalman filtering, square-root UKF/SVD filtering, and
+  any model-specific endogenous/exogenous state definitions used by SmallNK,
+  Rotemberg, SGU, EZ, or future NAWM-style targets.
+
+- MacroFinance monograph root:
+
+  ```text
+  /home/chakwong/latex/CIP_monograph/main.tex
+  ```
+
+  Relevant included chapters should cover at least state-space recursions,
+  Kalman filtering, nonlinear filtering, multi-country state construction,
+  differentiable particle filtering, and analytical validation.
+
+Audit objectives:
+
+1. Identify which formulas are already derived in the DSGE monograph.
+2. Identify which formulas are already derived in the MacroFinance monograph.
+3. State which formulas are mathematically equivalent after relabeling of state
+   blocks and notation.
+4. State which formulas are valid only for collapsed linear-Gaussian moment
+   filtering.
+5. State which formulas are required for structural nonlinear propagation with
+   deterministic completion.
+6. State which claims remain unverified, approximate, or model-specific.
+7. State which existing implementations are candidates for extraction or
+   wrapping into BayesFilter.
+
+Required tool usage during the audit:
+
+- Use ResearchAssistant to locate source labels, equations, theorem statements,
+  appendix references, and citations when the derivation claim depends on a
+  paper or monograph source.
+- Use MathDevMCP to check obligation-level derivation steps, expose hidden
+  assumptions, and flag unsupported or under-specified steps.
+- Record provenance for each nontrivial mathematical claim: monograph section,
+  chapter/equation label, paper label, or explicit derivation in BayesFilter
+  notation.
+
+The audit must not rely on:
+
+- memory of what the derivation “probably meant”;
+- code behavior alone as mathematical evidence;
+- prose statements that are not backed by equations, labels, or explicit
+  derivations.
+
+Pass gate for the audit:
+
+- A written audit note exists in `docs/plans`.
+- The note identifies exact versus approximate paths explicitly.
+- The note identifies reusable existing code paths and suspected risk points.
+- The note lists unresolved mathematical gaps and blocks implementation on those
+  gaps where they affect correctness.
+- No BayesFilter backend implementation starts before this note exists.
+
+## Reuse-and-audit migration rule
+
+The intent of this project is not to casually rewrite filtering code that
+already exists elsewhere.  The intent is to centralize audited common machinery
+in BayesFilter while keeping model-specific logic in client repos.
+
+Therefore, for every candidate backend or derivative path:
+
+1. Audit the math source.
+2. Audit the existing code path.
+3. Classify the code path as one of:
+   - exact and reusable as-is after extraction/wrapping;
+   - reusable with localized fixes;
+   - reusable only as a labeled approximation;
+   - not reusable because it is mathematically wrong, too entangled, or too
+     poorly specified.
+4. Only then decide whether to extract, wrap, refactor, or reimplement.
+
+This rule applies especially to:
+
+- exact and square-root Kalman implementations;
+- singular-`Q` handling;
+- SVD sigma-point primitives;
+- derivative and Hessian support;
+- DSGE sigma-point adapter logic;
+- MacroFinance analytic derivative providers.
+
+A migration should preserve:
+
+- mathematical semantics;
+- approximation labels;
+- existing validated regression fixtures where those fixtures are relevant;
+- client-side ownership of economics/finance model logic.
+
+A migration should not preserve:
+
+- silent assumptions that were never documented;
+- client-specific hacks that violate the BayesFilter contract;
+- convenience noise added to deterministic coordinates to make a filter run.
 
 ## Core mathematical contract
 
@@ -151,6 +332,8 @@ Validation rules:
 - `innovation_dim` is positive for stochastic models and may differ from the
   number of stochastic coordinates.
 - The partition is metadata, not an inference from `Q` alone.
+- Zero rows in an impact matrix may be used as a diagnostic but must not be the
+  sole source of truth for partition classification.
 
 ### Structural transition protocol
 
@@ -201,6 +384,9 @@ Rules:
 - `integration_space="full_state"` on a mixed model requires
   `allow_full_state_for_mixed=True` and a nonempty approximation label.
 - Result objects must record the integration space and approximation label.
+- Pure LGSSM or genuinely all-stochastic models must not be forced through
+  deterministic-completion machinery when an exact or simpler validated backend
+  exists.
 
 ### Result metadata
 
@@ -233,6 +419,8 @@ Requirements:
 - Support collapsed companion-form representations for AR(p) and affine
   MacroFinance models.
 - Expose derivative hooks without forcing nonlinear structural completion.
+- Prefer audited extraction/wrapping of existing Kalman or square-root code
+  over greenfield reimplementation.
 
 ### SVD sigma-point filter
 
@@ -243,6 +431,9 @@ Requirements:
 - Preserve structural manifold identities pointwise.
 - Support additive innovation covariance and later state-dependent extensions.
 - Reject mixed full-state mode unless explicitly labeled as approximation.
+- Reuse audited generic SVD sigma-point primitives where valid; rewrite only
+  the parts that fail the structural audit or cannot be separated from
+  client-specific logic.
 
 ### Particle filters
 
@@ -264,17 +455,25 @@ Requirements:
   /home/chakwong/MathDevMCP/docs/proof-carrying-derivation-agent-guide.md
   ```
 
+- Use ResearchAssistant when source-backed literature claims or monograph-source
+  reconciliation is required.
 - Split obligations into small labeled derivations.
 - Require finite-difference, JVP/VJP, eager/compiled, and spectral-gap stress
   tests before HMC promotion.
+- Do not migrate derivative code into BayesFilter merely because it already
+  exists in a client repo; migrate it only after the derivative path is audited
+  mathematically and numerically.
 
 ## Implementation phases
 
 Each phase follows:
 
 ```text
-plan -> execute -> test -> audit -> tidy -> update reset memo
+plan -> audit math -> audit code -> execute -> test -> audit -> tidy -> update reset memo
 ```
+
+No phase may skip the math-audit or code-audit components when correctness
+depends on them.
 
 ### Phase 0: repository and dependency inventory
 
@@ -296,16 +495,100 @@ Actions:
    rg -n "SVDSigmaPointFilter|transition_points|Kalman|particle" src tests
    ```
 
-3. Identify MacroFinance source files for analytic Kalman derivatives and
-   state-space abstractions.  Do not copy code yet; record candidate APIs and
-   tests.
+3. Record MacroFinance status:
+
+   ```bash
+   cd /home/chakwong/MacroFinance
+   git status --short
+   rg -n "Kalman|filter|derivative|state_space|state-space|sigma|particle" .
+   ```
+
+4. Identify candidate source files for:
+   - exact Kalman backends;
+   - square-root or SVD Kalman backends;
+   - nonlinear sigma-point primitives;
+   - derivative/Hessian providers;
+   - client-specific adapter logic.
+
+5. Record which monograph chapters and appendices appear to contain the primary
+   derivations for each candidate backend.
 
 Pass gate:
 
-- Inventory note is appended to the BayesFilter reset memo.
+- Inventory note is appended to the BayesFilter reset memo or a dedicated plan
+  note.
+- Candidate code paths and derivation sources are listed explicitly.
 - No implementation changes.
 
-### Phase 1: write structural contracts and toy examples in docs
+### Phase 1: mathematical source audit and derivation reconciliation
+
+Actions:
+
+1. Read the relevant DSGE monograph chapters from:
+
+   ```text
+   /home/chakwong/python/docs/monograph.tex
+   ```
+
+2. Read the relevant MacroFinance monograph chapters from:
+
+   ```text
+   /home/chakwong/latex/CIP_monograph/main.tex
+   ```
+
+3. Produce a written audit note in BayesFilter `docs/plans` that states:
+   - the common notation used for BayesFilter;
+   - the mapping from DSGE notation into BayesFilter notation;
+   - the mapping from MacroFinance notation into BayesFilter notation;
+   - which filtering equations are exact collapsed LGSSM equations;
+   - which nonlinear equations require structural deterministic completion;
+   - which equations are already validated by monograph derivation;
+   - which equations still require local derivation in BayesFilter notation.
+
+4. Use ResearchAssistant where helpful to retrieve equation labels, theorem
+   labels, appendix references, and citation provenance.
+
+5. Use MathDevMCP where helpful to audit local derivation steps, surface
+   assumptions, and mark unsupported steps as blockers rather than smoothing
+   them over.
+
+6. Create a backend-classification table at the mathematical level:
+
+   | Backend/path | Exact for LGSSM? | Exact for mixed nonlinear structural models? | Approximation? | Reuse candidate? | Notes |
+   | --- | --- | --- | --- | --- | --- |
+
+Pass gate:
+
+- The audit note exists.
+- The note states explicitly what is exact, what is approximate, and what is
+  still unresolved.
+- The note is sufficient for an implementation agent to know which backend is
+  mathematically allowed for each model class.
+- No BayesFilter code implementation starts before this gate passes.
+
+### Phase 2: code audit and migration decision
+
+Actions:
+
+1. Audit existing BayesFilter-adjacent code in `/home/chakwong/python` and
+   `/home/chakwong/MacroFinance` against the mathematical audit.
+2. For each candidate code path, classify it as:
+   - extract/wrap as-is after tests;
+   - extract/wrap with localized fixes;
+   - keep only as labeled approximation;
+   - do not reuse.
+3. Record hidden assumptions, client-specific entanglements, and suspected bug
+   risks.
+4. Record which tests or regression fixtures are needed to preserve validated
+   behavior during migration.
+
+Pass gate:
+
+- A written code-audit section or note exists.
+- Every planned migration path has an explicit reuse decision.
+- Greenfield reimplementation is justified in writing wherever chosen.
+
+### Phase 3: write structural contracts and toy examples in docs
 
 Actions:
 
@@ -325,13 +608,17 @@ Actions:
    - MacroFinance affine/lag-stack example.
 
 3. Mark source provenance explicitly.
+4. State explicitly in the docs that a shared BayesFilter API does not imply a
+   single internal propagation algorithm for every model class.
 
 Pass gate:
 
 - The monograph states that structural deterministic completion is a generic
   BayesFilter contract, not a DSGE-only patch.
+- The monograph distinguishes shared API from backend-specific propagation
+  semantics.
 
-### Phase 2: create BayesFilter core interfaces
+### Phase 4: create BayesFilter core interfaces
 
 Actions:
 
@@ -339,6 +626,7 @@ Actions:
 2. Add structural metadata dataclasses.
 3. Add validation helpers.
 4. Add minimal result metadata.
+5. Encode failure-closed behavior for mixed models lacking structural metadata.
 
 Suggested module layout:
 
@@ -362,9 +650,11 @@ Tests:
 - partition validation;
 - invalid overlapping indices;
 - missing coverage;
-- approximation label required for mixed full-state integration.
+- approximation label required for mixed full-state integration;
+- failure when mixed nonlinear models request structural filtering without
+  structural metadata.
 
-### Phase 3: AR(p) and toy structural fixtures
+### Phase 5: AR(p) and toy structural fixtures
 
 Actions:
 
@@ -387,16 +677,19 @@ Tests:
   quadrature reference.
 - Full-state approximation is blocked or explicitly labeled.
 
-### Phase 4: implement structural SVD sigma-point backend
+### Phase 6: implement structural SVD sigma-point backend
 
 Actions:
 
-1. Port or reimplement the generic SVD sigma-point primitives only after the
-   interface and tests are stable.
-2. Generate sigma points in `innovation` or `stochastic_state` space.
-3. Complete deterministic states pointwise.
-4. Evaluate observations on completed states.
-5. Return run metadata.
+1. Extract, wrap, or reimplement generic SVD sigma-point primitives strictly
+   according to the Phase 2 reuse decision.
+2. Do not rewrite audited reusable primitives merely for style consistency.
+3. Generate sigma points in `innovation` or `stochastic_state` space.
+4. Complete deterministic states pointwise.
+5. Evaluate observations on completed states.
+6. Return run metadata.
+7. Preserve explicit approximation labels where legacy behavior is retained only
+   as approximation.
 
 Tests:
 
@@ -406,13 +699,15 @@ Tests:
 - finite gradients for small differentiable examples.
 - no unlabeled full-state approximation.
 
-### Phase 5: exact/square-root Kalman with degenerate Q
+### Phase 7: exact/square-root Kalman with degenerate Q
 
 Actions:
 
-1. Implement or wrap exact Kalman code that accepts singular `Q` safely.
-2. Add square-root/SVD factor variants.
-3. Add analytic derivative hooks where available.
+1. Wrap, extract, or reimplement exact Kalman code according to the Phase 2
+   audit decision.
+2. Preserve support for singular `Q` where mathematically valid.
+3. Add square-root/SVD factor variants.
+4. Add analytic derivative hooks where available and audited.
 
 Tests:
 
@@ -421,14 +716,17 @@ Tests:
 - singular `Q` smoke;
 - analytic derivative vs finite difference on small cases.
 
-### Phase 6: MacroFinance adapter pilot
+### Phase 8: MacroFinance adapter pilot
 
 Actions:
 
-1. Inspect `/home/chakwong/MacroFinance` analytic Kalman derivative code.
+1. Inspect `/home/chakwong/MacroFinance` analytic Kalman derivative code and
+   monograph support.
 2. Do not port wholesale.
-3. Build a minimal adapter around one model or fixture.
-4. Reuse BayesFilter Kalman/derivative contracts.
+3. Extract or wrap only the audited reusable generic pieces.
+4. Keep MacroFinance-specific financial model construction in MacroFinance.
+5. Build a minimal adapter around one model or fixture.
+6. Reuse BayesFilter Kalman/derivative contracts.
 
 Tests:
 
@@ -436,7 +734,7 @@ Tests:
 - BayesFilter wrapper matches MacroFinance reference likelihood/gradient;
 - no duplicate filter implementation is created in MacroFinance.
 
-### Phase 7: DSGE adapter pilot
+### Phase 9: DSGE adapter pilot
 
 Actions:
 
@@ -447,6 +745,8 @@ Actions:
    requested.
 4. Fail closed for mixed-state DSGE models that do not yet have structural
    maps.
+5. Preserve old collapsed sigma behavior only if it is blocked or explicitly
+   labeled as approximation.
 
 Tests:
 
@@ -456,7 +756,7 @@ Tests:
 - Existing exact Kalman tests are unchanged.
 - Old collapsed sigma path is blocked or labeled.
 
-### Phase 8: HMC readiness gates
+### Phase 10: HMC readiness gates
 
 Actions:
 
@@ -503,7 +803,8 @@ Expected checks:
 - singular covariance support;
 - no unlabeled mixed full-state integration;
 - finite gradients;
-- compiled/eager parity when a compiled backend exists.
+- compiled/eager parity when a compiled backend exists;
+- legacy reused paths agree with audited reference fixtures where applicable.
 
 ## Documentation deliverables
 
@@ -515,7 +816,9 @@ BayesFilter docs should include:
 - MacroFinance adapter example;
 - filter choice table;
 - HMC target checklist;
-- derivative validation checklist.
+- derivative validation checklist;
+- a short explicit statement that shared API does not imply one propagation
+  backend for all model classes.
 
 The DSGE-side docs should point back to this plan and describe only:
 
@@ -528,13 +831,17 @@ The DSGE-side docs should point back to this plan and describe only:
 
 Stop and ask for direction if:
 
-- BayesFilter package layout is not yet decided.
-- MacroFinance derivative code cannot be inspected without changing that repo.
+- the mathematical audit has not yet established whether a path is exact,
+  approximate, or unresolved;
+- BayesFilter package layout is not yet decided;
+- MacroFinance derivative code cannot be inspected without changing that repo;
 - DSGE structural completion maps require new model derivations not present in
-  docs.
-- A test can only pass by adding noise to deterministic coordinates.
-- A full-state approximation is being used without a label.
-- A gradient claim depends on unverified SVD/eigen derivative assumptions.
+  docs;
+- a test can only pass by adding noise to deterministic coordinates;
+- a full-state approximation is being used without a label;
+- a greenfield rewrite is being considered even though an audited reusable path
+  appears available;
+- a gradient claim depends on unverified SVD/eigen derivative assumptions.
 
 ## Reset handoff
 
@@ -543,7 +850,7 @@ At the start of the next implementation session:
 ```bash
 cd /home/chakwong/BayesFilter
 git status --short
-sed -n '1,240p' docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md
+sed -n '1,260p' docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md
 sed -n '1,220p' docs/chapters/ch18b_structural_deterministic_dynamics.tex
 ```
 
@@ -555,9 +862,22 @@ sed -n '1,220p' docs/plans/svd-structural-dsge-state-partition-implementation-pl
 rg -n "SVDSigmaPointFilter|_build_dsge_sigma_filter_components|transition_points" src tests
 ```
 
+And inspect MacroFinance source context:
+
+```bash
+cd /home/chakwong/MacroFinance
+rg -n "Kalman|filter|derivative|state_space|state-space|sigma|particle" .
+sed -n '1,220p' main.tex
+```
+
 Do not treat `/home/chakwong/python` as the source of truth for the generic
 filter design.  It is a DSGE client and integration test site.
 
+Do not treat `/home/chakwong/MacroFinance` as the source of truth for the
+generic filter design.  It is a MacroFinance client and regression/reference
+site.
+
 ## One-sentence principle
 
-BayesFilter owns structural filtering; model projects own structural maps.
+BayesFilter owns audited common filtering contracts and implementations; model
+projects own structural maps, model logic, and client adapters.

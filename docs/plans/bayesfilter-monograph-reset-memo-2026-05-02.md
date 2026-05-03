@@ -288,6 +288,264 @@ Interpretation:
 - Next writing work should proceed to the exact linear Gaussian likelihood
   spine and analytic Kalman derivative consolidation.
 
+## 2026-05-04 update: exact linear Gaussian spine writing pass
+
+User requested the next documentation continuation pass with a detailed plan,
+reset memo updates, independent audit, phase-by-phase execution, tests, audit,
+commit, and summary.  This pass is scoped to the value-side exact linear
+Gaussian likelihood spine.  It deliberately defers analytic score/Hessian
+formulas to the next pass.
+
+Planning artifact:
+- Added
+  `docs/plans/bayesfilter-linear-gaussian-spine-writing-plan-2026-05-04.md`.
+
+Independent plan audit:
+- The plan is sensible because it keeps the pass value-side and
+  contract-focused.
+- It would be unsafe to finalize Kalman score/Hessian formulas here without a
+  MacroFinance derivation/code audit, so those formulas remain deferred.
+- The pass should include singular process covariance, missing-data, backend
+  diagnostics, and large-scale validation policy because those are prerequisites
+  for structural partitions and later HMC claims.
+
+### Phase L0: hygiene and source inventory
+
+Phase plan:
+- Record working tree state.
+- Parse `docs/source_map.yml`.
+- Run `git diff --check`.
+- Identify source material for linear Gaussian, Kalman, and mixed-frequency
+  prose.
+
+Execution:
+- `git status --short` showed one pre-existing modified file:
+  `docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md`,
+  plus the newly added linear-Gaussian spine plan.
+- `python -c "import yaml; ..."` returned `source_map yaml ok`.
+- `git diff --check` passed.
+- Source inventory used targeted `rg` over:
+  - `/home/chakwong/MacroFinance/analytic_kalman_derivatives.tex`;
+  - `/home/chakwong/python/docs/chapters/ch08_kalman_filter.tex`;
+  - `/home/chakwong/latex/CIP_monograph/chapters/ch16_kalman_filter.tex`;
+  - `/home/chakwong/latex/CIP_monograph/chapters/ch18_mixed_frequency.tex`.
+
+Audit:
+- MacroFinance analytic Kalman note is the primary source for exact likelihood
+  and later derivative layering.
+- CIP Kalman and mixed-frequency chapters provide useful exposition and
+  missing-data/mixed-frequency policy but must not be copied wholesale.
+- The pre-existing edit to the structural partition core plan is related and
+  should be preserved in this commit if final checks pass.
+- Phase L1 remains justified.
+
+### Phase L1: prediction-error decomposition chapter
+
+Phase plan:
+- Make Chapter 5 the exact value-side likelihood reference.
+- Clarify singular process covariance, innovation regularity, missing
+  observations, Joseph/covariance update semantics, and initialization policy.
+- Keep score/Hessian formulas deferred.
+
+Execution:
+- Updated `docs/chapters/ch05_prediction_error_decomposition.tex` with:
+  - semidefinite `Q` policy for companion-form lag stacks, mixed-frequency
+    accumulators, and deterministic structural coordinates;
+  - innovation regularity assumption;
+  - Joseph-form covariance update as a numerical representation of the same
+    likelihood;
+  - all-missing time-step convention;
+  - value-oracle/reference role for later backend and derivative chapters.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Targeted search for `Hessian|score|gradient|converged|production-ready|
+  certified|guarantee` found only derivative deferrals or consistency
+  requirements, not formulas or success claims.
+
+Audit:
+- Chapter 5 now provides a clearer exact likelihood value contract.
+- The chapter still defers derivative recursions.
+- Phase L2 remains justified.
+
+### Phase L2: stable linear filtering chapter
+
+Phase plan:
+- Make Chapter 6 a numerical backend policy for exact linear Gaussian
+  likelihoods.
+- Distinguish covariance-form reference algebra from solve/square-root
+  production evaluation.
+- Preserve a clear line between exact linear SVD/spectral backends and
+  nonlinear SVD sigma-point filters.
+
+Execution:
+- Updated `docs/chapters/ch06_stable_linear_filtering.tex` with:
+  - covariance form as reference algebra;
+  - solve-form contract based on factorization, triangular solves, log
+    determinants, and residual diagnostics;
+  - Cholesky, QR, and spectral backend roles;
+  - explicit warning that SVD-factored exact LGSSM success does not certify
+    nonlinear SVD sigma-point filtering;
+  - backend agreement test checklist;
+  - diagnostic record policy for HMC reports.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Risky-word search found only intended exact-linear terminology and warnings
+  against automatic safety/certification.
+
+Audit:
+- Chapter 6 now explains how exact likelihood semantics are preserved across
+  numerical backends.
+- The chapter avoids implying that spectral fallback proves gradient safety.
+- Phase L3 remains justified.
+
+### Phase L3: missing data and mixed frequency chapter
+
+Phase plan:
+- Make Chapter 7 a precise contract for row selection, mask patterns,
+  all-missing time steps, mixed-frequency augmentation, and static-shape
+  compiled policies.
+- Treat missingness and mixed-frequency alignment as likelihood semantics, not
+  as preprocessing outside the model.
+- Keep derivative formulas deferred.
+
+Execution:
+- Updated `docs/chapters/ch07_missing_data_mixed_frequency.tex` with:
+  - observed-row notation for per-period innovations and innovation
+    covariances;
+  - all-missing likelihood contribution convention;
+  - mixed-frequency state-augmentation policy for deterministic cumulators,
+    publication-lag states, and running averages;
+  - singular deterministic-row covariance policy;
+  - diagnostic record requirements for masks, all-missing steps, compiled
+    grouping, handling policy, and regularization;
+  - explicit derivative deferral.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Targeted risky-claim search found only intended policy language and
+  derivative deferrals.
+
+Audit:
+- Chapter 7 now treats sparse and mixed-frequency panels as part of the
+  likelihood contract.
+- It avoids claiming derivative or compiled-backend certification.
+- Phase L4 remains justified.
+
+### Phase L4: large-scale LGSSM chapter
+
+Phase plan:
+- Make Chapter 8 the bridge from exact textbook filtering to industrial-scale
+  validation.
+- Add scale metadata, backend registry, validation ladder, stress scenarios,
+  HMC readiness criteria, and derivative-consolidation hypotheses.
+- Avoid claiming that current evidence solves every NAWM-scale model.
+
+Execution:
+- Updated `docs/chapters/ch08_large_scale_lgssm.tex` with:
+  - backend registry requirements for value backend, derivative backend,
+    initialization, missing-data handling, static-shape assumptions, and
+    fallback labels;
+  - value-to-HMC validation ladder;
+  - stress scenarios for singular `Q`, nearly singular innovations, long
+    panels, ragged panels, boundary draws, and spectral telemetry;
+  - explicit HMC-readiness criteria;
+  - hypotheses for the next MacroFinance analytic Kalman derivative
+    consolidation pass.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Risky-claim search over Chapters 5--8 returned no matches for unsupported
+  guarantee, convergence, production, industrial, certification, or
+  always-type claims.
+
+Audit:
+- Chapter 8 now states what must be tested before large-scale HMC experiments.
+- It treats MacroFinance large-scale evidence as infrastructure evidence, not
+  as blanket NAWM readiness.
+- The derivative material is framed as hypotheses to test, not completed
+  certification.
+- Phase L5 remains justified.
+
+### Phase L5: provenance, final audit, tidy, and commit
+
+Phase plan:
+- Record the exact-linear spine pass in `docs/source_map.yml`.
+- Run final mechanical checks.
+- Audit the changed files for unsupported claims and generated artifacts.
+- Commit only the intended documentation and plan files.
+
+Execution:
+- Updated `docs/source_map.yml` with:
+  - source id `bayesfilter_linear_gaussian_spine_plan`;
+  - chapter mapping from the plan to Chapters 5--8.
+- Preserved the related pre-existing edit to
+  `docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md`
+  because it strengthens the math-audit, code-audit, and reuse rules needed by
+  the next implementation agent.
+
+Final tests:
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8')); print('source_map yaml ok')"` passed.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed and
+  reported `main.pdf` up to date after the Chapter 8 build.
+- Risky-claim scan over Chapters 5--8 returned no matches for unsupported
+  guarantee, convergence, production, industrial, certification, unbiased, or
+  always-type claims.
+
+Audit:
+- No BayesFilter code was changed.
+- No source-project files under `/home/chakwong/python`,
+  `/home/chakwong/latex/CIP_monograph`, or `/home/chakwong/MacroFinance` were
+  modified.
+- The pass did not introduce final Kalman score/Hessian formulas.
+- The pass did not claim industrial readiness for NAWM, DSGE, or any backend
+  family.
+- Generated PDFs and LaTeX byproducts remain ignored and are not intended for
+  staging.
+
+Interpretation:
+- The exact linear Gaussian value contract is now clearer and can be used as
+  the reference likelihood for later derivative, nonlinear-filter, and HMC
+  validation work.
+- The next phase remains justified: consolidate and audit the MacroFinance
+  analytic Kalman score/Hessian derivations against this value contract before
+  promoting derivative backends to HMC use.
+
+Completion summary:
+- Added the detailed execution plan
+  `docs/plans/bayesfilter-linear-gaussian-spine-writing-plan-2026-05-04.md`.
+- Strengthened Chapter 5 as the exact prediction-error likelihood reference,
+  including singular `Q`, innovation regularity, Joseph-form semantics,
+  all-missing observations, and reference-role language.
+- Strengthened Chapter 6 as the exact linear numerical backend policy,
+  including solve form, square-root/spectral roles, backend agreement tests,
+  and HMC diagnostic metadata.
+- Strengthened Chapter 7 as the missing-data and mixed-frequency likelihood
+  contract, including row-selection notation, deterministic auxiliary states,
+  all-missing steps, compiled mask policy, and derivative deferral.
+- Strengthened Chapter 8 as the large-scale LGSSM validation bridge, including
+  backend registry, validation ladder, stress scenarios, HMC readiness, and
+  explicit derivative-consolidation hypotheses.
+- Updated `docs/source_map.yml` and this reset memo.
+
+Next hypotheses to test:
+- H1: The Chapter 5 prediction-error likelihood is exactly the value contract
+  differentiated in the MacroFinance analytic Kalman note after notation
+  reconciliation.
+- H2: Analytic score recursions can match autodiff or finite differences on
+  small dense and structurally singular-`Q` LGSSM cases without changing the
+  value contract.
+- H3: Analytic Hessian recursions can match finite-difference-on-gradient tests
+  on small cases before being used for mass-matrix or curvature construction.
+- H4: Solve-form derivative implementations can avoid explicit innovation
+  covariance inverses while preserving value/gradient/Hessian parity.
+- H5: The backend registry and diagnostics in Chapter 8 are sufficient to make
+  later HMC failures attributable to value algebra, derivative path,
+  posterior geometry, or compilation mode.
+
 ## Plan audit
 
 Plan audited:

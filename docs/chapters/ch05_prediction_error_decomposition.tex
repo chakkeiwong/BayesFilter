@@ -22,6 +22,22 @@ For the exact likelihood backend, $Q(\theta)\succeq 0$ and
 $R(\theta)\succ 0$ are required at every accepted target evaluation.  The
 initial moments are denoted $m_{0|0}$ and $P_{0|0}$.
 
+The semidefinite allowance for $Q$ is intentional.  Companion-form lag stacks,
+mixed-frequency accumulators, and structural deterministic coordinates often
+produce process covariances with zero rows or deficient rank.  This is not a
+reason to abandon the exact linear Gaussian likelihood.  It is a requirement
+that the backend distinguish structural degeneracy from accidental numerical
+failure.
+
+\begin{assumption}[Innovation regularity]
+\label{asm:bf-innovation-regularity}
+For every time point contributing an observation, the selected innovation
+covariance $S_t$ defined below is positive definite on the observed
+coordinates.  If the model or data mask makes $S_t$ singular, the likelihood
+backend must return a named finite-failure diagnostic or use a separately
+documented diffuse/singular-observation treatment.
+\end{assumption}
+
 \section{Kalman Recursion}
 \label{sec:bf-kalman-recursion}
 
@@ -46,8 +62,16 @@ When $S_t\succ 0$, the Kalman gain and filtered moments are
   m_{t|t} &= m_{t|t-1}+K_tv_t, \label{eq:bf-kalman-update-mean}\\
   P_{t|t} &= (I-K_tH)P_{t|t-1}. \label{eq:bf-kalman-update-cov}
 \end{align}
-Production square-root implementations may update an algebraically equivalent
-factor rather than materializing \eqref{eq:bf-kalman-update-cov}.
+The covariance update in \eqref{eq:bf-kalman-update-cov} is the compact
+textbook form.  Production implementations may use the Joseph form
+\[
+  P_{t|t}
+  =
+  (I-K_tH)P_{t|t-1}(I-K_tH)^\top + K_t R K_t^\top
+\]
+or may update an algebraically equivalent factor rather than materializing a
+full covariance matrix.  These are numerical representations of the same
+exact linear Gaussian likelihood, not different statistical models.
 
 \section{Log Likelihood}
 \label{sec:bf-ped-loglik}
@@ -69,6 +93,11 @@ panel, $n_{y,t}=n_y$.  In a masked panel, the same formula applies after
 selecting the observed components and the corresponding rows and columns of the
 observation objects.
 
+If no components are observed at a time point, the measurement update and
+likelihood contribution are skipped and the filter carries the prediction
+forward.  This convention treats missingness as part of the observation
+contract rather than as a change in the latent transition law.
+
 Equation~\eqref{eq:bf-ped-loglik} is the exact likelihood for
 \eqref{eq:bf-lgssm-state}--\eqref{eq:bf-lgssm-observation}.  It is also the
 reference value against which approximate nonlinear filters and alternative
@@ -84,3 +113,18 @@ $P_{0|0}$ is the stationary covariance, then its derivatives are governed by
 the derivative Lyapunov equations for the transition system.  BayesFilter must
 record which initialization policy defines the target, because changing it
 changes the likelihood.
+
+\section{Reference Role}
+\label{sec:bf-ped-reference-role}
+
+The prediction-error likelihood is the value oracle for the rest of the
+monograph.  Later chapters may evaluate it through covariance, solve-form,
+Cholesky, QR, or SVD linear-algebra primitives, but they must agree on
+\eqref{eq:bf-ped-loglik} within documented tolerances.  Nonlinear filters
+should also recover this value when their model is specialized to a linear
+Gaussian case.
+
+Derivative chapters differentiate this same scalar likelihood.  A custom
+gradient, analytic score recursion, or Hessian recursion is valid for HMC only
+if it corresponds to the value defined here, plus the prior and parameter
+transform terms in Chapter~\ref{ch:bf-hmc-target-requirements}.

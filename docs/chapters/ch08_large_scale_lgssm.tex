@@ -25,6 +25,71 @@ ill-conditioned process noise, and near-rank-loss candidates.  BayesFilter
 uses these as infrastructure evidence, not as a claim that every NAWM-sized
 model is already solved.
 
+\section{Backend Registry}
+\label{sec:bf-lgssm-backend-registry}
+
+Large-scale runs should be described by a backend registry rather than by a
+single method name.  A registry entry should identify:
+\begin{itemize}
+  \item the value backend, such as covariance form, solve form, Cholesky
+    square root, QR square root, or spectral fallback;
+  \item the derivative backend, such as tape autodiff, analytic score,
+    analytic Hessian, custom gradient, or finite-difference diagnostic;
+  \item the initialization policy;
+  \item the missing-data policy;
+  \item static-shape and compilation assumptions;
+  \item finite-failure diagnostics and fallback labels.
+\end{itemize}
+This registry is part of the scientific result.  A reported HMC run without
+backend metadata is not reproducible enough to diagnose whether a divergence,
+small effective sample size, or slow compilation came from the posterior
+geometry, the filtering algebra, the derivative path, or the execution mode.
+
+\section{Validation Ladder}
+\label{sec:bf-lgssm-validation-ladder}
+
+The validation ladder should move from exact values to sampler behavior:
+\begin{enumerate}[label=(\roman*)]
+  \item value parity against the prediction-error decomposition in
+    Chapter~\ref{ch:bf-prediction-error-decomposition};
+  \item filtered-moment and backend-delta parity across covariance, solve, and
+    square-root implementations on controlled small cases;
+  \item stress cases with low measurement noise, nearly collinear observations,
+    singular or ill-conditioned process covariance, and long panels;
+  \item derivative parity on small cases before the derivative backend is used
+    by HMC;
+  \item compiled-path checks for static shape, finite diagnostics, and stable
+    recompilation behavior;
+  \item short HMC smoke runs that exercise the target without being used as
+    convergence evidence;
+  \item medium and strict HMC recovery only after the value and derivative
+    gates have passed.
+\end{enumerate}
+The same ladder should be reused for MacroFinance adapters, DSGE adapters, and
+future BayesFilter-native examples.  Passing it for one model family is useful
+evidence about the backend, but it does not automatically transfer to another
+state partition, observation mask policy, or parameterization.
+
+\section{Stress Scenarios}
+\label{sec:bf-lgssm-stress-scenarios}
+
+The stress suite should include both numerical and modeling edge cases:
+\begin{itemize}
+  \item structurally singular $Q$ from AR($p$) companion states,
+    mixed-frequency accumulators, or deterministic structural coordinates;
+  \item nearly singular innovation covariance from collinear measurements or
+    very small measurement noise;
+  \item long panels where repeated updates test covariance symmetry and factor
+    reconstruction;
+  \item ragged panels and all-missing time steps;
+  \item parameter draws near admissibility boundaries;
+  \item backend fallback triggers and spectral-gap telemetry.
+\end{itemize}
+Each scenario should define the expected diagnostic outcome before it is used
+as an HMC target.  Some cases should pass with comfortable numerical margins;
+others should return named finite failures.  Both outcomes are useful if they
+are intentional and reproducible.
+
 \section{Readiness Criteria}
 \label{sec:bf-lgssm-readiness}
 
@@ -42,3 +107,24 @@ A large-scale LGSSM backend is ready for HMC experiments only after:
 The current evidence supports this ladder as a validation design.  It does not
 remove the need to rerun the ladder for each new model family, parameterization,
 or missing-data policy.
+
+\section{Derivative Consolidation Hypotheses}
+\label{sec:bf-lgssm-derivative-hypotheses}
+
+The next analytic-derivative pass should test the following hypotheses against
+the MacroFinance derivation and implementation:
+\begin{enumerate}[label=(\roman*)]
+  \item the Chapter~\ref{ch:bf-prediction-error-decomposition} value contract
+    is identical to the likelihood differentiated in the MacroFinance analytic
+    Kalman note;
+  \item analytic score recursions match autodiff or finite differences on small
+    dense and singular-$Q$ cases;
+  \item Hessian recursions match finite-difference-on-gradient diagnostics on
+    small cases before they are used for mass-matrix or curvature proposals;
+  \item solve-form derivatives avoid explicit innovation-covariance inverses in
+    production code;
+  \item derivative diagnostics identify the first time step and matrix block
+    responsible for nonfinite values or large parity errors.
+\end{enumerate}
+These are hypotheses, not completed certification.  They should be promoted to
+claims only after source derivations, code, and numerical tests agree.

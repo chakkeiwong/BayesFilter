@@ -25,6 +25,44 @@ selected innovation and selected innovation covariance.  If no components are
 observed at time $t$, the filter performs prediction without a measurement
 update.
 
+Equivalently, write $\mathcal{O}_t$ for the observed row set.  The per-period
+objects are
+\[
+  v_{t,\mathcal{O}_t}=y_{t,\mathcal{O}_t}-a_{\mathcal{O}_t}
+    -H_{\mathcal{O}_t}m_{t|t-1},
+  \qquad
+  S_{t,\mathcal{O}_t}
+    =H_{\mathcal{O}_t}P_{t|t-1}H_{\mathcal{O}_t}^\top
+      +R_{\mathcal{O}_t,\mathcal{O}_t}.
+\]
+The likelihood contribution uses the dimension
+$|\mathcal{O}_t|$.  If $\mathcal{O}_t$ is empty, the contribution is zero and
+the filtered moments equal the predicted moments.  This convention is important
+for ragged panels because it makes missingness explicit in the likelihood
+rather than hidden in preprocessed data.
+
+\section{Mixed-Frequency State Augmentation}
+\label{sec:bf-mixed-frequency-state-augmentation}
+
+Mixed-frequency models often require deterministic auxiliary states.  Examples
+include cumulators for quarterly growth, publication-lag states, and running
+averages used to align daily, monthly, and quarterly releases.  These
+coordinates are part of the structural state contract from
+Definition~\ref{def:bf-structural-state-partition}.  Their process covariance
+may be singular because the auxiliary rows are deterministic functions of
+lagged states and current high-frequency states.
+
+BayesFilter should therefore distinguish two operations:
+\begin{enumerate}[label=(\roman*)]
+  \item augmenting the state so the observation equation is linear or
+    conditionally linear at the target sampling frequency;
+  \item selecting the observed rows at each time point.
+\end{enumerate}
+Both operations preserve the prediction-error likelihood when the augmented
+transition and observation maps are the declared model.  A small ridge added
+only for numerical conditioning must be recorded as numerical regularization,
+not as a new source of structural shock variation.
+
 \section{Implementation Policy}
 \label{sec:bf-missing-implementation-policy}
 
@@ -44,3 +82,23 @@ For compiled likelihoods, there are two viable policies:
 Either policy is acceptable if the likelihood value and derivative contract are
 unchanged and the diagnostics identify which observations contributed to each
 time step.
+
+The diagnostic record should include at least:
+\begin{itemize}
+  \item number of observed rows at each time or by mask pattern;
+  \item count of all-missing prediction-only steps;
+  \item mask-pattern identifiers used for compiled grouping;
+  \item whether missingness was handled by row selection, dense masking, or an
+    unsupported fallback;
+  \item any regularization applied to augmented deterministic rows.
+\end{itemize}
+
+\section{Derivative Deferral}
+\label{sec:bf-missing-derivative-deferral}
+
+The value contract above is independent of the derivative implementation.
+Later derivative chapters must state whether mask patterns are differentiated
+as fixed data, whether all-missing steps contribute zero derivative to the
+measurement likelihood, and whether mixed-frequency augmentation parameters
+enter the transition, the observation map, or both.  This chapter fixes the
+likelihood object; it does not yet certify any derivative backend.

@@ -23,6 +23,20 @@ The ladder is a production policy, not a mathematical change to the likelihood.
 All exact linear Gaussian backends must agree with
 \eqref{eq:bf-ped-loglik} within documented tolerances.
 
+\section{Covariance Form as Reference Algebra}
+\label{sec:bf-covariance-form-reference}
+
+The covariance-form recursion is the clearest way to state the likelihood, but
+it is not automatically the safest way to compute it.  In finite precision, the
+compact covariance update can lose symmetry or positive semidefiniteness after
+many time steps.  Implementations should therefore symmetrize only as a
+documented numerical projection, not as a way to hide model invalidity.
+
+For small reference tests, covariance form is useful because it exposes the
+same moments that appear in the mathematical recursion.  For production
+likelihoods, BayesFilter should prefer solve and factor forms that avoid
+explicit inverses and provide residual diagnostics.
+
 \section{Solve Form}
 \label{sec:bf-solve-form-likelihood}
 
@@ -36,6 +50,50 @@ The likelihood can therefore be evaluated with triangular solves and log
 diagonal pivots rather than by explicitly forming $S_t^{-1}$.  This is the
 preferred reference form for implementation because the same solves appear in
 the analytic score and Hessian recursions.
+
+The solve-form contract is:
+\begin{itemize}
+  \item factor the selected innovation covariance;
+  \item solve for the whitened innovation;
+  \item accumulate log determinant and quadratic form from the factor and
+    solve result;
+  \item record factor pivots and solve residuals.
+\end{itemize}
+The backend should not form an explicit inverse except in small diagnostic
+tests where the numerical error is itself being measured.
+
+\section{Square-Root and Spectral Backends}
+\label{sec:bf-square-root-spectral-backends}
+
+Cholesky square-root filters are efficient when positive pivots are reliable.
+QR square-root filters are useful when the implementation needs stable stack
+updates, reconstruction checks, and a clear path to derivative-factor
+validation.  SVD or eigenspectral factorizations are useful for rank-deficient
+or nearly rank-deficient linear Gaussian problems, but they should be reported
+as spectral backend choices with their own diagnostics.
+
+This distinction matters because the word SVD appears in two different parts
+of the monograph.  An SVD-factored exact linear Gaussian backend is still
+evaluating \eqref{eq:bf-ped-loglik}.  A nonlinear SVD sigma-point filter is an
+approximate nonlinear Gaussian filter whose value and gradient policy require
+separate tests.  Success of the former does not certify the latter.
+
+\section{Backend Agreement Tests}
+\label{sec:bf-linear-backend-agreement-tests}
+
+Every exact linear Gaussian backend should be tested against at least one
+reference backend on controlled models.  A minimal agreement test records:
+\begin{itemize}
+  \item log-likelihood difference;
+  \item maximum filtered-mean difference;
+  \item maximum filtered-covariance or reconstructed-factor difference;
+  \item minimum pivot or singular value;
+  \item solve residual norm;
+  \item whether the process covariance is full rank or structurally singular.
+\end{itemize}
+For singular $Q$ examples, the test should assert that the likelihood is
+finite and that the structural degeneracy is reported as model structure or
+backend telemetry, not as an unexplained numerical exception.
 
 \section{Diagnostics}
 \label{sec:bf-stable-linear-diagnostics}
@@ -53,3 +111,9 @@ Those tests classify SVD fallback triggers as no trigger, candidate trigger, or
 confirmed trigger.  BayesFilter should preserve that caution: a spectral
 fallback is a diagnostic event, not evidence that the HMC gradient path is
 automatically safe.
+
+The diagnostic record should travel with the likelihood into HMC reports.  A
+finite log likelihood with repeated tiny pivots or frequent fallback triggers
+is not the same engineering result as a finite log likelihood with comfortable
+factor margins.  Both may be mathematically valid evaluations, but they imply
+different sampler risk.
