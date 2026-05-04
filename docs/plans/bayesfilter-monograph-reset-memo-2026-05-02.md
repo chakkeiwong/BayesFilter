@@ -2999,3 +2999,258 @@ Next justified work:
 - Phase 10: use the one-country adapter as a candidate HMC target only after
   value, score, Hessian, eager/compiled parity, and target-readiness gates are
   explicitly rerun in the BayesFilter context.
+
+## 2026-05-04 update: Phase 8 follow-on metadata gap closure
+
+Closure plan:
+- `docs/plans/bayesfilter-phase8-followon-gap-closure-plan-2026-05-04.md`
+
+Independent audit:
+- `docs/plans/bayesfilter-phase8-followon-gap-closure-audit-2026-05-04.md`
+
+Audit conclusion:
+- No blocking issue.
+- Execution must keep metadata immutable, preserve fail-closed readiness, avoid
+  convergence claims, keep MacroFinance optional, and avoid staging the
+  pre-existing dirty `ch18b` chapter edit.
+
+### Phase C0: reset memo setup and latest-state check
+
+Plan:
+- Confirm current repo state and start the reset-memo execution trail.
+
+Execute:
+- BayesFilter latest commit before this pass:
+  `a2b058e Add MacroFinance adapter pilot`.
+- MacroFinance latest commit before this pass:
+  `0e81988 Derive MacroFinance test roots from file paths`.
+- BayesFilter has a pre-existing unstaged chapter edit:
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`.
+
+Test:
+- `git status --short --branch` inspected in both repos.
+- `git log -1 --oneline` inspected in both repos.
+
+Audit:
+- The only BayesFilter dirty file outside this pass is the chapter edit.
+- MacroFinance is ahead by the committed path-fix patch and has no uncommitted
+  changes.
+
+Interpretation:
+- Phase C1 remains justified.
+
+### Phase C1: generic metadata primitives
+
+Plan:
+- Add immutable metadata primitives for units, masks, derivative coverage,
+  finite-difference oracles, production readiness, identification evidence,
+  sparse backend policy, and HMC target gates.
+
+Execute:
+- Added dependency-free dataclasses to `bayesfilter/adapters/macrofinance.py`.
+- Exported them from `bayesfilter/adapters/__init__.py`.
+- Added pure tests for immutability, tuple coercion, and fail-closed readiness
+  semantics.
+
+Test:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py`: 8 passed.
+
+Audit:
+- New result objects are frozen dataclasses.
+- Readiness metadata has explicit `final_ready` and error fields.
+- HMC gate metadata distinguishes target readiness from convergence claims.
+
+Interpretation:
+- Phase C2 remains justified.
+
+### Phase C2: large-scale LGSSM mask/unit metadata
+
+Plan:
+- Add provider metadata extractors for parameter units and observation-mask
+  policy.
+- Keep the extraction value-only and metadata-only; do not run large-scale
+  likelihood, derivative, or HMC workloads.
+
+Execute:
+- Added `extract_parameter_unit_metadata`.
+- Added `extract_observation_mask_metadata`.
+- Exported both helpers from `bayesfilter.adapters`.
+- Added a pure fake-provider test covering finite unit extraction and
+  finite-observation mask fallback.
+- Added an optional MacroFinance integration test against
+  `LargeScaleLGSSMDerivativeProvider` using the current
+  `baseline_10x3x5` helper scenario.
+
+Test:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py`: 10 passed, with two
+  TensorFlow Probability deprecation warnings from the optional MacroFinance
+  import path.
+
+Audit:
+- The first optional test attempt used a stale scenario name,
+  `small_dense_smoke`; the current MacroFinance registry exports
+  `baseline_10x3x5`, `long_panel_10x3x5`, and stress scenarios.
+- The corrected test checks actual provider names, unit vector shape,
+  finite units, observation-mask shape, and all-observed dense-panel policy.
+- No large-scale likelihood or derivative workload was run.
+
+Interpretation:
+- Phase C3 remains justified.
+
+### Phase C3: cross-currency coverage and oracle provenance
+
+Plan:
+- Normalize derivative coverage rows from MacroFinance-like cross-currency
+  structural providers.
+- Record finite-difference oracle availability and step provenance without
+  treating the oracle as the production derivative backend.
+
+Execute:
+- Added `extract_derivative_coverage_metadata`.
+- Added `extract_finite_difference_oracle_metadata`.
+- Added recursive metadata freezing so dataclass, namedtuple, mapping, list,
+  set, and NumPy-array row fields are stored as immutable scalar/tuple
+  structures.
+- Exported both helpers from `bayesfilter.adapters`.
+- Added pure fake-provider coverage/oracle tests.
+- Added optional MacroFinance integration against
+  `CrossCurrencyStructuralDerivativeProvider.from_synthetic_fixture(n_steps=4)`.
+
+Test:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py -k "cross_currency_metadata"`:
+  2 passed, 15 deselected.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 17 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- Coverage metadata includes real provider block names such as
+  `physical_dynamics` and `measurement_error_blocks`.
+- Oracle provenance records availability, finite-difference step, and oracle
+  class name, but does not run finite differences and does not claim production
+  readiness.
+- Row metadata is tuple-frozen to avoid mutable list/array payloads.
+
+Interpretation:
+- Phase C4 remains justified.
+
+### Phase C4: production readiness metadata
+
+Plan:
+- Normalize production blocker table, blocker summary, identification-evidence
+  rows, sparse-backend policy rows, and final ten-country readiness validation.
+- Fail closed when blockers exist or `validate_final_ten_country_ready` raises.
+
+Execute:
+- Added `extract_readiness_blocker_metadata`.
+- Added `extract_identification_evidence_metadata`.
+- Added `extract_sparse_backend_policy_metadata`.
+- Exported the helpers from `bayesfilter.adapters`.
+- Added a pure fake-production-provider test proving blocker preservation,
+  fail-closed final readiness, identification row freezing, and sparse-policy
+  row normalization.
+- Added optional MacroFinance integration against
+  `ProductionCrossCurrencyDerivativeProvider.from_synthetic_fixture(n_steps=4)`.
+
+Test:
+- `pytest -q tests/test_macrofinance_adapter.py -k "production"`:
+  2 passed, 15 deselected.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 17 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- The optional production test preserves MacroFinance blockers and
+  readiness-blocker table rows exactly.
+- Final readiness is `False` because the provider raises
+  `requires 10 countries`.
+- Blocked derivative rows remain visible as `blocked_final_provider`.
+- Identification evidence does not claim `Identified`.
+- Sparse backend policy keeps `masked_covariance_reference` visible.
+
+Interpretation:
+- Phase C5 remains justified.
+
+### Phase C5: BayesFilter HMC target gates
+
+Plan:
+- Add explicit target-readiness gates for finite value, finite score, finite
+  negative Hessian, negative-Hessian symmetry, and optional eager/compiled
+  value/score parity.
+- Preserve the no-sampler and no-convergence-claim boundary.
+
+Execute:
+- Added `evaluate_macrofinance_hmc_gate`.
+- Exported the helper from `bayesfilter.adapters`.
+- Added pure fake-posterior tests for passing parity and failing parity.
+- Added optional MacroFinance integration against
+  `OneCountryAnalyticThetaNoisePosteriorAdapter`.
+
+Test:
+- `pytest -q tests/test_macrofinance_adapter.py -k "hmc_gate"`:
+  3 passed, 14 deselected, with two TensorFlow Probability deprecation
+  warnings.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 17 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- `target_ready` is true only when finite value/score/Hessian, Hessian
+  symmetry, and optional parity gates pass.
+- A parity failure records `eager_compiled_parity=False` and
+  `target_ready=False`.
+- The result carries `convergence_claim="not_claimed"`; no sampler was run.
+
+Interpretation:
+- Final validation is justified.
+
+### Phase 8 follow-on completion validation
+
+BayesFilter validation:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py`: 17 passed, with two
+  TensorFlow Probability deprecation warnings from the optional MacroFinance
+  import path.
+- `pytest -q tests`: 32 passed, with the same two TensorFlow Probability
+  deprecation warnings.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8'))"` passed.
+- `git diff --check` passed.
+
+Completion interpretation:
+- The large-scale metadata gap is closed at the adapter metadata layer:
+  BayesFilter now records parameter units and observation-mask policy without
+  running or endorsing large-scale likelihood/HMC workloads.
+- The cross-currency provenance gap is closed at the metadata layer:
+  BayesFilter now records derivative coverage and finite-difference oracle
+  provenance without treating finite differences as production derivatives.
+- The production-readiness metadata gap is closed at the adapter metadata
+  layer: blockers, blocker tables, identification evidence, sparse backend
+  policy, and final-readiness failures are preserved and fail closed.
+- The BayesFilter-context HMC target gate is closed for target readiness:
+  finite value/score/Hessian, Hessian symmetry, and optional eager/compiled
+  parity are explicit, while convergence remains `not_claimed`.
+- The pre-existing dirty chapter edit
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex` remains
+  outside this pass and must not be included in the Phase 8 follow-on commit.
+
+Next hypotheses to test:
+- H-C6: Large-scale LGSSM likelihood adaptation is justified only after
+  masked Kalman derivative slicing is implemented or every large-scale adapter
+  fixture explicitly reports `all_observed=True`.
+- H-C7: Cross-currency structural derivative adaptation is justified when the
+  derivative coverage rows cover every provider parameter and when finite
+  difference oracle checks pass on a bounded blockwise sample.
+- H-C8: Production provider exposure is justified only when
+  `final_ready=True`, no blocker rows remain, and identification evidence rows
+  can claim final data rather than fixture-only or weak identification.
+- H-C9: HMC sampler integration is justified only after target gates pass
+  across eager/compiled backends and are followed by actual chain diagnostics
+  for ESS, split R-hat, divergences, acceptance, and energy behavior.
