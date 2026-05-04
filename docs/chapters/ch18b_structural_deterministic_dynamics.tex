@@ -168,6 +168,58 @@ be used only as a declared proposal or regularization device, with the
 proposal/target correction and approximation status stated explicitly.  It is
 not the default filtering law.
 
+\section{Reusable BayesFilter Structural Filtering Step}
+\label{sec:bf-structural-filter-step-algorithm}
+
+The doctrine above can be stated as a reusable backend contract.  At every time
+step, the filter should treat the structural transition as the object being
+approximated:
+\[
+  x_t = F_\theta(x_{t-1},\varepsilon_t),
+  \qquad
+  y_t \sim p_\theta(y_t\mid x_t).
+\]
+The filtered state is still the full state $x_t$.  The integration variable is
+the pre-transition uncertainty that generates the predictive law.
+
+\begin{mdframed}
+\textbf{Algorithm: \texttt{structural\_filter\_step}.}
+
+\begin{enumerate}[label=(\arabic*)]
+  \item Start from the filtered approximation to
+    $p_\theta(x_{t-1}\mid y_{1:t-1})$ and the declared innovation law
+    $p_\theta(\varepsilon_t)$.
+  \item Form sigma points, quadrature points, particles, or linearization
+    points in the declared integration space:
+    $(x_{t-1},\varepsilon_t)$, $(s_{t-1},d_{t-1},\varepsilon_t)$, or an
+    equivalent stochastic-state parameterization.
+  \item For each point, call the structural transition map:
+    \[
+      s_t^{(j)}=T_s(s_{t-1}^{(j)},\varepsilon_t^{(j)};\theta),
+      \qquad
+      d_t^{(j)}=T_d(d_{t-1}^{(j)},s_{t-1}^{(j)},s_t^{(j)};\theta).
+    \]
+    Deterministic-completion coordinates are outputs of this map, not
+    independent new stochastic coordinates.
+  \item Pack $x_t^{(j)}=\operatorname{pack}(s_t^{(j)},d_t^{(j)},a_t^{(j)})$
+    and evaluate the observation map or density on these structurally valid
+    points.
+  \item Apply the selected update: exact Kalman, Gaussian sigma-point closure,
+    particle weighting/resampling, or another declared backend.
+  \item Return the likelihood contribution, filtered approximation, and
+    metadata recording integration space, deterministic-completion policy,
+    approximation label, derivative policy, and finite-failure diagnostics.
+\end{enumerate}
+\end{mdframed}
+
+This algorithm is intentionally backend-neutral.  For a linear Gaussian Kalman
+backend, the structural transition may collapse to matrices $(F,Q)$ as long as
+the same conditional Gaussian law is preserved.  For UKF, CKF, SVD sigma-point,
+and particle backends, the pointwise structural transition is the default.  A
+mixed-model full-state Gaussian approximation may still be offered as a
+diagnostic or legacy path, but it must carry an approximation label and must be
+tested against structural references.
+
 \section[Degenerate Transitions]{Degenerate Transitions Are Structural}
 \label{sec:bf-degenerate-transitions-structural}
 
@@ -215,6 +267,141 @@ variant.  The point is to show the BayesFilter structural-design rule for mixed
 structural models: generate sigma points in the declared pre-transition
 uncertainty variables, then complete deterministic coordinates pointwise.
 
+Before turning to the arithmetic, it is useful to isolate what differs from a
+generic additive-noise full-state UKF pattern.  In many textbook UKF
+implementations, one starts from a Gaussian approximation for the full state and
+a process-noise covariance, generates sigma points for that enlarged Gaussian
+object, and then propagates every state coordinate as if it belonged to one
+homogeneous stochastic transition.  That pattern can be a usable approximation
+in some models, but for mixed structural models it is not automatically the same
+target as the structural transition declared in
+Chapter~\ref{ch:bf-state-space-contracts}.
+
+For the structural DSGE transition
+\eqref{eq:bf-m-transition}--\eqref{eq:bf-k-transition}, the contrast is:
+\begin{itemize}
+  \item \textbf{Structural UKF:} generate sigma points in the declared
+    pre-transition uncertainty variables, typically $(x_{t-1},\varepsilon_t)$
+    or the declared stochastic block together with the lagged state, then
+    complete the deterministic-completion block pointwise.
+  \item \textbf{Naive full-state UKF approximation:} generate sigma points for
+    a full post-transition state covariance that grants every coordinate a
+    direct stochastic perturbation, even when the structural model declares some
+    coordinates to belong to the deterministic-completion block.
+\end{itemize}
+The second construction is not automatically useless, but in this class of
+models it enlarges the stochastic space.  It therefore requires an explicit
+approximation label and a justification against a reference if it is used at
+all.
+
+\subsection{Why the Sigma-Point Variable Uses Pre-Transition Uncertainty}
+\label{sec:bf-structural-ukf-proposition}
+
+\begin{proposition}[Predictive pushforward and sigma-point space]
+\label{prop:bf-structural-ukf-pushforward}
+Under the structural transition
+\begin{align}
+  m_t &= T_m(m_{t-1},\varepsilon_t),
+    \label{eq:bf-structural-ukf-prop-m}\\
+  k_t &= T_k(k_{t-1},m_{t-1},m_t),
+    \label{eq:bf-structural-ukf-prop-k}\\
+  x_t &= (m_t,k_t),
+    \label{eq:bf-structural-ukf-prop-state}
+\end{align}
+with innovation law $p(\varepsilon_t)$ independent of
+$x_{t-1}\mid y_{1:t-1}$, the following hold:
+\begin{enumerate}[label=(\roman*)]
+  \item the one-step predictive law $p(x_t\mid y_{1:t-1})$ is the pushforward
+    of the joint law of $(x_{t-1},\varepsilon_t)$ under the structural map;
+  \item a UKF that approximates this predictive law should place sigma points on
+    $(x_{t-1},\varepsilon_t)$, or on an equivalent parameterization of the same
+    pre-transition uncertainty;
+  \item a naive full-state additive-noise UKF is exact only if its induced
+    predictive law coincides with that pushforward law; if it adds a direct
+    perturbation to $k_t$, it targets a different law.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Define the structural map
+\begin{equation}
+  F(x_{t-1},\varepsilon_t)
+  =
+  \bigl(T_m(m_{t-1},\varepsilon_t),
+  T_k(k_{t-1},m_{t-1},T_m(m_{t-1},\varepsilon_t))\bigr).
+  \label{eq:bf-structural-ukf-prop-map}
+\end{equation}
+Because the current innovation is independent of the lagged filtering law, the
+joint pre-transition uncertainty factorizes as
+\begin{equation}
+  p(x_{t-1},\varepsilon_t\mid y_{1:t-1})
+  =
+  p(x_{t-1}\mid y_{1:t-1})p(\varepsilon_t).
+  \label{eq:bf-structural-ukf-prop-factorization}
+\end{equation}
+Let $\varphi$ be any bounded test function on the state space of $x_t$.  Then
+\begin{equation}
+  \E\!\left[\varphi(x_t)\mid y_{1:t-1}\right]
+  =
+  \iint
+  \varphi\!\left(F(x_{t-1},\varepsilon_t)\right)
+  p(x_{t-1}\mid y_{1:t-1})p(\varepsilon_t)
+  \, d\varepsilon_t \, dx_{t-1}.
+  \label{eq:bf-structural-ukf-prop-pushforward}
+\end{equation}
+Equation~\eqref{eq:bf-structural-ukf-prop-pushforward} is exactly the
+expectation of $\varphi$ under the pushforward of the joint law of
+$(x_{t-1},\varepsilon_t)$ through $F$, which proves part~(i).
+
+Moreover, under the structural transition,
+\begin{equation}
+  x_t = F(x_{t-1},\varepsilon_t)
+  \qquad \text{almost surely.}
+  \label{eq:bf-structural-ukf-prop-deterministic-completion}
+\end{equation}
+So once $(x_{t-1},\varepsilon_t)$ is fixed, both $m_t$ and $k_t$ are fixed.
+There is no independent new perturbation attached to $k_t$ under the intended
+model.  Therefore any sigma-point rule intended to approximate
+$p(x_t\mid y_{1:t-1})$ should be applied to the pre-transition uncertainty
+variables that generate that law, namely $(x_{t-1},\varepsilon_t)$ or an
+exactly equivalent parameterization.  This proves part~(ii).
+
+Finally, if a full-state additive-noise UKF omits $\varepsilon_t$, then it
+misses genuine current-shock uncertainty.  If it instead adds a direct
+perturbation to $k_t$, then it enlarges the stochastic space and defines a
+different predictive law unless that perturbation is degenerate in exactly the
+way required to reproduce the same pushforward distribution in
+\eqref{eq:bf-structural-ukf-prop-pushforward}.  This proves part~(iii).
+\end{proof}
+
+The proposition does not say that the filter stops targeting $x_t$.  The
+filtered state remains $x_t$.  The point is that the sigma-point variable is the
+pre-transition uncertainty whose pushforward generates the predictive law of
+$x_t$.  This is analogous to process-noise augmentation in a standard additive-
+noise UKF, but in the mixed structural setting the distinction is sharper:
+$\varepsilon_t$ is a genuine new source of uncertainty, while $k_t$ is a
+structural completion of that uncertainty rather than an independently shocked
+coordinate.
+
+\subsection{Comparison Table}
+\label{sec:bf-structural-ukf-comparison-table}
+
+\begin{center}
+\begin{tabular}{p{0.18\linewidth}p{0.34\linewidth}p{0.34\linewidth}}
+\toprule
+\textbf{Feature} & \textbf{Structural UKF} & \textbf{Naive full-state UKF}\\
+\midrule
+Integration space & Pre-transition variables, e.g. $(x_{t-1},\varepsilon_t)$ or the declared stochastic block & Full post-transition state with additive covariance on all coordinates\\
+Independent new randomness & Only in the declared stochastic block & Potentially assigned to every state coordinate\\
+Deterministic-block treatment & Completed pointwise from the structural map & Perturbed directly unless extra constraints are imposed\\
+Support preservation & Preserves the support implied by the structural transition & Can place mass outside that support\\
+Target law & Same structural target the model declares & Different target unless justified as an approximation\\
+Metadata label & No approximation label when faithful to the contract & Approximation label required if the stochastic space is enlarged\\
+When acceptable & Default design for mixed structural transitions & Only as a declared and tested approximation\\
+\bottomrule
+\end{tabular}
+\end{center}
+
 Let
 \begin{align}
   m_t &= \rho m_{t-1}+\sigma\varepsilon_t,
@@ -236,10 +423,35 @@ Suppose the previous filtering distribution is Gaussian:
   \begin{bmatrix}\bar m\\ \bar k\end{bmatrix}.
 \]
 The structural UKF should augment the previous state with the innovation.  This
-places sigma points in the same pre-transition uncertainty variables that define
-the predictive law, rather than in an artificially padded post-transition full
-state:
-\[
+step needs to be motivated carefully, because it is exactly where the structural
+UKF departs from the naive full-state construction.  The point is not to pad the
+state arbitrarily.  The point is to place sigma points on the variables that
+actually generate the one-step uncertainty in the structural transition.  In
+this example, the predictive law is generated by the joint uncertainty in the
+lagged state $(m_{t-1},k_{t-1})$ and the current shock $\varepsilon_t$.  Once
+those three quantities are fixed, both $m_t$ and $k_t$ are fixed by the
+structural map.
+
+That is why the augmented variable is
+\begin{equation}
+  a_t=(x_{t-1},\varepsilon_t),
+  \label{eq:bf-ukf-augmented-variable}
+\end{equation}
+rather than an artificially padded post-transition full state.  Standard
+additive-noise UKF presentations often augment with process noise for the same
+reason: sigma points should live on the pre-transition uncertainty variables.
+For a mixed structural model, however, that principle has a sharper consequence.
+The shock $\varepsilon_t$ is a genuine new source of uncertainty, while $k_t$
+is not.  If the augmentation omitted $\varepsilon_t$, the propagated sigma
+points would miss current shock uncertainty.  If the augmentation instead added
+a direct perturbation for $k_t$, the sigma points would describe a different
+transition law from the one declared by the model.
+
+So the structural UKF should augment the previous state with the innovation.
+This places sigma points in the same pre-transition uncertainty variables that
+define the predictive law, rather than in an artificially padded post-transition
+full state:
+\begin{equation}
   a_t =
   \begin{bmatrix}
     m_{t-1}\\ k_{t-1}\\ \varepsilon_t
@@ -254,7 +466,8 @@ state:
       0 & 1
     \end{bmatrix}
   \right).
-\]
+  \label{eq:bf-ukf-augmented-law}
+\end{equation}
 Let $\{a_t^{(j)},w_j^{(m)},w_j^{(c)}\}_{j=0}^{2n_a}$ be the usual unscented
 points and weights for this $n_a=3$ dimensional augmented Gaussian
 \citep{julier1997new}.  For every point
@@ -272,6 +485,112 @@ This is the crucial step: the filter never creates an independent sigma-point
 perturbation for $k_t$.  It creates sigma points for the previous state and
 the current innovation, then computes $k_t$ by the structural map
 \eqref{eq:bf-ukf-example-k}.
+
+The structural and naive full-state UKF constructions now differ at the level
+that matters for the update.  The structural UKF forms sigma points for
+$(x_{t-1},\varepsilon_t)$, propagates them through the structural transition,
+and therefore computes moments of the target law declared by the model.  A
+naive full-state UKF instead behaves as if there were an additive-noise model
+of the form
+\[
+  x_t = \tilde f(x_{t-1}) + \tilde u_t,
+  \qquad
+  \tilde u_t \sim \calN(0,\tilde Q),
+\]
+with a full-state covariance $\tilde Q$ that assigns direct new variance to all
+or most coordinates of $x_t$.  The three failure claims can now be derived in
+the notation of this toy model.
+
+\paragraph{Prediction-law failure.}
+Under the structural model,
+\[
+  m_t = \rho m_{t-1} + \sigma \varepsilon_t,
+  \qquad
+  k_t = \phi k_{t-1} + \gamma m_t^2.
+\]
+So conditional on $(m_{t-1},k_{t-1})$, the one-step predictive law is induced by
+a single scalar shock $\varepsilon_t$.  Eliminating the shock-driven update for
+$m_t$ gives the structural identity
+\begin{equation}
+  k_t - \phi k_{t-1} - \gamma m_t^2 = 0.
+  \label{eq:bf-ukf-structural-identity}
+\end{equation}
+Every propagated sigma point in the structural UKF satisfies this identity, so
+its sigma-point cloud lies on the support of the structural predictive law.  A
+naive full-state UKF instead propagates points
+\[
+  \tilde x_t^{(j)}=(\tilde m_t^{(j)},\tilde k_t^{(j)})
+\]
+from an additive full-state covariance model.  In general those points satisfy
+\[
+  \tilde k_t^{(j)} - \phi k_{t-1}^{(j)} - \gamma \bigl(\tilde m_t^{(j)}\bigr)^2
+  \neq 0,
+\]
+so the naive sigma-point cloud approximates moments of a different one-step law.
+That is the prediction-law failure.
+
+\paragraph{Cross-covariance failure.}
+For the observation equation $z_t=m_t+k_t$, the structural UKF computes
+\[
+  P_{xz,t}^{\mathrm{struct}}
+  =
+  \sum_j w_j^{(c)}
+  \bigl(x_t^{(j)}-\hat x_{t|t-1}\bigr)
+  \bigl(z_t^{(j)}-\hat z_t\bigr),
+\]
+with
+\[
+  z_t^{(j)} = m_t^{(j)} + k_t^{(j)},
+  \qquad
+  k_t^{(j)} = \phi k_{t-1}^{(j)} + \gamma \bigl(m_t^{(j)}\bigr)^2.
+\]
+Hence all variation in the second state coordinate enters through lagged-state
+variation and the common shock channel already represented in $m_t^{(j)}$.
+Under the naive full-state UKF,
+\[
+  P_{xz,t}^{\mathrm{naive}}
+  =
+  \sum_j w_j^{(c)}
+  \bigl(\tilde x_t^{(j)}-\tilde x_{t|t-1}\bigr)
+  \bigl(\tilde z_t^{(j)}-\tilde z_t\bigr),
+\]
+with
+\[
+  \tilde z_t^{(j)} = \tilde m_t^{(j)} + \tilde k_t^{(j)}.
+\]
+Because $\tilde k_t^{(j)}$ now contains a direct artificial perturbation channel,
+the second component of $P_{xz,t}^{\mathrm{naive}}$ contains covariance terms
+between the observation and that artificial variation.  Those terms do not exist
+in the structural model, where $k_t$ is completed deterministically from the
+same shock path that drives $m_t$.  That is the cross-covariance failure.
+
+\paragraph{Update-law failure.}
+The familiar UKF update equations,
+\[
+  K_t = P_{xz,t} S_t^{-1},
+  \qquad
+  \hat x_{t|t} = \hat x_{t|t-1} + K_t v_t,
+  \qquad
+  P_{t|t} = P_{t|t-1} - K_t S_t K_t^\top,
+\]
+do not fail algebraically.  They fail semantically when
+$(\hat x_{t|t-1},S_t,P_{xz,t})$ are computed from the wrong predictive law.
+Once the naive full-state approximation changes either $P_{xz,t}$ or $S_t$, it
+changes the gain itself:
+\[
+  K_t^{\mathrm{naive}}
+  =
+  P_{xz,t}^{\mathrm{naive}} \left(S_t^{\mathrm{naive}}\right)^{-1}
+  \neq
+  P_{xz,t}^{\mathrm{struct}} \left(S_t^{\mathrm{struct}}\right)^{-1}
+  = K_t^{\mathrm{struct}}
+\]
+in general.  The existing numerical comparison later in this example shows this
+explicitly: adding artificial variance to $k_t$ changes the innovation variance
+from $S_t=0.61217$ to $S_t=0.65217$, which then changes the approximate
+log-likelihood contribution.  The same change propagates into the Kalman gain
+and posterior update.  So the update law is not wrong as linear algebra; it is
+correctly updating the wrong approximate model.
 
 The predicted state moments are
 \begin{align}
@@ -407,6 +726,53 @@ The one-step log likelihood contribution is approximately
   \ell_t=-0.70297.
 \]
 
+\paragraph{Side-by-side prediction/update contrast.}
+For this toy model, the structural UKF treats
+\[
+  a_t=(x_{t-1},\varepsilon_t)
+\]
+as the sigma-point object and computes propagated points by
+\[
+  m_t^{(j)} = \rho m_{t-1}^{(j)} + \sigma \varepsilon_t^{(j)},
+  \qquad
+  k_t^{(j)} = \phi k_{t-1}^{(j)} + \gamma \bigl(m_t^{(j)}\bigr)^2.
+\]
+It therefore forms
+\[
+  P_{xz,t}^{\mathrm{struct}}
+  =
+  \sum_j w_j^{(c)}
+  \bigl(x_t^{(j)}-\hat x_{t|t-1}\bigr)
+  \bigl(z_t^{(j)}-\hat z_t\bigr),
+\]
+where every $x_t^{(j)}$ lies on the support generated by the structural map.
+A naive full-state UKF instead produces an artificial cloud
+$\tilde x_t^{(j)}=(\tilde m_t^{(j)},\tilde k_t^{(j)})$ with
+\[
+  \tilde k_t^{(j)} \neq \phi k_{t-1}^{(j)} + \gamma \bigl(\tilde m_t^{(j)}\bigr)^2
+  \text{ in general,}
+\]
+and therefore forms
+\[
+  P_{xz,t}^{\mathrm{naive}}
+  =
+  \sum_j w_j^{(c)}
+  \bigl(\tilde x_t^{(j)}-\tilde x_{t|t-1}\bigr)
+  \bigl(\tilde z_t^{(j)}-\tilde z_t\bigr),
+\]
+which mixes genuine shock-driven variation with artificial perturbations of the
+deterministic-completion coordinate.
+
+\paragraph{Structural identity test.}
+A simple way to see the difference is to check whether propagated points satisfy
+\[
+  k_t - \phi k_{t-1} - \gamma m_t^2 = 0.
+\]
+The structural UKF satisfies this identity point by point for every propagated
+sigma point.  A naive full-state UKF with direct perturbations to $k_t$ does
+not.  That is the exact place where the structural target and the naive
+full-state approximation part company.
+
 Now compare this with an off-manifold full-state approximation that adds an
 independent artificial innovation variance $0.04$ directly to $k_t$ after the
 structural map.  Nothing in
@@ -417,12 +783,482 @@ from $-0.70297$ to $-0.73282$.  The numerical difference is small in this toy
 calibration, but the conceptual difference is large: the latter filter is
 approximating a different state-space model.
 
+To connect these numbers back to the three failures above, write the naive
+full-state approximation as using
+\[
+  \tilde P_{xx,t}
+  =
+  \begin{bmatrix}
+    0.27560 & 0\\
+    0 & 0.12657
+  \end{bmatrix},
+\]
+which differs from the structural covariance only by the artificial extra
+variance in the $k_t$ coordinate.  Under the same observation equation
+$z_t=m_t+k_t$, this gives
+\[
+  \tilde S_t = 0.65217,
+  \qquad
+  \tilde P_{xz,t} =
+  \begin{bmatrix}
+    0.27560\\ 0.12657
+  \end{bmatrix},
+\]
+and therefore
+\[
+  \tilde K_t
+  =
+  \begin{bmatrix}
+    0.42259\\ 0.19408
+  \end{bmatrix},
+  \qquad
+  \tilde x_{t|t}
+  =
+  \begin{bmatrix}
+    0.08019\\ 0.14707
+  \end{bmatrix},
+\]
+for the same observation $y_t=0.30$.
+
+These values make the three failures concrete:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Prediction-law failure:}
+    the structural update uses
+    $P_{xx,t}=\operatorname{diag}(0.27560,0.08657)$,
+    while the naive full-state approximation uses
+    $\tilde P_{xx,t}=\operatorname{diag}(0.27560,0.12657)$ because it has
+    inserted artificial uncertainty directly into $k_t$.
+  \item \textbf{Cross-covariance failure:}
+    the structural update uses
+    \[
+      P_{xz,t}=
+      \begin{bmatrix}
+        0.27560\\ 0.08657
+      \end{bmatrix},
+    \]
+    whereas the naive full-state approximation uses
+    \[
+      \tilde P_{xz,t}=
+      \begin{bmatrix}
+        0.27560\\ 0.12657
+      \end{bmatrix}.
+    \]
+    The second component is larger only because the naive construction lets the
+    observation load directly on artificial variation in $k_t$.
+  \item \textbf{Update-law failure:}
+    the structural gain and posterior mean are
+    \[
+      K_t=
+      \begin{bmatrix}
+        0.45020\\ 0.14141
+      \end{bmatrix},
+      \qquad
+      \hat x_{t|t}=
+      \begin{bmatrix}
+        0.08543\\ 0.13707
+      \end{bmatrix},
+    \]
+    whereas the naive full-state approximation gives
+    \[
+      \tilde K_t=
+      \begin{bmatrix}
+        0.42259\\ 0.19407
+      \end{bmatrix},
+      \qquad
+      \tilde x_{t|t}=
+      \begin{bmatrix}
+        0.08019\\ 0.14707
+      \end{bmatrix}.
+    \]
+    The update formula has not changed, but the gain and posterior correction do
+    because they are now computed from the wrong predictive moments.
+\end{enumerate}
+So the numerical illustration does not merely show a slightly different
+likelihood value.  It shows that once the naive approximation changes the
+predictive covariance and cross covariance, the entire measurement update shifts
+with it.
+
 The lesson is not that UKF is wrong.  The lesson is that the UKF must be
 applied to the correct structural transition.  Sigma points belong in the
 declared stochastic integration space.  Endogenous deterministic coordinates
 are completed by the model point by point.  In BayesFilter terms, this is a
 design rule for mixed structural models and an approximation-label boundary for
 any backend that instead enlarges the stochastic space.
+
+\section{Nonlinear Measurement Equations with a Degenerate Linear Transition}
+\label{sec:bf-structural-nonlinear-measurement}
+
+The worked UKF example above uses a nonlinear state transition.  Many applied
+state-space problems instead have a degenerate linear transition together with a
+nonlinear measurement equation.  That case is closer to many DSGE and affine
+term-structure applications than a fully nonlinear latent transition.  The key
+point is that the latent transition may still have a structural split even when
+it is linear.  A nonlinear measurement equation does not remove that split.
+
+Consider the linear structural transition
+\begin{align}
+  m_t &= \rho m_{t-1} + \sigma\varepsilon_t,
+    & \varepsilon_t &\sim \calN(0,1),
+    \label{eq:bf-exp-affine-transition-m}\\
+  k_t &= \phi k_{t-1} + \psi m_{t-1} + \chi m_t,
+    \label{eq:bf-exp-affine-transition-k}\\
+  x_t &= (m_t,k_t),
+    \label{eq:bf-exp-affine-transition-state}
+\end{align}
+and the nonlinear exponential-affine measurement equation
+\begin{align}
+  y_t &= \exp(A^\top x_t + \mu) + e_t,
+    & e_t &\sim \calN(0,R).
+    \label{eq:bf-exp-affine-observation}
+\end{align}
+The latent transition is linear, but it is still structurally degenerate:
+conditional on $(x_{t-1},\varepsilon_t)$, the endogenous coordinate $k_t$ is
+completed deterministically from the same shock path that drives $m_t$.  So the
+structural issue from the previous section does not disappear.  What changes is
+where the nonlinearity appears.  The latent transition is linear, while the
+measurement map is nonlinear.
+
+This means there are now two layers to keep separate:
+\begin{enumerate}[label=(\roman*)]
+  \item the latent predictive law is still generated by the pre-transition
+    uncertainty variables $(x_{t-1},\varepsilon_t)$, not by direct full-state
+    perturbations of $x_t$;
+  \item even after the latent cloud is propagated correctly, the UKF must still
+    approximate nonlinear observation moments and cross covariances for the map
+    $x_t \mapsto \exp(A^\top x_t + \mu)$.
+\end{enumerate}
+The first issue is structural-modeling correctness.  The second is observation-
+side quadrature quality.
+
+\subsection{Formal structural statement for the degenerate linear-transition case}
+\label{sec:bf-exp-affine-formal}
+
+\paragraph{Accepted assumptions.}
+For this section, treat the following as explicit modeling assumptions:
+\begin{enumerate}[label=(A\arabic*)]
+  \item the innovation is conditionally independent of the lagged filtering law,
+    so that
+    \begin{equation}
+      p(x_{t-1},\varepsilon_t\mid y_{1:t-1})
+      =
+      p(x_{t-1}\mid y_{1:t-1})p(\varepsilon_t);
+      \label{ass:bf-exp-affine-factorization}
+    \end{equation}
+  \item the latent map, observation map, and composed map defined below are
+    measurable and have the finite moments needed for the stated expectations;
+  \item whenever we refer to the observation-side-only error regime, we assume
+    that the latent predictive law from
+    \eqref{eq:bf-exp-affine-pushforward} is preserved exactly.
+\end{enumerate}
+
+\begin{proposition}[Latent predictive pushforward]
+\label{lem:bf-exp-affine-latent-pushforward}
+Define the degenerate linear structural map
+\begin{equation}
+  F_{\mathrm{lin}}(x_{t-1},\varepsilon_t)
+  =
+  \Bigl(
+    \rho m_{t-1}+\sigma\varepsilon_t,
+    \phi k_{t-1}+\psi m_{t-1}+\chi(\rho m_{t-1}+\sigma\varepsilon_t)
+  \Bigr).
+  \label{eq:bf-exp-affine-latent-map}
+\end{equation}
+Then for any bounded test function $\varphi$ on the latent-state space,
+\begin{equation}
+  \E\!\left[\varphi(x_t)\mid y_{1:t-1}\right]
+  =
+  \iint
+  \varphi\!\left(F_{\mathrm{lin}}(x_{t-1},\varepsilon_t)\right)
+  p(x_{t-1}\mid y_{1:t-1})p(\varepsilon_t)
+  \, d\varepsilon_t \, dx_{t-1}.
+  \label{eq:bf-exp-affine-pushforward}
+\end{equation}
+Hence the latent predictive law is the pushforward of the joint law of
+$(x_{t-1},\varepsilon_t)$ through $F_{\mathrm{lin}}$.
+\end{proposition}
+
+\begin{proof}
+Under the state transition
+\eqref{eq:bf-exp-affine-transition-m}--\eqref{eq:bf-exp-affine-transition-state}
+and the factorization assumption
+\eqref{ass:bf-exp-affine-factorization}, the conditional expectation of any
+bounded test function $\varphi(x_t)$ is obtained by substituting
+$x_t=F_{\mathrm{lin}}(x_{t-1},\varepsilon_t)$ and integrating over the joint law
+of $(x_{t-1},\varepsilon_t)$.  This gives
+\eqref{eq:bf-exp-affine-pushforward}, which is exactly the pushforward identity.
+\end{proof}
+
+\begin{proposition}[Deterministic-completion identity]
+\label{lem:bf-exp-affine-deterministic-completion}
+Under \eqref{eq:bf-exp-affine-transition-m}--\eqref{eq:bf-exp-affine-transition-k},
+all admissible latent states satisfy
+\begin{equation}
+  k_t - \phi k_{t-1} - \psi m_{t-1} - \chi m_t = 0.
+  \label{eq:bf-exp-affine-structural-identity}
+\end{equation}
+Therefore, once $(x_{t-1},\varepsilon_t)$ is fixed, both $m_t$ and $k_t$ are
+fixed; there is no independent new perturbation attached to $k_t$ in the latent
+transition.
+\end{proposition}
+
+\begin{proof}
+Substitute \eqref{eq:bf-exp-affine-transition-m} into
+\eqref{eq:bf-exp-affine-transition-k} and rearrange terms.  The resulting
+identity is exactly \eqref{eq:bf-exp-affine-structural-identity}.
+\end{proof}
+
+\begin{proposition}[Observation predictive pushforward]
+\label{lem:bf-exp-affine-observation-pushforward}
+Define the nonlinear noise-free observation map
+\begin{equation}
+  h(x_t)=\exp(A^\top x_t+\mu).
+  \label{eq:bf-exp-affine-observation-map}
+\end{equation}
+and the composed map
+\begin{equation}
+  G(x_{t-1},\varepsilon_t)
+  =
+  h\!\left(F_{\mathrm{lin}}(x_{t-1},\varepsilon_t)\right).
+  \label{eq:bf-exp-affine-composed-map}
+\end{equation}
+Then for any bounded test function $\psi_0$ on the noise-free observation
+space,
+\begin{equation}
+  \E\!\left[\psi_0\!\bigl(h(x_t)\bigr)\mid y_{1:t-1}\right]
+  =
+  \iint
+  \psi_0\!\left(G(x_{t-1},\varepsilon_t)\right)
+  p(x_{t-1}\mid y_{1:t-1})p(\varepsilon_t)
+  \, d\varepsilon_t \, dx_{t-1}.
+  \label{eq:bf-exp-affine-observation-pushforward}
+\end{equation}
+Hence the noise-free observation predictive law is the pushforward of the same
+pre-transition uncertainty through the composed map.
+\end{proposition}
+
+\begin{proof}
+Compose the latent pushforward identity
+\eqref{eq:bf-exp-affine-pushforward} with the measurable observation map
+\eqref{eq:bf-exp-affine-observation-map}.  This yields
+\eqref{eq:bf-exp-affine-observation-pushforward}.
+\end{proof}
+
+\begin{proposition}[Naive full-state perturbation changes the latent law]
+\label{lem:bf-exp-affine-naive-full-state-support-violation}
+If a naive full-state UKF introduces a direct perturbation to the endogenous
+coordinate $k_t$, then its propagated latent sigma-point cloud does not, in
+general, satisfy \eqref{eq:bf-exp-affine-structural-identity} pointwise.
+Therefore it does not target the latent predictive law characterized by
+\eqref{eq:bf-exp-affine-pushforward}.
+\end{proposition}
+
+\begin{proof}
+By Lemma~\ref{lem:bf-exp-affine-deterministic-completion}, every admissible
+latent state under the structural model satisfies
+\eqref{eq:bf-exp-affine-structural-identity}.  A naive full-state UKF that adds
+an independent perturbation to $k_t$ creates propagated points whose $k_t$
+values are not determined solely by $(x_{t-1},\varepsilon_t)$, so the identity
+fails in general.  Hence the resulting sigma-point cloud cannot represent the
+same latent predictive law.
+\end{proof}
+
+\begin{proposition}[Failure propagation and observation-side-only error]
+\label{prop:bf-exp-affine-law-mismatch-propagation}
+Under the preceding lemmas:
+\begin{enumerate}[label=(\roman*)]
+  \item if a naive full-state UKF directly perturbs $k_t$, then
+    prediction-law failure, cross-covariance failure, and update-law failure all
+    still apply;
+  \item if the latent predictive law from
+    \eqref{eq:bf-exp-affine-pushforward} is preserved exactly and only the
+    transformed observation moments from
+    \eqref{eq:bf-exp-affine-observation-pushforward} are approximated by
+    quadrature, then the error is not structural-model failure; it is only
+    observation-side quadrature error.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Part~(i) follows because Lemma~\ref{lem:bf-exp-affine-naive-full-state-support-violation}
+shows that the naive construction changes the latent predictive law, and
+Lemma~\ref{lem:bf-exp-affine-observation-pushforward} shows that the nonlinear
+observation law is the pushforward of that same latent law.  So once the latent
+law changes, the observation moments, state-observation cross covariance, and
+therefore the UKF update objects also change.  Part~(ii) follows from Assumption
+(A3): if the latent law is preserved and only the nonlinear observation moments
+are approximated, then the remaining error arises only in the observation-side
+quadrature.
+\end{proof}
+
+The formal statements above separate three layers that are easy to blur in
+practice: accepted modeling assumptions, exact pushforward identities, and the
+interpretation of failure modes.  The filtered state is still $x_t$, but the
+latent predictive law is generated by the pre-transition uncertainty variables
+$(x_{t-1},\varepsilon_t)$.  The nonlinear measurement equation adds another
+approximation layer, but it does not remove the need to respect the degenerate
+latent transition.
+
+\subsection{Worked Degenerate Linear-Transition Example}
+\subsection{Worked Degenerate Linear-Transition Example}
+\label{sec:bf-exp-affine-example}
+
+Use
+\[
+  \rho = 0.8,
+  \qquad
+  \sigma = 0.5,
+  \qquad
+  \phi = 0.7,
+  \qquad
+  \psi = 0.3,
+  \qquad
+  \chi = 0.4,
+\]
+with previous filtering moments
+\[
+  \mu_{t-1}=(0,0)^\top,
+  \qquad
+  P_{t-1}=\operatorname{diag}(0.04,0.09),
+\]
+and measurement parameters
+\[
+  A=
+  \begin{bmatrix}
+    1.1\\ 0.6
+  \end{bmatrix},
+  \qquad
+  \mu = 0.10,
+  \qquad
+  R = 0.04.
+\]
+Because the latent transition remains structurally degenerate, the correct
+sigma-point object is still
+\[
+  a_t=(x_{t-1},\varepsilon_t),
+\]
+not a naively perturbed full post-transition state.  Using the same scaled
+unscented construction as in the previous example, the propagated latent points
+are obtained from
+\begin{align}
+  m_t^{(j)} &= \rho m_{t-1}^{(j)} + \sigma\varepsilon_t^{(j)},\\
+  k_t^{(j)} &= \phi k_{t-1}^{(j)} + \psi m_{t-1}^{(j)} + \chi m_t^{(j)}.
+\end{align}
+For each propagated point, define the nonlinear noise-free observation
+\[
+  z_t^{(j)} = \exp\!\left(1.1 m_t^{(j)} + 0.6 k_t^{(j)} + 0.10\right).
+\]
+The same seven sigma points used earlier now produce the following latent and
+measurement values:
+\[
+\begin{array}{c|rrr|rrr}
+  j
+  & m_{t-1}^{(j)} & k_{t-1}^{(j)} & \varepsilon_t^{(j)}
+  & m_t^{(j)} & k_t^{(j)} & z_t^{(j)}\\
+  \hline
+  0 & 0 & 0 & 0 & 0 & 0 & 1.10517\\
+  1 & 0.34641 & 0 & 0 & 0.27713 & 0.21455 & 1.61857\\
+  2 & 0 & 0.51962 & 0 & 0 & 0.36373 & 1.37758\\
+  3 & 0 & 0 & 1.73205 & 0.86603 & 0.34641 & 3.39053\\
+  4 & -0.34641 & 0 & 0 & -0.27713 & -0.21455 & 0.75442\\
+  5 & 0 & -0.51962 & 0 & 0 & -0.36373 & 0.88816\\
+  6 & 0 & 0 & -1.73205 & -0.86603 & -0.34641 & 0.36079
+\end{array}
+\]
+The predicted latent moments are
+\[
+  \hat x_{t|t-1}
+  =
+  \begin{bmatrix}
+    0\\ 0
+  \end{bmatrix},
+  \qquad
+  P_{xx,t}
+  =
+  \begin{bmatrix}
+    0.27560 & 0.16536\\
+    0.16536 & 0.12170
+  \end{bmatrix}.
+\]
+The nonlinear predicted observation moments are
+\[
+  \hat z_t = 1.39834,
+  \qquad
+  S_t = 1.08356,
+  \qquad
+  P_{xz,t}
+  =
+  \begin{bmatrix}
+    0.39302\\ 0.24514
+  \end{bmatrix}.
+\]
+So the structural UKF gain is
+\[
+  K_t
+  =
+  \begin{bmatrix}
+    0.36270\\ 0.22624
+  \end{bmatrix}.
+\]
+If the realized observation is $y_t=1.50$, then
+\[
+  v_t = 0.10166,
+  \qquad
+  \hat x_{t|t}
+  =
+  \begin{bmatrix}
+    0.03687\\ 0.02300
+  \end{bmatrix}.
+\]
+
+\subsection{What Is Similar to the Structural-Deterministic Case?}
+\label{sec:bf-exp-affine-similarities}
+
+The similarity is that the structural latent transition is still generated by
+$(x_{t-1},\varepsilon_t)$, not by independent perturbations of every coordinate
+of $x_t$.  If a naive full-state UKF directly perturbs $k_t$, it again changes
+the latent predictive law before the observation map is even evaluated.  So the
+structural warning remains active even though the latent transition is linear.
+
+The nonlinear observation adds a second approximation layer.  Once the latent
+cloud is propagated correctly, the UKF still has to approximate
+\[
+  \hat y_t,
+  \qquad
+  S_t,
+  \qquad
+  P_{xz,t}
+\]
+for the map $x_t \mapsto \exp(A^\top x_t + \mu)$.  Poor quadrature here still
+changes the gain and posterior update, just as in other nonlinear Gaussian
+filters.
+
+\subsection{What Is Different from the Earlier Nonlinear-State Example?}
+\label{sec:bf-exp-affine-differences}
+
+In the earlier toy example, the latent state equation itself was nonlinear, so
+the UKF had to approximate both the latent pushforward through the nonlinear
+state map and the resulting observation moments.  Here the latent transition is
+linear, but structurally degenerate.  That removes one source of approximation
+error but not the structural state-partition issue.  The UKF still needs the
+correct pre-transition uncertainty variable because $k_t$ remains a
+deterministic-completion coordinate.
+
+So this example isolates a different practical regime:
+\begin{enumerate}[label=(\roman*)]
+  \item the latent transition is linear but not full-state stochastic;
+  \item the nonlinear burden sits in the measurement equation;
+  \item the UKF can still fail in two distinct ways:
+    \begin{itemize}
+      \item structurally, if it perturbs $k_t$ directly and therefore changes the
+        latent predictive law;
+      \item numerically, if it uses the correct latent construction but poorly
+        approximates the nonlinear observation moments.
+    \end{itemize}
+\end{enumerate}
+This is exactly why the structural deterministic-dynamics chapter should not be
+read as applying only to nonlinear state transitions.  The same latent
+state-partition discipline remains necessary when the state equation is linear
+but degenerate and the observation map is nonlinear.
 
 \section{Pruned DSGE Filtering: A Minimal Correct Pattern}
 \label{sec:bf-pruned-dsge-correct-pattern}

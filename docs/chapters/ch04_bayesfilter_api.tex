@@ -77,6 +77,56 @@ evaluated.  At minimum, diagnostics should include:
 This metadata prevents a collapsed approximation, a diagnostic surrogate, or a
 partially compiled run from being misreported as a structural HMC target.
 
+For mixed structural models, the metadata must also be strong enough to audit
+deterministic completion.  A sigma-point, cubature, or particle backend should
+therefore expose:
+\begin{itemize}
+  \item whether deterministic identities were checked pointwise;
+  \item the maximum deterministic identity residual when such a check is
+    available;
+  \item whether a full-state integration path was used for a mixed model;
+  \item the approximation label attached to any enlarged stochastic space;
+  \item whether artificial jitter was only a numerical linear-algebra device or
+    part of the model transition being evaluated.
+\end{itemize}
+These fields are not cosmetic.  They are the evidence that the backend followed
+the \texttt{structural\_filter\_step} contract from
+Chapter~\ref{ch:bf-structural-deterministic-dynamics}.  If they are missing,
+the safest interpretation is that the result has not yet earned a structural
+filtering claim.
+
+\section{Structural Filter Implementation Requirements}
+\label{sec:bf-api-structural-filter-requirements}
+
+A BayesFilter structural filter implementation should satisfy the following
+requirements before a client adapter uses it as an HMC likelihood:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Fail-closed partition validation:} mixed models must declare
+    stochastic, deterministic-completion, and auxiliary coordinates before a
+    non-full-state backend runs.
+  \item \textbf{Visible integration space:} the result must state whether the
+    backend integrated over innovations, stochastic states, or the full state.
+  \item \textbf{Deterministic identity diagnostics:} test fixtures with known
+    identities, such as AR(p) lag shifts or
+    $k_t-\phi k_{t-1}-\gamma m_t^2=0$, must be checked pointwise for propagated
+    points or particles.
+  \item \textbf{Approximation-label propagation:} if a mixed model is evaluated
+    by a full-state Gaussian approximation, the label must survive into the
+    likelihood result, HMC target wrapper, case-study tables, and reset memo.
+  \item \textbf{Reference-oracle tests:} affine Gaussian cases must recover the
+    exact Kalman value, and low-dimensional nonlinear cases should be compared
+    with dense quadrature, high-particle simulation, or another explicit
+    reference.
+  \item \textbf{Derivative and compilation gates:} value-side structural
+    correctness is not a gradient guarantee.  SVD/eigen derivatives, static
+    shapes, eager/compiled parity, and HMC diagnostics need separate gates.
+\end{enumerate}
+
+DSGE and MacroFinance adapters should supply model timing and economics.
+BayesFilter should supply this generic validation and filtering machinery.
+That boundary keeps the common structural-filtering rule in one place while
+still allowing client projects to own their own solution methods and priors.
+
 \section{Return Contract}
 \label{sec:bf-api-return-contract}
 

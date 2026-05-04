@@ -37,6 +37,44 @@ class CubatureRule:
 
 
 @dataclass(frozen=True)
+class UnscentedRule:
+    """Scaled unscented sigma-point rule for Gaussian moments."""
+
+    dim: int
+    lambda_: float = 0.0
+    central_covariance_weight: float = 2.0
+
+    def sigma_points(
+        self,
+        mean: np.ndarray,
+        covariance: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        mean = np.asarray(mean, dtype=float)
+        covariance = _symmetrize(np.asarray(covariance, dtype=float))
+        if self.dim <= 0:
+            raise ValueError("dim must be positive")
+        if mean.shape != (self.dim,):
+            raise ValueError("mean dimension does not match rule dimension")
+        if covariance.shape != (self.dim, self.dim):
+            raise ValueError("covariance dimension does not match rule dimension")
+        spread = float(self.dim + self.lambda_)
+        if spread <= 0.0:
+            raise ValueError("dim + lambda_ must be positive")
+        factor, eigenvalues = _spectral_factor(spread * covariance)
+        offsets = factor.T
+        points = np.concatenate(
+            [mean[None, :], mean[None, :] + offsets, mean[None, :] - offsets],
+            axis=0,
+        )
+        mean_weights = np.empty(2 * self.dim + 1, dtype=float)
+        mean_weights[0] = self.lambda_ / spread
+        mean_weights[1:] = 1.0 / (2.0 * spread)
+        covariance_weights = mean_weights.copy()
+        covariance_weights[0] = float(self.central_covariance_weight)
+        return points, mean_weights, covariance_weights, eigenvalues
+
+
+@dataclass(frozen=True)
 class SigmaPointResult:
     log_likelihood: float
     filtered_means: np.ndarray | None

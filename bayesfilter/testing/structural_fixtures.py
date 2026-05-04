@@ -102,3 +102,51 @@ class NonlinearAccumulationModel:
     def observe(self, state_points, theta=None) -> np.ndarray:
         states = np.asarray(state_points, dtype=float)
         return (states[:, 0] + states[:, 1])[:, None]
+
+
+@dataclass(frozen=True)
+class WorkedStructuralUKFModel:
+    """Toy model used by the structural UKF monograph example."""
+
+    rho: float = 0.80
+    sigma: float = 0.50
+    phi: float = 0.70
+    gamma: float = 0.40
+    observation_sigma: float = 0.50
+
+    @property
+    def partition(self) -> StatePartition:
+        return StatePartition(
+            state_names=("m", "k"),
+            stochastic_indices=(0,),
+            deterministic_indices=(1,),
+            innovation_dim=1,
+        )
+
+    def initial_mean(self, theta=None) -> np.ndarray:
+        return np.zeros(2)
+
+    def initial_cov(self, theta=None) -> np.ndarray:
+        return np.diag([0.04, 0.09])
+
+    def innovation_cov(self, theta=None) -> np.ndarray:
+        return np.array([[1.0]], dtype=float)
+
+    def observation_cov(self, theta=None) -> np.ndarray:
+        return np.array([[self.observation_sigma**2]], dtype=float)
+
+    def transition(self, previous_state, innovation, theta=None) -> np.ndarray:
+        previous = np.asarray(previous_state, dtype=float)
+        eps = float(np.asarray(innovation, dtype=float)[0])
+        m_next = self.rho * previous[0] + self.sigma * eps
+        k_next = self.phi * previous[1] + self.gamma * m_next**2
+        return np.array([m_next, k_next], dtype=float)
+
+    def observe(self, state_points, theta=None) -> np.ndarray:
+        states = np.asarray(state_points, dtype=float)
+        return (states[:, 0] + states[:, 1])[:, None]
+
+    def deterministic_residual(self, previous_state, next_state) -> float:
+        previous = np.asarray(previous_state, dtype=float)
+        next_state = np.asarray(next_state, dtype=float)
+        return float(next_state[1] - self.phi * previous[1] - self.gamma * next_state[0] ** 2)

@@ -3039,6 +3039,231 @@ Audit:
 Interpretation:
 - Phase C1 remains justified.
 
+## 2026-05-04 update: structural filtering six-gap execution pass
+
+Closure plan:
+- `docs/plans/bayesfilter-structural-filtering-six-gap-execution-plan-2026-05-04.md`
+
+Independent audit:
+- `docs/plans/bayesfilter-structural-filtering-six-gap-execution-audit-2026-05-04.md`
+
+Audit conclusion:
+- No blocking issue.
+- Execute in BayesFilter first.
+- Do not edit DSGE or MacroFinance internals in this pass.
+- Keep HMC convergence, SVD-gradient, and production-readiness claims blocked
+  until their explicit gates pass.
+- Scope staging carefully because unrelated MacroFinance follow-on work is
+  already dirty in the working tree.
+
+### Phase S0: baseline validation and scoped-state check
+
+Plan:
+- Record the latest dirty state.
+- Confirm the existing test suite passes before edits.
+- Continue only if unrelated dirty files can be kept out of this pass.
+
+Execute:
+- Current dirty files before this pass included:
+  - `bayesfilter/adapters/macrofinance.py`;
+  - `docs/chapters/ch18b_structural_deterministic_dynamics.tex`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - untracked Phase 8 follow-on plan/audit files.
+- Added this six-gap plan and independent audit.
+
+Test:
+- `pytest -q`: 23 passed, with two TensorFlow Probability deprecation warnings
+  and one sandbox pytest-cache write warning.
+
+Audit:
+- Baseline tests pass.
+- The dirty MacroFinance adapter belongs to a separate Phase 8 follow-on pass
+  and should not be staged for this structural-filtering closure unless
+  explicitly required.
+
+Interpretation:
+- Phase S1 remains justified.
+
+### Phase S1: doctrine and reusable algorithm
+
+Plan:
+- Add a compact reusable structural-filtering algorithm to Chapter 18b.
+- State that filters integrate over declared pre-transition uncertainty and
+  complete deterministic coordinates through the model.
+
+Execute:
+- Added Section `Reusable BayesFilter Structural Filtering Step` to
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`.
+- Added the `structural_filter_step` algorithm as a backend-neutral contract
+  covering Kalman, UKF/CKF/SVD sigma-point, and particle-filter patterns.
+
+Test:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Targeted grep confirmed `structural_filter_step` and the new section label.
+- `git diff --check` passed.
+
+Audit:
+- The new section does not claim that every full-state filter is invalid.
+- It states that mixed-model full-state integration is an approximation unless
+  it reproduces the structural pushforward law.
+
+Interpretation:
+- Phase S2 remains justified.
+
+### Phase S2: DSGE connection and BayesFilter API contract
+
+Plan:
+- Strengthen the implementation contract so future agents know what metadata
+  and diagnostics a structural filter must expose.
+
+Execute:
+- Added `Structural Filter Implementation Requirements` to
+  `docs/chapters/ch04_bayesfilter_api.tex`.
+- Added requirements for fail-closed partition validation, visible integration
+  space, deterministic identity diagnostics, approximation-label propagation,
+  reference-oracle tests, and separate derivative/compilation gates.
+
+Test:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Targeted grep confirmed `deterministic identity diagnostics` and
+  `structural_filter_step`.
+- `git diff --check` passed.
+
+Audit:
+- The API contract keeps DSGE and MacroFinance economics in adapters while
+  keeping generic validation in BayesFilter.
+- It does not promote HMC, SVD-gradient, or production claims.
+
+Interpretation:
+- Phase S3 remains justified.
+
+### Phase S3: executable UKF worked-example regression
+
+Plan:
+- Convert the Chapter 18b structural UKF worked example into an executable
+  numerical oracle.
+- Add a pointwise deterministic identity test for the propagated sigma points.
+
+Execute:
+- Added `WorkedStructuralUKFModel` in
+  `bayesfilter/testing/structural_fixtures.py`.
+- Added `UnscentedRule` in `bayesfilter/filters/sigma_points.py` and exported
+  it from `bayesfilter/filters/__init__.py`.
+- Added tests in `tests/test_structural_sigma_points.py` that reproduce the
+  chapter's predicted mean, covariance, observation variance, cross covariance,
+  gain, posterior mean/covariance, log likelihood, and off-manifold
+  artificial-noise contrast.
+- Added a deterministic residual test for
+  `k_t - phi k_{t-1} - gamma m_t^2 = 0`.
+
+Test:
+- First focused test run failed because the test used the existing cubature
+  rule, while the chapter example uses a central-point UKF rule with
+  `lambda=0` and central covariance weight 2.
+- After adding `UnscentedRule`, `PYTHONDONTWRITEBYTECODE=1 pytest -q
+  tests/test_structural_sigma_points.py` passed: 4 passed, with one sandbox
+  pytest-cache warning.
+
+Audit:
+- The initial failure was a useful audit result, not a model failure: it
+  prevented conflating cubature and UKF weights.
+- The structural SVD/cubature backend was not changed; `UnscentedRule` is a
+  reference rule for the worked UKF example and future tests.
+
+Interpretation:
+- Phase S4 remains justified.
+
+### Phase S4: implementation contract audit and tidy
+
+Plan:
+- Audit the implementation against the six-gap contract and avoid broad
+  refactors.
+
+Execute:
+- Confirmed the existing `StatePartition`, `StructuralFilterConfig`, and
+  `validate_filter_config` paths already fail closed for missing mixed-model
+  metadata and unlabeled full-state mixed integration.
+- Confirmed `StructuralSVDSigmaPointFilter` still integrates over
+  `(previous_state, innovation)` and records the structural metadata.
+- Kept the only new code to the small UKF reference rule and worked-example
+  fixture/tests.
+
+Test:
+- Focused structural sigma-point tests passed after the UKF-rule correction.
+
+Audit:
+- The pass stays adapter-neutral.
+- No DSGE or MacroFinance model logic was copied into BayesFilter core.
+- SVD/eigen derivative and HMC promotion remain blocked.
+
+Interpretation:
+- Phase S5 final validation and scoped commit are now justified.
+
+### Phase S5: final validation, tidy, and commit
+
+Plan:
+- Run the full validation ladder for this pass.
+- Fix any real build or test failures.
+- Commit only the scoped structural-filtering files.
+
+Execute:
+- Ran full BayesFilter tests.
+- Parsed `docs/source_map.yml`.
+- Ran whitespace/diff validation.
+- Ran a forced LaTeX rebuild to avoid trusting stale `latexmk` state.
+- The forced rebuild exposed a real documentation infrastructure bug:
+  Chapter 18b used `lemma`, but `docs/preamble.tex` did not define a lemma
+  theorem environment.
+- Added `\newtheorem{lemma}{Lemma}[chapter]` to `docs/preamble.tex`.
+
+Test:
+- `PYTHONDONTWRITEBYTECODE=1 pytest -q`: 43 passed, with two TensorFlow
+  Probability deprecation warnings and one sandbox pytest-cache write warning.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8')); print('source_map yaml ok')"` passed.
+- `git diff --check` passed.
+- `latexmk -g -pdf -interaction=nonstopmode -halt-on-error main.tex` passed
+  after the lemma-environment fix.
+- Final log grep found no `LaTeX Error`, no undefined citations, no undefined
+  references, and no stale label-rerun warning.  Remaining LaTeX messages are
+  layout warnings.
+
+Audit:
+- The pass is scoped to BayesFilter structural filtering docs/tests and small
+  reference-rule support.
+- The new `UnscentedRule` is a reference sigma-point rule for the worked UKF
+  example; it does not change the structural SVD/cubature backend's default
+  behavior.
+- The executable UKF test now guards the exact chapter numbers and the
+  deterministic-completion identity.
+- The implementation remains adapter-neutral and dependency-light.
+- HMC convergence, SVD/eigen gradient safety, and production-readiness claims
+  remain explicitly unclaimed.
+
+Completion interpretation:
+- The six immediate gaps are closed at the documentation/contract/regression
+  level:
+  1. doctrine is stated in Chapter 18b;
+  2. `structural_filter_step` gives a reusable algorithm;
+  3. DSGE timing is connected to the BayesFilter partition contract;
+  4. Chapter 4 now states implementation requirements;
+  5. tests execute the worked UKF numerical example and identity check;
+  6. BayesFilter remains the generic implementation home before client adapters.
+
+Next hypotheses to test:
+- H-S1: The structural UKF example's off-manifold likelihood distortion
+  generalizes to larger DSGE mixed-state filters when deterministic-completion
+  coordinates are noised directly.
+- H-S2: AR(p), DSGE, and MacroFinance lag/accounting states can share one
+  `StatePartition` contract without model-specific filter forks.
+- H-S3: The current NumPy structural SVD/cubature backend should be extended
+  with explicit deterministic-residual diagnostics before any DSGE case-study
+  claim.
+- H-S4: Analytic score/Hessian work must treat structural correctness and
+  spectral-gradient safety as separate proof obligations.
+- H-S5: NK/Rotemberg/SGU/EZ/NAWM HMC experiments should wait until value,
+  derivative, compiled/eager, and sampler gates pass on structural test cases.
+
 ### Phase C1: generic metadata primitives
 
 Plan:
