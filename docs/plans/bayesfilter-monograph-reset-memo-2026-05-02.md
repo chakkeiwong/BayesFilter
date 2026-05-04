@@ -3254,3 +3254,230 @@ Next hypotheses to test:
 - H-C9: HMC sampler integration is justified only after target gates pass
   across eager/compiled backends and are followed by actual chain diagnostics
   for ESS, split R-hat, divergences, acceptance, and energy behavior.
+
+## 2026-05-04 update: Phase 8 executable gate closure
+
+Closure plan:
+- `docs/plans/bayesfilter-phase8-gate-closure-plan-2026-05-04.md`
+
+Independent audit:
+- `docs/plans/bayesfilter-phase8-gate-closure-audit-2026-05-04.md`
+
+Audit conclusion:
+- No blocking issue.
+- Execution must keep gate result objects immutable, fail closed on missing
+  support/evidence, avoid importing MacroFinance implementation logic, avoid
+  convergence overclaims, and avoid staging the pre-existing dirty `ch18b`
+  chapter edit.
+
+### Phase G0: setup and latest-state check
+
+Plan:
+- Record current repository state and start the executable-gate reset trail.
+
+Execute:
+- BayesFilter latest commit before this pass:
+  `09d2b53 Close MacroFinance metadata adapter gaps`.
+- BayesFilter has a pre-existing unstaged chapter edit:
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`.
+
+Test:
+- `git status --short --branch` inspected.
+- `git log -5 --oneline` inspected.
+
+Audit:
+- The new plan converts the prior reset-memo hypotheses H-C6--H-C9 into
+  executable gate phases G1--G4.
+- No blocker was found before implementation.
+
+Interpretation:
+- Phase G1 remains justified.
+
+### Phase G1: large-scale adaptation gate
+
+Plan:
+- Add an executable large-scale adaptation gate that combines observation-mask
+  metadata with explicit masked-derivative support through the requested order.
+- Keep the gate metadata-only; do not run large-scale likelihood inside
+  BayesFilter.
+
+Execute:
+- Added `LargeScaleAdaptationGateResult`.
+- Added `evaluate_large_scale_adaptation_gate`.
+- Exported the result and helper from `bayesfilter.adapters`.
+- Added pure tests for dense ready, sparse blocked, and sparse ready when
+  masked derivative support through order 2 is declared.
+- Added optional MacroFinance integration using the dense
+  `baseline_10x3x5` provider and the sparse
+  `sparse_panel_masked_or_documented_pending` mask.
+
+Test:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py -k "large_scale_gate"`:
+  2 passed, 24 deselected, with two TensorFlow Probability deprecation
+  warnings.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 26 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- Dense all-observed panels pass without requiring masked derivatives.
+- Sparse masks fail closed unless `masked_derivative_order_supported >= 2`.
+- The gate records the blocker instead of silently imputing, dropping, or
+  treating sparse panels as dense.
+
+Interpretation:
+- Phase G2 remains justified.
+
+### Phase G2: cross-currency coverage/oracle gate
+
+Plan:
+- Add an executable cross-currency derivative gate that requires coverage rows
+  to cover every provider parameter.
+- Allow a bounded caller-supplied oracle check and record the maximum absolute
+  discrepancy against a tolerance.
+- Keep oracle execution outside BayesFilter implementation ownership.
+
+Execute:
+- Added `CrossCurrencyDerivativeGateResult`.
+- Added `evaluate_cross_currency_derivative_gate`.
+- Exported the result and helper from `bayesfilter.adapters`.
+- Added pure tests for complete coverage, missing parameter coverage, passing
+  oracle discrepancy, and failing oracle discrepancy.
+- Added optional MacroFinance integration using
+  `CrossCurrencyStructuralDerivativeProvider.from_synthetic_fixture(n_steps=4)`
+  with a bounded two-direction oracle comparison.
+
+Test:
+- `pytest -q tests/test_macrofinance_adapter.py -k
+  "cross_currency_derivative_gate or optional_cross_currency_gate"`:
+  3 passed, 23 deselected.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 26 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- Missing provider parameters set `coverage_complete=False` and
+  `adaptation_ready=False`.
+- Oracle discrepancies larger than tolerance set `oracle_passed=False` and
+  `adaptation_ready=False`.
+- The optional MacroFinance gate covers all provider parameters and passes the
+  bounded oracle discrepancy check without importing oracle logic into
+  BayesFilter.
+
+Interpretation:
+- Phase G3 remains justified.
+
+### Phase G3: production exposure gate
+
+Plan:
+- Add an executable production exposure gate that combines final readiness,
+  readiness blockers, identification evidence, and sparse backend policy.
+- Require final readiness, no blockers, nonempty sparse policy, and
+  final-data `Identified` evidence.
+
+Execute:
+- Added `ProductionExposureGateResult`.
+- Added `evaluate_production_exposure_gate`.
+- Exported the result and helper from `bayesfilter.adapters`.
+- Added pure tests for a blocked fake provider and a final-ready fake provider.
+- Added optional MacroFinance integration proving the current production
+  scaffold remains blocked.
+
+Test:
+- `pytest -q tests/test_macrofinance_adapter.py -k "production_exposure_gate"`:
+  2 passed, 24 deselected.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 26 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- The current MacroFinance production scaffold remains `exposure_ready=False`.
+- Final readiness failures and provider blockers are preserved as blockers.
+- Weak, fixture, synthetic, blocked, or not-final identification text prevents
+  final identification readiness.
+- A pure final-ready fake can pass only when it has no blockers, final readiness
+  succeeds, sparse policy exists, and identification rows are `Identified`
+  without fixture/blocker language.
+
+Interpretation:
+- Phase G4 remains justified.
+
+### Phase G4: HMC diagnostics gate
+
+Plan:
+- Add an executable HMC diagnostics gate layered on top of target readiness.
+- Require target readiness, finite diagnostics, no divergences, acceptable
+  acceptance rate, bounded split R-hat, and minimum ESS.
+- Do not infer convergence from finite target operations alone.
+
+Execute:
+- Added `MacroFinanceHMCDiagnosticGateResult`.
+- Added `evaluate_macrofinance_hmc_diagnostic_gate`.
+- Exported the result and helper from `bayesfilter.adapters`.
+- Added pure tests for passing diagnostics, bad acceptance, divergences, bad
+  split R-hat, low ESS, and target-not-ready behavior.
+
+Test:
+- `pytest -q tests/test_macrofinance_adapter.py -k "hmc_diagnostic_gate"`:
+  2 passed, 24 deselected.
+- Broader focused adapter suite after the implementation:
+  `pytest -q tests/test_macrofinance_adapter.py`: 26 passed, with two
+  TensorFlow Probability deprecation warnings.
+
+Audit:
+- Diagnostics cannot pass if the target gate is not ready.
+- Divergences, high split R-hat, low ESS, nonfinite diagnostics, or acceptance
+  outside thresholds all produce explicit blockers.
+- Passing diagnostics set `convergence_claim="diagnostics_thresholds_passed"`;
+  failing diagnostics keep `convergence_claim="not_claimed"`.
+- No sampler was added or run by BayesFilter.
+
+Interpretation:
+- Final validation is justified.
+
+### Phase 8 executable gate closure validation
+
+BayesFilter validation:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py`: 26 passed, with two
+  TensorFlow Probability deprecation warnings from the optional MacroFinance
+  import path.
+- `pytest -q tests`: 41 passed, with the same two TensorFlow Probability
+  deprecation warnings.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8'))"` passed.
+- `git diff --check` passed.
+
+Completion interpretation:
+- H-C6 is closed as an executable large-scale gate: dense panels pass, sparse
+  panels require declared masked derivative support through the requested order.
+- H-C7 is closed as an executable cross-currency gate: provider parameter
+  coverage is checked directly and bounded oracle discrepancies can be recorded
+  before adaptation readiness is true.
+- H-C8 is closed as an executable production exposure gate: current scaffold
+  providers remain blocked, and passing requires final readiness, no blockers,
+  sparse policy, and final-data `Identified` evidence.
+- H-C9 is closed as an executable HMC diagnostics gate: sampler readiness is
+  layered on top of target readiness and requires acceptance, divergence,
+  split-R-hat, and ESS thresholds.
+- The pre-existing dirty chapter edit
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex` remains outside
+  this pass.
+
+Next hypotheses to test:
+- H-G5: BayesFilter can safely add a large-scale value/derivative adapter only
+  after the G1 gate is supplied with real provider-level
+  `masked_derivative_order_supported` metadata rather than a caller override.
+- H-G6: Cross-currency structural adaptation should require oracle checks over
+  a deterministic blockwise sample that includes dynamics, covariance,
+  observation loadings, and measurement error, not only the two-direction smoke
+  used in this gate pass.
+- H-G7: Production exposure should remain blocked until a real final calibrated
+  ten-country provider returns `final_ready=True` and identification rows avoid
+  fixture, synthetic, weak, blocked, and not-final qualifiers.
+- H-G8: HMC sampler integration should run the diagnostic gate on actual
+  MacroFinance chain output and then compare diagnostic sensitivity across
+  covariance, QR, and any future XLA-safe target backends.

@@ -15,10 +15,14 @@ from bayesfilter.adapters.macrofinance import (
     ObservationMaskMetadata,
     ParameterUnitMetadata,
     ReadinessBlockerMetadata,
+    evaluate_cross_currency_derivative_gate,
+    evaluate_large_scale_adaptation_gate,
+    evaluate_macrofinance_hmc_diagnostic_gate,
     evaluate_macrofinance_hmc_gate,
     evaluate_macrofinance_hmc_readiness,
     evaluate_macrofinance_provider_derivatives,
     evaluate_macrofinance_provider_likelihood,
+    evaluate_production_exposure_gate,
     extract_derivative_coverage_metadata,
     extract_finite_difference_oracle_metadata,
     extract_identification_evidence_metadata,
@@ -129,6 +133,24 @@ class FakeProductionProvider(FakeProvider):
 
     def sparse_derivative_backend_policy(self):
         return (FakePolicyRow("masked_covariance_reference", "implemented_order_2", 2),)
+
+
+class FakeFinalProductionProvider(FakeProductionProvider):
+    @property
+    def blockers(self):
+        return tuple()
+
+    def blocker_summary(self):
+        return ""
+
+    def readiness_blocker_table(self):
+        return (("final_country_panel", "present"),)
+
+    def validate_final_ten_country_ready(self):
+        return None
+
+    def identification_evidence_status(self):
+        return (FakeEvidenceRow("offset", "Identified", ["final real-data evidence"]),)
 
 
 def fake_first_order_backend(observations, model, derivatives, *, jitter):
@@ -306,6 +328,32 @@ def test_large_scale_metadata_extractors_work_with_fake_provider():
     assert mask.all_observed is False
 
 
+def test_large_scale_gate_accepts_dense_or_explicit_masked_support():
+    provider = FakeProvider()
+
+    dense = evaluate_large_scale_adaptation_gate(
+        provider,
+        mask=np.ones((2, 1), dtype=bool),
+        requested_derivative_order=2,
+    )
+    sparse_blocked = evaluate_large_scale_adaptation_gate(
+        provider,
+        requested_derivative_order=2,
+    )
+    sparse_ready = evaluate_large_scale_adaptation_gate(
+        provider,
+        requested_derivative_order=2,
+        masked_derivative_order_supported=2,
+    )
+
+    assert dense.likelihood_adaptation_ready is True
+    assert dense.mask_metadata.all_observed is True
+    assert sparse_blocked.likelihood_adaptation_ready is False
+    assert "sparse observations require masked derivative support" in sparse_blocked.blockers[0]
+    assert sparse_ready.likelihood_adaptation_ready is True
+    assert sparse_ready.mask_metadata.missing_count == 1
+
+
 def test_cross_currency_metadata_extractors_work_with_fake_provider():
     provider = FakeProvider()
 
@@ -320,6 +368,43 @@ def test_cross_currency_metadata_extractors_work_with_fake_provider():
     assert oracle.available is True
     assert oracle.step == 1e-5
     assert oracle.notes == ("FakeFiniteDifferenceOracle",)
+
+
+def test_cross_currency_derivative_gate_checks_coverage_and_oracle_discrepancy():
+    provider = FakeProvider()
+
+    ready = evaluate_cross_currency_derivative_gate(
+        provider,
+        oracle_check=lambda _provider: {"max_abs_oracle_discrepancy": 1e-8},
+        oracle_tolerance=1e-6,
+    )
+    failing_oracle = evaluate_cross_currency_derivative_gate(
+        provider,
+        oracle_check=lambda _provider: 1e-3,
+        oracle_tolerance=1e-6,
+    )
+
+    assert ready.coverage_complete is True
+    assert ready.oracle_checked is True
+    assert ready.oracle_passed is True
+    assert ready.adaptation_ready is True
+    assert failing_oracle.oracle_passed is False
+    assert failing_oracle.adaptation_ready is False
+    assert "finite-difference oracle discrepancy" in failing_oracle.blockers[0]
+
+
+def test_cross_currency_derivative_gate_blocks_missing_parameter_coverage():
+    class IncompleteCoverageProvider(FakeProvider):
+        parameter_dim = 2
+
+        def parameter_names(self):
+            return ["offset_shift", "extra_shift"]
+
+    result = evaluate_cross_currency_derivative_gate(IncompleteCoverageProvider())
+
+    assert result.coverage_complete is False
+    assert result.missing_parameter_names == ("extra_shift",)
+    assert result.adaptation_ready is False
 
 
 def test_production_readiness_metadata_fails_closed_with_fake_provider():
@@ -340,6 +425,18 @@ def test_production_readiness_metadata_fails_closed_with_fake_provider():
     policy_row = dict(sparse_policy.rows[0])
     assert policy_row["backend"] == "masked_covariance_reference"
     assert policy_row["supported_order"] == 2
+
+
+def test_production_exposure_gate_requires_final_readiness_and_identification():
+    blocked = evaluate_production_exposure_gate(FakeProductionProvider())
+    ready = evaluate_production_exposure_gate(FakeFinalProductionProvider())
+
+    assert blocked.exposure_ready is False
+    assert blocked.final_identification_ready is False
+    assert "final readiness validation failed" in blocked.blockers
+    assert ready.exposure_ready is True
+    assert ready.final_identification_ready is True
+    assert ready.sparse_policy_available is True
 
 
 def test_hmc_gate_checks_finiteness_symmetry_and_parity_without_convergence_claim():
@@ -377,6 +474,63 @@ def test_hmc_gate_records_parity_failure_without_claiming_target_ready():
     assert result.eager_compiled_parity is False
     assert result.target_ready is False
     assert result.convergence_claim == "not_claimed"
+
+
+def test_hmc_diagnostic_gate_requires_target_and_chain_diagnostics():
+    target = evaluate_macrofinance_hmc_gate(
+        FakePosteriorAdapter(),
+        compiled_log_prob_and_grad=FakePosteriorAdapter().log_prob_and_grad,
+    )
+    good = evaluate_macrofinance_hmc_diagnostic_gate(
+        target,
+        {
+            "acceptance_rate": 0.8,
+            "divergence_count": 0,
+            "split_rhat": np.array([1.0]),
+            "ess": np.array([100.0]),
+        },
+    )
+    bad = evaluate_macrofinance_hmc_diagnostic_gate(
+        target,
+        {
+            "acceptance_rate": 0.99,
+            "divergence_count": 1,
+            "split_rhat": np.array([1.03]),
+            "ess": np.array([10.0]),
+        },
+    )
+
+    assert good.diagnostics_ready is True
+    assert good.convergence_claim == "diagnostics_thresholds_passed"
+    assert bad.diagnostics_ready is False
+    assert bad.convergence_claim == "not_claimed"
+    assert any("acceptance rate" in blocker for blocker in bad.blockers)
+    assert any("divergence count" in blocker for blocker in bad.blockers)
+    assert any("split R-hat" in blocker for blocker in bad.blockers)
+    assert any("ESS" in blocker for blocker in bad.blockers)
+    with pytest.raises(ValueError):
+        good.ess[0] = 0.0
+
+
+def test_hmc_diagnostic_gate_does_not_claim_readiness_when_target_gate_fails():
+    target = evaluate_macrofinance_hmc_gate(
+        FakePosteriorAdapter(),
+        compiled_log_prob_and_grad=lambda theta: (10.0, np.zeros_like(theta)),
+    )
+
+    result = evaluate_macrofinance_hmc_diagnostic_gate(
+        target,
+        {
+            "acceptance_rate": 0.8,
+            "divergence_count": 0,
+            "split_rhat": np.array([1.0]),
+            "ess": np.array([100.0]),
+        },
+    )
+
+    assert target.target_ready is False
+    assert result.diagnostics_ready is False
+    assert "target gate is not ready" in result.blockers
 
 
 def _macrofinance_module(name: str):
@@ -511,6 +665,36 @@ def test_optional_large_scale_metadata_extracts_units_and_mask_policy():
     assert mask.all_observed is True
 
 
+def test_optional_large_scale_gate_blocks_sparse_without_declared_support():
+    large_provider_module = _macrofinance_module("large_scale_lgssm_derivative_provider")
+    scenarios = _macrofinance_module("tests.helpers_large_scale_lgssm")
+
+    dense_provider = large_provider_module.LargeScaleLGSSMDerivativeProvider(
+        scenarios.scenario_by_name("baseline_10x3x5"),
+        parameter_count_per_block=1,
+    )
+    sparse_mask = scenarios.deterministic_observation_mask(
+        scenarios.scenario_by_name("sparse_panel_masked_or_documented_pending")
+    )
+
+    dense_gate = evaluate_large_scale_adaptation_gate(dense_provider, requested_derivative_order=2)
+    sparse_blocked = evaluate_large_scale_adaptation_gate(
+        dense_provider,
+        mask=sparse_mask,
+        requested_derivative_order=2,
+    )
+    sparse_ready = evaluate_large_scale_adaptation_gate(
+        dense_provider,
+        mask=sparse_mask,
+        requested_derivative_order=2,
+        masked_derivative_order_supported=2,
+    )
+
+    assert dense_gate.likelihood_adaptation_ready is True
+    assert sparse_blocked.likelihood_adaptation_ready is False
+    assert sparse_ready.likelihood_adaptation_ready is True
+
+
 def test_optional_cross_currency_metadata_extracts_coverage_and_oracle_provenance():
     structural_provider = _macrofinance_module("cross_currency_structural_derivative_provider")
 
@@ -527,6 +711,60 @@ def test_optional_cross_currency_metadata_extracts_coverage_and_oracle_provenanc
     assert oracle.available is True
     assert oracle.step == provider.finite_difference_step
     assert oracle.notes == ("FiniteDifferenceStructuralDerivativeOracle",)
+
+
+def test_optional_cross_currency_gate_covers_parameters_and_bounded_oracle_check():
+    structural_provider = _macrofinance_module("cross_currency_structural_derivative_provider")
+
+    provider = structural_provider.CrossCurrencyStructuralDerivativeProvider.from_synthetic_fixture(
+        n_steps=4,
+    )
+
+    def bounded_oracle_check(candidate):
+        theta = candidate.reference_point()
+        analytic_model, analytic = candidate.build_state_space_with_derivatives(theta, order=1)
+        _oracle_model, oracle = candidate.finite_difference_oracle().build_state_space_with_derivatives(
+            theta,
+            order=1,
+        )
+        names = candidate.parameter_names()
+        indices = [0, names.index("log_measurement_error_domestic_yield")]
+        discrepancies = []
+        for idx in indices:
+            discrepancies.append(
+                np.max(
+                    np.abs(
+                        analytic.d_transition_offset[idx]
+                        - oracle.d_transition_offset[idx]
+                    )
+                )
+            )
+            discrepancies.append(
+                np.max(
+                    np.abs(
+                        analytic.d_observation_covariance[idx]
+                        - oracle.d_observation_covariance[idx]
+                    )
+                )
+            )
+        np.testing.assert_allclose(
+            analytic_model.observation_covariance,
+            _oracle_model.observation_covariance,
+            rtol=0.0,
+            atol=0.0,
+        )
+        return max(float(value) for value in discrepancies)
+
+    result = evaluate_cross_currency_derivative_gate(
+        provider,
+        oracle_check=bounded_oracle_check,
+        oracle_tolerance=1e-4,
+    )
+
+    assert result.coverage_complete is True
+    assert result.oracle_checked is True
+    assert result.oracle_passed is True
+    assert result.adaptation_ready is True
 
 
 def test_optional_production_metadata_preserves_blockers_and_policy():
@@ -549,6 +787,21 @@ def test_optional_production_metadata_preserves_blockers_and_policy():
     assert any(row["derivative_status"] == "blocked_final_provider" for row in coverage_rows)
     assert all(dict(row)["trust_status"] != "Identified" for row in evidence.rows)
     assert any(dict(row)["backend"] == "masked_covariance_reference" for row in sparse_policy.rows)
+
+
+def test_optional_production_exposure_gate_keeps_scaffold_blocked():
+    production_provider = _macrofinance_module("production_cross_currency_derivative_provider")
+
+    provider = production_provider.ProductionCrossCurrencyDerivativeProvider.from_synthetic_fixture(
+        n_steps=4,
+    )
+
+    result = evaluate_production_exposure_gate(provider)
+
+    assert result.exposure_ready is False
+    assert result.readiness.final_ready is False
+    assert result.final_identification_ready is False
+    assert "final readiness validation failed" in result.blockers
 
 
 def test_optional_one_country_hmc_gate_records_target_readiness_without_convergence_claim():

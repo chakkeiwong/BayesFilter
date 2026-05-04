@@ -196,6 +196,114 @@ class MacroFinanceHMCGateResult:
     convergence_claim: str = "not_claimed"
 
 
+@dataclass(frozen=True)
+class LargeScaleAdaptationGateResult:
+    mask_metadata: ObservationMaskMetadata
+    requested_derivative_order: int
+    masked_derivative_order_supported: int
+    likelihood_adaptation_ready: bool
+    blockers: tuple[str, ...]
+    source: str = "large_scale_adaptation_gate"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "requested_derivative_order", int(self.requested_derivative_order))
+        object.__setattr__(
+            self,
+            "masked_derivative_order_supported",
+            int(self.masked_derivative_order_supported),
+        )
+        object.__setattr__(self, "likelihood_adaptation_ready", bool(self.likelihood_adaptation_ready))
+        object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
+
+
+@dataclass(frozen=True)
+class CrossCurrencyDerivativeGateResult:
+    coverage: DerivativeCoverageMetadata
+    provider_parameter_names: tuple[str, ...]
+    covered_parameter_names: tuple[str, ...]
+    missing_parameter_names: tuple[str, ...]
+    extra_parameter_names: tuple[str, ...]
+    coverage_complete: bool
+    oracle_checked: bool
+    oracle_passed: bool | None
+    max_abs_oracle_discrepancy: float | None
+    oracle_tolerance: float
+    adaptation_ready: bool
+    blockers: tuple[str, ...]
+    source: str = "cross_currency_derivative_gate"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "provider_parameter_names", tuple(str(name) for name in self.provider_parameter_names))
+        object.__setattr__(self, "covered_parameter_names", tuple(str(name) for name in self.covered_parameter_names))
+        object.__setattr__(self, "missing_parameter_names", tuple(str(name) for name in self.missing_parameter_names))
+        object.__setattr__(self, "extra_parameter_names", tuple(str(name) for name in self.extra_parameter_names))
+        object.__setattr__(self, "coverage_complete", bool(self.coverage_complete))
+        object.__setattr__(self, "oracle_checked", bool(self.oracle_checked))
+        if self.oracle_passed is not None:
+            object.__setattr__(self, "oracle_passed", bool(self.oracle_passed))
+        if self.max_abs_oracle_discrepancy is not None:
+            object.__setattr__(
+                self,
+                "max_abs_oracle_discrepancy",
+                float(self.max_abs_oracle_discrepancy),
+            )
+        object.__setattr__(self, "oracle_tolerance", float(self.oracle_tolerance))
+        object.__setattr__(self, "adaptation_ready", bool(self.adaptation_ready))
+        object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
+
+
+@dataclass(frozen=True)
+class ProductionExposureGateResult:
+    readiness: ReadinessBlockerMetadata
+    identification: IdentificationEvidenceMetadata
+    sparse_policy: SparseBackendPolicyMetadata
+    final_identification_ready: bool
+    sparse_policy_available: bool
+    exposure_ready: bool
+    blockers: tuple[str, ...]
+    source: str = "production_exposure_gate"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "final_identification_ready", bool(self.final_identification_ready))
+        object.__setattr__(self, "sparse_policy_available", bool(self.sparse_policy_available))
+        object.__setattr__(self, "exposure_ready", bool(self.exposure_ready))
+        object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
+
+
+@dataclass(frozen=True)
+class MacroFinanceHMCDiagnosticGateResult:
+    target_gate: MacroFinanceHMCGateResult
+    acceptance_rate: float
+    divergence_count: int
+    split_rhat: np.ndarray
+    ess: np.ndarray
+    min_ess: float
+    max_split_rhat: float
+    min_acceptance_rate: float
+    max_acceptance_rate: float
+    diagnostics_ready: bool
+    blockers: tuple[str, ...]
+    convergence_claim: str = "not_claimed"
+    source: str = "hmc_diagnostic_gate"
+
+    def __post_init__(self) -> None:
+        split_rhat = np.asarray(self.split_rhat, dtype=float).copy()
+        split_rhat.setflags(write=False)
+        ess = np.asarray(self.ess, dtype=float).copy()
+        ess.setflags(write=False)
+        object.__setattr__(self, "acceptance_rate", float(self.acceptance_rate))
+        object.__setattr__(self, "divergence_count", int(self.divergence_count))
+        object.__setattr__(self, "split_rhat", split_rhat)
+        object.__setattr__(self, "ess", ess)
+        object.__setattr__(self, "min_ess", float(self.min_ess))
+        object.__setattr__(self, "max_split_rhat", float(self.max_split_rhat))
+        object.__setattr__(self, "min_acceptance_rate", float(self.min_acceptance_rate))
+        object.__setattr__(self, "max_acceptance_rate", float(self.max_acceptance_rate))
+        object.__setattr__(self, "diagnostics_ready", bool(self.diagnostics_ready))
+        object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
+        object.__setattr__(self, "convergence_claim", str(self.convergence_claim))
+
+
 def _as_array(value: Any) -> np.ndarray:
     """Convert NumPy, TensorFlow eager tensors, or array-like objects."""
 
@@ -472,6 +580,38 @@ def extract_observation_mask_metadata(
     )
 
 
+def evaluate_large_scale_adaptation_gate(
+    provider: Any,
+    *,
+    mask: Any | None = None,
+    requested_derivative_order: int = 2,
+    masked_derivative_order_supported: int | None = None,
+) -> LargeScaleAdaptationGateResult:
+    """Gate large-scale likelihood adaptation on dense panels or masked support."""
+
+    requested_order = int(requested_derivative_order)
+    if requested_order < 0:
+        raise ValueError("requested_derivative_order must be nonnegative")
+    mask_metadata = extract_observation_mask_metadata(provider, mask=mask)
+    if masked_derivative_order_supported is None:
+        supported = int(getattr(provider, "masked_derivative_order_supported", 0))
+    else:
+        supported = int(masked_derivative_order_supported)
+    blockers: list[str] = []
+    if not mask_metadata.all_observed and supported < requested_order:
+        blockers.append(
+            "sparse observations require masked derivative support through "
+            f"order {requested_order}; provider reports order {supported}"
+        )
+    return LargeScaleAdaptationGateResult(
+        mask_metadata=mask_metadata,
+        requested_derivative_order=requested_order,
+        masked_derivative_order_supported=supported,
+        likelihood_adaptation_ready=not blockers,
+        blockers=tuple(blockers),
+    )
+
+
 def extract_derivative_coverage_metadata(
     provider: Any,
     *,
@@ -514,6 +654,74 @@ def extract_finite_difference_oracle_metadata(
         available=False,
         source=source,
         notes=("not_exposed",),
+    )
+
+
+def _row_value(row: tuple[tuple[str, Any], ...], key: str, default: Any = None) -> Any:
+    return dict(row).get(key, default)
+
+
+def _covered_parameter_names(coverage: DerivativeCoverageMetadata) -> tuple[str, ...]:
+    covered: set[str] = set()
+    for row in coverage.rows:
+        names = _row_value(row, "parameter_names", tuple())
+        if isinstance(names, str):
+            covered.add(names)
+        else:
+            covered.update(str(name) for name in names)
+    return tuple(sorted(covered))
+
+
+def evaluate_cross_currency_derivative_gate(
+    provider: Any,
+    *,
+    oracle_check: Any | None = None,
+    oracle_tolerance: float = 1e-6,
+) -> CrossCurrencyDerivativeGateResult:
+    """Gate cross-currency adaptation on parameter coverage and oracle evidence."""
+
+    coverage = extract_derivative_coverage_metadata(provider)
+    provider_names = tuple(str(name) for name in provider.parameter_names())
+    covered_names = _covered_parameter_names(coverage)
+    provider_set = set(provider_names)
+    covered_set = set(covered_names)
+    missing = tuple(name for name in provider_names if name not in covered_set)
+    extra = tuple(name for name in covered_names if name not in provider_set)
+    coverage_complete = not missing
+    blockers: list[str] = []
+    if missing:
+        blockers.append(f"derivative coverage missing {len(missing)} provider parameters")
+
+    oracle_checked = oracle_check is not None
+    oracle_passed: bool | None = None
+    max_abs_oracle_discrepancy: float | None = None
+    if oracle_check is not None:
+        raw = oracle_check(provider)
+        if isinstance(raw, Mapping):
+            discrepancy = raw.get("max_abs_oracle_discrepancy", raw.get("max_abs_discrepancy"))
+        else:
+            discrepancy = raw
+        max_abs_oracle_discrepancy = float(discrepancy)
+        oracle_passed = bool(np.isfinite(max_abs_oracle_discrepancy) and max_abs_oracle_discrepancy <= float(oracle_tolerance))
+        if not oracle_passed:
+            blockers.append(
+                "finite-difference oracle discrepancy "
+                f"{max_abs_oracle_discrepancy:.3e} exceeds tolerance {float(oracle_tolerance):.3e}"
+            )
+
+    return CrossCurrencyDerivativeGateResult(
+        coverage=coverage,
+        provider_parameter_names=provider_names,
+        covered_parameter_names=covered_names,
+        missing_parameter_names=missing,
+        extra_parameter_names=extra,
+        coverage_complete=coverage_complete,
+        oracle_checked=oracle_checked,
+        oracle_passed=oracle_passed,
+        max_abs_oracle_discrepancy=max_abs_oracle_discrepancy,
+        oracle_tolerance=float(oracle_tolerance),
+        adaptation_ready=not blockers,
+        blockers=tuple(blockers),
     )
 
 
@@ -605,6 +813,52 @@ def extract_sparse_backend_policy_metadata(
     return SparseBackendPolicyMetadata(rows=rows, source=source)
 
 
+def _identification_is_final(row: tuple[tuple[str, Any], ...]) -> bool:
+    trust_status = str(_row_value(row, "trust_status", ""))
+    if trust_status != "Identified":
+        return False
+    text_parts = [trust_status]
+    for _, value in row:
+        if isinstance(value, tuple):
+            text_parts.extend(str(item) for item in value)
+        else:
+            text_parts.append(str(value))
+    text = " ".join(text_parts).lower()
+    blocked_tokens = ("weak", "fixture", "synthetic", "blocked", "not_final")
+    return not any(token in text for token in blocked_tokens)
+
+
+def evaluate_production_exposure_gate(provider: Any) -> ProductionExposureGateResult:
+    """Gate production exposure on final readiness and final identification evidence."""
+
+    readiness = extract_readiness_blocker_metadata(provider)
+    identification = extract_identification_evidence_metadata(provider)
+    sparse_policy = extract_sparse_backend_policy_metadata(provider)
+    final_identification_ready = bool(identification.rows) and all(
+        _identification_is_final(row) for row in identification.rows
+    )
+    sparse_policy_available = bool(sparse_policy.rows)
+    blockers: list[str] = []
+    if not readiness.final_ready:
+        blockers.append("final readiness validation failed")
+    if readiness.blockers:
+        blockers.append(f"provider reports {len(readiness.blockers)} readiness blockers")
+    if not final_identification_ready:
+        blockers.append("identification evidence is not final-data Identified evidence")
+    if not sparse_policy_available:
+        blockers.append("sparse derivative backend policy is missing")
+
+    return ProductionExposureGateResult(
+        readiness=readiness,
+        identification=identification,
+        sparse_policy=sparse_policy,
+        final_identification_ready=final_identification_ready,
+        sparse_policy_available=sparse_policy_available,
+        exposure_ready=not blockers,
+        blockers=tuple(blockers),
+    )
+
+
 def evaluate_macrofinance_hmc_gate(
     adapter: Any,
     theta: np.ndarray | None = None,
@@ -670,4 +924,65 @@ def evaluate_macrofinance_hmc_gate(
         max_abs_score_diff=max_abs_score_diff,
         target_ready=target_ready,
         convergence_claim=readiness.convergence_claim,
+    )
+
+
+def _diagnostic_value(diagnostics: Any, name: str) -> Any:
+    if isinstance(diagnostics, Mapping):
+        return diagnostics[name]
+    return getattr(diagnostics, name)
+
+
+def evaluate_macrofinance_hmc_diagnostic_gate(
+    target_gate: MacroFinanceHMCGateResult,
+    diagnostics: Any,
+    *,
+    min_ess: float = 50.0,
+    max_split_rhat: float = 1.01,
+    min_acceptance_rate: float = 0.6,
+    max_acceptance_rate: float = 0.95,
+) -> MacroFinanceHMCDiagnosticGateResult:
+    """Gate HMC sampler readiness on target readiness plus chain diagnostics."""
+
+    acceptance_rate = float(_diagnostic_value(diagnostics, "acceptance_rate"))
+    divergence_count = int(_diagnostic_value(diagnostics, "divergence_count"))
+    split_rhat = np.asarray(_diagnostic_value(diagnostics, "split_rhat"), dtype=float)
+    ess = np.asarray(_diagnostic_value(diagnostics, "ess"), dtype=float)
+    blockers: list[str] = []
+    if not target_gate.target_ready:
+        blockers.append("target gate is not ready")
+    if not np.isfinite(acceptance_rate):
+        blockers.append("acceptance rate is not finite")
+    elif not (float(min_acceptance_rate) <= acceptance_rate <= float(max_acceptance_rate)):
+        blockers.append(
+            f"acceptance rate {acceptance_rate:.3f} outside "
+            f"[{float(min_acceptance_rate):.3f}, {float(max_acceptance_rate):.3f}]"
+        )
+    if divergence_count != 0:
+        blockers.append(f"divergence count is {divergence_count}")
+    if split_rhat.size == 0 or not np.all(np.isfinite(split_rhat)):
+        blockers.append("split R-hat diagnostics are missing or nonfinite")
+    elif float(np.max(split_rhat)) > float(max_split_rhat):
+        blockers.append(
+            f"max split R-hat {float(np.max(split_rhat)):.3f} exceeds {float(max_split_rhat):.3f}"
+        )
+    if ess.size == 0 or not np.all(np.isfinite(ess)):
+        blockers.append("ESS diagnostics are missing or nonfinite")
+    elif float(np.min(ess)) < float(min_ess):
+        blockers.append(f"min ESS {float(np.min(ess)):.3f} below {float(min_ess):.3f}")
+
+    diagnostics_ready = not blockers
+    return MacroFinanceHMCDiagnosticGateResult(
+        target_gate=target_gate,
+        acceptance_rate=acceptance_rate,
+        divergence_count=divergence_count,
+        split_rhat=split_rhat,
+        ess=ess,
+        min_ess=float(min_ess),
+        max_split_rhat=float(max_split_rhat),
+        min_acceptance_rate=float(min_acceptance_rate),
+        max_acceptance_rate=float(max_acceptance_rate),
+        diagnostics_ready=diagnostics_ready,
+        blockers=tuple(blockers),
+        convergence_claim="diagnostics_thresholds_passed" if diagnostics_ready else "not_claimed",
     )
