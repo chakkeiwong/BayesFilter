@@ -43,6 +43,24 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase8-macrofinance-adapter-plan-2026-05-04.md
     status: drafted
     role: Phase 8 MacroFinance adapter pilot plan, including pull/auth provenance, local code audit, execution ladder, and go/no-go criteria.
+  - id: bayesfilter_phase8_macrofinance_adapter_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase8-macrofinance-adapter-audit-2026-05-04.md
+    status: drafted
+    role: Independent audit of the Phase 8 MacroFinance adapter plan before execution.
+  - id: bayesfilter_phase8_macrofinance_contract_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase8-macrofinance-contract-audit-2026-05-04.md
+    status: drafted
+    role: Contract audit for MacroFinance one-country provider, derivative tensor conventions, jitter, initial-state policy, and workload split.
+  - id: bayesfilter_phase8_macrofinance_deferral_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase8-macrofinance-deferral-audit-2026-05-04.md
+    status: drafted
+    role: Deferral audit for large-scale LGSSM, cross-currency structural, and production cross-currency providers.
   - id: bayesfilter_six_step_structural_filtering_closure_plan
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -122,6 +140,24 @@ chapter_mappings:
       destination: bayesfilter/adapters/macrofinance.py; tests/test_macrofinance_adapter.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
       import_status: drafted
       reason: Defines the gated MacroFinance adapter pilot around a value-only LGSSM wrapper first, with derivative and HMC bridges deferred until dedicated audits pass.
+
+  bayesfilter_phase8_macrofinance_adapter_audit:
+    - source_file: bayesfilter-phase8-macrofinance-adapter-audit-2026-05-04.md
+      destination: bayesfilter/adapters/macrofinance.py; tests/test_macrofinance_adapter.py
+      import_status: drafted
+      reason: Audits the Phase 8 execution plan and adds required guardrails for optional imports, derivative workload separation, and no convergence claims.
+
+  bayesfilter_phase8_macrofinance_contract_audit:
+    - source_file: bayesfilter-phase8-macrofinance-contract-audit-2026-05-04.md
+      destination: bayesfilter/adapters/macrofinance.py; tests/test_macrofinance_adapter.py
+      import_status: drafted
+      reason: Records the one-country MacroFinance contract used by the adapter and derivative bridge.
+
+  bayesfilter_phase8_macrofinance_deferral_audit:
+    - source_file: bayesfilter-phase8-macrofinance-deferral-audit-2026-05-04.md
+      destination: docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Records why large-scale, cross-currency, and production MacroFinance providers are follow-on targets rather than blockers.
 
   bayesfilter_six_step_structural_filtering_closure_plan:
     - source_file: bayesfilter-six-step-structural-filtering-closure-plan-2026-05-04.md

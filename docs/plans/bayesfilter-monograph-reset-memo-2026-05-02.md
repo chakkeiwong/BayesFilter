@@ -93,7 +93,480 @@ Follow-up planning action:
   metadata, manifold preservation, linear recovery, toy nonlinear DSGE
   behavior, Rotemberg NK, SGU, XLA, gradients, and HMC smoke gates.
 
-## 2026-05-04 update: Chapter 18b execution-pass baseline and plan audit incorporation
+## 2026-05-04 update: explicit structural UKF versus full-state UKF contrast
+
+User asked for a summary of the recent Chapter 18b changes and noted a real
+remaining weakness: the structural UKF example still did not contrast sharply
+enough with what a reader would treat as a normal generic full-state UKF.
+
+### Focused UKF contrast pass
+
+Phase plan:
+- Add explicit sections that contrast the structural UKF with a naive or
+a generic additive-noise full-state UKF pattern.
+- Make the difference operational, not only conceptual.
+- Keep the new material consistent with Chapters 16, 20, and 32.
+
+Execution:
+- Added a new section:
+  - `Structural UKF Versus a Generic Full-State UKF Pattern`
+- Added a compact comparison table that contrasts:
+  - integration space;
+  - independent new randomness;
+  - deterministic-block treatment;
+  - support preservation;
+  - target law;
+  - metadata label;
+  - when acceptable.
+- Added a new subsection:
+  - `Algorithmic Contrast with a Naive Full-State UKF`
+  explaining step by step how the two constructions differ operationally.
+- Added a new subsection:
+  - `What a Naive Full-State UKF Would Do Differently`
+  tied directly to the existing toy model.
+- Reused the chapter’s existing artificial-variance comparison so it now reads
+  as an explicit target-law contrast rather than only a closing remark.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted search in Chapter 18b confirmed explicit use of:
+  `UKF`, `approximation`, `support`, `stochastic`, and `deterministic`.
+
+Audit:
+- The chapter now answers the concrete reader questions that were still too easy
+  to miss after the previous pass:
+  - what the sigma-point object is in the structural UKF;
+  - what a naive full-state UKF would do differently;
+  - why that changes the target law;
+  - when the full-state version is only an approximation.
+- The new material does not claim that all full-state UKFs are invalid.  It
+  states instead that, for this mixed structural class, they require an
+  approximation label when they enlarge the stochastic space.
+- No further immediate chapter pass is required for this specific UKF contrast
+  issue.
+
+## 2026-05-04 update: why the naive full-state UKF update fails
+
+User then asked for one more missing piece: not just the contrast, but an
+explicit section explaining why the naive full-state UKF update equation fails
+once exogenous and endogenous states are separated structurally.
+
+### Focused naive-UKF-failure pass
+
+Phase plan:
+- Add one focused section explaining why the failure is semantic, not merely a
+  different sigma-point convention.
+- Tie the failure directly to the separation of exogenous/stochastic and
+  endogenous/deterministic-completion states.
+- Make clear that the algebraic UKF update formula itself is not invalid; the
+  predicted moments and cross covariances are wrong when built from the wrong
+  target law.
+
+Execution:
+- Added a new subsection:
+  - `Why the Naive Full-State UKF Update Fails in Mixed Structural Models`
+- The new subsection explains the failure at three levels:
+  - prediction-law failure;
+  - cross-covariance failure;
+  - update-law failure.
+- It now states explicitly that, after a naive full-state additive covariance is
+  imposed, the UKF gain and covariance update are computed for an altered
+  Gaussian approximation rather than for the intended structural transition.
+- It also states the key conclusion directly: the linear algebra is fine, but
+  the target law is wrong.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted search confirmed the new section includes the intended failure
+  language around prediction-law failure, cross-covariance failure, update-law
+  failure, and `the target law is wrong`.
+
+Audit:
+- This directly closes the last major exposition gap in the UKF part of Chapter
+  18b.
+- The chapter now distinguishes clearly among:
+  - structural UKF construction;
+  - naive full-state UKF approximation;
+  - and the specific reason the naive update fails for mixed structural models.
+- No further clarification is immediately necessary for this point unless you
+  want an even more formal derivation against a textbook additive-noise UKF
+  notation.
+
+## 2026-05-04 update: proposition refactor for better MathDevMCP auditability and LaTeX polish
+
+User then asked for both remaining follow-ups to be done together:
+- refactor the proposition/proof so MathDevMCP has a better chance to audit it;
+- do a chapter-local LaTeX polish pass for the recent warning hotspots.
+
+### Focused auditability-and-polish pass
+
+Phase plan:
+- split the proposition/proof into smaller labeled obligations;
+- add stable labels for the augmented variable, augmented Gaussian law, and
+  structural identity;
+- shorten or sanitize local headings and reduce comparison-table warning load;
+- re-run the bounded MathDevMCP audit and record the new boundary honestly.
+
+Execution:
+- Renamed the subsection heading to plain text:
+  - `Why the Sigma-Point Variable Uses Pre-Transition Uncertainty`
+- Shortened the proposition title to:
+  - `Predictive pushforward and sigma-point space`
+- Refactored the proposition into explicit numbered obligations and labeled
+  equations:
+  - `eq:bf-structural-ukf-prop-m`
+  - `eq:bf-structural-ukf-prop-k`
+  - `eq:bf-structural-ukf-prop-state`
+  - `eq:bf-structural-ukf-prop-map`
+  - `eq:bf-structural-ukf-prop-factorization`
+  - `eq:bf-structural-ukf-prop-pushforward`
+  - `eq:bf-structural-ukf-prop-deterministic-completion`
+- Added stable labels for the later UKF exposition:
+  - `eq:bf-ukf-augmented-variable`
+  - `eq:bf-ukf-augmented-law`
+  - `eq:bf-ukf-structural-identity`
+- Replaced the old math-mode comparison array with a text-mode tabular using
+  shorter cell text and a shorter right-column header.
+- Re-ran the bounded MathDevMCP audit on
+  `prop:bf-structural-ukf-pushforward`.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Bounded MathDevMCP audit still returned `unverified`, but the obligation count
+  tightened from the earlier larger diagnostic bundle to a smaller set:
+  - total obligations: 3
+  - unverified: 2
+  - inconclusive: 1
+- The previous `source_label_missing` issue disappeared after the refactor.
+
+Audit:
+- The proposition is now more readable and more structurally auditable.
+- MathDevMCP still does not certify the proof, but the result is cleaner: the
+  remaining boundary is now primarily `manual_formalization_required` rather than
+  a larger mix of ambiguity and missing-source issues.
+- The local hyperref warning from raw math in the subsection heading was removed
+  by the plain-text heading rewrite.
+- Remaining warning hotspots are now mostly cosmetic table/line-break issues and
+  do not undermine the logic of the chapter.
+
+
+User then asked for a formal proposition and proof explaining why the structural
+UKF uses `(x_{t-1},\varepsilon_t)` as the sigma-point variable even though the
+filtered state remains `x_t`, and explicitly asked that the proof be audited by
+MathDevMCP if possible.
+
+### Focused proposition-and-proof pass
+
+Phase plan:
+- add a bounded proposition and proof before the worked UKF example;
+- keep the proof in the toy-model notation `(m_t,k_t,\varepsilon_t)`;
+- state formally that the predictive law of `x_t` is the pushforward of the
+  joint law of `(x_{t-1},\varepsilon_t)`;
+- use MathDevMCP for a bounded derivation audit and record its verification
+  boundary honestly.
+
+Execution:
+- Added a new subsection:
+  - `Why the Sigma-Point Variable is $(x_{t-1},\varepsilon_t)$`
+- Added Proposition `prop:bf-structural-ukf-pushforward` stating that under the
+  structural transition, the one-step predictive law of `x_t` is the pushforward
+  of the joint law of `(x_{t-1},\varepsilon_t)` under the structural map.
+- Added a proof using a bounded test function `\varphi` and the conditional
+  expectation identity
+  \[
+    \E[\varphi(x_t)\mid y_{1:t-1}]
+    =
+    \iint
+    \varphi(F(x_{t-1},\varepsilon_t))
+    p(\varepsilon_t)
+    p(x_{t-1}\mid y_{1:t-1})
+    \, d\varepsilon_t \, dx_{t-1}.
+  \]
+- Added an interpretation paragraph making explicit that:
+  - the filtered state remains `x_t`;
+  - `(x_{t-1},\varepsilon_t)` is the sigma-point / integration variable because
+    it generates the predictive law;
+  - omitting `\varepsilon_t` misses genuine current-shock uncertainty, while
+    directly perturbing `k_t` changes the law.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Ran a bounded MathDevMCP audit on
+  `prop:bf-structural-ukf-pushforward`.
+
+MathDevMCP audit result:
+- status: `unverified`
+- reason: at least one obligation remains unverified or diagnostic-only.
+- high-priority actions reported by the tool include:
+  - human formalization/review for typed obligations;
+  - splitting or rewriting an ambiguous derivation row.
+
+Audit:
+- The proposition materially improves the chapter by separating the filtered
+  state `x_t` from the sigma-point variable `(x_{t-1},\varepsilon_t)` in a
+  formally stated way.
+- MathDevMCP did not certify the proof.  Its result is still useful: it marks a
+  verification boundary and indicates that the proof is currently at the level
+  of human-readable mathematical derivation rather than machine-verified
+  obligation closure.
+- This is acceptable for the chapter as long as the text does not overclaim that
+  the proposition has been backend-certified.  It should be presented as a
+  bounded chapter-level derivation with explicit audit limitation.
+
+
+While I was finishing the derivation pass, the user raised one more important
+clarity gap: the numerical illustration gave structural values and a naive
+likelihood delta, but it still did not follow through with the two different
+computed update objects in a way that visibly tied the numbers back to the three
+failure claims.
+
+### Focused numerical tie-back pass
+
+Phase plan:
+- compute and display the naive full-state predictive/update quantities beside
+  the structural ones;
+- tie those numbers directly to prediction-law failure, cross-covariance
+  failure, and update-law failure.
+
+Execution:
+- Expanded the numerical-contrast paragraph after the artificial-variance
+  example so it now writes the naive full-state quantities explicitly:
+  - `\tilde P_{xx,t}`
+  - `\tilde S_t`
+  - `\tilde P_{xz,t}`
+  - `\tilde K_t`
+  - `\tilde x_{t|t}`
+- Tied those numbers directly to the three failures:
+  - prediction-law failure via the changed predictive covariance;
+  - cross-covariance failure via the enlarged second component of
+    `\tilde P_{xz,t}`;
+  - update-law failure via the changed gain and posterior correction.
+- Verified the naive-gain and posterior-mean numbers numerically before writing
+  them into the chapter.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Independent numeric check confirmed:
+  - `\tilde K_t = (0.42259, 0.19408)^\top`
+  - `\tilde x_{t|t} = (0.08019, 0.14707)^\top`
+
+Audit:
+- The numerical illustration now does what the prose claims: it shows two
+  different computed update objects, not only two different likelihood values.
+- This makes the three failures visible both algebraically and numerically.
+
+
+User then asked for the three named failures to be derived explicitly rather
+than only described in words.
+
+### Focused derivation pass
+
+Phase plan:
+- derive the structural predictive law explicitly in the toy model’s notation;
+- show why the naive full-state sigma-point cloud represents a different
+  predictive law;
+- derive explicitly why the cross covariance changes;
+- derive explicitly why the same algebraic update formula then updates the wrong
+  approximate model.
+
+Execution:
+- Expanded the UKF-failure passage so it now derives:
+  - the structural predictive law from
+    `m_t = \rho m_{t-1} + \sigma \varepsilon_t` and
+    `k_t = \phi k_{t-1} + \gamma m_t^2`;
+  - the structural identity
+    `k_t - \phi k_{t-1} - \gamma m_t^2 = 0` as the support condition for the
+    intended one-step law;
+  - the prediction-law failure via propagated naive points
+    `\tilde x_t^{(j)} = (\tilde m_t^{(j)}, \tilde k_t^{(j)})` that in general do
+    not satisfy that identity;
+  - the cross-covariance failure through the difference between
+    `P_{xz,t}^{\mathrm{struct}}` and `P_{xz,t}^{\mathrm{naive}}`, with explicit
+    explanation that the naive construction introduces covariance terms coming
+    from artificial perturbations of the deterministic-completion coordinate;
+  - the update-law failure by showing that once
+    `(\hat x_{t|t-1}, S_t, P_{xz,t})` come from the altered predictive law, the
+    gain `K_t` itself changes and the standard UKF update is then updating the
+    wrong approximate model.
+- Connected the update-law derivation directly to the existing numerical
+  comparison where the artificial variance changes `S_t` and the likelihood.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- A targeted file-content check confirmed the chapter now contains:
+  - `Prediction-law failure`
+  - `Cross-covariance failure`
+  - `Update-law failure`
+  - `P_{xz,t}^{\mathrm{struct}}`
+  - `P_{xz,t}^{\mathrm{naive}}`
+  - `k_t - \phi k_{t-1} - \gamma m_t^2`
+
+Audit:
+- The chapter now proves, within the toy-model notation, why the three failures
+  are genuine failures and not only labels.
+- The remaining limitation is still one of scope, not clarity: this is a bounded
+  derivation for the toy model and the associated structural-design lesson, not
+  a universal theorem about every possible UKF construction.
+
+
+User then pointed out another real exposition gap: in the worked UKF example,
+the augmented variable includes the current shock `\varepsilon_t`, but the text
+did not yet explain clearly enough why this is necessary and how it differs from
+a naive post-transition full-state augmentation.
+
+### Focused epsilon-augmentation clarification pass
+
+Phase plan:
+- Explain why the augmentation with `\varepsilon_t` is not arbitrary padding.
+- Tie the augmentation directly to the predictive law and to the distinction
+  between genuine new uncertainty and deterministic completion.
+- Contrast omission of `\varepsilon_t` with direct perturbation of `k_t`.
+
+Execution:
+- Expanded the paragraph before the augmented UKF variable so it now explains:
+  - the predictive law is generated by the joint uncertainty in
+    `(m_{t-1},k_{t-1},\varepsilon_t)`;
+  - once those are fixed, both `m_t` and `k_t` are fixed by the structural map;
+  - `\varepsilon_t` is therefore included because it is a genuine pre-transition
+    uncertainty variable;
+  - omitting `\varepsilon_t` would miss current shock uncertainty;
+  - directly perturbing `k_t` instead would define a different transition law.
+- Added an explicit remark that standard additive-noise UKF presentations also
+  augment with process noise for this same structural reason: sigma points must
+  live on the variables that generate the one-step uncertainty.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted search confirmed the revised paragraph now explicitly addresses:
+  - `pad the state arbitrarily`;
+  - `pre-transition uncertainty variables`;
+  - omission of `\varepsilon_t`;
+  - and direct perturbation of `k_t`.
+
+Audit:
+- The UKF example now motivates the augmented variable much more clearly.
+- The reader no longer has to infer why `\varepsilon_t` appears in the sigma-point
+  object.
+- This closes another substantive readability gap in the example.
+
+
+User then asked to make the contrast even sharper by writing the naive and
+structural UKF equations more explicitly.
+
+### Focused sharpened-contrast pass
+
+Phase plan:
+- Add side-by-side structural versus naive UKF prediction/update equations.
+- Make the wrong object in the naive cross covariance explicit.
+- Add one simple structural identity test that distinguishes the two
+  constructions point by point.
+
+Execution:
+- Added a `Side-by-side prediction/update contrast` paragraph in Chapter 18b.
+- Wrote the structural sigma-point propagation and the structural
+  cross-covariance formula `P_{xz,t}^{\mathrm{struct}}` explicitly.
+- Wrote the naive full-state additive approximation and the altered
+  cross-covariance formula `P_{xz,t}^{\mathrm{naive}}` explicitly.
+- Added a direct explanation that once the altered `P_{xz,t}` is used in the
+  standard UKF gain/update equations, the update is correcting the wrong
+  approximate model.
+- Added a `Structural identity test` based on
+  `k_t - \phi k_{t-1} - \gamma m_t^2 = 0` to show exactly where the structural
+  and naive propagated sigma points part company.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted search confirmed the presence of the sharpened UKF contrast material,
+  including the structural identity test and the `wrong transition law` /
+  `target law is wrong` explanation.
+
+Audit:
+- The UKF part of the chapter is now materially sharper.
+- A careful reader can now see not only that the naive full-state UKF is a
+  different approximation, but exactly where the wrong prediction and
+  cross-covariance objects enter the update.
+- This is probably sufficient unless you want a separate appendix-level formal
+  proposition.
+
+## 2026-05-04 update: thorough Chapter 18b audit and cleanup pass
+
+User asked for a thorough audit/cleanup pass on Chapter 18b after the recent
+incremental additions.
+
+### Focused cleanup pass
+
+Phase plan:
+- preserve the stronger mathematics;
+- reduce duplicated UKF contrast/failure material;
+- smooth transitions;
+- standardize terminology where possible;
+- reduce overlap with generic policy chapters.
+
+Execution:
+- Folded the earlier standalone UKF contrast section into the worked-example
+  section so the chapter now reaches the toy model through one continuous
+  progression instead of separate stitched blocks.
+- Removed the repeated standalone `Why the Naive Full-State UKF Update Fails`
+  and `What a Naive Full-State UKF Would Do Differently` subsection structure as
+  separate exposition blocks, while preserving their strongest content:
+  - semantic failure explanation;
+  - wrong-target-law diagnosis;
+  - side-by-side prediction/update contrast;
+  - structural identity test.
+- Kept the comparison table, numerical illustration, and off-manifold/full-state
+  approximation contrast, but made them read as one sequence instead of repeated
+  variants of the same point.
+- Preserved the chapter’s concrete `(m_t,k_t)` notation throughout the UKF
+  discussion.
+- Left the DSGE-specific structural tests and policy sections in place, but the
+  UKF part now relies less on repeated restatement and more on a single clean
+  argument.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted phrase searches showed reduced duplication in the UKF portion.
+- Internal grep confirmed that the removed UKF subsection labels no longer
+  remain in the file.
+
+Audit:
+- The chapter now reads more like one developing argument and less like several
+  accreted notes.
+- The mathematical content was preserved while the strongest duplication was
+  reduced.
+- The biggest remaining issues are cosmetic LaTeX table/line-break warnings, not
+  structural clarity or notation drift.
+
+
+User pointed out a real notation bug: in the naive-UKF-failure section I had
+momentarily switched from the chapter’s concrete example notation `(m_t,k_t)` to
+the generic contract notation `(s_t,d_t)`.  That weakened readability in exactly
+the place where the chapter is trying to be most concrete.
+
+### Focused notation-fix pass
+
+Phase plan:
+- Restore consistency with the toy example notation.
+- Keep the generic BayesFilter structural language in the surrounding prose, but
+  write the failure subsection itself in the chapter’s explicit `(m_t,k_t)`
+  notation.
+
+Execution:
+- Rewrote the opening of the `Why the Naive Full-State UKF Update Fails in Mixed
+  Structural Models` subsection so it now consistently uses:
+  - exogenous state `m_t`
+  - endogenous state `k_t`
+  - transition maps `T_m` and `T_k`
+- Removed the temporary switch to `s_t`, `d_t`, and `\operatorname{pack}(s_t,d_t)`
+  in that subsection.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+
+Audit:
+- The notation is now locally consistent with the worked UKF example.
+- The subsection remains connected conceptually to the generic structural-state
+  contract, but it no longer forces the reader to translate notation midstream.
+
 
 User requested a full autonomous execution pass for
 `docs/chapters/ch18b_structural_deterministic_dynamics.tex`, including another
@@ -2273,3 +2746,256 @@ Validation after SSH pull:
 - Interpretation: the path issue should be fixed or handled upstream in
   MacroFinance before treating theta2 geometry tests as Phase 8 gate evidence.
   It does not block the value-only BayesFilter adapter plan.
+
+## 2026-05-04 update: Phase 8 MacroFinance adapter execution
+
+Canonical plan:
+- `docs/plans/bayesfilter-phase8-macrofinance-adapter-plan-2026-05-04.md`
+
+Independent audit artifact:
+- `docs/plans/bayesfilter-phase8-macrofinance-adapter-audit-2026-05-04.md`
+
+Audit conclusion before execution:
+- No blocking issue was found.
+- The audit added explicit requirements for pure BayesFilter adapter tests,
+  optional MacroFinance integration tests, separate first- and second-order
+  derivative workloads, HMC-conformance metadata, and reset-memo updates after
+  each phase.
+
+### Phase 8.0: latest-code gate
+
+Plan:
+- Confirm the active MacroFinance checkout is the pulled SSH state and matches
+  remote HEAD.
+
+Execute:
+- Verified `/home/chakwong/MacroFinance` on `main`.
+- Verified `HEAD`, `origin/main`, and `origin/HEAD` at
+  `e23c31e Document one-country HMC remaining test gates`.
+- Verified SSH remote HEAD:
+  `e23c31e531bdd7cb286af33c4caf154687cee634`.
+
+Test:
+- `git status --short --branch` in MacroFinance reports `main...origin/main`
+  plus only the deliberate local test-path fixes.
+- `git log -1 --oneline --decorate` reports `e23c31e`.
+- SSH `git ls-remote` reports the same commit.
+
+Audit:
+- Latest-code gate passes.
+- The configured MacroFinance `origin` is still HTTPS, but the SSH path works
+  and remote-tracking refs have been refreshed.  This is not a blocker.
+
+Interpretation:
+- Phase 8.1 remains justified.
+
+### Phase 8.1: MacroFinance contract and derivative audit
+
+Plan:
+- Audit the one-country provider and derivative tensors before adding
+  BayesFilter adapter code.
+- Treat MacroFinance tests as regression references, not as permission to copy
+  derivative recursions.
+
+Execute:
+- Added contract audit:
+  `docs/plans/bayesfilter-phase8-macrofinance-contract-audit-2026-05-04.md`.
+- Recorded the parameter order
+  `[theta_0, theta_1, theta_2, log_measurement_error_std]`.
+- Recorded LGSSM field compatibility, jitter convention, initial-mean policy,
+  derivative tensor shapes, active derivative blocks, and the split between
+  value-plus-score and value-plus-score-plus-Hessian workloads.
+
+Test:
+- MacroFinance focused gate passed:
+  `pytest -q tests/test_one_country_analytic_hmc_adapter.py
+  tests/test_one_country_hmc_analytic_gradient_hessian.py
+  tests/test_one_country_theta2_geometry_diagnostics.py
+  tests/test_filter_conventions.py`
+  produced 17 passed.
+- MacroFinance `git diff --check` passed.
+
+Audit:
+- The one-country provider remains the smallest safe pilot.
+- First-order and second-order analytical workloads are separable and should
+  remain separable in BayesFilter metadata.
+- No MacroFinance finance-construction or derivative-recursion code should be
+  copied.
+
+Interpretation:
+- Phase 8.2 remains justified.
+
+### Phase 8.2: value-only BayesFilter wrapper
+
+Plan:
+- Add an optional BayesFilter adapter module for MacroFinance-shaped LGSSM
+  objects.
+- Keep MacroFinance optional and avoid importing it at BayesFilter package
+  import time.
+- Prove value parity against the one-country MacroFinance reference.
+
+Execute:
+- Added `bayesfilter/adapters/__init__.py`.
+- Added `bayesfilter/adapters/macrofinance.py`.
+- Added `tests/test_macrofinance_adapter.py`.
+- Implemented `macrofinance_lgssm_to_bayesfilter`.
+- Implemented `evaluate_macrofinance_provider_likelihood`.
+- Added `MacroFinanceLikelihoodResult` metadata.
+
+Test:
+- `pytest -q tests/test_macrofinance_adapter.py`: 3 passed.
+- `pytest -q tests`: 18 passed.
+- Import smoke:
+  `python -c "import bayesfilter; import bayesfilter.adapters.macrofinance as m; print(m.__name__)"`
+  passed.
+- The optional integration test imported `/home/chakwong/MacroFinance` and
+  matched the one-country MacroFinance differentiated-Kalman value at the same
+  fixture/reference point to tight tolerance.
+
+Audit:
+- No MacroFinance financial-model construction was copied.
+- No MacroFinance Kalman or derivative recursion was copied.
+- The adapter result is exact LGSSM value-only and preserves BayesFilter
+  metadata.
+- The optional integration test skips when MacroFinance is unavailable.
+
+Interpretation:
+- Phase 8.3 remains justified.
+
+### Phase 8.3: analytical derivative bridge, no migration
+
+Plan:
+- Add a narrow derivative bridge that delegates value/score/Hessian evaluation
+  to MacroFinance-compatible backends.
+- Preserve the separation between first-order value-plus-score and second-order
+  Hessian workloads.
+
+Execute:
+- Added `MacroFinanceDerivativeResult`.
+- Added `evaluate_macrofinance_provider_derivatives`.
+- Exported the derivative bridge from `bayesfilter.adapters`.
+- Added pure BayesFilter tests proving first-order calls request only
+  `order=1` and return no Hessian, while second-order calls request `order=2`
+  and record a Hessian.
+- Added optional MacroFinance integration parity against
+  `filters.differentiated_kalman.differentiated_kalman_loglik`.
+
+Test:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py`: 5 passed.
+
+Audit:
+- The derivative bridge is metadata normalization and delegation only.
+- No derivative recursion was copied into BayesFilter.
+- First-order and second-order workloads remain separate.
+- The one-country score and Hessian match the MacroFinance NumPy reference.
+
+Interpretation:
+- Phase 8.4 remains justified as an HMC-readiness conformance gate.
+
+### Phase 8.4: HMC-readiness conformance gate
+
+Plan:
+- Add no BayesFilter sampler.
+- Add a finite-operation conformance check for posterior-like adapters that a
+  future HMC driver could consume.
+- Explicitly avoid convergence claims.
+
+Execute:
+- Added `MacroFinanceHMCReadinessResult`.
+- Added `evaluate_macrofinance_hmc_readiness`.
+- Added pure BayesFilter conformance tests using a fake posterior adapter.
+- Added optional MacroFinance conformance test using
+  `OneCountryAnalyticThetaNoisePosteriorAdapter`.
+
+Test:
+- `python -m py_compile bayesfilter/adapters/macrofinance.py
+  tests/test_macrofinance_adapter.py` passed.
+- `pytest -q tests/test_macrofinance_adapter.py`: 7 passed.
+
+Audit:
+- The readiness result checks finite value, score, negative objective,
+  negative gradient, and negative Hessian.
+- The readiness label is `hmc_contract_ready_smoke`.
+- The convergence claim is explicitly `not_claimed`.
+- No sampler was added to BayesFilter.
+
+Interpretation:
+- Phase 8.5 remains justified as a deferral/readiness audit for larger
+  MacroFinance providers.
+
+### Phase 8.5: large-scale and cross-currency deferral audit
+
+Plan:
+- Document why large-scale and cross-currency MacroFinance providers are not
+  the first adapter targets.
+- Record follow-on hypotheses and candidate tests.
+
+Execute:
+- Added
+  `docs/plans/bayesfilter-phase8-macrofinance-deferral-audit-2026-05-04.md`.
+- Updated `docs/source_map.yml` for the Phase 8 audit artifacts.
+
+Test:
+- No new provider code was required for this phase.
+- Deferral note was source-backed by local code reads of:
+  `large_scale_lgssm_derivative_provider.py`,
+  `cross_currency_structural_derivative_provider.py`, and
+  `production_cross_currency_derivative_provider.py`.
+
+Audit:
+- Large-scale LGSSM should wait for explicit mask-policy and parameter-unit
+  metadata.
+- Cross-currency structural providers should wait for coverage-matrix and
+  finite-difference oracle provenance metadata.
+- Production cross-currency providers should wait for blocker-table,
+  derivative-coverage, and identification-evidence metadata, and should fail
+  closed when final-provider readiness is false.
+
+Interpretation:
+- Phase 8 implementation is complete.
+- Final validation, tidy, reset-memo completion note, and commits are now
+  justified.
+
+### Phase 8 completion validation
+
+BayesFilter validation:
+- `pytest -q tests`: 22 passed.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8'))"` passed.
+- `git diff --check` passed.
+
+MacroFinance validation for the companion path-fix patch:
+- `pytest -q tests/test_one_country_theta2_geometry_diagnostics.py
+  tests/test_demo_hmc.py tests/test_demo_cross_currency.py
+  tests/test_perf_tfp_analytic_filter_speed.py
+  tests/test_perf_one_country_analytic_hmc_validation.py`:
+  17 passed.
+- Earlier focused MacroFinance gate:
+  `pytest -q tests/test_one_country_analytic_hmc_adapter.py
+  tests/test_one_country_hmc_analytic_gradient_hessian.py
+  tests/test_one_country_theta2_geometry_diagnostics.py
+  tests/test_filter_conventions.py`:
+  17 passed.
+- MacroFinance `git diff --check` passed.
+
+Completion interpretation:
+- Phase 8 is complete for the one-country MacroFinance pilot.
+- BayesFilter now has optional MacroFinance-shaped LGSSM value conversion,
+  delegated derivative result normalization, and finite HMC-target conformance
+  checks without sampler migration or convergence claims.
+- MacroFinance path-fix tests remove stale `/home/chakwong/python/MacroFinance`
+  assumptions from executable tests and make the active checkout portable.
+
+Next justified work:
+- Phase 8 follow-on A: add mask-policy and parameter-unit metadata before
+  adapting `LargeScaleLGSSMDerivativeProvider`.
+- Phase 8 follow-on B: add derivative coverage and finite-difference oracle
+  provenance before adapting `CrossCurrencyStructuralDerivativeProvider`.
+- Phase 8 follow-on C: add blocker-table, identification-evidence, and
+  production-readiness metadata before adapting production cross-currency
+  providers.
+- Phase 10: use the one-country adapter as a candidate HMC target only after
+  value, score, Hessian, eager/compiled parity, and target-readiness gates are
+  explicitly rerun in the BayesFilter context.
