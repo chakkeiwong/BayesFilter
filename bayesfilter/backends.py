@@ -41,6 +41,7 @@ class SpectralDerivativeCertificationResult:
 
     object_name: str
     singular_or_eigen_values: np.ndarray
+    derivative_policy: str
     min_gap: float
     gap_tolerance: float
     derivative_certified: bool
@@ -54,6 +55,7 @@ class SpectralDerivativeCertificationResult:
         values.setflags(write=False)
         object.__setattr__(self, "object_name", str(self.object_name))
         object.__setattr__(self, "singular_or_eigen_values", values)
+        object.__setattr__(self, "derivative_policy", str(self.derivative_policy))
         object.__setattr__(self, "min_gap", float(self.min_gap))
         object.__setattr__(self, "gap_tolerance", float(self.gap_tolerance))
         object.__setattr__(self, "derivative_certified", bool(self.derivative_certified))
@@ -103,12 +105,18 @@ def certify_spectral_derivative_region(
     values: Any,
     *,
     object_name: str = "spectral_factor",
+    derivative_policy: str = "spectral",
     gap_tolerance: float = 1e-6,
     finite_difference_checked: bool = False,
     jvp_vjp_checked: bool = False,
 ) -> SpectralDerivativeCertificationResult:
     """Gate spectral derivative claims on gap telemetry and numerical evidence."""
 
+    policy = str(derivative_policy)
+    if policy not in {"spectral", "non_spectral_custom_gradient"}:
+        raise ValueError(
+            "derivative_policy must be spectral or non_spectral_custom_gradient"
+        )
     spectral_values = np.sort(np.asarray(values, dtype=float).ravel())
     if spectral_values.size == 0:
         raise ValueError("spectral values must not be empty")
@@ -120,11 +128,13 @@ def certify_spectral_derivative_region(
     warning_label: str | None = None
     if not np.all(np.isfinite(spectral_values)):
         blockers.append("spectral values are nonfinite")
-    if min_gap <= float(gap_tolerance):
+    if policy == "spectral" and min_gap <= float(gap_tolerance):
         blockers.append(
             f"minimum spectral gap {min_gap:.3e} is at or below tolerance {float(gap_tolerance):.3e}"
         )
         warning_label = "spectral_gap_too_small"
+    elif policy == "non_spectral_custom_gradient" and min_gap <= float(gap_tolerance):
+        warning_label = "small_gap_non_spectral_policy"
     if not finite_difference_checked:
         blockers.append("finite-difference derivative check missing")
     if not jvp_vjp_checked:
@@ -133,6 +143,7 @@ def certify_spectral_derivative_region(
     return SpectralDerivativeCertificationResult(
         object_name=object_name,
         singular_or_eigen_values=spectral_values,
+        derivative_policy=policy,
         min_gap=min_gap,
         gap_tolerance=float(gap_tolerance),
         derivative_certified=certified,

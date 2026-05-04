@@ -55,6 +55,18 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-factor-backend-derivative-certification-audit-2026-05-05.md
     status: drafted
     role: Factor-backend classification and SVD/eigen derivative certification control audit.
+  - id: bayesfilter_six_next_issue_closure_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-six-next-issue-closure-plan-2026-05-05.md
+    status: drafted
+    role: Template-based execution plan for DSGE, particle, MacroFinance, spectral derivative, and HMC diagnostic next issues.
+  - id: bayesfilter_six_next_issue_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-six-next-issue-closure-audit-2026-05-05.md
+    status: drafted
+    role: Independent audit of the six next-issue closure plan.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -206,6 +218,22 @@ chapter_mappings:
       destination: bayesfilter/backends.py; tests/test_backend_readiness.py; docs/chapters/ch12_factor_derivatives.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch25_diagnostics.tex
       import_status: drafted
       reason: Defines backend value/derivative/HMC classification and spectral-gap derivative certification gates.
+
+  bayesfilter_six_next_issue_closure_plan:
+    - source_file: bayesfilter-six-next-issue-closure-plan-2026-05-05.md
+      destination: bayesfilter/adapters/dsge.py; bayesfilter/adapters/macrofinance.py; bayesfilter/backends.py; bayesfilter/filters/particles.py; tests/test_dsge_adapter_gate.py; tests/test_structural_particles.py; tests/test_macrofinance_adapter.py; tests/test_backend_readiness.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: >-
+        Defines the phase-by-phase closure pass for the six next issues: DSGE
+        metadata regimes, particle Monte Carlo evidence, provider-owned masked
+        metadata, blockwise cross-currency oracles, spectral derivative policy,
+        and HMC backend diagnostic comparison.
+
+  bayesfilter_six_next_issue_closure_audit:
+    - source_file: bayesfilter-six-next-issue-closure-audit-2026-05-05.md
+      destination: docs/plans/bayesfilter-six-next-issue-closure-plan-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the six-issue plan and confirms it avoids client-promotion and convergence overclaims.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md

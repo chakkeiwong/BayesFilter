@@ -33,6 +33,37 @@ def test_structural_bootstrap_particle_likelihood_is_finite_and_near_kalman():
     assert particle.diagnostics["max_identity_residual"] < 1e-14
 
 
+def test_structural_particle_ar2_error_shrinks_with_more_particles_over_seed_panel():
+    model = AR2StructuralModel(phi1=0.35, phi2=-0.10, sigma=0.25, observation_sigma=0.15)
+    observations = np.array(
+        [[0.2], [0.05], [-0.1], [0.15], [0.0], [0.12], [-0.08], [0.04]],
+        dtype=float,
+    )
+    reference = kalman_log_likelihood(observations, model.as_lgssm()).log_likelihood
+
+    low_errors = []
+    high_errors = []
+    for seed in range(5):
+        low = particle_filter_log_likelihood(
+            model,
+            observations,
+            config=ParticleFilterConfig(num_particles=512, random_seed=seed),
+            identity_diagnostic=_ar2_identity_residual,
+        )
+        high = particle_filter_log_likelihood(
+            model,
+            observations,
+            config=ParticleFilterConfig(num_particles=8192, random_seed=seed),
+            identity_diagnostic=_ar2_identity_residual,
+        )
+        low_errors.append(abs(low.log_likelihood - reference))
+        high_errors.append(abs(high.log_likelihood - reference))
+        assert low.diagnostics["max_identity_residual"] < 1e-14
+        assert high.diagnostics["max_identity_residual"] < 1e-14
+
+    assert float(np.mean(high_errors)) < 0.5 * float(np.mean(low_errors))
+
+
 def test_particle_filter_preserves_deterministic_completion_in_final_particles():
     model = AR2StructuralModel()
 

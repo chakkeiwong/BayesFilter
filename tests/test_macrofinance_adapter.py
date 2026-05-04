@@ -17,6 +17,7 @@ from bayesfilter.adapters.macrofinance import (
     ReadinessBlockerMetadata,
     evaluate_cross_currency_derivative_gate,
     evaluate_large_scale_adaptation_gate,
+    compare_macrofinance_hmc_backend_diagnostics,
     evaluate_macrofinance_hmc_diagnostic_gate,
     evaluate_macrofinance_hmc_gate,
     evaluate_macrofinance_hmc_readiness,
@@ -348,10 +349,12 @@ def test_large_scale_gate_accepts_dense_or_explicit_masked_support():
 
     assert dense.likelihood_adaptation_ready is True
     assert dense.mask_metadata.all_observed is True
+    assert dense.masked_support_source == "not_declared"
     assert sparse_blocked.likelihood_adaptation_ready is False
     assert "sparse observations require masked derivative support" in sparse_blocked.blockers[0]
     assert sparse_ready.likelihood_adaptation_ready is True
     assert sparse_ready.mask_metadata.missing_count == 1
+    assert sparse_ready.masked_support_source == "caller_override"
 
 
 def test_large_scale_gate_prefers_provider_owned_masked_support_metadata():
@@ -365,7 +368,24 @@ def test_large_scale_gate_prefers_provider_owned_masked_support_metadata():
 
     assert result.likelihood_adaptation_ready is True
     assert result.masked_derivative_order_supported == 2
+    assert result.masked_support_source == "provider.masked_derivative_order_supported"
     assert result.blockers == tuple()
+
+
+def test_large_scale_gate_blocks_caller_masked_support_override_in_production_mode():
+    provider = FakeProvider()
+
+    result = evaluate_large_scale_adaptation_gate(
+        provider,
+        requested_derivative_order=2,
+        masked_derivative_order_supported=2,
+        production_mode=True,
+    )
+
+    assert result.production_mode is True
+    assert result.masked_support_source == "caller_override"
+    assert result.likelihood_adaptation_ready is False
+    assert "provider-owned masked derivative support" in result.blockers[0]
 
 
 def test_cross_currency_metadata_extractors_work_with_fake_provider():
@@ -409,25 +429,53 @@ def test_cross_currency_derivative_gate_checks_coverage_and_oracle_discrepancy()
 
 def test_cross_currency_gate_accepts_blockwise_oracle_metadata():
     provider = FakeProvider()
+    required_blocks = (
+        "dynamics",
+        "transition_covariance",
+        "observation_loadings",
+        "measurement_error",
+    )
 
     result = evaluate_cross_currency_derivative_gate(
         provider,
         oracle_check=lambda _provider: {
             "max_abs_oracle_discrepancy": 5e-8,
-            "checked_blocks": (
-                "dynamics",
-                "transition_covariance",
-                "observation_loadings",
-                "measurement_error",
-            ),
+            "checked_blocks": required_blocks,
         },
         oracle_tolerance=1e-6,
+        required_oracle_blocks=required_blocks,
     )
 
     assert result.oracle_checked is True
     assert result.oracle_passed is True
     assert result.adaptation_ready is True
     assert result.max_abs_oracle_discrepancy == 5e-8
+    assert result.checked_oracle_blocks == required_blocks
+    assert result.missing_oracle_blocks == tuple()
+
+
+def test_cross_currency_gate_blocks_missing_required_oracle_block_even_with_small_discrepancy():
+    provider = FakeProvider()
+
+    result = evaluate_cross_currency_derivative_gate(
+        provider,
+        oracle_check=lambda _provider: {
+            "max_abs_oracle_discrepancy": 1e-10,
+            "checked_blocks": ("dynamics", "transition_covariance"),
+        },
+        oracle_tolerance=1e-6,
+        required_oracle_blocks=(
+            "dynamics",
+            "transition_covariance",
+            "observation_loadings",
+            "measurement_error",
+        ),
+    )
+
+    assert result.oracle_passed is True
+    assert result.adaptation_ready is False
+    assert result.missing_oracle_blocks == ("observation_loadings", "measurement_error")
+    assert "missing required blocks" in result.blockers[0]
 
 
 def test_cross_currency_derivative_gate_blocks_missing_parameter_coverage():
@@ -568,6 +616,97 @@ def test_hmc_diagnostic_gate_does_not_claim_readiness_when_target_gate_fails():
     assert target.target_ready is False
     assert result.diagnostics_ready is False
     assert "target gate is not ready" in result.blockers
+
+
+def test_hmc_backend_comparison_requires_every_backend_to_pass_diagnostics():
+    adapter = FakePosteriorAdapter()
+    target = evaluate_macrofinance_hmc_gate(
+        adapter,
+        compiled_log_prob_and_grad=adapter.log_prob_and_grad,
+    )
+
+    ready = compare_macrofinance_hmc_backend_diagnostics(
+        {
+            "covariance": (
+                target,
+                {
+                    "acceptance_rate": 0.75,
+                    "divergence_count": 0,
+                    "split_rhat": np.array([1.0]),
+                    "ess": np.array([150.0]),
+                },
+            ),
+            "qr": (
+                target,
+                {
+                    "acceptance_rate": 0.82,
+                    "divergence_count": 0,
+                    "split_rhat": np.array([1.005]),
+                    "ess": np.array([120.0]),
+                },
+            ),
+        },
+    )
+    blocked = compare_macrofinance_hmc_backend_diagnostics(
+        {
+            "covariance": (
+                target,
+                {
+                    "acceptance_rate": 0.75,
+                    "divergence_count": 0,
+                    "split_rhat": np.array([1.0]),
+                    "ess": np.array([150.0]),
+                },
+            ),
+            "svd": (
+                target,
+                {
+                    "acceptance_rate": 0.99,
+                    "divergence_count": 1,
+                    "split_rhat": np.array([1.02]),
+                    "ess": np.array([10.0]),
+                },
+            ),
+        },
+    )
+
+    assert ready.comparison_ready is True
+    assert ready.convergence_claim == "diagnostics_thresholds_passed"
+    assert ready.acceptance_rate_min == 0.75
+    assert ready.acceptance_rate_max == 0.82
+    assert ready.min_ess == 120.0
+    assert ready.max_split_rhat == 1.005
+    assert blocked.comparison_ready is False
+    assert blocked.convergence_claim == "not_claimed"
+    assert "svd diagnostics blocked" in blocked.blockers[0]
+
+
+def test_hmc_backend_comparison_handles_missing_arrays_as_blocked_result():
+    adapter = FakePosteriorAdapter()
+    target = evaluate_macrofinance_hmc_gate(
+        adapter,
+        compiled_log_prob_and_grad=adapter.log_prob_and_grad,
+    )
+
+    result = compare_macrofinance_hmc_backend_diagnostics(
+        {
+            "missing_arrays": (
+                target,
+                {
+                    "acceptance_rate": 0.75,
+                    "divergence_count": 0,
+                    "split_rhat": np.array([]),
+                    "ess": np.array([]),
+                },
+            ),
+        },
+    )
+
+    assert result.comparison_ready is False
+    assert result.convergence_claim == "not_claimed"
+    assert np.isnan(result.min_ess)
+    assert np.isnan(result.max_split_rhat)
+    assert "missing_arrays diagnostics blocked" in result.blockers[0]
 
 
 def _macrofinance_module(name: str):

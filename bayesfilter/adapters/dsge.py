@@ -17,6 +17,7 @@ class DSGEStructuralAdapterGateResult:
     adapter_ready: bool
     blockers: tuple[str, ...]
     approximation_label: str | None = None
+    metadata_regime: str = "unknown"
     source: str = "dsge_structural_adapter_gate"
 
     def __post_init__(self) -> None:
@@ -25,6 +26,7 @@ class DSGEStructuralAdapterGateResult:
         object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
         if self.approximation_label is not None:
             object.__setattr__(self, "approximation_label", str(self.approximation_label))
+        object.__setattr__(self, "metadata_regime", str(self.metadata_regime))
 
 
 def _call_or_value(model: Any, name: str) -> Any:
@@ -64,6 +66,7 @@ def dsge_structural_adapter_gate(
     name = model_name or type(model).__name__
     blockers: list[str] = []
     partition: StatePartition | None = None
+    metadata_regime = "missing"
     try:
         state_names = _optional_tuple(model, "bayesfilter_state_names", "state_names")
         stochastic_indices = _optional_tuple(
@@ -107,6 +110,14 @@ def dsge_structural_adapter_gate(
                 auxiliary_indices=tuple(int(item) for item in (auxiliary_indices or ())),
                 innovation_dim=int(innovation_dim),
             )
+            if partition.is_mixed:
+                metadata_regime = "mixed_structural"
+            elif partition.stochastic_dim == partition.state_dim:
+                metadata_regime = "all_stochastic"
+            elif partition.deterministic_dim == partition.state_dim:
+                metadata_regime = "all_deterministic"
+            else:
+                metadata_regime = "structural_declared"
             completion = getattr(model, "bayesfilter_deterministic_completion", None)
             if partition.is_mixed and completion is None:
                 blockers.append("mixed DSGE model lacks deterministic completion map")
@@ -123,4 +134,5 @@ def dsge_structural_adapter_gate(
         adapter_ready=not blockers,
         blockers=tuple(blockers),
         approximation_label=approximation_label,
+        metadata_regime=metadata_regime,
     )

@@ -201,6 +201,8 @@ class LargeScaleAdaptationGateResult:
     mask_metadata: ObservationMaskMetadata
     requested_derivative_order: int
     masked_derivative_order_supported: int
+    masked_support_source: str
+    production_mode: bool
     likelihood_adaptation_ready: bool
     blockers: tuple[str, ...]
     source: str = "large_scale_adaptation_gate"
@@ -212,6 +214,8 @@ class LargeScaleAdaptationGateResult:
             "masked_derivative_order_supported",
             int(self.masked_derivative_order_supported),
         )
+        object.__setattr__(self, "masked_support_source", str(self.masked_support_source))
+        object.__setattr__(self, "production_mode", bool(self.production_mode))
         object.__setattr__(self, "likelihood_adaptation_ready", bool(self.likelihood_adaptation_ready))
         object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
 
@@ -228,6 +232,9 @@ class CrossCurrencyDerivativeGateResult:
     oracle_passed: bool | None
     max_abs_oracle_discrepancy: float | None
     oracle_tolerance: float
+    required_oracle_blocks: tuple[str, ...]
+    checked_oracle_blocks: tuple[str, ...]
+    missing_oracle_blocks: tuple[str, ...]
     adaptation_ready: bool
     blockers: tuple[str, ...]
     source: str = "cross_currency_derivative_gate"
@@ -248,6 +255,9 @@ class CrossCurrencyDerivativeGateResult:
                 float(self.max_abs_oracle_discrepancy),
             )
         object.__setattr__(self, "oracle_tolerance", float(self.oracle_tolerance))
+        object.__setattr__(self, "required_oracle_blocks", tuple(str(block) for block in self.required_oracle_blocks))
+        object.__setattr__(self, "checked_oracle_blocks", tuple(str(block) for block in self.checked_oracle_blocks))
+        object.__setattr__(self, "missing_oracle_blocks", tuple(str(block) for block in self.missing_oracle_blocks))
         object.__setattr__(self, "adaptation_ready", bool(self.adaptation_ready))
         object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
 
@@ -300,6 +310,33 @@ class MacroFinanceHMCDiagnosticGateResult:
         object.__setattr__(self, "min_acceptance_rate", float(self.min_acceptance_rate))
         object.__setattr__(self, "max_acceptance_rate", float(self.max_acceptance_rate))
         object.__setattr__(self, "diagnostics_ready", bool(self.diagnostics_ready))
+        object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
+        object.__setattr__(self, "convergence_claim", str(self.convergence_claim))
+
+
+@dataclass(frozen=True)
+class MacroFinanceHMCBackendComparisonResult:
+    backend_results: tuple[tuple[str, MacroFinanceHMCDiagnosticGateResult], ...]
+    comparison_ready: bool
+    acceptance_rate_min: float
+    acceptance_rate_max: float
+    min_ess: float
+    max_split_rhat: float
+    blockers: tuple[str, ...]
+    convergence_claim: str = "not_claimed"
+    source: str = "hmc_backend_comparison_gate"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "backend_results",
+            tuple((str(name), result) for name, result in self.backend_results),
+        )
+        object.__setattr__(self, "comparison_ready", bool(self.comparison_ready))
+        object.__setattr__(self, "acceptance_rate_min", float(self.acceptance_rate_min))
+        object.__setattr__(self, "acceptance_rate_max", float(self.acceptance_rate_max))
+        object.__setattr__(self, "min_ess", float(self.min_ess))
+        object.__setattr__(self, "max_split_rhat", float(self.max_split_rhat))
         object.__setattr__(self, "blockers", tuple(str(blocker) for blocker in self.blockers))
         object.__setattr__(self, "convergence_claim", str(self.convergence_claim))
 
@@ -586,6 +623,7 @@ def evaluate_large_scale_adaptation_gate(
     mask: Any | None = None,
     requested_derivative_order: int = 2,
     masked_derivative_order_supported: int | None = None,
+    production_mode: bool = False,
 ) -> LargeScaleAdaptationGateResult:
     """Gate large-scale likelihood adaptation on dense panels or masked support."""
 
@@ -595,18 +633,32 @@ def evaluate_large_scale_adaptation_gate(
     mask_metadata = extract_observation_mask_metadata(provider, mask=mask)
     if masked_derivative_order_supported is None:
         supported = int(getattr(provider, "masked_derivative_order_supported", 0))
+        support_source = (
+            "provider.masked_derivative_order_supported"
+            if hasattr(provider, "masked_derivative_order_supported")
+            else "not_declared"
+        )
     else:
         supported = int(masked_derivative_order_supported)
+        support_source = "caller_override"
     blockers: list[str] = []
     if not mask_metadata.all_observed and supported < requested_order:
         blockers.append(
             "sparse observations require masked derivative support through "
             f"order {requested_order}; provider reports order {supported}"
         )
+    if (
+        bool(production_mode)
+        and not mask_metadata.all_observed
+        and support_source == "caller_override"
+    ):
+        blockers.append("production sparse readiness requires provider-owned masked derivative support")
     return LargeScaleAdaptationGateResult(
         mask_metadata=mask_metadata,
         requested_derivative_order=requested_order,
         masked_derivative_order_supported=supported,
+        masked_support_source=support_source,
+        production_mode=bool(production_mode),
         likelihood_adaptation_ready=not blockers,
         blockers=tuple(blockers),
     )
@@ -677,6 +729,7 @@ def evaluate_cross_currency_derivative_gate(
     *,
     oracle_check: Any | None = None,
     oracle_tolerance: float = 1e-6,
+    required_oracle_blocks: tuple[str, ...] = (),
 ) -> CrossCurrencyDerivativeGateResult:
     """Gate cross-currency adaptation on parameter coverage and oracle evidence."""
 
@@ -695,10 +748,15 @@ def evaluate_cross_currency_derivative_gate(
     oracle_checked = oracle_check is not None
     oracle_passed: bool | None = None
     max_abs_oracle_discrepancy: float | None = None
+    required_blocks = tuple(str(block) for block in required_oracle_blocks)
+    checked_blocks: tuple[str, ...] = tuple()
+    missing_blocks: tuple[str, ...] = tuple(required_blocks)
     if oracle_check is not None:
         raw = oracle_check(provider)
         if isinstance(raw, Mapping):
             discrepancy = raw.get("max_abs_oracle_discrepancy", raw.get("max_abs_discrepancy"))
+            raw_blocks = raw.get("checked_blocks", raw.get("oracle_blocks", tuple()))
+            checked_blocks = tuple(str(block) for block in raw_blocks)
         else:
             discrepancy = raw
         max_abs_oracle_discrepancy = float(discrepancy)
@@ -708,6 +766,15 @@ def evaluate_cross_currency_derivative_gate(
                 "finite-difference oracle discrepancy "
                 f"{max_abs_oracle_discrepancy:.3e} exceeds tolerance {float(oracle_tolerance):.3e}"
             )
+        checked_set = set(checked_blocks)
+        missing_blocks = tuple(block for block in required_blocks if block not in checked_set)
+    if required_blocks and not oracle_checked:
+        blockers.append("required finite-difference oracle blocks were not checked")
+    elif missing_blocks:
+        blockers.append(
+            "finite-difference oracle missing required blocks: "
+            + ", ".join(missing_blocks)
+        )
 
     return CrossCurrencyDerivativeGateResult(
         coverage=coverage,
@@ -720,6 +787,9 @@ def evaluate_cross_currency_derivative_gate(
         oracle_passed=oracle_passed,
         max_abs_oracle_discrepancy=max_abs_oracle_discrepancy,
         oracle_tolerance=float(oracle_tolerance),
+        required_oracle_blocks=required_blocks,
+        checked_oracle_blocks=checked_blocks,
+        missing_oracle_blocks=missing_blocks,
         adaptation_ready=not blockers,
         blockers=tuple(blockers),
     )
@@ -985,4 +1055,57 @@ def evaluate_macrofinance_hmc_diagnostic_gate(
         diagnostics_ready=diagnostics_ready,
         blockers=tuple(blockers),
         convergence_claim="diagnostics_thresholds_passed" if diagnostics_ready else "not_claimed",
+    )
+
+
+def compare_macrofinance_hmc_backend_diagnostics(
+    backend_diagnostics: Mapping[str, tuple[MacroFinanceHMCGateResult, Any]],
+    *,
+    min_ess: float = 50.0,
+    max_split_rhat: float = 1.01,
+    min_acceptance_rate: float = 0.6,
+    max_acceptance_rate: float = 0.95,
+) -> MacroFinanceHMCBackendComparisonResult:
+    """Compare supplied HMC diagnostics across named backend targets."""
+
+    if not backend_diagnostics:
+        raise ValueError("backend_diagnostics must not be empty")
+    results: list[tuple[str, MacroFinanceHMCDiagnosticGateResult]] = []
+    blockers: list[str] = []
+    for backend_name, (target_gate, diagnostics) in backend_diagnostics.items():
+        result = evaluate_macrofinance_hmc_diagnostic_gate(
+            target_gate,
+            diagnostics,
+            min_ess=min_ess,
+            max_split_rhat=max_split_rhat,
+            min_acceptance_rate=min_acceptance_rate,
+            max_acceptance_rate=max_acceptance_rate,
+        )
+        results.append((str(backend_name), result))
+        if not result.diagnostics_ready:
+            blockers.append(
+                f"{backend_name} diagnostics blocked: " + "; ".join(result.blockers)
+            )
+
+    acceptance_rates = [result.acceptance_rate for _, result in results]
+    ess_values = [
+        float(np.min(result.ess)) if result.ess.size else float("nan")
+        for _, result in results
+    ]
+    rhat_values = [
+        float(np.max(result.split_rhat)) if result.split_rhat.size else float("nan")
+        for _, result in results
+    ]
+    comparison_ready = not blockers
+    return MacroFinanceHMCBackendComparisonResult(
+        backend_results=tuple(results),
+        comparison_ready=comparison_ready,
+        acceptance_rate_min=float(np.min(acceptance_rates)),
+        acceptance_rate_max=float(np.max(acceptance_rates)),
+        min_ess=float(np.min(ess_values)),
+        max_split_rhat=float(np.max(rhat_values)),
+        blockers=tuple(blockers),
+        convergence_claim=(
+            "diagnostics_thresholds_passed" if comparison_ready else "not_claimed"
+        ),
     )

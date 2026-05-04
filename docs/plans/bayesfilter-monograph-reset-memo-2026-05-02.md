@@ -4027,3 +4027,209 @@ Final interpretation:
   adapters, MacroFinance final-provider evidence, spectral client derivative
   certification, and real HMC chain diagnostics remain separate next-phase
   blockers.
+
+## 2026-05-05 update: six next-issue closure pass
+
+Context:
+- User asked for a detailed plan using `docs/plans/templates` where possible,
+  a reset-memo update, an independent audit, phase-by-phase execution, final
+  commit, and next-phase hypotheses.
+- The six issues were interpreted as the six hypotheses left by the previous
+  closure pass: DSGE adapter evidence, particle Monte Carlo convergence,
+  provider-owned MacroFinance masked metadata, cross-currency blockwise oracle
+  evidence, SVD/eigen derivative policy, and HMC backend diagnostic comparison.
+
+### S0: hygiene, plan, and audit
+
+Plan:
+- Use the local experiment-plan/result template headings.
+- Keep pre-existing unrelated reset-memo and roadmap edits out of the scoped
+  commit.
+
+Execute:
+- Added `docs/plans/bayesfilter-six-next-issue-closure-plan-2026-05-05.md`.
+- Added `docs/plans/bayesfilter-six-next-issue-closure-audit-2026-05-05.md`.
+
+Test:
+- Manual audit confirmed all six issues are represented.
+
+Audit:
+- The plan avoids client-repo economics, production data, and real sampler
+  claims.
+
+Interpretation:
+- S1 remains justified.
+
+### S1: DSGE adapter evidence gate
+
+Plan:
+- Prove that SmallNK-like all-stochastic metadata passes while mixed
+  Rotemberg/SGU-like metadata without completion fails closed.
+
+Execute:
+- Added `metadata_regime` to `DSGEStructuralAdapterGateResult`.
+- Added all-stochastic and Rotemberg-like mixed-metadata tests.
+
+Test:
+- Focused six-issue test suite passed after implementation.
+
+Audit:
+- All-stochastic metadata now records `metadata_regime="all_stochastic"` and
+  passes without a deterministic completion map.
+- Mixed metadata records `metadata_regime="mixed_structural"` and remains
+  blocked without a deterministic completion map.
+
+Interpretation:
+- S2 remains justified.
+- DSGE client implementation is still blocked until `/home/chakwong/python`
+  exposes real model adapters.
+
+### S2: particle Monte Carlo convergence evidence
+
+Plan:
+- Add deterministic AR(2) evidence that increasing particle count improves
+  likelihood error on average over a small seed panel.
+
+Execute:
+- Added a longer AR(2) particle-vs-Kalman seed-panel test.
+- Kept identity diagnostics at every particle count.
+
+Test:
+- Focused structural particle tests passed.
+
+Audit:
+- The higher particle count has less than half the mean absolute likelihood
+  error of the lower particle count under the fixed seed panel.
+- The test does not claim a formal convergence rate or differentiability.
+
+Interpretation:
+- S3 remains justified.
+
+### S3: provider-owned MacroFinance masked metadata
+
+Plan:
+- Distinguish provider-owned masked derivative metadata from caller overrides.
+- Block caller overrides in production mode.
+
+Execute:
+- Added `masked_support_source` and `production_mode` to
+  `LargeScaleAdaptationGateResult`.
+- Added `production_mode` to `evaluate_large_scale_adaptation_gate`.
+- Added tests for provider-owned support and production-mode caller override
+  blocking.
+
+Test:
+- Focused MacroFinance adapter tests passed.
+
+Audit:
+- Caller overrides can still support non-production smoke tests.
+- Sparse production readiness requires provider-owned
+  `masked_derivative_order_supported`.
+
+Interpretation:
+- S4 remains justified.
+
+### S4: cross-currency blockwise oracle evidence
+
+Plan:
+- Require named oracle blocks instead of accepting only an aggregate
+  discrepancy.
+
+Execute:
+- Added required/checked/missing oracle block fields to
+  `CrossCurrencyDerivativeGateResult`.
+- Added `required_oracle_blocks` to `evaluate_cross_currency_derivative_gate`.
+- Added tests for complete blockwise oracle evidence and missing-block
+  fail-closed behavior.
+
+Test:
+- Focused MacroFinance adapter tests passed.
+
+Audit:
+- Dynamics, transition covariance, observation loadings, and measurement error
+  can be required explicitly.
+- A tiny aggregate oracle discrepancy no longer passes if required block names
+  are absent.
+
+Interpretation:
+- S5 remains justified.
+
+### S5: spectral derivative policy gate
+
+Plan:
+- Block small-gap spectral derivative paths by default.
+- Allow explicitly declared non-spectral custom-gradient policy only with
+  finite-difference and JVP/VJP checks.
+
+Execute:
+- Added `derivative_policy` to `SpectralDerivativeCertificationResult`.
+- Added `derivative_policy` to `certify_spectral_derivative_region`.
+- Added non-spectral small-gap certification test.
+
+Test:
+- Focused backend readiness tests passed.
+
+Audit:
+- Default spectral policy remains blocked near small gaps.
+- `non_spectral_custom_gradient` can pass small-gap telemetry only when both
+  numerical checks are declared, with warning label
+  `small_gap_non_spectral_policy`.
+
+Interpretation:
+- S6 remains justified.
+
+### S6: HMC backend diagnostic comparison
+
+Plan:
+- Compare supplied HMC diagnostics across named backends.
+- Fail closed when any backend fails.
+
+Execute:
+- Added `MacroFinanceHMCBackendComparisonResult`.
+- Added `compare_macrofinance_hmc_backend_diagnostics`.
+- Exported comparison helper from `bayesfilter.adapters`.
+- Added tests for all-pass and one-backend-fails cases.
+
+Test:
+- Focused MacroFinance adapter tests passed after correcting the comparison
+  summary to use observed ESS and split-R-hat values rather than threshold
+  fields.
+
+Audit:
+- All supplied backends must pass target/diagnostic gates before the comparison
+  result is ready.
+- A failing backend preserves `convergence_claim="not_claimed"`.
+- The helper consumes diagnostics only; it does not run a sampler.
+
+Interpretation:
+- Final validation remains justified.
+
+### Six next-issue closure validation
+
+Results:
+- Initial `PYTHONDONTWRITEBYTECODE=1 python -m py_compile ...` attempted to
+  write under the read-only in-tree `__pycache__` path and failed with
+  `Errno 30`; rerunning the same syntax check with
+  `PYTHONPYCACHEPREFIX=/tmp/bayesfilter_pycache` passed.
+- `PYTHONDONTWRITEBYTECODE=1 pytest -q tests/test_dsge_adapter_gate.py
+  tests/test_structural_particles.py tests/test_backend_readiness.py
+  tests/test_filter_metadata.py tests/test_macrofinance_adapter.py -q -p
+  no:cacheprovider` passed: 48 focused tests, with two TensorFlow Probability
+  deprecation warnings from the optional MacroFinance import path.
+- Final `pytest -q` passed: 62 tests, with the same two TensorFlow Probability
+  deprecation warnings.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8')); print('source_map yaml ok')"` passed.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` in `docs/`
+  passed with `main.pdf` already up to date.
+- Stale-claim search over `docs`, `bayesfilter`, and `tests` found label
+  policies, blocker text, and tests asserting `not_claimed`/`blocked`, but no
+  new unsupported convergence or production-readiness claim from this pass.
+
+Final interpretation:
+- The six BayesFilter-owned next issues are closed as executable gates and
+  tests.
+- Client promotion remains blocked for real DSGE adapters, real MacroFinance
+  production providers, real non-spectral derivative implementations, and real
+  HMC chain output.

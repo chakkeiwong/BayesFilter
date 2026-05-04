@@ -61,3 +61,18 @@ def test_spectral_derivative_certification_requires_gap_and_numerical_checks():
     assert blocked.warning_label == "spectral_gap_too_small"
     assert any("minimum spectral gap" in blocker for blocker in blocked.blockers)
     assert any("JVP/VJP" in blocker for blocker in blocked.blockers)
+
+
+def test_non_spectral_custom_gradient_policy_can_pass_small_gap_with_checks():
+    result = certify_spectral_derivative_region(
+        np.array([1.0, 1.0 + 1e-10]),
+        derivative_policy="non_spectral_custom_gradient",
+        gap_tolerance=1e-6,
+        finite_difference_checked=True,
+        jvp_vjp_checked=True,
+    )
+
+    assert result.derivative_policy == "non_spectral_custom_gradient"
+    assert result.derivative_certified is True
+    assert result.hmc_eligible is True
+    assert result.warning_label == "small_gap_non_spectral_policy"

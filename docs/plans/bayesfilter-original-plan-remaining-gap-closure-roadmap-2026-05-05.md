@@ -32,6 +32,109 @@ workspace hygiene
   -> release-quality docs and literature gates
 ```
 
+## Best Execution Path
+
+The best path is not to start with the most technically interesting item.  The
+best path is to first protect claim discipline and then attack the two
+structural blockers that determine every later HMC claim:
+
+1. **R0--R1 first: make the control layer clean.**
+   Close workspace ambiguity, reconcile the source map, and create a blocker
+   register.  This is the cheapest work, but it prevents later agents from
+   mixing unrelated commits or turning smoke evidence into convergence prose.
+2. **R2 next: DSGE structural adapter pilot.**
+   The original structural-state problem is not closed until at least one DSGE
+   model exports BayesFilter-compatible structural metadata and mixed models
+   without deterministic-completion maps fail closed.
+3. **R4--R5 next on the derivative track: factor backend audit, then
+   SVD/eigen derivative certification.**
+   HMC cannot be promoted through spectral backends until the differentiated
+   numerical object is named, tested, and guarded by spectral-gap telemetry.
+4. **R3 can run after R1 for toy models, but client-facing particle claims
+   should wait for R2.**
+   Particle filters are useful, but without adapter-level structural maps they
+   can easily reintroduce artificial noise in deterministic coordinates.
+5. **R6 can run in parallel with R2/R4 if the worker stays inside
+   MacroFinance evidence gates.**
+   MacroFinance expanded-provider work is mostly provider-evidence collection,
+   not BayesFilter core design.
+6. **R7 is last among implementation phases.**
+   Actual HMC chains should run only after target value, derivative,
+   compiled/backend, and provider/model evidence gates pass.
+7. **R8 is final release synchronization.**
+   Documentation should be updated continuously, but release language should be
+   finalized only after implementation gates settle.
+
+In short:
+
+```text
+R0 -> R1 -> {R2, R4}
+R2 -> R3
+R4 -> R5
+{R5, R6, R2/R3 as applicable} -> R7
+R7 -> R8
+```
+
+## First Three Concrete Execution Rounds
+
+### Round 1: hygiene and control-layer commit
+
+Objective:
+- Make the workspace auditable and establish the blocker/claim register.
+
+Deliverables:
+- A committed blocker register under `docs/plans`.
+- Reconciled `docs/source_map.yml`.
+- Reset memo section summarizing closed, blocked, approximate, and candidate
+  work.
+- No ambiguous dirty files in future phase write sets.
+
+Validation:
+- YAML parse for `docs/source_map.yml`.
+- `git diff --check`.
+- Targeted stale-claim search for `converged`, `production-ready`,
+  `Identified`, `not_claimed`, and `blocked`.
+
+### Round 2: DSGE adapter pilot commit
+
+Objective:
+- Prove that the BayesFilter structural contract can be consumed by at least one
+  DSGE model without moving DSGE economics into BayesFilter.
+
+Deliverables:
+- DSGE-side adapter contract tests in `/home/chakwong/python`.
+- SmallNK partition certification if all states are exogenous.
+- At least one mixed-model fail-closed test for missing deterministic
+  completion.
+- Rotemberg/SGU metadata audit note, even if one or both remain blocked.
+
+Validation:
+- Existing BayesFilter structural tests still pass.
+- DSGE adapter tests pass.
+- Legacy collapsed/full-state paths are either blocked or approximation-labeled.
+
+### Round 3: factor-backend and derivative-risk commit
+
+Objective:
+- Name which factor backends can be value or derivative references before any
+  SVD/eigen derivative certification starts.
+
+Deliverables:
+- Backend classification matrix for covariance, square-root, QR, SVD/eigen
+  paths.
+- Metadata extensions if needed for factor backend, differentiability status,
+  compiled status, and spectral-gap diagnostics.
+- A derivative-hook ownership decision: BayesFilter core versus client adapters.
+
+Validation:
+- LGSSM parity across accepted value backends.
+- Singular-`Q` smoke checks.
+- Finite-difference smoke only where derivative hooks already exist.
+
+Only after these three rounds should the project spend serious time on SVD/eigen
+gradient certification or HMC sampler runs.  Otherwise, the most expensive
+debugging work will be built on an unstable contract.
+
 ## Current Closure State
 
 Already closed or substantially closed:
