@@ -3706,3 +3706,324 @@ Next hypotheses to test:
 - H-G8: HMC sampler integration should run the diagnostic gate on actual
   MacroFinance chain output and then compare diagnostic sensitivity across
   covariance, QR, and any future XLA-safe target backends.
+
+## 2026-05-05 update: dependency-aware original-plan remaining-gap closure pass
+
+User asked to update the reset memo, audit the remaining-gap roadmap as if by
+another developer, and execute every roadmap phase using the cycle:
+
+```text
+plan -> execute -> test -> audit -> tidy -> update reset memo
+```
+
+The execution target was
+`docs/plans/bayesfilter-original-plan-remaining-gap-closure-roadmap-2026-05-05.md`.
+
+### R0: workspace hygiene and scope separation
+
+Plan:
+- Record the dirty workspace.
+- Classify current dirty files and avoid staging unrelated work.
+- Treat the reset memo as a shared file requiring hunk-level staging.
+
+Execute:
+- Recorded `git status --short --branch`.
+- Confirmed the current pass owns the new remaining-gap roadmap, source-map
+  registrations, BayesFilter adapter/filter/backend additions, new tests, and
+  this memo section.
+- Confirmed the reset memo already contained an unrelated formal
+  nonlinear-measurement refactor note before this pass.
+
+Test:
+- `git status --short --branch` showed scoped current-pass files and the
+  pre-existing reset-memo change.
+
+Audit:
+- The pass can proceed if commits stage only the new remaining-gap closure
+  hunks and files.
+
+Interpretation:
+- R1 remains justified.
+
+### Independent roadmap audit
+
+Plan:
+- Review the roadmap as if by a separate developer.
+- Check for missing original-plan gaps, dependency mistakes, and overclaim risk.
+
+Execute:
+- Added
+  `docs/plans/bayesfilter-original-plan-remaining-gap-closure-audit-2026-05-05.md`.
+- Added
+  `docs/plans/bayesfilter-original-plan-remaining-gap-blocker-register-2026-05-05.md`.
+
+Test:
+- Source-map YAML parse is part of final validation.
+
+Audit:
+- The roadmap covers DSGE adapters, particle semantics, factor/derivative
+  backends, SVD/eigen derivative certification, MacroFinance provider evidence,
+  HMC diagnostics, and release docs.
+- The main correction is interpretive: BayesFilter can close local gates, but
+  cannot honestly promote client DSGE/MacroFinance implementations without
+  client-owned evidence.
+
+Interpretation:
+- R1 remains justified.
+
+### R1: provenance and control-layer consolidation
+
+Plan:
+- Make the remaining-gap control layer explicit.
+- Register new plan/audit/control artifacts in `docs/source_map.yml`.
+- Preserve conservative labels.
+
+Execute:
+- Registered the roadmap, audit, blocker register, particle semantics audit,
+  and backend/derivative certification audit in `docs/source_map.yml`.
+- Added a closed-vs-blocked register with owner, evidence, required gate,
+  allowed label, and promotion blocker for each remaining gap.
+
+Test:
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8'))"` is included in final validation.
+
+Audit:
+- Every remaining gap now has a dependency and promotion gate.
+- Claim labels distinguish `adapter_ready`, `monte_carlo_value_only`,
+  `target_candidate`, `diagnostics_thresholds_passed`, and `not_claimed`.
+
+Interpretation:
+- R2 remains justified as a BayesFilter adapter gate.  Full DSGE client
+  implementation remains blocked pending client-repo metadata work.
+
+### R2: DSGE adapter pilot
+
+Plan:
+- Avoid copying DSGE economics into BayesFilter.
+- Add a fail-closed BayesFilter gate that accepts explicit DSGE structural
+  metadata and blocks missing or incomplete mixed-model metadata.
+
+Execute:
+- Added `bayesfilter/adapters/dsge.py`.
+- Added `DSGEStructuralAdapterGateResult`.
+- Added `dsge_structural_adapter_gate`.
+- Exported the gate from `bayesfilter.adapters`.
+- Added `tests/test_dsge_adapter_gate.py`.
+
+Test:
+- Focused suite including `tests/test_dsge_adapter_gate.py` passed.
+
+Audit:
+- Missing DSGE structural metadata fails closed.
+- Explicit toy structural metadata passes.
+- Mixed DSGE metadata without a deterministic completion map is blocked.
+- SmallNK/Rotemberg/SGU client implementation was not claimed, because
+  `/home/chakwong/python` is outside this BayesFilter pass.
+
+Interpretation:
+- R3 remains justified for BayesFilter toy structural particles.
+- Client-facing DSGE adapter promotion remains blocked until the DSGE repo
+  supplies and tests model-specific maps.
+
+### R3: particle-filter semantics before implementation
+
+Plan:
+- Write the structural particle semantics audit.
+- Implement only an innovation-space bootstrap particle reference path.
+- Preserve deterministic-completion coordinates pointwise.
+- Reject artificial deterministic-coordinate noise unless labeled as an
+  approximation.
+
+Execute:
+- Added
+  `docs/plans/bayesfilter-particle-filter-structural-semantics-audit-2026-05-05.md`.
+- Replaced the fail-closed particle placeholder with:
+  - `ParticleFilterConfig`;
+  - `ParticleFilterResult`;
+  - `particle_filter_log_likelihood`.
+- Exported particle filter symbols from `bayesfilter.filters`.
+- Added `tests/test_structural_particles.py`.
+- Updated `tests/test_filter_metadata.py` to check audited particle metadata.
+
+Test:
+- Focused particle and metadata tests passed.
+
+Audit:
+- The implementation samples innovations, propagates each particle through the
+  model transition, and records `monte_carlo_value_only`.
+- AR(2) deterministic lag identity is preserved pointwise.
+- Unlabeled deterministic-coordinate noise fails closed.
+- Labeled artificial deterministic noise is allowed only as
+  `declared_approximation`.
+
+Interpretation:
+- R4 remains justified.
+- Differentiable PF and PMCMC/HMC claims remain blocked behind separate source
+  and estimator audits.
+
+### R4: factor-backend and derivative-hook audit
+
+Plan:
+- Add a BayesFilter-local backend classification gate.
+- Keep value, derivative, compiled, approximation, and HMC statuses separate.
+
+Execute:
+- Added `bayesfilter/backends.py`.
+- Added `FactorBackendAuditResult` and `audit_factor_backend`.
+- Exported backend gates from `bayesfilter`.
+- Added `tests/test_backend_readiness.py`.
+
+Test:
+- Focused backend tests passed.
+
+Audit:
+- Value-only covariance Kalman remains exact for LGSSM values but HMC-blocked.
+- A fake exact/derivative/compiled backend can become `target_candidate`.
+- Unlabeled approximations are blocked.
+
+Interpretation:
+- R5 remains justified.
+
+### R5: SVD/eigen derivative certification
+
+Plan:
+- Add a spectral derivative gate with explicit gap telemetry and numerical
+  evidence requirements.
+- Do not certify client SVD/eigen paths without backend-specific tests.
+
+Execute:
+- Added `SpectralDerivativeCertificationResult`.
+- Added `certify_spectral_derivative_region`.
+- Added
+  `docs/plans/bayesfilter-factor-backend-derivative-certification-audit-2026-05-05.md`.
+
+Test:
+- Focused backend tests passed.
+
+Audit:
+- Large-gap values with declared finite-difference and JVP/VJP checks can pass.
+- Near-repeated spectral values produce `spectral_gap_too_small` and block HMC
+  eligibility.
+- Missing finite-difference or JVP/VJP evidence blocks certification.
+
+Interpretation:
+- R6 remains justified for MacroFinance provider-evidence gates.
+- SVD/eigen HMC promotion remains blocked for real client paths until
+  backend-specific stress tests pass.
+
+### R6: MacroFinance expanded-provider evidence
+
+Plan:
+- Use existing MacroFinance gates but add tests for provider-owned masked
+  support and blockwise oracle metadata.
+- Do not claim final production readiness unless a provider supplies final
+  evidence.
+
+Execute:
+- Added focused tests proving `evaluate_large_scale_adaptation_gate` can consume
+  provider-owned `masked_derivative_order_supported`.
+- Added focused tests proving `evaluate_cross_currency_derivative_gate` can
+  consume a blockwise oracle result with dynamics, transition covariance,
+  observation loadings, and measurement-error block names.
+
+Test:
+- Focused MacroFinance adapter tests passed.
+
+Audit:
+- BayesFilter now consumes expanded-provider evidence without owning
+  MacroFinance financial-model logic.
+- The current production exposure rule still requires final readiness, no
+  blockers, sparse policy, and final-data `Identified` evidence.
+
+Interpretation:
+- R7 remains justified only as a diagnostics gate over supplied chain output.
+- MacroFinance production promotion remains blocked until real final provider
+  evidence passes the gates.
+
+### R7: HMC sampler readiness
+
+Plan:
+- Reuse the existing target and diagnostic gates.
+- Confirm no convergence is inferred from target readiness alone.
+
+Execute:
+- Kept `evaluate_macrofinance_hmc_gate` and
+  `evaluate_macrofinance_hmc_diagnostic_gate` as the sampler-readiness boundary.
+- No sampler was added or run by BayesFilter.
+
+Test:
+- Focused MacroFinance HMC target/diagnostic tests passed.
+
+Audit:
+- `target_ready` is distinct from `convergence_claim`.
+- Diagnostics require target readiness, acceptance bounds, zero divergences,
+  split R-hat, and ESS.
+- Passing synthetic diagnostics set
+  `convergence_claim="diagnostics_thresholds_passed"` only for the supplied
+  diagnostic object, not for a real production run.
+
+Interpretation:
+- R8 remains justified as release-quality validation with conservative blocked
+  labels.
+
+### R8: release-quality documentation and literature gates
+
+Plan:
+- Keep docs/source-map/reset-memo in agreement with implementation state.
+- Run stale-claim and syntax validations.
+
+Execute:
+- Registered all new plan/audit artifacts in `docs/source_map.yml`.
+- This memo section records each phase result and next-phase justification.
+- The blocker register keeps client promotion and production/HMC claims
+  conservative.
+
+Test:
+- Final validation is recorded below.
+
+Audit:
+- Documentation artifacts now distinguish BayesFilter-owned gates from client
+  repository blockers.
+- No final production or convergence claim is introduced.
+
+Interpretation:
+- The BayesFilter-owned remaining-gap closure pass is complete.
+- Client implementation/promotions remain as next-phase work.
+
+### Final validation for remaining-gap closure pass
+
+Planned validation:
+- focused tests for new gates and affected adapter paths;
+- full BayesFilter test suite;
+- source-map YAML parse;
+- `git diff --check`;
+- Python compile check for new modules.
+
+Results:
+- `python -m py_compile bayesfilter/__init__.py
+  bayesfilter/adapters/__init__.py bayesfilter/adapters/dsge.py
+  bayesfilter/backends.py bayesfilter/filters/__init__.py
+  bayesfilter/filters/particles.py tests/test_backend_readiness.py
+  tests/test_dsge_adapter_gate.py tests/test_structural_particles.py` passed.
+- `pytest -q tests/test_dsge_adapter_gate.py tests/test_structural_particles.py
+  tests/test_backend_readiness.py tests/test_filter_metadata.py
+  tests/test_macrofinance_adapter.py -q` passed, with the same two TensorFlow
+  Probability deprecation warnings from the optional MacroFinance import path.
+- `pytest -q` passed: 55 passed, with the same two TensorFlow Probability
+  deprecation warnings.
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8'))"` passed.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` in
+  `docs/` passed; `main.pdf` was already up to date.
+- Stale-claim search for convergence/production labels found only label
+  policies, blockers, or caution text, not a new promotion claim.
+
+Final interpretation:
+- BayesFilter now has executable gates or conservative blockers for every
+  remaining original-plan gap.
+- The original plan is not fully production-promoted, because DSGE client
+  adapters, MacroFinance final-provider evidence, spectral client derivative
+  certification, and real HMC chain diagnostics remain separate next-phase
+  blockers.

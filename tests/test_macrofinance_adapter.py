@@ -354,6 +354,20 @@ def test_large_scale_gate_accepts_dense_or_explicit_masked_support():
     assert sparse_ready.mask_metadata.missing_count == 1
 
 
+def test_large_scale_gate_prefers_provider_owned_masked_support_metadata():
+    class ProviderOwnedMaskedSupport(FakeProvider):
+        masked_derivative_order_supported = 2
+
+    result = evaluate_large_scale_adaptation_gate(
+        ProviderOwnedMaskedSupport(),
+        requested_derivative_order=2,
+    )
+
+    assert result.likelihood_adaptation_ready is True
+    assert result.masked_derivative_order_supported == 2
+    assert result.blockers == tuple()
+
+
 def test_cross_currency_metadata_extractors_work_with_fake_provider():
     provider = FakeProvider()
 
@@ -391,6 +405,29 @@ def test_cross_currency_derivative_gate_checks_coverage_and_oracle_discrepancy()
     assert failing_oracle.oracle_passed is False
     assert failing_oracle.adaptation_ready is False
     assert "finite-difference oracle discrepancy" in failing_oracle.blockers[0]
+
+
+def test_cross_currency_gate_accepts_blockwise_oracle_metadata():
+    provider = FakeProvider()
+
+    result = evaluate_cross_currency_derivative_gate(
+        provider,
+        oracle_check=lambda _provider: {
+            "max_abs_oracle_discrepancy": 5e-8,
+            "checked_blocks": (
+                "dynamics",
+                "transition_covariance",
+                "observation_loadings",
+                "measurement_error",
+            ),
+        },
+        oracle_tolerance=1e-6,
+    )
+
+    assert result.oracle_checked is True
+    assert result.oracle_passed is True
+    assert result.adaptation_ready is True
+    assert result.max_abs_oracle_discrepancy == 5e-8
 
 
 def test_cross_currency_derivative_gate_blocks_missing_parameter_coverage():

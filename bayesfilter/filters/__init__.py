@@ -5,6 +5,12 @@ from bayesfilter.filters.kalman import (
     LinearGaussianStateSpace,
     kalman_log_likelihood,
 )
+from bayesfilter.filters.particles import (
+    ParticleFilterConfig,
+    ParticleFilterNotAuditedError,
+    ParticleFilterResult,
+    particle_filter_log_likelihood,
+)
 from bayesfilter.filters.sigma_points import (
     CubatureRule,
     SigmaPointResult,
@@ -16,8 +22,12 @@ __all__ = [
     "CubatureRule",
     "KalmanResult",
     "LinearGaussianStateSpace",
+    "ParticleFilterConfig",
+    "ParticleFilterNotAuditedError",
+    "ParticleFilterResult",
     "SigmaPointResult",
     "StructuralSVDSigmaPointFilter",
     "UnscentedRule",
     "kalman_log_likelihood",
+    "particle_filter_log_likelihood",
 ]

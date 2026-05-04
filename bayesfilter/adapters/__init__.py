@@ -1,5 +1,9 @@
 """Optional adapters for external state-space projects."""
 
+from bayesfilter.adapters.dsge import (
+    DSGEStructuralAdapterGateResult,
+    dsge_structural_adapter_gate,
+)
 from bayesfilter.adapters.macrofinance import (
     DerivativeCoverageMetadata,
     FiniteDifferenceOracleMetadata,
@@ -36,6 +40,7 @@ from bayesfilter.adapters.macrofinance import (
 
 __all__ = [
     "DerivativeCoverageMetadata",
+    "DSGEStructuralAdapterGateResult",
     "FiniteDifferenceOracleMetadata",
     "IdentificationEvidenceMetadata",
     "CrossCurrencyDerivativeGateResult",
@@ -50,6 +55,7 @@ __all__ = [
     "ReadinessBlockerMetadata",
     "ProductionExposureGateResult",
     "SparseBackendPolicyMetadata",
+    "dsge_structural_adapter_gate",
     "evaluate_cross_currency_derivative_gate",
     "evaluate_large_scale_adaptation_gate",
     "evaluate_macrofinance_hmc_diagnostic_gate",

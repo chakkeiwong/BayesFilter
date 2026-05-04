@@ -25,6 +25,36 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md
     status: drafted
     role: Canonical implementation plan for generic structural state partition and filtering core.
+  - id: bayesfilter_original_plan_remaining_gap_closure_roadmap
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-original-plan-remaining-gap-closure-roadmap-2026-05-05.md
+    status: drafted
+    role: Dependency-aware roadmap for closing the remaining gaps of the original structural state partition core plan.
+  - id: bayesfilter_original_plan_remaining_gap_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-original-plan-remaining-gap-closure-audit-2026-05-05.md
+    status: drafted
+    role: Independent audit of the dependency-aware remaining-gap closure roadmap.
+  - id: bayesfilter_original_plan_remaining_gap_blocker_register
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-original-plan-remaining-gap-blocker-register-2026-05-05.md
+    status: drafted
+    role: Closed-vs-blocked control register for the remaining original-plan gaps and allowed claim labels.
+  - id: bayesfilter_particle_filter_structural_semantics_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-particle-filter-structural-semantics-audit-2026-05-05.md
+    status: drafted
+    role: Structural bootstrap particle-filter semantics audit and approximation policy.
+  - id: bayesfilter_factor_backend_derivative_certification_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-factor-backend-derivative-certification-audit-2026-05-05.md
+    status: drafted
+    role: Factor-backend classification and SVD/eigen derivative certification control audit.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -146,6 +176,36 @@ chapter_mappings:
       destination: docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch04_bayesfilter_api.tex; docs/chapters/ch18b_structural_deterministic_dynamics.tex; docs/chapters/ch32_production_checklist.tex
       import_status: drafted
       reason: Canonical BayesFilter plan defining structural partitions, deterministic completion, AR(p) examples, MacroFinance/DSGE adapters, and test ladder.
+
+  bayesfilter_original_plan_remaining_gap_closure_roadmap:
+    - source_file: bayesfilter-original-plan-remaining-gap-closure-roadmap-2026-05-05.md
+      destination: docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md; docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch03_hmc_target_requirements.tex; docs/chapters/ch16_sigma_point_filters.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch21_hmc_for_state_space.tex; docs/chapters/ch25_diagnostics.tex; docs/chapters/ch32_production_checklist.tex
+      import_status: drafted
+      reason: Dependency-aware control plan for closing the original plan's remaining DSGE adapter, particle-filter, factor-backend, SVD/eigen derivative, MacroFinance provider, HMC sampler, and release-documentation gaps.
+
+  bayesfilter_original_plan_remaining_gap_closure_audit:
+    - source_file: bayesfilter-original-plan-remaining-gap-closure-audit-2026-05-05.md
+      destination: docs/plans/bayesfilter-original-plan-remaining-gap-closure-roadmap-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Confirms the roadmap is complete while distinguishing BayesFilter-owned closure gates from client-repository promotion blockers.
+
+  bayesfilter_original_plan_remaining_gap_blocker_register:
+    - source_file: bayesfilter-original-plan-remaining-gap-blocker-register-2026-05-05.md
+      destination: docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md; docs/chapters/ch20_filter_choice.tex; docs/chapters/ch25_diagnostics.tex; docs/chapters/ch32_production_checklist.tex
+      import_status: drafted
+      reason: Records owner, evidence, required gate, allowed label, and remaining blocker for each unclosed original-plan gap.
+
+  bayesfilter_particle_filter_structural_semantics_audit:
+    - source_file: bayesfilter-particle-filter-structural-semantics-audit-2026-05-05.md
+      destination: bayesfilter/filters/particles.py; tests/test_structural_particles.py; docs/chapters/ch19_particle_filters.tex
+      import_status: drafted
+      reason: Defines innovation-space bootstrap particle semantics, deterministic-completion preservation, and approximation labels for artificial deterministic-coordinate noise.
+
+  bayesfilter_factor_backend_derivative_certification_audit:
+    - source_file: bayesfilter-factor-backend-derivative-certification-audit-2026-05-05.md
+      destination: bayesfilter/backends.py; tests/test_backend_readiness.py; docs/chapters/ch12_factor_derivatives.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch25_diagnostics.tex
+      import_status: drafted
+      reason: Defines backend value/derivative/HMC classification and spectral-gap derivative certification gates.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md

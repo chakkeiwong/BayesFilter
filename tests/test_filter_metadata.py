@@ -1,7 +1,8 @@
+import numpy as np
 import pytest
 
 from bayesfilter import StructuralFilterConfig, validate_filter_config
-from bayesfilter.filters.particles import ParticleFilterNotAuditedError, particle_filter_log_likelihood
+from bayesfilter.filters.particles import ParticleFilterConfig
 from bayesfilter.filters.sigma_points import StructuralSVDSigmaPointFilter
 from bayesfilter.testing.structural_fixtures import AR2StructuralModel
 
@@ -27,6 +28,17 @@ def test_missing_structural_metadata_fails_closed_for_structural_config():
         validate_filter_config(None, config)
 
 
-def test_particle_namespace_fails_closed_until_audited():
-    with pytest.raises(ParticleFilterNotAuditedError):
-        particle_filter_log_likelihood()
+def test_particle_namespace_records_audited_structural_metadata():
+    from bayesfilter.filters import particle_filter_log_likelihood
+
+    model = AR2StructuralModel()
+    result = particle_filter_log_likelihood(
+        model,
+        np.array([[0.1]], dtype=float),
+        config=ParticleFilterConfig(num_particles=128, random_seed=2),
+    )
+
+    assert result.metadata.filter_name == "structural_bootstrap_particle"
+    assert result.metadata.partition == model.partition
+    assert result.metadata.integration_space == "innovation"
+    assert result.metadata.deterministic_completion == "required"
