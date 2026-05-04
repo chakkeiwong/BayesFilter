@@ -4216,7 +4216,7 @@ Results:
   tests/test_filter_metadata.py tests/test_macrofinance_adapter.py -q -p
   no:cacheprovider` passed: 48 focused tests, with two TensorFlow Probability
   deprecation warnings from the optional MacroFinance import path.
-- Final `pytest -q` passed: 62 tests, with the same two TensorFlow Probability
+- Final `pytest -q` passed: 63 tests, with the same two TensorFlow Probability
   deprecation warnings.
 - `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
   encoding='utf-8')); print('source_map yaml ok')"` passed.
