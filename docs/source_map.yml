@@ -37,6 +37,12 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md
     status: drafted
     role: Phase 0--2 audit note for structural state partition math/code reconciliation and reuse decisions.
+  - id: bayesfilter_phase8_macrofinance_adapter_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase8-macrofinance-adapter-plan-2026-05-04.md
+    status: drafted
+    role: Phase 8 MacroFinance adapter pilot plan, including pull/auth provenance, local code audit, execution ladder, and go/no-go criteria.
   - id: bayesfilter_six_step_structural_filtering_closure_plan
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -110,6 +116,12 @@ chapter_mappings:
       destination: bayesfilter/structural.py; bayesfilter/filters/kalman.py; bayesfilter/filters/sigma_points.py; bayesfilter/filters/particles.py; bayesfilter/testing/structural_fixtures.py; tests/test_structural_partition.py; tests/test_structural_ar_p.py; tests/test_structural_sigma_points.py; tests/test_degenerate_kalman.py; tests/test_filter_metadata.py; tests/test_derivative_validation_smoke.py
       import_status: drafted
       reason: Supports the first BayesFilter-local structural metadata, exact LGSSM reference, toy fixtures, and approximate structural sigma-point backend.
+
+  bayesfilter_phase8_macrofinance_adapter_plan:
+    - source_file: bayesfilter-phase8-macrofinance-adapter-plan-2026-05-04.md
+      destination: bayesfilter/adapters/macrofinance.py; tests/test_macrofinance_adapter.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Defines the gated MacroFinance adapter pilot around a value-only LGSSM wrapper first, with derivative and HMC bridges deferred until dedicated audits pass.
 
   bayesfilter_six_step_structural_filtering_closure_plan:
     - source_file: bayesfilter-six-step-structural-filtering-closure-plan-2026-05-04.md
@@ -514,8 +526,20 @@ duplicate_groups:
         filters must respect exogenous shock-driven state blocks and
         deterministic endogenous/accounting state transitions rather than
         treating all state coordinates as exchangeable noisy Gaussian
-        coordinates.
+        coordinates. The revised BayesFilter chapter now states the predictive
+        law in structural-transition form, distinguishes deterministic
+        completion from zero predictive variance, and aligns nonlinear
+        approximation language with BayesFilter contract and claim-discipline
+        chapters.
       source_files:
+        - /home/chakwong/BayesFilter/docs/plans/ch18b-structural-deterministic-dynamics-revision-plan-2026-05-04.md
+        - /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-state-partition-core-plan-2026-05-04.md
+        - /home/chakwong/BayesFilter/docs/chapters/ch02_state_space_contracts.tex
+        - /home/chakwong/BayesFilter/docs/chapters/ch04_bayesfilter_api.tex
+        - /home/chakwong/BayesFilter/docs/chapters/ch16_sigma_point_filters.tex
+        - /home/chakwong/BayesFilter/docs/chapters/ch19_particle_filters.tex
+        - /home/chakwong/BayesFilter/docs/chapters/ch20_filter_choice.tex
+        - /home/chakwong/BayesFilter/docs/chapters/ch32_production_checklist.tex
         - /home/chakwong/python/src/dsge_hmc/filters/_svd_filters.py
         - /home/chakwong/python/src/dsge_hmc/models/base.py
         - /home/chakwong/python/src/dsge_hmc/models/canonical.py

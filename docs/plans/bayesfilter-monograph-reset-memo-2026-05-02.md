@@ -93,7 +93,328 @@ Follow-up planning action:
   metadata, manifold preservation, linear recovery, toy nonlinear DSGE
   behavior, Rotemberg NK, SGU, XLA, gradients, and HMC smoke gates.
 
-## 2026-05-04 update: structural state-space monograph pass starts
+## 2026-05-04 update: Chapter 18b execution-pass baseline and plan audit incorporation
+
+User requested a full autonomous execution pass for
+`docs/chapters/ch18b_structural_deterministic_dynamics.tex`, including another
+full read-through, tool-assisted checking where useful, phase-by-phase reset
+memo updates, final provenance closure, commit, and a detailed completion
+summary.
+
+### Phase C18b-0: baseline and evidence check
+
+Phase plan:
+- Re-read Chapter 18b and the governing structural-contract and API chapters.
+- Re-read nearby sigma-point, particle, filter-choice, and production-checklist
+  chapters for consistency constraints.
+- Re-check whether MathDevMCP and research-assistant materially help.
+- Incorporate the independent plan-audit findings into the executable Chapter
+  18b plan before prose edits begin.
+
+Execution:
+- Re-read:
+  - `docs/chapters/ch18b_structural_deterministic_dynamics.tex`
+  - `docs/chapters/ch02_state_space_contracts.tex`
+  - `docs/chapters/ch04_bayesfilter_api.tex`
+  - `docs/chapters/ch16_sigma_point_filters.tex`
+  - `docs/chapters/ch19_particle_filters.tex`
+  - `docs/chapters/ch32_production_checklist.tex`
+- Re-checked the local-tool role:
+  - MathDevMCP is useful for bounded equation/derivation audits and assumption
+    surfacing, but it is not sufficient to certify the whole conceptual DSGE
+    filtering argument on its own.
+  - research-assistant is useful only if strengthened literature-backed claims
+    require section-level citation support; it is not the primary tool for this
+    chapter’s internal derivation cleanup.
+- Performed an independent plan audit and found the prior chapter plan was
+  mathematically good but under-specified for BayesFilter workflow discipline.
+- Tightened
+  `docs/plans/ch18b-structural-deterministic-dynamics-revision-plan-2026-05-04.md`
+  to add:
+  - contract/notation reconciliation;
+  - nearby-chapter consistency checks;
+  - provenance classification;
+  - semantic claim audits;
+  - required-tests section audit;
+  - explicit phase-by-phase reset-memo obligations.
+- Parsed `docs/source_map.yml`; YAML remains valid.
+
+Tests:
+- `python -c "import yaml; yaml.safe_load(...)"` returned `source_map yaml ok`.
+
+Audit:
+- The rewrite pass remains justified.
+- No blocking provenance or cross-chapter inconsistency has been found yet.
+- The main issue at this phase was execution-plan rigor, not chapter invalidity.
+- Phase C18b-1 remains justified.
+
+### Phase C18b-1: contract and notation reconciliation
+
+Phase plan:
+- Align Chapter 18b vocabulary with the structural state-partition and API
+  metadata chapters before deeper mathematical edits.
+- Make Chapter 18b explicitly use BayesFilter contract language without losing
+  DSGE readability.
+- Add only bounded cross-references and terminology cleanup at this phase.
+
+Execution:
+- Updated the chapter opening to connect the DSGE `m_t`/`k_t` split to the
+  structural partition language from
+  `docs/chapters/ch02_state_space_contracts.tex`.
+- Reframed the endogenous block as a deterministic-completion block and the
+  exogenous block as the declared stochastic block.
+- Added cross-references to:
+  - Chapter~\ref{ch:bf-state-space-contracts}
+  - Chapter~\ref{ch:bf-api-design}
+- Tightened the linear-to-nonlinear transition warning so it refers explicitly
+  to integration-space metadata rather than only state dimension.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- A targeted terminology search in Chapter 18b confirmed visible use of:
+  `stochastic`, `deterministic-completion`, `approximation`, and
+  `integration space`.
+
+Audit:
+- Contract ambiguity was reduced without changing the chapter’s core claim.
+- Chapter 18b now reads more clearly as a downstream application of the generic
+  BayesFilter contract, not as a DSGE-only exception.
+- No broader restructuring was required.
+- Phase C18b-2 remains justified.
+
+### Phase C18b-2: predictive law and inherited randomness
+
+Phase plan:
+- Make the nonlinear target law explicit.
+- Clarify that deterministic completion means no independent innovation, not
+  zero one-step predictive variance.
+- Reuse Chapter 2’s lag-stack lesson by reference where that avoids redundant
+  generic exposition.
+
+Execution:
+- Added an explicit predictive-law display in Chapter 18b that writes the
+  nonlinear one-step predictive distribution as the pushforward of the joint law
+  over lagged state and current stochastic input.
+- Clarified in prose that ``deterministic'' means fixed once
+  `(x_{t-1},\varepsilon_t)` is given, not zero predictive variance conditional
+  only on the lagged filtering state.
+- Added a short inherited-randomness clarification tied to the Chapter 2 AR(2)
+  lag-stack example and stated explicitly that `\Var(k_t\mid x_{t-1}) > 0`
+  can hold even without an independent innovation in `k_t`.
+- Used MathDevMCP in a bounded way on revised labels; it returned `unverified`,
+  which is treated as an evidence limit rather than silent support.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted semantic search in Chapter 18b confirmed explicit coverage of
+  `variance`, `innovation`, `deterministic`, and `noise`.
+- Bounded MathDevMCP audit on `eq:bf-m-transition` and
+  `eq:bf-ukf-example-m` returned `STATUS unverified`.
+
+Audit:
+- The main conceptual ambiguity about deterministic completion versus inherited
+  randomness is now addressed directly in the chapter.
+- No stronger literature claim was introduced; the new material is best
+  interpreted as local BayesFilter derivation and contract restatement.
+- MathDevMCP abstention does not block the rewrite because the chapter change is
+  explanatory rather than a new theorem-strength claim.
+- Phase C18b-3 remains justified.
+
+### Phase C18b-3: linear exactness versus nonlinear approximation boundary
+
+Phase plan:
+- Tighten the linear Kalman section so it states precisely when the collapsed
+  representation is acceptable.
+- Separate exact degenerate conditional Gaussian laws from numerical
+  regularization and from model-changing artificial noise injection.
+- Audit wording such as `exact`, `singular`, `regularization`, `noise`, and
+  `correct` for overclaim.
+
+Execution:
+- Rewrote the linear Kalman section to say that singular or nearly singular
+  `Q` is acceptable when the collapsed linear representation preserves the same
+  conditional law induced by the structural transition.
+- Clarified that the key point is not that structural determinism disappears,
+  but that the exact linear-Gaussian path still encodes the same one-step
+  conditional Gaussian law.
+- Added an explicit three-way distinction in the degenerate-transition section:
+  - exact degenerate transition law;
+  - numerical regularization for stable evaluation;
+  - altered transition law with new stochastic degrees of freedom.
+- Kept the SVD warning separate: value-side robustness does not repair the
+  wrong target law.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Semantic search on `exact`, `singular`, `regularization`, `noise`, and
+  `correct` in Chapter 18b found the intended tightened phrasing only.
+
+Audit:
+- The chapter now distinguishes structural exactness from numerical expedients
+  more sharply.
+- No blocking source-discipline problem appeared; the revised claims remain a
+  conservative restatement of standard linear-Gaussian and BayesFilter contract
+  logic.
+- The remaining issue is expository cleanup in the nonlinear sigma-point,
+  particle, and UKF sections, not a derivational blocker.
+- Phase C18b-4 remains justified.
+
+### Phase C18b-4: nonlinear sigma-point, particle, and UKF cleanup
+
+Phase plan:
+- State the nonlinear integration-space choice explicitly.
+- Replace overly geometric wording with support-based wording where needed.
+- Add a compact particle-filter propagation/weighting formula.
+- Upgrade the UKF example so it teaches the reusable structural-design rule
+  without overclaiming a universal UKF theorem.
+
+Execution:
+- Rewrote the nonlinear-filter section to identify the integration-space choice
+  as the filter-metadata decision.
+- Replaced the strongest `off-manifold` wording with language about the
+  `model-implied support of the structural transition` and tied the warning to
+  the approximation boundary in Chapter 16.
+- Added a compact particle-filter propagation/weighting formula in structural
+  notation and clarified that deterministic coordinates should be completed
+  after sampling the declared stochastic block.
+- Added a preface to the UKF example stating the BayesFilter design lesson:
+  sigma points belong in the declared pre-transition uncertainty variables.
+- Added a closing UKF summary paragraph stating that this is a structural-design
+  rule and approximation-label boundary for mixed structural models, not a
+  universal theorem about every UKF formulation.
+- Checked consistency against Chapters 16, 18, 19, and 20.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted semantic search in Chapter 18b confirmed intended use of
+  `support`, `proposal`, and `approximation` and reduced reliance on
+  `manifold` wording.
+
+Audit:
+- Chapter 18b is now better aligned with the sigma-point, particle, and
+  filter-choice chapters.
+- The remaining `off-manifold` comparison in the toy approximation paragraph is
+  tolerable because it is clearly labeled as an approximation contrast rather
+  than the main explanatory device.
+- No nearby-chapter consistency blocker was found.
+- Phase C18b-5 remains justified.
+
+### Phase C18b-5: required tests, misunderstandings, and policy language
+
+Phase plan:
+- Audit the chapter’s strongest policy section against the production-checklist
+  and nonlinear-backend chapters.
+- Replace informal claim language with BayesFilter claim-discipline language
+  where appropriate.
+- Add only a compact misunderstandings subsection that adds value without
+  duplicating Chapter 2 or Chapter 32.
+
+Execution:
+- Rewrote the required-tests introduction so it now ties Chapter 18b claims to
+  the Chapter 32 labels `value-valid`, `gradient-valid`, `sampler-usable`,
+  `converged`, and `production-ready`.
+- Renamed the former `Manifold test` to `Constraint-support test` to match the
+  chapter’s revised support-based language.
+- Added a compact `Common Misunderstandings` subsection that clarifies:
+  - deterministic completion versus predictive variance;
+  - singular covariance versus modeling error in the exact linear case;
+  - regularization versus new stochastic coordinates;
+  - approximation labeling for enlarged stochastic spaces.
+- Tightened the closing policy paragraph so failing the listed tests is framed
+  as a limit on the strongest BayesFilter claim labels, not as a blanket claim
+  that the backend is useless.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted claim-language search in Chapter 18b showed the intended new uses of
+  `converged`, `production-ready`, and `support`, with no new `guarantee` or
+  `must always` overclaim.
+
+Audit:
+- The chapter’s policy outputs are now more consistent with the formal
+  production-checklist discipline.
+- No text now implies that the listed tests already exist as completed evidence;
+  they remain gate requirements.
+- The compact misunderstandings subsection adds value without becoming a long
+  FAQ.
+- Phase C18b-6 remains justified.
+
+### Phase C18b-6: provenance, overlap audit, and closure
+
+Phase plan:
+- Update provenance so another agent can understand the revised Chapter 18b
+  support basis after a reboot.
+- Audit overlap with Chapters 2, 16, 19, 20, and 32.
+- Run final mechanical checks before commit preparation.
+
+Execution:
+- Updated `docs/source_map.yml` so the Chapter 18b rationale now records the
+  revised BayesFilter emphasis on:
+  - predictive-law statement in structural-transition form;
+  - deterministic completion versus zero predictive variance;
+  - alignment with contract and claim-discipline chapters.
+- Added Chapter 18b provenance pointers in the source-map duplicate-group entry
+  to the local revision plan, structural-state-partition plan, and nearby
+  BayesFilter contract/policy chapters used in this pass.
+- Audited overlap against Chapters 2, 16, 19, 20, and 32.  The current chapter
+  now reads as a focused DSGE structural-filtering warning and worked example,
+  while those neighboring chapters remain the generic contract/policy sources.
+- Ran final `git diff --check` and final LaTeX build before commit review.
+
+Tests:
+- `python -c "import yaml; yaml.safe_load(...)"` had already passed earlier in
+  the pass and the source-map structure remains valid.
+- `git diff --check` passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` reported all
+  targets up to date.
+
+Audit:
+- Provenance is now explicit enough for another agent to continue after a
+  reboot.
+- No duplication or support mismatch was found that would block commit
+  preparation.
+- The plan is complete enough to move to git review and commit.
+- Phase C18b-7 remains justified.
+
+### Phase C18b completion summary
+
+Results:
+- Tightened the chapter-specific execution plan.
+- Revised Chapter 18b to make the target law, inherited-randomness distinction,
+  exact-linear-versus-approximate boundary, nonlinear integration-space rule,
+  UKF lesson, and policy/claim discipline substantially clearer.
+- Updated `docs/source_map.yml` with revised provenance and support basis for
+  Chapter 18b.
+
+Interpretation:
+- The chapter is still a policy chapter, not a formal theorem chapter, but it
+  now states its mathematical content and approximation boundary much more
+  cleanly.
+- MathDevMCP remained useful only as a bounded audit tool; its `unverified`
+  outputs mark an evidence boundary, not a contradiction.
+- research-assistant was not needed because the pass did not expand literature
+  claims beyond the current source-backed scope.
+
+What remains unresolved or intentionally approximate:
+- The chapter still does not prove a general sigma-point theorem; it states a
+  BayesFilter structural-design rule for mixed structural models.
+- The required-tests section remains a release-gating policy list, not evidence
+  that those tests have already been implemented for every DSGE target.
+
+Next-phase hypotheses to test:
+1. A BayesFilter structural sigma-point backend that integrates only over the
+   declared stochastic block should recover exact Kalman likelihoods on linear
+   degenerate-transition test cases up to declared approximation tolerance.
+2. The same structural contract should cover AR(p) lag stacks, DSGE
+   predetermined-state transitions, and MacroFinance affine/auxiliary-state
+   constructions without inventing model-specific filter forks.
+3. Explicit filter metadata for integration space and approximation label should
+   prevent accidental promotion of model-changing nonlinear approximations into
+   HMC targets.
+4. Case-study adapters for Rotemberg NK, SGU, and later EZ/NAWM targets should
+   be able to document structural timing cleanly enough to satisfy the Chapter
+   18b release gate without relying on dense artificial transition noise.
+
 
 User reframed the documentation goal as a monograph on Bayesian estimation for
 structural state-space models.  This is the right scope: SVD sigma-point
@@ -1860,3 +2181,95 @@ Next hypotheses:
   non-spectral derivative policy before production HMC promotion.
 - H5: Particle filters should enter BayesFilter only after a proposal,
   resampling, estimator-variance, and target-correction audit.
+
+## 2026-05-04 update: MacroFinance SSH pull and Phase 8 plan
+
+User reported that `~/MacroFinance` was updated and requested a `git pull`
+plus a plan for Phase 8 of the structural state partition core plan.
+
+Pull result:
+- Initial HTTPS pull failed because GitHub credentials were unavailable in the
+  noninteractive environment.
+- User clarified that SSH is set up on this machine.
+- SSH authentication to GitHub succeeded.
+- MacroFinance was fast-forwarded over SSH:
+  `22f496e Record analytic HMC validation pilots` ->
+  `e23c31e Document one-country HMC remaining test gates`.
+- `HEAD`, `origin/main`, and `origin/HEAD` now point to `e23c31e`.
+
+New plan artifact:
+- `docs/plans/bayesfilter-phase8-macrofinance-adapter-plan-2026-05-04.md`
+
+Source map:
+- Added `bayesfilter_phase8_macrofinance_adapter_plan` to
+  `docs/source_map.yml`.
+
+MacroFinance code audit summary from the local snapshot:
+- `domain/types.py` exposes `LinearGaussianStateSpace`,
+  `LinearGaussianStateSpaceDerivatives`, and `RunConfig`.
+- `HMCConfig` now includes chain count, target-XLA choice, full-chain-XLA
+  choice, and optional latent initial scale.
+- `inference/posterior_adapter.py` exposes `DifferentiableStateSpaceProvider`
+  and `PosteriorAdapter` protocols.
+- `one_country_derivative_provider.py` is the lowest-risk Phase 8 pilot target
+  because it builds a restricted four-parameter AFNS LGSSM with analytical
+  derivative tensors and existing parity tests.
+- `one_country_tf_derivative_provider.py` now has an explicit
+  `initial_mean_policy` and respects first- versus second-order derivative
+  requests.
+- `filters/tf_differentiated_kalman.py` now separates graph-native
+  value-plus-score work from value-plus-score-plus-Hessian work.
+- `inference/hmc.py` contains `OneCountryAnalyticThetaNoisePosteriorAdapter`,
+  with `log_prob_and_grad`, `log_prob_grad_hessian`,
+  `negative_log_prob_and_gradient`, and `negative_log_prob_hessian`.
+  Value/gradient paths no longer call Hessian work.
+- The updated MacroFinance checkout includes target-XLA HMC chain-policy tests,
+  theta2 geometry diagnostics, and JSONL validation harnesses for one-country
+  analytic HMC. These are references for BayesFilter readiness gates, not code
+  to port wholesale.
+- Large-scale and cross-currency providers are useful follow-on targets but
+  include masking, production-readiness, and identification policies too broad
+  for the first adapter slice.
+
+Phase 8 decision:
+- The latest-code gate now passes at `e23c31e`.
+- The next justified action is still a value-only BayesFilter wrapper for a
+  MacroFinance-shaped LGSSM object.
+- After the value wrapper passes, the derivative bridge should preserve
+  MacroFinance's split between value-plus-score and Hessian diagnostics instead
+  of collapsing every gradient path into second-order work.
+- Do not copy MacroFinance financial model construction, differentiated
+  Kalman implementations, QR/square-root factor derivative code, SVD fallback
+  code, TensorFlow HMC plumbing, or production cross-currency readiness logic
+  into BayesFilter during the first slice.
+
+Next hypotheses:
+- H8.1: The one-country restricted AFNS derivative provider is sufficient as
+  the first MacroFinance adapter target because it is small, deterministic,
+  analytically differentiated, and already has local regression tests.
+- H8.2: BayesFilter can match MacroFinance value likelihoods by converting only
+  LGSSM dataclass fields and preserving initial-state and jitter conventions.
+- H8.3: MacroFinance score/Hessian outputs can later be exposed through a
+  BayesFilter-facing derivative bridge without migrating derivative recursion
+  code; the bridge should preserve the value-plus-score versus Hessian workload
+  split.
+- H8.4: Large-scale and cross-currency providers should wait until the
+  one-country value and derivative bridges pass.
+
+Validation after SSH pull:
+- BayesFilter checks passed:
+  - YAML parse for `docs/source_map.yml`;
+  - `git diff --check`;
+  - `pytest -q tests`: 15 passed.
+- MacroFinance focused one-country checks passed:
+  - `pytest -q tests/test_one_country_analytic_hmc_adapter.py
+    tests/test_one_country_hmc_analytic_gradient_hessian.py`: 7 passed.
+- MacroFinance theta2 geometry subprocess checks were attempted together with
+  the focused subset.  The four failures are path/configuration failures before
+  model code executes:
+  `tests/test_one_country_theta2_geometry_diagnostics.py` hard-codes
+  `/home/chakwong/python/MacroFinance`, while the active checkout is
+  `/home/chakwong/MacroFinance`.
+- Interpretation: the path issue should be fixed or handled upstream in
+  MacroFinance before treating theta2 geometry tests as Phase 8 gate evidence.
+  It does not block the value-only BayesFilter adapter plan.
