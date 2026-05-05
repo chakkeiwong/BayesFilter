@@ -4520,3 +4520,65 @@ Final interpretation:
   metadata adapter-readiness are validated.
 - The next substantive phases are model-specific Rotemberg/SGU/EZ residual and
   timing evidence, then derivative/JIT gates, then HMC diagnostics.
+
+## 2026-05-05 update: structural SVD 12-phase implementation handoff
+
+Context:
+- User asked for a detailed 12-phase plan with motivation, implementation
+  instructions, reset-memo updates, independent audit, phase-by-phase execution,
+  commit, and final summary.
+- The immediately preceding user policy was that this session should be
+  reserved for documentation only.
+- Therefore this pass executes the documentation/audit/reset-memo phases and
+  stops before backend implementation.  The plan itself requires a mathematical
+  source audit before code changes.
+
+Phase plan:
+- Turn the final-goal and remaining-gap summary into a concrete 12-phase
+  implementation roadmap.
+- Write the plan in BayesFilter, where another coding agent will naturally look.
+- Audit the plan as a separate developer.
+- Update this reset memo with results and the stop decision.
+- Commit only scoped planning artifacts, leaving unrelated untracked assets and
+  other-agent dirty files alone.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-structural-svd-12-phase-implementation-plan-2026-05-05.md`.
+- Added
+  `docs/plans/bayesfilter-structural-svd-12-phase-implementation-audit-2026-05-05.md`.
+- Reused the previously moved handoff:
+  `docs/plans/bayesfilter-structural-svd-code-implementation-handoff-plan-2026-05-05.md`.
+- Did not edit BayesFilter backend code.
+- Did not edit DSGE or MacroFinance code.
+
+Test:
+- Planned validation for this documentation-only pass:
+  - `git diff --check`;
+  - read-back/claim scan over the new plan and audit;
+  - `git status --short --branch` to verify scoped staging.
+
+Audit:
+- The 12-phase plan covers:
+  1. mathematical source audit;
+  2. code reuse and migration audit;
+  3. BayesFilter structural sigma-point core;
+  4. exact Kalman and degenerate linear spine;
+  5. generic structural fixtures;
+  6. MacroFinance adapter and analytic derivative spine;
+  7. DSGE adapter integration;
+  8. model-specific DSGE completion evidence;
+  9. derivative and Hessian safety gate;
+  10. JIT and static-shape production gate;
+  11. HMC validation ladder;
+  12. documentation, provenance, and release gate.
+- The independent audit approves the plan as a roadmap and explicitly blocks
+  code implementation in this documentation-only session.
+- Running Phase 1 as an actual mathematical source audit is justified next, but
+  it should be its own BayesFilter execution pass with source retrieval and
+  provenance artifacts.
+
+Interpretation:
+- The next phase is justified, but not inside this documentation-only session.
+- The next coding/research agent should start with Phase 1 of the new plan:
+  write the mathematical source audit before backend implementation.
