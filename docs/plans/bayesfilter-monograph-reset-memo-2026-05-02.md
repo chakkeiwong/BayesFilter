@@ -192,7 +192,62 @@ Audit:
   want an even more formal derivation against a textbook additive-noise UKF
   notation.
 
-## 2026-05-04 update: proposition refactor for better MathDevMCP auditability and LaTeX polish
+## 2026-05-05 update: assumptions-and-small-lemmas refactor for the formal nonlinear-measurement section
+
+User then asked whether some minor issues could be declared as explicit
+assumptions so that the remaining proof obligations become easier for
+MathDevMCP to inspect.  This was the right move.
+
+### Focused assumptions-and-lemmas pass
+
+Phase plan:
+- separate accepted assumptions from proved identities;
+- split the formal section into smaller theorem-like obligations;
+- move interpretation-level conclusions out of the heaviest proof burden;
+- re-run bounded MathDevMCP audits on the smaller formal labels.
+
+Execution:
+- Replaced the single larger formal block with:
+  - an `Accepted assumptions` block;
+  - smaller proposition-level obligations for:
+    - latent predictive pushforward;
+    - deterministic-completion identity;
+    - observation predictive pushforward;
+    - naive full-state perturbation changes the latent law;
+  - a concluding proposition on failure propagation and the observation-side-only
+    error regime.
+- Added and reused explicit labels so the proof now has narrower anchors:
+  - `ass:bf-exp-affine-factorization`
+  - `eq:bf-exp-affine-latent-map`
+  - `eq:bf-exp-affine-pushforward`
+  - `eq:bf-exp-affine-structural-identity`
+  - `eq:bf-exp-affine-observation-map`
+  - `eq:bf-exp-affine-composed-map`
+  - `eq:bf-exp-affine-observation-pushforward`
+- Converted the unsupported `lemma` environment into supported `proposition`
+  environments so the monograph build remains compatible with the current
+  preamble.
+- Preserved the chapter’s concrete `(m_t,k_t,\varepsilon_t)` notation throughout.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Re-ran bounded MathDevMCP audits on the smaller formal labels.
+
+MathDevMCP audit result:
+- the smaller-label audits still remain on the audit boundary, but they now
+  isolate more precisely where the extraction problem lies;
+- the result is still not backend certification, but the formal section is now
+  cleaner and more modular for human review.
+
+Audit:
+- This refactor makes the chapter more honest mathematically: assumptions are now
+  declared explicitly, exact identities are proved separately, and the failure
+  interpretation is derived in a lighter final step.
+- It also gives a much clearer path for any future attempt at stronger
+  MathDevMCP certification.
+- Remaining warning hotspots are cosmetic LaTeX line-break and heading-width
+  issues, not conceptual blockers.
+
 
 User then asked for both remaining follow-ups to be done together:
 - refactor the proposition/proof so MathDevMCP has a better chance to audit it;
