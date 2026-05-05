@@ -4342,3 +4342,181 @@ Interpretation:
 - BayesFilter should not proceed to DSGE structural particle or HMC promotion
   until the DSGE-focused test phase and BayesFilter gate confirmation are
   recorded.
+
+## 2026-05-05 update: structural SVD six-phase validation closure
+
+Context:
+- User asked for six concrete phases motivated by the structural SVD handoff
+  plan from another agent, followed by phase-by-phase execution, audit,
+  reset-memo updates, and commit.
+- The handoff was directionally valid but partially stale: BayesFilter already
+  has structural partition/config/metadata, the structural SVD sigma-point
+  reference backend, structural particle semantics, degenerate Kalman tests,
+  and derivative policy gates.
+
+### V0: hygiene and handoff reconciliation
+
+Plan:
+- Classify the handoff requests as already implemented, needing validation,
+  BayesFilter-local, client-owned, or stale.
+- Keep untracked assets out of scope unless explicitly requested.
+
+Execute:
+- Added
+  `docs/plans/bayesfilter-structural-svd-six-phase-validation-plan-2026-05-05.md`.
+- Added
+  `docs/plans/bayesfilter-structural-svd-six-phase-validation-audit-2026-05-05.md`.
+- Recorded current status: untracked `.claude/`, Julier PDF, the untracked
+  structural SVD handoff, the new validation plan/audit, and
+  `docs/plans/templates/`; no tracked BayesFilter code file was dirty.
+
+Test:
+- `git status --short --branch` completed.
+- `git log -5 --oneline --decorate` completed.
+
+Audit:
+- The untracked Julier PDF and templates are not needed for this validation
+  pass and should remain unstaged.
+
+Interpretation:
+- V1 remains justified.
+
+### V1: BayesFilter structural core validation
+
+Plan:
+- Validate existing structural partition, sigma-point, AR(p), metadata, and
+  particle semantics before considering code changes.
+
+Execute:
+- Ran the focused BayesFilter structural-core test group.
+
+Test:
+- `pytest -q tests/test_structural_partition.py
+  tests/test_structural_sigma_points.py tests/test_structural_ar_p.py
+  tests/test_filter_metadata.py tests/test_structural_particles.py` passed:
+  19 tests.
+
+Audit:
+- Current structural SVD reference behavior already records approximation
+  metadata and preserves deterministic completion in toy tests.
+- No BayesFilter structural SVD rewrite is justified by this phase.
+
+Interpretation:
+- V2 remains justified.
+
+### V2: exact Kalman and DSGE metadata validation
+
+Plan:
+- Validate exact/degenerate Kalman, derivative-smoke gates, BayesFilter DSGE
+  adapter gates, and `/home/chakwong/python` structural metadata contracts.
+
+Execute:
+- Ran the BayesFilter exact/derivative/DSGE gate subset.
+- Ran the focused DSGE client metadata contract test with BayesFilter on
+  `PYTHONPATH`.
+- Ran a read-only gate probe on SmallNK, Rotemberg, SGU, and EZ.
+
+Test:
+- `pytest -q tests/test_degenerate_kalman.py
+  tests/test_derivative_validation_smoke.py tests/test_dsge_adapter_gate.py`
+  passed: 8 tests.
+- In `/home/chakwong/python`,
+  `PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q
+  tests/contracts/test_structural_dsge_partition.py` passed: 11 tests, with
+  two TensorFlow Probability deprecation warnings and one pytest cache warning
+  caused by the read-only client checkout.
+- The read-only gate probe returned:
+  - SmallNK: `adapter_ready=True`, `metadata_regime="all_stochastic"`;
+  - Rotemberg: `adapter_ready=True`, `metadata_regime="mixed_structural"`;
+  - SGU: `adapter_ready=True`, `metadata_regime="mixed_structural"`;
+  - EZ: `adapter_ready=False`, `metadata_regime="missing"`.
+
+Audit:
+- DSGE metadata is now adapter-ready for SmallNK, Rotemberg, and SGU.
+- This is not nonlinear structural promotion for Rotemberg or SGU.
+- EZ correctly remains fail-closed pending timing/partition audit.
+
+Interpretation:
+- V3 remains justified.
+
+### V3: blocker/register and source-map reconciliation
+
+Plan:
+- Update the blocker register and source map to reflect validation evidence
+  without overpromoting DSGE structural filtering or HMC.
+
+Execute:
+- Updated
+  `docs/plans/bayesfilter-original-plan-remaining-gap-blocker-register-2026-05-05.md`
+  so the DSGE adapter pilot is now
+  `client_metadata_ready_for_structural_tests` rather than
+  `blocked_pending_client_metadata`.
+- Kept explicit blockers for Rotemberg second-order/pruned identity evidence,
+  SGU deterministic residual evidence, EZ timing/partition audit,
+  derivative/JIT/HMC gates, and MacroFinance final-provider evidence.
+- Registered the six-phase plan and audit in `docs/source_map.yml`.
+
+Test:
+- Source-map parse and final validation are deferred to V4.
+
+Audit:
+- The register no longer understates DSGE metadata progress.
+- It also does not claim `filter-correct`, `sampler-usable`, or `converged`
+  for DSGE targets.
+
+Interpretation:
+- V4 remains justified.
+
+### V4: final validation
+
+Plan:
+- Run full repo validation and documentation/source-map checks after V0--V3.
+
+Execute:
+- Ran source-map YAML parse, whitespace check, stale-claim scan, full pytest,
+  and LaTeX build.
+
+Test:
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml',
+  encoding='utf-8'))"` passed.
+- `git diff --check` passed.
+- Stale-claim scan over `docs/plans`, `docs/chapters`, `bayesfilter`, and
+  `tests` found label policies, blocker text, and tests asserting
+  `not_claimed`, but no new unsupported convergence or production-readiness
+  claim from this pass.
+- `pytest -q` passed: 63 tests, with two TensorFlow Probability deprecation
+  warnings from the optional MacroFinance import path.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` in `docs/`
+  passed with `main.pdf` already up to date.
+
+Audit:
+- TensorFlow Probability warnings are deprecation warnings only.
+- The client-repo pytest cache warning in V2 was caused by the read-only
+  `/home/chakwong/python` checkout and did not affect assertions.
+
+Interpretation:
+- V5 remains justified.
+
+### V5: commit and next hypotheses
+
+Plan:
+- Commit only scoped validation and reconciliation artifacts.
+- Leave untracked handoff/assets/templates out of the commit unless explicitly
+  requested.
+
+Execute:
+- Prepared scoped files for staging:
+  - six-phase validation plan and audit;
+  - blocker register update;
+  - source-map registrations;
+  - this reset-memo section.
+
+Audit:
+- The final commit should not include the Julier PDF, `.claude/`, the untracked
+  handoff input, or `docs/plans/templates/`.
+
+Final interpretation:
+- BayesFilter structural core, exact/degenerate Kalman separation, and DSGE
+  metadata adapter-readiness are validated.
+- The next substantive phases are model-specific Rotemberg/SGU/EZ residual and
+  timing evidence, then derivative/JIT gates, then HMC diagnostics.

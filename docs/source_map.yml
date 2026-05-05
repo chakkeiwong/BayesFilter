@@ -79,6 +79,18 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-audit-2026-05-05.md
     status: drafted
     role: Independent audit of the DSGE minimal-impact adapter stabilization handoff.
+  - id: bayesfilter_structural_svd_six_phase_validation_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-six-phase-validation-plan-2026-05-05.md
+    status: drafted
+    role: Six-phase validation and claim-reconciliation plan for the structural SVD handoff.
+  - id: bayesfilter_structural_svd_six_phase_validation_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-six-phase-validation-audit-2026-05-05.md
+    status: drafted
+    role: Independent audit of the structural SVD six-phase validation plan.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -262,6 +274,22 @@ chapter_mappings:
       destination: docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-plan-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
       import_status: drafted
       reason: Audits the DSGE stabilization handoff and confirms it avoids broad DSGE refactors and HMC overclaims.
+
+  bayesfilter_structural_svd_six_phase_validation_plan:
+    - source_file: bayesfilter-structural-svd-six-phase-validation-plan-2026-05-05.md
+      destination: bayesfilter/filters/sigma_points.py; bayesfilter/structural.py; bayesfilter/filters/kalman.py; bayesfilter/adapters/dsge.py; tests/test_structural_partition.py; tests/test_structural_sigma_points.py; tests/test_structural_ar_p.py; tests/test_degenerate_kalman.py; tests/test_filter_metadata.py; tests/test_derivative_validation_smoke.py; tests/test_dsge_adapter_gate.py; docs/plans/bayesfilter-original-plan-remaining-gap-blocker-register-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: >-
+        Converts the structural SVD implementation handoff into a six-phase
+        validation and claim-reconciliation pass, distinguishing already closed
+        BayesFilter structural gates from downstream DSGE residual,
+        derivative/JIT, and HMC blockers.
+
+  bayesfilter_structural_svd_six_phase_validation_audit:
+    - source_file: bayesfilter-structural-svd-six-phase-validation-audit-2026-05-05.md
+      destination: docs/plans/bayesfilter-structural-svd-six-phase-validation-plan-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the six-phase validation plan and confirms it does not rewrite existing structural SVD code unnecessarily or overpromote DSGE/HMC claims.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
