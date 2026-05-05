@@ -4859,3 +4859,411 @@ Audit:
   less repetitive.
 - The remaining work is primarily literature-strengthening, final global audit,
   and a last pass for coherence rather than major structural surgery.
+
+
+## 2026-05-06 update: reviewer-response Chapter 18b rewrite execution
+
+User requested a full execution pass against
+`docs/plans/ch18b-reviewer-response-rewrite-plan-2026-05-06.md`, with the
+reset memo updated before work starts, then after every phase in a
+plan/execute/test/audit/tidy/update-memo cycle.
+
+### Pre-flight plan audit as an independent developer
+
+Phase plan:
+- inspect the new reviewer-response plan, current Chapter 18b, bibliography,
+  local PDFs, and git state;
+- audit whether the plan misses reviewer concerns or contains unsafe execution
+  assumptions;
+- decide whether the rewrite remains justified before editing the chapter.
+
+Execution:
+- Confirmed the plan directly maps to the reviewer issues:
+  - code-generation-grade algorithms;
+  - original/naive UKF review;
+  - standard-versus-structural UKF comparison;
+  - UT approximation-order proof;
+  - notation definitions for predictive law, pushforward, and sigma-point
+    placement;
+  - proof hygiene;
+  - readability and flow;
+  - literature/SVD answer;
+  - `\phi=0` edge case.
+- Rechecked the current chapter structure and found that the plan's theorem
+  hygiene concern is real: the chapter still contains six `proposition`
+  environments, with five in the example-specific exp-affine section.
+- Rechecked local source availability:
+  - Julier--Uhlmann (1996) local PDF is readable with `pdftotext`;
+  - van der Merwe / Wan local PDF is readable with `pdftotext`, but its
+    bibliographic identity needs care because the local file is a short paper
+    while the stable dissertation metadata is 2004.
+- Verified via OHSU metadata that the dissertation
+  `Sigma-point kalman filters for probabilistic inference in dynamic
+  state-space models` is a 2004 Ph.D. dissertation by Rudolph van der Merwe;
+  the local paper-style PDF is still useful for the SPKF/UKF notation cited in
+  this chapter.
+- Checked git state and found pre-existing untracked files:
+  - the two local PDFs;
+  - `docs/plans/bayesfilter-structural-svd-six-blocker-closure-plan-2026-05-06.md`;
+  - `docs/plans/templates/`;
+  - the newly created reviewer-response plan.
+
+Test:
+- No source files were edited in this pre-flight phase.
+- Label-reference search found that the chapter-level label is used outside the
+  chapter, while most section/proposition labels are chapter-local or plan-local.
+
+Audit:
+- The plan is justified and should be executed.
+- Missing point found and added to the execution interpretation: add a stable
+  bibliography entry for the van der Merwe dissertation/short source before
+  relying on it in Chapter 18b.
+- The rewrite should preserve the chapter label and important equation labels
+  where practical, but it may downgrade example-specific proposition labels to
+  paragraph/remark anchors because the plan explicitly requires this.
+- The next phase is justified: definitions, notation, and literature-source
+  setup.
+
+### Phase A: definitions, source setup, and notation
+
+Phase plan:
+- add stable bibliography support for the van der Merwe sigma-point source;
+- introduce formal notation for structural state, predictive law, pushforward,
+  and sigma-point placement before the chapter relies on those terms;
+- tighten the opening warning so it states what the chapter proves and what
+  remains an approximation boundary.
+
+Execution:
+- Added `vandermerwe2004sigma` to `docs/references.bib` as a Ph.D. dissertation
+  entry for Rudolph van der Merwe's
+  `Sigma-Point Kalman Filters for Probabilistic Inference in Dynamic
+  State-Space Models`.
+- Rewrote the opening production warning to state the chapter's law-level
+  result: mixed structural prediction targets the pushforward of lagged-state
+  and innovation laws through the structural transition.
+- Added Definition `def:bf-structural-transition-notation`, defining:
+  - `x_t=(m_t,k_t)`;
+  - stochastic block `m_t`;
+  - deterministic-completion block `k_t`;
+  - structural map `F_\theta`;
+  - filtering/predictive laws `\pi_{t-1|t-1}^x`, `\pi_t^a`,
+    `\pi_{t|t-1}^x`;
+  - pushforward `(F_\theta)_#\pi_t^a`;
+  - the operational meaning of placing sigma points on a variable.
+- Preserved the existing core transition equation labels:
+  - `eq:bf-m-transition`;
+  - `eq:bf-k-transition`.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted search confirmed the new definitions and bibliography key are
+  present.
+
+Audit:
+- Phase A passes.
+- The chapter now defines the terms that reviewers found too abstract before it
+  uses them heavily.
+- Remaining issue: BibTeX still warns that `julier1996general` is an article
+  with no journal; this is not a correctness blocker, but Phase B should tidy it
+  by converting the entry to a technical report.
+- The next phase remains justified: literature-grounded UKF algorithm rewrite.
+
+### Phase B: literature-grounded UKF algorithms
+
+Phase plan:
+- expand the original unscented-transform review using Julier--Uhlmann and
+  van der Merwe notation;
+- make the standard additive-noise UKF and structural UKF algorithms parallel
+  and implementation-ready;
+- add an exact comparison table before the formal proposition;
+- tidy the Julier 1996 bibliography warning.
+
+Execution:
+- Converted `julier1996general` from an `@article` with no journal to a
+  `@techreport` entry.
+- Expanded the original unscented-transform subsection with:
+  - scaled sigma-point locations;
+  - scaled UKF weights;
+  - transformed mean and covariance formulas;
+  - a source-backed distinction between UT mechanics and the structural-law
+    question.
+- Added `vandermerwe2004sigma` citation support to the SPKF/UKF discussion.
+  Public OHSU metadata confirms the dissertation title, author, 2004 date,
+  content type, school, and DOI `10.6083/M4Z60KZ5`; the local PDF remains the
+  working notation source for this pass.
+- Rewrote the standard additive-noise UKF algorithm so it now specifies:
+  inputs, augmented variable, sigma-point generation, state propagation,
+  observation propagation, innovation moments, Gaussian update/log likelihood,
+  and returned metadata.
+- Rewrote the structural UKF algorithm in parallel form, specifying:
+  inputs, pre-transition variable, stochastic-block propagation,
+  deterministic completion, observation moments, update/log likelihood, and
+  returned metadata.
+- Added a direct comparison table distinguishing filtered object, sigma-point
+  variable, direct noise, deterministic-coordinate treatment, target law,
+  failure mode, and SVD/square-root role.
+
+Tests:
+- Initial build failed because literal metadata text with an underscore was
+  inserted in LaTeX text.  This was repaired by using the existing `\code{...}`
+  macro.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` then
+  succeeded.
+- Targeted log search found no fatal errors, missing-dollar errors, undefined
+  citations, undefined references, or BibTeX warnings after rerun.
+
+Audit:
+- Phase B passes.
+- The two UKF algorithms are now explicit enough for a coding agent to identify
+  the random variable, point cloud, propagation map, moment formulas, update
+  equations, and metadata boundary.
+- The comparison now states the exact difference: the update equations are
+  shared, while the sigma-point variable and predictive cloud differ.
+- The next phase remains justified: formal proposition cleanup and
+  example-specific theorem demotion.
+
+### Phase C: formal statements and proof hygiene
+
+Phase plan:
+- keep a small theorem budget in the main UKF section;
+- preserve one pushforward proposition and add one moment-accuracy proposition;
+- demote example-specific theorem-like blocks into worked identities,
+  derivations, and diagnostics;
+- use MathDevMCP to audit labels/provenance and record what the tool can and
+  cannot certify.
+
+Execution:
+- Kept the main pushforward statement as
+  `prop:bf-structural-ukf-pushforward`.
+- Added `prop:bf-structural-ukf-ut-accuracy`, now stated as a local Taylor
+  expansion result:
+  - the structural UKF transformed mean matches the true transformed mean
+    through the quadratic Hessian term;
+  - the structural UKF covariance matches the leading
+    `J P_a J^\top` term;
+  - both claims are explicitly for the correct pre-transition input law
+    `(x_{t-1},\varepsilon_t)`.
+- Demoted the example-specific proposition ladder into paragraph-level worked
+  derivations and diagnostics while preserving labels for cross-reference
+  stability:
+  - `lem:bf-exp-affine-latent-pushforward`;
+  - `lem:bf-exp-affine-deterministic-completion`;
+  - `lem:bf-exp-affine-observation-pushforward`;
+  - `lem:bf-exp-affine-naive-full-state-support-violation`;
+  - `prop:bf-exp-affine-law-mismatch-propagation`.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted log search found no fatal errors, missing-dollar errors, undefined
+  citations, undefined references, or BibTeX warnings after the final rerun.
+- Theorem count search shows only two `proposition` environments remain in
+  Chapter 18b, both in the main UKF section.
+
+Audit:
+- Phase C passes the plan criteria.
+- MathDevMCP `typed_obligation_label` returned `consistent` for both main
+  proposition labels, with usable file/line provenance.
+- MathDevMCP `audit_derivation_v2_label` did not provide a backend proof
+  certificate.  It routed the obligations to human review / manual
+  formalization, which is expected for measure-pushforward notation and
+  Taylor-order claims.  Interpretation: MathDevMCP is useful here as a
+  structured audit and provenance tool, not as a complete formal verifier for
+  this chapter without further formalization.
+- The next phase remains justified: examples still need direct `\phi=0`
+  treatment and numerical recomputation.
+
+### Phase D: worked examples and reviewer edge case
+
+Phase plan:
+- give the nonlinear toy model its own worked-example heading;
+- answer the reviewer question about `\phi=0` directly;
+- recompute the displayed numbers in the nonlinear-state example and the
+  degenerate-linear-transition/nonlinear-measurement example;
+- keep the second example focused on the distinction between latent-law error
+  and observation-side quadrature error.
+
+Execution:
+- Added `Worked Example A: Nonlinear Structural Transition`.
+- Added a direct `Reviewer edge case: \phi=0` paragraph:
+  - when `\phi=0`, `k_t=\gamma m_t^2`;
+  - the lagged-`k` channel disappears, but current-shock randomness remains
+    whenever `\gamma\neq0` and `m_t` is nondegenerate;
+  - the support becomes the manifold `{(m,k): k=\gamma m^2}`;
+  - collapse to a point requires a further degeneracy such as `\gamma=0` or
+    degenerate `m_t`.
+- Recomputed and inserted the `\phi=0` UKF moments:
+  - `P_{xx,t}(2,2)=0.04247`;
+  - `S_t=0.56807`;
+  - `P_{xz,t}=(0.27560,0.04247)^\top`.
+- Renamed the later section to
+  `Worked Example B: Degenerate Linear Transition with Nonlinear Measurement`.
+- Recomputed the second worked example from the stated transition and
+  measurement parameters.  This corrected stale values in:
+  - the latent point table;
+  - `P_{xx,t}`;
+  - `\hat z_t`, `S_t`, and `P_{xz,t}`;
+  - structural and naive gains/posterior means.
+- Made the naive nonlinear-measurement comparison reproducible by defining the
+  artificial four-dimensional sigma-point variable
+  `\tilde a_t=(x_{t-1},\varepsilon_t,\delta_t)`,
+  with `\delta_t\sim N(0,0.04)`.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Targeted log search found no fatal errors, missing-dollar errors, undefined
+  citations, undefined references, or BibTeX warnings after the final rerun.
+- Stale-number sweep found none of the old second-example values.
+- Targeted search confirmed the `\phi=0` edge-case paragraph, manifold
+  explanation, and recomputed values are present.
+
+Audit:
+- Phase D passes.
+- Interpretation of the edge case: the reviewer is right that setting
+  `\phi=0` removes the lagged endogenous-state propagation channel, but it does
+  not collapse the predictive law unless the remaining stochastic map is also
+  degenerate.
+- The second example now better supports the intended claim: even when the
+  latent transition is linear, a direct perturbation of a deterministic
+  coordinate changes the latent law before observation-side quadrature is
+  considered.
+- The next phase remains justified: the chapter still needs a stronger
+  literature map, direct SVD answer, and tighter adapter/validation closure.
+
+### Phase E: literature, SVD objection, adapter, and validation close
+
+Phase plan:
+- add a source-backed literature map that ties each cited source class to the
+  specific claim it supports;
+- answer the reviewer's SVD sigma-point objection directly;
+- tighten adapter-facing implications and validation gates so implementation
+  work has an auditable target.
+
+Execution:
+- Added `sec:bf-structural-literature-map`, separating:
+  - state-space likelihood / Bayesian DSGE sources;
+  - pruned nonlinear DSGE state-space sources;
+  - Julier--Uhlmann / van der Merwe unscented and sigma-point sources;
+  - particle-filter and factor-backend sources.
+- Added `ionescu2015matrixbackprop` to `docs/references.bib` for the
+  spectral-gap derivative-risk claim.
+- Strengthened the early SVD answer:
+  - SVD can be the right factorization backend for a structural sigma-point
+    rule;
+  - it solves the reviewer's degeneracy concern only if the sigma points are
+    placed on the correct structural integration variable and deterministic
+    coordinates are completed pointwise;
+  - if a backend first invents a full-rank post-transition covariance for
+    deterministic-completion coordinates, SVD merely represents the altered
+    law more stably.
+- Renamed and expanded the degeneracy section to
+  `Structural Degeneracy, Numerical Degeneracy, and SVD`.
+- Added the explicit diagnostic question:
+  `Which law is being factored and propagated?`
+- Connected SVD/eigenspectral HMC promotion to spectral-gap, finite-gradient,
+  and compiled-parity evidence.
+- Tightened adapter implications:
+  - dimensions/names for filtered, innovation, and deterministic blocks;
+  - pointwise structural map from `(x_{t-1},\varepsilon_t)` to `x_t`;
+  - deterministic-identity residuals on propagated points;
+  - observation map after structural completion;
+  - approximation label for legacy full-state paths.
+- Tightened validation gates with:
+  - `SVD/factorization test`;
+  - `Derivative-promotion test`.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- Initial LaTeX passes reported the new citation as undefined until BibTeX and
+  reruns completed; the final targeted log search found no fatal errors,
+  undefined citations, undefined references, rerun warnings, or BibTeX
+  warnings.
+- Targeted search confirmed the new literature map, SVD diagnostic question,
+  Matrix Backprop citation key, factorization gate, and derivative-promotion
+  gate.
+
+Audit:
+- Phase E passes.
+- The SVD answer is now more precise than a rejection: SVD/square-root methods
+  address factorization and numerical degeneracy; structural correctness is
+  about the law being factorized and propagated.
+- The chapter now ties the structural UKF and structural SVD story back to the
+  rest of the monograph instead of letting Chapter 18b drift as an isolated
+  warning.
+- The next phase remains justified: perform final global audit, tidy scoped
+  files, update memo, and commit.
+
+### Phase F: final audit, tidy, memo, and commit
+
+Phase plan:
+- run final LaTeX and targeted log checks;
+- run theorem-count, stale-number, citation-key, and reviewer-concern sweeps;
+- inspect git scope and avoid staging unrelated user artifacts;
+- update this reset memo with results, interpretation, and next hypotheses;
+- commit the scoped rewrite files.
+
+Execution:
+- Added short optional section titles for long Chapter 18b section names so the
+  running PDF headers are less likely to overflow.
+- Left unrelated untracked artifacts unstaged:
+  - local Julier and van der Merwe PDFs in `docs/`;
+  - `docs/plans/templates/`.
+- Included the new reviewer-response plan in the commit scope because this
+  reset memo points to it as the controlling execution plan.
+
+Tests:
+- Final `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex`
+  succeeded from `docs/`.
+- Final targeted searches confirmed:
+  - only two `proposition` environments remain in Chapter 18b;
+  - the literature map, `\phi=0` edge case, SVD diagnostic question, and new
+    validation gates are present;
+  - stale second-example numerical values are absent;
+  - no `TODO`, `FIXME`, reviewer complaint residue, or placeholder `??`
+    remains in the chapter/plan/memo surfaces checked.
+- Final log search found no fatal errors, missing-dollar errors, undefined
+  citations, undefined references, BibTeX warnings, citation-rerun warnings, or
+  cross-reference rerun warnings.
+- Residual LaTeX warnings are cosmetic overfull/underfull boxes, including a
+  few compact Chapter 18b table/long-term lines and older chapters.
+
+Audit:
+- Phase F passes.
+- The rewrite plan has been executed through all phases.  No blocking result
+  was found that would make the next phase unjustified.
+- MathDevMCP helped as an audit/provenance tool, but the proposition proofs
+  remain human mathematical arguments rather than machine-certified formal
+  proofs.
+- ResearchAssistant currently has no local summary records for the Julier /
+  van der Merwe sources, so the rewrite used direct PDF metadata/text checks
+  plus existing monograph bibliography sources.
+
+Completion interpretation:
+- Chapter 18b now answers the reviewer concerns directly:
+  - it defines predictive law, pushforward, and sigma-point placement;
+  - it presents the standard additive-noise UKF and structural UKF in
+    implementation-grade steps;
+  - it compares the two algorithms explicitly;
+  - it states and proves a local second-order UT inheritance result for the
+    correct structural input law;
+  - it answers the `\phi=0` objection;
+  - it distinguishes structural-law correctness, quadrature accuracy,
+    factorization/SVD robustness, and derivative/HMC readiness.
+
+Next hypotheses to test:
+- H1: A small executable Chapter 18b regression script can reproduce every
+  displayed number in both worked examples and should be added before the next
+  review draft.
+- H2: A structural SVD sigma-point backend that factors the covariance of
+  `(x_{t-1},\varepsilon_t)` and completes `k_t` pointwise will match the
+  chapter's structural UKF/cubature examples, while a legacy full-state
+  perturbed backend will fail the deterministic-identity residual test.
+- H3: In mixed DSGE adapters, metadata based only on zero rows of a shock-impact
+  matrix will misclassify at least one endogenous/predetermined coordinate; a
+  model-supplied structural map and pointwise residual test should catch it.
+- H4: SVD/eigenspectral value paths can pass finite likelihood tests while
+  failing derivative promotion near small spectral gaps; spectral-gap telemetry
+  and finite-gradient stress tests should remain mandatory before HMC claims.
+- H5: Rotemberg/SGU/EZ-style pruned examples need separate first-order and
+  second-order/pruned deterministic-completion residual gates; first-order
+  structural success should not be promoted to pruned-order correctness without
+  those tests.
