@@ -91,6 +91,30 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-six-phase-validation-audit-2026-05-05.md
     status: drafted
     role: Independent audit of the structural SVD six-phase validation plan.
+  - id: bayesfilter_structural_svd_final_execution_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-final-execution-plan-2026-05-06.md
+    status: drafted
+    role: Tool-gated final execution path for the structural SVD twelve-phase implementation ladder.
+  - id: bayesfilter_structural_svd_final_execution_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-final-execution-audit-2026-05-06.md
+    status: drafted
+    role: Independent audit of the tool-gated structural SVD final execution path.
+  - id: bayesfilter_structural_svd_tool_gated_source_derivation_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-tool-gated-source-derivation-audit-2026-05-06.md
+    status: drafted
+    role: ResearchAssistant and MathDevMCP source/derivation addendum for structural SVD Phase 1.
+  - id: bayesfilter_structural_svd_final_execution_result
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-final-execution-result-2026-05-06.md
+    status: drafted
+    role: Phase-by-phase result summary for the tool-gated structural SVD execution pass.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -290,6 +314,34 @@ chapter_mappings:
       destination: docs/plans/bayesfilter-structural-svd-six-phase-validation-plan-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
       import_status: drafted
       reason: Audits the six-phase validation plan and confirms it does not rewrite existing structural SVD code unnecessarily or overpromote DSGE/HMC claims.
+
+  bayesfilter_structural_svd_final_execution_plan:
+    - source_file: bayesfilter-structural-svd-final-execution-plan-2026-05-06.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/plans/bayesfilter-structural-svd-final-execution-result-2026-05-06.md; docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch18b_structural_deterministic_dynamics.tex; bayesfilter/structural.py; bayesfilter/filters/sigma_points.py; bayesfilter/filters/kalman.py; bayesfilter/backends.py
+      import_status: drafted
+      reason: >-
+        Refines the twelve-phase structural SVD implementation ladder into a
+        tool-gated execution path with ResearchAssistant source-support labels,
+        MathDevMCP derivation/doc-code labels, and explicit promotion blockers
+        for DSGE residuals, derivatives, JIT, and HMC.
+
+  bayesfilter_structural_svd_final_execution_audit:
+    - source_file: bayesfilter-structural-svd-final-execution-audit-2026-05-06.md
+      destination: docs/plans/bayesfilter-structural-svd-final-execution-plan-2026-05-06.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+      import_status: drafted
+      reason: Audits the tool-gated execution plan and confirms ResearchAssistant and MathDevMCP should be hard gates, not optional helpers.
+
+  bayesfilter_structural_svd_tool_gated_source_derivation_audit:
+    - source_file: bayesfilter-structural-svd-tool-gated-source-derivation-audit-2026-05-06.md
+      destination: docs/chapters/ch02_state_space_contracts.tex; docs/chapters/ch18b_structural_deterministic_dynamics.tex; bayesfilter/structural.py; bayesfilter/filters/sigma_points.py; bayesfilter/filters/kalman.py; tests/test_structural_partition.py; tests/test_structural_sigma_points.py; tests/test_degenerate_kalman.py; tests/test_backend_readiness.py
+      import_status: drafted
+      reason: Records ResearchAssistant source_missing/source_supported status and MathDevMCP derivation/human-review routing for the structural SVD execution pass.
+
+  bayesfilter_structural_svd_final_execution_result:
+    - source_file: bayesfilter-structural-svd-final-execution-result-2026-05-06.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; tests/test_structural_partition.py; tests/test_structural_sigma_points.py; tests/test_degenerate_kalman.py; tests/test_macrofinance_adapter.py; tests/test_dsge_adapter_gate.py; tests/test_derivative_validation_smoke.py; tests/test_backend_readiness.py
+      import_status: drafted
+      reason: Records the phase-by-phase outcome of the final tool-gated execution pass and preserves blockers for Rotemberg/SGU/EZ residuals, SVD/eigen derivatives, JIT, and HMC.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md

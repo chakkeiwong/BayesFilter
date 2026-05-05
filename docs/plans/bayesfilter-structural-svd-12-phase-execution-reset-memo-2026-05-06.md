@@ -628,3 +628,529 @@ before any HMC benchmark.
 H4: Exact LGSSM and structural AR/lag fixtures should remain the regression
 oracle ladder; DSGE models should enter only after toy and generic gates stay
 green.
+
+
+## 2026-05-06 update: final tool-gated execution pass
+
+User asked to re-run the final structural SVD execution plan with reset-memo
+updates, independent audit, phase-by-phase execution, tests, tidy-up, commit,
+and a detailed summary.  The active plan is:
+
+- `docs/plans/bayesfilter-structural-svd-final-execution-plan-2026-05-06.md`
+
+The independent audit is:
+
+- `docs/plans/bayesfilter-structural-svd-final-execution-audit-2026-05-06.md`
+
+The key refinement relative to the earlier twelve-phase execution memo is that
+ResearchAssistant and MathDevMCP are treated as evidence gates, not optional
+helpers.
+
+### Preflight: workspace and baseline
+
+Phase plan:
+- record the workspace status;
+- protect pre-existing dirty files;
+- commit only scoped structural SVD execution artifacts.
+
+Execution:
+- Ran `git status --short --branch`.
+- Ran `git log -5 --oneline --decorate`.
+- Observed branch `main` ahead of `origin/main` with pre-existing dirty docs:
+  `docs/chapters/ch18b_structural_deterministic_dynamics.tex`,
+  `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`,
+  `docs/references.bib`, the Julier PDF, the Chapter 18b restructuring plan,
+  an untracked remaining-gap best-path plan, and plan templates.
+
+Test:
+- No code test is required for preflight.
+
+Audit:
+- No tracked BayesFilter code file was dirty before this pass.
+- The pre-existing Chapter 18b/reference/planning files were not edited by this
+  structural SVD execution pass.
+
+Interpretation:
+- The pass may proceed if staging remains path-scoped.
+
+Next phase justified:
+- Yes.  Phase 1 is justified.
+
+### Phase 1: source and derivation audit
+
+Phase plan:
+- apply the stricter ResearchAssistant/MathDevMCP evidence policy to the
+  source and derivation audit;
+- record `source_missing` and `human_review_required` where appropriate.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-structural-svd-tool-gated-source-derivation-audit-2026-05-06.md`.
+- Used ResearchAssistant:
+  - workspace/privacy/tool status: read-only, offline, local workflows ready;
+  - local summary searches for Julier/Uhlmann UKF support, Matrix Backprop/SVD
+    derivative support, Hoffman/Gelman NUTS support, and Betancourt HMC support
+    returned no matching local paper summaries.
+- Used MathDevMCP:
+  - `latex_label_lookup` succeeded for
+    `def:bf-structural-state-partition`;
+  - `latex_label_lookup` succeeded for
+    `asm:bf-approximation-labeling`;
+  - `latex_label_lookup` succeeded for
+    `prop:bf-structural-ukf-pushforward`;
+  - `latex_label_lookup` succeeded for
+    `eq:bf-structural-ukf-prop-deterministic-completion`;
+  - prior typed obligation routing for
+    `prop:bf-structural-ukf-pushforward` required human review rather than
+    backend certification.
+
+Test:
+- The audit addendum records a source-support and derivation-status table.
+
+Audit:
+- The exact Kalman value path remains source-supported through local monograph
+  equations and existing tests.
+- The structural UKF pushforward proposition has local proof text, but
+  theorem-level certification remains `human_review_required`.
+- External literature claims about UKF, Matrix Backprop/SVD, and NUTS/HMC are
+  `source_missing` in the current ResearchAssistant local index and must not be
+  promoted without reviewed sources.
+
+Interpretation:
+- Phase 1 passes for BayesFilter-local value validation.
+- Phase 1 does not close literature, derivative, DSGE residual, or HMC
+  promotion gates.
+
+Next phase justified:
+- Yes.  Phase 2 is justified as a code reuse/doc-code audit.
+
+### Phase 2: code reuse and document-code audit
+
+Phase plan:
+- re-use existing BayesFilter code unless tests or tool gates expose a real
+  gap;
+- use MathDevMCP document-code tools where possible.
+
+Execution:
+- Reviewed the existing source/code audit:
+  `docs/plans/bayesfilter-structural-source-code-audit-2026-05-04.md`.
+- Reviewed core code:
+  `bayesfilter/structural.py`,
+  `bayesfilter/filters/sigma_points.py`,
+  `bayesfilter/filters/kalman.py`,
+  `bayesfilter/backends.py`.
+- Attempted MathDevMCP `compare_label_code` for
+  `def:bf-structural-state-partition` and
+  `asm:bf-approximation-labeling`.
+
+Test:
+- MathDevMCP `compare_label_code` returned internal tool execution errors for
+  both labels.
+- Existing tests were used as doc-code consistency evidence in later phases.
+
+Audit:
+- The tool failure is recorded as a tool limitation, not as code proof.
+- Reuse decisions from the 2026-05-04 audit remain valid:
+  covariance Kalman is the exact LGSSM value reference, structural sigma points
+  are approximate value reference, MacroFinance derivatives are later
+  candidates, and DSGE/MacroFinance economics stay in client repos.
+
+Interpretation:
+- Phase 2 passes for current scope because code/test evidence is sufficient for
+  BayesFilter value gates.
+- It does not certify derivative formulas or client economics.
+
+Next phase justified:
+- Yes.  Phase 3 is justified.
+
+### Phase 3: BayesFilter structural sigma-point core
+
+Phase plan:
+- validate the existing eager NumPy structural sigma-point backend.
+
+Execution:
+- No backend code rewrite was made.
+- Reviewed structural sigma-point metadata: integration space, deterministic
+  completion, approximation label, differentiability status, and compiled
+  status.
+
+Test:
+- Ran:
+
+```bash
+pytest -q tests/test_structural_partition.py tests/test_structural_sigma_points.py tests/test_structural_ar_p.py tests/test_filter_metadata.py
+```
+
+- Result:
+
+```text
+14 passed
+```
+
+Audit:
+- The backend remains `structural_svd_sigma_point`,
+  `sigma_point_gaussian_closure`, `finite_difference_smoke_only`, and
+  `eager_numpy`.
+
+Interpretation:
+- Phase 3 passes as a value-side approximate structural reference.
+- It is not derivative-, compiled-, or HMC-ready evidence.
+
+Next phase justified:
+- Yes.  Phase 4 is justified.
+
+### Phase 4: exact Kalman and degenerate linear spine
+
+Phase plan:
+- validate the exact covariance-form Kalman path separately from structural
+  nonlinear approximation.
+
+Execution:
+- No Kalman code rewrite was made.
+
+Test:
+- Ran:
+
+```bash
+pytest -q tests/test_degenerate_kalman.py tests/test_filter_metadata.py
+```
+
+- Result:
+
+```text
+5 passed
+```
+
+Audit:
+- Exact Kalman metadata remains `covariance_kalman`, `full_state`,
+  `deterministic_completion="none"`, no approximation label, `value_only`, and
+  `eager`.
+
+Interpretation:
+- Phase 4 passes as an exact LGSSM value gate.
+
+Next phase justified:
+- Yes.  Phase 5 is justified.
+
+### Phase 5: generic structural fixtures
+
+Phase plan:
+- validate that structural fixtures are generic, not just DSGE-specific.
+
+Execution:
+- No fixture code changes were required.
+
+Test:
+- Ran:
+
+```bash
+pytest -q tests/test_structural_ar_p.py tests/test_structural_sigma_points.py
+```
+
+- Result:
+
+```text
+6 passed
+```
+
+Audit:
+- The generic AR/structural fixtures remain green and support the BayesFilter
+  structural contract.
+
+Interpretation:
+- Phase 5 passes.
+
+Next phase justified:
+- Yes.  Phase 6 is justified.
+
+### Phase 6: MacroFinance adapter and analytic derivative classification
+
+Phase plan:
+- validate MacroFinance adapter/readiness gates without migrating economics or
+  derivative formulas.
+
+Execution:
+- No MacroFinance code was edited.
+
+Test:
+- Ran:
+
+```bash
+pytest -q tests/test_macrofinance_adapter.py tests/test_degenerate_kalman.py
+```
+
+- Result:
+
+```text
+34 passed, 2 warnings
+```
+
+- Warnings were TensorFlow Probability deprecation warnings.
+
+Audit:
+- The adapter gate remains a value/readiness metadata gate.
+- Analytic derivatives are not migrated or certified.
+
+Interpretation:
+- Phase 6 passes for adapter classification only.
+
+Next phase justified:
+- Yes.  Phase 7 is justified.
+
+### Phase 7: DSGE adapter integration
+
+Phase plan:
+- validate BayesFilter DSGE adapter gates and client metadata contracts.
+
+Execution:
+- No BayesFilter or DSGE adapter code was edited.
+
+Test:
+- Ran:
+
+```bash
+PYTHONPATH=/home/chakwong/python/src pytest -q tests/test_dsge_adapter_gate.py
+```
+
+- Result:
+
+```text
+5 passed
+```
+
+- Ran from `/home/chakwong/python`:
+
+```bash
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q tests/contracts/test_structural_dsge_partition.py
+```
+
+- Result:
+
+```text
+11 passed, 3 warnings
+```
+
+- Warnings were two TensorFlow Probability deprecation warnings and one
+  read-only pytest cache warning.
+
+Audit:
+- SmallNK, Rotemberg, and SGU metadata are adapter-ready.
+- EZ remains fail-closed.
+- Passing adapter metadata is not nonlinear filtering correctness.
+
+Interpretation:
+- Phase 7 passes as an adapter metadata gate.
+
+Next phase justified:
+- Phase 8 evaluation is justified, but only as a blocker audit unless
+  model-specific residual tests exist.
+
+### Phase 8: model-specific DSGE completion evidence
+
+Phase plan:
+- determine whether Rotemberg, SGU, and EZ can be promoted.
+
+Execution:
+- No model-specific residual tests were added or run in this pass.
+
+Test:
+- The relevant evidence remains the Phase 7 adapter gate only.
+
+Audit:
+- Rotemberg still needs second-order/pruned identity evidence for
+  `dy_next = y_next - y_current`.
+- SGU still needs residual evidence for `d,k,r,riskprem`.
+- EZ still needs a timing/partition audit before metadata exposure.
+
+Interpretation:
+- Phase 8 is blocked.
+
+Next phase justified:
+- Phase 9 guardrail validation is justified.
+- DSGE nonlinear promotion is not justified.
+
+### Phase 9: derivative and Hessian safety gate
+
+Phase plan:
+- validate derivative/Hessian guardrails without claiming SVD/eigen derivative
+  certification.
+
+Execution:
+- No backend code was changed.
+
+Test:
+- Ran:
+
+```bash
+pytest -q tests/test_derivative_validation_smoke.py tests/test_backend_readiness.py
+```
+
+- Result:
+
+```text
+5 passed
+```
+
+Audit:
+- The guardrail tests block derivative/HMC promotion when JVP/VJP and spectral
+  gap evidence are missing.
+- ResearchAssistant local source support for Matrix Backprop/SVD derivative
+  claims is currently `source_missing`.
+
+Interpretation:
+- Phase 9 guardrails pass.
+- Certified SVD/eigen analytic gradients and Hessians remain blocked.
+
+Next phase justified:
+- Phase 10 metadata/JIT readiness audit is justified.
+
+### Phase 10: JIT and static-shape production gate
+
+Phase plan:
+- determine whether current backends claim compiled target readiness.
+
+Execution:
+- Reviewed metadata through tests and code.
+
+Test:
+- Covered by:
+
+```bash
+pytest -q tests/test_backend_readiness.py
+pytest -q
+```
+
+- Full suite result:
+
+```text
+63 passed, 2 warnings
+```
+
+Audit:
+- Structural sigma points are `eager_numpy`.
+- Covariance Kalman is `eager`.
+- No compiled production HMC target is claimed.
+
+Interpretation:
+- Phase 10 is blocked as a production gate and correctly guarded by metadata.
+
+Next phase justified:
+- HMC execution is not justified.
+- Phase 11 should be recorded as blocked.
+
+### Phase 11: HMC validation ladder
+
+Phase plan:
+- determine whether an HMC ladder can run.
+
+Execution:
+- No HMC ladder was run because Phases 8--10 are not closed.
+
+Test:
+- No HMC tests were run.
+
+Audit:
+- No convergence claim is supported.
+- ResearchAssistant local source support for HMC/NUTS literature claims is
+  currently `source_missing` in the local summary index.
+
+Interpretation:
+- Phase 11 is blocked.
+
+Next phase justified:
+- Phase 12 documentation/provenance is justified.
+
+### Phase 12: documentation, provenance, and release gate
+
+Phase plan:
+- update docs/provenance artifacts for the execution pass;
+- keep unsupported claims blocked;
+- run final validation.
+
+Execution:
+- Added:
+  - `docs/plans/bayesfilter-structural-svd-final-execution-plan-2026-05-06.md`;
+  - `docs/plans/bayesfilter-structural-svd-final-execution-audit-2026-05-06.md`;
+  - `docs/plans/bayesfilter-structural-svd-tool-gated-source-derivation-audit-2026-05-06.md`;
+  - `docs/plans/bayesfilter-structural-svd-final-execution-result-2026-05-06.md`.
+- Updated `docs/source_map.yml` to register the new artifacts.
+- Updated this reset memo with phase-by-phase results.
+
+Test:
+- Ran:
+
+```bash
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml', encoding='utf-8'))"
+git diff --check
+pytest -q
+```
+
+- Results:
+
+```text
+YAML parse passed
+git diff --check passed
+63 passed, 2 warnings
+```
+
+Audit:
+- The final plan and result preserve the blockers for Phase 8 residuals, Phase
+  9 derivative certification, Phase 10 JIT, and Phase 11 HMC.
+- Pre-existing unrelated dirty files were not staged.
+
+Interpretation:
+- Phase 12 passes for documentation/provenance of this execution pass.
+- Release-level production/HMC readiness remains blocked.
+
+## Final tool-gated execution status
+
+Closed:
+
+- final execution plan and independent audit;
+- Phase 1 tool-gated source/derivation addendum for BayesFilter-local value
+  validation;
+- Phase 2 code reuse decision for current scope;
+- Phase 3 structural sigma-point value gate;
+- Phase 4 exact Kalman value gate;
+- Phase 5 generic structural fixtures;
+- Phase 6 MacroFinance adapter classification;
+- Phase 7 DSGE adapter metadata;
+- Phase 9 and Phase 10 guardrail tests as blockers/metadata gates;
+- Phase 12 documentation/provenance for this pass.
+
+Still blocked:
+
+- Phase 8 Rotemberg second-order/pruned identity evidence;
+- Phase 8 SGU deterministic residual evidence;
+- Phase 8 EZ timing/partition audit;
+- Phase 9 SVD/eigen analytic gradient and Hessian certification;
+- Phase 10 compiled static-shape production target;
+- Phase 11 HMC ladder and convergence claims;
+- external literature-source support in the current ResearchAssistant local
+  summary index for UKF, Matrix Backprop/SVD, and HMC/NUTS claims.
+
+## Next hypotheses
+
+H1: Rotemberg's mixed structural metadata is adapter-ready, but nonlinear
+structural promotion will fail unless the second-order/pruned implementation
+preserves `dy_next = y_next - y_current` pointwise on sigma-point grids.
+
+H2: SGU's deterministic coordinates `d,k,r,riskprem` require a model-specific
+residual derivation; failure near boundary parameters should keep SGU
+fail-closed for nonlinear structural sigma-point filtering.
+
+H3: EZ can be made adapter-ready with minimal BayesFilter impact only after a
+timing/partition audit identifies the stochastic and deterministic blocks
+without relying solely on zero rows of `eta`.
+
+H4: SVD/eigen derivative certification will fail near small spectral gaps
+unless the backend records validity regions, uses custom derivatives, or
+switches factorization policy.
+
+H5: A compiled static-shape target can probably match the eager BayesFilter
+value path on toy structural fixtures, but this must be tested before any HMC
+benchmark.
+
+H6: HMC diagnostics will be meaningful only after value, residual, derivative,
+and compiled-target gates pass; finite smoke tests should remain labeled as
+finite smoke only.
