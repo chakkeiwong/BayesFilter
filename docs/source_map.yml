@@ -67,6 +67,18 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-six-next-issue-closure-audit-2026-05-05.md
     status: drafted
     role: Independent audit of the six next-issue closure plan.
+  - id: bayesfilter_dsge_minimal_impact_adapter_stabilization_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-plan-2026-05-05.md
+    status: drafted
+    role: Minimal-impact handoff plan for stabilizing DSGE BayesFilter structural metadata in the client repo.
+  - id: bayesfilter_dsge_minimal_impact_adapter_stabilization_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-audit-2026-05-05.md
+    status: drafted
+    role: Independent audit of the DSGE minimal-impact adapter stabilization handoff.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -234,6 +246,22 @@ chapter_mappings:
       destination: docs/plans/bayesfilter-six-next-issue-closure-plan-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
       import_status: drafted
       reason: Audits the six-issue plan and confirms it avoids client-promotion and convergence overclaims.
+
+  bayesfilter_dsge_minimal_impact_adapter_stabilization_plan:
+    - source_file: bayesfilter-dsge-minimal-impact-adapter-stabilization-plan-2026-05-05.md
+      destination: /home/chakwong/python/src/dsge_hmc/models/structural_metadata.py; /home/chakwong/python/src/dsge_hmc/models/small_nk.py; /home/chakwong/python/src/dsge_hmc/models/rotemberg_nk.py; /home/chakwong/python/src/dsge_hmc/models/sgu.py; /home/chakwong/python/src/dsge_hmc/filters/_svd_filters.py; /home/chakwong/python/tests/contracts/test_structural_dsge_partition.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: >-
+        Defines a minimal-impact client-repo handoff for stabilizing DSGE
+        BayesFilter structural metadata after /home/chakwong/python commit
+        8645623, while preserving fail-closed labels for unaudited models and
+        legacy full-state approximations.
+
+  bayesfilter_dsge_minimal_impact_adapter_stabilization_audit:
+    - source_file: bayesfilter-dsge-minimal-impact-adapter-stabilization-audit-2026-05-05.md
+      destination: docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-plan-2026-05-05.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the DSGE stabilization handoff and confirms it avoids broad DSGE refactors and HMC overclaims.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md

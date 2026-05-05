@@ -4233,3 +4233,57 @@ Final interpretation:
 - Client promotion remains blocked for real DSGE adapters, real MacroFinance
   production providers, real non-spectral derivative implementations, and real
   HMC chain output.
+
+## 2026-05-05 update: DSGE minimal-impact adapter stabilization handoff
+
+Context:
+- User approved planning for the DSGE client-repo issue with minimal effect on
+  `/home/chakwong/python`, including a detailed handoff for another agent
+  operating in that project.
+- A read-only preflight first suggested DSGE metadata was missing, but a later
+  verification against current `/home/chakwong/python` HEAD found commit
+  `8645623 Expose DSGE structural metadata for BayesFilter`.
+
+Plan:
+- Treat the DSGE task as stabilization and evidence collection, not a broad
+  implementation from scratch.
+- Keep the adapter surface minimal: model-local metadata fields, a lightweight
+  helper module, deterministic-completion bridges, and legacy full-state SVD
+  guards.
+- Do not move DSGE equilibrium logic, priors, parameter transforms, solvers, or
+  HMC samplers into BayesFilter.
+
+Execute:
+- Added
+  `docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-plan-2026-05-05.md`.
+- Added
+  `docs/plans/bayesfilter-dsge-minimal-impact-adapter-stabilization-audit-2026-05-05.md`.
+- Registered both files in `docs/source_map.yml`.
+- Read `/home/chakwong/python/src/dsge_hmc/models/structural_metadata.py`,
+  SmallNK, Rotemberg, SGU, and
+  `/home/chakwong/python/tests/contracts/test_structural_dsge_partition.py`.
+
+Test:
+- Read-only import preflight against `/home/chakwong/python/src` found:
+  - `SmallNKEstimable` exposes all-stochastic BayesFilter metadata;
+  - `RotembergNKEstimable` exposes mixed metadata plus a deterministic
+    completion bridge;
+  - `SGUEstimable` exposes mixed metadata plus a deterministic completion
+    bridge.
+- The import preflight produced TensorFlow/CUDA and Matplotlib cache warnings;
+  these are environment noise, not adapter failures.
+
+Audit:
+- The handoff plan correctly avoids broad DSGE refactors.
+- EZ and other unaudited DSGE models must remain fail-closed until a timing and
+  structural-role audit exists.
+- Legacy full-state SVD paths for mixed DSGE models must remain blocked by
+  default or require explicit approximation labels.
+
+Interpretation:
+- The next justified work is for a `/home/chakwong/python` agent to run focused
+  contract tests around commit `8645623`, fix only local metadata/guard
+  regressions, and report the final commit hash and test output.
+- BayesFilter should not proceed to DSGE structural particle or HMC promotion
+  until the DSGE-focused test phase and BayesFilter gate confirmation are
+  recorded.
