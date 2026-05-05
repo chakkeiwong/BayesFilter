@@ -255,44 +255,28 @@ Chapter~\ref{ch:bf-svd-sigma-point}.  SVD factors may improve value-side
 robustness for nearly singular covariances.  They do not repair a filter that
 is propagating the wrong state-space law.
 
-\section{Worked Structural UKF Example}
-\label{sec:bf-structural-ukf-worked-example}
+\section{Standard UKF, Structural UKF, and the Predictive Law}
+\label{sec:bf-ukf-structural-overview}
 
-This section works through a one-step unscented update in a model with one
-shock-driven state and one deterministic endogenous state.  The example is
-small enough to expose the algebra, but it contains the same structural issue
-as a DSGE model with exogenous shocks and endogenous predetermined variables.
-The point of the example is not to prove a universal theorem about every UKF
-variant.  The point is to show the BayesFilter structural-design rule for mixed
-structural models: generate sigma points in the declared pre-transition
-uncertainty variables, then complete deterministic coordinates pointwise.
+\subsection{The Original Unscented-Transform Pattern}
+\label{sec:bf-original-ut-pattern}
 
-Before turning to the arithmetic, it is useful to isolate what differs from a
-generic additive-noise full-state UKF pattern.  In many textbook UKF
-implementations, one starts from a Gaussian approximation for the full state and
-a process-noise covariance, generates sigma points for that enlarged Gaussian
-object, and then propagates every state coordinate as if it belonged to one
-homogeneous stochastic transition.  That pattern can be a usable approximation
-in some models, but for mixed structural models it is not automatically the same
-target as the structural transition declared in
-Chapter~\ref{ch:bf-state-space-contracts}.
+Julier and Uhlmann's original unscented-transform construction starts from a
+random variable $x$ with known mean and covariance and approximates the moments
+of the transformed variable $y=g(x)$ by propagating a deterministic set of sigma
+points through the nonlinear map \citep{julier1996general,julier1997new}.  The
+core idea is to represent the distribution by a small set of points whose sample
+mean and covariance agree with the original distribution up to the stated order,
+then to compute transformed mean and covariance from the propagated points.
 
-For the structural DSGE transition
-\eqref{eq:bf-m-transition}--\eqref{eq:bf-k-transition}, the contrast is:
-\begin{itemize}
-  \item \textbf{Structural UKF:} generate sigma points in the declared
-    pre-transition uncertainty variables, typically $(x_{t-1},\varepsilon_t)$
-    or the declared stochastic block together with the lagged state, then
-    complete the deterministic-completion block pointwise.
-  \item \textbf{Naive full-state UKF approximation:} generate sigma points for
-    a full post-transition state covariance that grants every coordinate a
-    direct stochastic perturbation, even when the structural model declares some
-    coordinates to belong to the deterministic-completion block.
-\end{itemize}
-The second construction is not automatically useless, but in this class of
-models it enlarges the stochastic space.  It therefore requires an explicit
-approximation label and a justification against a reference if it is used at
-all.
+In the additive-noise filtering setting used in that literature, the same idea
+is applied to an augmented Gaussian variable that contains the prior state and
+the current additive-noise variables.  The sigma points therefore approximate
+the distribution of the variables that actually generate the next predicted
+state and predicted observation.  This point is crucial: the unscented transform
+approximates a nonlinear transformation of a declared random variable.  If the
+wrong random variable is chosen, the transform may approximate the wrong law
+accurately.
 
 \subsection{Standard Additive-Noise UKF Algorithm}
 \label{sec:bf-standard-ukf-algorithm}
@@ -996,15 +980,16 @@ are completed by the model point by point.  In BayesFilter terms, this is a
 design rule for mixed structural models and an approximation-label boundary for
 any backend that instead enlarges the stochastic space.
 
-\section{Nonlinear Measurement Equations with a Degenerate Linear Transition}
+\section{Worked Example A: Degenerate Linear Transition with Nonlinear Measurement}
 \label{sec:bf-structural-nonlinear-measurement}
 
-The worked UKF example above uses a nonlinear state transition.  Many applied
-state-space problems instead have a degenerate linear transition together with a
-nonlinear measurement equation.  That case is closer to many DSGE and affine
-term-structure applications than a fully nonlinear latent transition.  The key
-point is that the latent transition may still have a structural split even when
-it is linear.  A nonlinear measurement equation does not remove that split.
+The most practically relevant counterpart to the previous example is not a fully
+stochastic linear-Gaussian state transition.  It is a degenerate linear
+transition together with a nonlinear measurement equation.  That case is closer
+to many DSGE and affine term-structure applications than a fully nonlinear
+latent transition.  The key point is that the latent transition may still have a
+structural split even when it is linear.  A nonlinear measurement equation does
+not remove that split.
 
 Consider the linear structural transition
 \begin{align}
@@ -1501,7 +1486,42 @@ read as applying only to nonlinear state transitions.  The same latent
 state-partition discipline remains necessary when the state equation is linear
 but degenerate and the observation map is nonlinear.
 
-\section{Pruned DSGE Filtering: A Minimal Correct Pattern}
+\section{What Structural Correctness Does and Does Not Guarantee}
+\label{sec:bf-structural-correctness-boundary}
+
+Structural correctness guarantees that the filter is approximating the intended latent predictive law rather than an altered full-state approximation.  It does not, by itself, guarantee that the resulting Gaussian closure is exact, that nonlinear observation moments are approximated with negligible error, or that the derivative path is stable enough for HMC.  In BayesFilter terms, structural correctness is a law-specification requirement; it is not a blanket certificate of moment accuracy, derivative accuracy, or production readiness.
+
+In particular, structural correctness does not solve four other problems that must be evaluated separately:
+\begin{enumerate}[label=(\roman*)]
+  \item it does not make the Gaussian sigma-point closure exact for a genuinely nonlinear transformation;
+  \item it does not remove observation-side quadrature error in models such as
+    \eqref{eq:bf-exp-affine-observation};
+  \item it does not resolve numerical covariance-factor issues when square roots,
+    SVD factors, or PSD projections are used;
+  \item it does not guarantee a stable value-gradient path for HMC, especially
+    when spectral decompositions or fallback branches are differentiated.
+\end{enumerate}
+Thus the right mental model is layered: first make sure the latent law is correct, then measure the quality of the nonlinear approximation, then audit the numerical and derivative path.
+
+\section{Structural Degeneracy Versus Numerical Degeneracy}
+\label{sec:bf-structural-versus-numerical-degeneracy}
+
+The literature and the source-project audit motivate a distinction that should be made explicit:
+\begin{center}
+\begin{tabular}{p{0.22\linewidth}p{0.30\linewidth}p{0.34\linewidth}}
+\toprule
+\textbf{Issue} & \textbf{What it means} & \textbf{What fixes it}\\
+\midrule
+Structural degeneracy & Some latent coordinates are deterministic-completion variables under the model law & Respect the declared stochastic integration space and complete the deterministic block pointwise\\
+Numerical degeneracy & A covariance or innovation matrix is singular or ill-conditioned in computation & Use a stable solve, square-root, or spectral factorization appropriate to the declared law\\
+SVD/square-root representation & A numerical backend chooses a robust factorization of a covariance object & This may improve value-side robustness, but it does not by itself correct a structurally wrong latent law\\
+Derivative/spectral risk & Raw autodiff through spectral or fallback branches may be unstable & Requires derivative audits, stress tests, and possibly custom gradients\\
+\bottomrule
+\end{tabular}
+\end{center}
+This is why an SVD sigma-point filter does not automatically solve the problem discussed in this chapter.  It may solve a factorization problem while leaving the latent-law specification problem untouched.
+
+\section{Pruned DSGE and Adapter Implications}
 \label{sec:bf-pruned-dsge-correct-pattern}
 
 For pruned second-order DSGE approximations, the source DSGE project already
@@ -1518,36 +1538,23 @@ uses the standard first-order/second-order decomposition:
 That decomposition is necessary, but it is not sufficient for large DSGE
 filtering.  It separates perturbation order; it does not automatically
 separate exogenous shock states from endogenous deterministic states inside
-$x_t^f$.  A robust BayesFilter DSGE adapter should carry both decompositions:
+$x_t^f$.  A robust BayesFilter DSGE adapter should therefore carry both
+bookkeeping axes,
 \[
   \text{perturbation order: } (x^f,x^s),
   \qquad
   \text{structural timing: } (m,k).
 \]
+The adapter-facing implication is simple: the model must expose the exogenous
+transition, the deterministic endogenous transition, the observation map, and a
+declaration of which variables define the stochastic integration space.
 
-The implementation should therefore expose a structural transition interface
-with at least:
-\begin{itemize}
-  \item exogenous-state indices and shock dimensions;
-  \item endogenous/predetermined deterministic-state indices;
-  \item the exogenous transition $T_m$;
-  \item the deterministic endogenous transition $T_k$;
-  \item the observation map and measurement-error law;
-  \item a declaration of whether the backend integrates over shocks,
-    exogenous states, or a full latent state approximation.
-\end{itemize}
-For CKF/UKF/SVD sigma-point filters, sigma points should be generated in the
-declared stochastic integration space and then lifted through the structural
-transition.  For particle filters, proposals should sample the stochastic
-blocks and deterministically complete the endogenous block unless a different
-proposal is explicitly specified.
-
-\section{Current Source-Project Failure Mode}
+\section{Source-Project Lesson}
 \label{sec:bf-current-source-project-failure-mode}
 
-The recent source-project audit found a concrete instance of this design
-failure.  The default DSGE SVD sigma-point adapter uses a collapsed transition
-of the form
+The recent source-project audit found a concrete instance of the structural
+failure discussed in this chapter.  The default DSGE SVD sigma-point adapter
+uses a collapsed transition of the form
 \[
   Q_w = \eta\eta^\top + \epsilon I,\qquad
   x_{t|t-1}^f = h_x x_{t-1|t-1}^f,
@@ -1557,15 +1564,15 @@ and propagates the covariance as
   P_{t|t-1} = h_x P_{t-1|t-1} h_x^\top + Q_w.
 \]
 It tracks the pruned $x^s$ correction separately, but it does not expose a
-partition between exogenous and endogenous coordinates inside $x^f$.  For the smallest NK example,
-where the states are only the exogenous demand and monetary-policy shocks,
-this is not a serious modeling error.  For Rotemberg NK, SGU, EZ, and
-NAWM-scale DSGE models, the state vector contains deterministic or
-endogenous/predetermined components.  Treating those models as if every state
-coordinate were an exchangeable noisy Gaussian coordinate is a structural
-filtering bug, not a mere numerical tuning problem.
+partition between exogenous and endogenous coordinates inside $x^f$.  For the
+smallest NK example, where the states are only the exogenous demand and
+monetary-policy shocks, this is not a serious modeling error.  For Rotemberg NK,
+SGU, EZ, and NAWM-scale DSGE models, however, the state vector contains
+endogenous/predetermined components, so treating every coordinate as an
+exchangeable noisy Gaussian coordinate becomes a structural filtering bug rather
+than a mere numerical tuning issue.
 
-\section{Required Tests Before Any DSGE Nonlinear Filter Claim}
+\section{Validation Gates and Final Policy Rule}
 \label{sec:bf-structural-deterministic-required-tests}
 
 No future BayesFilter report should claim that a nonlinear DSGE filter is
@@ -1597,7 +1604,7 @@ structural tests are passed or explicitly waived with written justification:
     that timing.
 \end{enumerate}
 
-\section{Common Misunderstandings}
+\subsection{Common Misunderstandings}
 \label{sec:bf-structural-common-misunderstandings}
 
 The most common reader errors in this area are:
@@ -1613,8 +1620,6 @@ The most common reader errors in this area are:
     beyond the structural transition contract.
 \end{enumerate}
 
-
-The rule is simple:
 \begin{center}
 \fbox{\parbox{0.88\linewidth}{
 For nonlinear DSGE filtering, the stochastic integration variables are not
@@ -1626,8 +1631,7 @@ be computed, not noised.
 
 If an implementation violates this rule, it must be labeled as an artificial
 approximation and justified against a reference.  Otherwise, the filter is
-solving the wrong state-space model.  This policy should be treated as a release gate for any BayesFilter DSGE
-backend intended for HMC, industrial forecasting, or peer-reviewed empirical
-work.  Failing one of these tests does not automatically make a backend useless,
-but it does mean the strongest claim labels from
-Chapter~\ref{ch:bf-production-checklist} are not yet justified.
+solving the wrong state-space model.  Failing one of the validation gates above
+does not automatically make a backend useless, but it does mean the strongest
+claim labels from Chapter~\ref{ch:bf-production-checklist} are not yet
+justified.

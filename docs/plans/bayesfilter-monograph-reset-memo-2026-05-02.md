@@ -4582,3 +4582,280 @@ Interpretation:
 - The next phase is justified, but not inside this documentation-only session.
 - The next coding/research agent should start with Phase 1 of the new plan:
   write the mathematical source audit before backend implementation.
+
+
+## 2026-05-06 update: refined Proposition 19.1 assumptions around T_m and T_k
+
+User raised a useful mathematical refinement about the assumptions behind the
+first structural UKF proposition.  The core pushforward result does not require
+full invertibility of `T_m`, but a stronger assumption is needed if the chapter
+wants to say that one may replace `\varepsilon_t` by the current exogenous state
+`m_t` as an equivalent sigma-point variable.  No comparable invertibility
+assumption is needed on `T_k`.
+
+### Focused assumption-refinement pass
+
+Phase plan:
+- keep the pushforward result under minimal assumptions;
+- add a stronger assumption only for the optional `m_t`-instead-of-`\varepsilon_t`
+  reparameterization claim;
+- make explicit that no analogous invertibility restriction is needed on `T_k`.
+
+Execution:
+- Expanded the accepted assumptions block before Proposition 19.1.
+- Added an explicit statement that no invertibility of `T_k` is required so long
+  as it is a measurable deterministic completion map.
+- Added a separate stronger assumption for the optional reparameterization of the
+  sigma-point variable from `\varepsilon_t` to `m_t`: for fixed `m_{t-1}`, the
+  map `\varepsilon_t \mapsto T_m(m_{t-1},\varepsilon_t)` should be injective or
+  invertible onto its image with measurable inverse.
+- Added a clarifying paragraph after the formal statements stating that this
+  extra assumption is only needed for the reparameterization claim, not for the
+  core pushforward identities themselves.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+
+Audit:
+- Proposition 19.1 is now more precise mathematically.
+- It cleanly separates what is needed for the core law-based result from what is
+  only needed for the stronger claim that sigma points may be parameterized by
+  `m_t` instead of `\varepsilon_t`.
+- This reduces the chance that a careful reader thinks the main pushforward
+  result depends on an unnecessarily strong invertibility assumption.
+
+
+## 2026-05-06 update: broad Chapter 18b audit and restructuring plan creation
+
+User asked for a broad audit of the whole chapter, including restructuring,
+literature/citation strengthening, degeneracy/SVD distinctions, algorithmic
+explicitness, theorem/assumption hygiene, and worked-example ordering -- not
+just another local repair.
+
+### Broad planning-and-audit pass
+
+Phase plan:
+- audit the entire chapter for duplicated arguments, unclear flow, weak
+  literature support, mixed evidence classes, and algorithmic ambiguity;
+- review the Julier (1996) source PDF and nearby BayesFilter chapters to map
+  what each literature/source class actually supports;
+- write an explicit execution plan under `docs/plans` that another agent could
+  use to perform a full rewrite.
+
+Execution:
+- Performed a broad chapter audit and identified the main structural weaknesses:
+  - accumulated patch-like growth rather than one spine;
+  - weak literature mapping;
+  - under-specified algorithm sections for implementation use;
+  - repeated doctrine in multiple places;
+  - blurred distinctions between structural-law error, quadrature error,
+    numerical factorization issues, and derivative/HMC issues.
+- Re-read the Julier (1996) PDF and confirmed it is the right spine for:
+  - unscented-transform mechanics;
+  - sigma-point construction;
+  - additive-noise augmentation lineage;
+  - approximation-order framing.
+- Wrote the explicit plan:
+  - `docs/plans/ch18b-restructuring-and-literature-strengthening-plan-2026-05-05.md`
+- Tightened that plan after an independent-style audit by adding:
+  - a mandatory Phase 0 inventory/pruning/classification pass;
+  - UKF-variant discipline;
+  - theorem-budget / assumption-hygiene rules;
+  - stronger reset-memo and provenance obligations;
+  - explicit example-order and anti-duplication checks.
+- Added a bibliography entry for the local Julier 1996 source as
+  `julier1996general` in `docs/references.bib` so the planned literature rewrite
+  has a stable cite key available.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+- The new bibliography entry was added without breaking the monograph build.
+
+Audit:
+- The chapter now has a concrete, chapter-level rewrite plan rather than a
+  series of local fixes.
+- The plan is broad enough to cover the reviewers' main criticisms and several
+  adjacent issues that would otherwise resurface during implementation.
+- The next justified phase is execution of the restructuring plan itself.
+
+
+## 2026-05-06 update: Phase 0 inventory, pruning, and claim classification for Chapter 18b rewrite
+
+User requested that the broad Chapter 18b restructuring plan now be executed
+phase by phase, with an explicit `plan -> execute -> test -> audit -> tidy ->
+update reset memo` cycle and continuation unless a real blocker appears.
+
+### Phase 0: inventory, pruning, and claim classification
+
+Phase plan:
+- inventory the current chapter structure, including sections, subsection
+  sequence, theorem-like blocks, algorithm blocks, comparison tables, and
+  worked examples;
+- classify repeated or overloaded parts before any large rewrite begins;
+- decide whether the next rewrite phase remains justified.
+
+Execution:
+- Inspected the full current chapter and enumerated the main structural blocks:
+  - production warning;
+  - structural split;
+  - linear-Kalman-versus-nonlinear distinction;
+  - structural filtering step algorithm;
+  - degenerate-transition discussion;
+  - UKF comparison, formal statement, and worked nonlinear-state example;
+  - degenerate linear-transition + nonlinear-measurement formal section and
+    worked example;
+  - pruning / adapter implications;
+  - source-project failure mode;
+  - required tests;
+  - common misunderstandings;
+  - final policy rule.
+- Classified the main current weaknesses:
+  - duplicated UKF doctrine across prose, formal statements, and examples;
+  - theorem/proposition overgrowth in the nonlinear-measurement section;
+  - literature support too implicit relative to chapter ambition;
+  - useful but dispersed distinction between structural degeneracy, numerical
+    regularization, and SVD/spectral derivative issues;
+  - algorithm sections improved but still not yet fully code-generation-ready in
+    a literature-grounded form.
+- Classified the major claim types now present in the chapter as a mix of:
+  - exact derivation;
+  - accepted assumption;
+  - source-backed literature claim;
+  - BayesFilter implementation policy;
+  - toy numerical illustration;
+  - source-project audit evidence.
+- Concluded that the chapter is ready for a real rewrite, not another patch.
+
+Tests:
+- Verified the current chapter structure programmatically by listing sections,
+  subsection headings, proposition blocks, and framed algorithm blocks.
+- No build-breaking issue was introduced in this inventory phase.
+
+Audit:
+- Phase 0 passes.
+- The chapter now has a clear pruning/rewrite target list.
+- No blocker was discovered that would make the restructuring pass unjustified.
+- Phase 1 rewrite remains justified.
+
+
+### Phase 1A: rebuild the UKF spine around literature and explicit algorithms
+
+Phase plan:
+- remove the duplicated introductory UKF explanation that had accumulated around
+  the worked example;
+- introduce a clearer UKF narrative spine that starts from the original
+  unscented-transform pattern and then derives the standard additive-noise and
+  structural UKF algorithms explicitly;
+- preserve the existing detailed formal and numerical content for later phases.
+
+Execution:
+- Replaced the old `Worked Structural UKF Example` opening block as the first
+  UKF-facing entry point.
+- Added a new section:
+  - `Standard UKF, Structural UKF, and the Predictive Law`
+- Added a new subsection:
+  - `The Original Unscented-Transform Pattern`
+  grounded explicitly in `julier1996general` and `julier1997new`.
+- Kept the explicit `Standard Additive-Noise UKF Algorithm` and
+  `Structural UKF Algorithm` sections, but moved them under the new UKF section
+  so the chapter now introduces the literature mechanics before the structural
+  contrast.
+- Removed the duplicated high-level UKF contrast prose that previously sat in
+  front of the worked example and repeated points now stated in the algorithm and
+  proposition sections.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+
+Audit:
+- Phase 1A passes.
+- The UKF half of the chapter now begins from the literature mechanism rather
+  than from the local worked example, which is a much better pedagogical entry
+  point.
+- No blocker was found; the next rewrite chunk remains justified.
+
+
+### Phase 1D: stabilize the rewritten section and clean malformed insertions
+
+Phase plan:
+- clean malformed scripted insertions that broke the build during the rewrite;
+- restore build stability before continuing further restructuring;
+- update the reset memo with what was fixed and whether the next phase remains
+  justified.
+
+Execution:
+- Found and repaired remaining malformed literal backslash-n insertions in the
+  `What Structural Correctness Does and Does Not Guarantee` section.
+- Re-ran the monograph build from a clean `latexmk -C` state to ensure the
+  rewritten chapter no longer depended on stale auxiliary files.
+- Confirmed that the rewritten UKF and nonlinear-measurement sections now compile
+  successfully in the current chapter state.
+
+Tests:
+- `latexmk -C`
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex`
+- Build completed successfully and produced an updated PDF.
+
+Audit:
+- Phase 1D passes.
+- The remaining issues are now ordinary chapter-level warning cleanup and the
+  continuation of the larger restructuring, not malformed-text blockers.
+- The next rewrite phase remains justified.
+
+
+### Phase 1E: tighten chapter-local readability in the new doctrinal sections
+
+Phase plan:
+- reduce local readability problems that arose from the rewritten doctrinal
+  sections while preserving the new distinctions;
+- keep the chapter buildable before moving on to the remaining restructuring
+  phases.
+
+Execution:
+- Reflowed the `What Structural Correctness Does and Does Not Guarantee` section
+  into shorter lines and clearer list items.
+- Tightened the `Structural Degeneracy Versus Numerical Degeneracy` table by
+  shortening headers and cell text while preserving the doctrinal distinction.
+- Preserved the explicit statement that an SVD sigma-point backend may solve a
+  factorization problem without solving a structural-law problem.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+
+Audit:
+- Phase 1E passes.
+- The chapter remains in a stable build state after the doctrinal rewrite.
+- The remaining work is now the continuation of the larger chapter restructure,
+  not local emergency cleanup.
+
+
+### Phase 1F: restructure the late chapter around adapters, source lesson, and validation
+
+Phase plan:
+- tighten the late chapter so it no longer reads as a sequence of disconnected
+  postscript sections;
+- align the pruning/adapters discussion, source-project lesson, and validation
+  gates with the new doctrinal spine;
+- reduce repeated policy restatement at the very end.
+
+Execution:
+- Renamed and reframed the late sections so the chapter now ends with:
+  - `Pruned DSGE and Adapter Implications`
+  - `Source-Project Lesson`
+  - `Validation Gates and Final Policy Rule`
+- Shortened the adapter section so it now emphasizes the two bookkeeping axes:
+  perturbation order and structural timing.
+- Tightened the source-project lesson into a bounded concrete warning rather than
+  a longer project-specific postmortem.
+- Folded the old `Required Tests` and `Common Misunderstandings` material into a
+  cleaner validation-gate ending with a single final policy rule.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` succeeded.
+
+Audit:
+- Phase 1F passes.
+- The chapter ending now fits the earlier restructuring spine much better and is
+  less repetitive.
+- The remaining work is primarily literature-strengthening, final global audit,
+  and a last pass for coherence rather than major structural surgery.
