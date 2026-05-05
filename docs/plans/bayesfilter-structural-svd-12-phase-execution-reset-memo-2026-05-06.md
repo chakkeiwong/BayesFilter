@@ -1154,3 +1154,372 @@ benchmark.
 H6: HMC diagnostics will be meaningful only after value, residual, derivative,
 and compiled-target gates pass; finite smoke tests should remain labeled as
 finite smoke only.
+
+
+## 2026-05-06 update: six-blocker closure execution
+
+User asked to execute the six-blocker closure plan with reset-memo updates,
+independent audit, phase-by-phase plan/execute/test/audit/tidy cycles, commit,
+and final hypotheses.
+
+Active plan:
+
+- `docs/plans/bayesfilter-structural-svd-six-blocker-closure-plan-2026-05-06.md`
+
+Independent audit:
+
+- `docs/plans/bayesfilter-structural-svd-six-blocker-closure-audit-2026-05-06.md`
+
+Result note:
+
+- `docs/plans/bayesfilter-structural-svd-six-blocker-closure-result-2026-05-06.md`
+
+### Plan audit
+
+Plan:
+- audit the six-blocker plan as another developer before execution.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-structural-svd-six-blocker-closure-audit-2026-05-06.md`.
+
+Test:
+- Manual audit against:
+  - `docs/plans/bayesfilter-structural-svd-final-execution-result-2026-05-06.md`;
+  - existing BayesFilter backend readiness tests;
+  - existing DSGE strong residual gate artifacts in `/home/chakwong/python`.
+
+Audit:
+- The plan orders work correctly: residuals before derivatives, compiled
+  parity, and HMC.
+- The plan keeps DSGE economic semantics in `/home/chakwong/python`.
+- The plan correctly treats blocker assertions as useful results, not model
+  promotions.
+
+Interpretation:
+- The plan is valid for execution.
+
+Next phase justified:
+- Yes.  Blocker 0 is justified.
+
+### Blocker 0: preflight and evidence freeze
+
+Plan:
+- record BayesFilter and DSGE client status;
+- isolate the write set.
+
+Execution:
+- In BayesFilter, ran `git status --short --branch` and
+  `git log -5 --oneline --decorate`.
+- BayesFilter status included pre-existing dirty/untracked documentation and
+  PDF/template files:
+  - `docs/chapters/ch18b_structural_deterministic_dynamics.tex`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/references.bib`;
+  - Julier and van der Merwe PDFs;
+  - Chapter 18b reviewer-response plan;
+  - plan templates.
+- In `/home/chakwong/python`, ran `git status --short --branch` and
+  `git log -5 --oneline --decorate`.
+- The DSGE client is ahead of `origin/main` by one commit and only `.codex/`
+  and `.serena/` are untracked.
+
+Test:
+- BayesFilter guardrail baseline:
+
+```bash
+pytest -q tests/test_dsge_adapter_gate.py tests/test_derivative_validation_smoke.py tests/test_backend_readiness.py
+```
+
+- Result:
+
+```text
+10 passed
+```
+
+Audit:
+- No BayesFilter code file is dirty.
+- This pass owns only BayesFilter plan/audit/result/source-map/reset artifacts.
+- DSGE client strong residual artifacts already exist and are treated as
+  external evidence; no client files are staged by this BayesFilter pass.
+
+Interpretation:
+- The write set is scoped.
+
+Next phase justified:
+- Yes.  Blockers 1--3 can be evaluated from the DSGE client tests.
+
+### Blocker 1: Rotemberg residual gate
+
+Plan:
+- test whether Rotemberg second-order/pruned propagation satisfies
+  `dy_next = y_next - y_current`.
+
+Execution:
+- Used the DSGE client test:
+  `tests/contracts/test_dsge_strong_structural_residual_gates.py`.
+- The test verifies that Rotemberg second-order H-S measurement equations match
+  the hand-written measurement equations.
+- The test then asserts the stronger blocker:
+  `blocked_pruned_second_order_dy_identity_residual`.
+
+Test:
+- Ran from `/home/chakwong/python`:
+
+```bash
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py \
+  tests/contracts/test_dsge_structural_completion_residuals.py \
+  tests/contracts/test_structural_dsge_partition.py
+```
+
+- Result:
+
+```text
+19 passed, 3 warnings
+```
+
+Audit:
+- The passing test is a passing blocker assertion, not a Rotemberg promotion.
+- Rotemberg measurement equations pass, but the second-order/pruned `dy`
+  identity is materially nonzero under the current completion path.
+
+Interpretation:
+- Blocker 1 is closed as a named blocker:
+  `blocked_pruned_second_order_dy_identity_residual`.
+
+Next phase justified:
+- Yes.  SGU residual evaluation is still justified.
+
+### Blocker 2: SGU residual gate
+
+Plan:
+- test whether SGU's current completion bridge satisfies nonlinear canonical
+  residuals.
+
+Execution:
+- Used the DSGE client strong residual gate.
+- The test evaluates `SGUEstimable(use_second_order=True,
+  estimate_obs_noise=False)` against canonical residuals after applying the
+  current completion bridge.
+
+Test:
+- Covered by the same DSGE command:
+
+```text
+19 passed, 3 warnings
+```
+
+Audit:
+- The result proves the existing linear completion bridge is not enough for
+  nonlinear equilibrium-manifold certification.
+- It does not weaken the previous `linear_completion_bridge_passed` label.
+
+Interpretation:
+- Blocker 2 is closed as a named blocker:
+  `blocked_nonlinear_equilibrium_manifold_residual`.
+
+Next phase justified:
+- Yes.  EZ timing/fail-closed evaluation is justified.
+
+### Blocker 3: EZ timing and partition gate
+
+Plan:
+- probe EZ timing/code shape without exposing metadata.
+
+Execution:
+- Used the DSGE strong residual gate.
+- The test verifies EZ has two states and two shocks and that shock-impact rows
+  are `(0, 1)`, while BayesFilter metadata is still absent.
+
+Test:
+- Covered by the same DSGE command:
+
+```text
+19 passed, 3 warnings
+```
+
+Audit:
+- A code-level all-stochastic-looking probe is not source-backed timing
+  metadata.
+- EZ remains fail-closed in the BayesFilter adapter.
+
+Interpretation:
+- Blocker 3 is closed as a fail-closed blocker:
+  `blocked_pending_source_backed_timing_metadata`.
+
+Next phase justified:
+- Only guardrail evaluation is justified.  Since Rotemberg, SGU, and EZ are not
+  promotable, derivative/JIT/HMC implementation is not justified for those
+  models.
+
+### Blocker 4: SVD/eigen derivative and Hessian certification
+
+Plan:
+- determine whether derivative/Hessian certification can proceed.
+
+Execution:
+- Reviewed `bayesfilter/backends.py`.
+- Re-ran backend guardrails.
+
+Test:
+- Ran:
+
+```bash
+pytest -q tests/test_dsge_adapter_gate.py tests/test_derivative_validation_smoke.py tests/test_backend_readiness.py
+```
+
+- Result:
+
+```text
+10 passed
+```
+
+Audit:
+- Existing guardrails can block unsupported spectral derivative claims.
+- No target/model pair from Blockers 1--3 is promotable.
+- No new `tests/test_structural_svd_derivative_certification.py` was created,
+  because model residual gates are blocked.
+
+Interpretation:
+- Blocker 4 remains blocked with label `value_only_blocked`.
+
+Next phase justified:
+- Compiled parity can be evaluated only as a blocker/metadata gate.
+
+### Blocker 5: compiled static-shape parity
+
+Plan:
+- determine whether compiled parity is justified.
+
+Execution:
+- Reviewed current backend metadata.
+- Structural sigma-point paths remain `eager_numpy`.
+- Covariance Kalman remains `eager`.
+
+Test:
+- Covered by BayesFilter guardrails and full test suite:
+
+```bash
+pytest -q
+```
+
+- Result:
+
+```text
+63 passed, 2 warnings
+```
+
+Audit:
+- No compiled structural SVD target exists.
+- A compiled parity test would be premature for Rotemberg, SGU, and EZ because
+  their model-specific residual/timing gates are blocked.
+
+Interpretation:
+- Blocker 5 remains blocked with label `compiled_parity_not_started`.
+
+Next phase justified:
+- HMC can only be recorded as not justified.
+
+### Blocker 6: HMC diagnostics ladder
+
+Plan:
+- decide whether HMC diagnostics can run.
+
+Execution:
+- No HMC ladder was run because residual, derivative, and compiled gates are
+  not closed for any target model in this blocker plan.
+
+Test:
+- No HMC tests were run.
+
+Audit:
+- Running HMC would violate the plan's stop rules.
+- Finite smoke tests would not be convergence evidence.
+
+Interpretation:
+- Blocker 6 remains blocked with label `hmc_not_justified`.
+
+Next phase justified:
+- Provenance cleanup is justified.
+
+### Provenance cleanup
+
+Plan:
+- record the blocker results;
+- update source-map provenance;
+- run final validation.
+
+Execution:
+- Added:
+  - `docs/plans/bayesfilter-structural-svd-six-blocker-closure-audit-2026-05-06.md`;
+  - `docs/plans/bayesfilter-structural-svd-six-blocker-closure-result-2026-05-06.md`.
+- Updated `docs/source_map.yml`.
+- Updated this reset memo.
+
+Test:
+- Ran:
+
+```bash
+pytest -q
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml', encoding='utf-8'))"
+git diff --check
+rg -n "converged|production-ready|HMC-ready|certified|structurally fixed" docs bayesfilter tests
+```
+
+- Results:
+
+```text
+63 passed, 2 warnings
+YAML parse passed
+git diff --check passed
+```
+
+- Stale-claim search found only policy text, blocker text, tests, and allowed
+  label definitions.
+
+Audit:
+- The pass did not stage PDFs/templates or client repo files.
+- The client strong residual gates are evidence, but the BayesFilter commit
+  records only BayesFilter-side planning/provenance artifacts.
+
+Interpretation:
+- The six-blocker execution pass is complete.
+
+## Six-blocker closure status
+
+Closed as explicit blockers:
+
+- Rotemberg: `blocked_pruned_second_order_dy_identity_residual`;
+- SGU: `blocked_nonlinear_equilibrium_manifold_residual`;
+- EZ: `blocked_pending_source_backed_timing_metadata`.
+
+Still blocked:
+
+- SVD/eigen derivative and Hessian certification: `value_only_blocked`;
+- compiled static-shape parity: `compiled_parity_not_started`;
+- HMC diagnostics ladder: `hmc_not_justified`.
+
+## Six-blocker next hypotheses
+
+H1: Rotemberg needs a second-order/pruned deterministic completion design for
+`dy`; the next test should drive
+`dy_next - (y_next - y_current)` below tolerance on deterministic sigma-point
+grids.
+
+H2: SGU needs nonlinear equilibrium-manifold completion, not only an `h_x`
+linear bridge; the next test should reduce canonical residuals below tolerance
+for `d,k,r,riskprem`.
+
+H3: EZ should remain fail-closed until a source-backed timing/provenance note
+explains state ordering, shock timing, and measurement timing.
+
+H4: Derivative/Hessian certification should wait for the first promotable model
+target.  Once one exists, spectral gradients require minimum-gap telemetry plus
+finite-difference and JVP/VJP checks.
+
+H5: Compiled parity should be tested first on exact LGSSM and generic
+structural fixtures, then on the first DSGE model whose residual gate passes.
+
+H6: HMC should start only after the same model/backend pair has residual,
+derivative, and compiled parity evidence.
