@@ -1593,3 +1593,413 @@ Next recommended continuation after reboot:
 
 Do not resume by running HMC.  HMC is downstream of model residual,
 derivative/Hessian, and compiled parity gates for the same model/backend pair.
+
+
+## 2026-05-06 update: gap-closure master-plan execution pass
+
+User asked to:
+
+1. update this reset memo;
+2. audit the structural SVD remaining-gap closure master plan as another
+   developer;
+3. execute the phases one by one with a plan/execute/test/audit/tidy/reset-memo
+   cycle;
+4. continue without human intervention only while the next phase remains
+   justified;
+5. commit the scoped modified files after the pass;
+6. update this reset memo on completion;
+7. provide a detailed final summary with hypotheses and next suggestions.
+
+Active plan:
+
+- `docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-2026-05-06.md`
+
+Independent audit:
+
+- `docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-audit-2026-05-06.md`
+
+### Master-plan audit
+
+Plan:
+- audit the active master plan as if written by another developer;
+- identify missing points, ordering issues, and stop-rule issues before
+  executing phases.
+
+Execution:
+- Added the independent audit artifact listed above.
+- Updated the master plan with an execution note that the DSGE client now has
+  commit `59c05f5 Close Rotemberg structural completion gate`.
+
+Test:
+- Manual audit against:
+  - the active BayesFilter master plan;
+  - this reset memo's six-blocker handoff;
+  - `/home/chakwong/python` commit `59c05f5`;
+  - `/home/chakwong/python/docs/plans/dsge-structural-completion-gap-closure-reset-memo-2026-05-06.md`;
+  - `/home/chakwong/python/tests/contracts/test_dsge_strong_structural_residual_gates.py`.
+
+Audit:
+- The plan ordering is correct: model semantics and residuals precede
+  derivative, compiled, and HMC gates.
+- The main execution correction is that Rotemberg is no longer a fresh
+  implementation phase in the DSGE client.  It is now a validation/provenance
+  phase because commit `59c05f5` already closed the tested completion gate.
+- The SGU stop rule remains necessary.  The latest DSGE evidence sharpens SGU
+  into a target-definition decision rather than a missing implementation line.
+
+Interpretation:
+- The plan is safe to execute through Phase 2 as validation/provenance.
+- Phase 3 and later are not automatically justified if Phase 2 reproduces the
+  SGU target-definition blocker.
+
+Next phase justified?
+- Yes.  Phase 0 preflight/evidence freeze is justified.
+
+### Phase 0: preflight and evidence freeze
+
+Plan:
+- record BayesFilter and DSGE client status;
+- rerun the current BayesFilter guardrails;
+- rerun the current DSGE structural residual/partition suite;
+- keep the write set scoped to BayesFilter planning/provenance files.
+
+Execution:
+- BayesFilter status:
+
+```text
+## main...origin/main [ahead 1]
+ M docs/chapters/ch18b_structural_deterministic_dynamics.tex
+ M docs/source_map.yml
+?? "docs/A general method for approximating non-linear transformations of probability distributions Julier(96).pdf"
+?? "docs/Sigma-Point Kalman Filters for Probabilistic Inference in Dynamic State-Space Models Merwe(03).pdf"
+?? docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-2026-05-06.md
+?? docs/plans/templates/
+```
+
+- BayesFilter log head:
+
+```text
+2f79f6c Add structural SVD reboot handoff
+70ec312 Clarify phi zero structural UKF edge case
+8371198 Rewrite Chapter 18b reviewer response
+d6a9e4a Record structural SVD six-blocker closure
+d8d0521 Restructure Chapter 18b around structural UKF doctrine
+```
+
+- DSGE client status:
+
+```text
+## main...origin/main [ahead 2]
+ M docs/plans/dsge-structural-completion-gap-closure-reset-memo-2026-05-06.md
+?? .codex
+?? .serena/
+```
+
+- DSGE client log head:
+
+```text
+59c05f5 Close Rotemberg structural completion gate
+bf468cc Add DSGE strong structural residual gates
+e75722f Document Codex GPU sandbox escalation policy
+bfa16a0 Add DSGE structural completion residual harness
+a4d555f Commit NeuTra German Gate 1 data defaults
+```
+
+Test:
+- Ran in BayesFilter:
+
+```bash
+pytest -q tests/test_dsge_adapter_gate.py tests/test_derivative_validation_smoke.py tests/test_backend_readiness.py
+```
+
+Result:
+
+```text
+10 passed in 0.13s
+```
+
+- Ran in `/home/chakwong/python`:
+
+```bash
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py \
+  tests/contracts/test_dsge_structural_completion_residuals.py \
+  tests/contracts/test_structural_dsge_partition.py
+```
+
+Result:
+
+```text
+21 passed, 3 warnings in 16.30s
+```
+
+Warnings were two TensorFlow Probability `distutils` deprecation warnings and
+one read-only pytest-cache warning in `/home/chakwong/python`.
+
+Audit:
+- BayesFilter has unrelated tracked Chapter 18b work and untracked PDFs/templates
+  that this pass must not stage.
+- `/home/chakwong/python` has a dirty reset memo from the DSGE closure pass and
+  untracked tool-state directories.  This BayesFilter pass must not overwrite
+  or stage them.
+- The DSGE residual suite now has 21 tests, not the older 19-test baseline,
+  because Rotemberg completion evidence has been added in the client repo.
+
+Interpretation:
+- Phase 0 passed.  The write set for this BayesFilter pass is scoped to:
+  - the master plan;
+  - its independent audit;
+  - `docs/source_map.yml`;
+  - this reset memo.
+
+Next phase justified?
+- Yes.  Phase 1 is justified as validation/provenance for the committed
+  Rotemberg closure evidence, not as a fresh BayesFilter implementation.
+
+### Phase 1: Rotemberg second-order/pruned completion validation
+
+Plan:
+- validate the newer DSGE client Rotemberg completion evidence;
+- inspect the implementation enough to confirm it completes only the
+  second-order side-state `dy` coordinate;
+- do not reimplement Rotemberg in BayesFilter.
+
+Execution:
+- Reviewed `/home/chakwong/python/src/dsge_hmc/models/rotemberg_nk.py`.
+- Reviewed `/home/chakwong/python/tests/contracts/test_dsge_strong_structural_residual_gates.py`.
+- The DSGE client now exposes:
+
+```text
+bayesfilter_second_order_deterministic_completion(...)
+```
+
+for Rotemberg.  The helper preserves the first-order stochastic path and
+overwrites only `x_s_next[dy]` so the completed total state satisfies:
+
+```text
+dy_next = y_out_next - y_out_current
+```
+
+under the second-order policy.  It fails closed to the predicted side-state
+coordinate when `1 - g_x[y_out, dy]` is near singular.
+
+Test:
+- Ran in `/home/chakwong/python`:
+
+```bash
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py -k rotemberg
+```
+
+Result:
+
+```text
+4 passed, 2 deselected, 3 warnings in 3.88s
+```
+
+Warnings were the same TensorFlow Probability deprecation and read-only
+pytest-cache warnings observed in Phase 0.
+
+Audit:
+- The raw pruned Rotemberg residual blocker remains in the test suite as a
+  diagnostic for the uncompleted path.
+- The positive completion label remains:
+
+```text
+rotemberg_second_order_dy_completion_residual_passed
+```
+
+- The implementation does not add artificial process noise and does not modify
+  BayesFilter generic filtering code.
+- This is model-specific residual evidence only.  It is not derivative,
+  compiled, or HMC evidence.
+
+Interpretation:
+- Phase 1 passes as validation/provenance.  The historical raw-path blocker is
+  still meaningful, but the DSGE client now has tested completion evidence for
+  the Rotemberg second-order side-state `dy` identity on the committed grids.
+
+Next phase justified?
+- Yes.  Phase 2 is justified as SGU blocker validation and target-definition
+  audit.
+
+### Phase 2: SGU nonlinear equilibrium-manifold blocker validation
+
+Plan:
+- validate the current SGU blocker evidence;
+- inspect the SGU deterministic-completion bridge;
+- decide whether the next phase remains justified without a new SGU target
+  choice.
+
+Execution:
+- Reviewed `/home/chakwong/python/src/dsge_hmc/models/sgu.py`.
+- Reviewed `/home/chakwong/python/docs/plans/sgu-nonlinear-deterministic-completion-derivation-2026-05-06.md`.
+- SGU currently exposes metadata:
+
+```text
+state_names = ('d', 'k', 'r', 'a', 'riskprem', 'zeta', 'mu')
+stochastic_indices = (3, 5, 6)
+deterministic_indices = (0, 1, 2, 4)
+```
+
+- SGU's current `bayesfilter_deterministic_completion(...)` explicitly uses a
+  linear solution bridge for `(d,k,r,riskprem)` and documents that it is not
+  the final nonlinear SGU equilibrium-manifold adapter.
+
+Test:
+- Ran in `/home/chakwong/python`:
+
+```bash
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py -k sgu
+```
+
+Result:
+
+```text
+1 passed, 5 deselected, 3 warnings in 1.45s
+```
+
+The passing test is a passing blocker assertion:
+
+```text
+blocked_nonlinear_equilibrium_manifold_residual
+```
+
+Audit:
+- The SGU evidence confirms that adapter metadata and the linear bridge are not
+  enough for nonlinear structural promotion.
+- The DSGE client derivation found that solving the natural four deterministic
+  state equations `(7,8,10,11)` can close those selected residuals, but the full
+  canonical residual remains around `8.6e-2`.
+- Implementing only a four-state solve would overclaim nonlinear
+  equilibrium-manifold completion.
+- No BayesFilter generic contract change is forced by this evidence.
+
+Interpretation:
+- Phase 2 reproduces and sharpens the SGU blocker.  SGU now requires a
+  structural target decision before code implementation:
+  1. state-identity completion only;
+  2. joint state-control nonlinear projection;
+  3. perturbation-policy residual target.
+
+Next phase justified?
+- No.  Under the master-plan stop rules and the DSGE client reset memo, Phase 3
+  EZ metadata promotion, BayesFilter contract patching, derivative
+  certification, compiled parity, and HMC are not automatically justified.
+  Execution stops here pending a user decision on the SGU target.
+
+### Tidy, validation, and completion status
+
+Plan:
+- validate BayesFilter docs/provenance edits;
+- run the BayesFilter full test suite;
+- avoid staging unrelated Chapter 18b/PDF/template work;
+- commit only the scoped planning/provenance files if validation passes.
+
+Execution:
+- Added:
+  - `docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-audit-2026-05-06.md`.
+- Updated:
+  - `docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-2026-05-06.md`;
+  - `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`;
+  - `docs/source_map.yml`.
+- Did not edit BayesFilter backend code.
+- Did not edit or stage `/home/chakwong/python` files.
+- Did not stage the pre-existing dirty Chapter 18b file, source PDFs, or plan
+  templates.
+
+Test:
+- Ran:
+
+```bash
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml', encoding='utf-8'))"
+git diff --check
+rg -n "converged|production-ready|HMC-ready|certified|structurally fixed" \
+  docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-2026-05-06.md \
+  docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-audit-2026-05-06.md \
+  docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md \
+  docs/source_map.yml
+pytest -q
+```
+
+Results:
+
+```text
+YAML parse passed
+git diff --check passed
+stale-claim search found only blocker/policy text and existing negative claims
+63 passed, 2 warnings in 16.07s
+```
+
+The two warnings were TensorFlow Probability `distutils` deprecation warnings.
+
+Audit:
+- The pass executed as far as justified by the plan.
+- Rotemberg is now promoted only to the model-specific residual-completion
+  evidence label recorded in the DSGE client, not to derivative, compiled, or
+  HMC readiness.
+- SGU remains blocked because the target is underspecified: state-only
+  completion, joint state-control projection, and perturbation-policy residual
+  target imply different tests and claims.
+- EZ is still blocked because the SGU stop rule prevents automatic progression
+  to later phases under the requested no-human-intervention protocol.
+
+Interpretation:
+- The BayesFilter-side gap-closure pass is complete as a validation/provenance
+  pass.  It did not close SGU, EZ, derivative, compiled, or HMC gaps.
+
+Next phase justified?
+- No automatic next phase is justified.  The next decision is the SGU target
+  choice:
+  1. state-identity completion only;
+  2. joint state-control nonlinear projection;
+  3. perturbation-policy residual target.
+
+## Gap-closure master-plan execution status
+
+Closed or validated:
+
+- master plan artifact exists and is source-map registered;
+- independent master-plan audit exists;
+- Phase 0 preflight/evidence freeze passed;
+- Rotemberg second-order/pruned completion evidence is validated from DSGE
+  client commit `59c05f5`;
+- BayesFilter guardrails and full suite remain green.
+
+Still open:
+
+- SGU nonlinear structural target decision;
+- EZ source-backed timing/partition metadata;
+- SVD/eigen derivative and Hessian certification;
+- compiled static-shape parity;
+- HMC diagnostics ladder;
+- release/documentation promotion claims for anything beyond current
+  value/adapter/residual evidence.
+
+Hypotheses to test next:
+
+H1: SGU can be honestly advanced fastest if the next target is first narrowed
+to `state_identity_completion_only`, with explicit non-promotion language for
+the full nonlinear equilibrium manifold.
+
+H2: A joint SGU state-control projection may close the full canonical residual,
+but it will likely require solving for current controls together with
+deterministic states and therefore changes the target from simple completion
+to nonlinear projection.
+
+H3: A perturbation-policy residual target may be the most faithful to the
+existing second-order SGU solver, but it must define tolerances in perturbation
+accuracy terms rather than exact-equilibrium residual terms.
+
+H4: EZ should remain fail-closed until a timing/provenance note identifies
+state ordering, shock timing, and measurement timing from sources rather than
+from shock-impact rows alone.
+
+H5: Derivative/Hessian certification should wait for the first promotable
+model/backend pair; spectral derivatives need minimum-gap telemetry plus
+finite-difference, JVP/VJP, and Hessian checks.
+
+H6: Compiled parity and HMC should start on exact LGSSM and generic structural
+fixtures before any DSGE target, and DSGE HMC should remain blocked until the
+same target has residual, derivative, and compiled parity evidence.
