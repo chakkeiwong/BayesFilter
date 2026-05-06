@@ -1523,3 +1523,73 @@ structural fixtures, then on the first DSGE model whose residual gate passes.
 
 H6: HMC should start only after the same model/backend pair has residual,
 derivative, and compiled parity evidence.
+
+
+## 2026-05-06 reboot handoff
+
+Context:
+- User is rebooting the machine and asked for a reset-memo update so work can
+  continue cleanly afterward.
+- BayesFilter `main` is at `70ec312 Clarify phi zero structural UKF edge case`
+  and matches `origin/main`.
+- The structural SVD six-blocker closure commit is already in history:
+  `d6a9e4a Record structural SVD six-blocker closure`.
+- BayesFilter working tree has only untracked PDF/template artifacts:
+  - `docs/A general method for approximating non-linear transformations of probability distributions Julier(96).pdf`;
+  - `docs/Sigma-Point Kalman Filters for Probabilistic Inference in Dynamic State-Space Models Merwe(03).pdf`;
+  - `docs/plans/templates/`.
+- `/home/chakwong/python` is ahead of its origin and has a dirty reset memo:
+  `docs/plans/dsge-structural-completion-gap-closure-reset-memo-2026-05-06.md`,
+  plus untracked `.codex/` and `.serena/`.  Do not revert or overwrite those.
+
+Current structural SVD status:
+- BayesFilter value/adapter gates are validated.
+- DSGE strong residual gates have produced executable blocker evidence.
+- Rotemberg is blocked by
+  `blocked_pruned_second_order_dy_identity_residual`.
+- SGU is blocked by
+  `blocked_nonlinear_equilibrium_manifold_residual`.
+- EZ is blocked by
+  `blocked_pending_source_backed_timing_metadata`.
+- SVD/eigen derivative certification remains `value_only_blocked`.
+- Compiled parity remains `compiled_parity_not_started`.
+- HMC remains `hmc_not_justified`.
+
+Validated commands from the last pass:
+
+```bash
+cd /home/chakwong/BayesFilter
+pytest -q tests/test_dsge_adapter_gate.py tests/test_derivative_validation_smoke.py tests/test_backend_readiness.py
+pytest -q
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml', encoding='utf-8'))"
+git diff --check
+
+cd /home/chakwong/python
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py \
+  tests/contracts/test_dsge_structural_completion_residuals.py \
+  tests/contracts/test_structural_dsge_partition.py
+```
+
+Observed results:
+- BayesFilter guardrails: `10 passed`.
+- Full BayesFilter suite: `63 passed, 2 warnings`.
+- DSGE strong residual gates: `19 passed, 3 warnings`.
+- Source-map YAML parse passed.
+- `git diff --check` passed.
+
+Next recommended continuation after reboot:
+1. In `/home/chakwong/python`, finish or inspect the dirty
+   `dsge-structural-completion-gap-closure-reset-memo-2026-05-06.md` without
+   overwriting user/agent work.
+2. Continue with Rotemberg first: design a second-order/pruned deterministic
+   completion map for `dy`.
+3. Add a focused client test that proves
+   `dy_next - (y_next - y_current)` is below tolerance on deterministic
+   sigma-point grids.
+4. Only if Rotemberg passes that residual gate should derivative/Hessian or
+   compiled parity work begin for Rotemberg.
+5. Keep BayesFilter generic; do not encode DSGE economics into BayesFilter.
+
+Do not resume by running HMC.  HMC is downstream of model residual,
+derivative/Hessian, and compiled parity gates for the same model/backend pair.
