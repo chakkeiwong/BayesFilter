@@ -2216,3 +2216,155 @@ but that is a nonlinear projection backend and should get a new label.
 H4: BayesFilter may still use SGU as a state-support-complete labeled
 approximation after Gate A, but documentation must not call it residual
 improved, exact nonlinear, derivative-ready, compiled-ready, or HMC-ready.
+
+## 2026-05-07 SGU hypothesis diagnostics addendum
+
+### Scope
+
+After the SGU combined target failed Gate B, the follow-on question was why it
+failed and whether any next target is justified.  The tested hypotheses were:
+
+```text
+H1: volatility-correction residual source
+H2: pruned-state comparison rescue
+H3: joint state-control projection target
+H4: BayesFilter state-support-only status
+```
+
+### Phase 0: plan and audit
+
+Plan:
+- create a concrete plan under `docs/plans`;
+- audit the plan as another developer;
+- execute only diagnostic phases unless the next phase is justified.
+
+Execute:
+- Added:
+  - `docs/plans/bayesfilter-sgu-residual-source-pruned-projection-plan-2026-05-07.md`;
+  - `docs/plans/bayesfilter-sgu-residual-source-pruned-projection-audit-2026-05-07.md`.
+
+Audit:
+- The plan is safe because it separates perturbation-policy comparison,
+  pruned-state comparison, and joint nonlinear projection.
+- A successful projection is explicitly a new target, not a resurrection of
+  the failed quadratic-over-linear Gate B.
+
+Interpretation:
+- Proceeding through diagnostics was justified.
+
+### Phase 1: residual-source attribution
+
+Execute:
+- Client tests now compare:
+  - linear residuals;
+  - quadratic residuals without constant volatility correction;
+  - full quadratic residuals.
+
+Diagnostics:
+
+```text
+linear_rms                  = 2.676197203969e-02
+linear_max                  = 6.448381212971e-02
+quadratic_without_const_rms = 2.666750900397e-02
+quadratic_without_const_max = 6.418604258189e-02
+full_quadratic_rms          = 4.389182552998e-02
+full_quadratic_max          = 8.595595430720e-02
+state_identity_max          = 4.510281037540e-17
+```
+
+Interpretation:
+- H1 is supported.  The Gate B failure is driven by full second-order
+  volatility corrections in Euler/static/control FOC equations, not by the
+  selected state identities.
+
+Next phase justified?
+- Yes.  The pruned-state hypothesis remained distinct.
+
+### Phase 2: pruned-state comparison
+
+Diagnostics:
+
+```text
+linear_rms           = 2.761755539436e-02
+linear_max           = 6.744263684618e-02
+raw_pruned_rms       = 4.518957478096e-02
+raw_pruned_max       = 8.979413943445e-02
+completed_pruned_rms = 4.490820137142e-02
+completed_pruned_max = 8.952685399501e-02
+state_identity_max   = 4.510281037540e-17
+```
+
+Interpretation:
+- H2 is rejected on the declared local grid.  Completing state identities in a
+  pruned side-state representation does not make quadratic residuals better
+  than the linear benchmark.
+
+Blocked label:
+
+```text
+blocked_sgu_pruned_state_comparison_not_residual_improving
+```
+
+Next phase justified?
+- Yes.  H3 is a different target and was allowed as a bounded pilot.
+
+### Phase 3: joint state-control projection
+
+Diagnostics:
+
+```text
+before_rms                          = 4.389182552998e-02
+before_max                          = 8.595595430720e-02
+projected_rms                       = 3.543965164610e-09
+projected_max                       = 1.256486389166e-08
+current_control_adjustment_norm     = 7.704118037390e-03
+next_control_adjustment_norm        = 6.362048017869e-03
+deterministic_state_adjustment_norm = 3.753306747968e-03
+max_nfev                            = 41
+```
+
+Interpretation:
+- H3 is supported as a new local projection target:
+
+```text
+sgu_joint_state_control_projection_pilot_passed
+```
+
+- It is not the old Gate B:
+
+```text
+blocked_sgu_projection_is_new_target_not_gate_b
+```
+
+Next phase justified?
+- No automatic promotion phase is justified.  A separate SGU joint projection
+  design plan is justified; BayesFilter adapter/backend changes, derivative
+  certification, compiled parity, and HMC remain blocked.
+
+### Test and provenance
+
+Client targeted suite:
+
+```text
+30 passed, 3 warnings in 23.50s
+```
+
+Client result note:
+
+```text
+/home/chakwong/python/docs/plans/sgu-residual-source-pruned-projection-result-2026-05-07.md
+```
+
+Current SGU status:
+
+```text
+state_identity_completion_passed
+quadratic_failure_attributed_to_volatility_corrections
+pruned_state_comparison_not_residual_improving
+joint_state_control_projection_pilot_passed_as_new_target_only
+```
+
+Remaining recommendation:
+- Write a new SGU joint projection design plan with unknowns, equations,
+  locality thresholds, conditioning diagnostics, fail-closed semantics, and
+  filtering-integration policy.

@@ -169,6 +169,24 @@ sources:
     entrypoint: /home/chakwong/python/docs/plans/sgu-combined-structural-target-result-2026-05-07.md
     status: drafted
     role: DSGE client result note for SGU state-identity completion and quadratic-over-linear residual-improvement diagnostics.
+  - id: bayesfilter_sgu_residual_source_pruned_projection_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-residual-source-pruned-projection-plan-2026-05-07.md
+    status: drafted
+    role: Diagnostic plan for SGU residual-source attribution, pruned-state comparison, and joint projection hypotheses.
+  - id: bayesfilter_sgu_residual_source_pruned_projection_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-residual-source-pruned-projection-audit-2026-05-07.md
+    status: drafted
+    role: Independent audit of the SGU residual-source, pruned-state, and projection diagnostic plan.
+  - id: dsge_sgu_residual_source_pruned_projection_result
+    project: dsge_hmc
+    root: /home/chakwong/python/docs/plans
+    entrypoint: /home/chakwong/python/docs/plans/sgu-residual-source-pruned-projection-result-2026-05-07.md
+    status: drafted
+    role: DSGE client result note for SGU residual-source, pruned-state, and joint projection diagnostics.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -436,6 +454,24 @@ chapter_mappings:
       destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
       import_status: drafted
       reason: Records that SGU state identities close but the user-requested quadratic-over-linear residual-improvement gate fails at default shock volatility.
+
+  bayesfilter_sgu_residual_source_pruned_projection_plan:
+    - source_file: bayesfilter-sgu-residual-source-pruned-projection-plan-2026-05-07.md
+      destination: /home/chakwong/python/tests/contracts/test_dsge_strong_structural_residual_gates.py; /home/chakwong/python/docs/plans/sgu-residual-source-pruned-projection-result-2026-05-07.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+      import_status: drafted
+      reason: Defines the diagnostic ladder for SGU volatility-correction attribution, pruned-state comparison, and joint projection target evidence.
+
+  bayesfilter_sgu_residual_source_pruned_projection_audit:
+    - source_file: bayesfilter-sgu-residual-source-pruned-projection-audit-2026-05-07.md
+      destination: docs/plans/bayesfilter-sgu-residual-source-pruned-projection-plan-2026-05-07.md; /home/chakwong/python/docs/plans/sgu-residual-source-pruned-projection-result-2026-05-07.md
+      import_status: drafted
+      reason: Audits the diagnostic plan and enforces that a successful joint projection is a new target, not a Gate B pass.
+
+  dsge_sgu_residual_source_pruned_projection_result:
+    - source_file: /home/chakwong/python/docs/plans/sgu-residual-source-pruned-projection-result-2026-05-07.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Records that SGU Gate B failure is volatility-correction driven, pruned comparison does not rescue it, and joint projection is a viable new target only.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
