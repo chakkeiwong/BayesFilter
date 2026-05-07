@@ -5783,3 +5783,274 @@ Next hypotheses to test:
   second-order/pruned deterministic-completion residual gates; first-order
   structural success should not be promoted to pruned-order correctness without
   those tests.
+
+## 2026-05-08 update: filter-backend replacement execution
+
+User request:
+- update the reset memo;
+- audit the filter-backend replacement implementation plan as an independent
+  developer;
+- execute the plan phase by phase using a plan, execute, test, audit, tidy,
+  memo cycle;
+- continue without human intervention while the next phase remains justified;
+- stop for direction if a phase exposes a blocker;
+- commit scoped changes at the end of the justified execution.
+
+Initial scope:
+- controlling plan:
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-plan-2026-05-08.md`;
+- planned audit:
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`;
+- implementation target:
+  BayesFilter-owned filtering library code first, with MacroFinance and
+  `/home/chakwong/python` treated as read-only source material until a
+  separate cross-repo migration step is explicitly justified.
+
+Initial working-tree note:
+- unrelated modified files were present before this execution thread:
+  `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`
+  and `docs/source_map.yml`;
+- unrelated untracked artifacts were also present, including local PDFs,
+  SGU projection plan/audit files, and `docs/plans/templates/`;
+- this execution should stage only files created or changed for the
+  filter-backend replacement work.
+
+Initial interpretation:
+- Phase 0 remains justified: establish a test baseline and write the independent
+  audit before porting code.
+- Cross-repo switch-over phases are not automatically writable from the
+  BayesFilter workspace; they should become executable only after BayesFilter
+  replacement backends pass parity gates and a separate client-repo edit grant is
+  appropriate.
+
+### Filter backend replacement audit
+
+Plan for this step:
+- audit the 12-phase filter-backend replacement plan as a skeptical second
+  developer;
+- identify missing gates, unsafe assumptions, and the largest justified
+  automatic execution boundary.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`.
+
+Audit findings:
+- The roadmap is directionally sound: MacroFinance should seed linear
+  value/score/Hessian and TensorFlow linear backends; `/home/chakwong/python`
+  should seed generic nonlinear SVD sigma-point, structural metadata, and CUT
+  rules.
+- The plan needs explicit packaging/optional dependency policy before TensorFlow
+  phases, because BayesFilter currently has no root `pyproject.toml`, `setup.py`,
+  or requirements file.
+- Client switch-over phases for `/home/chakwong/python` and MacroFinance are not
+  fully executable inside the BayesFilter writable root and should require
+  separate cross-repo edit/commit steps after BayesFilter parity gates pass.
+- SVD-CUT analytic Hessian work should be split into smaller subphases so
+  spectral factor Hessian risk does not hide simpler moment-derivative bugs.
+- The first justified automatic execution boundary is Phase 0 through the NumPy
+  linear foundation: core types/results, linear value hardening, and NumPy
+  solve-form derivatives if each previous phase passes.
+
+Next phase justified?
+- Yes.  Proceed to Phase 0 baseline tests and environment/dependency inventory.
+
+### Phase 0: baseline and hygiene
+
+Phase plan:
+- run the current BayesFilter tests;
+- record CPU/NumPy environment facts;
+- avoid GPU probing because Phase 0 is CPU-only;
+- re-confirm dirty-tree exclusions.
+
+Execution:
+- Ran `pytest -q` from `/home/chakwong/BayesFilter`.
+- Recorded environment with lightweight Python commands.
+- Reconfirmed the active branch is `main`.
+
+Results:
+- Test baseline: `63 passed, 2 warnings in 15.71s`.
+- Warnings: TensorFlow Probability deprecation warnings about
+  `distutils.version.LooseVersion` in the optional MacroFinance reference test.
+- Python: `3.11.14`.
+- NumPy: `2.1.3`.
+- TensorFlow availability probe: `tensorflow_available True`.
+- GPU/CUDA was not probed in this phase.
+
+Interpretation:
+- Phase 0 passes.
+- The existing BayesFilter suite is clean enough to begin scoped NumPy
+  implementation work.
+- The TensorFlow warning confirms optional TF-related imports exist in the
+  environment, but it does not settle package metadata or production XLA policy.
+
+Next phase justified?
+- Yes.  Proceed to Phase 1 core types/results and keep the write scope inside
+  BayesFilter.
+
+### Phase 1: core types and result objects
+
+Phase plan:
+- add shared result containers before porting additional algorithms;
+- add BayesFilter-owned LGSSM derivative dataclasses based on the MacroFinance
+  generic shape contract;
+- preserve existing public imports from `bayesfilter.filters`;
+- test shape validation, immutability, and current adapter compatibility.
+
+Execution:
+- Added `bayesfilter/results.py` with `FilterValueResult` and
+  `FilterDerivativeResult`.
+- Added `bayesfilter/linear/types.py` and `bayesfilter/linear/__init__.py`.
+- Updated `bayesfilter/filters/kalman.py` to use the shared
+  `LinearGaussianStateSpace` type and to alias `KalmanResult` to
+  `FilterValueResult`.
+- Added stable re-exports from `bayesfilter/__init__.py` and
+  `bayesfilter/filters/__init__.py`.
+- Added `tests/test_linear_types_and_results.py`.
+
+Tests:
+- Targeted Phase 1 suite:
+  `8 passed in 0.09s`.
+- Full suite:
+  `67 passed, 2 warnings in 17.26s`.
+- Import smoke:
+  `imports_ok`.
+- Diff whitespace check on touched code/docs passed.
+
+Audit:
+- Phase 1 passes.
+- The public Kalman value result now has a common diagnostics mapping while old
+  code that imports `KalmanResult` still works.
+- One initial test assumed the validator would report `transition_matrix`
+  before any dependent shape; the validator correctly failed earlier on
+  `initial_mean`, so the test was made order-independent.
+
+Next phase justified?
+- Yes.  Proceed to Phase 2 NumPy linear value hardening.  TensorFlow-specific
+  value backends remain deferred until optional dependency/package policy is
+  explicit.
+
+### Phase 2: NumPy linear value backends
+
+Phase plan:
+- keep existing covariance-form Kalman as the compatibility front door;
+- add a solve-form NumPy value backend;
+- add a NumPy SVD/eigen value backend with explicit floor diagnostics;
+- add a small backend dispatcher;
+- avoid TensorFlow value backend work until package/dependency policy is
+  explicit.
+
+Execution:
+- Extended `bayesfilter/filters/kalman.py` with:
+  - `solve_kalman_log_likelihood`;
+  - `svd_kalman_log_likelihood`;
+  - `linear_gaussian_log_likelihood`;
+  - shared row-selection mask and innovation helpers;
+  - diagnostics for mask convention, jitter, Cholesky pivots, solve residuals,
+    SVD singular floor, floor counts, and minimum innovation eigenvalues.
+- Re-exported the new backends from `bayesfilter/filters/__init__.py`.
+- Added `tests/test_linear_value_backends.py`.
+
+Tests:
+- Targeted Phase 2 suite:
+  `9 passed in 0.08s`.
+- Full suite:
+  `71 passed, 2 warnings in 14.35s`.
+
+Audit:
+- Phase 2 passes.
+- An attempted `bayesfilter.linear` value-backend re-export created a circular
+  import with `bayesfilter.filters`; this was removed.  For now,
+  `bayesfilter.linear` remains a pure type namespace and value backend exports
+  live under `bayesfilter.filters`.
+- The SVD value backend reports the implemented floor branch but remains
+  value-only; no derivative readiness claim is made.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3 NumPy solve-form analytic score/Hessian.
+
+### Phase 3: NumPy solve-form analytic score and Hessian
+
+Phase plan:
+- port the MacroFinance solve-form analytic Kalman derivative recursion into
+  BayesFilter notation;
+- keep the first implementation dense, time-invariant, and NumPy-only;
+- test against finite differences of the same BayesFilter covariance Kalman
+  likelihood;
+- expose the backend without adding TensorFlow dependency policy.
+
+Execution:
+- Added `bayesfilter/linear/kalman_derivatives_numpy.py` with
+  `solve_kalman_score_hessian`.
+- Re-exported `solve_kalman_score_hessian` from `bayesfilter/__init__.py` and
+  `bayesfilter/filters/__init__.py`.
+- Added `tests/test_linear_derivatives_numpy.py`.
+
+Tests:
+- Derivative finite-difference test:
+  `1 passed in 0.08s`.
+- Import smoke:
+  `derivative_imports_ok`.
+- Full suite:
+  `72 passed, 2 warnings in 19.41s`.
+- Diff whitespace check on touched code/docs passed.
+
+Audit:
+- Phase 3 passes.
+- The backend currently declares `mask_convention=dense_only`; masked derivative
+  support is intentionally deferred.
+- The test includes nonzero first and second derivatives for the transition
+  covariance through a log-variance parameter, plus transition-matrix and
+  observation-offset derivatives.  This is enough for a first BayesFilter-owned
+  finite-difference gate, but not a replacement for MacroFinance one-country
+  parity yet.
+
+Next phase justified?
+- Not automatically in this execution thread.  The independent audit set the
+  first safe automatic boundary at the NumPy linear foundation.  The next plan
+  phase is TensorFlow linear backends and XLA gates, which requires package and
+  optional dependency policy before implementation.  Client switch-over phases
+  also require separate cross-repo write decisions.
+
+### Filter backend replacement completion note
+
+Final tidy/check cycle:
+- Reran the full BayesFilter suite after the Phase 3 stop decision:
+  `72 passed, 2 warnings in 14.32s`.
+- The two warnings remain TensorFlow Probability `distutils.version`
+  deprecation warnings in the optional MacroFinance adapter reference test.
+- Ran `git diff --check` over the scoped implementation, tests, plan, audit,
+  and reset-memo files; no whitespace errors were reported.
+- Confirmed the active branch is `main`.
+
+Completion interpretation:
+- The justified automatic execution boundary has been completed: BayesFilter now
+  has a NumPy linear Gaussian foundation with shared result containers,
+  BayesFilter-owned LGSSM derivative types, covariance/solve/SVD value
+  front doors, and a dense solve-form analytic score/Hessian backend.
+- This is enough to support the next parity-oriented work against
+  MacroFinance-owned models, but it is not yet a production replacement for all
+  MacroFinance or DSGE filtering code.
+- No TensorFlow/XLA, masked derivative, nonlinear SVD sigma-point, SVD-CUT, or
+  cross-repo migration phase was executed, because the independent audit found
+  those phases need package/optional dependency policy and, for client repos,
+  explicit cross-repo migration decisions.
+
+Next hypotheses to test:
+- H1: The BayesFilter dense NumPy derivative backend should match
+  MacroFinance's one-country value, score, and Hessian on a fixed fixture once
+  MacroFinance model construction is wrapped through the new
+  `LinearGaussianStateSpace` and `LinearGaussianStateSpaceDerivatives` objects.
+- H2: A masked derivative extension can be derived by applying the same
+  row-selection convention used by the NumPy value backends, and it should
+  agree with dense evaluation on fully observed rows and with finite
+  differences on masked fixtures.
+- H3: A package metadata phase defining NumPy-only, TensorFlow, development,
+  and optional robust-eigh extras will prevent TensorFlow/XLA work from making
+  `import bayesfilter` fragile in NumPy-only environments.
+- H4: The SVD value backend's floor diagnostics should predict where analytic
+  SVD derivatives are unsafe; tests should vary spectral gaps and floor counts
+  before promoting SVD gradients or Hessians to HMC use.
+- H5: SVD-CUT implementation should begin with a dependency-light CUT rule and
+  moment tests, then add TensorFlow/XLA placement, and only then attempt
+  analytic factor derivatives and Hessians.
