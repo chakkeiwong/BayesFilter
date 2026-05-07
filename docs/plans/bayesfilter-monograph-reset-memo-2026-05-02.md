@@ -53,6 +53,473 @@ as part of this monograph consolidation. Work should happen inside
 This memo starts the execution pass. The plan audit and Phase 0 scaffold are
 next.
 
+## 2026-05-07 update: analytic-derivative chapter completion pass started
+
+User requested a full analytic-derivative documentation completion pass with the
+same cycle used by earlier monograph work:
+
+```
+plan -> execute -> test -> audit -> tidy -> update reset memo
+```
+
+Scope for this pass:
+- complete the analytic-derivative chapters:
+  `docs/chapters/ch09_kalman_score.tex`,
+  `docs/chapters/ch10_kalman_hessian.tex`,
+  `docs/chapters/ch11_structural_derivatives.tex`,
+  `docs/chapters/ch12_factor_derivatives.tex`,
+  `docs/chapters/ch13_custom_gradient_wrappers.tex`, and
+  `docs/chapters/ch14_derivative_validation.tex`;
+- keep the already-added SVD sigma-point score/Hessian material in
+  `docs/chapters/ch18_svd_sigma_point.tex` aligned with those chapters;
+- update `docs/source_map.yml` and this reset memo with phase results;
+- compile and audit after each phase;
+- commit the modified files after the whole pass completes.
+
+Initial plan audit, pretending to be a separate developer:
+- The proposed order is justified.  The score and Hessian chapters must define
+  the backend-neutral innovation derivative contract before factor,
+  structural, custom-gradient, and validation chapters depend on it.
+- The plan would be incomplete without explicit first- and second-order update
+  recursions for the Kalman gain, filtered mean, and filtered covariance.  Those
+  recursions are needed so Chapter 10 is not merely a likelihood-Hessian formula
+  detached from the filtering scan.
+- The plan would also be incomplete without a clear distinction between
+  covariance-form derivatives, solve-form likelihood derivatives, triangular
+  factor derivatives, and spectral factor derivatives.  Those are related but
+  not interchangeable.
+- SVD/eigen derivative formulas may be stated on smooth simple-spectrum
+  branches, but the chapter must not claim production HMC certification without
+  finite-difference, branch, gap, and fallback evidence.
+- Missing-data masks, fixed quadrature rules, transformed parameters, and
+  initial-state derivatives must be named explicitly as derivative contracts.
+- MathDevMCP can support provenance checks for local labels, but manual
+  derivation and numerical parity remain the primary evidence for the formulas.
+  ResearchAssistant has no local summaries for the SVD/eigen derivative papers,
+  so this pass will rely on committed bibliography entries and source-map
+  records rather than unsupported literature claims.
+- No blocker prevents Phase 1.  The pass should continue without human
+  intervention unless compilation fails, the source-map update exposes a
+  provenance contradiction, or a formula cannot be reconciled with the
+  MacroFinance derivative note.
+
+### Phase AD-1: source-map and provenance update
+
+Phase plan:
+- promote the MacroFinance analytic derivative source-map entries from generic
+  candidate status to drafted derivative-chapter provenance where the formulas
+  are now being consolidated;
+- add this 2026-05-07 analytic-derivative completion pass as a BayesFilter
+  source-map item;
+- record the key MacroFinance equation labels that support score, Hessian,
+  factor, and structural derivative chapters;
+- parse the YAML and compile the monograph before proceeding.
+
+Execution:
+- Updated `docs/source_map.yml` with a new
+  `bayesfilter_analytic_derivative_completion_pass` source item.
+- Promoted the MacroFinance analytic derivative spine and related code-reference
+  entries for covariance-form, solve-form, QR square-root, and TensorFlow/XLA
+  derivative paths to `drafted`.
+- Added an explicit label list for the derivative formulas being consolidated:
+  `eq:dm_pred_note`, `eq:dP_pred_note`, `eq:dv_note`, `eq:dS_note`,
+  `eq:score_note`, `eq:solve_score_proved`, `eq:first_w_derivative`,
+  `eq:second_w_derivative`, `eq:solve_hessian_proved`,
+  `eq:first_cholesky_derivative`, `eq:second_cholesky_derivative`,
+  `eq:first_qr_r_derivative`, `eq:second_qr_r_derivative`,
+  `eq:structural_map_g`, `eq:structural_first_derivative_contract`, and
+  `eq:structural_second_derivative_contract`.
+
+Tests:
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map_yaml_ok')"`
+  passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` reported the
+  PDF up to date.
+- `git diff --check` passed.
+
+Audit:
+- The provenance layer is now explicit enough to support the formula-expansion
+  phases.
+- No source-map contradiction was found.
+- ResearchAssistant still has no local paper summaries for the SVD/eigen
+  derivative literature, so this pass must continue to phrase spectral formulas
+  as source-backed/bibliography-backed mathematical contracts plus validation
+  targets, not as literature-certified production readiness.
+- Next phase remains justified: Chapter 9 can now be expanded against the
+  MacroFinance score labels and solve-form source labels.
+
+### Phase AD-2: Kalman score chapter
+
+Phase plan:
+- expand Chapter 9 from a compact score formula into a complete first-order
+  derivative scan;
+- include prediction, innovation, score, gain, filtered mean, and filtered
+  covariance derivatives;
+- include the missing-data mask convention because masked observations change
+  the effective observation equation but not the derivative algebra;
+- compile, scan references, check whitespace, and audit for overclaiming.
+
+Execution:
+- Updated `docs/chapters/ch09_kalman_score.tex`.
+- Added prediction derivative equations for
+  `\dot m_{t|t-1}` and `\dot P_{t|t-1}` with MacroFinance source labels
+  `eq:dm_pred_note` and `eq:dP_pred_note`.
+- Added labeled innovation derivatives for `\dot v_t` and `\dot S_t`.
+- Kept both covariance-form and solve-form score equations.
+- Added covariance-form and solve-form gain derivative equations.
+- Added filtered mean and filtered covariance derivative propagation.
+- Added an explicit mask/time-varying observation block convention, including
+  zero likelihood/score contribution and identity update for all-missing times.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed after
+  the expected reruns for new labels.
+- `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches after the final rerun.
+- `git diff --check` passed.
+
+Audit:
+- Chapter 9 now defines the first-order filtering scan, not only the final score
+  contraction.
+- The chapter remains honest about evidence: MathDevMCP AST checks are
+  provenance support, while MacroFinance finite-difference/autodiff/backend
+  parity tests remain the stronger validation evidence.
+- The missing-data convention is now explicit and consistent with Chapter 7.
+- Next phase remains justified: Chapter 10 can build on Chapter 9 by adding the
+  second-order prediction, innovation, gain, update, and solve-Hessian contract.
+
+### Phase AD-3: Kalman Hessian chapter
+
+Phase plan:
+- expand Chapter 10 from the compact solve-Hessian formula into a complete
+  second-order filtering scan;
+- include second-order prediction, innovation, gain, filtered mean, and
+  filtered covariance derivatives;
+- make the solve-form Hessian bridge explicit so linear, square-root, and
+  sigma-point backends can share the same likelihood-Hessian contraction once
+  they supply matching innovation derivatives;
+- compile, scan references, check whitespace, and audit the evidence language.
+
+Execution:
+- Updated `docs/chapters/ch10_kalman_hessian.tex`.
+- Added second-order prediction equations for
+  `\ddot m_{t|t-1}` and `\ddot P_{t|t-1}`.
+- Added second-order innovation equations for `\ddot v_t` and `\ddot S_t`.
+- Expanded the solve-form Hessian into explicit solved-vector,
+  log-determinant, innovation-linear, and quadratic pieces.
+- Added second-order precision, gain, filtered mean, and filtered covariance
+  recursions for covariance-form audit parity.
+- Added sign-convention and Hessian-ready backend contract sections linking the
+  chapter to observed information and the later SVD sigma-point bridge.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` reported the
+  PDF up to date after the chapter edits had been compiled.
+- `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches.
+- `git diff --check` passed.
+
+Audit:
+- Chapter 10 now supplies the second-order counterpart of the Chapter 9 score
+  scan, rather than only a terminal Hessian contraction.
+- The chapter explicitly separates the model-specific derivative objects from
+  the backend-neutral solve-form likelihood Hessian.
+- Evidence language remains cautious: the formulas are source-backed contracts
+  and validation targets, while production readiness still requires numerical
+  parity on each backend.
+- Next phase remains justified: Chapter 12 can now state factor-derivative
+  contracts as ways to reproduce the covariance, score, and Hessian objects
+  defined in Chapters 9 and 10.
+
+### Phase AD-4: factor-derivative chapter
+
+Phase plan:
+- expand Chapter 12 from a short factor warning into a mathematical factor
+  contract;
+- add universal first- and second-order reconstruction equations for
+  differentiated factors;
+- restate the Cholesky and QR first-/second-derivative formulas under explicit
+  branch conventions;
+- connect factor derivatives back to Kalman prediction, innovation, update,
+  score, and Hessian parity;
+- compile, scan references, check whitespace, and audit for hidden
+  regularization claims.
+
+Execution:
+- Updated `docs/chapters/ch12_factor_derivatives.tex`.
+- Added the universal reconstruction identities
+  `\dot A_\star=\dot C C^\top+C\dot C^\top` and
+  `\ddot A_\star=\ddot C C^\top+C\ddot C^\top+\dot C_i\dot C_j^\top+\dot C_j\dot C_i^\top`.
+- Added lower-triangular Cholesky derivative formulas tied to source labels
+  `eq:first_cholesky_derivative` and `eq:second_cholesky_derivative`.
+- Added thin-QR derivative formulas tied to source labels
+  `eq:first_qr_r_derivative` and `eq:second_qr_r_derivative`.
+- Added Kalman stack examples for prediction, innovation, and Joseph filtered
+  covariance factors.
+- Expanded the spectral-factor section to emphasize that SVD/eigen factors
+  reconstruct the implemented covariance `P_+`, not automatically the
+  pre-regularized covariance `P`.
+- Added backend parity gates covering value reconstruction, derivative
+  reconstruction, solve parity, branch reporting, and cross-backend parity.
+
+Tests:
+- MathDevMCP label lookups for the Cholesky and QR source equations found the
+  expected MacroFinance neighborhoods.
+- ResearchAssistant privacy status confirmed the local read-only/offline
+  workflow remains in effect.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed after
+  the expected reruns for new labels.
+- `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches after the final rerun.
+- `git diff --check` passed.
+
+Audit:
+- Chapter 12 now gives mathematical checks for what a differentiated factor
+  means, rather than relying on verbal stability claims.
+- The Cholesky and QR formulas are clearly limited to smooth fixed-rank,
+  fixed-sign branches.
+- The spectral section now makes the implemented/floored covariance target
+  explicit, which prevents mistaking numerical regularization for the original
+  model law.
+- Next phase remains justified: Chapter 11 should define how structural models
+  provide the reduced-form derivatives consumed by Chapters 9, 10, and 12.
+
+### Phase AD-5: structural-derivative chapter
+
+Phase plan:
+- expand Chapter 11 from a short provider checklist into the upstream
+  structural derivative contract for the filtering scan;
+- include raw/transformed parameter chain rules;
+- add initial-state derivative handling, including stationary initialization
+  equations;
+- distinguish structural zeros from unavailable derivative entries;
+- connect observation masks and provider metadata to the score/Hessian chapters;
+- compile, scan references, check whitespace, and audit for ambiguous parameter
+  coordinate claims.
+
+Execution:
+- Updated `docs/chapters/ch11_structural_derivatives.tex`.
+- Added the structural provider map
+  `g(\psi)=ve(c,F,Q,a,H,R,m_0,P_0)`, extending the MacroFinance
+  `(b,F,Q,a,H,R)` source map with initial moments.
+- Added first- and second-order provider contracts for all reduced-form blocks.
+- Added transformed-parameter chain rules for first and second derivatives.
+- Added fixed, stationary, and estimated initial-condition policies, including
+  stationary mean and covariance derivative equations.
+- Added sections on structural zeros, unavailable blocks, observation masks,
+  shape metadata, parameter units, and provider validation.
+
+Tests:
+- MathDevMCP label lookups found the MacroFinance structural map and first- and
+  second-derivative provider contract labels.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed after
+  the expected reruns for new labels.
+- `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches after the final rerun.
+- `git diff --check` passed.
+
+Audit:
+- Chapter 11 now defines the derivative objects that enter Chapters 9, 10, and
+  12, including the parameter coordinate system in which they are valid.
+- The initial-state policy is now explicit, which closes a common gap in
+  filtering derivative derivations.
+- The mask convention is tied to the score chapter and keeps masks as data-side
+  selections rather than parameters.
+- Next phase remains justified: custom-gradient wrappers and validation can now
+  be written against explicit structural, innovation, Hessian, and factor
+  contracts.
+
+### Phase AD-6: custom-gradient and validation chapters
+
+Phase plan:
+- expand Chapter 13 so custom gradients are tied to the exact same scalar,
+  branch, masks, parameter transforms, and regularization policy as the value
+  path;
+- expand Chapter 14 into a concrete validation ladder with comparison targets,
+  tolerances, backend-specific gates, and required artifacts;
+- keep HMC claims separated from deterministic value/gradient/Hessian
+  certification;
+- compile, scan references, check whitespace, and audit for surrogate-gradient
+  ambiguity.
+
+Execution:
+- Updated `docs/chapters/ch13_custom_gradient_wrappers.tex`.
+- Added the same-scalar contract
+  `g_i(\psi)=\partial\mathcal{L}(\psi)/\partial\psi_i`.
+- Added diagnostic requirements for structural provider, masks, covariance or
+  factor backend, jitter, PSD projection, spectral floors, pivots, rank
+  truncation, sign/order corrections, and finite status.
+- Added a separate Hessian/observed-information path for mass matrices and
+  diagnostics, distinct from the HMC hot path.
+- Added static-shape and HMC safety label sections.
+- Updated `docs/chapters/ch14_derivative_validation.tex`.
+- Added explicit score/Hessian comparison targets, a detailed validation ladder,
+  finite-difference step-size guidance, backend-specific failure modes, and a
+  validation artifact schema.
+
+Tests:
+- ResearchAssistant local search returned no paper-summary hits for the exact
+  Kalman/SVD derivative-validation cluster, so the chapter remains grounded in
+  local MacroFinance evidence and BayesFilter contracts.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed after
+  the expected reruns for new labels.
+- `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches after the final rerun.
+- `git diff --check` passed.
+
+Audit:
+- The custom-gradient chapter now rules out the major HMC risk: evaluating one
+  scalar while returning the derivative of a nearby surrogate or hidden
+  regularized branch.
+- The validation chapter now says exactly what is compared and why backend
+  parity only applies when backends target the same law.
+- HMC smoke tests are explicitly demoted to sampler-usability evidence unless
+  deterministic value/gradient/Hessian checks have already passed.
+- Next phase remains justified: the SVD sigma-point bridge can now be audited
+  against the completed Chapters 9--14 and the full monograph can be checked.
+
+### Phase AD-7: SVD bridge and whole-document audit
+
+Phase plan:
+- audit Chapter 18 against the completed analytic-derivative stack in
+  Chapters 9--14;
+- add a small bridge only if the SVD score/Hessian discussion does not clearly
+  connect structural derivatives, factor derivatives, custom gradients, and
+  validation;
+- run the full document compile, warning scan, source-map parse, whitespace
+  check, and git-status audit;
+- decide whether final commit remains justified.
+
+Execution:
+- Reviewed `docs/chapters/ch18_svd_sigma_point.tex`.
+- Added a bridge paragraph stating how the SVD sigma-point derivative recursion
+  depends on Chapter 11 structural derivatives, Chapter 12 factor
+  reconstruction, Chapter 13 same-scalar custom gradients, and Chapter 14
+  validation gates.
+- Confirmed the chapter already states that the SVD/UKF likelihood score and
+  Hessian are the Kalman solve-form expressions applied to sigma-point
+  innovation moments, and that spectral factors reconstruct the implemented
+  `P_+`.
+
+Tests:
+- `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map_yaml_ok')"`
+  passed.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches.
+- `git diff --check` passed.
+- `git status --short` showed the analytic-derivative chapter files and main
+  reset memo/source map as modified, plus unrelated/untracked plan/PDF/template
+  files that should not be included in this commit.
+
+Audit:
+- The SVD bridge is now tied to the whole derivative stack rather than only to a
+  local SVD formula.
+- No compilation, reference, YAML, or whitespace blocker remains.
+- The next step remains justified: update this reset memo with final
+  interpretation, stage only the relevant analytic-derivative pass files, and
+  commit them.
+
+### Final completion: analytic-derivative documentation pass
+
+Final result:
+- The analytic-derivative chapter set is now complete at the documentation
+  contract level.  Chapters 9--10 define first- and second-order Kalman
+  prediction, innovation, score, gain, update, and solve-Hessian recursions.
+  Chapter 11 defines the structural provider layer.  Chapter 12 defines
+  triangular and spectral factor derivative contracts.  Chapters 13--14 define
+  same-scalar custom-gradient and validation requirements.  Chapter 18 now
+  points the SVD sigma-point Hessian discussion back to the whole stack.
+- The pass deliberately does not claim production HMC readiness for every
+  backend.  It defines the mathematical and diagnostic obligations that must be
+  tested before such a claim is valid.
+
+Final tests:
+- Full monograph compile:
+  `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` passed.
+- Warning scan:
+  `rg -n "undefined|Citation.*undefined|Reference.*undefined|multiply defined|LaTeX Warning" docs/main.log`
+  returned no matches.
+- Source-map parse:
+  `python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map_yaml_ok')"`
+  passed.
+- Whitespace audit:
+  `git diff --check` passed.
+
+Final audit:
+- The plan order was justified and no phase exposed a blocker requiring human
+  direction.
+- ResearchAssistant remains local/offline and has no local summary hits for the
+  exact SVD/eigen derivative-validation cluster; spectral derivative claims
+  remain framed as mathematical contracts and validation targets.
+- MathDevMCP label lookups support provenance for the MacroFinance score,
+  Hessian, Cholesky, QR, and structural-provider labels, but manual derivation
+  and numerical parity remain the proof obligations.
+- Unrelated SGU plan/provenance work and pre-existing structural-SVD memo
+  changes were observed in the working tree.  The analytic-derivative commit
+  should stage only the files in this pass and leave those unrelated changes
+  untouched.
+
+Recommended next hypotheses:
+- H1: On small affine Gaussian systems, the completed SVD sigma-point derivative
+  recursion should match the exact Kalman score and Hessian to finite-difference
+  tolerance when the spectral factor reconstructs the same covariance branch.
+- H2: On small nonlinear systems, the analytic sigma-point score/Hessian should
+  match finite differences of the same implemented SVD sigma-point likelihood,
+  with mismatches concentrated near spectral-gap, floor, or branch events.
+- H3: The factor reconstruction residuals in Chapter 12 should predict
+  likelihood-gradient discrepancies better than raw finite-gradient status near
+  singular covariance regimes.
+- H4: Same-scalar custom-gradient diagnostics should catch every intentional
+  jitter, floor, PSD projection, pivot, rank truncation, sign/order correction,
+  or fallback that changes the derivative target before HMC is allowed to run.
+- H5: Stationary initial-condition derivatives are a likely remaining source of
+  score/Hessian mismatch in models that currently validate only fixed initial
+  moments.
+- H6: Masked mixed-frequency panels should pass derivative parity when masks
+  are treated as data-side row selections, but should fail or change target if
+  dynamic shape-changing mask implementations are used inside compiled scans.
+- H7: Production promotion should proceed backend by backend: covariance/solve
+  first, Cholesky/QR factor derivatives second, SVD/spectral sigma-point
+  derivatives only after gap/floor/branch validation artifacts exist.
+
+### CUT higher-order sigma-point addendum
+
+Follow-up request:
+- document the experimental conjugate unscented transform filter in
+  `/home/chakwong/python/src/dsge_hmc/filters/CUTSRUKF.py`;
+- cite the original CUT papers;
+- answer whether CUT can be combined with SVD for numerical stability;
+- answer whether analytic gradients and Hessians can be derived.
+
+Execution:
+- Added CUT references to `docs/references.bib`.
+- Added Section~`Conjugate Unscented Transform Rules` to
+  `docs/chapters/ch16_sigma_point_filters.tex`.
+- Added Section~`CUT With Square-Root Backends` to
+  `docs/chapters/ch17_square_root_sigma_point.tex`.
+- Added Section~`CUT-SVD Score and Hessian` to
+  `docs/chapters/ch18_svd_sigma_point.tex`.
+
+Interpretation:
+- CUT is a higher-order sigma-point rule, not a covariance factorization.
+  The experimental implementation uses CUT4-G points with a square-root QR
+  backend and rank-deficient process-noise factors.
+- CUT can be combined with SVD by using an SVD/eigen factor
+  `C=U Lambda_+^{1/2}` to place the CUT points.  This can improve value-side
+  robustness for singular or nearly singular covariances, but it does not change
+  CUT's quadrature order and it inherits SVD branch/gap/floor derivative risks.
+- Analytic gradients and Hessians are derivable by replacing the UKF offsets in
+  the SVD sigma-point derivative recursion with fixed CUT offsets and weights.
+  The cost scales with the CUT point count, for CUT4-G `2n+2^n`, and therefore
+  is most plausible on low-dimensional declared stochastic blocks.
+
+Next phase justified?
+- Yes for documentation and small validation fixtures.
+- No for production HMC promotion until CUT moment tests, CUT-vs-UT nonlinear
+  benchmarks, factor reconstruction, SVD branch diagnostics, and same-scalar
+  gradient/Hessian finite-difference checks exist.
+
 ## 2026-05-03 update: DSGE structural deterministic dynamics warning
 
 User raised a serious modeling-design issue: nonlinear DSGE filters must

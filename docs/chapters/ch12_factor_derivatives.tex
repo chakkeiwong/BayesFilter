@@ -3,7 +3,11 @@
 
 Square-root filters propagate factors rather than covariance matrices.  Their
 derivative contract is therefore not only a Kalman contract; it is also a factor
-calculus contract.
+calculus contract.  The likelihood score and Hessian in
+Chapters~\ref{ch:bf-kalman-score}--\ref{ch:bf-kalman-hessian} are expressed in
+terms of $v_t$, $S_t$, and their derivatives.  A factor backend is acceptable
+only if the factors it propagates reproduce those covariance objects and the
+same derivative objects.
 
 BayesFilter uses three levels of factor evidence:
 \begin{enumerate}[label=(\roman*)]
@@ -20,3 +24,272 @@ and Hessian against the solve-form backend.  Those tests are currently the
 right standard for BayesFilter factor-derivative chapters: a factor formula is
 not production-ready until both reconstruction and end-to-end likelihood
 parity pass.
+
+\section{Reconstruction Contract}
+\label{sec:bf-factor-reconstruction-contract}
+
+Let $A(\theta)$ be any covariance-like symmetric positive semidefinite object
+used by the filter, and let an implemented factor satisfy
+\[
+  A_\star(\theta)=C(\theta)C(\theta)^\top .
+\]
+The subscript $\star$ is deliberate.  For a Cholesky backend,
+$A_\star=A$ on a positive-definite branch.  For a spectral backend,
+$A_\star$ may be a rank-truncated, floored, or symmetrized version of $A$.
+The first derivative reconstructed by the factor is
+\begin{equation}
+\label{eq:bf-factor-reconstruction-first}
+  \dot A_\star^{(i)}
+  =
+  \dot C^{(i)}C^\top
+  +C\dot C^{(i)\top}.
+\end{equation}
+The second derivative reconstructed by the factor is
+\begin{equation}
+\label{eq:bf-factor-reconstruction-second}
+  \ddot A_\star^{(ij)}
+  =
+  \ddot C^{(ij)}C^\top
+  +C\ddot C^{(ij)\top}
+  +\dot C^{(i)}\dot C^{(j)\top}
+  +\dot C^{(j)}\dot C^{(i)\top}.
+\end{equation}
+Equations~\eqref{eq:bf-factor-reconstruction-first}--\eqref{eq:bf-factor-reconstruction-second}
+are the universal audit equations for every factor backend.  The derivative may
+be obtained by analytic formulas, custom gradients, or autodiff, but the
+resulting $C$, $\dot C$, and $\ddot C$ must reconstruct the implemented
+covariance branch that produced the likelihood value.
+
+\section{Cholesky Factor Derivatives}
+\label{sec:bf-factor-cholesky}
+
+Suppose $A=LL^\top$, where $A$ is positive definite and $L$ is lower triangular
+with positive diagonal.  Define the lower-triangular half-diagonal operator
+\[
+  \Phi(X)_{ab} =
+  \begin{cases}
+    X_{ab}, & a>b,\\
+    X_{aa}/2, & a=b,\\
+    0, & a<b.
+  \end{cases}
+\]
+For a first derivative, form
+\[
+  B^{(i)}=L^{-1}\dot A^{(i)}L^{-\top},\qquad
+  G^{(i)}=\Phi\!\left(B^{(i)}\right).
+\]
+Then the Cholesky factor derivative is
+\begin{equation}
+\label{eq:bf-factor-cholesky-first}
+  \dot L^{(i)} = L G^{(i)}.
+\end{equation}
+This is the BayesFilter restatement of source label
+\texttt{eq:first\_cholesky\_derivative}.
+
+For a second derivative, remove the known first-order products before applying
+the same triangular split:
+\[
+  C^{(ij)}
+  =
+  L^{-1}\!\left(
+    \ddot A^{(ij)}
+    -\dot L^{(i)}\dot L^{(j)\top}
+    -\dot L^{(j)}\dot L^{(i)\top}
+  \right)L^{-\top},
+  \qquad
+  H^{(ij)}=\Phi\!\left(C^{(ij)}\right).
+\]
+Then
+\begin{equation}
+\label{eq:bf-factor-cholesky-second}
+  \ddot L^{(ij)} = L H^{(ij)}.
+\end{equation}
+This restates source label \texttt{eq:second\_cholesky\_derivative}.  The
+formulas are local smooth-branch formulas: they require a positive diagonal and
+become numerically fragile near a Cholesky pivot boundary.  A backend that adds
+jitter before Cholesky must report whether its derivatives target the original
+$A$ or the implemented $A+\delta I$.
+
+\section{QR Factor Derivatives}
+\label{sec:bf-factor-qr}
+
+QR square-root filters often factor a stack rather than a covariance matrix.  Let
+$M(\theta)\in\mathbb{R}^{m\times n}$ have full column rank, $m\ge n$, and use
+the thin convention
+\[
+  M=QR,\qquad Q^\top Q=I_n,\qquad R\ \hbox{upper triangular},\qquad R_{aa}>0.
+\]
+The positive diagonal fixes the local sign convention.  Define
+\[
+  A^{(i)} = Q^\top\dot M^{(i)}R^{-1}.
+\]
+Let $\Omega^{(i)}$ be the skew-symmetric matrix identified from
+\[
+  \Omega^{(i)}_{ab}=
+  \begin{cases}
+    A^{(i)}_{ab}, & a>b,\\
+    0, & a=b,\\
+    -A^{(i)}_{ba}, & a<b,
+  \end{cases}
+  \qquad
+  T^{(i)}=A^{(i)}-\Omega^{(i)} .
+\]
+Then
+\begin{align}
+\label{eq:bf-factor-qr-r-first}
+  \dot R^{(i)} &= T^{(i)}R,\\
+\label{eq:bf-factor-qr-q-first}
+  \dot Q^{(i)} &= Q\Omega^{(i)}+(I-QQ^\top)\dot M^{(i)}R^{-1}.
+\end{align}
+Equation~\eqref{eq:bf-factor-qr-r-first} restates source label
+\texttt{eq:first\_qr\_r\_derivative}.
+
+For second derivatives, define the effective second-order stack derivative
+\[
+  E^{(ij)}
+  =
+  \ddot M^{(ij)}
+  -\dot Q^{(i)}\dot R^{(j)}
+  -\dot Q^{(j)}\dot R^{(i)}
+\]
+and
+\[
+  B^{(ij)}=Q^\top E^{(ij)}R^{-1},\qquad
+  C_Q^{(ij)}
+  =
+  -\dot Q^{(i)\top}\dot Q^{(j)}
+  -\dot Q^{(j)\top}\dot Q^{(i)}.
+\]
+The matrix $\Gamma^{(ij)}=Q^\top\ddot Q^{(ij)}$ is determined by
+\[
+  \Gamma^{(ij)}_{ab}=
+  \begin{cases}
+    B^{(ij)}_{ab}, & a>b,\\
+    C_{Q,aa}^{(ij)}/2, & a=b,\\
+    C_{Q,ab}^{(ij)}-B^{(ij)}_{ba}, & a<b,
+  \end{cases}
+  \qquad
+  U^{(ij)}=B^{(ij)}-\Gamma^{(ij)}.
+\]
+Then
+\begin{align}
+\label{eq:bf-factor-qr-r-second}
+  \ddot R^{(ij)} &= U^{(ij)}R,\\
+\label{eq:bf-factor-qr-q-second}
+  \ddot Q^{(ij)} &= Q\Gamma^{(ij)}+(I-QQ^\top)E^{(ij)}R^{-1}.
+\end{align}
+Equation~\eqref{eq:bf-factor-qr-r-second} restates source label
+\texttt{eq:second\_qr\_r\_derivative}.  The QR formulas are local to a fixed
+rank and sign branch.  Pivoting, column-rank loss, or diagonal sign corrections
+are branch events and must be reported as derivative-policy events, not hidden
+inside a smooth Hessian claim.
+
+\section{Square-Root Kalman Stacks}
+\label{sec:bf-factor-kalman-stacks}
+
+The generic formulas above enter the filter through stack factorizations.  If
+$C_{t-1|t-1}C_{t-1|t-1}^\top=P_{t-1|t-1}$ and
+$G_tG_t^\top=Q_t$, the prediction covariance can be declared by the stack
+\[
+  M_t^P =
+  \begin{bmatrix}
+    F_tC_{t-1|t-1} & G_t
+  \end{bmatrix},
+  \qquad
+  P_{t|t-1}=M_t^PM_t^{P\top}.
+\]
+Equivalently, a thin QR factorization of $M_t^{P\top}=Q_t^PR_t^P$ gives the
+lower factor $C_{t|t-1}=R_t^{P\top}$.  The first and second derivatives of
+$M_t^P$ are obtained by product rule from the derivatives of
+$F_t$, $C_{t-1|t-1}$, and $G_t$, and
+\eqref{eq:bf-factor-qr-r-first}--\eqref{eq:bf-factor-qr-r-second} then give the
+derivatives of $C_{t|t-1}$.
+
+Likewise, if $E_tE_t^\top=R_t$,
+\[
+  M_t^S =
+  \begin{bmatrix}
+    H_tC_{t|t-1} & E_t
+  \end{bmatrix},
+  \qquad
+  S_t=M_t^SM_t^{S\top},
+\]
+and QR of $M_t^{S\top}$ gives the innovation factor used by the solve-form
+likelihood.  The filtered covariance can be audited by the Joseph stack
+\[
+  M_t^U =
+  \begin{bmatrix}
+    (I-K_tH_t)C_{t|t-1} & K_tE_t
+  \end{bmatrix},
+  \qquad
+  P_{t|t}=M_t^UM_t^{U\top}.
+\]
+Derivatives of $K_t$ are those in
+\eqref{eq:bf-score-gain-first} and
+\eqref{eq:bf-hessian-gain-second}.  Therefore a square-root implementation has
+two equivalent audit paths: reconstruct
+\eqref{eq:bf-factor-reconstruction-first}--\eqref{eq:bf-factor-reconstruction-second}
+from differentiated factors, and compare the resulting score/Hessian objects to
+the covariance-form recursions in Chapters~\ref{ch:bf-kalman-score}--\ref{ch:bf-kalman-hessian}.
+
+\section{Spectral Factors}
+\label{sec:bf-factor-spectral}
+
+SVD sigma-point filters use a spectral factor, not a triangular factor, to
+generate point displacements.  If
+\[
+  P=U\Lambda U^\top,\qquad C=U\Lambda_+^{1/2},
+\]
+then the factor actually reconstructs
+\[
+  P_+ = CC^\top = U\Lambda_+U^\top,
+\]
+where $\Lambda_+$ includes the rank, floor, or smoothing policy used by the
+implementation.  Therefore spectral factor validation must distinguish two
+questions:
+\begin{enumerate}[label=(\roman*)]
+  \item Do $C$ and its derivatives reconstruct $P_+$ and its derivatives?
+  \item If $P_+\ne P$, is the difference a declared model approximation, a
+    finite-arithmetic regularization, or an invalid fallback?
+\end{enumerate}
+This distinction is essential for HMC.  A hard eigenvalue floor can produce a
+finite likelihood while changing the derivative target at the floor boundary.
+If the floor is hard, derivatives are branch derivatives of $P_+$, not
+derivatives of the pre-regularized covariance $P$.  If the floor is smooth, the
+floor derivative is part of the model actually differentiated.  Either way, the
+factor reconstruction equations in
+\eqref{eq:bf-factor-reconstruction-first}--\eqref{eq:bf-factor-reconstruction-second}
+must be checked against $P_+$.
+
+Chapter~\ref{ch:bf-svd-sigma-point} therefore treats spectral derivatives as a
+separate contract with gap telemetry, active-floor reporting, and branch
+diagnostics.  Its simple-spectrum SVD/eigen formulas define one smooth-branch
+policy; they do not remove the need for finite-difference checks across spectral
+gap, rank, and floor regimes.
+
+\section{Backend Parity Gates}
+\label{sec:bf-factor-backend-parity}
+
+A factor backend is ready to support analytic gradients and Hessians only after
+the following checks pass on controlled systems:
+\begin{enumerate}[label=(\roman*)]
+  \item value reconstruction:
+    $\|A_\star-CC^\top\|$ is within tolerance for prediction, innovation, and
+    filtered covariance objects;
+  \item first- and second-derivative reconstruction:
+    \eqref{eq:bf-factor-reconstruction-first}--\eqref{eq:bf-factor-reconstruction-second}
+    match the declared $\dot A_\star$ and $\ddot A_\star$;
+  \item solve parity:
+    the factor solve gives the same $w_t$, score, and Hessian contribution as
+    the covariance solve on well-conditioned systems;
+  \item branch reporting:
+    jitter, rank truncation, pivoting, sign flips, active floors, and fallback
+    paths are emitted as diagnostics;
+  \item backend parity:
+    Cholesky-refactorized, QR square-root, and SVD/spectral backends agree where
+    their mathematical branches represent the same covariance law.
+\end{enumerate}
+These gates prevent a common mistake: a numerically stable factor can make the
+likelihood finite while silently changing the derivative target.  The factor
+chapter therefore supplies the algebraic contracts that the validation chapter
+turns into executable tests.

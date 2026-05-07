@@ -24,6 +24,129 @@ agreement with the existing differentiated backend, TensorFlow eager/compiled
 parity, and large-scale backend ladder diagnostics.  BayesFilter should import
 the testing discipline before importing any claim of production readiness.
 
+\section{What Is Being Compared}
+\label{sec:bf-validation-comparison-target}
+
+Every derivative test must name the scalar or tensor being compared.  For a
+posterior target,
+\[
+  \mathcal{L}(\psi)
+  =
+  \sum_{t=1}^T\ell_t(\psi)+\log p(\psi),
+\]
+the score test compares
+\[
+  \hat g_i(\psi)
+  \quad\hbox{to}\quad
+  \frac{\mathcal{L}(\psi+h e_i)-\mathcal{L}(\psi-h e_i)}{2h}
+\]
+or to an autodiff score of the same scalar.  The Hessian test compares
+\[
+  \hat H_{ij}(\psi)
+  \quad\hbox{to}\quad
+  \frac{\hat g_i(\psi+h e_j)-\hat g_i(\psi-h e_j)}{2h}
+\]
+or to a tape Hessian of the same scalar.  If the reported analytic derivative is
+likelihood-only but the finite difference includes the prior, the test is
+invalid.  If the value path contains jitter, floors, masks, or transformed
+parameters, the comparison value must contain the same choices.
+
+\section{Recommended Rungs}
+\label{sec:bf-validation-recommended-rungs}
+
+The derivative validation ladder should be run in this order:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Finite values and shapes.}
+    Check that value, score, Hessian, state moments, factors, provider tensors,
+    and diagnostics are finite and have declared dimensions.
+  \item \textbf{Symmetry and admissibility.}
+    Check that covariance-like objects are symmetric, positive
+    semidefinite/definite under their declared policy, and that Hessians are
+    symmetric within tolerance.
+  \item \textbf{Block finite differences.}
+    Validate structural derivatives of $c,F,Q,a,H,R,m_0,P_0$ before running a
+    long filter scan.
+  \item \textbf{Likelihood finite differences.}
+    Compare score and Hessian of the complete scalar target on tiny systems.
+  \item \textbf{Autodiff parity.}
+    Use taped gradients and Hessians as small-system oracles where nested tapes
+    are feasible.
+  \item \textbf{Backend parity.}
+    Compare covariance, solve, Cholesky, QR, and SVD/spectral backends on
+    systems where they represent the same law.
+  \item \textbf{Factor reconstruction.}
+    Check
+    \eqref{eq:bf-factor-reconstruction-first}--\eqref{eq:bf-factor-reconstruction-second}
+    for prediction, innovation, and filtered covariance factors.
+  \item \textbf{Mask tests.}
+    Test dense all-observed masks, sparse deterministic masks, and all-missing
+    periods using the convention in Section~\ref{sec:bf-score-masks}.
+  \item \textbf{Spectral and branch stress tests.}
+    Vary spectral gaps, Cholesky pivots, QR diagonals, rank thresholds, floors,
+    jitter, and fallback branches while checking diagnostics.
+  \item \textbf{Eager/compiled parity.}
+    Compare values and derivatives under eager execution, compiled execution,
+    and XLA/JIT paths when those paths are intended for production.
+  \item \textbf{Sampler smoke tests.}
+    Run short HMC/NUTS checks only after deterministic value-and-gradient tests
+    pass, and interpret them as sampler usability evidence, not proof of the
+    derivative formulas.
+\end{enumerate}
+
+\section{Finite-Difference Tolerances}
+\label{sec:bf-validation-finite-difference-tolerances}
+
+Finite differences are not exact tests; they are numerical experiments.  The
+step size should be selected relative to the transformed parameter scale, for
+example
+\[
+  h_i = \eta(1+|\psi_i|),
+\]
+with several $\eta$ values checked when possible.  A central difference should
+show a stable error plateau before the result is accepted.  Parameters near
+constraints, branch boundaries, or spectral floors should be tested separately
+from smooth interior points, because the expected derivative may be a branch
+derivative rather than a smooth derivative of the unregularized model.
+
+\section{Backend-Specific Gates}
+\label{sec:bf-validation-backend-gates}
+
+Each backend has a distinct failure mode:
+\begin{itemize}
+  \item covariance form can lose symmetry or positive semidefiniteness under
+    finite arithmetic;
+  \item solve form can hide ill conditioning unless solve residuals and
+    log-determinant policies are reported;
+  \item Cholesky form depends on positive pivots and any jitter policy;
+  \item QR form depends on full column rank, diagonal sign convention, and
+    pivot policy;
+  \item SVD/spectral form depends on gap, rank, floor, sign/order, and fallback
+    policy;
+  \item sigma-point form additionally depends on fixed point rules, weights,
+    nonlinear map derivatives, and moment reconstruction.
+\end{itemize}
+Backend parity is meaningful only when the compared backends target the same
+law.  A covariance backend using $P$ and an SVD backend using a floored $P_+$ are
+not required to have identical derivatives unless $P_+=P$ on that test case.
+
+\section{Validation Artifact}
+\label{sec:bf-validation-artifact}
+
+Every promoted derivative backend should leave an artifact containing:
+\begin{itemize}
+  \item model name, parameter vector, transform policy, and reference point;
+  \item backend name and value branch;
+  \item tests run, tolerances, and maximum absolute/relative errors;
+  \item finite-value, finite-gradient, and finite-Hessian status;
+  \item branch diagnostics: jitter, PSD projection, spectral floors, pivots,
+    rank truncation, sign/order corrections, and fallbacks;
+  \item interpretation: which claim is supported and which regimes remain
+    untested.
+\end{itemize}
+This artifact is the bridge between a mathematical derivation and an HMC claim.
+Without it, phrases such as ``analytic Hessian'', ``SVD sigma-point gradient'',
+or ``HMC-ready backend'' are too ambiguous to audit.
+
 \section{Audit Record}
 \label{sec:bf-derivative-audit-record}
 
@@ -32,3 +155,14 @@ that support it.  If a tool audit is inconclusive, the monograph should say so.
 An inconclusive symbolic audit can still be valuable: it identifies which
 guards, shapes, or noncommutative matrix steps need manual proof before a
 formula is promoted to peer-review-ready status.
+
+For the analytic-derivative chapter set, the current audit record is:
+\begin{itemize}
+  \item MacroFinance analytic derivative labels provide the source formulas for
+    score, Hessian, structural provider, Cholesky, and QR contracts;
+  \item MathDevMCP is useful for label lookup and local-context provenance, but
+    it does not replace manual proof of noncommutative matrix calculus steps;
+  \item ResearchAssistant is local/offline and has no current summary hits for
+    the exact SVD/eigen derivative-validation cluster used here;
+  \item production readiness remains a test claim, not a prose claim.
+\end{itemize}

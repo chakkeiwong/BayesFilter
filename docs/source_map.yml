@@ -838,29 +838,48 @@ chapter_mappings:
   macrofinance_analytic_kalman:
     - source_file: analytic_kalman_derivatives.tex
       destination: docs/chapters/ch05_prediction_error_decomposition.tex; docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex; docs/chapters/ch11_structural_derivatives.tex; docs/chapters/ch12_factor_derivatives.tex; docs/chapters/ch13_custom_gradient_wrappers.tex; docs/chapters/ch14_derivative_validation.tex
-      import_status: candidate
-      reason: Mathematical spine for analytic likelihood derivatives.
+      import_status: drafted
+      reason: >
+        Mathematical spine for analytic likelihood derivatives.  The
+        2026-05-07 completion pass consolidates score labels
+        eq:dm_pred_note, eq:dP_pred_note, eq:dv_note, eq:dS_note,
+        eq:score_note, solve-form labels eq:solve_score_proved,
+        eq:first_w_derivative, eq:second_w_derivative,
+        eq:solve_hessian_proved, factor labels
+        eq:first_cholesky_derivative, eq:second_cholesky_derivative,
+        eq:first_qr_r_derivative, eq:second_qr_r_derivative, and
+        structural labels eq:structural_map_g,
+        eq:structural_first_derivative_contract, and
+        eq:structural_second_derivative_contract.
     - source_file: analytic_kalman_derivatives.bib
       destination: docs/references.bib
       import_status: candidate
       reason: Bibliography candidate; merge only after key-conflict audit.
+  bayesfilter_analytic_derivative_completion_pass:
+    - source_file: bayesfilter-monograph-reset-memo-2026-05-02.md
+      destination: docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex; docs/chapters/ch11_structural_derivatives.tex; docs/chapters/ch12_factor_derivatives.tex; docs/chapters/ch13_custom_gradient_wrappers.tex; docs/chapters/ch14_derivative_validation.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/source_map.yml
+      import_status: drafted
+      reason: >
+        Records the plan/execute/test/audit/tidy/reset cycle for the analytic
+        derivative chapter completion pass and the remaining validation
+        hypotheses after documentation completion.
 
   macrofinance_code:
     - source_file: filters/differentiated_kalman.py
       destination: docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex; docs/chapters/ch14_derivative_validation.tex
-      import_status: candidate
-      reason: Implementation reference for covariance-form differentiated recursions.
+      import_status: drafted
+      reason: Implementation reference for covariance-form differentiated recursions and finite-difference/autodiff validation oracles.
     - source_file: filters/solve_differentiated_kalman.py
       destination: docs/chapters/ch06_stable_linear_filtering.tex; docs/chapters/ch09_kalman_score.tex; docs/chapters/ch10_kalman_hessian.tex
-      import_status: candidate
+      import_status: drafted
       reason: Solve-form likelihood/score/Hessian implementation reference.
     - source_file: filters/qr_sqrt_differentiated_kalman.py
       destination: docs/chapters/ch06_stable_linear_filtering.tex; docs/chapters/ch12_factor_derivatives.tex
-      import_status: candidate
+      import_status: drafted
       reason: QR square-root derivative implementation reference.
     - source_file: filters/tf_qr_sqrt_differentiated_kalman.py
       destination: docs/chapters/ch13_custom_gradient_wrappers.tex; docs/chapters/ch24_xla_jit.tex
-      import_status: candidate
+      import_status: drafted
       reason: TensorFlow/XLA implementation reference for custom-gradient policy.
     - source_file: filters/masked_*kalman*.py
       destination: docs/chapters/ch07_missing_data_mixed_frequency.tex

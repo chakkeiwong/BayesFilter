@@ -6,6 +6,31 @@ scalar log target used in the Metropolis correction.  A fast gradient of a
 nearby surrogate changes the dynamics and can bias the chain unless the sampler
 is explicitly corrected.
 
+\section{Same-Scalar Contract}
+\label{sec:bf-custom-gradient-same-scalar}
+
+Let the production value path return
+\begin{equation}
+\label{eq:bf-custom-primal-target}
+  \mathcal{L}(\psi)
+  =
+  \sum_{t=1}^T \ell_t(\psi) + \log p(\psi),
+\end{equation}
+where the likelihood terms use the same structural provider, masks, factor
+branch, regularization policy, and parameter transforms declared in
+Chapters~\ref{ch:bf-structural-derivatives}--\ref{ch:bf-factor-derivatives}.
+The custom-gradient path is valid only if it returns
+\begin{equation}
+\label{eq:bf-custom-gradient-target}
+  g_i(\psi)=\frac{\partial \mathcal{L}(\psi)}{\partial\psi_i}.
+\end{equation}
+If the value path evaluates a floored spectral covariance $P_+$, the gradient
+must be the derivative of that implemented value path.  If the value path uses a
+jittered innovation covariance $S_t+\delta I$, the gradient must include the
+same jitter policy or clearly report that the parameter point is outside the
+certified smooth branch.  The wrapper must not evaluate one scalar and return the
+gradient of another.
+
 BayesFilter's custom-gradient wrapper policy is:
 \begin{enumerate}[label=(\roman*)]
   \item compute the primal log likelihood with the production backend;
@@ -20,3 +45,97 @@ BayesFilter's custom-gradient wrapper policy is:
 This policy reflects the MacroFinance motivation: nested tape Hessians through
 full Kalman scans are useful as small-model validation oracles, but they are not
 the intended large-model production path.
+
+\section{Gradient Callback Contract}
+\label{sec:bf-custom-gradient-callback}
+
+A custom-gradient wrapper should expose a contract equivalent to the following
+mathematical tuple:
+\[
+  \operatorname{value\_and\_score}(\psi)
+  =
+  \left(
+    \mathcal{L}(\psi),
+    \nabla_\psi\mathcal{L}(\psi),
+    d(\psi)
+  \right),
+\]
+where $d(\psi)$ is a diagnostic record.  The diagnostic record must include:
+\begin{itemize}
+  \item the structural provider and parameter transform identifiers;
+  \item the active observation-mask policy;
+  \item the covariance/factor backend used by the value path;
+  \item any jitter, nugget, PSD projection, rank truncation, active spectral
+    floor, pivoting, sign correction, or fallback branch;
+  \item the minimum relevant Cholesky pivot, QR diagonal, or spectral gap;
+  \item finite-value and finite-gradient status.
+\end{itemize}
+The gradient callback should return a failure status rather than silently
+replacing the derivative with zeros, prior gradients, or a different backend.
+Emergency fallbacks can be useful for optimization diagnostics, but HMC must
+know whether it is using the certified target derivative.
+
+\section{Hessian and Observed-Information Path}
+\label{sec:bf-custom-gradient-hessian-path}
+
+The HMC hot path needs values and gradients.  Hessians are usually used outside
+the leapfrog loop for mass-matrix initialization, local identification, and
+curvature diagnostics.  If a wrapper exposes a Hessian, it should target
+\[
+  H_{ij}(\psi)
+  =
+  \frac{\partial^2\mathcal{L}(\psi)}
+       {\partial\psi_i\,\partial\psi_j}
+\]
+for the same scalar in \eqref{eq:bf-custom-primal-target}.  The observed
+information is $-H(\psi)$, possibly plus a sign-adjusted convention for priors
+if the likelihood-only and posterior targets are both reported.  A Hessian path
+that omits prior curvature, transformed-parameter curvature, or jitter/floor
+branch terms must label itself as a partial diagnostic, not as posterior
+curvature.
+
+The recommended production pattern is:
+\begin{enumerate}[label=(\roman*)]
+  \item value-plus-score path for MAP and HMC;
+  \item analytic or custom Hessian path for mode diagnostics and mass-matrix
+    construction;
+  \item small-model autodiff Hessian path as an oracle, not as the large-model
+    default.
+\end{enumerate}
+
+\section{Static-Shape and Compilation Contract}
+\label{sec:bf-custom-gradient-static-shapes}
+
+Compiled HMC paths require stable shapes.  Parameter dimension, state dimension,
+observation dimension, maximum active observation size, and the layout of
+diagnostic records should be static across leapfrog calls.  Missing data should
+be represented by fixed-shape masks or predeclared selection patterns rather
+than by dynamically changing tensor ranks.  Fixed sigma-point rules must keep the
+number and ordering of points stable.  Factor backends must report branch events
+without changing the differentiable return signature.
+
+This static-shape rule is an implementation constraint, but it has mathematical
+content: changing the set of coordinates, points, or factors during a compiled
+scan can turn a smooth derivative contract into a piecewise branch derivative
+without making the branch visible to the sampler.
+
+\section{HMC Safety Labels}
+\label{sec:bf-custom-gradient-hmc-labels}
+
+BayesFilter should distinguish the following labels:
+\begin{itemize}
+  \item \textbf{value-correct}: the scalar likelihood or posterior value matches
+    a reference value path;
+  \item \textbf{gradient-correct}: the returned score matches finite
+    differences or autodiff of that same scalar on certified cases;
+  \item \textbf{curvature-correct}: the Hessian or observed information matches
+    the same scalar and sign convention;
+  \item \textbf{sampler-usable}: short HMC runs have finite log probabilities,
+    finite gradients, and acceptable diagnostic telemetry;
+  \item \textbf{production-gated}: compiled/eager parity, branch diagnostics,
+    mask tests, stress tests, and representative workload tests all pass.
+\end{itemize}
+A finite HMC run is not by itself a gradient proof.  Conversely, a correct
+gradient on small smooth systems does not certify spectral floors, rank changes,
+or DSGE deterministic-completion branches unless those regimes have been
+validated explicitly.

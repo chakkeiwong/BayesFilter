@@ -37,6 +37,53 @@ The gain is $K_t=P_{xz,t}P_{zz,t}^{-1}$ and the innovation is
 $v_t=y_t-\bar z_t$.  The same Gaussian innovation likelihood formula is then
 used, with $P_{zz,t}$ replacing $S_t$.
 
+\section{Conjugate Unscented Transform Rules}
+\label{sec:bf-cut-rules}
+
+The ordinary unscented transform is not the only deterministic quadrature rule
+that can be used in the interface above.  The conjugate unscented transform
+(CUT) of \citet{adurthi2012cut,adurthi2012cutfiltering} constructs higher-order
+Gaussian point sets by combining symmetric conjugate point families.  The
+experimental file
+\[
+  \texttt{/home/chakwong/python/src/dsge\_hmc/filters/CUTSRUKF.py}
+\]
+implements a deprecated TensorFlow square-root CUT4 demonstration for a
+coordinated-turn tracking model.  It is not wired into the current BayesFilter
+filter hierarchy, but it is a useful design reference because it separates the
+sigma-point rule from the square-root covariance backend.
+
+For a standard normal variable $Z\in\mathbb{R}^n$, the CUT4-G rule used there
+has
+\[
+  N_{\mathrm{CUT4}} = 2n + 2^n
+\]
+points: $2n$ axis points and $2^n$ hypercube-corner points.  In the convention
+used by the demo, for $n\ge3$,
+\[
+  r_a^2=\frac{n+2}{2},\qquad
+  r_c^2=\frac{n+2}{n-2},
+\]
+with weights
+\[
+  w_a=\frac{4}{(n+2)^2},\qquad
+  w_c=\frac{(n-2)^2}{2^n(n+2)^2}.
+\]
+The rule is symmetric, has positive weights, and is designed to integrate
+Gaussian polynomials through degree five.  By contrast, the usual
+$2n+1$ unscented rule is commonly described as third-degree accurate for
+Gaussian moment propagation.  The extra corner points are what allow CUT4-G to
+match cross moments such as $\mathbb{E}[Z_i^2Z_j^2]$ that axis-only rules do not
+represent in the same way.
+
+The price is exponential growth in the corner set.  CUT4-G uses $42$ points at
+$n=5$, $1044$ points at $n=10$, and becomes unattractive in large structural
+states unless the quadrature is applied to a low-dimensional stochastic block.
+This reinforces the structural lesson of
+Chapter~\ref{ch:bf-structural-deterministic-dynamics}: higher-order quadrature
+should be spent on the declared stochastic integration coordinates, not on
+deterministic-completion directions that add no stochastic law.
+
 \section{Approximation Boundary}
 \label{sec:bf-sigma-point-approximation-boundary}
 
@@ -84,3 +131,10 @@ The minimum evidence ladder for a sigma-point backend is:
 \end{enumerate}
 This ladder is the consolidation of the source-project SVD/HMC validation
 plans, not a completed BayesFilter certification result.
+
+CUT backends should pass the same ladder plus one rule-specific check: for
+standard-normal polynomial test functions up to the declared degree, the
+implemented points and weights should reproduce the analytic Gaussian moments
+before the points are used in a filter.  This catches mistakes in point
+enumeration, weights, dimension restrictions, and transformed-coordinate
+scaling before nonlinear filtering errors obscure the quadrature issue.

@@ -9,23 +9,61 @@ For parameter component $\theta_i$, write
 \[
   \dot z^{(i)} = \frac{\partial z}{\partial \theta_i}.
 \]
-The source note derives the innovation derivatives
+All objects in the filtering recursion may depend on $\theta$:
 \[
+  c_t,\quad F_t,\quad Q_t,\quad a_t,\quad H_t,\quad R_t.
+\]
+Time subscripts are kept in this chapter because missing-data masks and
+mixed-frequency observation systems can make the effective observation equation
+time varying even when the underlying structural model is time homogeneous.
+
+\section{Prediction Derivatives}
+\label{sec:bf-score-prediction-derivatives}
+
+The differentiated prediction step is
+\begin{align}
+\label{eq:bf-score-predicted-mean-first}
+  \dot m_{t|t-1}^{(i)}
+  &=
+  \dot c_t^{(i)}
+  +\dot F_t^{(i)}m_{t-1|t-1}
+  +F_t\dot m_{t-1|t-1}^{(i)},\\
+\label{eq:bf-score-predicted-cov-first}
+  \dot P_{t|t-1}^{(i)}
+  &=
+  \dot F_t^{(i)}P_{t-1|t-1}F_t^\top
+  +F_t\dot P_{t-1|t-1}^{(i)}F_t^\top
+  +F_tP_{t-1|t-1}\dot F_t^{(i)\top}
+  +\dot Q_t^{(i)}.
+\end{align}
+These are source labels \texttt{eq:dm\_pred\_note} and
+\texttt{eq:dP\_pred\_note} in the MacroFinance analytic derivative note.  They
+also define the initial-condition contract: if the implementation fixes
+$(m_{0|0},P_{0|0})$ as data, the initial derivatives are zero; if it uses a
+stationary initial covariance, the derivatives must come from the corresponding
+derivative Lyapunov equations and be reported as part of the structural
+provider.
+
+\section{Innovation Derivatives}
+\label{sec:bf-score-innovation-derivatives}
+
+The source note derives the innovation derivatives
+\begin{align}
+\label{eq:bf-score-innovation-first}
   \dot v_t^{(i)}
   =
-  -\dot a^{(i)}
-  -\dot H^{(i)}m_{t|t-1}
-  -H\dot m_{t|t-1}^{(i)}
-\]
-and
-\[
+  -\dot a_t^{(i)}
+  -\dot H_t^{(i)}m_{t|t-1}
+  -H_t\dot m_{t|t-1}^{(i)},\\
+\label{eq:bf-score-innovation-cov-first}
   \dot S_t^{(i)}
   =
-  \dot H^{(i)}P_{t|t-1}H^\top
-  +H\dot P_{t|t-1}^{(i)}H^\top
-  +HP_{t|t-1}\dot H^{(i)\top}
-  +\dot R^{(i)}.
-\]
+  \dot H_t^{(i)}P_{t|t-1}H_t^\top
+  +H_t\dot P_{t|t-1}^{(i)}H_t^\top
+  +H_tP_{t|t-1}\dot H_t^{(i)\top}
+  +\dot R_t^{(i)}.
+\end{align}
+These are source labels \texttt{eq:dv\_note} and \texttt{eq:dS\_note}.
 Using $\partial_i S^{-1}=-S^{-1}\dot S^{(i)}S^{-1}$, the per-time score
 contribution is
 \begin{equation}
@@ -59,7 +97,91 @@ Then the same score can be written as
   \right].
 \end{equation}
 This is source label \texttt{eq:solve\_score\_proved}.  The implementation
-reference is the MacroFinance solve differentiated Kalman backend.
+reference is the MacroFinance solve differentiated Kalman backend.  The trace
+term may be computed by explicit materialization in small tests, but production
+code should prefer factor solves or trace estimators appropriate to the
+dimension and backend.
+
+\section{Gain and Update Derivatives}
+\label{sec:bf-score-update-derivatives}
+
+The score contribution at time $t$ can be computed as soon as
+\eqref{eq:bf-score-innovation-first}--\eqref{eq:bf-score-innovation-cov-first}
+are available.  The recursion must still propagate derivatives to the next time
+step.  For the covariance-form Kalman update,
+\[
+  K_t=P_{t|t-1}H_t^\top S_t^{-1},
+\]
+the gain derivative is
+\begin{align}
+\label{eq:bf-score-gain-first}
+  \dot K_t^{(i)}
+  &=
+  \dot P_{t|t-1}^{(i)}H_t^\top S_t^{-1}
+  +P_{t|t-1}\dot H_t^{(i)\top}S_t^{-1}
+  -P_{t|t-1}H_t^\top S_t^{-1}\dot S_t^{(i)}S_t^{-1}.
+\end{align}
+Equivalently, if the implementation treats the gain as the solved matrix
+$S_tK_t^\top=H_tP_{t|t-1}$, then
+\begin{equation}
+\label{eq:bf-score-gain-first-solve}
+  \dot K_t^{(i)\top}
+  =
+  \mathcal{S}_{S_t}
+  \left(
+    \dot H_t^{(i)}P_{t|t-1}
+    +H_t\dot P_{t|t-1}^{(i)}
+    -\dot S_t^{(i)}K_t^\top
+  \right).
+\end{equation}
+The filtered mean and covariance derivatives are
+\begin{align}
+\label{eq:bf-score-filtered-mean-first}
+  \dot m_{t|t}^{(i)}
+  &=
+  \dot m_{t|t-1}^{(i)}
+  +\dot K_t^{(i)}v_t
+  +K_t\dot v_t^{(i)},\\
+\label{eq:bf-score-filtered-cov-first}
+  \dot P_{t|t}^{(i)}
+  &=
+  -\dot K_t^{(i)}H_tP_{t|t-1}
+  -K_t\dot H_t^{(i)}P_{t|t-1}
+  +(I-K_tH_t)\dot P_{t|t-1}^{(i)}.
+\end{align}
+Equation \eqref{eq:bf-score-filtered-cov-first} differentiates the simplified
+covariance update $P_{t|t}=(I-K_tH_t)P_{t|t-1}$.  A Joseph-form or square-root
+backend may use a different algebraic update for numerical reasons, but it must
+produce derivatives of the same filtered covariance it uses in the next
+prediction step.
+
+\section{Masks and Time-Varying Observation Blocks}
+\label{sec:bf-score-masks}
+
+For missing data, let $M_t$ select the observed rows at time $t$.  The effective
+observation objects are
+\[
+  y_t^o=M_ty_t,\qquad
+  a_t^o=M_ta_t,\qquad
+  H_t^o=M_tH_t,\qquad
+  R_t^o=M_tR_tM_t^\top .
+\]
+The score recursion above applies after replacing
+$(y_t,a_t,H_t,R_t)$ by $(y_t^o,a_t^o,H_t^o,R_t^o)$.  The mask is data, not a
+differentiated parameter, so $\dot M_t=0$.  If no rows are observed, the
+likelihood and score contribution for that time are zero and the update is the
+identity:
+\[
+  m_{t|t}=m_{t|t-1},\qquad
+  P_{t|t}=P_{t|t-1},
+\]
+with the same equalities for first derivatives.  This convention ensures that
+the derivative path corresponds to the same masked likelihood value used by the
+filter.
+
+\section{Evidence Status}
+\label{sec:bf-score-evidence-status}
+
 The current MathDevMCP AST audit identifies Cholesky/solve, prediction, update,
 quadratic-form, and derivative-recursion structure in that file, but it does
 not by itself certify the algebra.  The stronger evidence is the

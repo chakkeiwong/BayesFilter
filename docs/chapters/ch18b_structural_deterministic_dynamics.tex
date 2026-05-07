@@ -1884,6 +1884,499 @@ Chapters~\ref{ch:bf-square-root-sigma-point} and
   \text{Which law is being factored and propagated?}
 \]
 
+\begin{proposition}[Degenerate covariance and formal sigma-point accuracy]
+\label{prop:bf-degenerate-covariance-formal-ut-accuracy}
+Let $A_\delta=\mu+\delta Z$ be a possibly degenerate Gaussian random
+variable in $\R^L$, with $\E[Z]=0$ and
+$\Cov(Z)=\Sigma\succeq0$.  Thus
+$\Cov(A_\delta)=P_\delta=\delta^2\Sigma$ may be singular.  Let
+$\{a_\delta^{(j)},w_j^{(m)},w_j^{(c)}\}$ be any sigma-point rule whose
+deviations $\xi_j=a_\delta^{(j)}-\mu=\delta\zeta_j$ have fixed standardized
+points $\zeta_j$ and satisfy
+\[
+  \sum_j w_j^{(m)}\xi_j=0,\qquad
+  \sum_j w_j^{(m)}\xi_j\xi_j^\top=P_\delta,\qquad
+  \sum_j w_j^{(c)}\xi_j\xi_j^\top=P_\delta .
+\]
+If $G:\R^L\to\R^d$ is three-times continuously differentiable and its
+third-order Taylor remainders around $\mu$ have expected size $O(\delta^3)$
+under the Gaussian law and weighted size $O(\delta^3)$ under the sigma-point
+cloud, then the sigma-point transformed mean and covariance have the same local
+order as in the nonsingular case:
+\begin{align}
+  \E[G_r(A_\delta)]
+    &=
+    G_r(\mu)+\frac{1}{2}\tr(H_rP_\delta)+O(\delta^3),\\
+  \hat g_r^{\mathrm{SP}}
+    &=
+    G_r(\mu)+\frac{1}{2}\tr(H_rP_\delta)+O(\delta^3),\\
+  \Cov(G(A_\delta))
+    &=
+    JP_\delta J^\top+O(\delta^3),\\
+  P_G^{\mathrm{SP}}
+    &=
+    JP_\delta J^\top+O(\delta^3),
+\end{align}
+where $J$ is the Jacobian of $G$ at $\mu$ and $H_r$ is the Hessian of
+the $r$th component.  Positive definiteness of $P_\delta$ is not used.
+Consequently, abstracting from finite arithmetic and factor-construction
+errors, rank deficiency of the state-noise covariance does not by itself lower
+the formal local sigma-point moment accuracy for the law being propagated.
+\end{proposition}
+
+\begin{proof}
+The usual Taylor proof only uses the first two moments of the input variable
+and the matching first two weighted moments of the sigma-point cloud.  For a
+component $r$,
+\[
+  G_r(\mu+\Delta)
+  =
+  G_r(\mu)+J_r\Delta+\frac{1}{2}\Delta^\top H_r\Delta
+  +O(\|\Delta\|^3).
+\]
+Taking expectations with $\Delta=A_\delta-\mu$ gives the first expansion
+because $\E[\Delta]=0$ and $\E[\Delta\Delta^\top]=P_\delta$.  Taking the
+weighted sum with $\Delta=\xi_j$ gives the sigma-point mean expansion by the
+same identities.  For covariance, the leading centered term is
+$J\Delta$, whose second moment is $JP_\delta J^\top$ both for the true
+Gaussian law and for the sigma-point cloud.  The quadratic remainder terms
+enter at order $O(\delta^3)$ or smaller.  No inverse, Cholesky pivot, or
+full-rank support argument appears in this proof, so the conclusion is
+unchanged when $P_\delta$ is only positive semidefinite.
+\end{proof}
+
+Proposition~\ref{prop:bf-degenerate-covariance-formal-ut-accuracy} verifies
+the reviewer's claim in its precise value-side form.  If a model is written as
+a full-state transition with a degenerate Gaussian innovation, and if that
+transition induces exactly the same conditional law as the structural
+pushforward in Proposition~\ref{prop:bf-structural-ukf-pushforward}, then an
+exact SVD sigma-point rule for that degenerate law has the same formal local
+moment order as the corresponding nondegenerate rule.  Degeneracy is not, by
+itself, a mathematical objection to sigma-point filtering.
+
+That statement is an equivalence result, not a recommendation to hide the
+structural split inside a large singular covariance matrix.  To make the
+comparison precise, let the structural route use
+\[
+  A_t=(x_{t-1},\varepsilon_t),\qquad
+  x_t=F_\theta(A_t),\qquad
+  \pi_t^x=(F_\theta)_\#\pi_t^a ,
+\]
+where $\pi_t^a=\pi_{t-1|t-1}^x\otimes\nu_\theta^\varepsilon$.  Let a collapsed
+full-state SVD route instead use an augmented variable
+\[
+  \widetilde A_t=(x_{t-1},\widetilde u_t),\qquad
+  \widetilde u_t\sim\calN(0,\widetilde Q_t),\qquad
+  \widetilde x_t=\widetilde F_\theta(\widetilde A_t),
+\]
+with $\widetilde Q_t=\widetilde C_t\widetilde C_t^\top$ obtained by an SVD or
+spectral rule.  The collapsed route is acceptable only when the following
+mathematical diagnostics are satisfied.
+
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Law declaration is pushforward equality.}  The two
+    declarations are equivalent only if
+    \[
+      (\widetilde F_\theta)_\#
+      \left(\pi_{t-1|t-1}^x\otimes\calN(0,\widetilde Q_t)\right)
+      =
+      (F_\theta)_\#
+      \left(\pi_{t-1|t-1}^x\otimes\nu_\theta^\varepsilon\right),
+      \label{eq:bf-collapsed-law-equivalence}
+    \]
+    or, equivalently, if
+    $\E[\varphi(\widetilde x_t)\mid y_{1:t-1}]
+    =\E[\varphi(x_t)\mid y_{1:t-1}]$ for every bounded test function
+    $\varphi$.  Matching a covariance matrix is only a necessary moment check,
+    not this equality of laws.
+
+    \emph{Example.}  If $m_t=\varepsilon_t$ and $k_t=\varepsilon_t^2$, then the
+    structural conditional law is supported on the parabola
+    $\{(m,k):k=m^2\}$.  A collapsed additive Gaussian transition
+    $\widetilde x_t=\mu+\widetilde u_t$ with any covariance
+    $\widetilde Q_t$ has affine Gaussian support.  It cannot equal the
+    parabolic pushforward unless $\varepsilon_t$ is degenerate.  A singular
+    covariance matrix by itself therefore does not encode the nonlinear timing
+    contract.
+
+  \item \textbf{Sigma-point support is a constraint residual.}  Let
+    $c_\theta(a,x)=0$ collect the deterministic identities implied by the
+    structural transition, for example
+    $c_\theta(A_t,x_t)=x_t-F_\theta(A_t)$.  A structural sigma-point cloud
+    satisfies
+    \[
+      \Delta_{\mathrm{id}}^{\mathrm{str}}
+      =
+      \max_j \|c_\theta(a_t^{(j)},F_\theta(a_t^{(j)}))\|
+      =0.
+    \]
+    The collapsed cloud must satisfy the corresponding check
+    \[
+      \Delta_{\mathrm{id}}^{\mathrm{col}}
+      =
+      \max_j
+      \|c_\theta(\widetilde a_t^{(j)},
+        \widetilde F_\theta(\widetilde a_t^{(j)}))\|
+      =0,
+      \label{eq:bf-collapsed-identity-residual}
+    \]
+    after translating its variables into the structural coordinates.  If this
+    residual is not defined because the collapsed adapter no longer exposes the
+    relevant shock or timing variables, the adapter cannot demonstrate
+    structural equivalence.
+
+    \emph{Example.}  For the linear deterministic identity
+    $x_t=(m_t,k_t)=(\varepsilon_t,\varepsilon_t)$, the support condition is
+    $c(m,k)=k-m=0$.  The exact rank-one covariance
+    $\widetilde Q=\begin{psmallmatrix}1&1\\1&1\end{psmallmatrix}$ has an SVD
+    factor whose points lie on $k=m$.  After a nugget,
+    $\widetilde Q_\eta=\widetilde Q+\eta^2I$, sigma points have normal
+    coordinate displacement $\sqrt{L+\lambda}\,\eta$ in the direction
+    $(1,-1)/\sqrt2$, so $\Delta_{\mathrm{id}}^{\mathrm{col}}>0$.
+
+  \item \textbf{Dimension and cost are point-count identities.}  For a
+    symmetric $2L+1$ rule, the number of model evaluations is determined by the
+    dimension $L$ of the factored variable.  If the previous state has dimension
+    $n$ and the declared shock has dimension $q$, the structural augmented rule
+    uses
+    \[
+      N_{\mathrm{str}}=2(n+q)+1.
+    \]
+    A full-state additive-noise route that augments by an $n$-dimensional
+    degenerate noise vector uses
+    \[
+      N_{\mathrm{col}}=2(n+n)+1,
+      \qquad
+      N_{\mathrm{col}}-N_{\mathrm{str}}=2(n-q).
+      \label{eq:bf-collapsed-point-count}
+    \]
+    This overhead is pure bookkeeping if the extra $n-q$ directions are
+    zero-noise directions.
+
+    \emph{Example.}  With $n=100$ state coordinates and $q=10$ genuine shocks,
+    the structural augmented rule uses $221$ points, while the full-state
+    degenerate-noise augmentation uses $401$ points.  In the two-coordinate toy
+    covariance $\diag(1,0)$ treated as a two-dimensional factor, the zero
+    column produces two sigma points equal to the mean; they add evaluations
+    and alter the weight bookkeeping without adding stochastic information.
+
+  \item \textbf{Finite arithmetic is normal-support leakage.}  Let $M_t$ be a
+    matrix whose columns span the exact linear support of a degenerate
+    Gaussian factor, and let $N_t$ span the normal space
+    $(\operatorname{col}M_t)^\perp$.  Exact support preservation requires
+    \[
+      N_t^\top \widetilde C_t=0
+      \quad\Longleftrightarrow\quad
+      N_t^\top\widetilde Q_tN_t=0 .
+      \label{eq:bf-collapsed-normal-support}
+    \]
+    A nugget, PSD projection, rank threshold, or asymmetric reconstruction
+    should therefore be reported through
+    \[
+      \ell_{\perp,t}
+      =
+      \|N_t^\top\widetilde Q_tN_t\|_{\mathrm{op}}
+      \quad\text{or}\quad
+      \max_j\|N_t^\top(\widetilde x_t^{(j)}-\bar x_t)\|.
+      \label{eq:bf-collapsed-support-leakage}
+    \]
+
+    \emph{Example.}  In the identity example $k=m$, the normal vector is
+    $N=(1,-1)^\top/\sqrt2$.  For
+    $\widetilde Q_\eta=
+    \begin{psmallmatrix}1&1\\1&1\end{psmallmatrix}+\eta^2I$,
+    \[
+      N^\top\widetilde Q_\eta N=\eta^2.
+    \]
+    Hence the nominally deterministic relation has positive artificial
+    variance $\eta^2$ in finite arithmetic.  This is not a harmless
+    representation of the same law; it is a regularized law unless explicitly
+    removed before propagation.
+
+  \item \textbf{Gradient risk is controlled by spectral gaps.}  If
+    $\widetilde C_t(\theta)$ is produced from an eigendecomposition or SVD,
+    derivatives of the spectral vectors contain gap denominators.  For a
+    symmetric eigendecomposition, schematically,
+    \[
+      d u_i
+      =
+      \sum_{j\ne i}
+      u_j
+      \frac{u_j^\top(d\widetilde Q_t)u_i}{\lambda_i-\lambda_j}
+      +\text{terms along }u_i .
+      \label{eq:bf-collapsed-spectral-gap-gradient}
+    \]
+    Therefore the gradient audit must track
+    \[
+      g_t^{\min}
+      =
+      \min_{i\ne j}|\lambda_i(\widetilde Q_t)-\lambda_j(\widetilde Q_t)|,
+      \qquad
+      \|\partial_\theta\widetilde C_t\|
+      \lesssim
+      \frac{\|\partial_\theta\widetilde Q_t\|}{g_t^{\min}}
+    \]
+    away from rank and ordering branches.  Structural completion does not
+    remove factor-gradient issues, but it avoids adding spectral choices for
+    artificial zero-noise coordinates.
+
+    \emph{Example.}  Let
+    $\widetilde Q(\theta)=
+    \begin{psmallmatrix}1&\theta\\ \theta&1\end{psmallmatrix}$.
+    The eigenvalues are $1+\theta$ and $1-\theta$, with gap $2|\theta|$.
+    At $\theta=0$ the covariance is perfectly smooth but the ordered
+    eigenspace is not unique; raw autodiff through the spectral factor can be
+    discontinuous or unstable even though the value-side covariance is benign.
+
+  \item \textbf{Diagnostics must separate model law from regularization.}  A
+    collapsed route should report both the identity residual
+    \eqref{eq:bf-collapsed-identity-residual} and the normal leakage
+    \eqref{eq:bf-collapsed-support-leakage}.  Otherwise a finite likelihood can
+    be produced by a different state-space model.  For a scalar observation
+    that loads on a deterministic coordinate, this difference is explicit:
+    if the structural law is
+    \[
+      k_t=0,\qquad y_t=k_t+e_t,\qquad e_t\sim\calN(0,r),
+    \]
+    then $y_t\sim\calN(0,r)$.  If a collapsed covariance injects artificial
+    variance $\eta^2$ into $k_t$, then the implemented likelihood uses
+    $y_t\sim\calN(0,r+\eta^2)$, and the one-period log-likelihood change is
+    \[
+      \Delta\ell_t
+      =
+      -\frac12
+      \left[
+        \log\frac{r+\eta^2}{r}
+        +
+        y_t^2
+        \left(\frac{1}{r+\eta^2}-\frac{1}{r}\right)
+      \right].
+      \label{eq:bf-collapsed-nugget-likelihood-change}
+    \]
+    A finite value of this likelihood is therefore not evidence that the
+    structural transition was respected; it may only show that the nugget made
+    the altered model numerically evaluable.
+\end{enumerate}
+
+These diagnostics matter for the UKF because the UKF update is only as correct
+as the sigma-point cloud used to build its predictive moments.  For a
+noise-free observation map $h_\theta$ and observation noise covariance $R_t$,
+the structural UKF forms points
+\[
+  x_t^{(j)}=F_\theta(a_t^{(j)}),
+  \qquad
+  z_t^{(j)}=h_\theta(x_t^{(j)}),
+\]
+and then computes
+\begin{align}
+  \hat x_t
+    &=\sum_j w_j^{(m)}x_t^{(j)},&
+  \hat z_t
+    &=\sum_j w_j^{(m)}z_t^{(j)},\\
+  P_{xx,t}
+    &=\sum_j w_j^{(c)}
+      (x_t^{(j)}-\hat x_t)(x_t^{(j)}-\hat x_t)^\top,\\
+  S_t
+    &=\sum_j w_j^{(c)}
+      (z_t^{(j)}-\hat z_t)(z_t^{(j)}-\hat z_t)^\top + R_t,\\
+  P_{xz,t}
+    &=\sum_j w_j^{(c)}
+      (x_t^{(j)}-\hat x_t)(z_t^{(j)}-\hat z_t)^\top .
+    \label{eq:bf-structural-ukf-moment-objects}
+\end{align}
+The Gaussian UKF update then uses
+\begin{align}
+  v_t &= y_t-\hat z_t,&
+  K_t &= P_{xz,t}S_t^{-1},\\
+  \hat x_{t|t}
+    &= \hat x_t+K_tv_t,&
+  P_{t|t}
+    &= P_{xx,t}-K_tS_tK_t^\top,
+    \label{eq:bf-structural-ukf-update-objects}
+\end{align}
+with log-likelihood contribution
+\begin{equation}
+  \ell_t
+  =
+  -\frac12
+  \left[
+    d_y\log(2\pi)+\log\det S_t+v_t^\top S_t^{-1}v_t
+  \right].
+  \label{eq:bf-structural-ukf-loglik-object}
+\end{equation}
+Thus a collapsed SVD route is not merely changing an implementation detail.
+It replaces the point cloud
+$\{F_\theta(a_t^{(j)})\}$ in
+\eqref{eq:bf-structural-ukf-moment-objects} by
+$\{\widetilde F_\theta(\widetilde a_t^{(j)})\}$.  The error enters through
+\begin{align}
+  \Delta\hat z_t
+    &= \widetilde{\hat z}_t-\hat z_t,\\
+  \Delta S_t
+    &= \widetilde S_t-S_t,\\
+  \Delta P_{xz,t}
+    &= \widetilde P_{xz,t}-P_{xz,t},\\
+  \Delta K_t
+    &= \widetilde P_{xz,t}\widetilde S_t^{-1}
+      -P_{xz,t}S_t^{-1}.
+    \label{eq:bf-collapsed-ukf-object-errors}
+\end{align}
+Even when the formal sigma-point rule is accurate for its own input law,
+\eqref{eq:bf-collapsed-ukf-object-errors} is controlled by whether the
+collapsed cloud matches the structural cloud on the particular functions
+$h_\theta$, $x\,h_\theta(x)^\top$, and
+$h_\theta(x)h_\theta(x)^\top$ used in the UKF update.  Equality of predictive
+laws is the robust sufficient condition; accidental equality of a few low-order
+moments is not a model-contract proof.  This is the precise UKF sense in which
+the law-level diagnostics above are not optional metadata.
+
+The six diagnostics above correspond to the UKF recursion as follows.
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Pushforward equality} is the condition that the two point clouds
+    approximate the same expectations in
+    \eqref{eq:bf-structural-ukf-moment-objects}.  If
+    \eqref{eq:bf-collapsed-law-equivalence} fails, then
+    $\widetilde{\hat x}_t$, $\widetilde{\hat z}_t$,
+    $\widetilde S_t$, and $\widetilde P_{xz,t}$ are moments of a different
+    predictive law.
+  \item \textbf{Identity residuals} test whether every propagated point used in
+    \eqref{eq:bf-structural-ukf-moment-objects} is an admissible structural
+    state.  If
+    $\Delta_{\mathrm{id}}^{\mathrm{col}}>0$, then the UKF averages include
+    states that the DSGE transition assigns probability zero.
+  \item \textbf{Point-count overhead} affects the number of evaluations of
+    $F_\theta$ and $h_\theta$ required to build the same objects
+    $\hat x_t,\hat z_t,S_t,P_{xz,t}$.  Extra zero-noise directions do not add
+    information; they add factorization and map-evaluation work before the
+    update in \eqref{eq:bf-structural-ukf-update-objects}.
+  \item \textbf{Normal-support leakage} enters the UKF through $S_t$ and
+    $P_{xz,t}$.  Artificial variance in a deterministic-completion direction
+    changes the innovation covariance and the state-observation cross
+    covariance, so it changes both the likelihood
+    \eqref{eq:bf-structural-ukf-loglik-object} and the gain
+    $K_t=P_{xz,t}S_t^{-1}$.
+  \item \textbf{Spectral-gap gradient risk} is the derivative of the same UKF
+    likelihood and update with respect to parameters.  If
+    $\partial_\theta\widetilde C_t$ is unstable, then the gradients of
+    $\widetilde S_t$, $\widetilde P_{xz,t}$, $\widetilde K_t$, and
+    $\widetilde\ell_t$ inherit that instability.
+  \item \textbf{Diagnostic separation} tells the reader whether
+    \eqref{eq:bf-structural-ukf-update-objects} and
+    \eqref{eq:bf-structural-ukf-loglik-object} were evaluated under the
+    structural law or under a regularized law.  Without the identity and
+    leakage diagnostics, a finite UKF likelihood cannot distinguish those two
+    cases.
+\end{enumerate}
+
+A one-dimensional observation example shows the mechanism without requiring
+filtering expertise.  Let
+\[
+  m_t=\varepsilon_t,\qquad k_t=m_t,\qquad
+  y_t=k_t+e_t,\qquad
+  \varepsilon_t\sim\calN(0,q),\quad e_t\sim\calN(0,r).
+\]
+The structural predictive state has
+\[
+  \Var(m_t)=q,\qquad
+  \Var(k_t)=q,\qquad
+  \Cov(m_t,k_t)=q,
+  \qquad
+  S_t^{\mathrm{str}}=q+r.
+\]
+The Kalman gain components implied by the UKF moment objects are therefore
+\[
+  K_t^{\mathrm{str}}
+  =
+  \frac{\Cov((m_t,k_t),y_t)}{\Var(y_t)}
+  =
+  \frac{1}{q+r}
+  \begin{pmatrix}q\\ q\end{pmatrix}.
+  \label{eq:bf-structural-gain-identity-example}
+\]
+If the collapsed SVD route adds a small independent numerical variance
+$\eta^2$ to the deterministic-completion coordinate $k_t$, then
+\[
+  \widetilde k_t=m_t+\eta\xi_t,\qquad
+  \xi_t\sim\calN(0,1),
+\]
+and the UKF objects become
+\[
+  \widetilde S_t=q+\eta^2+r,\qquad
+  \widetilde K_t
+  =
+  \frac{1}{q+\eta^2+r}
+  \begin{pmatrix}q\\ q+\eta^2\end{pmatrix}.
+  \label{eq:bf-collapsed-gain-identity-example}
+\]
+The likelihood and update have changed:
+\begin{align}
+  \widetilde\ell_t-\ell_t
+  &=
+  -\frac12
+  \left[
+    \log\frac{q+\eta^2+r}{q+r}
+    +
+    y_t^2
+    \left(\frac{1}{q+\eta^2+r}-\frac{1}{q+r}\right)
+  \right],\\
+  \widetilde K_{m,t}-K_{m,t}
+  &=
+  -\frac{q\eta^2}{(q+r)(q+\eta^2+r)},\\
+  \widetilde K_{k,t}-K_{k,t}
+  &=
+  \frac{\eta^2 r}{(q+r)(q+\eta^2+r)} .
+  \label{eq:bf-collapsed-ukf-likelihood-gain-change}
+\end{align}
+In this example, the six diagnostics above appear in concrete form:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Pushforward equality} is the difference between the structural
+    law $k_t=m_t$ and the collapsed law
+    $\widetilde k_t=m_t+\eta\xi_t$.  If $\eta>0$, the predictive law is no
+    longer supported on $k=m$, and the UKF moments in
+    \eqref{eq:bf-collapsed-gain-identity-example} are not the moments in
+    \eqref{eq:bf-structural-gain-identity-example}.
+  \item \textbf{Identity residuals} are measured by
+    $c(m,k)=k-m$.  The structural points have $c=0$ pointwise, while the
+    collapsed points have
+    $c(\widetilde m_t,\widetilde k_t)=\eta\xi_t$ and therefore positive
+    residual whenever the artificial direction is sampled.
+  \item \textbf{Point-count overhead} is hidden in the construction of
+    $\widetilde k_t$.  The structural rule needs points for the one genuine
+    shock $\varepsilon_t$; the collapsed route adds a second numerical
+    direction $\xi_t$ before computing the same scalar observation $y_t$.
+  \item \textbf{Normal-support leakage} is the extra term $\eta^2$ in
+    $\widetilde S_t=q+\eta^2+r$ in
+    \eqref{eq:bf-collapsed-gain-identity-example}.  That term is exactly the
+    artificial variance normal to the structural line $k=m$, and it changes the
+    likelihood and gain in
+    \eqref{eq:bf-collapsed-ukf-likelihood-gain-change}.
+  \item \textbf{Spectral-gradient risk} enters if $\eta^2$ is produced by an
+    SVD threshold, nugget branch, or spectral factor of a nearly singular
+    covariance.  Then derivatives of
+    $\widetilde S_t$, $\widetilde K_t$, and $\widetilde\ell_t$ inherit the
+    derivative behavior of that spectral branch.
+  \item \textbf{Diagnostic separation} is the need to report whether the
+    likelihood is based on $S_t^{\mathrm{str}}=q+r$ or on
+    $\widetilde S_t=q+\eta^2+r$.  Both are finite UKF likelihoods, but
+    \eqref{eq:bf-collapsed-ukf-likelihood-gain-change} shows that they are not
+    the same likelihood unless $\eta=0$.
+\end{enumerate}
+So the nugget changes both the likelihood weight assigned to the observation
+and the way the observation is fed back into $m_t$ and $k_t$.  This is the UKF
+problem in concrete terms: the filter can remain numerically stable and still
+perform the prediction, likelihood evaluation, and update for a different
+state-space model.
+
+The practical conclusion is therefore conservative.  SVD is a good numerical
+backend for singular or nearly singular covariance factors, and it can be used
+inside a structurally correct sigma-point filter.  But using SVD on a collapsed
+full-state covariance is usually a harder implementation contract: it has more
+linear algebra to audit, more fragile derivatives for HMC, and more ways for a
+regularization choice to become an unrecorded model change.  The structural
+adapter is preferred because it states the economic law directly and leaves SVD
+to do the narrower job of factoring the covariance that actually belongs to
+that law.
+
 For HMC promotion, one more distinction matters.  Matrix backpropagation
 formulas for spectral decompositions contain denominators involving
 singular-value or eigenvalue gaps, so repeated or nearly repeated spectral

@@ -9,6 +9,56 @@ they map model parameters into
 \]
 and their first and second derivatives.
 
+\section{Provider Map}
+\label{sec:bf-structural-provider-map}
+
+Let $\psi\in\mathbb{R}^p$ denote the parameter vector used by the numerical
+provider.  In HMC this is usually an unconstrained or transformed parameter
+vector, not necessarily the raw economic vector.  The structural provider
+declares the map
+\begin{equation}
+\label{eq:bf-structural-map}
+  g(\psi)
+  =
+  \ve\!\left(
+    c(\psi),F(\psi),Q(\psi),a(\psi),H(\psi),R(\psi),
+    m_0(\psi),P_0(\psi)
+  \right).
+\end{equation}
+The MacroFinance source map uses the same contract for
+$(b,F,Q,a,H,R)$ under source label \texttt{eq:structural\_map\_g}; BayesFilter
+adds $(m_0,P_0)$ because the filtering scan cannot be differentiated without an
+initial-condition policy.
+
+For every active coordinate $\psi_i$, the first-order provider contract is
+\begin{equation}
+\label{eq:bf-structural-first-provider}
+  \dot G^{(i)}
+  =
+  \left(
+    \dot c^{(i)},\dot F^{(i)},\dot Q^{(i)},
+    \dot a^{(i)},\dot H^{(i)},\dot R^{(i)},
+    \dot m_0^{(i)},\dot P_0^{(i)}
+  \right).
+\end{equation}
+For every active pair $(\psi_i,\psi_j)$, the second-order contract is
+\begin{equation}
+\label{eq:bf-structural-second-provider}
+  \ddot G^{(ij)}
+  =
+  \left(
+    \ddot c^{(ij)},\ddot F^{(ij)},\ddot Q^{(ij)},
+    \ddot a^{(ij)},\ddot H^{(ij)},\ddot R^{(ij)},
+    \ddot m_0^{(ij)},\ddot P_0^{(ij)}
+  \right).
+\end{equation}
+Equations~\eqref{eq:bf-structural-first-provider}--\eqref{eq:bf-structural-second-provider}
+are the objects consumed by Chapters~\ref{ch:bf-kalman-score} and
+\ref{ch:bf-kalman-hessian}.  A backend may store them as dense tensors, sparse
+blocks, named arrays, or lazy linear operators, but the contract is mathematical:
+each block must mean a derivative of the same state-space law used to evaluate
+the likelihood.
+
 For BayesFilter, a derivative provider must declare:
 \begin{itemize}
   \item parameter order and units;
@@ -19,7 +69,157 @@ For BayesFilter, a derivative provider must declare:
   \item whether cross-derivatives are implemented or intentionally zero.
 \end{itemize}
 
+\section{Parameter Transforms}
+\label{sec:bf-structural-parameter-transforms}
+
+Let $\phi=T(\psi)$ be the raw economic parameter vector and let
+$M(\phi)$ be any reduced-form block among $c,F,Q,a,H,R,m_0,P_0$.  Write
+\[
+  M_\alpha=\frac{\partial M}{\partial\phi_\alpha},
+  \qquad
+  M_{\alpha\beta}
+  =
+  \frac{\partial^2M}{\partial\phi_\alpha\partial\phi_\beta},
+\]
+and
+\[
+  T_{\alpha,i}=\frac{\partial\phi_\alpha}{\partial\psi_i},
+  \qquad
+  T_{\alpha,ij}
+  =
+  \frac{\partial^2\phi_\alpha}{\partial\psi_i\partial\psi_j}.
+\]
+Then
+\begin{align}
+\label{eq:bf-structural-transform-first}
+  \dot M^{(i)}
+  &=
+  \sum_\alpha M_\alpha T_{\alpha,i},\\
+\label{eq:bf-structural-transform-second}
+  \ddot M^{(ij)}
+  &=
+  \sum_{\alpha,\beta}
+    M_{\alpha\beta}T_{\alpha,i}T_{\beta,j}
+  +\sum_\alpha M_\alpha T_{\alpha,ij}.
+\end{align}
+These are the BayesFilter versions of the MacroFinance transformed-parameter
+chain-rule equations.  They matter because HMC often runs on
+$\psi=\log\sigma$, $\psi=\log\kappa$, Cholesky coordinates, Fisher transforms,
+or stationarity transforms.  A correct derivative with respect to a raw standard
+deviation is wrong for HMC if it is passed off as the derivative with respect to
+the log standard deviation.
+
+\section{Initial Conditions}
+\label{sec:bf-structural-initial-conditions}
+
+The initial moments in \eqref{eq:bf-structural-map} are part of the model law.
+There are three common cases:
+\begin{enumerate}[label=(\roman*)]
+  \item fixed diffuse or fixed proper initialization:
+    $\dot m_0=\dot P_0=\ddot m_0=\ddot P_0=0$ because the initial moments are
+    data of the filtering problem;
+  \item stationary initialization:
+    $m_0$ and $P_0$ solve model equations and must be differentiated together
+    with those equations;
+  \item estimated or hierarchical initialization:
+    $m_0$ and $P_0$ have their own parameter blocks and cross derivatives.
+\end{enumerate}
+For a stationary linear system with $m_0=c+Fm_0$, the first derivative satisfies
+\begin{equation}
+\label{eq:bf-structural-stationary-mean-first}
+  (I-F)\dot m_0^{(i)}
+  =
+  \dot c^{(i)}+\dot F^{(i)}m_0.
+\end{equation}
+For $P_0=FP_0F^\top+Q$, the first derivative satisfies the Lyapunov derivative
+equation
+\begin{equation}
+\label{eq:bf-structural-stationary-cov-first}
+  \dot P_0^{(i)}
+  =
+  F\dot P_0^{(i)}F^\top
+  +\dot F^{(i)}P_0F^\top
+  +FP_0\dot F^{(i)\top}
+  +\dot Q^{(i)}.
+\end{equation}
+Second derivatives follow by differentiating
+\eqref{eq:bf-structural-stationary-mean-first} and
+\eqref{eq:bf-structural-stationary-cov-first}.  BayesFilter should record
+whether these equations were solved analytically, by a differentiable Lyapunov
+solver, by autodiff through the stationary solver, or intentionally not used.
+
+\section{Sparsity, Masks, and Zero Blocks}
+\label{sec:bf-structural-sparsity-masks}
+
+A derivative tensor entry equal to zero is different from a derivative entry
+that is unavailable.  The provider must distinguish:
+\[
+  \ddot M^{(ij)}=0\quad\hbox{declared structural zero},
+  \qquad
+  \ddot M^{(ij)}\ \hbox{not implemented}.
+\]
+Structural zeros are useful for large models because they allow the score and
+Hessian scan to skip blocks without changing the mathematical target.  Missing
+entries are not a mathematical shortcut; they mean the backend cannot certify
+the requested derivative object.
+
+Observation masks are data-side selections.  If $J_t$ selects observed
+coordinates at time $t$, the provider may expose either the full
+$(a_t,H_t,R_t)$ together with $J_t$ or the already-masked blocks
+\[
+  a_t^o=J_ta_t,\qquad H_t^o=J_tH_t,\qquad R_t^o=J_tR_tJ_t^\top .
+\]
+The same selection applies to derivatives.  Since $J_t$ is data, not a
+parameter, no derivative of the mask is taken.  This convention is the structural
+upstream counterpart of the masking rule in
+Section~\ref{sec:bf-score-masks}.
+
+\section{Metadata and Shape Contract}
+\label{sec:bf-structural-metadata-shapes}
+
+The provider must make the following metadata inspectable before likelihood
+evaluation:
+\begin{itemize}
+  \item names and order of $\psi_i$;
+  \item transform type and raw unit for each parameter;
+  \item state and observation coordinate names;
+  \item dimensions of each reduced-form block;
+  \item tensor layout conventions, including whether Hessian tensors store all
+    pairs or only the symmetric upper triangle;
+  \item symmetry and positive-definiteness policies for $Q$, $R$, and $P_0$;
+  \item deterministic or algebraic state-coordinate roles when the provider is
+    used by a structural nonlinear filter.
+\end{itemize}
+These declarations are not decorative.  Without them, a finite likelihood can be
+computed from a different parameter ordering, unit system, or deterministic
+state convention than the derivative tensors assume.
+
 The MacroFinance large-scale derivative-provider tests check derivative shapes,
 finite-difference parity by object type, reduced-form rank diagnostics, and
 parameter-unit rescaling.  BayesFilter should preserve these as public contract
 tests before a structural model is allowed to feed an HMC target.
+
+\section{Provider Validation}
+\label{sec:bf-structural-provider-validation}
+
+The minimum validation ladder for a structural provider is:
+\begin{enumerate}[label=(\roman*)]
+  \item finite value check: all blocks in \eqref{eq:bf-structural-map} are finite,
+    conformable, symmetric where required, and admissible before filtering;
+  \item shape check:
+    \eqref{eq:bf-structural-first-provider}--\eqref{eq:bf-structural-second-provider}
+    have the declared dimensions for every active parameter and pair;
+  \item transform check:
+    \eqref{eq:bf-structural-transform-first}--\eqref{eq:bf-structural-transform-second}
+    agree with finite differences in transformed coordinates;
+  \item block finite-difference check: each reduced-form object is checked
+    before it is inserted into a long filtering scan;
+  \item end-to-end check: the resulting likelihood score and Hessian agree with
+    finite differences or autodiff on small systems where that comparison is
+    reliable;
+  \item diagnostic check: structural zeros, unavailable derivatives,
+    regularization, rejected parameter points, and mask policies are reported.
+\end{enumerate}
+Only after these checks pass should the structural provider feed an HMC target
+or an observed-information diagnostic.  This is the upstream analogue of the
+factor parity gates in Chapter~\ref{ch:bf-factor-derivatives}.

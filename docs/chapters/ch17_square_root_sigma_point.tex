@@ -59,3 +59,31 @@ earlier than a final log likelihood does.  They should not be treated as a
 universal answer to nonlinear filtering: if the moment closure is poor, the
 filter is still approximating the wrong target; if the derivative of the
 factorization is unstable, HMC can still fail.
+
+\section{CUT With Square-Root Backends}
+\label{sec:bf-cut-square-root}
+
+The conjugate unscented transform in Section~\ref{sec:bf-cut-rules} is a
+point-and-weight rule.  It can be combined with any square-root factor backend
+that maps standardized points $\xi^{(j)}$ into state points
+\[
+  \chi^{(j)}=m+C\xi^{(j)},\qquad CC^\top=P_\star .
+\]
+The experimental
+\texttt{/home/chakwong/python/src/dsge\_hmc/filters/CUTSRUKF.py} module uses
+positive CUT4-G weights together with QR square-root covariance updates.  It also
+keeps rank-deficient process noise as a rectangular factor $G$ with
+$Q=GG^\top$, avoiding an invalid Cholesky factorization of a singular $Q$.
+
+An SVD/eigen factor can be used in the same location:
+\[
+  P=U\Lambda U^\top,\qquad C=U\Lambda_+^{1/2}.
+\]
+This may make value evaluation more robust when $P$ is singular or nearly
+singular.  It does not change CUT's quadrature degree; it changes the numerical
+factor used to place the CUT points.  Therefore a stable CUT-SVD filter must
+report the same factor diagnostics as an SVD sigma-point filter: the covariance
+actually reconstructed, active floors or rank truncations, spectral gaps, sign
+or order choices, and fallback branches.  In short, CUT can be combined with
+SVD, but the result is a higher-order quadrature rule on top of an SVD factor
+policy, not a new theorem that removes spectral derivative risk.

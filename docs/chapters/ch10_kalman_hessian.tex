@@ -15,24 +15,260 @@ For second derivatives, write
 \]
 The MacroFinance note expands the second-order prediction, innovation, and gain
 recursions by product rule.  In solve form, the source introduces
-\[
+\begin{equation}
+\label{eq:bf-solve-hessian-w-dot}
   \dot w_t^{(j)}
   =
   \mathcal{S}_{S_t}\left(\dot v_t^{(j)}-\dot S_t^{(j)}w_t\right),
-\]
+\end{equation}
 where $\mathcal{S}_{S_t}(b)$ denotes solving $S_tx=b$.  It then decomposes the
 per-time Hessian contribution into log-determinant, innovation-linear, and
 quadratic terms:
-\[
+\begin{equation}
+\label{eq:bf-solve-hessian-summary}
   \frac{\partial^2\ell_t}{\partial\theta_i\partial\theta_j}
   =
   -\frac{1}{2}
   \left[
     T_{ij}^{\log\det}+T_{ij}^{v}-T_{ij}^{S}
   \right].
-\]
+\end{equation}
 This statement is consolidated from source label
 \texttt{eq:solve\_hessian\_proved}.
+
+\section{Second-Order Prediction}
+\label{sec:bf-hessian-prediction}
+
+The second-order prediction step is the product-rule derivative of
+\eqref{eq:bf-score-predicted-mean-first}--\eqref{eq:bf-score-predicted-cov-first}.
+For the predicted mean,
+\begin{align}
+\label{eq:bf-hessian-predicted-mean}
+  \ddot m_{t|t-1}^{(ij)}
+  &=
+  \ddot c_t^{(ij)}
+  +\ddot F_t^{(ij)}m_{t-1|t-1}
+  +\dot F_t^{(i)}\dot m_{t-1|t-1}^{(j)}
+  +\dot F_t^{(j)}\dot m_{t-1|t-1}^{(i)}
+  +F_t\ddot m_{t-1|t-1}^{(ij)} .
+\end{align}
+For the predicted covariance,
+\begin{align}
+\label{eq:bf-hessian-predicted-cov}
+  \ddot P_{t|t-1}^{(ij)}
+  &=
+  \ddot F_t^{(ij)}P_{t-1|t-1}F_t^\top
+  +\dot F_t^{(i)}\dot P_{t-1|t-1}^{(j)}F_t^\top
+  +\dot F_t^{(i)}P_{t-1|t-1}\dot F_t^{(j)\top} \nonumber\\
+  &\quad
+  +\dot F_t^{(j)}\dot P_{t-1|t-1}^{(i)}F_t^\top
+  +F_t\ddot P_{t-1|t-1}^{(ij)}F_t^\top
+  +F_t\dot P_{t-1|t-1}^{(i)}\dot F_t^{(j)\top} \nonumber\\
+  &\quad
+  +\dot F_t^{(j)}P_{t-1|t-1}\dot F_t^{(i)\top}
+  +F_t\dot P_{t-1|t-1}^{(j)}\dot F_t^{(i)\top}
+  +F_tP_{t-1|t-1}\ddot F_t^{(ij)\top}
+  +\ddot Q_t^{(ij)} .
+\end{align}
+These equations are the second-order source recursions in the MacroFinance
+analytic derivative note.
+
+\section{Second-Order Innovation Objects}
+\label{sec:bf-hessian-innovation}
+
+The innovation derivatives are
+\begin{align}
+\label{eq:bf-hessian-innovation}
+  \ddot v_t^{(ij)}
+  &=
+  -\ddot a_t^{(ij)}
+  -\ddot H_t^{(ij)}m_{t|t-1}
+  -\dot H_t^{(i)}\dot m_{t|t-1}^{(j)}
+  -\dot H_t^{(j)}\dot m_{t|t-1}^{(i)}
+  -H_t\ddot m_{t|t-1}^{(ij)},\\
+\label{eq:bf-hessian-innovation-cov}
+  \ddot S_t^{(ij)}
+  &=
+  \ddot H_t^{(ij)}P_{t|t-1}H_t^\top
+  +\dot H_t^{(i)}\dot P_{t|t-1}^{(j)}H_t^\top
+  +\dot H_t^{(i)}P_{t|t-1}\dot H_t^{(j)\top} \nonumber\\
+  &\quad
+  +\dot H_t^{(j)}\dot P_{t|t-1}^{(i)}H_t^\top
+  +\dot H_t^{(j)}P_{t|t-1}\dot H_t^{(i)\top}
+  +H_t\ddot P_{t|t-1}^{(ij)}H_t^\top \nonumber\\
+  &\quad
+  +H_t\dot P_{t|t-1}^{(i)}\dot H_t^{(j)\top}
+  +H_t\dot P_{t|t-1}^{(j)}\dot H_t^{(i)\top}
+  +H_tP_{t|t-1}\ddot H_t^{(ij)\top}
+  +\ddot R_t^{(ij)}.
+\end{align}
+Together with the first-order innovation objects from
+Chapter~\ref{ch:bf-kalman-score}, these are the only model-specific inputs
+needed by the solve-form likelihood Hessian.
+
+\section{Solve-Form Hessian}
+\label{sec:bf-solve-form-hessian}
+
+The compact statement above is useful only if the three terms are kept explicit.
+Let $S_tw_t=v_t$ and define $\dot w_t^{(j)}$ by
+\eqref{eq:bf-solve-hessian-w-dot}.  The second derivative of the solved vector is
+\begin{equation}
+\label{eq:bf-solve-hessian-w-ddot}
+  \ddot w_t^{(ij)}
+  =
+  \mathcal{S}_{S_t}\left(
+    \ddot v_t^{(ij)}
+    -\ddot S_t^{(ij)}w_t
+    -\dot S_t^{(i)}\dot w_t^{(j)}
+    -\dot S_t^{(j)}\dot w_t^{(i)}
+  \right).
+\end{equation}
+The log-determinant term is
+\begin{equation}
+\label{eq:bf-solve-hessian-logdet}
+  T_{ij}^{\log\det}
+  =
+  \tr\!\left(
+    S_t^{-1}\ddot S_t^{(ij)}
+    -S_t^{-1}\dot S_t^{(j)}S_t^{-1}\dot S_t^{(i)}
+  \right).
+\end{equation}
+The innovation-linear term is
+\begin{equation}
+\label{eq:bf-solve-hessian-linear}
+  T_{ij}^{v}
+  =
+  2\ddot v_t^{(ij)\top}w_t
+  +2\dot v_t^{(i)\top}\dot w_t^{(j)}.
+\end{equation}
+The quadratic term is
+\begin{equation}
+\label{eq:bf-solve-hessian-quadratic}
+  T_{ij}^{S}
+  =
+  2\dot w_t^{(j)\top}\dot S_t^{(i)}w_t
+  +w_t^\top\ddot S_t^{(ij)}w_t .
+\end{equation}
+Substituting \eqref{eq:bf-solve-hessian-logdet}--\eqref{eq:bf-solve-hessian-quadratic}
+into \eqref{eq:bf-solve-hessian-summary} gives the observed Hessian contribution.
+The formula requires only the innovation objects
+\[
+  v_t,\quad S_t,\quad
+  \dot v_t^{(i)},\quad \dot S_t^{(i)},\quad
+  \ddot v_t^{(ij)},\quad \ddot S_t^{(ij)}.
+\]
+It is therefore backend-neutral.  A linear Kalman filter, a square-root Kalman
+filter, or a sigma-point filter may all use the same likelihood Hessian layer
+once their own recursions supply these six objects.
+
+\section{Second-Order Gain and Update}
+\label{sec:bf-hessian-update}
+
+The covariance-form backend also propagates the Hessian of the filtered state
+objects.  Define
+\begin{align}
+\label{eq:bf-hessian-precision-first}
+  \dot S_t^{-1(i)}
+  &=
+  -S_t^{-1}\dot S_t^{(i)}S_t^{-1},\\
+\label{eq:bf-hessian-precision-second}
+  \ddot S_t^{-1(ij)}
+  &=
+  S_t^{-1}\dot S_t^{(j)}S_t^{-1}\dot S_t^{(i)}S_t^{-1}
+  +S_t^{-1}\dot S_t^{(i)}S_t^{-1}\dot S_t^{(j)}S_t^{-1}
+  -S_t^{-1}\ddot S_t^{(ij)}S_t^{-1}.
+\end{align}
+Then
+\begin{align}
+\label{eq:bf-hessian-gain-first}
+  \dot K_t^{(i)}
+  &=
+  \dot P_{t|t-1}^{(i)}H_t^\top S_t^{-1}
+  +P_{t|t-1}\dot H_t^{(i)\top}S_t^{-1}
+  +P_{t|t-1}H_t^\top\dot S_t^{-1(i)},\\
+\label{eq:bf-hessian-gain-second}
+  \ddot K_t^{(ij)}
+  &=
+  \ddot P_{t|t-1}^{(ij)}H_t^\top S_t^{-1}
+  +\dot P_{t|t-1}^{(i)}\dot H_t^{(j)\top}S_t^{-1}
+  +\dot P_{t|t-1}^{(i)}H_t^\top\dot S_t^{-1(j)}
+  \nonumber\\
+  &\quad
+  +\dot P_{t|t-1}^{(j)}\dot H_t^{(i)\top}S_t^{-1}
+  +P_{t|t-1}\ddot H_t^{(ij)\top}S_t^{-1}
+  +P_{t|t-1}\dot H_t^{(i)\top}\dot S_t^{-1(j)}
+  \nonumber\\
+  &\quad
+  +\dot P_{t|t-1}^{(j)}H_t^\top\dot S_t^{-1(i)}
+  +P_{t|t-1}\dot H_t^{(j)\top}\dot S_t^{-1(i)}
+  +P_{t|t-1}H_t^\top\ddot S_t^{-1(ij)}.
+\end{align}
+The filtered mean Hessian is
+\begin{align}
+\label{eq:bf-hessian-filtered-mean}
+  \ddot m_{t|t}^{(ij)}
+  &=
+  \ddot m_{t|t-1}^{(ij)}
+  +\ddot K_t^{(ij)}v_t
+  +\dot K_t^{(i)}\dot v_t^{(j)}
+  +\dot K_t^{(j)}\dot v_t^{(i)}
+  +K_t\ddot v_t^{(ij)}.
+\end{align}
+For the simplified covariance update,
+\begin{align}
+\label{eq:bf-hessian-filtered-cov}
+  \ddot P_{t|t}^{(ij)}
+  &=
+  -\ddot K_t^{(ij)}H_tP_{t|t-1}
+  -\dot K_t^{(i)}\dot H_t^{(j)}P_{t|t-1}
+  -\dot K_t^{(i)}H_t\dot P_{t|t-1}^{(j)}
+  \nonumber\\
+  &\quad
+  -\dot K_t^{(j)}\dot H_t^{(i)}P_{t|t-1}
+  -K_t\ddot H_t^{(ij)}P_{t|t-1}
+  -K_t\dot H_t^{(i)}\dot P_{t|t-1}^{(j)}
+  \nonumber\\
+  &\quad
+  -\dot K_t^{(j)}H_t\dot P_{t|t-1}^{(i)}
+  -K_t\dot H_t^{(j)}\dot P_{t|t-1}^{(i)}
+  +(I-K_tH_t)\ddot P_{t|t-1}^{(ij)}.
+\end{align}
+The gain and covariance formulas are useful as a covariance-form audit oracle.
+Solve-form or square-root implementations may avoid explicit
+\eqref{eq:bf-hessian-precision-first}--\eqref{eq:bf-hessian-precision-second}
+internally, but they must agree with these recursions on controlled
+well-conditioned systems.
+
+\section{Information Objects and Sign Convention}
+\label{sec:bf-hessian-information}
+
+This chapter computes Hessians of the log likelihood contribution
+$\ell_t(\theta)$.  The observed information contribution is
+\[
+  \mathcal{J}_t(\theta)=-\nabla_\theta^2\ell_t(\theta),
+\]
+and posterior precision at a mode additionally includes the negative Hessian of
+the log prior.  BayesFilter should not call a matrix a mass matrix, local
+covariance, or identification object unless the sign convention and prior
+contribution have been stated explicitly.
+
+\section{Hessian-Ready Backend Contract}
+\label{sec:bf-hessian-ready-contract}
+
+A backend is Hessian-ready when it can return, for every time step and active
+parameter pair,
+\[
+  v_t,\quad S_t,\quad
+  \dot v_t^{(i)},\quad \dot S_t^{(i)},\quad
+  \ddot v_t^{(ij)},\quad \ddot S_t^{(ij)}
+\]
+for the same likelihood value it evaluates.  To propagate the scan, it must also
+return either the covariance-form update derivatives
+\eqref{eq:bf-hessian-filtered-mean}--\eqref{eq:bf-hessian-filtered-cov} or an
+equivalent factor/backend-specific derivative update with reconstruction
+diagnostics.  This is the bridge used later by the SVD sigma-point chapter: the
+nonlinear backend supplies approximate innovation derivatives, and the
+solve-form Hessian layer remains the same.
 
 \section{Evidence Status}
 \label{sec:bf-hessian-evidence-status}
