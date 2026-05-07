@@ -2003,3 +2003,216 @@ finite-difference, JVP/VJP, and Hessian checks.
 H6: Compiled parity and HMC should start on exact LGSSM and generic structural
 fixtures before any DSGE target, and DSGE HMC should remain blocked until the
 same target has residual, derivative, and compiled parity evidence.
+
+## 2026-05-07 SGU combined-target execution addendum
+
+### Scope
+
+The user selected a stricter SGU target:
+
+```text
+Gate A: deterministic state identities close for (d,k,r,riskprem)
+Gate B: quadratic/second-order policy residuals are better than
+        linear/first-order policy residuals on the same declared grid
+```
+
+This addendum records execution of
+`docs/plans/bayesfilter-sgu-combined-structural-target-closure-plan-2026-05-07.md`.
+
+### Phase 0: preflight and audit
+
+Plan:
+- record BayesFilter and `/home/chakwong/python` status;
+- protect unrelated dirty files;
+- audit the plan as another developer before implementation;
+- rerun targeted baseline tests.
+
+Execute:
+- Created:
+  - `docs/plans/bayesfilter-sgu-combined-structural-target-closure-audit-2026-05-07.md`.
+- Reviewed SGU canonical residual numbering and confirmed that plan equations
+  `(7,8,10,11)` correspond to zero-based residual entries
+  `H[7], H[8], H[10], H[11]`.
+- The audit clarified that SGU risk premium uses current `zeta_t`, not
+  next-period `zeta'`.
+
+Test:
+- Baseline targeted client suite:
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-bayesfilter-sgu \
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py \
+  tests/contracts/test_dsge_structural_completion_residuals.py \
+  tests/contracts/test_structural_dsge_partition.py
+```
+
+Result:
+
+```text
+23 passed, 3 warnings in 18.32s
+```
+
+The warnings were TensorFlow Probability `distutils` deprecation warnings and
+a sandbox `.pytest_cache` write warning.
+
+Audit:
+- The plan is executable only if Gate B remains a real stop rule.
+- No BayesFilter backend code change is justified; SGU economics stay in the
+  DSGE client.
+
+Interpretation:
+- Phase 0 passed.
+
+Next phase justified?
+- Yes.  Gate A implementation is model-local and directly required by the
+  user-selected combined target.
+
+### Phase 1: Gate A design and implementation
+
+Plan:
+- implement a model-owned SGU state-identity completion helper;
+- preserve stochastic candidate coordinates `(a,zeta,mu)`;
+- overwrite only `(d,k,r,riskprem)`;
+- close selected state/timing equations under an explicit policy order.
+
+Execute in `/home/chakwong/python`:
+- Added `SGUEstimable.bayesfilter_state_identity_completion(...)`.
+- The helper closes:
+
+```text
+H[7]:  exp(r') = r_w + riskprem'
+H[8]:  riskprem' = zeta_t + psi(exp(d' - d_bar) - 1)
+H[10]: ca_t = d'/GDP_t - d_t/GDP_t
+H[11]: exp(k') = exp(kfu_t)
+```
+
+Test:
+- Added `test_sgu_state_identity_completion_closes_selected_state_equations`.
+- Narrowed test run:
+
+```text
+2 passed, 3 warnings in 2.37s
+```
+
+Audit:
+- The helper is explicitly labeled as state-identity completion, not a full
+  nonlinear equilibrium-manifold projection.
+- The old linear bridge remains available and separately labeled.
+
+Interpretation:
+- Gate A passes on the declared local grid.
+
+Allowed label:
+
+```text
+sgu_state_identity_completion_passed
+```
+
+Next phase justified?
+- Yes.  Gate B diagnostic testing is required by the combined target.
+
+### Phase 2: Gate B residual comparison
+
+Plan:
+- compare linear/first-order and quadratic/second-order full canonical
+  residuals on the same completed-state grid;
+- require both:
+
+```text
+quadratic_rms < linear_rms
+quadratic_max <= linear_max
+```
+
+Execute:
+- Added a same-grid SGU policy residual summary in
+  `/home/chakwong/python/tests/contracts/test_dsge_strong_structural_residual_gates.py`.
+- Added explicit blocker label:
+
+```text
+blocked_sgu_quadratic_policy_not_better_than_linear_residual
+```
+
+Test:
+- Full targeted client suite after implementation:
+
+```text
+25 passed, 3 warnings in 20.12s
+```
+
+Default-volatility diagnostic:
+
+```text
+state_identity_max = 4.510281037540e-17
+linear_rms         = 2.676197203969e-02
+linear_max         = 6.448381212971e-02
+quadratic_rms      = 4.389182552998e-02
+quadratic_max      = 8.595595430720e-02
+rms_ratio          = 1.640082
+max_ratio          = 1.332985
+```
+
+Audit:
+- Gate A still closes selected state identities.
+- Gate B fails the user's stricter condition: quadratic residuals are worse
+  than linear residuals in both RMS and max at default shock volatility.
+
+Interpretation:
+- SGU does not earn the combined target.
+
+Blocked labels:
+
+```text
+sgu_quadratic_policy_residual_improvement_passed
+sgu_combined_structural_approximation_target_passed
+blocked_nonlinear_equilibrium_manifold_residual
+```
+
+Next phase justified?
+- No.  BayesFilter promotion, derivative certification, compiled parity, and
+  HMC are not justified after Gate B fails.  The appropriate next work is a
+  new SGU diagnostic/projection plan, not automatic promotion.
+
+### Phase 3: result note and provenance
+
+Plan:
+- write a client result note;
+- register plan/audit/result provenance;
+- update reset memos with phase outcomes.
+
+Execute:
+- Added in `/home/chakwong/python`:
+  - `docs/plans/sgu-combined-structural-target-result-2026-05-07.md`.
+- Updated in BayesFilter:
+  - `docs/source_map.yml`;
+  - this reset memo.
+
+Interpretation:
+- Current SGU status is `state_identity_completion_passed` plus explicit
+  quadratic-improvement blocker.  It is not a combined structural
+  approximation pass.
+
+### Remaining SGU gap and hypotheses
+
+Remaining gap:
+- SGU can complete deterministic support equations pointwise, but the current
+  quadratic policy does not improve the full canonical residual relative to
+  the linear policy on the same default grid.
+
+Hypotheses to test next:
+
+H1: The default-volatility quadratic failure is dominated by second-order
+volatility corrections in Euler/static/control FOC equations, not by state
+identity equations.
+
+H2: A pruned SGU comparison needs separate first-order and side-state
+completion.  Feeding one completed total state into the quadratic policy with
+zero side-state may be the wrong comparison object for a pruned second-order
+solver.
+
+H3: A joint state-control projection might reduce full canonical residuals,
+but that is a nonlinear projection backend and should get a new label.
+
+H4: BayesFilter may still use SGU as a state-support-complete labeled
+approximation after Gate A, but documentation must not call it residual
+improved, exact nonlinear, derivative-ready, compiled-ready, or HMC-ready.

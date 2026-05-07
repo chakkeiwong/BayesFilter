@@ -19,6 +19,12 @@ policy:
     claim-support audit before being merged into docs/references.bib.
 
 sources:
+  - id: bayesfilter_analytic_derivative_completion_pass
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+    status: drafted
+    role: Phase-by-phase 2026-05-07 pass completing the analytic derivative chapters, source-map provenance, validation ladder, and reset-memo evidence.
   - id: bayesfilter_structural_state_partition_core_plan
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -145,6 +151,24 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-svd-gap-closure-master-plan-audit-2026-05-06.md
     status: drafted
     role: Independent audit of the structural SVD remaining-gap closure master plan and current execution stop rules.
+  - id: bayesfilter_sgu_combined_structural_target_closure_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-combined-structural-target-closure-plan-2026-05-07.md
+    status: drafted
+    role: Concrete cross-repo plan for SGU state-identity completion plus quadratic-over-linear residual-improvement gates.
+  - id: bayesfilter_sgu_combined_structural_target_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-combined-structural-target-closure-audit-2026-05-07.md
+    status: drafted
+    role: Independent audit of the SGU combined structural target closure plan and stop rules.
+  - id: dsge_sgu_combined_structural_target_result
+    project: dsge_hmc
+    root: /home/chakwong/python/docs/plans
+    entrypoint: /home/chakwong/python/docs/plans/sgu-combined-structural-target-result-2026-05-07.md
+    status: drafted
+    role: DSGE client result note for SGU state-identity completion and quadratic-over-linear residual-improvement diagnostics.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -394,6 +418,24 @@ chapter_mappings:
       destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; /home/chakwong/python/tests/contracts/test_dsge_strong_structural_residual_gates.py; tests/test_backend_readiness.py
       import_status: drafted
       reason: Records that the DSGE strong residual gates pass as explicit blocker assertions and that derivative, compiled, and HMC promotion remain unjustified.
+
+  bayesfilter_sgu_combined_structural_target_closure_plan:
+    - source_file: bayesfilter-sgu-combined-structural-target-closure-plan-2026-05-07.md
+      destination: /home/chakwong/python/src/dsge_hmc/models/sgu.py; /home/chakwong/python/tests/contracts/test_dsge_structural_completion_residuals.py; /home/chakwong/python/tests/contracts/test_dsge_strong_structural_residual_gates.py; /home/chakwong/python/docs/plans/sgu-combined-structural-target-result-2026-05-07.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+      import_status: drafted
+      reason: Defines the SGU combined target requiring both state-identity completion and quadratic-over-linear residual improvement.
+
+  bayesfilter_sgu_combined_structural_target_closure_audit:
+    - source_file: bayesfilter-sgu-combined-structural-target-closure-audit-2026-05-07.md
+      destination: docs/plans/bayesfilter-sgu-combined-structural-target-closure-plan-2026-05-07.md; /home/chakwong/python/docs/plans/sgu-combined-structural-target-result-2026-05-07.md
+      import_status: drafted
+      reason: Audits the SGU plan, fixes the timing and residual-comparison requirements, and records the stop rule when quadratic residuals are not better than linear residuals.
+
+  dsge_sgu_combined_structural_target_result:
+    - source_file: /home/chakwong/python/docs/plans/sgu-combined-structural-target-result-2026-05-07.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Records that SGU state identities close but the user-requested quadratic-over-linear residual-improvement gate fails at default shock volatility.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
