@@ -47,7 +47,47 @@ it rather than extending it.  The intended end state is:
 
 ### From `/home/chakwong/MacroFinance`
 
-Use the TensorFlow files as the primary implementation sources:
+Use the TensorFlow/TFP files as the primary implementation sources.  The
+implementation strategy is not to rederive these from scratch; it is to port
+MacroFinance's already-tested TF algorithms into BayesFilter contracts, then
+scrub MacroFinance-specific economics, debug-only NumPy conversions, and
+application-specific HMC wrappers.
+
+Highest-priority donor functions:
+- `inference/hmc.py::tf_kalman_log_likelihood`
+  - dense TF Cholesky Kalman value recursion.
+- `inference/hmc.py::tf_lgssm_log_likelihood_backend`
+  - backend dispatch convention for `tf_cholesky`, `tf_direct_qr`, and
+    `tf_svd`.
+- `filters/tf_masked_kalman.py::tf_masked_kalman_log_likelihood`
+  - static-shape dummy-row masking convention.
+- `filters/tf_svd_kalman.py::tf_svd_kalman_loglik`
+  - TF SVD dense value backend.
+- `filters/tf_svd_kalman.py::tf_svd_masked_kalman_loglik`
+  - TF SVD masked value backend.
+- `filters/tf_differentiated_kalman.py::tf_differentiated_kalman_loglik_grad`
+  and `tf_differentiated_kalman_loglik_grad_graph`
+  - first-order analytic TF recursion for HMC leapfrog and MAP gradients.
+- `filters/tf_differentiated_kalman.py::tf_differentiated_kalman_loglik`
+  and `tf_differentiated_kalman_loglik_grad_hessian_graph`
+  - second-order analytic TF recursion.
+- `filters/tf_solve_differentiated_kalman.py::tf_solve_differentiated_kalman_loglik`
+  - solve-form TF analytic derivative recursion.
+- `filters/tf_qr_sqrt_differentiated_kalman.py::tf_qr_sqrt_kalman_loglik`
+  and `tf_qr_sqrt_masked_kalman_loglik`
+  - TF QR/square-root value and masked robustness pattern.
+- `filters/tf_qr_sqrt_differentiated_kalman.py::tf_qr_sqrt_differentiated_kalman_loglik`
+  - TF QR/square-root analytic score/Hessian pattern.
+- `filters/tf_sqrt_differentiated_kalman.py::tf_sqrt_differentiated_kalman_loglik`
+  - simpler TF square-root trace/debug pattern.
+
+Current donor caveat:
+- several MacroFinance TF files still import NumPy for constants or eager trace
+  conversion.  BayesFilter ports should replace those with `math`/TF constants
+  and keep any `.numpy()` conversion in explicit debug extraction helpers, not
+  in production filtering paths.
+
+Other TensorFlow files:
 - `filters/tf_differentiated_kalman.py`
   - TensorFlow first/second-order analytic derivative backends and graph
     variants.
@@ -66,20 +106,75 @@ Use these only as mathematical and API reference, not as NumPy ports:
 - QR/square-root NumPy files.
 
 Primary reusable tests:
+- `tests/test_tf_kalman.py`
 - `tests/test_filter_backend_parity.py`
 - `tests/test_tf_masked_kalman.py`
 - `tests/test_tf_svd_kalman.py`
+- `tests/test_tf_qr_sqrt_differentiated_kalman.py`
+- `tests/test_tf_qr_derivative_identities.py`
 - `tests/test_one_country_analytic_backend_parity.py`
 - `tests/test_one_country_hmc_analytic_gradient_hessian.py`
+- `tests/test_perf_tfp_analytic_filter_speed.py`
+
+Test reuse policy:
+- transplant tests by first replacing NumPy-reference assertions with TF-only
+  closed-form, TFP distribution, or MacroFinance TF-provider assertions;
+- keep test-side NumPy only for array construction and `np.testing` during the
+  migration window;
+- do not let a BayesFilter production module import a MacroFinance test helper
+  or a NumPy oracle.
 
 ### From `/home/chakwong/python`
 
-Use TensorFlow/XLA-oriented SVD and CUT sources:
+Use the DSGE codebase as the primary donor for nonlinear UKF, SVD sigma-point,
+structural DSGE metadata, XLA gates, and CUT experiments.  This code should be
+consolidated with the MacroFinance linear TF/TFP code before new BayesFilter
+implementation work begins.
+
+Highest-priority donor functions and classes:
 - `src/dsge_hmc/filters/_quadrature.py`
+  - `QuadratureRule`, `CubatureRule`, and `UnscentedRule`.
 - `src/dsge_hmc/filters/_svd_core.py`
+  - `svd_clamp`, `svd_factorize`, `svd_predict_linear`,
+    `svd_predict_sigma`, `svd_update`, and `svd_update_sigma`.
 - `src/dsge_hmc/filters/_svd_filters.py`
+  - `SVDKalmanFilter`, `SVDAugmentedKF`, and `SVDSigmaPointFilter`.
+  - Generic SSM path via the `ssm=` constructor.
+  - DSGE legacy path and mixed full-state approximation blocker.
+  - Diagnostics modes: first batch, stats, eigbatch summary, and failure code.
 - `src/dsge_hmc/filters/CUTSRUKF.py`
+  - `ut_sigma_points`, `cut4g_sigma_points`, and
+    `SquareRootSigmaPointFilter` as experimental CUT/UT donor material.
 - `src/dsge_hmc/models/structural_metadata.py`
+  - structural metadata helpers for stochastic/deterministic state
+    partitions and eta-support validation.
+
+Primary reusable tests:
+- `tests/contracts/test_filter_contracts.py`;
+- `tests/contracts/test_svd_lgssm_reference.py`;
+- `tests/contracts/test_svd_nonlinear_ssm_reference.py`;
+- `tests/contracts/test_svd_generic_nonlinear_ssm.py`;
+- `tests/contracts/test_svd_generic_ssm_xla.py`;
+- `tests/contracts/test_nk_svd_gradient_finiteness_gate.py`;
+- `tests/contracts/test_nk_svd_xla_gates.py`;
+- `tests/contracts/test_structural_dsge_partition.py`;
+- `tests/contracts/test_dsge_structural_completion_residuals.py`;
+- `tests/contracts/test_dsge_strong_structural_residual_gates.py`;
+- `tests/numerics/test_svd_filters.py`;
+- `tests/CUTSRUKF_test.py`;
+- extended HMC/XLA tests under `tests/extended/test_svd_*` after local
+  BayesFilter unit gates pass.
+
+Current donor caveat:
+- `_svd_core.py` currently imports the DSGE custom `robust_eigh` op
+  unconditionally.  BayesFilter should define an eigensolver interface with a
+  default `tf.linalg.eigh` implementation and an optional robust-eigh plugin.
+- `_svd_filters.py` carries DSGE-specific debug capture hooks and environment
+  variables.  BayesFilter should retain the diagnostic ideas, but not the
+  client-specific pyfunc capture machinery in production paths.
+- `CUTSRUKF.py` is explicitly marked experimental/deprecated in the DSGE tree.
+  Use it as CUT4-G and square-root pattern donor material, not as a direct
+  production drop-in.
 
 Reuse policy:
 - Port generic TF algorithms and contracts into BayesFilter notation.
@@ -225,11 +320,26 @@ rectangular structural factor, but all implementations must use TF tensors.
 
 ## Revised Implementation Phases
 
-### Phase 0: TF/TFP Dependency and Baseline Gate
+### Phase 0: Cross-Repo Consolidation and TF/TFP Baseline Gate
 
 Plan:
 - preserve unrelated dirty files and local PDFs;
-- run existing tests as a historical baseline;
+- inventory MacroFinance TF/TFP donor modules for linear value, masking,
+  SVD, QR/square-root, analytic gradient/Hessian, HMC, and performance tests;
+- inventory DSGE donor modules for UKF, SVD sigma-point filtering, structural
+  metadata, generic nonlinear SSMs, XLA gates, and CUT4-G experiments;
+- produce a consolidation map that assigns one BayesFilter owner module for
+  each family:
+  - dense linear Kalman;
+  - masked linear Kalman;
+  - SVD linear Kalman;
+  - analytic linear score/Hessian;
+  - QR/square-root robustness;
+  - cubature/UKF quadrature;
+  - generic SVD sigma-point filter;
+  - structural DSGE partition and deterministic completion;
+  - CUT4-G/SVD-CUT value and derivative work;
+- run existing BayesFilter tests as a historical baseline;
 - run a CPU-only TF/TFP import and version probe with `CUDA_VISIBLE_DEVICES=-1`;
 - run GPU probes only with escalated permissions per `AGENTS.md`;
 - record that the committed NumPy foundation is legacy and not the production
@@ -238,6 +348,8 @@ Plan:
 Exit criteria:
 - current baseline is known;
 - TensorFlow and TensorFlow Probability availability is recorded;
+- MacroFinance and DSGE donor maps are recorded with tests to transplant;
+- conflicts between donor implementations are resolved before porting;
 - no new implementation work depends on NumPy.
 
 ### Phase 1: TF Result, Diagnostics, and Tensor Contracts
@@ -263,14 +375,23 @@ Tests:
 ### Phase 2: TF Dense Linear Kalman Value Backend
 
 Plan:
-- port dense linear Kalman value filtering to `bayesfilter/linear/kalman_tf.py`;
+- port MacroFinance `inference/hmc.py::tf_kalman_log_likelihood` into
+  `bayesfilter/linear/kalman_tf.py`;
+- port MacroFinance `inference/hmc.py::tf_lgssm_log_likelihood_backend` into a
+  BayesFilter backend selector after removing MacroFinance-specific wrappers;
 - use TF linear algebra and TFP Gaussian log probability where appropriate;
-- implement missing-data masks with static-shape semantics suitable for XLA;
+- port `filters/tf_masked_kalman.py::tf_masked_kalman_log_likelihood` for
+  static-shape missing-data masks;
 - keep singular process covariance accepted when the predictive observation
   covariance is well-conditioned or explicitly regularized.
 
 Tests:
+- adapt MacroFinance `tests/test_tf_kalman.py`;
+- adapt MacroFinance `tests/test_tf_masked_kalman.py` without requiring a
+  NumPy masked oracle;
 - scalar and multivariate LGSSM likelihood identities;
+- TFP `MultivariateNormalTriL` or equivalent log-probability checks for one-step
+  prediction errors;
 - singular process covariance;
 - masked observation rows;
 - no NumPy import in implementation module;
@@ -279,13 +400,23 @@ Tests:
 ### Phase 3: TF Analytic Score and Hessian for Linear Filters
 
 Plan:
-- port MacroFinance TF analytic score/Hessian recursions;
+- port MacroFinance `filters/tf_differentiated_kalman.py` first-order and
+  second-order analytic score/Hessian recursions;
+- port MacroFinance `filters/tf_solve_differentiated_kalman.py` as the
+  solve-form analytic variant if it provides clearer derivative diagnostics;
+- port MacroFinance `filters/tf_qr_sqrt_differentiated_kalman.py` after the
+  dense derivative contract is stable, because it adds a larger factor
+  derivative surface;
 - support first and second derivatives of initial moments, transition matrices,
   transition covariances, observation matrices, and observation covariances;
 - expose both eager TF and `tf.function` graph paths;
 - keep the derivative target explicit when regularization is active.
 
 Tests:
+- adapt MacroFinance `tests/test_filter_backend_parity.py`;
+- adapt MacroFinance `tests/test_one_country_analytic_backend_parity.py`;
+- adapt MacroFinance `tests/test_tf_qr_derivative_identities.py` when the QR
+  path is ported;
 - finite-difference validation using TF-only perturbations;
 - Hessian symmetry;
 - parameter-dependent initial condition policies;
@@ -295,7 +426,9 @@ Tests:
 ### Phase 4: TF SVD Linear Value and Derivative Gates
 
 Plan:
-- port SVD/eigen value backend using `tf.linalg.eigh` or `tf.linalg.svd`;
+- port MacroFinance `filters/tf_svd_kalman.py` value and masked value backends;
+- use `tf.linalg.eigh` or `tf.linalg.svd` after choosing the more stable
+  TensorFlow primitive for symmetric PSD covariance objects;
 - report raw spectrum, floored spectrum, floor counts, and implemented
   covariance;
 - add derivative status labels:
@@ -305,6 +438,7 @@ Plan:
   - regularized value only.
 
 Tests:
+- adapt MacroFinance `tests/test_tf_svd_kalman.py`;
 - equality with dense TF backend on well-conditioned cases;
 - rank-deficient process covariance;
 - near-singular innovation covariance;
@@ -384,7 +518,8 @@ Exit criteria:
 ### Phase 10: MacroFinance Switch-Over
 
 Plan:
-- replace MacroFinance filter calls one TF backend at a time:
+- after BayesFilter ports pass local tests, replace MacroFinance filter calls
+  one TF backend at a time:
   - dense linear value;
   - analytic score/Hessian;
   - masked backend;
@@ -476,11 +611,14 @@ legacy_numpy_exports_removed_or_blocked      final cleanup gate
    - replace with TF;
    - remove after TF parity;
    - retain only as test/legacy fixture.
-3. Implement TF result containers, diagnostics schema, and no-NumPy source
+3. Add a MacroFinance donor map to the plan and reset memo so implementation
+   starts from tested TF/TFP code rather than a new derivation.
+4. Implement TF result containers, diagnostics schema, and no-NumPy source
    checks.
-4. Port dense TF linear Kalman value backend from MacroFinance.
-5. Port TF analytic score/Hessian backend.
-6. Only then resume nonlinear SVD sigma-point and SVD-CUT implementation.
+5. Port dense TF linear Kalman value backend from MacroFinance.
+6. Port TF masked and SVD value backends from MacroFinance.
+7. Port TF analytic score/Hessian backend from MacroFinance.
+8. Only then resume nonlinear SVD sigma-point and SVD-CUT implementation.
 
 ## Stop Rules
 

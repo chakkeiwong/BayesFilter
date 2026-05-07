@@ -1,99 +1,175 @@
-# Independent Audit: TF/TFP-Only BayesFilter Filter Plan
+# Independent Audit: BayesFilter Consolidation-First TF/TFP Plan
 
 Date: 2026-05-08
 
-Auditor stance: treat the revised implementation plan as if another developer
-wrote it.  The audit checks whether the new TF/TFP-only rule is enforceable and
-whether the prior NumPy foundation can accidentally remain the production path.
+Auditor stance: this audit treats
+`docs/plans/bayesfilter-filter-backend-replacement-implementation-plan-2026-05-08.md`
+as if another developer wrote it.  The objective is to check completeness,
+phase order, missing gates, and whether the plan can be executed safely inside
+the BayesFilter workspace without silently changing MacroFinance or DSGE
+likelihood targets.
 
 ## Audit Verdict
 
-The user clarification changes the architecture.  The earlier NumPy-first
-foundation is no longer an acceptable implementation target.  It may help as
-historical reference, but BayesFilter production filtering should be built from
-TensorFlow and TensorFlow Probability modules.
+The revised direction is correct: BayesFilter should consolidate the two donor
+codebases before implementing more filtering code.
 
-I agree with the pivot.  It is especially important for HMC and XLA workflows:
-NumPy implementations break graph compilation, force host/device transfers,
-hide `.numpy()` conversions in gradients, and do not match the intended
-TensorFlow/TFP execution model of MacroFinance and DSGE clients.
+- MacroFinance should be the donor for linear Gaussian TensorFlow/TFP value,
+  masked, SVD, QR/square-root, analytic score/Hessian, HMC, and performance
+  gates.
+- `/home/chakwong/python` should be the donor for UKF/cubature quadrature,
+  SVD sigma-point primitives, generic nonlinear SSM filtering, DSGE structural
+  metadata gates, XLA diagnostics, and CUT4-G experimental material.
+- BayesFilter production implementation should be TensorFlow/TFP only.
+  Existing NumPy modules are legacy/reference until TF replacements are
+  available and public exports can be retired.
 
-## Main Findings
+The plan is implementable, but not all 12 phases are justified in one automatic
+BayesFilter-only run.  The safe initial execution boundary is:
 
-1. The current committed code still imports NumPy in production modules:
-   `bayesfilter/filters/kalman.py`, `bayesfilter/linear/types.py`,
-   `bayesfilter/linear/kalman_derivatives_numpy.py`,
-   `bayesfilter/filters/sigma_points.py`, `bayesfilter/filters/particles.py`,
-   `bayesfilter/results.py`, and `bayesfilter/backends.py`.
+1. Phase 0: produce a consolidation map and run baseline/TF dependency gates.
+2. Phase 1: add TF result, diagnostics, and tensor contracts.
+3. Phase 2: port dense and masked TF linear value backends.
 
-2. The public package currently re-exports
-   `solve_kalman_score_hessian` from the NumPy derivative module.  That is a
-   production-surface problem and should be retired once a TF replacement
-   exists.
+Stop before Phase 3 unless Phase 2 has passed and the derivative donor choice
+is made explicit, because MacroFinance has several derivative variants
+(`tf_differentiated`, `tf_solve_differentiated`, `tf_qr_sqrt_differentiated`)
+with different trace, factor, and graph properties.
 
-3. The old plan used NumPy as an oracle for TF parity.  Under the new policy,
-   BayesFilter correctness should be checked by:
-   - closed-form scalar/multivariate Gaussian identities;
-   - TF-only finite differences;
-   - TFP distribution log-probability checks;
-   - MacroFinance TF provider parity;
-   - structural moment identities for quadrature rules.
+## Critical Findings
 
-4. Tests may continue to import NumPy for simple assertions during migration,
-   but tests should not make NumPy the mathematical oracle for production
-   filtering.
+1. The current BayesFilter public surface still imports NumPy implementation
+   code:
+   - `bayesfilter/filters/kalman.py`;
+   - `bayesfilter/filters/sigma_points.py`;
+   - `bayesfilter/filters/particles.py`;
+   - `bayesfilter/linear/types.py`;
+   - `bayesfilter/linear/kalman_derivatives_numpy.py`;
+   - `bayesfilter/results.py`.
 
-5. The first coding phase should not start with nonlinear SVD-CUT.  It should
-   first build the TF result, diagnostics, and tensor contracts that every later
-   backend will share.
+2. Removing those modules immediately would break current tests and public
+   imports.  They should be isolated as legacy while TF front doors are added.
 
-## Required Changes To The Plan
+3. MacroFinance TF donor files still contain some NumPy usage for constants and
+   eager trace conversion.  The port must replace constants with `math` or TF
+   constants and keep `.numpy()` conversion outside production filtering paths.
 
-- Replace all NumPy implementation phases with TF/TFP phases.
-- Add a source-check gate: production TF modules must not import NumPy or call
-  `.numpy()`.
-- Treat existing NumPy files as legacy, not as the implementation core.
-- Add TF/TFP dependency and version probing before coding.
-- Use CPU-only TF probes by default with `CUDA_VISIBLE_DEVICES=-1`; GPU probes
-  require escalated permissions under local policy.
-- Make TFP part of the value/log-probability contract where it is clearer than
-  handwritten Gaussian density code.
-- Keep XLA static-shape constraints visible in the public API from the start.
-- Delay removal of old public NumPy exports until TF replacements exist, but do
-  not extend those exports.
+4. DSGE SVD donor files use a custom `robust_eigh` op.  BayesFilter must define
+   an eigensolver interface with default `tf.linalg.eigh`; the custom op can be
+   an optional plugin but cannot be imported unconditionally.
 
-## Revised Phase Boundary
+5. Static-shape masking is a core contract, not an implementation detail.  It
+   must be defined early so TF/XLA and HMC paths do not diverge from masked
+   NumPy row-selection semantics.
 
-The next justified automatic boundary is now:
+6. The plan needs a concrete consolidation artifact.  Without it, overlapping
+   donors could lead to duplicate backends with inconsistent labels and
+   diagnostics.
 
-1. Update plan and reset memo to record the TF/TFP-only decision.
-2. Inventory NumPy implementation surfaces and classify migration status.
-3. Add TF result/diagnostics/tensor contract modules.
-4. Add dense TF linear Kalman value backend and tests.
+## Missing Gates To Add
 
-Stop before:
-- deleting old NumPy modules without TF replacements;
-- editing `/home/chakwong/python` or `/home/chakwong/MacroFinance`;
-- claiming SVD derivative or HMC readiness before TF branch diagnostics pass;
-- running GPU tests without escalation.
-
-## Acceptance Gates To Add
+Add these gates before client switch-over:
 
 ```text
-tf_import_and_tfp_import_cpu_only
-production_modules_no_numpy_imports
-production_modules_no_dot_numpy_calls
-tf_result_metadata_schema_consistent
-linear_tf_value_closed_form_identity
-linear_tf_value_tfp_log_prob_identity
-linear_tf_mask_static_shape
-linear_tf_score_hessian_tf_finite_difference
-legacy_numpy_exports_removed_after_tf_replacement
+consolidation_map_committed
+tf_tfp_import_cpu_only
+tf_modules_no_numpy_imports
+tf_modules_no_dot_numpy_calls
+tf_result_containers_preserve_tensors
+tf_diagnostics_schema_has_regularization_target
+dense_tf_linear_one_step_tfp_identity
+dense_tf_linear_multistep_closed_form_identity
+masked_tf_linear_all_true_equals_dense
+masked_tf_linear_all_missing_zero_likelihood
+masked_tf_linear_static_shape_graph_reuse
+legacy_numpy_exports_not_extended
+macrofinance_donor_tests_mapped
+dsge_donor_tests_mapped
+robust_eigh_optional_plugin_boundary
 ```
+
+## Phase-Order Audit
+
+### Phase 0
+
+Necessary and first.  It should create a durable consolidation map, not only a
+memo paragraph.  It should also run:
+- BayesFilter baseline tests;
+- CPU-only TensorFlow/TensorFlow Probability import probe;
+- source inventory for existing NumPy implementation surfaces;
+- donor repo cleanliness checks.
+
+### Phase 1
+
+Justified after Phase 0.  Add TF-specific result and type modules rather than
+rewriting existing NumPy modules in place.  This keeps legacy tests passing and
+creates a clean production path for TF code.
+
+### Phase 2
+
+Justified after Phase 1.  Port MacroFinance dense and masked TF value paths.
+Do not port SVD or derivatives into Phase 2; that would blur the first value
+gate.
+
+### Phase 3
+
+Conditionally justified after Phase 2.  Before coding, choose the derivative
+route:
+- dense covariance-form for continuity with MacroFinance HMC;
+- solve-form for clearer derivative diagnostics;
+- QR/square-root only after factor-derivative tests are in BayesFilter.
+
+### Phase 4
+
+Conditionally justified after dense and masked TF value pass.  SVD value should
+use a default TF eig/SVD primitive and record the implemented/floored
+covariance.  Derivatives near branch events must be blocked or labeled.
+
+### Phase 5 and Phase 6
+
+Conditionally justified after Phase 1 contracts and Phase 0 consolidation map.
+Do not start by copying DSGE full-state filters.  Start with generic structural
+protocols and generic nonlinear SSM tests.
+
+### Phase 7 and Phase 8
+
+High risk.  CUT4-G value and moments are justified before analytic
+gradient/Hessian.  Full SVD-CUT Hessians need smaller subphases and explicit
+branch/floor labels.
+
+### Phase 9
+
+Benchmark phase only.  GPU/XLA probes must use escalated permissions under the
+local policy.  CPU-only tests should set `CUDA_VISIBLE_DEVICES=-1`.
+
+### Phase 10 and Phase 11
+
+Not executable in this BayesFilter-only run.  They require explicit cross-repo
+edit permission and separate commits in MacroFinance and `/home/chakwong/python`.
+
+### Phase 12
+
+Final cleanup only after TF replacements cover the public surface.  Do not
+delete NumPy modules during the initial port.
+
+## Recommended Automatic Boundary
+
+Proceed automatically through:
+- Phase 0;
+- Phase 1;
+- Phase 2.
+
+Stop and ask for direction before Phase 3 if:
+- TensorFlow or TFP imports fail;
+- baseline tests fail for unrelated reasons;
+- the consolidation map reveals an unresolved donor conflict;
+- Phase 2 cannot preserve static mask semantics;
+- source checks show TF production modules importing NumPy or calling `.numpy()`.
 
 ## Conclusion
 
-Yes, the current implementation uses NumPy.  That should be treated as a
-mistake in direction, not as the foundation for the rest of BayesFilter.  The
-plan should now proceed TF/TFP-first, with NumPy code isolated as legacy until
-it can be removed or replaced safely.
+The plan is sound after the consolidation-first revision.  The safest useful
+execution is to establish the consolidation artifact and port the first TF
+value backend family.  That gives BayesFilter a clean TF/TFP spine without
+pretending the higher-risk derivative, nonlinear, SVD-CUT, GPU, and client
+switch-over phases are already settled.
