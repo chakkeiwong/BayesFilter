@@ -2368,3 +2368,348 @@ Remaining recommendation:
 - Write a new SGU joint projection design plan with unknowns, equations,
   locality thresholds, conditioning diagnostics, fail-closed semantics, and
   filtering-integration policy.
+
+## 2026-05-08 SGU joint projection design execution addendum
+
+### Scope
+
+The active plan is:
+
+```text
+docs/plans/bayesfilter-sgu-joint-state-control-projection-design-plan-2026-05-07.md
+```
+
+The user requested full execution with a plan/execute/test/audit/tidy/reset
+memo cycle, autonomous continuation while justified, and a final commit.
+
+This phase does not attempt to make the failed SGU quadratic-over-linear Gate B
+pass.  It asks whether the earlier local joint projection pilot is:
+
+```text
+causal filtering transition
+two-slice/offline diagnostic target
+blocked/nonlocal target
+```
+
+### Phase 0: preflight and independent audit
+
+Plan:
+- record the BayesFilter and DSGE client workspace states;
+- audit the plan before code changes;
+- preserve the stop rule that two-slice residual closure is not a filtering
+  transition.
+
+Execute:
+- BayesFilter status at preflight:
+
+```text
+## main...origin/main
+ M docs/source_map.yml
+?? docs/plans/bayesfilter-sgu-joint-state-control-projection-design-plan-2026-05-07.md
+?? docs/plans/templates/
+?? [two untracked PDF source files]
+```
+
+- DSGE client status at preflight:
+
+```text
+## main...origin/main [ahead 7]
+?? .codex
+?? .serena/
+```
+
+- Added independent audit:
+
+```text
+docs/plans/bayesfilter-sgu-joint-state-control-projection-design-audit-2026-05-08.md
+```
+
+Test:
+- Preflight is documentation and workspace-state only.
+
+Audit:
+- The plan is safe only if causal and two-slice modes remain separate.
+- A successful two-slice projection must keep:
+
+```text
+blocked_sgu_two_slice_projection_not_filter_transition
+```
+
+- BayesFilter backend/filter, derivative, compiled, and HMC work remain blocked
+  if causal projection fails.
+
+Interpretation:
+- Execution may proceed through client-owned diagnostic implementation.
+
+Next phase justified?
+- Yes.  Phase 1 can write the client target-decision note.
+
+### Phase 1: client projection target-decision note
+
+Plan:
+- write a DSGE client note fixing causal and two-slice variable layouts,
+  timing semantics, labels, and the underidentification selection rule.
+
+Execute:
+- Added in `/home/chakwong/python`:
+
+```text
+docs/plans/sgu-joint-state-control-projection-design-2026-05-08.md
+```
+
+Test:
+- Documentation-only check confirmed the note records:
+  - causal `z = [y'-y_bar, x'_D-x_bar_D]`;
+  - two-slice `z = [y_t-y_bar, y'-y_bar, x'_D-x_bar_D]`;
+  - anchor regularization `lambda_anchor = 1e-10`;
+  - `blocked_sgu_two_slice_projection_not_filter_transition`.
+
+Audit:
+- The note preserves the timing distinction: two-slice success is not a
+  filtering transition.
+
+Interpretation:
+- The target is now specified precisely enough to implement diagnostics.
+
+Next phase justified?
+- Yes.  Phase 2 can factor the pilot into a reusable DSGE helper.
+
+### Phase 2: reusable SGU projection helper
+
+Plan:
+- factor the test-only least-squares pilot into a client-owned value-only
+  helper with structured diagnostics and fail-closed labels.
+
+Execute:
+- Added in `/home/chakwong/python/src/dsge_hmc/models/sgu.py`:
+  - `SGUProjectionResult`;
+  - `SGUEstimable.project_sgu_state_control(...)`.
+
+Test:
+- Initial focused test run exposed an indentation error in the new helper.
+- After fixing it:
+
+```text
+tests/contracts/test_sgu_joint_projection_target.py: 4 passed, 3 warnings in 4.22s
+```
+
+Audit:
+- The helper has `causal` and `two_slice` modes.
+- Causal mode fixes `y_t = policy(x_t)`.
+- Two-slice mode includes a small anchor regularization
+  `lambda_anchor = 1e-10`.
+- The helper reports pure canonical residuals, adjustment norms, solver
+  diagnostics, Jacobian singular values, and labels/blockers.
+
+Interpretation:
+- The diagnostic is now reusable and model-owned, but still eager value-only.
+
+Next phase justified?
+- Yes.  Phase 3 can compare target classes.
+
+### Phase 3: causal versus two-slice target comparison
+
+Plan:
+- run causal and two-slice projection variants on the same default grid;
+- decide whether filtering integration is justified.
+
+Execute:
+- Added in `/home/chakwong/python`:
+
+```text
+tests/contracts/test_sgu_joint_projection_target.py
+```
+
+Test:
+
+```text
+4 passed, 3 warnings in 4.22s
+```
+
+Audit:
+- Causal projection preserves timing but fails the residual gate.
+- Two-slice projection passes local diagnostic thresholds but carries:
+
+```text
+blocked_sgu_two_slice_projection_not_filter_transition
+```
+
+Interpretation:
+- No causal filtering transition is justified.
+- The only positive target from this phase is a two-slice/offline diagnostic
+  projection.
+
+Next phase justified?
+- Yes.  Conditioning and stress diagnostics remain justified as diagnostic
+  hardening, not production promotion.
+
+### Phase 4: conditioning and stress diagnostics
+
+Plan:
+- test whether the two-slice projection is merely a default-grid artifact;
+- add conditioning, restart, state stress, and nearby-parameter stress checks.
+
+Execute:
+- Extended the client test:
+
+```text
+/home/chakwong/python/tests/contracts/test_sgu_joint_projection_target.py
+```
+
+- Added client result note:
+
+```text
+/home/chakwong/python/docs/plans/sgu-joint-state-control-projection-result-2026-05-08.md
+```
+
+Test:
+
+```text
+5 passed, 3 warnings in 4.84s
+```
+
+Diagnostics:
+
+```text
+causal_projected_max               = 8.561333092931e-02
+causal_projected_rms               = 3.113537564923e-02
+causal_next_control_adjustment_norm = 4.039154171952e-01
+two_slice_projected_max            = 1.256486389166e-08
+two_slice_projected_rms            = 3.543960161723e-09
+two_slice_current_control_norm     = 7.219385132598e-03
+two_slice_next_control_norm        = 6.860787546701e-03
+two_slice_deterministic_state_norm = 3.758583443181e-03
+two_slice_min_jacobian_rank        = 12
+```
+
+Stress result:
+- local state stress grid passed;
+- low-alpha/high-psi parameter stress passed;
+- high-gamma/low-rho_u parameter stress passed.
+
+Audit:
+- The two-slice diagnostic has finite conditioning diagnostics and stable
+  restart behavior on the tested cases.
+- Causal projection still fails residual and locality gates.
+
+Interpretation:
+- The only justified positive SGU claim is:
+
+```text
+sgu_two_slice_projection_diagnostic_passed
+```
+
+- Filtering transition, BayesFilter backend integration, derivative/JIT/HMC
+  promotion remain blocked.
+
+Next phase justified?
+- Yes.  Phase 5 can decide BayesFilter integration and update provenance.
+
+### Phase 5: BayesFilter integration decision and provenance
+
+Plan:
+- decide whether BayesFilter needs adapter/backend changes;
+- update provenance for the new plan, audit, and client result note;
+- keep BayesFilter generic.
+
+Execute:
+- Updated:
+
+```text
+docs/source_map.yml
+```
+
+- Registered:
+  - SGU joint projection design plan;
+  - independent audit;
+  - DSGE client result note.
+
+Test:
+
+```text
+tests/test_dsge_adapter_gate.py: 5 passed in 0.12s
+```
+
+Audit:
+- Causal projection failed the residual/locality gates.
+- The passing two-slice target adjusts current controls and is not a filtering
+  transition.
+- Therefore no BayesFilter adapter/backend/filter code change is justified.
+
+Interpretation:
+- BayesFilter remains state-support-aware and provenance-complete, but SGU
+  production filtering/HMC remains blocked.
+
+Next phase justified?
+- Yes.  Final verification, reset-memo completion, and scoped commits are
+  justified.
+
+### Phase 6: final verification and completion
+
+Plan:
+- run the targeted SGU/structural client suite;
+- run BayesFilter adapter guard and provenance hygiene checks;
+- commit only scoped SGU projection files.
+
+Test:
+- Client targeted suite:
+
+```text
+35 passed, 3 warnings in 28.68s
+```
+
+- BayesFilter DSGE adapter guard:
+
+```text
+5 passed in 0.12s
+```
+
+- BayesFilter YAML/source-map parse:
+
+```text
+passed
+```
+
+- Diff hygiene:
+
+```text
+BayesFilter git diff --check: passed
+DSGE client git diff --check: passed
+```
+
+Audit:
+- No BayesFilter backend/filter code was changed.
+- Causal projection failed, so no filtering integration is justified.
+- The passing two-slice projection is explicitly diagnostic/offline and keeps
+  the filtering-transition blocker.
+- Unrelated dirty/untracked files were left unstaged.
+
+Completion interpretation:
+- The SGU joint projection pass is complete.
+- The current allowed SGU status is:
+
+```text
+sgu_state_identity_completion_passed
+sgu_two_slice_projection_diagnostic_passed
+```
+
+- The current blocked SGU status is:
+
+```text
+blocked_sgu_causal_projection_residual_not_closed
+blocked_sgu_two_slice_projection_not_filter_transition
+blocked_sgu_projection_is_new_target_not_gate_b
+sgu_quadratic_policy_residual_improvement_passed
+sgu_combined_structural_approximation_target_passed
+blocked_nonlinear_equilibrium_manifold_residual
+```
+
+Remaining recommendations:
+1. Derive a timing-consistent SGU control map if causal filtering integration
+   is still desired.
+2. Focus the next mathematical audit on SGU equations `H[3]` through `H[6]`,
+   because state identities are not the active residual blocker.
+3. Treat the two-slice target as an offline diagnostic or smoother candidate
+   until a timing derivation says otherwise.
+4. Keep BayesFilter backend, derivative, compiled, and HMC promotion blocked
+   until a causal value target passes.
