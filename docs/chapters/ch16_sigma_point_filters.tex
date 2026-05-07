@@ -69,12 +69,82 @@ with weights
   w_a=\frac{4}{(n+2)^2},\qquad
   w_c=\frac{(n-2)^2}{2^n(n+2)^2}.
 \]
-The rule is symmetric, has positive weights, and is designed to integrate
-Gaussian polynomials through degree five.  By contrast, the usual
-$2n+1$ unscented rule is commonly described as third-degree accurate for
-Gaussian moment propagation.  The extra corner points are what allow CUT4-G to
-match cross moments such as $\mathbb{E}[Z_i^2Z_j^2]$ that axis-only rules do not
-represent in the same way.
+More explicitly, define
+\[
+  \mathcal A=\{\pm r_a e_i:i=1,\ldots,n\},
+  \qquad
+  \mathcal C=\{r_c s:s\in\{-1,+1\}^n\}.
+\]
+The CUT4-G quadrature operator is
+\begin{equation}
+\label{eq:bf-cut4-quadrature}
+  \mathcal Q_{\mathrm{CUT4}}[\varphi]
+  =
+  w_a\sum_{\xi\in\mathcal A}\varphi(\xi)
+  +w_c\sum_{\xi\in\mathcal C}\varphi(\xi).
+\end{equation}
+
+\begin{proposition}[CUT4-G Gaussian moment exactness]
+\label{prop:bf-cut4-moment-exactness}
+For $n\ge3$, the point set
+\eqref{eq:bf-cut4-quadrature} integrates every standard-normal monomial in
+$Z\in\mathbb R^n$ of total degree at most five exactly.  Equivalently, it is a
+degree-five Gaussian rule.
+\end{proposition}
+
+\begin{proof}
+Both $\mathcal A$ and $\mathcal C$ are centrally symmetric and sign-symmetric
+in every coordinate.  Hence every monomial with at least one odd coordinate
+exponent has zero quadrature value, matching the standard normal.  This covers
+all odd total degrees through five and also the mixed even-odd monomials.
+
+It remains to check total degrees $0$, $2$, and $4$.  The total mass is
+\[
+  2n w_a+2^n w_c=1 .
+\]
+For a coordinate $i$,
+\[
+  \mathcal Q_{\mathrm{CUT4}}[z_i^2]
+  =
+  2w_a r_a^2+2^n w_c r_c^2
+  =
+  1
+  =
+  \mathbb E[Z_i^2],
+\]
+and, for $i\ne j$,
+$\mathcal Q_{\mathrm{CUT4}}[z_i z_j]=0=\mathbb E[Z_iZ_j]$ by sign symmetry.  The
+fourth marginal moment is
+\[
+  \mathcal Q_{\mathrm{CUT4}}[z_i^4]
+  =
+  2w_a r_a^4+2^n w_c r_c^4
+  =
+  3
+  =
+  \mathbb E[Z_i^4],
+\]
+while the mixed fourth moment is
+\[
+  \mathcal Q_{\mathrm{CUT4}}[z_i^2z_j^2]
+  =
+  2^n w_c r_c^4
+  =
+  1
+  =
+  \mathbb E[Z_i^2Z_j^2],
+  \qquad i\ne j.
+\]
+All remaining fourth-degree monomials contain an odd coordinate exponent and
+therefore vanish on both sides.  These identities exhaust the Gaussian
+monomials of total degree at most five, so the rule has degree-five exactness.
+\end{proof}
+
+Thus the rule is symmetric, has positive weights, and integrates Gaussian
+polynomials through degree five.  By contrast, the usual $2n+1$ unscented rule
+is commonly described as third-degree accurate for Gaussian moment propagation.
+The extra corner points are what allow CUT4-G to match cross moments such as
+$\mathbb{E}[Z_i^2Z_j^2]$ that axis-only rules do not represent in the same way.
 
 The price is exponential growth in the corner set.  CUT4-G uses $42$ points at
 $n=5$, $1044$ points at $n=10$, and becomes unattractive in large structural

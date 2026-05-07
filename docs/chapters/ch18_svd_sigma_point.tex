@@ -505,45 +505,373 @@ These tests turn the phrase ``SVD sigma-point Hessian'' into an auditable object
 a sigma-point moment derivative recursion, a solve-form likelihood Hessian, and
 a declared spectral-factor derivative policy.
 
-\section{CUT-SVD Score and Hessian}
+\section{SVD-CUT Score and Hessian}
 \label{sec:bf-cut-svd-score-hessian}
 
-The conjugate unscented transform can be inserted into the same SVD derivative
-recursion.  Replace the standardized unscented offsets $\xi^{(r)}$ in
-\eqref{eq:bf-svd-sp-cloud} by the CUT offsets and weights from
-Section~\ref{sec:bf-cut-rules}.  With fixed CUT tuning parameters, the point
-derivatives remain
+The conjugate unscented transform can be inserted into the same spectral
+sigma-point filter.  The precise object is an SVD-placed CUT rule: use an
+SVD/eigen factor to place the CUT offsets, then use the ordinary sigma-point
+moment and likelihood recursions.  This is sometimes called CUT-SVD and
+sometimes SVD-CUT.  The name is less important than the contract
 \[
-  \dot\chi^{(r,i)}=\dot m^{(i)}+\dot C^{(i)}\xi^{(r)},\qquad
-  \ddot\chi^{(r,ij)}=\ddot m^{(ij)}+\ddot C^{(ij)}\xi^{(r)}.
+  P_\star=C C^\top ,
 \]
-The map derivatives, moment derivatives, innovation derivatives, and
-solve-form likelihood score/Hessian are then exactly the formulas in
-Section~\ref{sec:bf-svd-sp-analytic-recursion}, with the sums running over the
-CUT point set.
+where $P_\star$ is the covariance actually represented by the implemented
+factor.  If eigenvalues have been floored, truncated, or otherwise regularized,
+$P_\star$ is the floored or truncated covariance, not necessarily the
+pre-regularized covariance submitted to the factor routine.
 
-Thus the analytic gradient and Hessian can be derived.  The derivation does not
-require a new likelihood identity; it requires the following additional
-contracts:
-\begin{enumerate}[label=(\roman*)]
-  \item the CUT points and weights are fixed or their tuning derivatives are
-    included explicitly;
-  \item all nonlinear transition and observation maps provide first and second
-    derivatives at every CUT point;
-  \item the covariance factor $C$ provides $\dot C$ and $\ddot C$ for the same
-    implemented covariance $P_\star$ that places the CUT points;
-  \item any SVD floor, rank truncation, sign/order convention, or fallback is
-    part of the differentiated branch and is reported.
-\end{enumerate}
-Computationally, CUT4-G changes the constant in every derivative sum from
-$2n+1$ points to $2n+2^n$ points.  The score cost scales like
-$O(N_{\mathrm{CUT}})$ map-Jacobian evaluations plus factor derivative work; the
-Hessian additionally requires second map derivatives and the second factor
-derivative.  This is plausible for low-dimensional stochastic integration
-blocks, but it is usually too expensive for large collapsed full-state DSGE
-vectors.  The preferred design is therefore structural CUT-SVD: apply the CUT
-rule to the declared low-dimensional stochastic block and use SVD only for the
-covariance factor that truly needs spectral regularization.
+Let the SVD branch return a factor $C(\theta)\in\mathbb R^{n_x\times q}$ and
+let $Z\sim\calN(0,I_q)$.  A CUT rule in the factor coordinates supplies
+standardized offsets and weights
+\[
+  \{(\xi^{(r)},w_r): r=0,\ldots,N_{\mathrm{CUT}}-1\},
+  \qquad
+  \xi^{(r)}\in\mathbb R^q.
+\]
+For CUT4-G, when $q\ge3$,
+\[
+  N_{\mathrm{CUT4}}=2q+2^q .
+\]
+The SVD-CUT points are
+\begin{equation}
+\label{eq:bf-svd-cut-cloud}
+  \chi^{(r)}=m+C\xi^{(r)},\qquad
+  r=0,\ldots,N_{\mathrm{CUT}}-1.
+\end{equation}
+The quadrature approximation to an expectation under the implemented Gaussian
+law $X_\star=m+CZ\sim\calN(m,P_\star)$ is
+\begin{equation}
+\label{eq:bf-svd-cut-quadrature}
+  \mathcal Q_{\mathrm{SVD}\text{-}\mathrm{CUT}}[\varphi]
+  =
+  \sum_{r=0}^{N_{\mathrm{CUT}}-1} w_r
+  \varphi(m+C\xi^{(r)}).
+\end{equation}
+
+\begin{proposition}[SVD-CUT affine exactness]
+\label{prop:bf-svd-cut-affine-exactness}
+Suppose the standardized CUT rule is exact for standard-normal polynomials on
+$\mathbb R^q$ through degree $d$.  If $C C^\top=P_\star$, then
+\eqref{eq:bf-svd-cut-quadrature} integrates every polynomial
+$p:\mathbb R^{n_x}\to\mathbb R$ of total degree at most $d$ exactly under
+$X_\star\sim\calN(m,P_\star)$.  The statement remains true when
+$P_\star$ is singular.
+\end{proposition}
+
+\begin{proof}
+For any polynomial $p$ of degree at most $d$, define
+\[
+  \psi(z)=p(m+Cz).
+\]
+The affine composition cannot increase total degree, so $\psi$ is a polynomial
+on $\mathbb R^q$ of degree at most $d$.  By standardized CUT exactness,
+\[
+  \sum_r w_r \psi(\xi^{(r)})
+  =
+  \mathbb E[\psi(Z)].
+\]
+Substituting the definition of $\psi$ gives
+\[
+  \sum_r w_r p(m+C\xi^{(r)})
+  =
+  \mathbb E[p(m+CZ)]
+  =
+  \mathbb E[p(X_\star)].
+\]
+No inverse of $C$ is used.  Hence rank deficiency of $P_\star=C C^\top$ does
+not affect the formal quadrature exactness statement; it only changes the
+affine support on which the degenerate Gaussian law lives.
+\end{proof}
+
+This proposition is the clean mathematical answer to the accuracy question:
+abstracting from finite arithmetic, SVD placement does not by itself destroy
+CUT accuracy.  It is not a recommendation to hide a structural state split
+inside a large singular covariance.  A full zero-padded factor may reproduce
+the same law, but it also creates duplicate or nearly duplicate points in null
+directions and pushes the derivative path through the larger spectral branch.
+
+\subsection{SVD-CUT Moment Derivatives}
+\label{sec:bf-svd-cut-moment-derivatives}
+
+The analytic gradient and Hessian follow by differentiating
+\eqref{eq:bf-svd-cut-cloud}--\eqref{eq:bf-svd-cut-quadrature}.  Assume first
+that the CUT offsets and weights are fixed.  If CUT tuning parameters are
+estimated, the same derivation applies after adding the explicit
+$\dot \xi^{(r)}$, $\ddot \xi^{(r)}$, $\dot w_r$, and $\ddot w_r$ terms.
+
+For a parameter component $\theta_i$, the point derivatives are
+\begin{align}
+\label{eq:bf-svd-cut-point-first}
+  \dot\chi^{(r,i)}
+  &=
+  \dot m^{(i)}+\dot C^{(i)}\xi^{(r)},\\
+\label{eq:bf-svd-cut-point-second}
+  \ddot\chi^{(r,ij)}
+  &=
+  \ddot m^{(ij)}+\ddot C^{(ij)}\xi^{(r)}.
+\end{align}
+Let $g_\theta$ be the nonlinear map being integrated.  In a predict step this
+is the transition map; in an update step it is the observation map.  Write
+\[
+  y^{(r)}=g_\theta(\chi^{(r)}),\qquad
+  \bar y=\sum_r w_r y^{(r)},\qquad
+  d^{(r)}=y^{(r)}-\bar y .
+\]
+The propagated point derivatives are
+\begin{align}
+\label{eq:bf-svd-cut-map-first}
+  \dot y^{(r,i)}
+  &=
+  D_xg_\theta(\chi^{(r)})\dot\chi^{(r,i)}
+  +\partial_i g_\theta(\chi^{(r)}),\\
+\label{eq:bf-svd-cut-map-second}
+  \ddot y^{(r,ij)}
+  &=
+  D_xg_\theta(\chi^{(r)})\ddot\chi^{(r,ij)}
+  +D^2_{xx}g_\theta(\chi^{(r)})
+    [\dot\chi^{(r,i)},\dot\chi^{(r,j)}] \nonumber\\
+  &\quad
+  +D^2_{x\theta_i}g_\theta(\chi^{(r)})\dot\chi^{(r,j)}
+  +D^2_{x\theta_j}g_\theta(\chi^{(r)})\dot\chi^{(r,i)}
+  +\partial^2_{ij}g_\theta(\chi^{(r)}).
+\end{align}
+Therefore
+\begin{align}
+\label{eq:bf-svd-cut-mean-first}
+  \dot{\bar y}^{(i)}
+  &=
+  \sum_r w_r\dot y^{(r,i)},\\
+\label{eq:bf-svd-cut-mean-second}
+  \ddot{\bar y}^{(ij)}
+  &=
+  \sum_r w_r\ddot y^{(r,ij)}.
+\end{align}
+Let $\Omega_\theta$ denote the additive covariance in the moment being formed:
+$Q_\theta$ in a predict step or $R_\theta$ in an observation update.  The
+SVD-CUT covariance moment is
+\begin{equation}
+\label{eq:bf-svd-cut-cov}
+  M=\sum_r w_r d^{(r)}d^{(r)\top}+\Omega_\theta .
+\end{equation}
+With
+\[
+  \dot d^{(r,i)}=\dot y^{(r,i)}-\dot{\bar y}^{(i)},\qquad
+  \ddot d^{(r,ij)}=\ddot y^{(r,ij)}-\ddot{\bar y}^{(ij)},
+\]
+its derivatives are
+\begin{align}
+\label{eq:bf-svd-cut-cov-first}
+  \dot M^{(i)}
+  &=
+  \sum_r w_r
+  \left[
+    \dot d^{(r,i)}d^{(r)\top}
+    +d^{(r)}\dot d^{(r,i)\top}
+  \right]
+  +\dot\Omega_\theta^{(i)},\\
+\label{eq:bf-svd-cut-cov-second}
+  \ddot M^{(ij)}
+  &=
+  \sum_r w_r
+  \left[
+    \ddot d^{(r,ij)}d^{(r)\top}
+    +d^{(r)}\ddot d^{(r,ij)\top}
+    +\dot d^{(r,i)}\dot d^{(r,j)\top}
+    +\dot d^{(r,j)}\dot d^{(r,i)\top}
+  \right]
+  +\ddot\Omega_\theta^{(ij)}.
+\end{align}
+
+\begin{proof}[Derivation]
+Equations \eqref{eq:bf-svd-cut-point-first} and
+\eqref{eq:bf-svd-cut-point-second} are the first and second derivatives of the
+affine point map $\chi^{(r)}=m+C\xi^{(r)}$, using fixed $\xi^{(r)}$.  Equations
+\eqref{eq:bf-svd-cut-map-first} and \eqref{eq:bf-svd-cut-map-second} are the
+first and second multivariate chain rules for
+$g_\theta(\chi^{(r)}(\theta))$.  Equations
+\eqref{eq:bf-svd-cut-mean-first} and \eqref{eq:bf-svd-cut-mean-second} follow
+from linearity of the weighted sum.  Finally, differentiating
+$d^{(r)}d^{(r)\top}$ once and twice gives
+\[
+  \partial_i(dd^\top)=\dot d_i d^\top+d\dot d_i^\top
+\]
+and
+\[
+  \partial_{ij}^2(dd^\top)
+  =
+  \ddot d_{ij}d^\top+d\ddot d_{ij}^\top
+  +\dot d_i\dot d_j^\top+\dot d_j\dot d_i^\top ,
+\]
+which proves \eqref{eq:bf-svd-cut-cov-first} and
+\eqref{eq:bf-svd-cut-cov-second} after summing over the fixed weights and
+adding the derivatives of $\Omega_\theta$.
+\end{proof}
+
+\subsection{SVD-CUT Likelihood Gradient and Hessian}
+\label{sec:bf-svd-cut-likelihood-derivatives}
+
+For an observation update, set $g_\theta=h_\theta$ and identify
+\[
+  \bar z_t=\bar y,\qquad
+  S_t=M,\qquad
+  v_t=y_t^{\mathrm{obs}}-\bar z_t .
+\]
+If the recorded observation does not depend on $\theta$, then
+\begin{equation}
+\label{eq:bf-svd-cut-innovation-derivatives}
+  \dot v_t^{(i)}=-\dot{\bar z}_t^{(i)},\qquad
+  \ddot v_t^{(ij)}=-\ddot{\bar z}_t^{(ij)} .
+\end{equation}
+Let $S_tw_t=v_t$.  The per-time SVD-CUT log likelihood is
+\begin{equation}
+\label{eq:bf-svd-cut-loglik}
+  \ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    \log\det S_t+v_t^\top S_t^{-1}v_t+n_y\log(2\pi)
+  \right].
+\end{equation}
+Its score is
+\begin{equation}
+\label{eq:bf-svd-cut-score}
+  \partial_i\ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    \tr(S_t^{-1}\dot S_t^{(i)})
+    +2\dot v_t^{(i)\top}w_t
+    -w_t^\top\dot S_t^{(i)}w_t
+  \right].
+\end{equation}
+For the Hessian, define
+\begin{equation}
+\label{eq:bf-svd-cut-w-dot}
+  \dot w_t^{(j)}
+  =
+  \mathcal{S}_{S_t}
+  \left(\dot v_t^{(j)}-\dot S_t^{(j)}w_t\right).
+\end{equation}
+Then
+\begin{align}
+\label{eq:bf-svd-cut-hessian-pieces}
+  T_{ij}^{\log\det}
+  &=
+  \tr\!\left(
+    S_t^{-1}\ddot S_t^{(ij)}
+    -S_t^{-1}\dot S_t^{(j)}S_t^{-1}\dot S_t^{(i)}
+  \right),\\
+  T_{ij}^{v}
+  &=
+  2\ddot v_t^{(ij)\top}w_t
+  +2\dot v_t^{(i)\top}\dot w_t^{(j)},\\
+  T_{ij}^{S}
+  &=
+  2\dot w_t^{(j)\top}\dot S_t^{(i)}w_t
+  +w_t^\top\ddot S_t^{(ij)}w_t ,
+\end{align}
+and
+\begin{equation}
+\label{eq:bf-svd-cut-hessian}
+  \partial_{ij}^2\ell_t
+  =
+  -\frac{1}{2}
+  \left[
+    T_{ij}^{\log\det}+T_{ij}^{v}-T_{ij}^{S}
+  \right].
+\end{equation}
+
+\begin{proof}[Derivation]
+Equations \eqref{eq:bf-svd-cut-cov-first} and
+\eqref{eq:bf-svd-cut-cov-second}, with $\Omega_\theta=R_\theta$, supply
+$\dot S_t$ and $\ddot S_t$.  Equation
+\eqref{eq:bf-svd-cut-innovation-derivatives} supplies $\dot v_t$ and
+$\ddot v_t$.  Differentiating the solve $S_tw_t=v_t$ gives
+\[
+  S_t\dot w_t^{(j)}+\dot S_t^{(j)}w_t=\dot v_t^{(j)},
+\]
+hence \eqref{eq:bf-svd-cut-w-dot}.  The differential identities
+$\partial_i\log\det S=\tr(S^{-1}\dot S_i)$ and
+$\partial_i S^{-1}=-S^{-1}\dot S_iS^{-1}$ give
+\eqref{eq:bf-svd-cut-score}.  Differentiating the three pieces of
+\eqref{eq:bf-svd-cut-loglik} a second time gives
+\eqref{eq:bf-svd-cut-hessian-pieces} and
+\eqref{eq:bf-svd-cut-hessian}.  This is the same solve-form likelihood
+Hessian as Chapter~\ref{ch:bf-kalman-hessian}; the SVD-CUT-specific work is the
+construction of $v_t,S_t,\dot v_t,\dot S_t,\ddot v_t,\ddot S_t$ from the CUT
+point cloud.
+\end{proof}
+
+All dependence on the SVD backend enters through
+$C,\dot C,\ddot C$.  Consequently the derivative must reconstruct the same
+implemented covariance branch:
+\[
+  \dot P_\star^{(i)}
+  =
+  \dot C^{(i)}C^\top+C\dot C^{(i)\top},
+\]
+and
+\[
+  \ddot P_\star^{(ij)}
+  =
+  \ddot C^{(ij)}C^\top+C\ddot C^{(ij)\top}
+  +\dot C^{(i)}\dot C^{(j)\top}
+  +\dot C^{(j)}\dot C^{(i)\top}.
+\]
+These are exactly the reconstruction identities
+\eqref{eq:bf-svd-factor-reconstruction-first}--\eqref{eq:bf-svd-factor-reconstruction-second}.
+If a hard eigenvalue floor is active, the equations describe the branch
+derivative of the floored covariance $P_\star$, not the derivative of the
+pre-floor covariance.  If eigenvalues are clustered, repeated, reordered, or
+sign-flipped, the smooth-branch formulas in
+Section~\ref{sec:bf-svd-factor-derivative-contract} may fail or become
+ill-conditioned.
+
+\subsection{Point Count, GPU, and XLA}
+\label{sec:bf-svd-cut-gpu-xla}
+
+Modern GPUs and XLA make large sigma-point clouds much less painful than
+scalar Python loops, but they do not make the point count disappear.  The CUT
+map evaluations are embarrassingly parallel over points and chains, and the
+point dimension is static when $q$ is fixed.  This fits the XLA discipline in
+Chapter~\ref{ch:bf-xla-jit}: construct a fixed tensor of offsets, evaluate the
+transition or observation map in batch, and reduce over the point axis inside
+the compiled value-and-gradient path.
+
+The remaining costs still scale with
+\[
+  N_{\mathrm{CUT4}}=2q+2^q .
+\]
+For one observation update with output dimension $n_y$, the value-side moment
+assembly contains
+\[
+  O(N_{\mathrm{CUT}}\,c_h)
+  \quad\text{map work},\qquad
+  O(N_{\mathrm{CUT}}\,n_y^2)
+  \quad\text{innovation-covariance reductions},
+\]
+plus
+$O(N_{\mathrm{CUT}}\,n_x n_y)$ if the cross covariance and Kalman gain are
+formed.  With $p$ parameters, a direct analytic score stores or recomputes
+$O(N_{\mathrm{CUT}}\,p\,n_y)$ propagated first derivatives, and a direct
+Hessian stores or recomputes
+$O(N_{\mathrm{CUT}}\,p^2\,n_y)$ propagated second derivatives, in addition to
+the SVD-factor derivative work.  XLA can fuse many elementwise operations and
+run the point axis in parallel, but memory traffic, reductions, spectral
+factorization, compile time, and the sequential time scan remain real
+constraints.
+
+Thus the correct engineering conclusion is conditional.  A large number of
+CUT points may be acceptable on modern GPU/XLA hardware when the stochastic
+factor dimension $q$ is modest, the maps are sufficiently expensive to amortize
+compile and launch overhead, tensor shapes are static, and chains or particles
+provide enough batch parallelism.  It is not generally acceptable to collapse a
+large DSGE state into a full-state CUT rule and rely on the GPU to absorb the
+$2^q$ corner set.  The preferred design remains structural SVD-CUT: apply
+higher-order CUT quadrature only to the declared stochastic integration block,
+then complete deterministic coordinates through the structural transition map
+and use SVD regularization only where the covariance factor actually needs it.
 
 \section{Status Labels for SVD-HMC}
 \label{sec:bf-svd-status-labels}

@@ -520,6 +520,55 @@ Next phase justified?
   benchmarks, factor reconstruction, SVD branch diagnostics, and same-scalar
   gradient/Hessian finite-difference checks exist.
 
+### SVD-CUT derivation and GPU/XLA addendum
+
+Follow-up request:
+- derive the SVD-CUT equations clearly, with detailed proofs;
+- derive the analytic gradient and Hessian of SVD-CUT;
+- answer whether a large number of points is no longer an issue on modern
+  GPU/XLA architectures.
+
+Execution:
+- Expanded `docs/chapters/ch16_sigma_point_filters.tex` with a proposition
+  proving CUT4-G degree-five Gaussian moment exactness from the axis/corner
+  weights.
+- Expanded `docs/chapters/ch18_svd_sigma_point.tex` with an SVD-CUT affine
+  exactness proposition, moment derivative equations, likelihood score and
+  Hessian equations, proof sketches for each derivative block, and an explicit
+  GPU/XLA scaling discussion.
+- Used MathDevMCP/SymPy to check the CUT4-G weight sum, covariance, marginal
+  fourth-moment, and mixed fourth-moment identities.
+- ResearchAssistant had no local paper summary hit for the exact Adurthi CUT
+  query; the bibliography entries from the prior pass remain the citation
+  source for the CUT papers.
+
+Interpretation:
+- SVD-CUT is CUT quadrature after affine placement by an implemented spectral
+  factor `C`.  Its formal polynomial exactness is with respect to
+  `X_star=m+C Z`, hence with respect to `P_star=C C^T`.  If the factor routine
+  floors or truncates eigenvalues, the theorem is about the floored/truncated
+  covariance, not the pre-regularized covariance.
+- The analytic gradient and Hessian are obtained by differentiating the point
+  cloud, nonlinear map, weighted mean, weighted covariance, innovation, and
+  solve-form Gaussian likelihood.  No new likelihood identity is needed beyond
+  the Chapter 10 solve-form Hessian.
+- The derivative path still depends on `C`, `dot C`, and `ddot C`; therefore it
+  inherits SVD spectral-gap, floor, rank, sign/order, and fallback-branch risks.
+- GPU/XLA makes the point axis batchable and can remove Python-loop overhead,
+  but it does not remove the `2q+2^q` CUT4-G point count.  Memory traffic,
+  reductions, Hessian derivative storage/recomputation, spectral factor work,
+  compile time, and the sequential time scan remain first-order constraints.
+  The recommended design is structural SVD-CUT on the low-dimensional
+  stochastic factor block, not collapsed full-state CUT for large DSGE states.
+
+Next phase justified?
+- Yes for small CUT moment fixtures, SVD-CUT finite-difference score/Hessian
+  tests, and controlled CPU/GPU/XLA benchmarks on fixed low-dimensional
+  stochastic blocks.
+- No for claiming that large full-state CUT point sets are harmless on GPU/XLA
+  until a benchmark reports compile time, memory, throughput, and gradient/HMC
+  diagnostics over the intended model dimensions.
+
 ## 2026-05-03 update: DSGE structural deterministic dynamics warning
 
 User raised a serious modeling-design issue: nonlinear DSGE filters must
