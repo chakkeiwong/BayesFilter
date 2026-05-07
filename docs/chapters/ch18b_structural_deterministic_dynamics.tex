@@ -230,10 +230,10 @@ The endogenous coordinates should not receive arbitrary independent
 point moves an accounting identity or predetermined endogenous state outside
 the model-implied support of the structural transition, the filter is no longer
 approximating the intended DSGE state-space model.  It is approximating a
-different artificial model.  This is exactly the approximation boundary from
-Chapter~\ref{ch:bf-sigma-point-filters}: quadrature may approximate the target
-law, but injecting additional stochastic coordinates changes the target unless
-that change is declared and justified.
+different artificial model relative to the declared structural law.  This is
+exactly the approximation boundary from Chapter~\ref{ch:bf-sigma-point-filters}:
+quadrature may approximate the target law, but injecting additional stochastic
+coordinates changes the target unless that change is declared and justified.
 
 Particle-filter literature makes the same distinction operationally.  A
 particle filter propagates particles through the state transition and weights
@@ -355,8 +355,10 @@ altered law more stably.
 Julier and Uhlmann's original unscented-transform construction starts from a
 random variable $X\in\mathbb{R}^L$ with mean $\bar x$ and covariance $P_x$ and
 approximates the moments of $Y=g(X)$ by propagating deterministic sigma points
-through $g$ \citep{julier1996general,julier1997new}.  In the notation used here,
-one convenient scaled UKF rule forms
+through $g$ \citep{julier1996general,julier1997new}.  The
+$(\alpha,\beta,\kappa)$ scaled rule used for the formulas below belongs to the
+later sigma-point Kalman filter convention \citep{vandermerwe2004sigma}.  In
+the notation used here, one convenient scaled UKF rule forms
 \begin{align}
   \chi_0 &= \bar x,\\
   \chi_i &= \bar x+\left[\sqrt{(L+\lambda)P_x}\right]_i,
@@ -588,6 +590,201 @@ Structural UKF is not a different Kalman-gain formula.  It is the same Gaussian
 update algebra applied to a predictive sigma-point cloud that respects the
 structural transition law.
 
+\subsection{UKF in Sequential-Monte-Carlo Kernel Notation}
+\label{sec:bf-ukf-kernel-notation}
+
+The same point can be expressed in the probability-kernel notation used in
+\citet{chopin2020introduction}.  A state-space model is specified by an initial
+law $P_{\theta,0}(dx_0)$, transition kernels
+$P_{\theta,t}(x_{t-1},dx_t)$, and observation densities
+$f_{\theta,t}(y_t\mid x_t)$.  In the bootstrap Feynman--Kac formalism, the
+transition kernel is
+\[
+  M_{\theta,t}(x_{t-1},dx_t)=P_{\theta,t}(x_{t-1},dx_t),
+\]
+and the potential is
+\[
+  G_{\theta,t}(x_t)=f_{\theta,t}(y_t\mid x_t).
+\]
+If $\eta_{t-1}$ denotes the filtering law of $x_{t-1}$ given
+$y_{1:t-1}$, the exact one-step recursion is
+\begin{align}
+  \xi_t(dx_t)
+    &=
+    \int \eta_{t-1}(dx_{t-1})
+      P_{\theta,t}(x_{t-1},dx_t),
+    \label{eq:bf-kernel-exact-prediction}\\
+  \lambda_t
+    &=
+    \xi_t(G_{\theta,t})
+    =
+    \int G_{\theta,t}(x_t)\,\xi_t(dx_t),
+    \label{eq:bf-kernel-exact-likelihood-factor}\\
+  \eta_t(dx_t)
+    &=
+    \frac{G_{\theta,t}(x_t)\xi_t(dx_t)}{\xi_t(G_{\theta,t})}.
+    \label{eq:bf-kernel-exact-update}
+\end{align}
+Equations~\eqref{eq:bf-kernel-exact-prediction}--%
+\eqref{eq:bf-kernel-exact-update} are the filtering target.  A particle filter
+approximates the measures in these equations by random weighted particles.  A
+UKF instead approximates the same prediction/update recursion by deterministic
+quadrature and Gaussian projection.
+
+For the mixed structural transition in
+\eqref{eq:bf-structural-map-definition}, the transition kernel is the pushforward
+kernel
+\begin{equation}
+  P_{\theta,t}^{\mathrm{str}}(x,B)
+  =
+  \int
+  \mathbf 1\!\left\{F_\theta(x,\varepsilon)\in B\right\}
+  \nu_{\theta,t}^{\varepsilon}(d\varepsilon)
+  =
+  \int
+  \delta_{F_\theta(x,\varepsilon)}(B)
+  \nu_{\theta,t}^{\varepsilon}(d\varepsilon),
+  \label{eq:bf-structural-transition-kernel}
+\end{equation}
+for measurable state sets $B$.  This is a perfectly valid probability kernel
+even when it is singular with respect to Lebesgue measure.  Kernel notation is
+therefore useful here: it does not force a degenerate structural transition to
+pretend that it has a full-dimensional transition density.  The predictive
+integral in \eqref{eq:bf-kernel-exact-prediction} becomes, for any test function
+$\psi$,
+\begin{equation}
+  \xi_t^{\mathrm{str}}(\psi)
+  =
+  \iint
+  \psi\!\left(F_\theta(x_{t-1},\varepsilon_t)\right)
+  \eta_{t-1}(dx_{t-1})
+  \nu_{\theta,t}^{\varepsilon}(d\varepsilon_t).
+  \label{eq:bf-structural-kernel-prediction-test-function}
+\end{equation}
+Thus the kernel version of the structural statement is:
+\[
+  P_{\theta,t}=P_{\theta,t}^{\mathrm{str}},
+  \qquad
+  M_{\theta,t}=P_{\theta,t}^{\mathrm{str}},
+  \qquad
+  G_{\theta,t}(x)=f_{\theta,t}(y_t\mid x).
+\]
+
+Now suppose the incoming filter is approximated by a Gaussian
+$\widehat\eta_{t-1}=\calN(\widehat m_{t-1},\widehat P_{t-1})$.  Let
+\[
+  \widehat\alpha_t(da)
+  =
+  \widehat\eta_{t-1}(dx_{t-1})
+  \nu_{\theta,t}^{\varepsilon}(d\varepsilon_t),
+  \qquad
+  a=(x_{t-1},\varepsilon_t).
+\]
+The structural UKF replaces integrals against $\widehat\alpha_t$ by the
+deterministic sigma-point rule
+\[
+  \mathcal U_t^{(r)}[\psi]
+  =
+  \sum_j w_j^{(r)}\psi(a_t^{(j)}),
+  \qquad r\in\{m,c\}.
+\]
+With
+\[
+  x_t^{(j)}=F_\theta(a_t^{(j)}),
+  \qquad
+  z_t^{(j)}=h_\theta(x_t^{(j)}),
+\]
+the UKF predictive and observation moments are
+\begin{align}
+  \widehat m_t^-
+    &=
+    \sum_j w_j^{(m)}x_t^{(j)},\\
+  \widehat P_t^-
+    &=
+    \sum_j w_j^{(c)}
+    (x_t^{(j)}-\widehat m_t^-)(x_t^{(j)}-\widehat m_t^-)^\top,
+    \label{eq:bf-kernel-ukf-state-moments}\\
+  \widehat z_t
+    &=
+    \sum_j w_j^{(m)}z_t^{(j)},\\
+  \widehat S_t
+    &=
+    \sum_j w_j^{(c)}
+    (z_t^{(j)}-\widehat z_t)(z_t^{(j)}-\widehat z_t)^\top
+    +R_t,\\
+  \widehat P_{xz,t}
+    &=
+    \sum_j w_j^{(c)}
+    (x_t^{(j)}-\widehat m_t^-)(z_t^{(j)}-\widehat z_t)^\top .
+    \label{eq:bf-kernel-ukf-observation-moments}
+\end{align}
+Equivalently, UKF builds the Gaussian joint approximation
+\begin{equation}
+  \widehat J_t(dx_t,dy_t)
+  =
+  \calN\!\left(
+    \begin{bmatrix}x_t\\ y_t\end{bmatrix};
+    \begin{bmatrix}\widehat m_t^-\\ \widehat z_t\end{bmatrix},
+    \begin{bmatrix}
+      \widehat P_t^- & \widehat P_{xz,t}\\
+      \widehat P_{xz,t}^\top & \widehat S_t
+    \end{bmatrix}
+  \right)dx_t\,dy_t .
+  \label{eq:bf-kernel-ukf-joint-gaussian}
+\end{equation}
+The UKF likelihood factor and update are then the marginal and conditional
+Gaussian objects induced by \eqref{eq:bf-kernel-ukf-joint-gaussian}:
+\begin{align}
+  \widehat\lambda_t^{\mathrm{UKF}}
+    &=
+    \varphi_{d_y}(y_t;\widehat z_t,\widehat S_t),
+    \label{eq:bf-kernel-ukf-likelihood-factor}\\
+  \widehat\eta_t^{\mathrm{UKF}}(dx_t)
+    &=
+    \widehat J_t(dx_t\mid y_t) \nonumber\\
+    &=
+    \calN\!\left(
+      dx_t;\,
+      \widehat m_t^-+
+      \widehat P_{xz,t}\widehat S_t^{-1}(y_t-\widehat z_t),
+      \widehat P_t^--
+      \widehat P_{xz,t}\widehat S_t^{-1}\widehat P_{xz,t}^\top
+    \right).
+    \label{eq:bf-kernel-ukf-gaussian-update}
+\end{align}
+The corresponding contribution to the log likelihood is
+$\log\widehat\lambda_t^{\mathrm{UKF}}$.
+If measurement noise is augmented rather than added, replace
+$a=(x_{t-1},\varepsilon_t)$ by
+$a=(x_{t-1},\varepsilon_t,e_t)$, set
+$z_t^{(j)}=h_\theta(F_\theta(x_{t-1}^{(j)},\varepsilon_t^{(j)}),e_t^{(j)})$,
+and omit the extra $R_t$ term in \eqref{eq:bf-kernel-ukf-observation-moments}.
+
+This notation also states the equivalence condition for collapsed SVD
+constructions.  If a full-state degenerate SVD implementation uses another
+kernel
+\[
+  \widetilde P_{\theta,t}(x,B)
+  =
+  \int
+  \delta_{\widetilde F_\theta(x,\eta)}(B)
+  \widetilde\nu_{\theta,t}(d\eta),
+\]
+then it is a law-equivalent implementation of the structural model only when
+\begin{equation}
+  \widetilde P_{\theta,t}(x,B)
+  =
+  P_{\theta,t}^{\mathrm{str}}(x,B)
+  \qquad
+  \text{for the relevant }x\text{ and measurable }B,
+  \label{eq:bf-kernel-equivalence-condition}
+\end{equation}
+or at least when the two kernels induce the same predictive measure from the
+current filtering approximation.  Equality of a covariance matrix, or existence
+of an SVD factor for a singular covariance, is not by itself equality of
+probability kernels.  This is the kernel-notation version of the structural
+warning in this chapter.
+
 \subsection{Why These Algorithms Differ}
 \label{sec:bf-ukf-algorithm-contrast}
 
@@ -639,9 +836,9 @@ $x_{t-1}\mid y_{1:t-1}$, the following hold:
   \item a UKF that approximates this predictive law should place sigma points on
     $(x_{t-1},\varepsilon_t)$, or on an equivalent parameterization of the same
     pre-transition uncertainty;
-  \item a naive full-state additive-noise UKF is exact only if its induced
-    predictive law coincides with that pushforward law; if it adds a direct
-    perturbation to $k_t$, it targets a different law.
+  \item a naive full-state additive-noise UKF targets the same predictive law
+    only if its induced predictive law coincides with that pushforward law; if
+    it adds a direct perturbation to $k_t$, it targets a different law.
 \end{enumerate}
 \end{proposition}
 
@@ -706,7 +903,7 @@ $\varepsilon_t$ is a genuine new source of uncertainty, while $k_t$ is a
 structural completion of that uncertainty rather than an independently shocked
 coordinate.
 
-\begin{proposition}[Structural UKF inherits UT moment accuracy]
+\begin{proposition}[Local structural UKF Taylor accuracy]
 \label{prop:bf-structural-ukf-ut-accuracy}
 Let $A_t=(x_{t-1},\varepsilon_t)$ have a Gaussian approximation with mean
 $\mu_a$ and covariance $P_a$, and let
@@ -750,11 +947,14 @@ It also matches the leading second-order covariance term:
     JP_aJ^\top+O(\eta^3).
     \label{eq:bf-structural-ukf-second-order-cov}
 \end{align}
-Thus, in the smooth Gaussian regime considered by the unscented-transform
-literature, the structural UKF inherits the usual local second-order moment
-accuracy for the correct input law $(x_{t-1},\varepsilon_t)$.  This statement
-does not apply to a naive post-transition full-state sigma-point cloud unless
-that cloud induces the same law as $(F_\theta)_\#\pi_t^a$.
+Thus, under the local small-uncertainty Taylor expansion used here, the
+structural UKF matches the transformed mean through the quadratic term and
+matches the leading covariance term for the Gaussian approximation on the
+correct input law $(x_{t-1},\varepsilon_t)$.  This is a local expansion
+statement for the selected structural input law, not a blanket exactness theorem
+for nonlinear structural transitions.  It does not apply to a naive
+post-transition full-state sigma-point cloud unless that cloud induces the same
+law as $(F_\theta)_\#\pi_t^a$.
 \end{proposition}
 
 \begin{proof}
@@ -787,8 +987,8 @@ points.  Their second moments are both $JP_aJ^\top$ by moment matching.  The
 quadratic Taylor terms have size $O(\eta^2)$, so their covariance contribution
 with the leading linear term is $O(\eta^3)$ and their self-covariance
 contribution is $O(\eta^4)$.  This proves
-\eqref{eq:bf-structural-ukf-second-order-cov}.  These are exactly the usual
-local unscented-transform moment calculations for the selected sigma-point rule
+\eqref{eq:bf-structural-ukf-second-order-cov}.  These are the local
+unscented-transform moment calculations for the selected sigma-point rule
 \citep{julier1996general,vandermerwe2004sigma}, applied to the structural
 input variable.  If a naive full-state cloud is constructed from a different
 input law, the same UT calculation applies only to that different law; it gives
@@ -1090,8 +1290,10 @@ and previous filtering moments
   \qquad
   P_{t-1}=\operatorname{diag}(0.04,0.09).
 \]
-With the scaled unscented choice $\lambda=0$, the mean weight of the central
-point is zero and the six off-center points each have mean weight $1/6$.
+Use the scaled unscented convention $\alpha=1$, $\beta=2$, and $\kappa=0$.
+Since $n_a=3$, this gives $\lambda=\alpha^2(n_a+\kappa)-n_a=0$, central mean
+weight $w_0^{(m)}=0$, central covariance weight $w_0^{(c)}=2$, and six
+off-center mean/covariance weights equal to $1/6$.
 The augmented covariance is
 \[
   \operatorname{diag}(0.04,0.09,1),
@@ -1119,7 +1321,7 @@ $m_t=0.5(1.73205)=0.86603$ and
 $k_t=0.4(0.86603)^2=0.30000$.  No row contains an independently sampled
 ``new'' shock for $k_t$.
 
-Using covariance weight $w_0^{(c)}=2$ for the central point, the structural
+Using the stated covariance weights, the structural
 propagation gives
 \[
   \hat x_{t|t-1}
@@ -1170,6 +1372,9 @@ The one-step log likelihood contribution is approximately
 \[
   \ell_t=-0.70297.
 \]
+These numbers are illustrative calculations under the stated sigma-point
+convention and should be read as a worked example rather than general
+performance evidence.
 
 \paragraph{Side-by-side prediction/update contrast.}
 For this toy model, the structural UKF treats
@@ -1215,7 +1420,7 @@ A simple way to see the difference is to check whether propagated points satisfy
 \]
 The structural UKF satisfies this identity point by point for every propagated
 sigma point.  A naive full-state UKF with direct perturbations to $k_t$ does
-not.  That is the exact place where the structural target and the naive
+not.  That is the diagnostic place where the structural target and this naive
 full-state approximation part company.
 
 Now compare this with an off-manifold full-state approximation that adds an
@@ -1226,7 +1431,8 @@ shock.  It changes the innovation variance from $S_t=0.61217$ to
 $S_t=0.65217$ and changes the same observation's log likelihood contribution
 from $-0.70297$ to $-0.73282$.  The numerical difference is small in this toy
 calibration, but the conceptual difference is large: the latter filter is
-approximating a different state-space model.
+approximating a different approximate state-space model relative to the
+declared structural law.
 
 To connect these numbers back to the three failures above, write the naive
 full-state approximation as using
@@ -1657,6 +1863,10 @@ If the realized observation is $y_t=1.50$, then
     0.02813\\ 0.01385
   \end{bmatrix}.
 \]
+As in the previous example, these numbers are illustrative calculations under
+the stated sigma-point convention.  They demonstrate the law and moment objects
+being compared; they are not standalone performance evidence for a production
+filter.
 
 Now compare this with a naive full-state approximation that adds an artificial
 latent perturbation variance $0.04$ directly to the deterministic-completion
@@ -1953,6 +2163,9 @@ pushforward in Proposition~\ref{prop:bf-structural-ukf-pushforward}, then an
 exact SVD sigma-point rule for that degenerate law has the same formal local
 moment order as the corresponding nondegenerate rule.  Degeneracy is not, by
 itself, a mathematical objection to sigma-point filtering.
+This is a formal value-side statement abstracting from finite arithmetic,
+factor-construction choices, and derivative-branch effects.  Those
+implementation issues still require the diagnostics below.
 
 That statement is an equivalence result, not a recommendation to hide the
 structural split inside a large singular covariance matrix.  To make the
@@ -2526,7 +2739,7 @@ be computed, not noised.
 
 If an implementation violates this rule, it must be labeled as an artificial
 approximation and justified against a reference.  Otherwise, the filter is
-solving the wrong state-space model.  Failing one of the validation gates above
-does not automatically make a backend useless, but it does mean the strongest
-claim labels from Chapter~\ref{ch:bf-production-checklist} are not yet
-justified.
+solving a different approximate state-space model relative to the declared
+structural law.  Failing one of the validation gates above does not
+automatically make a backend useless, but it does mean the strongest claim
+labels from Chapter~\ref{ch:bf-production-checklist} are not yet justified.

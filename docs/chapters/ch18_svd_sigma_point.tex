@@ -434,8 +434,9 @@ Consequently
 \end{align}
 Equations
 \eqref{eq:bf-svd-eigenvalue-first}--\eqref{eq:bf-svd-factor-column-second}
-are the analytic SVD-factor gradient and Hessian on a smooth simple-spectrum
-branch.
+are the branch-local eigenderivative formulas for an eigen-factor covariance
+square root on a smooth simple-spectrum branch, before any active hard-floor
+or ordering/sign fallback is crossed.
 
 The formulas also show why the derivative path is fragile.  Eigenvector
 derivatives contain denominators $\lambda_a-\lambda_b$; the Hessian contains
@@ -549,7 +550,7 @@ law $X_\star=m+CZ\sim\calN(m,P_\star)$ is
   \varphi(m+C\xi^{(r)}).
 \end{equation}
 
-\begin{proposition}[SVD-CUT affine exactness]
+\begin{proposition}[Polynomial exactness under affine SVD placement]
 \label{prop:bf-svd-cut-affine-exactness}
 Suppose the standardized CUT rule is exact for standard-normal polynomials on
 $\mathbb R^q$ through degree $d$.  If $C C^\top=P_\star$, then
