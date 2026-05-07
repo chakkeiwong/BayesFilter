@@ -1,241 +1,99 @@
-# Independent Audit: BayesFilter Filter Backend Replacement Plan
+# Independent Audit: TF/TFP-Only BayesFilter Filter Plan
 
 Date: 2026-05-08
 
-Auditor stance: treat
-`docs/plans/bayesfilter-filter-backend-replacement-implementation-plan-2026-05-08.md`
-as if another developer wrote it.  The audit checks whether the plan is
-complete enough, whether phases are ordered safely, and whether any phase could
-silently change the likelihood target used by MacroFinance or DSGE clients.
+Auditor stance: treat the revised implementation plan as if another developer
+wrote it.  The audit checks whether the new TF/TFP-only rule is enforceable and
+whether the prior NumPy foundation can accidentally remain the production path.
 
 ## Audit Verdict
 
-The plan is directionally sound and phase order is mostly correct: linear value
-and derivative infrastructure should be stabilized before TensorFlow, nonlinear
-SVD, SVD-CUT, and client switch-over work.  The plan is also appropriately
-conservative about structural mixed-state filtering and about GPU/XLA claims.
+The user clarification changes the architecture.  The earlier NumPy-first
+foundation is no longer an acceptable implementation target.  It may help as
+historical reference, but BayesFilter production filtering should be built from
+TensorFlow and TensorFlow Probability modules.
 
-However, the plan needs four guardrails before broad execution:
+I agree with the pivot.  It is especially important for HMC and XLA workflows:
+NumPy implementations break graph compilation, force host/device transfers,
+hide `.numpy()` conversions in gradients, and do not match the intended
+TensorFlow/TFP execution model of MacroFinance and DSGE clients.
 
-1. Packaging and optional dependency policy must be solved before TensorFlow
-   phases.
-2. The first implementation pass should not attempt all 12 phases in one
-   commit; it should stop at the first major dependency or cross-repo boundary.
-3. Client switch-over phases require separate write grants for
-   `/home/chakwong/python` and `/home/chakwong/MacroFinance`.
-4. SVD-CUT analytic Hessians should be gated behind a smaller implemented
-   derivative surface, because spectral factor Hessians can dominate the risk.
+## Main Findings
 
-## Missing Or Under-Specified Points
+1. The current committed code still imports NumPy in production modules:
+   `bayesfilter/filters/kalman.py`, `bayesfilter/linear/types.py`,
+   `bayesfilter/linear/kalman_derivatives_numpy.py`,
+   `bayesfilter/filters/sigma_points.py`, `bayesfilter/filters/particles.py`,
+   `bayesfilter/results.py`, and `bayesfilter/backends.py`.
 
-### Packaging and dependency policy
+2. The public package currently re-exports
+   `solve_kalman_score_hessian` from the NumPy derivative module.  That is a
+   production-surface problem and should be retired once a TF replacement
+   exists.
 
-BayesFilter currently has no visible `pyproject.toml`, `setup.py`, or
-requirements file at the repo root.  TensorFlow, TensorFlow Probability,
-optional MKL/custom ops, and GPU/XLA tests cannot be made production claims
-without package metadata.
+3. The old plan used NumPy as an oracle for TF parity.  Under the new policy,
+   BayesFilter correctness should be checked by:
+   - closed-form scalar/multivariate Gaussian identities;
+   - TF-only finite differences;
+   - TFP distribution log-probability checks;
+   - MacroFinance TF provider parity;
+   - structural moment identities for quadrature rules.
 
-Required addition before TensorFlow phases:
-- define optional extras, for example `bayesfilter[tf]`, `bayesfilter[dev]`,
-  and possibly `bayesfilter[robust-eigh]`;
-- keep NumPy-only imports working when TensorFlow is not installed;
-- skip TensorFlow tests cleanly when the optional dependency is absent.
+4. Tests may continue to import NumPy for simple assertions during migration,
+   but tests should not make NumPy the mathematical oracle for production
+   filtering.
 
-### Version and compatibility policy
+5. The first coding phase should not start with nonlinear SVD-CUT.  It should
+   first build the TF result, diagnostics, and tensor contracts that every later
+   backend will share.
 
-The plan names compatibility re-exports but does not specify deprecation
-duration or import stability.
+## Required Changes To The Plan
 
-Required addition:
-- public imports remain stable through at least one migration window:
-  `bayesfilter.filters.kalman`, `bayesfilter.filters.sigma_points`, and
-  `bayesfilter.adapters.*`;
-- new modules may be introduced under `bayesfilter.linear` and
-  `bayesfilter.nonlinear`, with old modules wrapping them.
+- Replace all NumPy implementation phases with TF/TFP phases.
+- Add a source-check gate: production TF modules must not import NumPy or call
+  `.numpy()`.
+- Treat existing NumPy files as legacy, not as the implementation core.
+- Add TF/TFP dependency and version probing before coding.
+- Use CPU-only TF probes by default with `CUDA_VISIBLE_DEVICES=-1`; GPU probes
+  require escalated permissions under local policy.
+- Make TFP part of the value/log-probability contract where it is clearer than
+  handwritten Gaussian density code.
+- Keep XLA static-shape constraints visible in the public API from the start.
+- Delay removal of old public NumPy exports until TF replacements exist, but do
+  not extend those exports.
 
-### Data masking convention
+## Revised Phase Boundary
 
-The plan mentions masked support but should pin down semantics:
-- row selection in NumPy backends;
-- static-shape dummy-row convention in TensorFlow backends;
-- equality of likelihood contributions between conventions;
-- metadata describing whether missing rows are omitted or dummy-normalized.
+The next justified automatic boundary is now:
 
-### Initial condition derivatives
+1. Update plan and reset memo to record the TF/TFP-only decision.
+2. Inventory NumPy implementation surfaces and classify migration status.
+3. Add TF result/diagnostics/tensor contract modules.
+4. Add dense TF linear Kalman value backend and tests.
 
-Initial mean/covariance derivatives are included in the MacroFinance dataclass,
-but the plan should explicitly test:
-- fixed initial moments;
-- stationary initial covariance;
-- parameter-dependent initial mean;
-- block-specific initial policies exposed in metadata.
+Stop before:
+- deleting old NumPy modules without TF replacements;
+- editing `/home/chakwong/python` or `/home/chakwong/MacroFinance`;
+- claiming SVD derivative or HMC readiness before TF branch diagnostics pass;
+- running GPU tests without escalation.
 
-### Time-varying systems
-
-Client state-space systems may be time-invariant today, but BayesFilter should
-avoid painting itself into a corner.  The linear contract should either:
-- explicitly state Phase 1--4 are time-invariant only; or
-- accept per-time arrays/callables in a later phase.
-
-Recommendation: declare time-invariant first, then add time-varying LGSSM as a
-separate phase after dense derivative parity.
-
-### Observation dimensions and mixed frequency
-
-The plan should distinguish:
-- static observation dimension with masks;
-- time-varying observed subsets;
-- ragged observation blocks, which are not XLA-friendly unless represented with
-  static masks.
-
-### Numerical regularization contract
-
-Every backend needs a common regularization metadata schema:
-- jitter added to observation covariance;
-- eigenvalue/singular-value floors;
-- PSD projection residual;
-- failed conditioning guard;
-- implemented covariance `P_star`;
-- whether derivative is of pre-regularized or implemented object.
-
-The plan mentions these ideas but should make a shared diagnostics dataclass an
-early deliverable.
-
-### Randomness and reproducibility
-
-Particle filters are not the target here, but nonlinear tests and benchmark
-fixtures may simulate data.  Add a seeded fixture policy so future HMC/CUT
-benchmarks are reproducible.
-
-### Performance benchmarks
-
-The GPU/XLA phase should require:
-- compile time;
-- first-call time;
-- steady-state time;
-- peak memory if available;
-- point dimension `q`, state dimension, observation dimension, parameter count,
-  chain count, and time length.
-
-The original plan says this in spirit; the audit recommends a required JSON
-schema before benchmark claims are accepted.
-
-## Phase-Order Audit
-
-### Phase 0
-
-Good and necessary.  It should also record:
-- Python version;
-- NumPy version;
-- TensorFlow availability without importing TensorFlow in NumPy-only tests if
-  possible;
-- current branch and dirty-tree exclusions.
-
-### Phase 1
-
-Good.  It is the right first coding phase.  Add result/diagnostic dataclasses
-before moving algorithms, otherwise every backend will invent result metadata.
-
-### Phase 2
-
-Mostly good.  Splitting linear value backends into covariance, solve, masked,
-and SVD is safe.  Do not port TensorFlow SVD here unless TensorFlow dependency
-policy is already resolved; a NumPy SVD value backend can be done first.
-
-### Phase 3
-
-Good.  The solve-form analytic derivative backend is the highest-value port
-from MacroFinance.  It should be implemented before TensorFlow because it gives
-the clean oracle.
-
-### Phase 4
-
-Conditionally justified only after packaging/optional dependency policy is
-implemented.  Otherwise BayesFilter may become unimportable in NumPy-only
-environments.
-
-### Phase 5
-
-Good.  This should be partly parallel with Phase 1 only if write sets are
-disjoint, but a single developer can simply sequence it.
-
-### Phase 6
-
-Conditionally justified after Phase 5 and TensorFlow dependency policy.  The
-optional robust-eigh plugin boundary is important and should not import
-`dsge_hmc` unconditionally.
-
-### Phase 7
-
-Good after Phase 6.  CUT4-G value support can be implemented in NumPy before
-TensorFlow if desired, because the quadrature rule itself is dependency-light.
-
-### Phase 8
-
-High risk.  The plan should split this phase:
-- 8A: fixed-rule moment derivatives with a fixed factor derivative supplied by
-  a fixture;
-- 8B: SVD/eigen factor first derivative;
-- 8C: SVD/eigen factor second derivative;
-- 8D: full score/Hessian integration and branch diagnostics.
-
-This split prevents the spectral Hessian from obscuring simpler moment
-derivative bugs.
-
-### Phase 9
-
-Good but benchmark-only.  It should not block NumPy implementation phases.
-
-### Phase 10 and Phase 11
-
-These are client-repo migration phases and are not fully executable from the
-BayesFilter writable root alone.  They require:
-- BayesFilter parity tests passing;
-- explicit user permission to edit client repos;
-- separate commits in each client repo;
-- rollback-compatible wrappers.
-
-### Phase 12
-
-Good as final policy, not as an implementation phase for the first pass.
-
-## Additional Acceptance Gates
-
-Add these gates before client switch-over:
+## Acceptance Gates To Add
 
 ```text
-import_numpy_only_without_tensorflow
-result_metadata_schema_consistent_across_backends
-regularization_metadata_reports_implemented_covariance
-time_invariant_lgssm_declared_or_time_varying_supported
-mask_convention_parity_numpy_vs_tf
-initial_condition_derivative_policy_parity
-macrofinance_one_country_value_score_hessian_parity
-dsge_generic_ssm_value_gradient_parity
-full_state_mixed_dsge_blocked_by_default
-cut4_point_count_static_and_moment_exact
-svd_cut_derivative_branch_labels
+tf_import_and_tfp_import_cpu_only
+production_modules_no_numpy_imports
+production_modules_no_dot_numpy_calls
+tf_result_metadata_schema_consistent
+linear_tf_value_closed_form_identity
+linear_tf_value_tfp_log_prob_identity
+linear_tf_mask_static_shape
+linear_tf_score_hessian_tf_finite_difference
+legacy_numpy_exports_removed_after_tf_replacement
 ```
-
-## Recommended Execution Boundaries
-
-For the current BayesFilter-only execution, continue automatically through:
-- Phase 0 baseline;
-- Phase 1 core types/results if baseline passes;
-- Phase 2 NumPy linear value hardening if Phase 1 passes;
-- Phase 3 NumPy solve-form derivative backend if Phase 2 passes.
-
-Stop and ask before:
-- adding TensorFlow as a dependency or package extra;
-- editing `/home/chakwong/python`;
-- editing `/home/chakwong/MacroFinance`;
-- implementing full SVD-CUT Hessians beyond a fixture-level derivative core;
-- making production/HMC readiness claims.
 
 ## Conclusion
 
-The plan is a good roadmap, but all 12 phases are not equally executable in one
-BayesFilter-only run.  A justified first execution should establish the baseline
-and implement the NumPy linear foundation with shared result/diagnostic
-contracts.  That foundation is a prerequisite for every later nonlinear,
-TensorFlow, SVD-CUT, and client-migration phase.
+Yes, the current implementation uses NumPy.  That should be treated as a
+mistake in direction, not as the foundation for the rest of BayesFilter.  The
+plan should now proceed TF/TFP-first, with NumPy code isolated as legacy until
+it can be removed or replaced safely.

@@ -6054,3 +6054,45 @@ Next hypotheses to test:
 - H5: SVD-CUT implementation should begin with a dependency-light CUT rule and
   moment tests, then add TensorFlow/XLA placement, and only then attempt
   analytic factor derivatives and Hessians.
+
+### TF/TFP-only implementation pivot
+
+User clarification on 2026-05-08:
+- BayesFilter filtering implementation should exclude NumPy.
+- Production implementation should use TensorFlow and TensorFlow Probability
+  only.
+
+Plan update:
+- Rewrote
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-plan-2026-05-08.md`
+  as a TF/TFP-first plan.
+- Rewrote
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`
+  to audit the TF/TFP-only pivot.
+
+Interpretation:
+- The committed NumPy foundation is now classified as legacy/reference
+  material, not as the implementation target.
+- The next coding phases should not extend the NumPy Kalman, derivative,
+  sigma-point, or particle paths.
+- New production-facing modules should preserve TF tensors, use TF/TFP linear
+  algebra and log-probability contracts, avoid `.numpy()` conversions, and
+  pass source checks forbidding NumPy imports in production TF modules.
+- NumPy may still appear temporarily in tests or historical comparison notes,
+  but tests should move toward TF-only closed-form, TFP log-probability, and
+  TF finite-difference gates.
+
+Next phase justified?
+- Yes, but the justified next phase is now the TF/TFP dependency and contract
+  gate, not further NumPy implementation:
+  1. record CPU-only TensorFlow and TensorFlow Probability availability;
+  2. inventory production NumPy import surfaces;
+  3. add TF result/diagnostic/tensor contracts;
+  4. port the dense TF linear value backend before nonlinear SVD-CUT work.
+
+Stop rules:
+- Do not delete old NumPy public exports until TF replacements exist.
+- Do not run GPU/CUDA probes without escalated permissions.
+- Do not edit MacroFinance or `/home/chakwong/python` until BayesFilter TF
+  backends pass local gates and a separate cross-repo migration step is
+  justified.
