@@ -6561,3 +6561,263 @@ Updated next hypotheses:
   recursion failures.
 - H4: SVD derivative work should still wait until QR and the linear derivative
   reference triangle are stable.
+
+### Phase 3 QR/square-root derivative implementation thread begins
+
+User instruction on 2026-05-09:
+- update the reset memo;
+- audit the plan as an independent developer;
+- execute phases one by one with a plan, execute, test, audit, tidy-up, reset
+  memo cycle;
+- continue automatically when the next phase remains justified;
+- stop for direction if a later phase is no longer justified;
+- commit the modified files after the justified execution finishes;
+- provide detailed results and next hypotheses.
+
+Initial status:
+- `main` is synced with `origin/main` at `dcd0a28`.
+- Existing unrelated dirty local files remain out of scope:
+  - `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`;
+  - `docs/source_map.yml`;
+  - Windows/WSL `:Zone.Identifier` sidecars under `docs/plans/templates/`.
+- Production target remains TensorFlow/TensorFlow Probability only.
+- Solve-form and covariance-form TF derivatives are already available as
+  non-production references under `bayesfilter.testing`.
+
+Plan audit:
+- Added
+  `docs/plans/bayesfilter-phase3-qr-linear-derivatives-audit-2026-05-09.md`.
+- Corrected the consolidation map so QR/square-root is the production linear
+  derivative route and solve/covariance are testing references.
+
+Audit result:
+- Phase 3 is justified only as gated subphases:
+  1. QR/Cholesky factor derivative identities;
+  2. QR/square-root dense and masked value recursions;
+  3. QR/square-root analytic score/Hessian recursion.
+- Continue from one gate to the next only if tests pass and production source
+  hygiene remains clean.
+- Stop before SVD, nonlinear sigma-point, CUT4-G, GPU/XLA benchmarking, or
+  cross-repo client migration.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3A: QR and Cholesky factor derivative identities.
+
+### Phase 3A: QR and Cholesky factor derivative identities
+
+Phase plan:
+- port MacroFinance's positive-diagonal thin QR convention and first-/second-
+  order QR factor derivative helpers into a BayesFilter production module;
+- port Cholesky factor derivative helpers needed by QR/square-root Kalman
+  initialization and noise-factor derivatives;
+- add reconstruction tests before touching the Kalman recursion;
+- enforce the production hygiene rule: no NumPy imports and no `.numpy()` in
+  the production helper module.
+
+Execution:
+- Added `bayesfilter/linear/qr_factor_tf.py`.
+- Re-exported the QR factor helpers from `bayesfilter/linear/__init__.py`.
+- Added `tests/test_linear_qr_factor_tf.py`.
+
+Tests:
+- Targeted gate passed:
+  `pytest -q tests/test_linear_qr_factor_tf.py tests/test_tf_contracts.py`
+  reported `9 passed, 2 warnings in 6.58s`.
+- Python compile gate passed:
+  `python -m py_compile bayesfilter/linear/qr_factor_tf.py
+  tests/test_linear_qr_factor_tf.py`.
+- Source hygiene gate passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\(" bayesfilter/linear/qr_factor_tf.py
+  bayesfilter/linear/kalman_tf.py bayesfilter/linear/types_tf.py
+  bayesfilter/results_tf.py bayesfilter/diagnostics.py` returned no matches.
+
+Results:
+- Positive-diagonal QR reconstructs the matrix and preserves orthogonality.
+- First-order QR derivatives reconstruct `dM`.
+- Second-order QR derivatives reconstruct `d2M`.
+- QR lower factors of horizontal stacks reconstruct covariance, first
+  covariance derivatives, and second covariance derivatives.
+- Cholesky factor derivatives reconstruct covariance plus jitter, first
+  covariance derivatives, and second covariance derivatives.
+
+Audit:
+- Phase 3A passes.
+- The production factor helper module is independent of MacroFinance
+  application code and stays TensorFlow-only.
+- The next failure localization layer is now in place: if QR Kalman derivatives
+  fail later, the factor identities are unlikely to be the source.
+
+Tidy-up:
+- Existing unrelated dirty files remain out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3B: QR/square-root dense and masked value recursions.
+
+### Phase 3B: QR/square-root dense and masked value recursions
+
+Phase plan:
+- port the MacroFinance direct-QR square-root Kalman value recursion into
+  BayesFilter's TF LGSSM contract;
+- include the static dummy-row masked likelihood convention used by the
+  Cholesky TF backend;
+- compare dense QR against the Cholesky TF backend and compare masked QR
+  against masked Cholesky;
+- keep production code TensorFlow-only, with no NumPy imports and no `.numpy()`
+  calls;
+- require the graph/static-shape mask gate to pass before analytic QR
+  derivatives are ported.
+
+Execution:
+- Added `bayesfilter/linear/kalman_qr_tf.py`.
+- Re-exported the QR value backend from `bayesfilter/linear/__init__.py` and
+  `bayesfilter/__init__.py`.
+- Added `tests/test_linear_kalman_qr_tf.py`.
+- During audit, a dynamic `tf.while_loop` implementation of QR returned empty
+  float32 tensors from graph execution even though the Python function body
+  returned the correct float64 likelihood and filtered-state tensors.  The fix
+  was to follow the MacroFinance donor pattern: use a concrete static
+  observation length and unroll the QR recursion with `range(n_timesteps)` at
+  trace time.  The QR value functions intentionally use `@tf.function` without
+  `reduce_retracing=True` so TensorFlow does not generalize the time dimension
+  to `None`.
+
+Tests:
+- Focused QR value gate passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_linear_kalman_qr_tf.py
+  tests/test_linear_qr_factor_tf.py tests/test_linear_kalman_tf.py` reported
+  `21 passed, 2 warnings in 6.88s`.
+- The warnings are the existing TensorFlow Probability `distutils.version`
+  deprecation warnings.
+
+Results:
+- Dense QR log likelihood matches the dense Cholesky TF backend.
+- Masked QR with all-true masks matches dense QR and masked Cholesky.
+- Sparse masked rows match masked Cholesky.
+- All-missing masked rows contribute zero measurement likelihood and still
+  advance the state prediction.
+- Static-shape graph reuse with same-shaped masks passes.
+
+Audit:
+- Phase 3B passes.
+- The direct-QR value recursion is now a BayesFilter production backend, not a
+  testing-only reference.
+- The static-time requirement is a deliberate QR/square-root graph contract and
+  should be documented for client switch-over.  Dynamic-time QR scans can be
+  revisited later, but they are not a blocker for HMC or XLA workloads that
+  already use fixed observation arrays.
+
+Tidy-up:
+- Existing unrelated dirty files remain out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3C: dense QR/square-root analytic score and Hessian.
+- Masked analytic QR derivatives should remain a later subphase unless the
+  dense derivative gate passes cleanly.
+
+### Phase 3C: dense QR/square-root analytic score and Hessian
+
+Phase plan:
+- port MacroFinance's QR/square-root analytic likelihood, score, and Hessian
+  recursion into a BayesFilter production module;
+- use the Phase 3A factor derivative helpers and Phase 3B QR value backend as
+  the local foundation;
+- compare the QR derivative backend against the solve-form testing reference
+  and against TensorFlow autodiff on a small smooth model;
+- expose a public result wrapper returning `TFFilterDerivativeResult`;
+- keep masked analytic QR derivatives out of this subphase unless the dense
+  gate passes cleanly.
+
+Execution:
+- Added `bayesfilter/linear/kalman_qr_derivatives_tf.py`.
+- Re-exported:
+  - `TFQRLinearDerivativeBackend`;
+  - `tf_qr_sqrt_kalman_score_hessian`;
+  - `tf_qr_linear_gaussian_score_hessian`.
+- Added `tests/test_linear_kalman_qr_derivatives_tf.py`.
+- Updated the consolidation map to list QR/square-root as the production
+  derivative route and the correct BayesFilter derivative/factor test files.
+
+Tests:
+- New dense QR derivative gate passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py` reported
+  `5 passed, 2 warnings in 39.02s`.
+- Focused QR/reference gate passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py
+  tests/test_linear_kalman_qr_tf.py tests/test_linear_qr_factor_tf.py
+  tests/test_testing_derivative_references.py tests/test_linear_kalman_tf.py
+  tests/test_tf_contracts.py` reported `34 passed, 2 warnings in 42.31s`.
+- Python compile gate passed:
+  `python -m py_compile bayesfilter/linear/kalman_qr_derivatives_tf.py
+  bayesfilter/linear/kalman_qr_tf.py bayesfilter/linear/qr_factor_tf.py
+  tests/test_linear_kalman_qr_derivatives_tf.py
+  tests/test_linear_kalman_qr_tf.py tests/test_linear_qr_factor_tf.py`.
+- Source hygiene gate passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\("
+  bayesfilter/linear/kalman_qr_derivatives_tf.py
+  bayesfilter/linear/kalman_qr_tf.py bayesfilter/linear/qr_factor_tf.py
+  bayesfilter/linear/kalman_tf.py bayesfilter/linear/types_tf.py
+  bayesfilter/results_tf.py bayesfilter/diagnostics.py` returned no matches.
+- Whitespace gate passed: `git diff --check`.
+- Full CPU-only regression passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q` reported
+  `106 passed, 2 warnings in 53.04s`.
+
+Results:
+- The QR derivative likelihood matches the QR value likelihood.
+- The QR derivative likelihood, score, and Hessian match the solve-form testing
+  reference on a controlled one-dimensional LGSSM.
+- The QR derivative score and Hessian match TensorFlow autodiff on the same
+  smooth parameterized fixture.
+- The Hessian is explicitly symmetrized and passes the symmetry check.
+- Static-shape graph reuse through an outer `tf.function(reduce_retracing=True)`
+  passes for same-shaped observations.
+
+Audit:
+- Phase 3C passes for dense, time-invariant LGSSMs with static observation
+  length and smooth QR/Cholesky pivots.
+- The backend is production TensorFlow-only.  NumPy remains confined to tests
+  and `bayesfilter.testing` references.
+- The derivative target is the implemented regularized QR/square-root law,
+  with jitter included in the observation covariance factor.
+- The static-time requirement inherited from Phase 3B remains part of the QR
+  graph contract.
+
+Tidy-up:
+- Existing unrelated dirty files remain out of scope and should not be staged:
+  `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`,
+  `docs/source_map.yml`, SGU plan drafts, and Windows/WSL
+  `:Zone.Identifier` sidecars.
+
+Next phase justified?
+- Not automatically in this commit.  The QR dense derivative spine is now in
+  place and tested.
+- Recommended next subphases are:
+  1. add masked QR analytic derivatives, using the static dummy-row convention
+     from Phase 3B;
+  2. add time-varying LGSSM derivative support if MacroFinance or DSGE client
+     switch-over requires it;
+  3. port the TF SVD linear value backend with implemented/floored covariance
+     diagnostics;
+  4. only then resume nonlinear UKF/SVD sigma-point/CUT4-G consolidation.
+
+### Phase 3 QR/square-root thread completion
+
+Completion status:
+- Completed the justified QR/square-root Phase 3 subphases:
+  - 3A factor identities;
+  - 3B dense and masked QR value recursions;
+  - 3C dense QR analytic score and Hessian.
+- Did not start SVD, nonlinear sigma-point, CUT4-G, GPU/XLA benchmarking, or
+  cross-repo client migration in this run.
+
+Interpretation:
+- BayesFilter now has a production QR/square-root linear derivative route that
+  agrees with existing solve-form debug references and autodiff on local
+  fixtures.
+- The solve-form and covariance-form derivative ports remain valuable as
+  testing/debugging references, but QR/square-root is the production path.
+- The next implementation decision should be whether client needs require
+  masked/time-varying QR derivatives immediately or whether the project should
+  move to SVD value diagnostics first.
