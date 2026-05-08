@@ -400,23 +400,30 @@ Tests:
 ### Phase 3: TF Analytic Score and Hessian for Linear Filters
 
 Plan:
-- port MacroFinance `filters/tf_differentiated_kalman.py` first-order and
-  second-order analytic score/Hessian recursions;
-- port MacroFinance `filters/tf_solve_differentiated_kalman.py` as the
-  solve-form analytic variant if it provides clearer derivative diagnostics;
-- port MacroFinance `filters/tf_qr_sqrt_differentiated_kalman.py` after the
-  dense derivative contract is stable, because it adds a larger factor
-  derivative surface;
+- port MacroFinance `filters/tf_qr_sqrt_differentiated_kalman.py` as the
+  production derivative route, because MacroFinance already contains the clean
+  QR/square-root first- and second-order factor derivative implementation and
+  its identity tests;
+- keep MacroFinance `filters/tf_differentiated_kalman.py` covariance-form and
+  `filters/tf_solve_differentiated_kalman.py` solve-form derivatives under
+  `bayesfilter.testing` as reference/debug backends, not production front
+  doors;
+- use those testing references to localize failures in QR derivative work:
+  covariance-form for continuity with MacroFinance HMC conventions, solve-form
+  for transparent Cholesky-solve algebra and trace diagnostics;
 - support first and second derivatives of initial moments, transition matrices,
   transition covariances, observation matrices, and observation covariances;
 - expose both eager TF and `tf.function` graph paths;
 - keep the derivative target explicit when regularization is active.
 
 Tests:
+- adapt MacroFinance `tests/test_tf_qr_sqrt_differentiated_kalman.py`;
+- adapt MacroFinance `tests/test_tf_qr_derivative_identities.py`;
 - adapt MacroFinance `tests/test_filter_backend_parity.py`;
 - adapt MacroFinance `tests/test_one_country_analytic_backend_parity.py`;
-- adapt MacroFinance `tests/test_tf_qr_derivative_identities.py` when the QR
-  path is ported;
+- keep BayesFilter-local solve/covariance derivative references in
+  `bayesfilter.testing` and compare them against autodiff on controlled small
+  LGSSMs;
 - finite-difference validation using TF-only perturbations;
 - Hessian symmetry;
 - parameter-dependent initial condition policies;

@@ -6503,3 +6503,61 @@ Next hypotheses to test:
 - H5: DSGE nonlinear SVD sigma-point and CUT4-G work should begin only after
   the linear derivative spine is stable, because nonlinear score/Hessian tests
   need a trusted linear control case.
+
+### Derivative route correction: QR production, solve/covariance references
+
+User correction:
+- MacroFinance already has a clean QR/square-root differentiated Kalman backend
+  and factor-derivative tests.  The solve-form and covariance-form TF
+  derivative implementations should still be kept, but as testing/debugging
+  references rather than the main BayesFilter production route.
+
+Decision:
+- Revise Phase 3 so the production derivative target is the MacroFinance
+  QR/square-root analytic score/Hessian backend.
+- Port MacroFinance solve-form and covariance-form TF derivative implementations
+  into `bayesfilter.testing` as reference/debug backends.
+- Do not re-export the solve/covariance references from the public
+  `bayesfilter` namespace.
+- Keep eager NumPy trace conversion in those testing references because the
+  trace rows are useful for debugging derivative algebra.  This is compatible
+  with the production rule because the modules live under `bayesfilter.testing`.
+
+Execution:
+- Added
+  `bayesfilter/testing/tf_solve_differentiated_kalman_reference.py` from
+  MacroFinance `filters/tf_solve_differentiated_kalman.py`.
+- Added
+  `bayesfilter/testing/tf_covariance_differentiated_kalman_reference.py` from
+  MacroFinance `filters/tf_differentiated_kalman.py`.
+- Added `tests/test_testing_derivative_references.py`.
+- Updated the implementation plan and independent audit to state that
+  QR/square-root is the production derivative route, while solve/covariance are
+  testing references.
+
+Tests:
+- Focused reference gate passed:
+  `pytest -q tests/test_testing_derivative_references.py` reported
+  `3 passed, 2 warnings in 9.67s`.
+- Full regression gate passed:
+  `pytest -q` reported `89 passed, 2 warnings in 18.95s`.
+
+Results:
+- Solve-form and covariance-form testing references agree with each other on a
+  controlled one-dimensional LGSSM.
+- Both references agree with TensorFlow autodiff for log likelihood, score, and
+  Hessian on the same fixture.
+- The covariance-form score-only reference agrees with the full covariance-form
+  score/Hessian reference.
+- The reference functions are not exported from `bayesfilter`.
+
+Updated next hypotheses:
+- H1: the QR/square-root MacroFinance derivative backend should be the next
+  production implementation target in BayesFilter.
+- H2: the BayesFilter testing solve/covariance references should be used as
+  local parity oracles when porting QR derivatives and diagnosing failures.
+- H3: QR derivative identity tests should be ported before the full filtered
+  score/Hessian wrapper, so factor algebra failures are separated from Kalman
+  recursion failures.
+- H4: SVD derivative work should still wait until QR and the linear derivative
+  reference triangle are stable.

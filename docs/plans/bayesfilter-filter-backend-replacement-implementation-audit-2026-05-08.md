@@ -113,11 +113,13 @@ gate.
 
 ### Phase 3
 
-Conditionally justified after Phase 2.  Before coding, choose the derivative
-route:
-- dense covariance-form for continuity with MacroFinance HMC;
-- solve-form for clearer derivative diagnostics;
-- QR/square-root only after factor-derivative tests are in BayesFilter.
+Conditionally justified after Phase 2.  The derivative route is now explicit:
+port the MacroFinance QR/square-root derivative backend as the production
+route.  MacroFinance already contains the clean QR factor first- and
+second-derivative identities and tests.  The dense covariance-form and
+solve-form derivative implementations should still be ported, but only under
+`bayesfilter.testing` as reference/debug backends for parity and failure
+localization.
 
 ### Phase 4
 
