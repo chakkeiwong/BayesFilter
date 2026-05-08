@@ -6561,7 +6561,6 @@ Updated next hypotheses:
   recursion failures.
 - H4: SVD derivative work should still wait until QR and the linear derivative
   reference triangle are stable.
-
 ### Phase 3 QR/square-root derivative implementation thread begins
 
 User instruction on 2026-05-09:
@@ -6821,3 +6820,235 @@ Interpretation:
 - The next implementation decision should be whether client needs require
   masked/time-varying QR derivatives immediately or whether the project should
   move to SVD value diagnostics first.
+
+## 2026-05-09: student DPF baseline consolidation execution
+
+### Preflight: workspace, scope, and baseline
+
+Phase plan:
+- record the workspace state before executing the student DPF baseline
+  consolidation plan;
+- identify unrelated dirty files that must not be staged by this pass;
+- confirm the reset memo target and current student snapshot artifacts;
+- decide whether the next phase remains justified.
+
+Execution:
+- Reviewed `git status --short --branch`.
+- Reviewed recent commit history with `git log -5 --oneline --decorate`.
+- Inspected the current tail of this reset memo.
+- Inspected the current student-baseline scaffold and found nested Git
+  repositories under:
+  - `experiments/student_dpf_baselines/vendor/2026MLCOE/.git`;
+  - `experiments/student_dpf_baselines/vendor/advanced_particle_filter/.git`.
+
+Observed workspace:
+- Current branch: `main`.
+- Current HEAD: `ea956fa docs: derive SVD CUT equations`.
+- Unrelated pre-existing dirty/untracked documentation files are present:
+  - `docs/main.tex`;
+  - `docs/source_map.yml`;
+  - `docs/chapters/ch19b_dpf_literature_survey.tex`;
+  - `docs/chapters/ch19c_dpf_implementation_literature.tex`;
+  - `docs/chapters/ch19d_dpf_hmc_dsge_macrofinance_assessment.tex`.
+- This pass will not stage those unrelated files unless explicitly required by
+  the student-baseline plan.  They are outside the current execution scope.
+
+In-scope files for this pass:
+- `docs/differentiable-particle-filter-program.md`;
+- `docs/plans/bayesfilter-differentiable-particle-filter-governing-and-phase1-review-2026-05-08.md`;
+- `docs/plans/bayesfilter-differentiable-particle-filter-phase1-audit-plan-2026-05-08.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-consolidation-plan-2026-05-08.md`;
+- `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+- `experiments/`.
+
+Tests:
+- No code tests run in preflight.
+- File inventory and Git state checks completed.
+
+Audit:
+- Preflight passes.
+- The workspace is dirty, but the unrelated dirty files are clearly separable
+  from the current execution scope.
+- The next phase remains justified: audit the student consolidation plan as a
+  second developer before making further changes.
+
+### Independent plan audit
+
+Phase plan:
+- audit the student DPF baseline consolidation plan as if by another
+  developer;
+- identify missing controls or blockers before executing the plan;
+- decide whether autonomous execution remains justified.
+
+Execution:
+- Created
+  `docs/plans/bayesfilter-student-dpf-baseline-consolidation-audit-2026-05-09.md`.
+- Reviewed the student consolidation plan, the experimental scaffold, and the
+  current vendored snapshot state.
+
+Tests:
+- Documentation-only phase; no code tests run.
+
+Audit:
+- The audit disposition is "approve with execution controls".
+- Required controls identified:
+  - normalize nested Git repositories before commit;
+  - record large/generated vendored artifacts rather than deleting them
+    silently;
+  - isolate dependency checks and avoid unrecorded global installs;
+  - reproduce original examples before adaptation;
+  - preserve adapter failures as structured results;
+  - prevent student HMC/MLE experiments from promoting BayesFilter HMC claims.
+- The next phase remains justified: execute S1A storage normalization.
+
+### Phase S1A: normalize vendored snapshot storage
+
+Phase plan:
+- confirm both vendored repositories are at the recorded commits and clean;
+- remove only nested Git metadata so the parent repository can own the
+  snapshots as plain experimental files;
+- verify no `.git` directories remain under the vendor tree;
+- keep `sources.yml` and `vendor/SNAPSHOT.md` as provenance.
+
+Execution:
+- Confirmed `2026MLCOE` was at
+  `020cfd7f2f848afa68432e95e6c6e747d3d2402d` with clean nested status.
+- Confirmed `advanced_particle_filter` was at
+  `d2a797c330e11befacbb736b5c86b8d03eb4a389` with clean nested status.
+- Removed only:
+  - `experiments/student_dpf_baselines/vendor/2026MLCOE/.git`;
+  - `experiments/student_dpf_baselines/vendor/advanced_particle_filter/.git`.
+
+Tests:
+- `find experiments/student_dpf_baselines/vendor -maxdepth 2 -type d -name .git -print`
+  returned no entries.
+- `git status --short -- experiments/student_dpf_baselines/vendor` now shows
+  the vendor tree as ordinary untracked experimental files.
+- `git diff --check` over the touched documentation/vendor surfaces passed.
+
+Audit:
+- Phase S1A passes.
+- The snapshots are now plain source snapshots controlled by BayesFilter, with
+  upstream commit provenance recorded separately.
+- This avoids accidental submodule semantics and prevents upstream student
+  branch movement from changing our baseline.
+- The next phase remains justified: run S2 dependency and environment audit
+  without installing dependencies globally.
+
+### Phase S2: dependency and environment audit
+
+Phase plan:
+- inspect dependency declarations and README runtime notes for both student
+  snapshots;
+- check package availability in the current environment without installing
+  anything;
+- run import-only smoke checks for core modules;
+- classify each snapshot as runnable, runnable with environment work, or
+  blocked.
+
+Execution:
+- Inspected dependency records:
+  - `2026MLCOE` has `README.md`; no requirements/environment file was found in
+    the max-depth dependency audit.
+  - `advanced_particle_filter` has `requirements.txt`, `README.md`, and
+    `notebooks/README.md`.
+- Observed environment:
+  - Python `3.13.13`;
+  - TensorFlow `2.20.0`;
+  - TensorFlow Probability `0.25.0`.
+- Package import-spec availability:
+  - available: `numpy`, `scipy`, `tensorflow`,
+    `tensorflow_probability`, `pytest`;
+  - missing: `matplotlib`, `numba`.
+- Ran import-only smoke checks:
+  - `2026MLCOE`: imported `filters.classical`, `filters.particle`,
+    `filters.flow_filters`, and `models.classic_ssm` with the vendored package
+    paths added to `sys.path`.
+  - `advanced_particle_filter` NumPy side: imported package plus
+    `filters.kalman`, `filters.particle`, `filters.edh`, and
+    `models.linear_gaussian`.
+  - `advanced_particle_filter` TensorFlow side: imported `tf_filters.kalman`,
+    `tf_filters.differentiable_particle`, and `tf_models.linear_gaussian`.
+- Wrote
+  `experiments/student_dpf_baselines/reports/dependency-audit-2026-05-09.md`.
+
+Tests:
+- Import-only smoke checks passed for the listed modules.
+- No dependency installation was performed.
+
+Audit:
+- Phase S2 passes.
+- Both snapshots are classified as `runnable_for_smoke_import`.
+- Missing `matplotlib` may block plotting-heavy original scripts, and missing
+  `numba` may block optional acceleration, but neither blocks initial
+  non-plotting/test-based reproduction.
+- The `advanced_particle_filter` README states TF side was tested with TF 2.16
+  and TFP 0.24; current TF/TFP are 2.20.0/0.25.0, so later numerical failures
+  must distinguish environment drift from algorithm behavior.
+- The next phase remains justified: reproduce smallest original examples,
+  preferring non-plotting/test entry points first and recording dependency
+  blockers explicitly.
+
+### Phase S3: reproduce original student results, partial pass
+
+Phase plan:
+- run the smallest original/test examples for each student snapshot;
+- avoid plotting-heavy examples first because `matplotlib` is not available;
+- record exact outcomes without modifying student code;
+- continue to adapter work only if at least one reproducible baseline exists
+  and blockers are explicit.
+
+Execution:
+- Ran `2026MLCOE` unit tests:
+  `python experiments/student_dpf_baselines/vendor/2026MLCOE/tests/unit/test_unit_math.py -q`.
+- Ran `2026MLCOE` integration tests:
+  `python experiments/student_dpf_baselines/vendor/2026MLCOE/tests/integration/test_integration_system.py -q`.
+- Attempted the full `advanced_particle_filter` basic script:
+  `PYTHONPATH=experiments/student_dpf_baselines/vendor python experiments/student_dpf_baselines/vendor/advanced_particle_filter/tests/test_basic.py`.
+  It did not produce output promptly and was not used as a completed
+  reproduction result.
+
+Tests:
+- `2026MLCOE` unit tests: 8 passed, 1324 warnings.
+- `2026MLCOE` integration tests: 12 passed, 5272 warnings.
+- Warnings were dominated by TensorFlow/gast deprecation warnings under Python
+  3.13 and a CUDA no-device message; tests still passed on CPU.
+- `advanced_particle_filter` import smokes passed in S2, but original-example
+  reproduction remains incomplete and should use smaller targeted pytest tests
+  or direct adapter-level examples next.
+
+Audit:
+- Phase S3 is partially complete.
+- `2026MLCOE` has a reproducible internal test baseline in the current
+  environment.
+- `advanced_particle_filter` is import-runnable but not yet reproduced through
+  an original example; this is not a blocker for committing the snapshot and
+  plan, but it blocks claiming `student_reproduced` for that source.
+- No student code was modified.
+- The next phase remains justified after commit/push: run targeted
+  `advanced_particle_filter` tests before building adapters.
+
+### Commit checkpoint requested by user
+
+Phase plan:
+- stop long-running execution and commit/push the scoped DPF/student-baseline
+  work on request;
+- exclude unrelated dirty monograph files;
+- avoid committing generated cache files or OS metadata from vendored sources;
+- preserve the incomplete S3 status so later phases can resume correctly.
+
+Execution:
+- Added `.gitignore` entries for OS metadata from local/vendored snapshots:
+  `.DS_Store` and `Icon?`.
+- Confirmed no production `bayesfilter/` or `tests/` code imports from
+  `experiments/`.
+- Confirmed `git diff --check` passes.
+
+Audit:
+- Commit checkpoint is justified.
+- The final commit should include the DPF program/governing docs, student
+  consolidation plan/audit, reset memo updates, `.gitignore`, and the
+  quarantined experimental snapshot/scaffold.
+- The final commit should exclude unrelated pre-existing changes:
+  `docs/main.tex`, `docs/source_map.yml`, and the `docs/chapters/ch19*.tex`
+  files.
