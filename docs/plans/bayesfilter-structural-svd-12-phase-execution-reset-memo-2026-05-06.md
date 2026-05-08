@@ -2713,3 +2713,39 @@ Remaining recommendations:
    until a timing derivation says otherwise.
 4. Keep BayesFilter backend, derivative, compiled, and HMC promotion blocked
    until a causal value target passes.
+
+## 2026-05-08 SGU causal-control-anchor closure pass
+
+### Phase 0: plan, audit, and preflight
+
+Plan:
+- close the remaining causal-control-anchor hypothesis from the SGU goals/gaps
+  plan;
+- build on the already committed DSGE H1-H6 pass;
+- do not modify BayesFilter backend/filter code unless a causal anchor passes
+  both residual and locality gates.
+
+Execute:
+- Added plan:
+
+```text
+docs/plans/bayesfilter-sgu-causal-control-anchor-closure-plan-2026-05-08.md
+```
+
+- Added independent audit:
+
+```text
+docs/plans/bayesfilter-sgu-causal-control-anchor-closure-audit-2026-05-08.md
+```
+
+Audit:
+- The plan is approved as a bounded diagnostic closure pass.
+- Passing residuals alone is not sufficient; locality is required.
+- Expected outcome remains no BayesFilter production integration unless a
+  causal anchor satisfies all gates.
+
+Interpretation:
+- Proceed to client-owned anchor diagnostics.
+
+Next phase justified?
+- Yes.  Phase 1 can implement focused DSGE tests.
