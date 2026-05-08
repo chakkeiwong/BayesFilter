@@ -2749,3 +2749,354 @@ Interpretation:
 
 Next phase justified?
 - Yes.  Phase 1 can implement focused DSGE tests.
+
+### Phase 1: causal current-control anchor diagnostics
+
+Plan:
+- test whether alternative timing-consistent current-control anchors make SGU
+  causal projection residual-closing and local.
+
+Execute:
+- Added in `/home/chakwong/python`:
+  - `tests/contracts/test_sgu_causal_control_anchor_gate.py`;
+  - `docs/plans/sgu-causal-control-anchor-diagnostic-result-2026-05-08.md`.
+
+Test:
+
+```text
+2 passed, 3 warnings in 2.39s
+```
+
+Diagnostics:
+
+```text
+second_order_projected_max       = 8.561333092931e-02
+second_order_next_control_norm   = 4.039154171952e-01
+no_const_projected_max           = 1.256486389166e-08
+no_const_next_control_norm       = 8.562585814877e-01
+first_order_projected_max        = 1.653174499516e-06
+first_order_next_control_norm    = 1.087374407949e+00
+static_foc_projected_max         = 1.256486389166e-08
+static_foc_next_control_norm     = 3.147909874517e-02
+static_foc_static_anchor_max     = 1.065814103640e-14
+```
+
+Audit:
+- Alternative anchors can close residuals.
+- They do not satisfy locality.  The best anchor, `static_foc`, still has
+  next-control norm `3.15e-02`, above the `2e-02` production gate.
+
+Interpretation:
+- Causal SGU remains blocked for production filtering.
+- The new allowed evidence is diagnostic only:
+
+```text
+sgu_causal_control_anchor_residual_closure_diagnostic_passed
+```
+
+- The active production blocker is:
+
+```text
+blocked_sgu_causal_anchor_projection_nonlocal
+```
+
+Next phase justified?
+- Yes.  BayesFilter/downstream decision and final verification are justified.
+  Backend/filter, derivative/JIT, and HMC implementation remain unjustified.
+
+### Phase 2: BayesFilter and downstream decision
+
+Plan:
+- update provenance;
+- run BayesFilter DSGE adapter guard;
+- decide whether anchor evidence justifies BayesFilter or downstream work.
+
+Execute:
+- Updated:
+
+```text
+docs/source_map.yml
+```
+
+- Registered the causal-anchor plan, audit, and DSGE client result note.
+
+Test:
+
+```text
+tests/test_dsge_adapter_gate.py: 5 passed, 2 warnings in 4.26s
+```
+
+Audit:
+- Residual-closing anchors fail locality.
+- No causal production target passed.
+- BayesFilter code does not need to change.
+
+Interpretation:
+- BayesFilter backend/filter, derivative/JIT, and HMC remain blocked.
+
+Next phase justified?
+- Yes.  Final verification and scoped commit are justified.
+
+## 2026-05-09 SGU production-target gap closure pass
+
+### Phase 0: evidence freeze, master-plan alignment, and independent audit
+
+Plan:
+- execute
+  `docs/plans/bayesfilter-sgu-production-target-gap-closure-plan-2026-05-09.md`;
+- audit the plan as if written by another developer;
+- preserve the master-plan dependency order:
+
+```text
+model semantics -> residual evidence -> derivatives/JIT -> HMC
+```
+
+- keep unrelated QR/linear derivative files and Windows `Zone.Identifier`
+  files out of this SGU pass.
+
+Execute:
+- Added audit:
+
+```text
+docs/plans/bayesfilter-sgu-production-target-gap-closure-audit-2026-05-09.md
+```
+
+- Current commits at freeze:
+  - BayesFilter: `dcd0a28 Add filtering source materials and SGU plans`;
+  - DSGE client: `a849066 Test DSGE structural gap hypotheses`.
+
+Test:
+
+```text
+/home/chakwong/python:
+tests/contracts/test_dsge_structural_gap_hypotheses.py
+tests/contracts/test_sgu_causal_control_anchor_gate.py
+6 passed, 3 warnings in 5.49s
+```
+
+Audit:
+- The plan is safe as a gated diagnostic and decision plan.
+- The required guardrails are: no locality-threshold relaxation without a
+  derivation, no production API unless residual/locality/timing/rank/stress
+  gates pass, and no BayesFilter backend/filter or HMC promotion without a
+  production value target.
+
+Interpretation:
+- Baseline diagnostics reproduce.
+- The current blocker is still that residual-closing causal anchors fail
+  locality.
+
+Next phase justified?
+- Yes.  Phase 1 equation-level timing derivation for SGU `H[3]` through
+  `H[6]` is justified.
+
+### Phase 1: equation-level timing derivation for `H[3]` through `H[6]`
+
+Plan:
+- identify which SGU equations explain why residual-closing causal anchors are
+  nonlocal;
+- decompose the `static_foc` result by equation and by future-control
+  adjustment component.
+
+Execute:
+- Inspected the DSGE canonical SGU residual system:
+  - `H[3]`: Euler equation;
+  - `H[4]`: marginal utility;
+  - `H[5]`: labor FOC;
+  - `H[6]`: capital FOC.
+- Ran a local diagnostic comparing `second_order`,
+  `quadratic_without_constant`, `first_order`, and `static_foc` anchors.
+
+Test:
+- Added in `/home/chakwong/python`:
+
+```text
+tests/contracts/test_sgu_current_control_derivation_gate.py
+```
+
+- Focused result:
+
+```text
+tests/contracts/test_sgu_current_control_derivation_gate.py
+tests/contracts/test_sgu_causal_control_anchor_gate.py
+4 passed, 3 warnings in 3.87s
+```
+
+Diagnostics:
+
+```text
+static_foc before:
+H[3] Euler        = 2.279284775791e-01
+H[4] marginal U   = 7.105427357601e-15
+H[5] labor FOC    = 1.065814103640e-14
+H[6] capital FOC  = 2.304406035661e-01
+
+static_foc after:
+H[3] Euler        = 1.776356839400e-15
+H[4] marginal U   = 7.105427357601e-15
+H[5] labor FOC    = 1.065814103640e-14
+H[6] capital FOC  = 5.329070518201e-14
+
+next_lam_max      = 3.110735141719e-02
+next_norm_max     = 3.147909874517e-02
+locality_gate     = 2.000000000000e-02
+state_norm_max    = 2.315088502108e-16
+```
+
+Audit:
+- `static_foc` closes current/static equations and allows Euler/capital FOC
+  residuals to close.
+- The closure is dominated by a future marginal-utility movement, not by
+  deterministic-state movement.
+- The movement exceeds the predeclared production locality gate.
+
+Interpretation:
+- The active causal blocker is now sharper: SGU needs a predictive law or
+  augmented state convention for future marginal utility before production
+  filtering can be promoted.
+
+Next phase justified?
+- Yes.  Phase 2 candidate design is justified, but only as a diagnostic
+  design/decision phase.  A production API is not yet justified.
+
+### Phase 2: locality-repair candidate design
+
+Plan:
+- decide whether the Phase 1 evidence defines a candidate that can be tested
+  without changing production code;
+- forbid two-slice current-control movement in predictive candidates.
+
+Execute:
+- Designed three candidate classes:
+  1. static-FOC anchor plus predictive future-marginal-utility law;
+  2. augmented predictive state carrying lagged/shadow marginal utility or
+     controls;
+  3. source-backed expectation/volatility bookkeeping for `H[3]` and `H[6]`.
+
+Test:
+- No new production API test was run in Phase 2 because none of the candidates
+  is fully specified by a derivation yet.
+- The Phase 1 contract test is the guardrail that prevents accidental
+  promotion of the residual-only diagnostic.
+
+Audit:
+- The candidates are mathematically meaningful, but none is implementable as a
+  production target without a derivation of the predictive timing object.
+- Relaxing the `2e-2` locality threshold is not justified after seeing the
+  result.
+
+Interpretation:
+- Continue to a diagnostic implementation/test phase only.  Do not modify
+  BayesFilter or DSGE production APIs.
+
+Next phase justified?
+- Yes.  Phase 3 diagnostic implementation is justified because it locks the
+  derivation evidence into tests.
+
+### Phase 3: diagnostic implementation in DSGE client
+
+Plan:
+- add a focused client contract test that records the equation-level reason
+  `static_foc` remains diagnostic only.
+
+Execute:
+- Added:
+
+```text
+/home/chakwong/python/tests/contracts/test_sgu_current_control_derivation_gate.py
+/home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
+```
+
+Test:
+
+```text
+4 passed, 3 warnings in 3.87s
+```
+
+Audit:
+- The new test asserts that `static_foc` closes residuals by moving future
+  `lam`, and that no tested anchor earns
+  `sgu_causal_filtering_target_passed`.
+- The helper remains diagnostic and local to tests.
+
+Interpretation:
+- The SGU residual-closure evidence is now reproducible.
+- The production target remains blocked by locality.
+
+Next phase justified?
+- Yes.  Phase 4 promotion decision is justified, with the expected result
+  being no production API.
+
+### Phase 4: promotion decision and model-owned API
+
+Plan:
+- decide whether to add a production DSGE API for SGU causal filtering.
+
+Execute:
+- No production API was added.
+- The client result note records the blocked decision.
+
+Audit:
+- Residual closure alone is insufficient.
+- The required production label remains unearned:
+
+```text
+sgu_causal_filtering_target_passed
+```
+
+- The active labels are:
+
+```text
+sgu_causal_control_anchor_residual_closure_diagnostic_passed
+blocked_sgu_causal_anchor_projection_nonlocal
+```
+
+Interpretation:
+- SGU production remains state-identity-only, with causal-anchor residual
+  closure recorded as diagnostic evidence.
+
+Next phase justified?
+- Yes.  Phase 5 two-slice diagnostic containment is justified.  BayesFilter
+  backend/filter work remains unjustified.
+
+### Phase 5: two-slice smoother/diagnostic containment
+
+Plan:
+- preserve useful two-slice residual-closure evidence without promoting it as
+  a predictive filter transition.
+
+Execute:
+- Added in `/home/chakwong/python`:
+
+```text
+docs/plans/sgu-two-slice-smoother-diagnostic-containment-2026-05-09.md
+```
+
+Test:
+
+```text
+/home/chakwong/python:
+tests/contracts/test_sgu_joint_projection_target.py
+tests/contracts/test_dsge_structural_gap_hypotheses.py
+9 passed, 3 warnings in 7.92s
+```
+
+Audit:
+- Existing tests assert:
+
+```text
+sgu_two_slice_projection_diagnostic_passed
+blocked_sgu_two_slice_projection_not_filter_transition
+blocked_sgu_projection_is_new_target_not_gate_b
+```
+
+- Snapback evidence confirms two-slice closure depends on moving current
+  controls and therefore is not a predictive transition.
+
+Interpretation:
+- Two-slice SGU remains an offline diagnostic or future smoother candidate.
+- It cannot unlock BayesFilter filtering, derivative/JIT, or HMC gates.
+
+Next phase justified?
+- Yes.  Phase 6 BayesFilter integration gate is justified as a blocked-gate
+  verification only.

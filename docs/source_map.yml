@@ -217,6 +217,48 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-structural-sgu-goals-gaps-next-plan-2026-05-08.md
     status: drafted
     role: Goals, remaining gaps, hypotheses, and next closure plan for SGU structural filtering after the joint projection target classification.
+  - id: bayesfilter_sgu_causal_control_anchor_closure_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-causal-control-anchor-closure-plan-2026-05-08.md
+    status: drafted
+    role: Plan for testing timing-consistent SGU current-control anchors as the remaining causal filtering gap.
+  - id: bayesfilter_sgu_causal_control_anchor_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-causal-control-anchor-closure-audit-2026-05-08.md
+    status: drafted
+    role: Independent audit of the SGU causal current-control anchor closure plan and stop rules.
+  - id: dsge_sgu_causal_control_anchor_diagnostic_result
+    project: dsge_hmc
+    root: /home/chakwong/python/docs/plans
+    entrypoint: /home/chakwong/python/docs/plans/sgu-causal-control-anchor-diagnostic-result-2026-05-08.md
+    status: drafted
+    role: DSGE client result showing alternative causal anchors can close residuals but fail locality, leaving SGU production filtering blocked.
+  - id: bayesfilter_sgu_production_target_gap_closure_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-production-target-gap-closure-plan-2026-05-09.md
+    status: drafted
+    role: Successor plan for closing or retiring the SGU production filtering target gap after causal-anchor diagnostics.
+  - id: bayesfilter_sgu_production_target_gap_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-sgu-production-target-gap-closure-audit-2026-05-09.md
+    status: drafted
+    role: Independent audit of the SGU production-target gap closure plan and downstream stop rules.
+  - id: dsge_sgu_current_control_derivation_gate_result
+    project: dsge_hmc
+    root: /home/chakwong/python/docs/plans
+    entrypoint: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
+    status: drafted
+    role: DSGE client result showing static-FOC residual closure is dominated by future marginal-utility movement and remains nonlocal.
+  - id: dsge_sgu_two_slice_smoother_diagnostic_containment
+    project: dsge_hmc
+    root: /home/chakwong/python/docs/plans
+    entrypoint: /home/chakwong/python/docs/plans/sgu-two-slice-smoother-diagnostic-containment-2026-05-09.md
+    status: drafted
+    role: DSGE client note containing two-slice SGU projection as an offline diagnostic or future smoother candidate, not a predictive filter.
   - id: bayesfilter_structural_ssm_monograph_pass
     project: BayesFilter
     root: /home/chakwong/BayesFilter/docs/plans
@@ -535,6 +577,48 @@ chapter_mappings:
       destination: /home/chakwong/python/docs/plans/sgu-joint-state-control-projection-result-2026-05-08.md; /home/chakwong/python/tests/contracts/test_sgu_joint_projection_target.py; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
       import_status: drafted
       reason: Consolidates the SGU goals, active causal-filtering gap, two-slice diagnostic status, and the next timing/equation audit plan.
+
+  bayesfilter_sgu_causal_control_anchor_closure_plan:
+    - source_file: bayesfilter-sgu-causal-control-anchor-closure-plan-2026-05-08.md
+      destination: /home/chakwong/python/tests/contracts/test_sgu_causal_control_anchor_gate.py; /home/chakwong/python/docs/plans/sgu-causal-control-anchor-diagnostic-result-2026-05-08.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+      import_status: drafted
+      reason: Defines the execution path for testing whether first-order, no-constant, or static-FOC current-control anchors can make causal SGU projection local and residual-closing.
+
+  bayesfilter_sgu_causal_control_anchor_closure_audit:
+    - source_file: bayesfilter-sgu-causal-control-anchor-closure-audit-2026-05-08.md
+      destination: docs/plans/bayesfilter-sgu-causal-control-anchor-closure-plan-2026-05-08.md; /home/chakwong/python/docs/plans/sgu-causal-control-anchor-diagnostic-result-2026-05-08.md
+      import_status: drafted
+      reason: Audits the causal-anchor plan and requires locality before any BayesFilter, derivative/JIT, or HMC promotion.
+
+  dsge_sgu_causal_control_anchor_diagnostic_result:
+    - source_file: /home/chakwong/python/docs/plans/sgu-causal-control-anchor-diagnostic-result-2026-05-08.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Records that no-constant and static-FOC anchors close causal residuals but fail locality, keeping SGU production filtering blocked.
+
+  bayesfilter_sgu_production_target_gap_closure_plan:
+    - source_file: bayesfilter-sgu-production-target-gap-closure-plan-2026-05-09.md
+      destination: /home/chakwong/python/tests/contracts/test_sgu_causal_control_anchor_gate.py; /home/chakwong/python/docs/plans/sgu-causal-control-anchor-diagnostic-result-2026-05-08.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+      import_status: drafted
+      reason: "Defines the next implementation path for the remaining SGU blocker: residual-closing causal anchors exist, but no tested anchor satisfies locality for production filtering."
+
+  bayesfilter_sgu_production_target_gap_closure_audit:
+    - source_file: bayesfilter-sgu-production-target-gap-closure-audit-2026-05-09.md
+      destination: docs/plans/bayesfilter-sgu-production-target-gap-closure-plan-2026-05-09.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+      import_status: drafted
+      reason: Audits the SGU production-target gap plan and preserves stop rules before BayesFilter, derivative/JIT, and HMC promotion.
+
+  dsge_sgu_current_control_derivation_gate_result:
+    - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Records that the residual-closing static-FOC anchor requires nonlocal future marginal-utility movement and therefore does not earn a production causal filtering target.
+
+  dsge_sgu_two_slice_smoother_diagnostic_containment:
+    - source_file: /home/chakwong/python/docs/plans/sgu-two-slice-smoother-diagnostic-containment-2026-05-09.md
+      destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Contains the residual-closing two-slice SGU projection as an offline diagnostic or future smoother candidate, not a predictive BayesFilter filtering transition.
 
   bayesfilter_structural_ssm_monograph_pass:
     - source_file: bayesfilter-structural-ssm-monograph-consolidation-pass-plan-2026-05-04.md
