@@ -5784,6 +5784,1043 @@ Next hypotheses to test:
   structural success should not be promoted to pruned-order correctness without
   those tests.
 
+## 2026-05-08 update: filter-backend replacement execution
+
+User request:
+- update the reset memo;
+- audit the filter-backend replacement implementation plan as an independent
+  developer;
+- execute the plan phase by phase using a plan, execute, test, audit, tidy,
+  memo cycle;
+- continue without human intervention while the next phase remains justified;
+- stop for direction if a phase exposes a blocker;
+- commit scoped changes at the end of the justified execution.
+
+Initial scope:
+- controlling plan:
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-plan-2026-05-08.md`;
+- planned audit:
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`;
+- implementation target:
+  BayesFilter-owned filtering library code first, with MacroFinance and
+  `/home/chakwong/python` treated as read-only source material until a
+  separate cross-repo migration step is explicitly justified.
+
+Initial working-tree note:
+- unrelated modified files were present before this execution thread:
+  `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`
+  and `docs/source_map.yml`;
+- unrelated untracked artifacts were also present, including local PDFs,
+  SGU projection plan/audit files, and `docs/plans/templates/`;
+- this execution should stage only files created or changed for the
+  filter-backend replacement work.
+
+Initial interpretation:
+- Phase 0 remains justified: establish a test baseline and write the independent
+  audit before porting code.
+- Cross-repo switch-over phases are not automatically writable from the
+  BayesFilter workspace; they should become executable only after BayesFilter
+  replacement backends pass parity gates and a separate client-repo edit grant is
+  appropriate.
+
+### Filter backend replacement audit
+
+Plan for this step:
+- audit the 12-phase filter-backend replacement plan as a skeptical second
+  developer;
+- identify missing gates, unsafe assumptions, and the largest justified
+  automatic execution boundary.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`.
+
+Audit findings:
+- The roadmap is directionally sound: MacroFinance should seed linear
+  value/score/Hessian and TensorFlow linear backends; `/home/chakwong/python`
+  should seed generic nonlinear SVD sigma-point, structural metadata, and CUT
+  rules.
+- The plan needs explicit packaging/optional dependency policy before TensorFlow
+  phases, because BayesFilter currently has no root `pyproject.toml`, `setup.py`,
+  or requirements file.
+- Client switch-over phases for `/home/chakwong/python` and MacroFinance are not
+  fully executable inside the BayesFilter writable root and should require
+  separate cross-repo edit/commit steps after BayesFilter parity gates pass.
+- SVD-CUT analytic Hessian work should be split into smaller subphases so
+  spectral factor Hessian risk does not hide simpler moment-derivative bugs.
+- The first justified automatic execution boundary is Phase 0 through the NumPy
+  linear foundation: core types/results, linear value hardening, and NumPy
+  solve-form derivatives if each previous phase passes.
+
+Next phase justified?
+- Yes.  Proceed to Phase 0 baseline tests and environment/dependency inventory.
+
+### Phase 0: baseline and hygiene
+
+Phase plan:
+- run the current BayesFilter tests;
+- record CPU/NumPy environment facts;
+- avoid GPU probing because Phase 0 is CPU-only;
+- re-confirm dirty-tree exclusions.
+
+Execution:
+- Ran `pytest -q` from `/home/chakwong/BayesFilter`.
+- Recorded environment with lightweight Python commands.
+- Reconfirmed the active branch is `main`.
+
+Results:
+- Test baseline: `63 passed, 2 warnings in 15.71s`.
+- Warnings: TensorFlow Probability deprecation warnings about
+  `distutils.version.LooseVersion` in the optional MacroFinance reference test.
+- Python: `3.11.14`.
+- NumPy: `2.1.3`.
+- TensorFlow availability probe: `tensorflow_available True`.
+- GPU/CUDA was not probed in this phase.
+
+Interpretation:
+- Phase 0 passes.
+- The existing BayesFilter suite is clean enough to begin scoped NumPy
+  implementation work.
+- The TensorFlow warning confirms optional TF-related imports exist in the
+  environment, but it does not settle package metadata or production XLA policy.
+
+Next phase justified?
+- Yes.  Proceed to Phase 1 core types/results and keep the write scope inside
+  BayesFilter.
+
+### Phase 1: core types and result objects
+
+Phase plan:
+- add shared result containers before porting additional algorithms;
+- add BayesFilter-owned LGSSM derivative dataclasses based on the MacroFinance
+  generic shape contract;
+- preserve existing public imports from `bayesfilter.filters`;
+- test shape validation, immutability, and current adapter compatibility.
+
+Execution:
+- Added `bayesfilter/results.py` with `FilterValueResult` and
+  `FilterDerivativeResult`.
+- Added `bayesfilter/linear/types.py` and `bayesfilter/linear/__init__.py`.
+- Updated `bayesfilter/filters/kalman.py` to use the shared
+  `LinearGaussianStateSpace` type and to alias `KalmanResult` to
+  `FilterValueResult`.
+- Added stable re-exports from `bayesfilter/__init__.py` and
+  `bayesfilter/filters/__init__.py`.
+- Added `tests/test_linear_types_and_results.py`.
+
+Tests:
+- Targeted Phase 1 suite:
+  `8 passed in 0.09s`.
+- Full suite:
+  `67 passed, 2 warnings in 17.26s`.
+- Import smoke:
+  `imports_ok`.
+- Diff whitespace check on touched code/docs passed.
+
+Audit:
+- Phase 1 passes.
+- The public Kalman value result now has a common diagnostics mapping while old
+  code that imports `KalmanResult` still works.
+- One initial test assumed the validator would report `transition_matrix`
+  before any dependent shape; the validator correctly failed earlier on
+  `initial_mean`, so the test was made order-independent.
+
+Next phase justified?
+- Yes.  Proceed to Phase 2 NumPy linear value hardening.  TensorFlow-specific
+  value backends remain deferred until optional dependency/package policy is
+  explicit.
+
+### Phase 2: NumPy linear value backends
+
+Phase plan:
+- keep existing covariance-form Kalman as the compatibility front door;
+- add a solve-form NumPy value backend;
+- add a NumPy SVD/eigen value backend with explicit floor diagnostics;
+- add a small backend dispatcher;
+- avoid TensorFlow value backend work until package/dependency policy is
+  explicit.
+
+Execution:
+- Extended `bayesfilter/filters/kalman.py` with:
+  - `solve_kalman_log_likelihood`;
+  - `svd_kalman_log_likelihood`;
+  - `linear_gaussian_log_likelihood`;
+  - shared row-selection mask and innovation helpers;
+  - diagnostics for mask convention, jitter, Cholesky pivots, solve residuals,
+    SVD singular floor, floor counts, and minimum innovation eigenvalues.
+- Re-exported the new backends from `bayesfilter/filters/__init__.py`.
+- Added `tests/test_linear_value_backends.py`.
+
+Tests:
+- Targeted Phase 2 suite:
+  `9 passed in 0.08s`.
+- Full suite:
+  `71 passed, 2 warnings in 14.35s`.
+
+Audit:
+- Phase 2 passes.
+- An attempted `bayesfilter.linear` value-backend re-export created a circular
+  import with `bayesfilter.filters`; this was removed.  For now,
+  `bayesfilter.linear` remains a pure type namespace and value backend exports
+  live under `bayesfilter.filters`.
+- The SVD value backend reports the implemented floor branch but remains
+  value-only; no derivative readiness claim is made.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3 NumPy solve-form analytic score/Hessian.
+
+### Phase 3: NumPy solve-form analytic score and Hessian
+
+Phase plan:
+- port the MacroFinance solve-form analytic Kalman derivative recursion into
+  BayesFilter notation;
+- keep the first implementation dense, time-invariant, and NumPy-only;
+- test against finite differences of the same BayesFilter covariance Kalman
+  likelihood;
+- expose the backend without adding TensorFlow dependency policy.
+
+Execution:
+- Added `bayesfilter/linear/kalman_derivatives_numpy.py` with
+  `solve_kalman_score_hessian`.
+- Re-exported `solve_kalman_score_hessian` from `bayesfilter/__init__.py` and
+  `bayesfilter/filters/__init__.py`.
+- Added `tests/test_linear_derivatives_numpy.py`.
+
+Tests:
+- Derivative finite-difference test:
+  `1 passed in 0.08s`.
+- Import smoke:
+  `derivative_imports_ok`.
+- Full suite:
+  `72 passed, 2 warnings in 19.41s`.
+- Diff whitespace check on touched code/docs passed.
+
+Audit:
+- Phase 3 passes.
+- The backend currently declares `mask_convention=dense_only`; masked derivative
+  support is intentionally deferred.
+- The test includes nonzero first and second derivatives for the transition
+  covariance through a log-variance parameter, plus transition-matrix and
+  observation-offset derivatives.  This is enough for a first BayesFilter-owned
+  finite-difference gate, but not a replacement for MacroFinance one-country
+  parity yet.
+
+Next phase justified?
+- Not automatically in this execution thread.  The independent audit set the
+  first safe automatic boundary at the NumPy linear foundation.  The next plan
+  phase is TensorFlow linear backends and XLA gates, which requires package and
+  optional dependency policy before implementation.  Client switch-over phases
+  also require separate cross-repo write decisions.
+
+### Filter backend replacement completion note
+
+Final tidy/check cycle:
+- Reran the full BayesFilter suite after the Phase 3 stop decision:
+  `72 passed, 2 warnings in 14.32s`.
+- The two warnings remain TensorFlow Probability `distutils.version`
+  deprecation warnings in the optional MacroFinance adapter reference test.
+- Ran `git diff --check` over the scoped implementation, tests, plan, audit,
+  and reset-memo files; no whitespace errors were reported.
+- Confirmed the active branch is `main`.
+
+Completion interpretation:
+- The justified automatic execution boundary has been completed: BayesFilter now
+  has a NumPy linear Gaussian foundation with shared result containers,
+  BayesFilter-owned LGSSM derivative types, covariance/solve/SVD value
+  front doors, and a dense solve-form analytic score/Hessian backend.
+- This is enough to support the next parity-oriented work against
+  MacroFinance-owned models, but it is not yet a production replacement for all
+  MacroFinance or DSGE filtering code.
+- No TensorFlow/XLA, masked derivative, nonlinear SVD sigma-point, SVD-CUT, or
+  cross-repo migration phase was executed, because the independent audit found
+  those phases need package/optional dependency policy and, for client repos,
+  explicit cross-repo migration decisions.
+
+Next hypotheses to test:
+- H1: The BayesFilter dense NumPy derivative backend should match
+  MacroFinance's one-country value, score, and Hessian on a fixed fixture once
+  MacroFinance model construction is wrapped through the new
+  `LinearGaussianStateSpace` and `LinearGaussianStateSpaceDerivatives` objects.
+- H2: A masked derivative extension can be derived by applying the same
+  row-selection convention used by the NumPy value backends, and it should
+  agree with dense evaluation on fully observed rows and with finite
+  differences on masked fixtures.
+- H3: A package metadata phase defining NumPy-only, TensorFlow, development,
+  and optional robust-eigh extras will prevent TensorFlow/XLA work from making
+  `import bayesfilter` fragile in NumPy-only environments.
+- H4: The SVD value backend's floor diagnostics should predict where analytic
+  SVD derivatives are unsafe; tests should vary spectral gaps and floor counts
+  before promoting SVD gradients or Hessians to HMC use.
+- H5: SVD-CUT implementation should begin with a dependency-light CUT rule and
+  moment tests, then add TensorFlow/XLA placement, and only then attempt
+  analytic factor derivatives and Hessians.
+
+### TF/TFP-only implementation pivot
+
+User clarification on 2026-05-08:
+- BayesFilter filtering implementation should exclude NumPy.
+- Production implementation should use TensorFlow and TensorFlow Probability
+  only.
+
+Plan update:
+- Rewrote
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-plan-2026-05-08.md`
+  as a TF/TFP-first plan.
+- Rewrote
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`
+  to audit the TF/TFP-only pivot.
+
+Interpretation:
+- The committed NumPy foundation is now classified as legacy/reference
+  material, not as the implementation target.
+- The next coding phases should not extend the NumPy Kalman, derivative,
+  sigma-point, or particle paths.
+- New production-facing modules should preserve TF tensors, use TF/TFP linear
+  algebra and log-probability contracts, avoid `.numpy()` conversions, and
+  pass source checks forbidding NumPy imports in production TF modules.
+- NumPy may still appear temporarily in tests or historical comparison notes,
+  but tests should move toward TF-only closed-form, TFP log-probability, and
+  TF finite-difference gates.
+
+Next phase justified?
+- Yes, but the justified next phase is now the TF/TFP dependency and contract
+  gate, not further NumPy implementation:
+  1. record CPU-only TensorFlow and TensorFlow Probability availability;
+  2. inventory production NumPy import surfaces;
+  3. add TF result/diagnostic/tensor contracts;
+  4. port the dense TF linear value backend before nonlinear SVD-CUT work.
+
+Stop rules:
+- Do not delete old NumPy public exports until TF replacements exist.
+- Do not run GPU/CUDA probes without escalated permissions.
+- Do not edit MacroFinance or `/home/chakwong/python` until BayesFilter TF
+  backends pass local gates and a separate cross-repo migration step is
+  justified.
+
+### MacroFinance TF/TFP donor inventory
+
+User clarification on 2026-05-08:
+- MacroFinance already implements and tests most of the needed linear filtering
+  pieces in TensorFlow and TensorFlow Probability.
+- BayesFilter should borrow those implementations aggressively instead of
+  rebuilding them from scratch.
+
+Inventory:
+- `/home/chakwong/MacroFinance` working tree was clean during inspection.
+- Primary donor functions:
+  - `inference/hmc.py::tf_kalman_log_likelihood`;
+  - `inference/hmc.py::tf_lgssm_log_likelihood_backend`;
+  - `filters/tf_masked_kalman.py::tf_masked_kalman_log_likelihood`;
+  - `filters/tf_svd_kalman.py::tf_svd_kalman_loglik`;
+  - `filters/tf_svd_kalman.py::tf_svd_masked_kalman_loglik`;
+  - `filters/tf_differentiated_kalman.py::tf_differentiated_kalman_loglik_grad`;
+  - `filters/tf_differentiated_kalman.py::tf_differentiated_kalman_loglik`;
+  - `filters/tf_solve_differentiated_kalman.py::tf_solve_differentiated_kalman_loglik`;
+  - `filters/tf_qr_sqrt_differentiated_kalman.py::tf_qr_sqrt_kalman_loglik`;
+  - `filters/tf_qr_sqrt_differentiated_kalman.py::tf_qr_sqrt_masked_kalman_loglik`;
+  - `filters/tf_qr_sqrt_differentiated_kalman.py::tf_qr_sqrt_differentiated_kalman_loglik`.
+- Primary donor tests:
+  - `tests/test_tf_kalman.py`;
+  - `tests/test_tf_masked_kalman.py`;
+  - `tests/test_tf_svd_kalman.py`;
+  - `tests/test_filter_backend_parity.py`;
+  - `tests/test_tf_qr_sqrt_differentiated_kalman.py`;
+  - `tests/test_tf_qr_derivative_identities.py`;
+  - `tests/test_one_country_analytic_backend_parity.py`;
+  - `tests/test_one_country_hmc_analytic_gradient_hessian.py`;
+  - `tests/test_perf_tfp_analytic_filter_speed.py`.
+
+Porting interpretation:
+- The BayesFilter plan has been updated to treat these MacroFinance TF/TFP
+  modules as donor code.
+- The port still needs stricter BayesFilter production hygiene:
+  - replace MacroFinance's NumPy constants with `math` or TF constants;
+  - remove NumPy imports from production BayesFilter TF modules;
+  - move `.numpy()` trace conversion into explicit eager/debug helpers only;
+  - keep MacroFinance economics, providers, and application HMC wrappers out of
+    BayesFilter core.
+
+Next phase justified?
+- Yes.  The next implementation phase should begin with the MacroFinance dense
+  TF Cholesky Kalman likelihood and static-shape masked likelihood, because
+  they are already tested and form the backend selector base for the SVD and
+  analytic derivative ports.
+
+### DSGE UKF/SVD/CUT donor inventory and consolidation-first pivot
+
+User clarification on 2026-05-08:
+- The DSGE codebase under `/home/chakwong/python` also implements many UKF and
+  other filtering algorithms.
+- BayesFilter should use that code as well.
+- The first part of the work should be consolidation.
+
+Inventory:
+- `/home/chakwong/python` working tree had only untracked local tool state
+  (`.codex`, `.serena/`) during inspection.
+- Primary donor modules:
+  - `src/dsge_hmc/filters/__init__.py`;
+  - `src/dsge_hmc/filters/_quadrature.py`;
+  - `src/dsge_hmc/filters/_svd_core.py`;
+  - `src/dsge_hmc/filters/_svd_filters.py`;
+  - `src/dsge_hmc/filters/CUTSRUKF.py`;
+  - `src/dsge_hmc/models/structural_metadata.py`.
+- Primary donor classes/functions:
+  - legacy `KalmanFilter`, `AugmentedKalmanFilter`, `SquareRootUKF`, and
+    `PrunedSquareRootUKF` from `filters/__init__.py`;
+  - `QuadratureRule`, `CubatureRule`, and `UnscentedRule`;
+  - `svd_clamp`, `svd_factorize`, `svd_predict_linear`,
+    `svd_predict_sigma`, `svd_update`, and `svd_update_sigma`;
+  - `SVDKalmanFilter`, `SVDAugmentedKF`, and `SVDSigmaPointFilter`;
+  - `SVDSigmaPointFilter` generic `ssm=` path, diagnostics modes, and mixed
+    full-state DSGE approximation blocker;
+  - `ut_sigma_points`, `cut4g_sigma_points`, and
+    `SquareRootSigmaPointFilter` from `CUTSRUKF.py` as experimental CUT/UT
+    donor material.
+- Primary donor tests:
+  - `tests/contracts/test_filter_contracts.py`;
+  - `tests/contracts/test_svd_lgssm_reference.py`;
+  - `tests/contracts/test_svd_nonlinear_ssm_reference.py`;
+  - `tests/contracts/test_svd_generic_nonlinear_ssm.py`;
+  - `tests/contracts/test_svd_generic_ssm_xla.py`;
+  - `tests/contracts/test_nk_svd_gradient_finiteness_gate.py`;
+  - `tests/contracts/test_nk_svd_xla_gates.py`;
+  - `tests/contracts/test_structural_dsge_partition.py`;
+  - `tests/contracts/test_dsge_structural_completion_residuals.py`;
+  - `tests/contracts/test_dsge_strong_structural_residual_gates.py`;
+  - `tests/numerics/test_svd_filters.py`;
+  - `tests/CUTSRUKF_test.py`;
+  - extended SVD HMC/XLA tests under `tests/extended/test_svd_*` after local
+    BayesFilter gates pass.
+
+Porting interpretation:
+- Phase 0 of the BayesFilter implementation plan is now renamed as a
+  cross-repo consolidation and TF/TFP baseline gate.
+- Consolidation should assign donor ownership by filter family before coding:
+  - MacroFinance owns dense/masked/SVD linear TF likelihoods, analytic
+    score/Hessian, QR/square-root derivative patterns, and HMC/performance
+    tests.
+  - DSGE owns UKF/cubature quadrature, SVD sigma-point primitives, generic
+    nonlinear SSM filtering, DSGE structural partition gates, XLA diagnostics,
+    and CUT4-G experimental material.
+- BayesFilter should not copy client economics, DSGE solution logic, or
+  client-specific debug capture hooks.
+- The DSGE `robust_eigh` custom op should become an optional plugin boundary;
+  BayesFilter's default implementation should use TensorFlow/TFP only.
+
+Next phase justified?
+- Yes.  The next action should be a consolidation artifact that maps
+  MacroFinance and DSGE donor files to BayesFilter target modules, identifies
+  duplicate/overlapping implementations, and orders the port so tests migrate
+  with each backend.
+
+### Consolidation-first implementation execution thread begins
+
+User instruction on 2026-05-08:
+- update the reset memo;
+- audit the plan as an independent developer;
+- execute phases one by one with a plan, execute, test, audit, tidy-up, reset
+  memo cycle;
+- continue automatically when the next phase remains justified;
+- stop for direction if a later phase is no longer justified;
+- commit the modified files after the justified execution finishes;
+- write detailed results and next hypotheses.
+
+Initial scope:
+- BayesFilter repository files are writable in this execution.
+- `/home/chakwong/MacroFinance` and `/home/chakwong/python` are donor
+  repositories for inspection only unless a later explicit cross-repo migration
+  phase becomes justified.
+- Existing unrelated dirty files remain out of scope:
+  - `docs/source_map.yml`;
+  - local PDFs under `docs/`;
+  - untracked SGU/review plans and `docs/plans/templates/`.
+
+Initial interpretation:
+- The immediate goal is consolidation and TF/TFP BayesFilter implementation,
+  not further NumPy implementation.
+- Existing committed NumPy code is legacy/reference until TF replacements and
+  compatibility gates allow removal.
+- The safe automatic boundary will be determined by the independent audit and
+  updated after every phase.
+
+### Independent audit of consolidation-first plan
+
+Plan:
+- audit the revised plan as if written by another developer;
+- identify missing gates and unsafe phase ordering;
+- determine the first justified BayesFilter-only automatic execution boundary.
+
+Execution:
+- Rewrote
+  `docs/plans/bayesfilter-filter-backend-replacement-implementation-audit-2026-05-08.md`
+  as an independent consolidation-first audit.
+
+Audit result:
+- The consolidation-first direction is correct.
+- MacroFinance is the donor for linear TF/TFP filtering, analytic derivatives,
+  QR/square-root variants, HMC, and performance gates.
+- `/home/chakwong/python` is the donor for UKF/cubature, SVD sigma-point
+  filtering, generic nonlinear SSMs, DSGE structural metadata, XLA gates, and
+  CUT4-G experiments.
+- Existing NumPy implementation modules should not be deleted yet; they should
+  be isolated as legacy while TF front doors are added.
+- The initial automatic boundary is Phase 0 through Phase 2:
+  1. consolidation map and TF/TFP baseline gate;
+  2. TF result/diagnostic/tensor contracts;
+  3. dense and masked TF linear value backend.
+
+Next phase justified?
+- Yes.  Proceed to Phase 0.  Stop before Phase 3 unless Phase 2 passes and the
+  derivative donor route is explicitly selected.
+
+### Phase 0: cross-repo consolidation and TF/TFP baseline gate
+
+Phase plan:
+- create a durable consolidation map across BayesFilter, MacroFinance, and the
+  DSGE codebase;
+- record donor repository cleanliness;
+- inventory current BayesFilter NumPy implementation surfaces;
+- run a CPU-only TensorFlow/TensorFlow Probability import probe;
+- run the current BayesFilter test baseline.
+
+Execution:
+- Added
+  `docs/plans/bayesfilter-cross-repo-filter-consolidation-map-2026-05-08.md`.
+- Checked donor repository status:
+  - `/home/chakwong/MacroFinance`: clean;
+  - `/home/chakwong/python`: only untracked local tool state, `.codex` and
+    `.serena/`.
+- Inventoried current BayesFilter NumPy implementation surfaces.  Expected
+  legacy NumPy modules remain in `results.py`, `backends.py`,
+  `linear/types.py`, `linear/kalman_derivatives_numpy.py`,
+  `filters/kalman.py`, `filters/sigma_points.py`, `filters/particles.py`,
+  `testing/structural_fixtures.py`, and `adapters/macrofinance.py`.
+- Ran CPU-only TF/TFP probe with `CUDA_VISIBLE_DEVICES=-1`.
+- Ran `pytest -q`.
+
+Results:
+- TensorFlow import gate passed:
+  - Python `3.11.14`;
+  - TensorFlow `2.19.1`;
+  - TensorFlow Probability `0.25.0`;
+  - visible devices under CPU-only probe: CPU only.
+- TensorFlow emitted CUDA plugin/cuInit warnings despite CPU hiding; these are
+  import-time CPU-only probe noise and are not a GPU diagnosis.
+- Matplotlib warned that `/home/chakwong/.config/matplotlib` is not writable
+  and used a temporary cache directory.
+- Test baseline passed: `72 passed, 2 warnings in 17.66s`.
+- The two test warnings are the known TensorFlow Probability
+  `distutils.version` deprecation warnings in the optional MacroFinance adapter
+  reference test.
+
+Audit:
+- Phase 0 passes.
+- The consolidation map resolves donor ownership clearly enough to begin TF
+  contract work.
+- No cross-repo editing is justified yet.
+- Existing NumPy modules should remain legacy compatibility paths while TF
+  front doors are added.
+
+Next phase justified?
+- Yes.  Proceed to Phase 1: TF result, diagnostics, and tensor contracts.
+
+### Phase 1: TF result, diagnostics, and tensor contracts
+
+Phase plan:
+- add TensorFlow result containers that preserve `tf.Tensor` values and avoid
+  eager `.numpy()` conversion;
+- add a shared TensorFlow diagnostics schema for jitter, spectral floors,
+  implemented covariance, fallback branches, and derivative target semantics;
+- add TensorFlow linear Gaussian state-space and derivative contracts;
+- keep existing NumPy implementation modules as legacy/reference surfaces;
+- add source hygiene checks for the new TensorFlow production contract modules.
+
+Execution:
+- Added `bayesfilter/diagnostics.py` with `TFRegularizationDiagnostics` and
+  `TFFilterDiagnostics`.
+- Added `bayesfilter/results_tf.py` with `TFFilterValueResult` and
+  `TFFilterDerivativeResult`.
+- Added `bayesfilter/linear/types_tf.py` with `TFLinearGaussianStateSpace` and
+  `TFLinearGaussianStateSpaceDerivatives`.
+- Re-exported the TensorFlow contracts from `bayesfilter/linear/__init__.py`
+  and `bayesfilter/__init__.py`.
+- Added `tests/test_tf_contracts.py`.
+
+Tests:
+- Targeted contract gate passed:
+  `pytest -q tests/test_tf_contracts.py tests/test_linear_types_and_results.py`
+  reported `9 passed in 3.46s`.
+- Full regression gate passed:
+  `pytest -q` reported `77 passed, 2 warnings in 20.76s`.
+- The warnings remain the known TensorFlow Probability `distutils.version`
+  deprecation warnings triggered by the optional MacroFinance adapter test.
+
+Audit:
+- Phase 1 passes.
+- The new TF contracts do not import NumPy or call `.numpy()`.
+- Tensor-preserving result containers and regularization diagnostics are now in
+  place for value and derivative backends.
+- Existing NumPy modules are still present only as compatibility/reference
+  paths and were not extended.
+
+Tidy-up:
+- No unrelated dirty files were touched.
+- Phase 1 creates the expected foundation for a narrow dense/masked TF linear
+  value port.
+
+Next phase justified?
+- Yes.  Proceed to Phase 2: port the dense and static-shape masked
+  TensorFlow linear Kalman value backends from MacroFinance into BayesFilter
+  contracts.
+
+### Phase 2: dense and static-shape masked TF linear Kalman value backend
+
+Phase plan:
+- port MacroFinance's dense TensorFlow Cholesky Kalman value recursion into a
+  BayesFilter-owned module;
+- port MacroFinance's static-shape dummy-row masked observation convention;
+- expose both low-level scalar likelihood functions and a BayesFilter result
+  wrapper around `TFLinearGaussianStateSpace`;
+- keep the implementation TensorFlow/TensorFlow Probability only, with no
+  NumPy import and no `.numpy()` conversion in production paths;
+- test scalar/one-step TFP Gaussian identity, singular process covariance,
+  all-true masks, all-missing rows, wrapper metadata, shape errors, graph reuse,
+  and source hygiene.
+
+Execution:
+- Added `bayesfilter/linear/kalman_tf.py`.
+  - `tf_kalman_log_likelihood`;
+  - `tf_masked_kalman_log_likelihood`;
+  - `tf_kalman_filter`;
+  - `tf_masked_kalman_filter`;
+  - `tf_linear_gaussian_log_likelihood`;
+  - `TFLinearValueBackend`.
+- Re-exported the TensorFlow value backend from `bayesfilter/linear/__init__.py`
+  and `bayesfilter/__init__.py`.
+- Added `tests/test_linear_kalman_tf.py`.
+
+Tests:
+- Targeted Phase 2 gate passed:
+  `pytest -q tests/test_linear_kalman_tf.py tests/test_tf_contracts.py`
+  reported `14 passed, 2 warnings in 9.34s`.
+- Full regression gate passed:
+  `pytest -q` reported `86 passed, 2 warnings in 20.55s`.
+- Source hygiene gate passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\(" bayesfilter/diagnostics.py
+  bayesfilter/results_tf.py bayesfilter/linear/types_tf.py
+  bayesfilter/linear/kalman_tf.py` returned no matches.
+- Tidy gate passed:
+  `git diff --check` returned no whitespace errors.
+
+Results:
+- Dense one-step prediction-error likelihood matches
+  `tfp.distributions.MultivariateNormalTriL` directly.
+- Singular process covariance is accepted when the predictive observation
+  covariance is positive definite.
+- Static-shape all-true masks match the dense TensorFlow likelihood.
+- An all-missing observation row contributes exactly zero measurement
+  likelihood and still advances the predicted state and covariance.
+- The wrapper preserves `tf.Tensor` results and records
+  `tf_function`/`value_only` metadata plus `static_dummy_row` mask diagnostics.
+- Shape mismatch in the mask reports a clear TensorFlow assertion error.
+- A `tf.function(reduce_retracing=True)` wrapper reuses one concrete function
+  for same-shape masks.
+
+Audit:
+- Phase 2 passes.
+- The implementation follows the agreed TF/TFP-only production rule.
+- The masked convention is explicit and matches the mathematical contract:
+  missing rows are replaced by zero residual, zero loading, unit dummy variance,
+  and the dummy normalizers are removed from the log likelihood.
+- The new value backend is intentionally Cholesky-only.  SVD, QR/square-root,
+  and analytic derivative routes remain separate phases.
+- No donor repository was edited.
+
+Tidy-up:
+- Unrelated dirty files remain out of scope and should not be staged:
+  `docs/source_map.yml`, local PDFs under `docs/`, untracked SGU/review plans,
+  and `docs/plans/templates/`.
+- Scoped files for the implementation commit are the TF contract/value modules,
+  their tests, the plan, audit, reset memo, and consolidation map.
+
+Next phase justified?
+- Not automatically.  The independent audit set the safe automatic boundary at
+  Phase 2.  Phase 3 is justified only after selecting the analytic derivative
+  donor route explicitly:
+  1. dense covariance-form recursion for continuity with MacroFinance HMC;
+  2. solve-form recursion for clearer derivative diagnostics;
+  3. QR/square-root recursion after separate factor-derivative tests are
+     established.
+
+Recommendation:
+- Select the solve-form analytic derivative route as the next implementation
+  target, then compare it against the dense covariance-form MacroFinance HMC
+  path as a parity gate.  This gives the cleanest diagnostics for score/Hessian
+  algebra while retaining MacroFinance continuity as a regression target.
+
+### Consolidation-first automatic boundary completion
+
+Completion status:
+- The automatic execution boundary from the independent audit is complete:
+  Phase 0, Phase 1, and Phase 2 have passed.
+- Phase 3 was not started because the derivative route choice is a real design
+  decision, not a mechanical continuation of the value backend.
+- No changes were made to `/home/chakwong/MacroFinance` or
+  `/home/chakwong/python`.
+
+Implemented BayesFilter capabilities:
+- A durable cross-repo consolidation map now assigns donor ownership by filter
+  family.
+- BayesFilter now has TF/TFP result, diagnostics, LGSSM, derivative-contract,
+  dense Kalman value, and static-shape masked Kalman value modules.
+- The new production TF modules are free of NumPy imports and `.numpy()`
+  conversions.
+- The new dense Kalman value backend is tied directly to the TFP Gaussian
+  prediction-error density.
+- The new masked backend encodes the dummy-row convention explicitly, including
+  the all-missing-row zero-likelihood identity.
+
+Final test interpretation:
+- Baseline before TF contracts: `72 passed, 2 warnings`.
+- After Phase 1: `77 passed, 2 warnings`.
+- After Phase 2: `86 passed, 2 warnings`.
+- The only warnings observed are TensorFlow Probability deprecation warnings
+  for `distutils.version`.
+- The implementation did not require GPU tests.  Future GPU/XLA tests must use
+  escalated permissions under `AGENTS.md`.
+
+Next hypotheses to test:
+- H1: the solve-form TF analytic derivative recursion can reproduce dense
+  `tf.GradientTape` scores and Hessians for small LGSSMs while providing clearer
+  failure diagnostics than the covariance-form derivative recursion.
+- H2: MacroFinance's covariance-form analytic derivative path should remain a
+  parity target because it is closest to the existing HMC likelihood path.
+- H3: QR/square-root analytic derivatives should be delayed until BayesFilter
+  has standalone factor-derivative identities and a separate masked value gate.
+- H4: SVD value and SVD derivative gates should report the implemented/floored
+  covariance as the target law, with gradients blocked or labeled near repeated
+  spectra and active floors.
+- H5: DSGE nonlinear SVD sigma-point and CUT4-G work should begin only after
+  the linear derivative spine is stable, because nonlinear score/Hessian tests
+  need a trusted linear control case.
+
+### Derivative route correction: QR production, solve/covariance references
+
+User correction:
+- MacroFinance already has a clean QR/square-root differentiated Kalman backend
+  and factor-derivative tests.  The solve-form and covariance-form TF
+  derivative implementations should still be kept, but as testing/debugging
+  references rather than the main BayesFilter production route.
+
+Decision:
+- Revise Phase 3 so the production derivative target is the MacroFinance
+  QR/square-root analytic score/Hessian backend.
+- Port MacroFinance solve-form and covariance-form TF derivative implementations
+  into `bayesfilter.testing` as reference/debug backends.
+- Do not re-export the solve/covariance references from the public
+  `bayesfilter` namespace.
+- Keep eager NumPy trace conversion in those testing references because the
+  trace rows are useful for debugging derivative algebra.  This is compatible
+  with the production rule because the modules live under `bayesfilter.testing`.
+
+Execution:
+- Added
+  `bayesfilter/testing/tf_solve_differentiated_kalman_reference.py` from
+  MacroFinance `filters/tf_solve_differentiated_kalman.py`.
+- Added
+  `bayesfilter/testing/tf_covariance_differentiated_kalman_reference.py` from
+  MacroFinance `filters/tf_differentiated_kalman.py`.
+- Added `tests/test_testing_derivative_references.py`.
+- Updated the implementation plan and independent audit to state that
+  QR/square-root is the production derivative route, while solve/covariance are
+  testing references.
+
+Tests:
+- Focused reference gate passed:
+  `pytest -q tests/test_testing_derivative_references.py` reported
+  `3 passed, 2 warnings in 9.67s`.
+- Full regression gate passed:
+  `pytest -q` reported `89 passed, 2 warnings in 18.95s`.
+
+Results:
+- Solve-form and covariance-form testing references agree with each other on a
+  controlled one-dimensional LGSSM.
+- Both references agree with TensorFlow autodiff for log likelihood, score, and
+  Hessian on the same fixture.
+- The covariance-form score-only reference agrees with the full covariance-form
+  score/Hessian reference.
+- The reference functions are not exported from `bayesfilter`.
+
+Updated next hypotheses:
+- H1: the QR/square-root MacroFinance derivative backend should be the next
+  production implementation target in BayesFilter.
+- H2: the BayesFilter testing solve/covariance references should be used as
+  local parity oracles when porting QR derivatives and diagnosing failures.
+- H3: QR derivative identity tests should be ported before the full filtered
+  score/Hessian wrapper, so factor algebra failures are separated from Kalman
+  recursion failures.
+- H4: SVD derivative work should still wait until QR and the linear derivative
+  reference triangle are stable.
+### Phase 3 QR/square-root derivative implementation thread begins
+
+User instruction on 2026-05-09:
+- update the reset memo;
+- audit the plan as an independent developer;
+- execute phases one by one with a plan, execute, test, audit, tidy-up, reset
+  memo cycle;
+- continue automatically when the next phase remains justified;
+- stop for direction if a later phase is no longer justified;
+- commit the modified files after the justified execution finishes;
+- provide detailed results and next hypotheses.
+
+Initial status:
+- `main` is synced with `origin/main` at `dcd0a28`.
+- Existing unrelated dirty local files remain out of scope:
+  - `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`;
+  - `docs/source_map.yml`;
+  - Windows/WSL `:Zone.Identifier` sidecars under `docs/plans/templates/`.
+- Production target remains TensorFlow/TensorFlow Probability only.
+- Solve-form and covariance-form TF derivatives are already available as
+  non-production references under `bayesfilter.testing`.
+
+Plan audit:
+- Added
+  `docs/plans/bayesfilter-phase3-qr-linear-derivatives-audit-2026-05-09.md`.
+- Corrected the consolidation map so QR/square-root is the production linear
+  derivative route and solve/covariance are testing references.
+
+Audit result:
+- Phase 3 is justified only as gated subphases:
+  1. QR/Cholesky factor derivative identities;
+  2. QR/square-root dense and masked value recursions;
+  3. QR/square-root analytic score/Hessian recursion.
+- Continue from one gate to the next only if tests pass and production source
+  hygiene remains clean.
+- Stop before SVD, nonlinear sigma-point, CUT4-G, GPU/XLA benchmarking, or
+  cross-repo client migration.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3A: QR and Cholesky factor derivative identities.
+
+### Phase 3A: QR and Cholesky factor derivative identities
+
+Phase plan:
+- port MacroFinance's positive-diagonal thin QR convention and first-/second-
+  order QR factor derivative helpers into a BayesFilter production module;
+- port Cholesky factor derivative helpers needed by QR/square-root Kalman
+  initialization and noise-factor derivatives;
+- add reconstruction tests before touching the Kalman recursion;
+- enforce the production hygiene rule: no NumPy imports and no `.numpy()` in
+  the production helper module.
+
+Execution:
+- Added `bayesfilter/linear/qr_factor_tf.py`.
+- Re-exported the QR factor helpers from `bayesfilter/linear/__init__.py`.
+- Added `tests/test_linear_qr_factor_tf.py`.
+
+Tests:
+- Targeted gate passed:
+  `pytest -q tests/test_linear_qr_factor_tf.py tests/test_tf_contracts.py`
+  reported `9 passed, 2 warnings in 6.58s`.
+- Python compile gate passed:
+  `python -m py_compile bayesfilter/linear/qr_factor_tf.py
+  tests/test_linear_qr_factor_tf.py`.
+- Source hygiene gate passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\(" bayesfilter/linear/qr_factor_tf.py
+  bayesfilter/linear/kalman_tf.py bayesfilter/linear/types_tf.py
+  bayesfilter/results_tf.py bayesfilter/diagnostics.py` returned no matches.
+
+Results:
+- Positive-diagonal QR reconstructs the matrix and preserves orthogonality.
+- First-order QR derivatives reconstruct `dM`.
+- Second-order QR derivatives reconstruct `d2M`.
+- QR lower factors of horizontal stacks reconstruct covariance, first
+  covariance derivatives, and second covariance derivatives.
+- Cholesky factor derivatives reconstruct covariance plus jitter, first
+  covariance derivatives, and second covariance derivatives.
+
+Audit:
+- Phase 3A passes.
+- The production factor helper module is independent of MacroFinance
+  application code and stays TensorFlow-only.
+- The next failure localization layer is now in place: if QR Kalman derivatives
+  fail later, the factor identities are unlikely to be the source.
+
+Tidy-up:
+- Existing unrelated dirty files remain out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3B: QR/square-root dense and masked value recursions.
+
+### Phase 3B: QR/square-root dense and masked value recursions
+
+Phase plan:
+- port the MacroFinance direct-QR square-root Kalman value recursion into
+  BayesFilter's TF LGSSM contract;
+- include the static dummy-row masked likelihood convention used by the
+  Cholesky TF backend;
+- compare dense QR against the Cholesky TF backend and compare masked QR
+  against masked Cholesky;
+- keep production code TensorFlow-only, with no NumPy imports and no `.numpy()`
+  calls;
+- require the graph/static-shape mask gate to pass before analytic QR
+  derivatives are ported.
+
+Execution:
+- Added `bayesfilter/linear/kalman_qr_tf.py`.
+- Re-exported the QR value backend from `bayesfilter/linear/__init__.py` and
+  `bayesfilter/__init__.py`.
+- Added `tests/test_linear_kalman_qr_tf.py`.
+- During audit, a dynamic `tf.while_loop` implementation of QR returned empty
+  float32 tensors from graph execution even though the Python function body
+  returned the correct float64 likelihood and filtered-state tensors.  The fix
+  was to follow the MacroFinance donor pattern: use a concrete static
+  observation length and unroll the QR recursion with `range(n_timesteps)` at
+  trace time.  The QR value functions intentionally use `@tf.function` without
+  `reduce_retracing=True` so TensorFlow does not generalize the time dimension
+  to `None`.
+
+Tests:
+- Focused QR value gate passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_linear_kalman_qr_tf.py
+  tests/test_linear_qr_factor_tf.py tests/test_linear_kalman_tf.py` reported
+  `21 passed, 2 warnings in 6.88s`.
+- The warnings are the existing TensorFlow Probability `distutils.version`
+  deprecation warnings.
+
+Results:
+- Dense QR log likelihood matches the dense Cholesky TF backend.
+- Masked QR with all-true masks matches dense QR and masked Cholesky.
+- Sparse masked rows match masked Cholesky.
+- All-missing masked rows contribute zero measurement likelihood and still
+  advance the state prediction.
+- Static-shape graph reuse with same-shaped masks passes.
+
+Audit:
+- Phase 3B passes.
+- The direct-QR value recursion is now a BayesFilter production backend, not a
+  testing-only reference.
+- The static-time requirement is a deliberate QR/square-root graph contract and
+  should be documented for client switch-over.  Dynamic-time QR scans can be
+  revisited later, but they are not a blocker for HMC or XLA workloads that
+  already use fixed observation arrays.
+
+Tidy-up:
+- Existing unrelated dirty files remain out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 3C: dense QR/square-root analytic score and Hessian.
+- Masked analytic QR derivatives should remain a later subphase unless the
+  dense derivative gate passes cleanly.
+
+### Phase 3C: dense QR/square-root analytic score and Hessian
+
+Phase plan:
+- port MacroFinance's QR/square-root analytic likelihood, score, and Hessian
+  recursion into a BayesFilter production module;
+- use the Phase 3A factor derivative helpers and Phase 3B QR value backend as
+  the local foundation;
+- compare the QR derivative backend against the solve-form testing reference
+  and against TensorFlow autodiff on a small smooth model;
+- expose a public result wrapper returning `TFFilterDerivativeResult`;
+- keep masked analytic QR derivatives out of this subphase unless the dense
+  gate passes cleanly.
+
+Execution:
+- Added `bayesfilter/linear/kalman_qr_derivatives_tf.py`.
+- Re-exported:
+  - `TFQRLinearDerivativeBackend`;
+  - `tf_qr_sqrt_kalman_score_hessian`;
+  - `tf_qr_linear_gaussian_score_hessian`.
+- Added `tests/test_linear_kalman_qr_derivatives_tf.py`.
+- Updated the consolidation map to list QR/square-root as the production
+  derivative route and the correct BayesFilter derivative/factor test files.
+
+Tests:
+- New dense QR derivative gate passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py` reported
+  `5 passed, 2 warnings in 39.02s`.
+- Focused QR/reference gate passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py
+  tests/test_linear_kalman_qr_tf.py tests/test_linear_qr_factor_tf.py
+  tests/test_testing_derivative_references.py tests/test_linear_kalman_tf.py
+  tests/test_tf_contracts.py` reported `34 passed, 2 warnings in 42.31s`.
+- Python compile gate passed:
+  `python -m py_compile bayesfilter/linear/kalman_qr_derivatives_tf.py
+  bayesfilter/linear/kalman_qr_tf.py bayesfilter/linear/qr_factor_tf.py
+  tests/test_linear_kalman_qr_derivatives_tf.py
+  tests/test_linear_kalman_qr_tf.py tests/test_linear_qr_factor_tf.py`.
+- Source hygiene gate passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\("
+  bayesfilter/linear/kalman_qr_derivatives_tf.py
+  bayesfilter/linear/kalman_qr_tf.py bayesfilter/linear/qr_factor_tf.py
+  bayesfilter/linear/kalman_tf.py bayesfilter/linear/types_tf.py
+  bayesfilter/results_tf.py bayesfilter/diagnostics.py` returned no matches.
+- Whitespace gate passed: `git diff --check`.
+- Full CPU-only regression passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q` reported
+  `106 passed, 2 warnings in 53.04s`.
+
+Results:
+- The QR derivative likelihood matches the QR value likelihood.
+- The QR derivative likelihood, score, and Hessian match the solve-form testing
+  reference on a controlled one-dimensional LGSSM.
+- The QR derivative score and Hessian match TensorFlow autodiff on the same
+  smooth parameterized fixture.
+- The Hessian is explicitly symmetrized and passes the symmetry check.
+- Static-shape graph reuse through an outer `tf.function(reduce_retracing=True)`
+  passes for same-shaped observations.
+
+Audit:
+- Phase 3C passes for dense, time-invariant LGSSMs with static observation
+  length and smooth QR/Cholesky pivots.
+- The backend is production TensorFlow-only.  NumPy remains confined to tests
+  and `bayesfilter.testing` references.
+- The derivative target is the implemented regularized QR/square-root law,
+  with jitter included in the observation covariance factor.
+- The static-time requirement inherited from Phase 3B remains part of the QR
+  graph contract.
+
+Tidy-up:
+- Existing unrelated dirty files remain out of scope and should not be staged:
+  `docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md`,
+  `docs/source_map.yml`, SGU plan drafts, and Windows/WSL
+  `:Zone.Identifier` sidecars.
+
+Next phase justified?
+- Not automatically in this commit.  The QR dense derivative spine is now in
+  place and tested.
+- Recommended next subphases are:
+  1. add masked QR analytic derivatives, using the static dummy-row convention
+     from Phase 3B;
+  2. add time-varying LGSSM derivative support if MacroFinance or DSGE client
+     switch-over requires it;
+  3. port the TF SVD linear value backend with implemented/floored covariance
+     diagnostics;
+  4. only then resume nonlinear UKF/SVD sigma-point/CUT4-G consolidation.
+
+### Phase 3 QR/square-root thread completion
+
+Completion status:
+- Completed the justified QR/square-root Phase 3 subphases:
+  - 3A factor identities;
+  - 3B dense and masked QR value recursions;
+  - 3C dense QR analytic score and Hessian.
+- Did not start SVD, nonlinear sigma-point, CUT4-G, GPU/XLA benchmarking, or
+  cross-repo client migration in this run.
+
+Interpretation:
+- BayesFilter now has a production QR/square-root linear derivative route that
+  agrees with existing solve-form debug references and autodiff on local
+  fixtures.
+- The solve-form and covariance-form derivative ports remain valuable as
+  testing/debugging references, but QR/square-root is the production path.
+- The next implementation decision should be whether client needs require
+  masked/time-varying QR derivatives immediately or whether the project should
+  move to SVD value diagnostics first.
+
 ## 2026-05-09: student DPF baseline consolidation execution
 
 ### Preflight: workspace, scope, and baseline
