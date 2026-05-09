@@ -8189,3 +8189,25 @@ Sync protocol:
   are absent or strictly inside this planning/reset-memo lane.
 - Stop for direction if another agent changed overlapping planning text in a
   way that requires a substantive choice rather than a mechanical merge.
+
+Fetch/conflict check result:
+- Ran `git fetch origin`.
+- After fetch, local `main` is ahead of `origin/main` by two commits and behind
+  by zero:
+
+```text
+git rev-list --left-right --count HEAD...origin/main
+2 0
+```
+
+- Remote `origin/main` did not introduce competing commits during this check.
+- No merge or conflict resolution was required.
+- The two local commits already present at fetch-check time were:
+
+```text
+3ebe7fb docs: record scoped sync boundary
+df1f001 Plan post-seven-phase client switch-over
+```
+
+- This fetch-check result is itself a scoped reset-memo update and should be
+  committed before the final pre-push fetch/check.
