@@ -8211,3 +8211,144 @@ df1f001 Plan post-seven-phase client switch-over
 
 - This fetch-check result is itself a scoped reset-memo update and should be
   committed before the final pre-push fetch/check.
+
+## 2026-05-10 update: goals/status/gaps closure execution
+
+User request:
+- update the specific reset memo and stay out of other agents' lanes;
+- audit the new goals/status/gaps closure plan as if written by another
+  developer;
+- execute the phases one by one using
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only when the primary criterion and veto diagnostics
+  permit;
+- commit scoped modified files after the justified boundary;
+- summarize results, remaining gaps, and explicit hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md
+```
+
+Initial state:
+- Local `main` is synchronized with `origin/main`:
+
+```text
+git rev-list --left-right --count HEAD...origin/main
+0 0
+```
+
+- Scoped in-lane files currently modified or created:
+  - `docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md`;
+  - `docs/source_map.yml`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`.
+- Out-of-lane untracked files must remain unstaged:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Lane discipline:
+- This execution pass is restricted to BayesFilter planning/reset-memo
+  artifacts unless a phase has an explicit writable-root and client-repo
+  authorization.
+- Do not edit `/home/chakwong/MacroFinance` in this pass unless Phase 1 is
+  explicitly authorized beyond this BayesFilter workspace boundary.
+- Do not edit `/home/chakwong/python` in this pass.
+- Do not stage unrelated untracked files.
+
+Execution expectation:
+- Audit the plan first.
+- If the audit confirms that Phase 1 requires MacroFinance edits, stop before
+  implementing Phase 1 and commit the scoped BayesFilter planning/audit/memo
+  artifacts.
+
+Independent audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-goals-status-gaps-closure-plan-audit-2026-05-10.md
+```
+
+- Audit verdict: approved with an execution-boundary correction.
+- The ten-phase ordering is sound because it starts with MacroFinance, the
+  nearest real client, and keeps GPU/HMC/SVD-derivative claims behind
+  client-side value and derivative parity.
+- The audit confirms that Phase 1 requires editing:
+
+```text
+/home/chakwong/MacroFinance
+```
+
+- That path is outside the current BayesFilter writable root, so Phase 1 cannot
+  be executed automatically in this pass without explicit MacroFinance
+  authorization.
+
+### Phase 1: MacroFinance dense QR value pilot
+
+Phase plan:
+- add a MacroFinance-side optional backend such as
+  `bayesfilter_tf_direct_qr`;
+- wrap BayesFilter dense QR value filtering through MacroFinance's
+  `tf_lgssm_log_likelihood_backend`;
+- prove parity against MacroFinance's existing `tf_direct_qr` dense value path;
+- keep MacroFinance defaults unchanged.
+
+Execution:
+- Not executed in this pass.
+- The first implementation action would edit `/home/chakwong/MacroFinance`,
+  outside this BayesFilter workspace's writable root and outside the declared
+  lane for the current pass.
+
+Tests:
+- No tests were run for Phase 1 because no code was changed.
+- Existing relevant BayesFilter evidence remains:
+
+```text
+tests/test_macrofinance_linear_compat_tf.py
+```
+
+Audit:
+- Phase 1 remains justified, but it is blocked by the client-repo write
+  boundary.
+- No primary criterion can be evaluated until the MacroFinance-side optional
+  backend and parity tests exist.
+
+Tidy-up:
+- MacroFinance was not edited.
+- `/home/chakwong/python` was not edited.
+- Out-of-lane untracked files remain unstaged.
+- `docs/source_map.yml` was updated to register the new plan and audit
+  artifacts.
+
+Next phase justified?
+- Phase 2 is not justified before Phase 1 because masked QR switch-over should
+  not precede dense QR value dispatch.
+- Phase 7 CPU benchmark harness is a valid BayesFilter-only fallback only if
+  MacroFinance Phase 1 is explicitly deferred.
+- Stop here, commit the scoped BayesFilter planning/audit/source-map/reset-memo
+  artifacts, and ask whether to authorize MacroFinance Phase 1 or defer to the
+  BayesFilter-only benchmark fallback.
+
+Completion boundary:
+- Automatic execution stops at Phase 1's client-repo write boundary.
+- Scoped files for this commit:
+  - `docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md`;
+  - `docs/plans/bayesfilter-goals-status-gaps-closure-plan-audit-2026-05-10.md`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/source_map.yml`.
+
+Next hypotheses:
+- H1: MacroFinance dense static `tf_direct_qr` value dispatch can call
+  BayesFilter through an explicit optional backend without changing likelihood
+  values, default behavior, dtype, or graph reuse.
+- H2: If H1 passes, masked QR can switch next provided the static dummy-row
+  convention remains explicit in diagnostics.
+- H3: QR score/Hessian switch-over should wait for value parity and must prove
+  parameter-major derivative ordering and one-country posterior-adapter
+  behavior.
+- H4: Linear SVD/eigen value should remain optional until a singular or
+  near-singular MacroFinance fixture demonstrates QR/Cholesky insufficiency.
+- H5: Generic CPU benchmarks can proceed as a BayesFilter-only fallback, but
+  must not be labeled client-readiness evidence unless MacroFinance or DSGE
+  target parity is already established.
