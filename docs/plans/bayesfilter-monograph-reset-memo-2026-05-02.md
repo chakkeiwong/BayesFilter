@@ -7912,3 +7912,239 @@ Next hypotheses:
   small; GPU/XLA can improve throughput but does not remove `2q + 2^q`.
 - H5: SVD-CUT derivatives are HMC-suitable only if separated-spectrum,
   inactive-floor branches dominate the exact target-model posterior region.
+
+## 2026-05-10 update: post-seven-phase gap-closure execution
+
+User request:
+- update the reset memo;
+- audit the post-seven-phase gap-closure plan as another developer;
+- execute phases with the cycle
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only when primary criteria and veto diagnostics allow;
+- commit scoped modified files at the justified boundary;
+- summarize results, remaining suggestions, and hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md
+```
+
+Initial state:
+- Current HEAD before execution:
+  `68e1792 Implement TF SVD and CUT filtering gates`.
+- Local branch is ahead of `origin/main` by one commit and behind by zero:
+  `git rev-list --left-right --count HEAD...origin/main` returned `1 0`.
+- Scoped uncommitted files at execution start:
+  - `docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md`;
+  - `docs/source_map.yml`.
+- Out-of-scope untracked files remain uncommitted unless a later phase proves
+  they are relevant:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Initial independent audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-audit-2026-05-10.md
+```
+
+- Audit verdict: the plan is sound, but automatic execution in this workspace
+  should proceed only through:
+  - Phase A1: BayesFilter push/sync;
+  - Phase B1: read-only MacroFinance adapter audit.
+- Phase B2 edits MacroFinance, which is outside the BayesFilter writable root;
+  therefore B2 requires an explicit write/permission boundary unless the
+  workspace grants MacroFinance write access.
+
+### Phase A1: push/sync BayesFilter baseline
+
+Phase plan:
+- verify local branch relation to `origin/main`;
+- push the completed BayesFilter implementation baseline;
+- verify remote sync;
+- leave out-of-scope untracked files unstaged.
+
+Execution:
+- Before push, `git rev-list --left-right --count HEAD...origin/main`
+  returned `1 0`.
+- Ran:
+
+```text
+git push
+```
+
+- Push result:
+
+```text
+16912d3..68e1792  main -> main
+```
+
+Tests:
+- No code changed in Phase A1, so no test rerun was required.
+- The prior full-suite baseline remains:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q
+154 passed, 2 warnings in 161.27s
+```
+
+Audit:
+- Phase A1 passes.
+- `origin/main` now points to:
+
+```text
+68e1792 Implement TF SVD and CUT filtering gates
+```
+
+- Post-push `git rev-list --left-right --count HEAD...origin/main` returned
+  `0 0`.
+- Unrelated untracked files remained unstaged.
+
+Tidy-up:
+- No file edits were made by the push operation.
+- Current in-progress local edits are documentation-only for this gap-closure
+  execution pass.
+
+Next phase justified?
+- Yes.  Proceed to Phase B1: read-only MacroFinance adapter audit.
+
+### Phase B1: read-only MacroFinance adapter audit
+
+Phase plan:
+- inspect MacroFinance filtering entry points without editing MacroFinance;
+- identify the smallest production switch-over target;
+- record parity tests, import strategy, rollback boundary, and veto diagnostic
+  status;
+- stop before Phase B2 if the next step requires cross-repository edits outside
+  the BayesFilter writable root.
+
+Execution:
+- Added the audit artifact:
+
+```text
+docs/plans/macrofinance-bayesfilter-switch-over-audit-2026-05-10.md
+```
+
+- Inspected MacroFinance read-only files:
+
+```text
+/home/chakwong/MacroFinance/inference/hmc.py
+/home/chakwong/MacroFinance/filters/tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/filters/tf_svd_kalman.py
+/home/chakwong/MacroFinance/tests/test_tf_kalman.py
+/home/chakwong/MacroFinance/tests/test_production_lgssm_backend_fixture.py
+/home/chakwong/MacroFinance/tests/test_tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/tests/test_one_country_analytic_backend_parity.py
+/home/chakwong/MacroFinance/tests/test_tf_masked_kalman.py
+/home/chakwong/MacroFinance/tests/test_masked_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/tests/helpers_large_scale_lgssm.py
+```
+
+- Updated `docs/source_map.yml` with the Phase B1 audit artifact.
+
+Tests:
+- No code changed in Phase B1, and MacroFinance was inspected read-only.
+- Existing BayesFilter evidence for the selected client target remains:
+
+```text
+tests/test_macrofinance_linear_compat_tf.py
+```
+
+- That existing test file covers BayesFilter parity with MacroFinance for:
+  dense QR value, masked QR value, dense QR score/Hessian, and masked QR
+  score/Hessian on static fixtures.
+
+Audit:
+- Phase B1 passes.
+- The smallest safe MacroFinance switch-over target is:
+
+```text
+inference/hmc.py::tf_lgssm_log_likelihood_backend(
+    backend="tf_direct_qr",
+    observation_mask=None,
+    ...
+)
+```
+
+- The Phase B2 pilot should add an explicit MacroFinance-side option such as
+  `backend="bayesfilter_tf_direct_qr"` or an off-by-default feature flag that
+  wraps:
+
+```text
+bayesfilter.linear.kalman_qr_tf.tf_qr_linear_gaussian_log_likelihood(
+    observations,
+    model,
+    backend="tf_qr",
+    jitter=jitter,
+)
+```
+
+- Phase B2 should initially guard only dense static value parity through
+  MacroFinance tests such as:
+
+```text
+/home/chakwong/MacroFinance/tests/test_tf_kalman.py::test_tf_lgssm_backend_selector_direct_qr_matches_default
+/home/chakwong/MacroFinance/tests/test_production_lgssm_backend_fixture.py::test_production_shaped_surrogate_exercises_default_and_direct_qr_backends
+```
+
+- Masked QR value, QR analytic score/Hessian, one-country analytical posterior
+  behavior, and SVD value should remain later rungs.
+
+Veto diagnostics:
+- Time-varying derivative tensors are not needed for the first dense value
+  pilot.
+- No circular import is required if MacroFinance optionally imports BayesFilter
+  and BayesFilter does not import MacroFinance.
+- Mask convention is irrelevant for the first dense target; later masked QR
+  must preserve the static dummy-row convention.
+- Jitter can be passed directly from MacroFinance into BayesFilter.
+- Derivative tensor ordering is irrelevant for dense value and remains a
+  separate gate for analytic score/Hessian.
+- SVD regularization policy is not part of the first target.
+
+Tidy-up:
+- MacroFinance was not edited.
+- BayesFilter production code was not changed.
+- Out-of-scope untracked files remain unstaged:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Next phase justified?
+- Phase B2 is justified mathematically and architecturally as a
+  MacroFinance-side, feature-flagged dense QR value pilot.
+- Phase B2 is not automatically executable in the current BayesFilter
+  workspace because it requires editing `/home/chakwong/MacroFinance`, which is
+  outside the declared writable root.
+- Stop at this boundary, commit the scoped BayesFilter documentation artifacts,
+  and request a MacroFinance write/permission decision before executing B2.
+
+Completion boundary:
+- Automatic execution stops after Phase B1 because the next justified phase is
+  a MacroFinance edit.
+- `git diff --check` passed for the scoped BayesFilter documentation changes.
+- The scoped files to commit are:
+  - `docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md`;
+  - `docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-audit-2026-05-10.md`;
+  - `docs/plans/macrofinance-bayesfilter-switch-over-audit-2026-05-10.md`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/source_map.yml`.
+- Out-of-scope untracked files remain uncommitted.
+
+Next hypotheses:
+- H1: MacroFinance dense static `tf_direct_qr` value dispatch can call
+  BayesFilter through an explicit client-side wrapper without changing the
+  likelihood value, default backend behavior, or graph reuse.
+- H2: After dense value dispatch passes, masked QR can switch through the same
+  dependency direction if the static dummy-row mask convention remains visible
+  in diagnostics.
+- H3: QR analytic score/Hessian can switch after value parity because
+  BayesFilter already matches static MacroFinance derivative fixtures, but the
+  client adapter must still prove parameter ordering and HMC/MAP behavior.
+- H4: Linear SVD/eigen value should remain an optional client backend until a
+  MacroFinance singular or near-singular fixture demonstrates a need.
+- H5: DSGE nonlinear adapter and GPU/HMC work should wait until MacroFinance
+  Phase B2/B3 complete or are explicitly deferred with a written reason.
