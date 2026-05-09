@@ -1,0 +1,28 @@
+fixtures:
+  - name: lgssm_1d_short
+    type: linear_gaussian
+    reference: kalman
+    horizon: 8
+    state_dim: 1
+    obs_dim: 1
+    purpose: fastest smoke and serialization check
+    seeds: [0, 1, 2]
+    particle_counts: [128, 512]
+  - name: lgssm_cv_2d_short
+    type: linear_gaussian
+    reference: kalman
+    horizon: 12
+    state_dim: 4
+    obs_dim: 2
+    purpose: constant-velocity fixture aligned with advanced_particle_filter README style
+    seeds: [0, 1, 2]
+    particle_counts: [128, 512]
+  - name: lgssm_cv_2d_low_particles
+    type: linear_gaussian
+    reference: kalman
+    horizon: 12
+    state_dim: 4
+    obs_dim: 2
+    purpose: lower-observation-noise fixture for particle variance and ESS stress
+    seeds: [0, 1, 2]
+    particle_counts: [128, 512]
