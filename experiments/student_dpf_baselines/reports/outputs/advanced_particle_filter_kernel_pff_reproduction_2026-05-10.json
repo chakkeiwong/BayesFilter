@@ -1,0 +1,27 @@
+{
+  "classification": "algorithm_test_sensitivity_and_long_runtime",
+  "date": "2026-05-10",
+  "implementation": "advanced_particle_filter",
+  "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+  "tests": [
+    {
+      "command": "timeout 90s env PYTHONPATH=experiments/student_dpf_baselines/vendor pytest experiments/student_dpf_baselines/vendor/advanced_particle_filter/tests/test_kernel_pff.py::test_kernel_pff_lgssm -q -s",
+      "exit_code": 124,
+      "status": "timeout",
+      "summary": "No summary output before 90-second timeout."
+    },
+    {
+      "command": "timeout 90s env PYTHONPATH=experiments/student_dpf_baselines/vendor pytest experiments/student_dpf_baselines/vendor/advanced_particle_filter/tests/test_kernel_pff.py::test_kernel_pff_convergence -q -s",
+      "exit_code": 1,
+      "status": "failed",
+      "summary": "Average iterations was 100.0; assertion expected average iterations < 100."
+    },
+    {
+      "command": "timeout 90s env PYTHONPATH=experiments/student_dpf_baselines/vendor pytest experiments/student_dpf_baselines/vendor/advanced_particle_filter/tests/test_kernel_pff.py::test_scalar_vs_matrix_kernel -q -s",
+      "exit_code": 0,
+      "status": "passed_slow",
+      "summary": "1 passed, 1 warning in 85.92s."
+    }
+  ],
+  "decision": "exclude_kernel_pff_from_routine_comparison_until_separate_debug_plan"
+}

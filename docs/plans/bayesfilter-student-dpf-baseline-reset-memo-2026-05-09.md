@@ -324,6 +324,175 @@ Next justified work:
 - extend the MLCOE adapter beyond the Kalman path only after each target
   algorithm has its own reproduction gate.
 
+## Execution log: hypothesis-closure cycle started 2026-05-10
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-hypothesis-closure-plan-2026-05-10.md`.
+
+Independent audit:
+`docs/plans/bayesfilter-student-dpf-baseline-hypothesis-closure-plan-audit-2026-05-10.md`.
+
+Initial decision:
+- proceed in the student-baseline lane only;
+- do not stage unrelated monograph reset or DPF monograph plan files;
+- use bounded commands for kernel PFF reproduction.
+
+### H0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current branch: `dpf-monograph-rebuild`;
+- unrelated monograph files are dirty, including
+  `docs/chapters/ch19c_dpf_implementation_literature.tex`,
+  `docs/plans/bayesfilter-dpf-monograph-rebuild-reset-memo-2026-05-09.md`,
+  `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`, and an untracked
+  DPF monograph R3 plan;
+- the student reset memo and prior student result report are present;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`.
+
+Interpretation:
+- continuing is justified because this cycle can be staged path-by-path under
+  the student-baseline scope;
+- final commit must not include monograph dirty files.
+
+Next phase justified: H1 larger and low-noise linear stress panel.
+
+### H1: larger and low-noise linear stress panel
+
+Status: passed.
+
+Files added:
+- `experiments/student_dpf_baselines/fixtures/stress_fixtures.py`;
+- `experiments/student_dpf_baselines/runners/run_linear_stress_panel.py`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/linear_stress_panel_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/outputs/linear_stress_panel_summary_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-linear-stress-result-2026-05-10.md`.
+
+Panel:
+- fixtures: `lgssm_1d_long`, `lgssm_cv_2d_long`,
+  `lgssm_cv_2d_low_noise`;
+- seeds: `0`, `1`, `2`, `3`, `4`;
+- particle counts: `64`, `128`, `512`.
+
+Reference agreement:
+- `2026MLCOE`: 45/45 runs ok, max Kalman log-likelihood error
+  approximately `2.84e-14`;
+- `advanced_particle_filter`: 45/45 runs ok, max Kalman log-likelihood error
+  approximately `7.11e-15`.
+
+Advanced bootstrap-PF diagnostics:
+- `lgssm_1d_long`: median PF log-likelihood error ranged from about `0.206`
+  to `0.519`;
+- `lgssm_cv_2d_long`: median PF log-likelihood error ranged from about `1.52`
+  to `12.23`;
+- `lgssm_cv_2d_low_noise`: median PF log-likelihood error ranged from about
+  `0.767` at 512 particles to `24.15` at 64 particles;
+- low-noise ESS was materially lower, with min average ESS about `10.17` at
+  64 particles.
+
+Interpretation:
+- H1 is supported for particle diagnostics: Kalman paths remain
+  reference-consistent, while advanced bootstrap-PF diagnostics degrade under
+  lower observation noise and smaller particle counts;
+- MLCOE particle diagnostics remain unsupported in this adapter cycle because
+  the current MLCOE adapter covers only the Kalman smoke path.
+
+Next phase justified: H2 focused kernel PFF reproduction.
+
+### H2: focused kernel PFF reproduction
+
+Status: passed as classified failure/timeout.
+
+Report:
+`experiments/student_dpf_baselines/reports/advanced-particle-filter-kernel-pff-reproduction-2026-05-10.md`.
+
+Machine-readable record:
+`experiments/student_dpf_baselines/reports/outputs/advanced_particle_filter_kernel_pff_reproduction_2026-05-10.json`.
+
+Results:
+- `test_kernel_pff_lgssm`: timed out after 90 seconds with exit code `124`;
+- `test_kernel_pff_convergence`: failed in 4.60 seconds because average
+  iterations were `100.0`, hitting the maximum rather than satisfying the test
+  assertion `< 100`;
+- `test_scalar_vs_matrix_kernel`: passed but took 85.92 seconds and emitted a
+  pytest warning about returning `bool`.
+
+Interpretation:
+- H2 is supported: the earlier `.F.` and non-completion were reproducible and
+  localize to kernel PFF tests;
+- classification is `algorithm_test_sensitivity_and_long_runtime`;
+- kernel PFF should remain excluded from routine comparison panels until a
+  separate bounded debug/reproduction plan is approved.
+
+Next phase justified: H3 nonlinear smoke fixtures, but only as smoke/blocker
+classification, not as flow/kernel comparison.
+
+### H3: nonlinear smoke fixtures
+
+Status: passed as smoke classification.
+
+Files added:
+- `experiments/student_dpf_baselines/runners/run_nonlinear_smoke.py`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/nonlinear_smoke_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-nonlinear-smoke-result-2026-05-10.md`.
+
+Results:
+- `advanced_particle_filter` range-bearing Student-t smoke: ok, runtime about
+  `0.565` seconds, EKF/UKF/PF paths ran;
+- `2026MLCOE` range-bearing smoke: ok, runtime about `2.895` seconds, EKF/UKF
+  step paths ran.
+
+Caveats:
+- this is not a reference-consistency result;
+- MLCOE EKF final estimate stayed at zero while UKF moved, which indicates
+  method-specific nonlinear behavior needs explicit checks before comparison;
+- advanced PF average ESS was about `9.44` for 128 particles on the nonlinear
+  smoke, suggesting particle degeneracy risk even in a short run.
+
+Interpretation:
+- H3 is supported only as a feasibility smoke: both snapshots expose nonlinear
+  paths that can run through quarantined wrappers;
+- nonlinear comparison is feasible as a next experimental phase, but it needs
+  independent references, method-specific sanity checks, and blocker labels.
+
+Next phase justified: H4 synthesis, audit, and handoff.
+
+### H4: synthesis, audit, and handoff
+
+Status: passed.
+
+Result report:
+`experiments/student_dpf_baselines/reports/student-dpf-baseline-hypothesis-closure-result-2026-05-10.md`.
+
+Synthesis:
+- H1 is supported for available diagnostics: Kalman paths remained
+  reference-consistent and advanced bootstrap-PF diagnostics degraded under
+  low-noise/small-particle stress;
+- H2 is supported as classified kernel PFF failure/timeout:
+  `algorithm_test_sensitivity_and_long_runtime`;
+- H3 is supported as nonlinear feasibility smoke only, not as correctness or
+  reference-consistency evidence.
+
+Remaining gaps:
+- MLCOE particle/flow diagnostics are not yet exposed through adapters;
+- kernel PFF is not routine-panel ready;
+- nonlinear fixtures lack independent references and method-specific
+  tolerances;
+- HMC/DPF/neural OT code remains outside the validated baseline harness.
+
+Next justified work:
+- add an MLCOE BPF adapter gate for linear stress fixtures;
+- build a nonlinear reference/proxy-metric spine;
+- run a separate bounded kernel PFF debug gate if kernel/flow comparison remains
+  important.
+
 ## Stop rules
 
 - Do not edit vendored student code unless the edit is isolated as an adapter or
