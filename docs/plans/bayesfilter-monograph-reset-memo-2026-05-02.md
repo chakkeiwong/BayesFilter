@@ -378,6 +378,133 @@ Audit:
 - Next phase remains justified: the SVD sigma-point bridge can now be audited
   against the completed Chapters 9--14 and the full monograph can be checked.
 
+### Phase M5: HMC target correctness and DSGE/MacroFinance suitability plan
+
+Phase plan:
+- isolate the HMC question as a dedicated chapter-level problem;
+- analyze each rung of the DPF ladder by what target it evaluates and
+  differentiates;
+- record structural-model stress points for nonlinear DSGE and MacroFinance
+  models;
+- determine which rung is the first justified HMC-relevant development target.
+
+Execution:
+- Created the result note
+  `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-m5-hmc-suitability-result-2026-05-09.md`.
+- Defined the HMC-assessment chapter structure around five sections:
+  1. framing the HMC question;
+  2. rung-by-rung target analysis;
+  3. DSGE structural-model difficulties;
+  4. MacroFinance structural-model difficulties;
+  5. BayesFilter practical interpretation.
+- Recorded the rung-by-rung HMC assessment table and the structural-model stress
+  table.
+- Made explicit that HMC suitability attaches to a particular value-gradient
+  construction, not to the name of a method family.
+
+Tests:
+- verified consistency with the M1 literature map, M2 architecture, and M3/M4
+  separations;
+- checked that the resulting HMC analysis no longer collapses smoothness,
+  target validity, and structural-model suitability into the same claim.
+
+Interpretation:
+- The HMC question is now cleanly isolated enough that the final monograph can
+  distinguish exact targets, unbiased-estimator paths, relaxed targets, and
+  learned surrogates without handwaving.
+- The structural-model sections are necessary because nonlinear DSGE and
+  MacroFinance models magnify target-definition mistakes much more severely than
+  small toy benchmarks.
+
+Audit:
+- No blocker prevents moving to the drafting-execution phase.
+- The key obligation for later drafting is to keep every HMC statement tethered
+  to the rung-by-rung assessment rather than to broad method-family language.
+- The next phase remains justified because the program now has explicit source,
+  architecture, theory, resampling, and HMC planning artifacts.
+
+Next phase justified?
+- Yes.  Phase M6 is justified because the mathematical burdens are now explicit
+  enough to govern the actual reader-facing rewrite and equation-audit
+  execution.
+
+### Phase M6: drafting-execution and equation-audit protocol
+
+Phase plan:
+- define the chapter-by-chapter execution cycle for the rebuilt DPF block;
+- ensure later drafting is derivation-first rather than prose-first;
+- require tool audits, claim audits, and replacement tracking for the earlier
+  failed DPF draft artifacts.
+
+Execution:
+- Created the result note
+  `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-m6-drafting-execution-result-2026-05-09.md`.
+- Defined the required per-chapter execution cycle:
+  `source map -> derivation map -> draft -> tool audit -> revise -> compile -> claim audit`.
+- Recorded the per-chapter checklist, required audit artifacts, and tidy-up
+  requirements.
+- Made explicit that the earlier failed DPF pass must be retired through a
+  replacement map rather than silently polished.
+
+Tests:
+- verified internal consistency with the M1--M5 planning outputs;
+- confirmed that the execution protocol directly addresses the earlier failure
+  mode of commentary-first drafting.
+
+Interpretation:
+- The drafting protocol is now explicit enough to prevent the main failure mode
+  of the earlier DPF chapter pass.
+- The key insight is procedural: for this topic, equations and claim ledgers
+  must lead prose, not the other way around.
+
+Audit:
+- No blocker prevents the final integration-planning phase.
+- The next phase remains justified because the only remaining planning task is
+  to define the final integration and audit checklist for the rebuilt DPF block.
+
+Next phase justified?
+- Yes.  Phase M7 is justified because the drafting protocol is now explicit
+  enough to support a final integration and audit checklist.
+
+### Phase M7: integration and final audit protocol
+
+Phase plan:
+- define the final integration checklist for the rebuilt DPF block;
+- define the final compile, bibliography, and claim-audit checklist;
+- state clearly what counts as completion of the rebuild.
+
+Execution:
+- Created the result note
+  `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-m7-integration-audit-result-2026-05-09.md`.
+- Defined the integration checklist covering:
+  chapter order, `docs/main.tex`, bibliography integration,
+  source-map integration, and cross-reference coherence.
+- Defined the final audit checklist covering:
+  undefined citations/references, duplicate labels, unsupported high-stakes
+  claims, drift back toward repo commentary, and proper use of student-material
+  discussion.
+- Recorded the program-level completion condition: the rebuild is complete only
+  after the reader-facing chapters are rewritten, integrated, and successfully
+  audited.
+
+Tests:
+- verified consistency with the M1--M6 outputs and the master program;
+- checked that no obvious planning bucket remains missing at the program level.
+
+Interpretation:
+- The planning program is now structurally complete.
+- What remains is not more planning architecture but the actual monograph
+  rewriting and integration work governed by these plans.
+
+Audit:
+- No blocker prevents concluding the planning program.
+- The next substantive step after this planning set is the actual drafting
+  execution pass governed by the M6 protocol.
+
+Next phase justified?
+- Yes.  The planning program is complete enough to support the DPF monograph
+  rewrite and integration work.
+
 ### Phase AD-7: SVD bridge and whole-document audit
 
 Phase plan:
