@@ -3100,3 +3100,150 @@ Interpretation:
 Next phase justified?
 - Yes.  Phase 6 BayesFilter integration gate is justified as a blocked-gate
   verification only.
+
+### Phase 6: BayesFilter integration gate
+
+Plan:
+- verify whether the SGU production-target gap pass justifies BayesFilter
+  backend/filter changes.
+
+Execute:
+- No BayesFilter backend/filter code was changed for SGU.
+- Updated provenance only.
+
+Test:
+
+```text
+tests/test_dsge_adapter_gate.py: 5 passed, 2 warnings in 3.95s
+```
+
+Audit:
+- No causal production SGU target passed.
+- Current BayesFilter metadata can represent the honest SGU status:
+  state-identity production support plus diagnostic projection labels.
+- No generic metadata-interface failure was exposed.
+
+Interpretation:
+- BayesFilter SGU integration remains blocked beyond documentation and
+  provenance.
+
+Next phase justified?
+- Yes.  Phase 7 derivative/JIT/HMC gate decision is justified as a blocked
+  decision only.
+
+### Phase 7: derivative, JIT, and HMC gate decision
+
+Plan:
+- decide whether the SGU evidence justifies derivative, compiled/JIT, or HMC
+  work.
+
+Execute:
+- Recorded the downstream decision in the DSGE client:
+
+```text
+/home/chakwong/python/docs/plans/dsge-downstream-gates-after-may9-gap-pass-2026-05-09.md
+```
+
+Audit:
+- Derivative/JIT/HMC require a production value target for the same
+  model/backend pair.
+- SGU has no causal local residual-closing production target.
+- Two-slice and causal-anchor evidence remain diagnostic.
+
+Interpretation:
+- Derivative/JIT/HMC remain blocked for SGU.
+- The next SGU-specific work is a derivation of marginal-utility timing and
+  `H[3]`/`H[6]` expectation terms, not numerical promotion.
+
+Next phase justified?
+- Yes.  Phase 8 documentation, final verification, and scoped commit/push are
+  justified.
+
+### Phase 8: documentation, final verification, and first commit/push
+
+Plan:
+- finish reset-memo/provenance updates;
+- run final focused checks;
+- commit and push scoped DSGE and BayesFilter SGU artifacts.
+
+Execute:
+- Client checkpoint:
+  - committed `41ad256 Close SGU current-control diagnostic gates`;
+  - remote state after integration/push: `9473153 Merge remote-tracking branch
+    'origin/main'`;
+  - local and remote client branches are up to date.
+- BayesFilter checkpoint:
+  - committed/pushed `4a27566 Document SGU production target gap decision`.
+
+Final focused checks:
+
+```text
+/home/chakwong/python:
+tests/contracts/test_sgu_current_control_derivation_gate.py
+tests/contracts/test_sgu_causal_control_anchor_gate.py
+tests/contracts/test_sgu_joint_projection_target.py
+tests/contracts/test_dsge_structural_gap_hypotheses.py
+13 passed, 3 warnings in 11.89s
+
+/home/chakwong/BayesFilter:
+tests/test_dsge_adapter_gate.py
+5 passed, 2 warnings in 3.95s
+
+BayesFilter source_map YAML parse: passed
+BayesFilter git diff --check: passed
+DSGE client git diff --check: passed
+```
+
+Audit:
+- Scoped SGU files were committed.
+- Unrelated QR/linear derivative files and Windows `Zone.Identifier` files
+  were not staged as part of the SGU checkpoint.
+
+Interpretation:
+- This SGU production-target closure pass is complete as a blocker decision.
+- The remaining work is no longer to try another optimizer start.  It is to
+  derive a predictive future-marginal-utility law, an augmented-state
+  convention, or a separate smoother likelihood.
+
+Next phase justified?
+- Yes, but only as a new derivation/program-planning phase.  Immediate SGU
+  production filtering, derivative/JIT, and HMC remain unjustified.
+
+## 2026-05-09 filtering backend program continuation
+
+### Phase 0: goals, gaps, hypotheses, and next program plan
+
+Plan:
+- after SGU production filtering remained blocked, separate generic
+  BayesFilter backend work from model-specific DSGE promotion work.
+
+Execute:
+- Added:
+
+```text
+docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md
+```
+
+Audit:
+- Generic TF/TFP filtering work can continue independently of SGU production
+  filtering.
+- Model-specific SGU promotion remains blocked until the DSGE client produces
+  `sgu_causal_filtering_target_passed`.
+
+Interpretation:
+- The next BayesFilter implementation lane is generic filtering backend
+  completion:
+  1. masked QR analytic derivatives;
+  2. TF SVD linear value and regularization diagnostics;
+  3. TF structural protocols and quadrature;
+  4. generic TF SVD sigma-point and SVD-CUT value;
+  5. SVD-CUT score/Hessian only after value gates;
+  6. compiled/GPU gates;
+  7. client switch-over;
+  8. legacy NumPy cleanup.
+- SGU remains in the diagnostic/model-owned derivation lane.
+
+Next phase justified?
+- Yes.  A separate Phase 1A plan/audit/execute cycle for masked QR analytic
+  derivatives is justified.  It should not be mixed with SGU production
+  filtering claims.
