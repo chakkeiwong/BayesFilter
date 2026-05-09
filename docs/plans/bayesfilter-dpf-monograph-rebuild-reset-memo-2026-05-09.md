@@ -301,7 +301,33 @@ Audit:
 Next phase justified?
 - Yes.  The program is complete enough to support actual chapter rewriting.
 
-## 2026-05-09 update: first reader-facing DPF rewrite execution pass started
+## 2026-05-10 update: second reader-facing DPF rewrite phase started
+
+### Phase R2: particle-flow foundations rewrite
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r2-particle-flow-foundations-plan-2026-05-10.md`
+
+Phase plan:
+- rewrite the current `docs/chapters/ch19b_dpf_literature_survey.tex` into a
+  mathematically serious particle-flow foundations chapter;
+- cover the transport motivation, homotopy density, continuity equation, EDH
+  under Gaussian closure, linear-Gaussian recovery, LEDH, and stiffness;
+- keep PF-PF proposal correction as a later chapter rather than collapsing it
+  prematurely into the flow chapter;
+- compile, audit, tidy, and update this memo before the next phase proceeds.
+
+Primary criterion:
+- the rewritten chapter must be mathematically self-contained, materially
+  stronger than the current draft, and explicit about where approximation
+  enters.
+
+Veto diagnostics:
+- if the chapter still reads as a broad survey rather than a theory chapter,
+  stop and revise;
+- if the EDH/LEDH distinction is not mathematically clear, stop and revise;
+- if exact-special-case and approximate-flow statements are not separated
+  cleanly, do not proceed to the PF-PF rewrite phase.
 
 ### Phase R1: particle-filter foundations rewrite
 
@@ -396,3 +422,60 @@ Next phase justified?
   (EDH/LEDH/homotopy/continuity-equation structure), while keeping PF-PF
   proposal correction separate unless the derivation proves that one combined
   chapter remains readable.
+
+## 2026-05-10 update: second reader-facing DPF rewrite phase completed
+
+### Phase R2 result
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r2-particle-flow-foundations-plan-2026-05-10.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r2-particle-flow-foundations-result-2026-05-10.md`
+
+Execution:
+- Rewrote `docs/chapters/ch19b_dpf_literature_survey.tex` substantially into a
+  particle-flow foundations chapter.
+- The chapter now includes:
+  1. the move from discrete reweighting/resampling to continuous transport;
+  2. the pseudo-time homotopy density with explicit normalizing constant;
+  3. the continuity equation and the corresponding flow PDE;
+  4. EDH under Gaussian closure, including the homotopy covariance family and
+     affine EDH ODE coefficients;
+  5. the exact linear-Gaussian recovery statement as the main special-case
+     benchmark;
+  6. LEDH via particle-specific local linearization and local precision
+     matrices;
+  7. stiffness and discretization as mathematical and numerical concerns;
+  8. an explicit chapter-boundary section stating what is not yet claimed.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- A wording scan for exactness/high-stakes language was reviewed and accepted
+  because `exact` appears only in the continuity/conservation statement, the
+  linear-Gaussian recovery benchmark, and explicit qualifying boundary
+  statements.
+
+Interpretation:
+- The particle-flow foundations are now mathematically explicit enough that the
+  later PF-PF chapter can be written on top of a clear homotopy and transport
+  baseline.
+- The key conceptual improvement is that the monograph now states plainly that
+  raw flow transport is not yet the corrected filtering target in the nonlinear
+  case.
+
+Audit:
+- Primary criterion: satisfied.
+- Survey-drift veto: cleared.
+- EDH/LEDH distinction veto: cleared.
+- Exact-versus-approximate-status veto: cleared for this phase.
+- No phase-local formatting or citation blocker remains for this rewrite.
+
+Next phase justified?
+- Yes.  The next rewrite phase is justified because the particle-flow
+  foundations chapter is now strong enough to support a mathematically serious
+  PF-PF / proposal-correction rewrite.
+- Recommended next phase: separate flow-as-transport from flow-as-proposal and
+  write the corrected importance-weight and Jacobian/log-determinant machinery
+  carefully.

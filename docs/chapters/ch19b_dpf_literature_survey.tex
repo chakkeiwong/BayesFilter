@@ -1,451 +1,295 @@
-\chapter[Differentiable Particle Filters]{Differentiable Particle Filters: Literature Survey and Claim Boundaries}
-\label{ch:bf-dpf-literature-survey}
+\chapter{Particle-Flow Foundations}
+\label{ch:bf-dpf-particle-flow-foundations}
 
-This chapter surveys the differentiable particle-filter literature relevant to
-BayesFilter's program in
-\texttt{docs/differentiable-particle-filter-program.md}.  The goal is not to
-promote a single frontier method by enthusiasm alone.  The goal is to separate
-what the literature supports, what the current student reports claim, what is
-still only a project hypothesis, and what would be required before a
-particle-based likelihood path becomes acceptable for HMC in nonlinear DSGE or
-MacroFinance settings.
+This chapter develops the mathematical foundations of particle-flow methods.
+Where the previous chapter fixed the classical particle-filter baseline, the
+present chapter studies a different idea: instead of relying on repeated
+reweighting and resampling to move from the predictive law to the filtering law,
+one may attempt to transport particles continuously along a pseudo-time path.
 
-The survey therefore uses four evidence lanes:
+This transport point of view is attractive because it addresses a real weakness
+of classical particle filters: in sharply informative or moderately
+high-dimensional problems, repeated weight concentration can make the empirical
+measure numerically poor long before the state-space model itself ceases to be
+well defined.  Particle-flow methods attempt to reduce that instability by
+constructing a velocity field that pushes the predictive cloud toward the
+posterior cloud.  The mathematical difficulty is that the transport law is not
+free: one must define the interpolating densities, the continuity equation, the
+velocity field, and the assumptions under which the resulting flow is exact or
+only approximate.
+
+This chapter therefore treats particle flow first as a transport problem, not
+as a final likelihood engine.  In particular, the present chapter does
+\emph{not} yet claim that a raw particle flow defines the final HMC target.  It
+first develops the homotopy and flow mathematics, identifies the Gaussian-
+closure approximation behind the classical EDH construction, and states the
+exact special case in which the transport recovers the Kalman update.  The
+subsequent PF-PF chapter then asks how to restore a clearer proposal/target
+relationship by importance correction.
+
+\section{From discrete reweighting to continuous transport}
+\label{sec:bf-pff-motivation}
+
+Let the predictive law at time $t$ be
+\[
+  \pi_{t|t-1}(dx) = p_\theta(x_t \in dx \mid y_{1:t-1}),
+\]
+and let the filtering law be
+\[
+  \pi_{t|t}(dx) = p_\theta(x_t \in dx \mid y_{1:t}).
+\]
+The bootstrap particle filter approximates the transition from
+$\pi_{t|t-1}$ to $\pi_{t|t}$ by assigning observation-driven weights and then
+resampling the cloud.  Particle-flow methods replace this discrete update by a
+continuous pseudo-time transport from a prior-like distribution to a
+posterior-like distribution.  The intent is to move particles toward regions of
+high posterior density before resampling is needed, thereby reducing weight
+collapse.
+
+The conceptual shift is therefore from
 \begin{enumerate}[label=(\roman*)]
-  \item primary particle-filter and particle-flow literature;
-  \item the CIP monograph chapters that already synthesize part of that
-    literature in project notation;
-  \item the two student baseline tracks now vendored under
-    \texttt{experiments/student\_dpf\_baselines/vendor/};
-  \item BayesFilter's current doctrinal constraint that target validity,
-    derivative validity, and sampler validity are distinct questions.
+  \item a \emph{weighted empirical update} followed by discrete resampling,
 \end{enumerate}
-The student reports are useful because they expose implementation choices,
-benchmark habits, and occasionally stronger or looser conclusions than the
-primary literature.  They are not production authorities by themselves.  When
-this chapter disagrees with them, it does so by naming the specific source or
-contract distinction responsible for the difference.
+to
+\begin{enumerate}[label=(\roman*),resume]
+  \item a \emph{continuous transport path} whose endpoint approximates the
+    filtering law.
+\end{enumerate}
+The advantage of the second view is geometric: the cloud is moved by a velocity
+field rather than by repeated duplication and deletion of particles.  The cost
+is mathematical and numerical: the transport field must be derived, integrated,
+and interpreted correctly.
 
-\section{Scope and terminology}
-\label{sec:bf-dpf-scope-terminology}
+\section{Homotopy path between predictive and filtering laws}
+\label{sec:bf-pff-homotopy}
 
-Write the hidden state as $x_t \in \mathbb{R}^{n_x}$, the observation as
-$y_t \in \mathbb{R}^{n_y}$, and the structural parameter as
-$\theta \in \mathbb{R}^{d_\theta}$.  The nonlinear state-space model is
+Particle-flow methods introduce a pseudo-time parameter
+$\lambda \in [0,1]$ and construct an interpolating family of densities
+$\pi_{t,\lambda}$.  In the classical Daum--Huang construction, one defines the
+log-homotopy
+\begin{equation}
+\label{eq:bf-pff-log-homotopy}
+  \log \pi_{t,\lambda}(x)
+  = \log p_\theta(x_t=x \mid y_{1:t-1})
+    + \lambda \log p_\theta(y_t \mid x)
+    - \log Z_t(\lambda),
+\end{equation}
+where
+\begin{equation}
+\label{eq:bf-pff-homotopy-normalizer}
+  Z_t(\lambda)
+  = \int p_\theta(x_t \mid y_{1:t-1})
+      p_\theta(y_t \mid x_t)^\lambda\,dx_t
+\end{equation}
+is the normalizing constant.
+
+At $\lambda=0$, the homotopy density is the predictive law,
+\[
+  \pi_{t,0}(x) = p_\theta(x_t=x \mid y_{1:t-1}),
+\]
+while at $\lambda=1$ it becomes the filtering law,
+\[
+  \pi_{t,1}(x) = p_\theta(x_t=x \mid y_{1:t}).
+\]
+Thus the interpolation is exact at the level of endpoint densities.
+Differentiating \eqref{eq:bf-pff-log-homotopy} with respect to $\lambda$ gives
+\begin{equation}
+\label{eq:bf-pff-log-homotopy-derivative}
+  \partial_\lambda \log \pi_{t,\lambda}(x)
+  = \log p_\theta(y_t \mid x) - \partial_\lambda \log Z_t(\lambda).
+\end{equation}
+The term involving $Z_t(\lambda)$ is crucial: it keeps the intermediate density
+normalized.  Omitting it may produce a convenient algebraic simplification, but
+it changes the law being transported.
+
+\section{Continuity equation and transport PDE}
+\label{sec:bf-pff-continuity}
+
+Suppose the particle cloud is transported by a velocity field
+$v_{t,\lambda}(x)$ through the pseudo-time ODE
+\begin{equation}
+\label{eq:bf-pff-particle-ode}
+  \frac{d x(\lambda)}{d\lambda} = v_{t,\lambda}(x(\lambda)).
+\end{equation}
+Mass conservation then implies that the evolving density must satisfy the
+continuity equation
+\begin{equation}
+\label{eq:bf-pff-continuity-equation}
+  \partial_\lambda \pi_{t,\lambda}(x)
+  + \nabla \cdot \bigl(\pi_{t,\lambda}(x)
+  v_{t,\lambda}(x)\bigr) = 0.
+\end{equation}
+Dividing by $\pi_{t,\lambda}(x)$ where the density is positive yields
+\begin{equation}
+\label{eq:bf-pff-log-density-continuity}
+  \partial_\lambda \log \pi_{t,\lambda}(x)
+  = -\nabla \cdot v_{t,\lambda}(x)
+    - \nabla \log \pi_{t,\lambda}(x)^\top v_{t,\lambda}(x).
+\end{equation}
+Combining \eqref{eq:bf-pff-log-homotopy-derivative} and
+\eqref{eq:bf-pff-log-density-continuity} gives the basic particle-flow PDE:
+\begin{equation}
+\label{eq:bf-pff-flow-pde}
+  \log p_\theta(y_t \mid x)
+  - \partial_\lambda \log Z_t(\lambda)
+  = -\nabla \cdot v_{t,\lambda}(x)
+    - \nabla \log \pi_{t,\lambda}(x)^\top v_{t,\lambda}(x).
+\end{equation}
+This equation is exact as a conservation statement.  What is not yet fixed is a
+unique velocity field.  The PDE constrains the field but does not determine it
+without additional structure.
+
+\section{EDH under Gaussian closure}
+\label{sec:bf-pff-edh}
+
+The classical exact Daum--Huang (EDH) construction becomes explicit under a
+Gaussian predictive law and a Gaussian likelihood.  Assume that at pseudo-time
+$\lambda$ the interpolating density is approximated by
+\[
+  \pi_{t,\lambda}(x) \approx \mathcal N(x; m_{t,\lambda}, P_{t,\lambda}),
+\]
+and that the observation model is locally Gaussian with linear observation map
+$H_t$ and observation covariance $R_t$.  Then the likelihood precision is
+\begin{equation}
+\label{eq:bf-pff-likelihood-precision}
+  \Lambda_t = H_t^\top R_t^{-1} H_t.
+\end{equation}
+Under the Gaussian closure, the homotopy covariance satisfies
+\begin{equation}
+\label{eq:bf-pff-homotopy-covariance}
+  P_{t,\lambda} = \bigl(P_{t|t-1}^{-1} + \lambda \Lambda_t\bigr)^{-1},
+\end{equation}
+and differentiation gives
+\begin{equation}
+\label{eq:bf-pff-homotopy-cov-derivative}
+  \frac{dP_{t,\lambda}}{d\lambda}
+  = - P_{t,\lambda} \Lambda_t P_{t,\lambda}.
+\end{equation}
+The affine EDH velocity field is then written as
+\begin{equation}
+\label{eq:bf-pff-edh-velocity}
+  v_{t,\lambda}(x) = A_t(\lambda)x + b_t(\lambda),
+\end{equation}
+with coefficients
 \begin{align}
-  x_t &\sim p_\theta(x_t \mid x_{t-1}), \\
-  y_t &\sim p_\theta(y_t \mid x_t).
+\label{eq:bf-pff-edh-A}
+  A_t(\lambda)
+  &= -\frac{1}{2} P_{t,\lambda}\Lambda_t, \\
+\label{eq:bf-pff-edh-b}
+  b_t(\lambda)
+  &= -A_t(\lambda)m_{t|t-1}
+     + \bigl(I + \lambda A_t(\lambda)\bigr)
+       P_{t,\lambda}H_t^\top R_t^{-1}
+       (y_t - H_t m_{t|t-1}).
 \end{align}
-The filtering recursion propagates
-\[
-  p_\theta(x_t \mid y_{1:t-1})
-  = \int p_\theta(x_t \mid x_{t-1})
-    p_\theta(x_{t-1} \mid y_{1:t-1})\,dx_{t-1}
-\]
-and updates by Bayes' rule,
-\[
-  p_\theta(x_t \mid y_{1:t})
-  \propto p_\theta(y_t \mid x_t)
-  p_\theta(x_t \mid y_{1:t-1}).
-\]
-The marginal likelihood factorization is
+Thus the EDH pseudo-time ODE is
 \begin{equation}
-\label{eq:bf-dpf-marginal-factorization}
-  p_\theta(y_{1:T})
-  = \prod_{t=1}^T p_\theta(y_t \mid y_{1:t-1}).
+\label{eq:bf-pff-edh-ode}
+  \frac{dx}{d\lambda} = A_t(\lambda)x + b_t(\lambda).
 \end{equation}
+The load-bearing approximation here is the Gaussian closure itself.  The
+continuity equation is exact, but the affine solution
+\eqref{eq:bf-pff-edh-ode} is exact only when the intermediate densities are
+indeed Gaussian along the homotopy path.
 
-A classical particle filter approximates the filtering law by a weighted atomic
-measure,
+\section{Linear-Gaussian recovery as the exact special case}
+\label{sec:bf-pff-linear-gaussian-recovery}
+
+The most important exactness statement for EDH is the linear-Gaussian recovery
+result.  Suppose the predictive law is Gaussian and the observation model is
+truly linear-Gaussian.  Then the homotopy family remains Gaussian for all
+$\lambda$, and the covariance endpoint at $\lambda=1$ is
 \begin{equation}
-\label{eq:bf-dpf-empirical-measure}
-  \hat \pi_t^N(dx)
-  = \sum_{i=1}^N w_t^{(i)}\,\delta_{x_t^{(i)}}(dx).
+\label{eq:bf-pff-kalman-endpoint}
+  P_{t,1} = \bigl(P_{t|t-1}^{-1} + H_t^\top R_t^{-1}H_t\bigr)^{-1},
 \end{equation}
-Differentiable particle-filter proposals modify this basic construction in at
-least three conceptually different ways:
-\begin{enumerate}[label=(\alph*)]
-  \item they change the \emph{proposal dynamics}, for example by transporting
-    particles via a deterministic or stochastic flow;
-  \item they change the \emph{resampling mechanism}, for example by replacing a
-    categorical draw with a smooth relaxation or an optimal-transport map;
-  \item they change the \emph{learning objective}, for example by optimizing a
-    differentiable surrogate rather than maintaining an unbiased likelihood
-    estimator.
-\end{enumerate}
-These distinctions are load-bearing.  A method can be differentiable without
-being unbiased, useful for training without being suitable for HMC, or
-value-consistent in a special case without being a generally target-preserving
-likelihood path.
+which is exactly the Kalman posterior covariance.  Likewise, the corresponding
+mean endpoint recovers the Kalman posterior mean.  Therefore, in the
+linear-Gaussian case, EDH is not merely an approximation: it transports the
+predictive Gaussian law to the exact Kalman update.
 
-\section{Bootstrap particle filtering as the baseline}
-\label{sec:bf-dpf-bootstrap-baseline}
+This statement is crucial for BayesFilter because it supplies the exact special
+case against which any EDH implementation should be tested.  It is also the
+boundary line for the rest of the chapter: outside this special case, the
+particle-flow path is no longer guaranteed exact merely by writing down the
+homotopy.
 
-The baseline reference remains the bootstrap particle filter of
-\citet{gordon1993novel}, described at greater length in the CIP survey chapter
-\texttt{ch26\_differentiable\_pf.tex}.  For particles
-$\{x_t^{(i)}\}_{i=1}^N$, the basic recursion is:
-\begin{enumerate}[label=(\roman*)]
-  \item sample proposal particles
-    $\tilde x_t^{(i)} \sim p_\theta(x_t \mid x_{t-1}^{(i)})$;
-  \item assign weights
-    $\tilde w_t^{(i)} \propto p_\theta(y_t \mid \tilde x_t^{(i)})$;
-  \item normalize $w_t^{(i)} = \tilde w_t^{(i)} / \sum_j \tilde w_t^{(j)}$;
-  \item resample ancestors according to $w_t^{(i)}$.
-\end{enumerate}
-The marginal-likelihood estimator is
+\section{LEDH and local linearization}
+\label{sec:bf-pff-ledh}
+
+The local EDH (LEDH) construction replaces the single global observation
+linearization by a particle-specific local linearization.  For particle
+$x^{(i)}$, let
 \begin{equation}
-\label{eq:bf-dpf-bpf-likelihood}
-  \hat p_\theta^N(y_{1:T})
-  = \prod_{t=1}^T \left( \frac{1}{N}\sum_{i=1}^N \tilde w_t^{(i)} \right).
+\label{eq:bf-pff-local-jacobian}
+  G_t^{(i)} = \left.\frac{\partial g_\theta(x)}{\partial x}\right|_{x=x^{(i)}}
 \end{equation}
-Under the standard bootstrap-particle-filter assumptions this estimator is
-unbiased for the likelihood \citep{doucet2001sequential,andrieu2010particle}.
-That statement is mathematically valuable because it gives BayesFilter a clear
-reference distinction between:
+and define the local precision
+\begin{equation}
+\label{eq:bf-pff-local-precision}
+  \Lambda_t^{(i)} = (G_t^{(i)})^\top R_t^{-1} G_t^{(i)}.
+\end{equation}
+The local linearization of the observation map near particle $x^{(i)}$ produces
+particle-specific flow coefficients
+\begin{align}
+\label{eq:bf-pff-ledh-A}
+  A_t^{(i)}(\lambda)
+  &= -\frac{1}{2} P_{t,\lambda}^{(i)} \Lambda_t^{(i)}, \\
+\label{eq:bf-pff-ledh-b}
+  b_t^{(i)}(\lambda)
+  &= -A_t^{(i)}(\lambda)m_{t|t-1}
+     + \bigl(I + \lambda A_t^{(i)}(\lambda)\bigr)
+       P_{t,\lambda}^{(i)} \eta_t^{(i)},
+\end{align}
+where the local information vector is built from the linearized observation
+model.  The pseudo-time evolution is then
+\begin{equation}
+\label{eq:bf-pff-ledh-ode}
+  \frac{dx^{(i)}}{d\lambda}
+  = A_t^{(i)}(\lambda)x^{(i)} + b_t^{(i)}(\lambda).
+\end{equation}
+LEDH is therefore more adaptive to nonlinear observation geometry than EDH, but
+that adaptivity comes at the price of a stronger approximation dependence on the
+quality of the local linearization and on the numerical stability of the local
+Jacobians.
+
+\section{Stiffness and discretization}
+\label{sec:bf-pff-stiffness}
+
+Even when the flow equations are well defined, their numerical integration may
+be difficult.  The main difficulty is stiffness.  When the observation noise is
+small or the effective likelihood precision is large, the eigenvalues of the
+drift matrix in the EDH or LEDH ODE can span several orders of magnitude.  In
+that regime, explicit solvers require very small pseudo-time steps to avoid
+large truncation error or instability.
+
+Formally, the stiffness is tied to the conditioning of the homotopy covariance
+or precision family.  In the local case, for example, large eigenvalue spreads
+in $\Lambda_t^{(i)}$ may force extremely fine pseudo-time resolution near the
+posterior end of the path.  This matters for implementation because the flow
+construction is only useful if it can be integrated stably and repeatedly inside
+a filtering recursion.
+
+For BayesFilter, the main consequence is conceptual.  Stiffness is not merely a
+performance issue.  It is one of the points at which a formally attractive flow
+construction can become numerically unreliable enough to change the practical
+behavior of the filter.  This is why later implementation-facing chapters must
+record discretization policy, stiffness diagnostics, and stress tests explicitly.
+
+\section{What this chapter does and does not claim}
+\label{sec:bf-pff-chapter-boundary}
+
+This chapter develops the particle-flow transport mathematics itself.  It does
+\emph{not} yet claim:
 \begin{itemize}
-  \item an \emph{unbiased likelihood estimator},
-  \item a differentiable surrogate for the same likelihood,
-  \item and a value-only approximation with no exact-target claim.
+  \item that the transported cloud alone defines the final corrected filtering
+    law in the nonlinear case;
+  \item that raw EDH or LEDH transport is already the final HMC target;
+  \item that the Jacobian/proposal correction issue has been resolved;
+  \item that differentiable resampling or OT relaxations have been introduced.
 \end{itemize}
-
-The classical weakness is degeneracy.  As emphasized by
-\citet{bengtsson2008curse} and \citet{snyder2008obstacles}, the effective
-sample size can collapse rapidly in high dimension, especially when the
-observation density is tight.  The student MLCOE report correctly highlights
-this degeneracy problem in its literature review and uses it to motivate
-particle-flow methods.  That part of the report is consistent with the standard
-literature and with the CIP discussion.  The more ambitious conclusion one
-cannot draw from degeneracy alone is that a differentiable replacement for
-resampling automatically yields an HMC-suitable likelihood path.  Degeneracy
-motivates algorithmic innovation; it does not settle the target-validity issue.
-
-\section{Particle-flow filters}
-\label{sec:bf-dpf-particle-flow-literature}
-
-Particle-flow filters were introduced by \citet{daumhuang2008} and developed in
-subsequent work by Daum and Huang to replace discrete resampling by a
-continuous transport from a predictive density toward a posterior density.  The
-CIP survey chapter presents the standard homotopy form
-\begin{equation}
-\label{eq:bf-dpf-homotopy}
-  \log p_\lambda(x)
-  = \log p(x \mid y_{1:t-1}) + \lambda \log p(y_t \mid x) + c(\lambda),
-  \qquad \lambda \in [0,1],
-\end{equation}
-and then derives an affine flow field under Gaussian closure.  In the global
-exact Daum--Huang (EDH) construction, the resulting ordinary differential
-equation has the form
-\begin{equation}
-\label{eq:bf-dpf-edh-ode}
-  \frac{dx}{d\lambda} = A(\lambda)x + b(\lambda),
-\end{equation}
-with coefficients determined by the current predictive covariance and the local
-likelihood precision.
-
-The literature point that matters for BayesFilter is not merely the formula but
-the \emph{status} of the formula.  Under linear-Gaussian assumptions the flow
-recovers the Kalman update, so EDH supplies an exact special-case benchmark.
-Outside that setting, the global Gaussian closure is an approximation.  The CIP
-chapter states this carefully, and BayesFilter should preserve that wording.
-The MLCOE report's literature review and implementation framing are broadly
-consistent with this distinction: it treats EDH as analytically appealing but
-still motivates localized or corrected variants for non-Gaussian filtering.
-
-\subsection{Local EDH and particle-specific linearization}
-\label{sec:bf-dpf-ledh-literature}
-
-\citet{li2017particle} and related particle-flow literature replace the global
-linearization with particle-specific local linearizations, producing what is
-commonly called local EDH (LEDH).  The CIP methodology chapter writes the local
-homotopy coefficients in terms of a particle-specific Jacobian and local
-precision matrix.  This reduces the mismatch between the true nonlinear
-likelihood geometry and the global affine closure, but it changes the algorithm
-from a single deterministic transport field into a cloud of particle-specific
-transports.
-
-The main literature-supported benefit is improved adaptability to nonlinear
-observation structure.  The main literature-supported cost is that once the flow
-is discretized and localized, it is no longer generally exact.  The student
-repositories both pay serious attention to LEDH.  The MLCOE report uses LEDH as
-a core component of its PF-PF implementation track; the
-\texttt{advanced\_particle\_filter} repository also treats EDH/LEDH as a major
-classical and differentiable baseline.  Where their conclusions become stronger
-than the primary literature is usually not in claiming exactness of the local
-flow, but in how quickly they move from improved filtering behavior to stronger
-HMC conclusions.  BayesFilter should keep that boundary explicit.
-
-\subsection{PF-PF importance correction}
-\label{sec:bf-dpf-pfpf-literature}
-
-The particle-flow particle filter (PF-PF) literature, especially
-\citet{li2017particle}, treats the deterministic flow not as the final target
-itself but as a proposal mechanism inside an importance-sampling scheme.  If a
-flow map $\Phi$ transforms a proposal particle $x_{t,0}$ into a transported
-particle $x_{t,1}=\Phi(x_{t,0})$, then the corrected weight is obtained by the
-usual change-of-variables formula:
-\begin{equation}
-\label{eq:bf-dpf-pfpf-weight}
-  \tilde w_t
-  \propto
-  \frac{p_\theta(y_t \mid x_{t,1})\,p_\theta(x_{t,1} \mid x_{t-1})}
-       {q_\Phi(x_{t,1} \mid x_{t-1},y_t)}
-  =
-  \frac{p_\theta(y_t \mid x_{t,1})\,p_\theta(x_{t,1} \mid x_{t-1})
-        \left|\det D\Phi(x_{t,0})\right|}
-       {p_\theta(x_{t,0} \mid x_{t-1})}.
-\end{equation}
-This is the literature step that makes BayesFilter's agreed development ladder
-sensible.  The flow alone is not enough; the importance correction is the first
-step that tries to recover a principled proposal/target relationship.
-
-The student reports are useful here because they highlight two different
-implementation emphases.  The MLCOE report foregrounds PF-PF consistency and
-Jacobian correction as a central motivation.  The
-\texttt{advanced\_particle\_filter} codebase, especially its classical thread,
-also keeps EDH/LEDH and PF-PF in view, but its newer TensorFlow notebooks shift
-more attention toward differentiable-resampling and HMC experiments.  This is a
-useful warning for BayesFilter: once differentiable objectives become available,
-it becomes easy to underemphasize the correction logic that preserves a clear
-proposal interpretation.
-
-\section{Kernel and stochastic particle-flow work}
-\label{sec:bf-dpf-kernel-stochastic-literature}
-
-The student MLCOE report covers two additional literatures that are helpful even
-when they are not BayesFilter's primary intended production path.
-
-First, kernel-embedded particle-flow methods such as the work emphasized by
-\citet{hu2021particle} address high-dimensional or sparsely observed systems by
-constructing flow fields in a reproducing-kernel Hilbert space.  The report's
-treatment of marginal collapse in standard scalar-kernel formulations and the
-move to matrix-valued kernels is useful as a reminder that transport ideas can
-fail in underobserved subspaces even when they appear numerically stable on
-observed coordinates.
-
-Second, stochastic particle-flow work, including Dai and Daum's stiffness and
-control-inspired homotopy-schedule analyses, is useful for BayesFilter because
-it names a real implementation hazard: the flow ODE may become numerically
-stiff when observation precision is high.  The CIP chapters and the student
-reports are aligned on this issue.  This does not yet make stochastic
-particle-flow the preferred BayesFilter path, but it justifies carrying
-stiffness as a first-class diagnostic obligation in any EDH or LEDH
-implementation.
-
-\section{Differentiable resampling literature}
-\label{sec:bf-dpf-differentiable-resampling-literature}
-
-The differentiable-particle-filter frontier is driven by the resampling
-bottleneck.  Standard multinomial or systematic resampling is a discrete map,
-so a naive pathwise derivative with respect to the weights is zero almost
-everywhere.  The literature response has taken at least three main forms.
-
-\subsection{Soft resampling and related smooth relaxations}
-\label{sec:bf-dpf-soft-resampling}
-
-One family of methods uses a soft or partially collapsed replacement for hard
-ancestor selection.  The CIP resampling chapter follows
-\citet{zhumurphyjonschkowski2020} and writes a representative soft-resampling
-update as
-\begin{equation}
-\label{eq:bf-dpf-soft-resampling}
-  \tilde x^{(i)}
-  = \alpha x^{(a_i)} + (1-\alpha)\bar x_w,
-  \qquad
-  \bar x_w = \sum_{j=1}^N w^{(j)}x^{(j)}.
-\end{equation}
-The mean of this soft-resampled point agrees with the weighted empirical mean,
-but nonlinear functionals of the cloud are biased unless $\alpha=1$ and one
-reverts to standard resampling.  This is precisely the kind of statement that
-BayesFilter should preserve because it names the central trade-off: smooth
-gradients are purchased by changing the target.
-
-The \texttt{advanced\_particle\_filter} repository makes this trade-off very
-explicit in its HMC-with-differentiable-resampling thread.  Its notebook index
-states that the linear-Gaussian-observation diagnostics notebook is used to
-compare DPF gradient quality against Kalman ground truth, specifically to
-isolate DPF bias from observation nonlinearity.  This is a strong design move,
-and BayesFilter should reuse the idea.  The important doctrinal qualification is
-that such a diagnostic identifies and measures bias; it does not erase it.
-
-\subsection{Entropy-regularized optimal transport}
-\label{sec:bf-dpf-ot-resampling}
-
-A second family replaces categorical resampling by an optimal-transport map.
-The central reference for BayesFilter is \citet{corenflos2021differentiable},
-which formulates resampling as a transport problem between a weighted empirical
-measure and a uniformly weighted empirical measure.  The CIP chapter writes the
-entropically regularized problem as
-\begin{equation}
-\label{eq:bf-dpf-entropic-ot}
-  \Pi_\varepsilon^*
-  = \arg\min_{\Pi \in \mathcal U(w,u)}
-    \langle \Pi, C \rangle - \varepsilon H(\Pi),
-\end{equation}
-where $w$ is the source weight vector, $u$ is the uniform target weight vector,
-$C$ is the transport-cost matrix, and $H(\Pi)$ is the entropy term.  The
-barycentric projection of the resulting coupling defines a differentiable
-replacement for resampling.
-
-The literature-supported gain is a smooth transport map with a clear geometric
-interpretation.  The literature-supported cost is that the regularized
-transport is not the same object as exact resampling; it is a relaxed
-projection whose bias depends on the regularization and on the finite Sinkhorn
-solve.  The \texttt{advanced\_particle\_filter} repository is especially useful
-here because it records an explicit parameter sweep over the entropy parameter
-and Sinkhorn iterations, and its amortized-operator note states approximate
-speedups and residual approximation error.  This helps BayesFilter see where
-engineering enthusiasm can outrun target-discipline: faster wall clock is not
-yet a target-preservation theorem.
-
-\subsection{Amortized or learned OT operators}
-\label{sec:bf-dpf-amortized-ot}
-
-A third family learns to approximate the OT resampling map directly.  The
-\texttt{advanced\_particle\_filter} repository's
-\texttt{docs/amortized\_ot\_operator.md} is a particularly useful internal
-comparison object because it is unusually explicit about the architecture,
-training distribution, wall-clock speedups, and approximation residuals.  Its
-claimed use is to replace iterative Sinkhorn solves by a learned set-based
-operator that takes weighted clouds and returns approximately barycentric
-uniform clouds.
-
-This line of work is relevant to BayesFilter because it illustrates the final
-rung of the agreed ladder: neural OT as an acceleration layer on top of OT
-resampling, not as the first production baseline.  It also illustrates the key
-reason BayesFilter remains cautious.  Once the resampling operator is learned,
-any posterior change induced by operator approximation must be counted as part
-of the target definition or explicitly corrected.  The advanced student repo is
-helpfully honest about this: its architecture note reports a nonzero
-approximation error and a visible posterior-mean shift relative to Sinkhorn and
-Kalman comparisons.  That honesty is useful, and BayesFilter should preserve it
-rather than smoothing it away in prose.
-
-\section{Learning-based differentiable particle filters}
-\label{sec:bf-dpf-learning-based-literature}
-
-The student MLCOE report places differentiable particle filters in a broader
-learning-based literature that includes \citet{jonschkowski2018differentiable},
-\citet{karkus2018particle}, and related end-to-end filtering architectures.
-Those works are useful because they clarify a distinct goal: some DPF methods
-are designed primarily to train transition, observation, or proposal networks
-within algorithmic priors.  In that regime the objective is often a
-training-friendly surrogate, not an exact Monte Carlo likelihood estimator.
-
-This difference matters for BayesFilter's HMC program.  A learning objective can
-be perfectly respectable for representation learning and still be the wrong
-object for Hamiltonian Monte Carlo.  The MLCOE report groups differentiable and
-learning-based filtering together in a broad frontier category, which is fine as
-a literature map.  BayesFilter needs a sharper split: methods designed for
-end-to-end learning should not be treated as HMC-ready merely because they
-provide gradients.
-
-\section{Particle methods for parameter inference}
-\label{sec:bf-dpf-parameter-inference-literature}
-
-Parameter inference with particle methods occupies a wider space than the
-BayesFilter DPF program.  The classical pseudo-marginal reference is
-\citet{andrieu2010particle}, which uses an unbiased particle-filter likelihood
-estimator inside a Metropolis--Hastings correction.  The student MLCOE report
-also discusses particle marginal Metropolis--Hastings and particle HMC as bonus
-questions, and the \texttt{advanced\_particle\_filter} repository devotes a full
-thread to HMC with differentiable resampling.
-
-The survey conclusion BayesFilter should draw is careful but not negative:
-\begin{enumerate}[label=(\roman*)]
-  \item pseudo-marginal particle MCMC has a clear exact-target story when its
-    assumptions hold;
-  \item differentiable particle filters may be useful for gradient-based
-    parameter inference, but their exact target status depends on how the flow,
-    resampling, and learning approximations are handled;
-  \item the current literature does not justify collapsing all of these methods
-    into a single statement such as ``particle HMC is correct whenever the
-    filter is differentiable.''
-\end{enumerate}
-This is the main place where BayesFilter's doctrine remains intentionally more
-conservative than the tone of some experimental reports.
-
-\section{Comparison against the student literature reviews}
-\label{sec:bf-dpf-student-comparison}
-
-The two student tracks are genuinely useful as comparison objects because they
-cover partially different slices of the literature.
-
-The MLCOE report contributes a broad survey arc from Kalman and UKF through SMC,
-EDH, LEDH, PF-PF, kernel particle flow, stochastic particle flow,
-differentiable particle filters, and particle MCMC.  Relative to BayesFilter's
-current monograph, it usefully foregrounds:
-\begin{itemize}
-  \item kernel-embedded particle flow and marginal-collapse concerns;
-  \item stiffness mitigation in particle-flow ODEs;
-  \item a larger spread of geophysical benchmark literature.
-\end{itemize}
-Its weakest points are not the range of topics but the tendency to drift from
-survey statements into architecture or application enthusiasm without always
-maintaining BayesFilter's distinction between filtering quality, target status,
-and HMC validity.
-
-The \texttt{advanced\_particle\_filter} repository contributes a more explicit
-engineering and experimental arc.  Relative to both CIP and the MLCOE report,
-it is especially helpful about:
-\begin{itemize}
-  \item linear-Gaussian diagnostics that isolate DPF gradient bias;
-  \item Sinkhorn-parameter sweeps;
-  \item MAP, Laplace, and HMC pipeline experiments;
-  \item explicit amortized-OT approximation costs and speedups.
-\end{itemize}
-Its main limitation for BayesFilter is that it remains a research codebase and
-not a production contract.  Many conclusions are notebook- and benchmark-based,
-which makes them valuable hypotheses and diagnostics but not enough by
-themselves to upgrade BayesFilter's HMC claims.
-
-On balance, the student materials and the primary literature agree on the
-following broad story: particle-flow and differentiable-resampling methods are a
-serious research path for nonlinear filtering and gradient-based parameter
-inference, especially where Gaussian closures are inadequate.  Where BayesFilter
-remains more conservative is in the final interpretive step.  The literature and
-the student reports motivate the path; they do not yet eliminate the need for
-per-rung target, gradient, variance, and compiled-path audits.
-
-\section{Method-family claim register}
-\label{sec:bf-dpf-claim-register}
-
-Table~\ref{tab:bf-dpf-claim-register} summarizes the method families most
-relevant to the BayesFilter program.
-
-\begin{table}[ht]
-\centering
-\small
-\begin{tabular}{p{0.18\textwidth} p{0.18\textwidth} p{0.16\textwidth} p{0.34\textwidth}}
-\hline
-Method family & Likelihood / target status & Gradient status & Main BayesFilter blocker \\
-\hline
-Bootstrap PF & Unbiased likelihood estimator under standard assumptions & Not pathwise differentiable through standard resampling & Degeneracy and nondifferentiable resampling \\
-EDH flow alone & Exact only in linear-Gaussian recovery; otherwise controlled approximation & Smooth value path if implemented numerically stably & No generic corrected-target claim outside special cases \\
-LEDH flow alone & Improved local approximation, not generic exactness & Smooth local-flow path & Local linearization and discretization bias \\
-PF-PF with flow weights & Proposal-correction path with principled importance weighting & Depends on flow/Jacobian implementation & Variance, Jacobian accuracy, and practical stability \\
-Soft resampling & Biased differentiable surrogate & Pathwise-friendly & Target bias must be named explicitly \\
-Entropic OT resampling & Biased differentiable transport relaxation & Differentiable through Sinkhorn / OT solver & Relaxation bias and solver approximation \\
-Neural OT resampling & Learned surrogate to a relaxed OT map & Differentiable neural operator & Additional approximation layer and training-distribution mismatch \\
-\hline
-\end{tabular}
-\caption{Claim register for the main differentiable particle-filter method families discussed in this chapter.}
-\label{tab:bf-dpf-claim-register}
-\end{table}
-
-\section{Implication for the BayesFilter program}
-\label{sec:bf-dpf-literature-implication}
-
-The literature and student comparisons support the development ladder already
-recorded in \texttt{docs/differentiable-particle-filter-program.md}: start with
-EDH linear-Gaussian recovery, add PF-PF importance correction, then study soft
-or OT resampling, and only later consider LEDH plus neural OT.  This ordering is
-not arbitrary.  It matches the places where the literature moves from a clearer
-proposal or benchmark interpretation toward increasingly relaxed,
-learning-dependent surrogates.
-
-The survey therefore supports the BayesFilter path as a \emph{research and
-engineering program}.  It does not yet support skipping the intermediate gates.
-In particular, none of the surveyed material removes the need to test, rung by
-rung, whether the scalar being differentiated is an exact likelihood, an
-unbiased estimator, a biased surrogate, or merely a useful engineering score.
+Those belong to the later PF-PF and resampling chapters.  The role of the
+present chapter is narrower and mathematically prior: it explains how the
+transport path is constructed, where the Gaussian-closure or local-linearization
+approximation enters, and why the linear-Gaussian case supplies the exact
+special benchmark.
