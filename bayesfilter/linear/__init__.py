@@ -20,6 +20,7 @@ from bayesfilter.linear.kalman_qr_derivatives_tf import (
     TFQRLinearDerivativeBackend,
     tf_qr_linear_gaussian_score_hessian,
     tf_qr_sqrt_kalman_score_hessian,
+    tf_qr_sqrt_masked_kalman_score_hessian,
 )
 from bayesfilter.linear.qr_factor_tf import (
     cholesky_factor,
@@ -59,6 +60,7 @@ __all__ = [
     "tf_qr_sqrt_kalman_score_hessian",
     "tf_qr_sqrt_masked_kalman_filter",
     "tf_qr_sqrt_masked_kalman_log_likelihood",
+    "tf_qr_sqrt_masked_kalman_score_hessian",
     "tf_kalman_filter",
     "tf_kalman_log_likelihood",
     "tf_linear_gaussian_log_likelihood",

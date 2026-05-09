@@ -26,6 +26,7 @@ from bayesfilter.linear import (
     tf_qr_sqrt_kalman_score_hessian,
     tf_qr_sqrt_masked_kalman_filter,
     tf_qr_sqrt_masked_kalman_log_likelihood,
+    tf_qr_sqrt_masked_kalman_score_hessian,
 )
 from bayesfilter.linear.kalman_derivatives_numpy import solve_kalman_score_hessian
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
@@ -72,5 +73,6 @@ __all__ = [
     "tf_qr_sqrt_kalman_score_hessian",
     "tf_qr_sqrt_masked_kalman_filter",
     "tf_qr_sqrt_masked_kalman_log_likelihood",
+    "tf_qr_sqrt_masked_kalman_score_hessian",
     "validate_filter_config",
 ]

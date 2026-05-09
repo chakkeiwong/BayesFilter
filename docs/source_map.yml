@@ -319,6 +319,18 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md
     status: drafted
     role: Consolidated filtering backend completion plan covering TF linear spine, SVD value, structural protocols, sigma-point/CUT filters, derivatives, compiled/GPU gates, and client switch-over.
+  - id: bayesfilter_filtering_gap_closure_execution_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-gap-closure-execution-plan-2026-05-09.md
+    status: drafted
+    role: Operational execution plan translating filtering goals, gaps, and hypotheses into ordered closure phases and stop rules.
+  - id: bayesfilter_filtering_goals_gaps_hypotheses_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
+    status: drafted
+    role: Independent audit of the filtering goals/gaps closure plan, limiting automatic execution to Phase 0 and Phase 1A masked QR derivatives.
   - id: dsge_sgu_current_control_derivation_gate_result
     project: dsge_hmc
     root: /home/chakwong/python/docs/plans
@@ -685,6 +697,18 @@ chapter_mappings:
       destination: bayesfilter/linear/kalman_qr_tf.py; bayesfilter/linear/kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
       import_status: drafted
       reason: Defines the post-SGU implementation route for remaining generic filtering gaps while keeping SGU in the diagnostic lane until a causal local value target exists.
+
+  bayesfilter_filtering_gap_closure_execution_plan:
+    - source_file: bayesfilter-filtering-gap-closure-execution-plan-2026-05-09.md
+      destination: docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Converts the consolidated filtering goals and blockers into executable phases, with masked QR derivatives first and SGU production filtering kept in the model-owned derivation lane.
+
+  bayesfilter_filtering_goals_gaps_hypotheses_closure_audit:
+    - source_file: bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; tests/test_linear_kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the filtering closure plan and restricts this execution pass to evidence freeze plus masked QR analytic derivatives before SVD, nonlinear, CUT, GPU, HMC, or client switch-over promotion.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md

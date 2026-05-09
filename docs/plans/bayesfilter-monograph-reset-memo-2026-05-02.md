@@ -7052,3 +7052,199 @@ Audit:
 - The final commit should exclude unrelated pre-existing changes:
   `docs/main.tex`, `docs/source_map.yml`, and the `docs/chapters/ch19*.tex`
   files.
+
+## 2026-05-09 update: filtering goals/gaps closure plan execution
+
+User request:
+- update the reset memo;
+- audit the goals/gaps/hypotheses closure plan as another developer;
+- execute phases with the cycle:
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only when the next phase remains justified;
+- commit modified files after the justified plan finishes;
+- provide a detailed result summary and next hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md
+```
+
+Initial audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
+```
+
+- Audit verdict: the closure plan is sound as a master plan, but its full
+  sequence is too broad for one safe automatic pass.
+- Safe automatic boundary for this pass:
+  1. Phase 0: evidence freeze and scope guard;
+  2. Phase 1A: masked QR analytic derivatives.
+- Stop after Phase 1A unless explicitly directed to continue, because
+  time-varying derivatives, SVD value, nonlinear structural protocols,
+  CUT/SVD-CUT, GPU/XLA, and client switch-over each require separate gates.
+
+Next phase justified?
+- Yes.  Proceed to Phase 0 evidence freeze and scope guard.
+
+### Phase 0: evidence freeze and scope guard
+
+Phase plan:
+- record branch and dirty-file state;
+- run production TF source hygiene;
+- run a CPU-only BayesFilter test baseline;
+- preserve unrelated Windows/WSL sidecar files and avoid client-repo edits.
+
+Execution:
+- Current branch is synced with `origin/main`:
+  `git rev-list --left-right --count HEAD...origin/main` returned `0 0`.
+- Current HEAD at the start of this execution pass:
+  `fc19956 Plan filtering backend gap closure`.
+- Pre-existing local planning/provenance edits were present:
+  - `docs/source_map.yml`;
+  - `docs/plans/bayesfilter-filtering-gap-closure-execution-plan-2026-05-09.md`.
+- Existing untracked Windows/WSL sidecars remain out of scope:
+  - `docs/plans/templates/experiment-plan-template.md:Zone.Identifier`;
+  - `docs/plans/templates/experiment-result-template.md:Zone.Identifier`;
+  - `docs/plans/templates/reset-memo-template.md:Zone.Identifier`.
+- Initial bare `pytest -q` attempted to collect vendored student experiment
+  snapshots under `experiments/` and failed during collection before reaching
+  the intended BayesFilter suite.
+- Added `pytest.ini` so project-level pytest discovery is scoped to `tests/`
+  and does not recurse into `experiments/`, `docs/`, `.research`, or cache
+  directories.  Explicit vendored experiment tests can still be run by naming
+  their paths directly.
+
+Tests:
+- Production TF source hygiene passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\("` over the TF production linear
+  modules, result containers, and diagnostics returned no matches.
+- CPU-only project baseline passed after adding `pytest.ini`:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q` reported
+  `106 passed, 2 warnings in 51.11s`.
+
+Audit:
+- Phase 0 passes after the pytest scope guard fix.
+- The vendored experiment collection failure was not a BayesFilter backend
+  failure; it was a test-discovery boundary issue introduced by experimental
+  snapshots.
+- Adding `pytest.ini` is in scope because it restores the meaning of the
+  project baseline gate and prevents future false blockers.
+
+Tidy-up:
+- No client repositories were edited.
+- Windows/WSL sidecars remain untracked and out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 1A: masked QR analytic derivatives.
+
+### Phase 1A: masked QR analytic derivatives
+
+Phase plan:
+- extend the dense QR/square-root analytic score-Hessian backend to the
+  existing static dummy-row mask semantics;
+- keep production code in TensorFlow only, with no NumPy imports and no
+  `.numpy()` calls;
+- expose the masked derivative backend through the public linear API and
+  wrapper metadata;
+- test all-true, sparse, and all-missing masks against dense QR, value, and
+  autodiff references.
+
+Execution:
+- Added `tf_qr_sqrt_masked_kalman_score_hessian` in:
+
+```text
+bayesfilter/linear/kalman_qr_derivatives_tf.py
+```
+
+- The masked derivative recursion keeps the prediction step identical to the
+  dense QR derivative recursion, and replaces only the observation block by:
+  - `masked_observation_matrix = Z * row_weight[:, None]`;
+  - `masked_observation_covariance =
+    (H + jitter I) * row_outer + diag(missing_weight)`;
+  - first and second derivatives of the masked observation covariance and
+    observation matrix multiplied by the same fixed mask tensors;
+  - innovation, innovation derivatives, Kalman gain, Joseph update, and
+    update-stack derivatives computed from the masked observation block.
+- The log-likelihood contribution subtracts the static dummy-row normalizer
+  for missing coordinates.  Because this normalizer is parameter-independent,
+  score and Hessian contributions require no additional dummy term.
+- Added public exports in:
+
+```text
+bayesfilter/linear/__init__.py
+bayesfilter/__init__.py
+```
+
+- Extended `tf_qr_linear_gaussian_score_hessian` so:
+  - `backend="tf_qr_sqrt"` remains the dense default;
+  - an explicit or model-attached observation mask dispatches to masked QR;
+  - `backend="tf_masked_qr_sqrt"` requires a mask and reports
+    `mask_convention="static_dummy_row"`;
+  - metadata identifies the masked derivative backend as
+    `tf_qr_sqrt_masked_differentiated_kalman`.
+- Added `pytest.ini` during Phase 0 to keep default pytest collection scoped to
+  BayesFilter's `tests/` directory rather than vendored experiment snapshots.
+
+Tests:
+- Syntax check passed:
+  `python -m py_compile bayesfilter/linear/kalman_qr_derivatives_tf.py
+  bayesfilter/linear/__init__.py bayesfilter/__init__.py
+  tests/test_linear_kalman_qr_derivatives_tf.py`.
+- Production TF source hygiene passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\("` over the production TF linear
+  modules, result containers, and diagnostics returned no matches.
+- Focused derivative tests passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py`
+  reported `9 passed, 2 warnings in 68.57s`.
+- Focused linear/contract suite passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py
+  tests/test_linear_kalman_qr_tf.py tests/test_linear_qr_factor_tf.py
+  tests/test_linear_kalman_tf.py tests/test_tf_contracts.py`
+  reported `35 passed, 2 warnings in 67.95s`.
+- Full CPU-only BayesFilter suite passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q`
+  reported `110 passed, 2 warnings in 80.26s`.
+
+Audit:
+- Phase 1A passes.
+- Acceptance criteria satisfied:
+  - all-true mask matches dense QR likelihood, score, and Hessian;
+  - sparse mask matches the masked QR value backend and TensorFlow autodiff on
+    a smooth small fixture;
+  - all-missing observation series reports zero likelihood, score, and Hessian;
+  - Hessian symmetry is checked;
+  - same-shape graph reuse is checked;
+  - production source hygiene remains TensorFlow-only.
+- The all-missing-series test verifies the neutral likelihood case.  Sparse
+  mask tests also cover a missing period followed by later observations, so
+  prediction derivatives continue to propagate through later observed
+  likelihood terms.
+- The implementation deliberately uses the same static dummy-row law as the
+  existing masked QR value backend; it does not introduce a new missing-data
+  convention.
+- Remaining engineering risk: the masked derivative function duplicates much
+  of the dense QR derivative recursion.  Refactoring should wait until the next
+  backend boundary so that this phase remains easy to audit against the dense
+  formula.
+
+Tidy-up:
+- No edits were made to MacroFinance or `/home/chakwong/python`.
+- Windows/WSL `:Zone.Identifier` sidecars remain untracked and out of scope.
+- The unrelated untracked `singularity_test.png` remains untracked and out of
+  scope.
+
+Next phase justified?
+- No automatic continuation in this pass.  The audited safe boundary was
+  Phase 0 plus Phase 1A only.
+- Phase 1B remains a good candidate next if the user wants MacroFinance linear
+  compatibility smoke tests and a decision on time-varying derivative support.
+- Phase 2 remains justified only as a separate gate after deciding the SVD/eigen
+  value backend diagnostics and implemented-law semantics.
+
+Completion status:
+- The scoped plan execution for this pass is complete.
