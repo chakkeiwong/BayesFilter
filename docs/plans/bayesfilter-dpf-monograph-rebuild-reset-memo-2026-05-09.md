@@ -423,7 +423,84 @@ Next phase justified?
   proposal correction separate unless the derivation proves that one combined
   chapter remains readable.
 
-## 2026-05-10 update: second reader-facing DPF rewrite phase completed
+## 2026-05-10 update: third reader-facing DPF rewrite phase started
+
+### Phase R3: PF-PF and proposal-correction rewrite
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r3-pfpf-proposal-correction-plan-2026-05-10.md`
+
+Phase plan:
+- rewrite `docs/chapters/ch19c_dpf_implementation_literature.tex` into a
+  mathematically rigorous PF-PF / proposal-correction chapter;
+- cover the flow map as a proposal, transformed proposal density, corrected
+  importance weights, Jacobian/log-determinant evolution, and the exact status
+  of what the correction restores;
+- keep learned resampling / OT and broad HMC conclusions out of this phase;
+- compile, audit, tidy, and update this memo before the next phase proceeds.
+
+Primary criterion:
+- the rewritten chapter must be mathematically self-contained and make the
+  proposal-correction logic precise enough that later HMC-target analysis can be
+  written without ambiguity.
+
+Veto diagnostics:
+- if the change-of-variables argument is not stated clearly, stop and revise;
+- if the chapter still blurs raw flow with corrected PF-PF, stop and revise;
+- if the status of the corrected method remains ambiguous (exact vs approximate
+  vs finite-particle), do not proceed to the resampling chapter.
+
+### Phase R3 result
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r3-pfpf-proposal-correction-result-2026-05-10.md`
+
+Execution:
+- Rewrote `docs/chapters/ch19c_dpf_implementation_literature.tex` substantially
+  into a PF-PF / proposal-correction chapter.
+- The chapter now includes:
+  1. the need for proposal correction outside exact special cases;
+  2. the flow map as a change of variables;
+  3. transformed proposal density under the flow map;
+  4. corrected PF-PF importance weights;
+  5. the distinction between EDH/PF and LEDH/PF at the level of map
+     construction;
+  6. Jacobian-matrix and log-determinant evolution identities;
+  7. a rigorous discussion of what proposal correction restores and what still
+     remains approximate;
+  8. an explicit chapter-boundary section stating what is not yet claimed.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- A wording scan for status language was reviewed and accepted because:
+  - `exact` appears only in explicitly limited contexts;
+  - `restores` refers specifically to the proposal-to-target density ratio;
+  - `HMC target` appears only in negative or future-facing boundary statements.
+
+Interpretation:
+- The DPF exposition now distinguishes clearly between flow-as-transport and
+  flow-as-proposal with importance correction.
+- This closes the main mathematical gap between the raw-flow chapter and the
+  later HMC-assessment work.
+
+Audit:
+- Primary criterion: satisfied.
+- Change-of-variables clarity veto: cleared.
+- Raw-flow versus corrected-PF-PF blur veto: cleared.
+- Status ambiguity veto: cleared for this phase.
+- No phase-local formatting blocker remains.
+
+Next phase justified?
+- Yes.  The next rewrite phase is justified because the differentiable
+  resampling and OT chapter can now be written on top of a clear three-step
+  baseline:
+  1. classical particle filtering;
+  2. particle-flow transport;
+  3. proposal-corrected PF-PF.
+- Recommended next phase: rewrite the differentiable-resampling and OT chapter,
+  making the bias-versus-differentiability trade-off explicit and keeping
+  learned/amortized OT clearly downstream of OT itself.
 
 ### Phase R2 result
 
