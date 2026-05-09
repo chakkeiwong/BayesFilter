@@ -7248,3 +7248,667 @@ Next phase justified?
 
 Completion status:
 - The scoped plan execution for this pass is complete.
+
+## 2026-05-09 update: seven-phase filtering implementation execution
+
+User request:
+- update the reset memo;
+- audit the seven-phase filtering implementation plan as another developer;
+- execute each phase using the cycle:
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- after each phase, record results, interpretation, and whether the next phase
+  remains justified;
+- continue automatically only if the phase primary criterion and veto
+  diagnostics allow continuation;
+- commit modified files after the justified execution boundary finishes;
+- provide a detailed result summary with next hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md
+```
+
+Initial state:
+- Branch is synced with `origin/main`:
+  `git rev-list --left-right --count HEAD...origin/main` returned `0 0`.
+- Current HEAD:
+  `16912d3 Add masked QR analytic derivatives`.
+- In-scope uncommitted planning edits already present from plan drafting:
+  - `docs/plans/bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md`;
+  - `docs/source_map.yml`.
+- Out-of-scope untracked files remain uncommitted unless a later phase proves
+  they are relevant:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Next action:
+- Write an independent audit of the seven-phase plan before executing Phase
+  1B.  The audit must decide whether automatic execution may continue beyond
+  Phase 1B or whether an intermediate Phase 1C/time-varying derivative gate is
+  required.
+
+Initial audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-seven-phase-filtering-implementation-audit-2026-05-09.md
+```
+
+- Audit verdict: the seven-phase program is sound as a master program, but
+  later phases must be unlocked by primary criteria and veto diagnostics.
+- Automatic execution boundary:
+  - proceed through Phase 1B;
+  - continue to Phase 2 only if Phase 1B passes and no Phase 1C
+    time-varying derivative gate is required.
+
+### Phase 1B: MacroFinance linear compatibility
+
+Phase plan:
+- inspect MacroFinance TF/TFP linear filtering code and tests read-only;
+- identify the smallest static dense/masked likelihood and derivative fixture;
+- add BayesFilter-side compatibility tests without adding MacroFinance as a
+  production dependency;
+- decide whether time-varying derivatives are required before SVD/eigen work.
+
+Execution:
+- Inspected MacroFinance donor files:
+
+```text
+/home/chakwong/MacroFinance/tests/test_generic_lgssm_autodiff_validation.py
+/home/chakwong/MacroFinance/tests/test_tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/tests/test_masked_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/filters/tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/filters/masked_qr_sqrt_differentiated_kalman.py
+```
+
+- Added BayesFilter compatibility tests:
+
+```text
+tests/test_macrofinance_linear_compat_tf.py
+```
+
+- Added Phase 1B audit note:
+
+```text
+docs/plans/bayesfilter-phase1b-macrofinance-linear-compat-audit-2026-05-09.md
+```
+
+Tests:
+- Focused Phase 1B test passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_macrofinance_linear_compat_tf.py
+4 passed, 2 warnings in 71.49s
+```
+
+Audit:
+- Phase 1B passes for the first MacroFinance static target.
+- BayesFilter dense QR value matches MacroFinance TF direct-QR value.
+- BayesFilter masked QR value matches MacroFinance TF masked direct-QR value
+  under the static dummy-row convention.
+- BayesFilter dense QR score/Hessian matches MacroFinance TF direct-QR
+  differentiated backend.
+- BayesFilter masked QR score/Hessian matches MacroFinance masked QR sparse
+  oracle.
+- The tested donor fixture uses static matrices/covariances and
+  parameter-major derivative tensors, so no Phase 1C time-varying derivative
+  gate is required before Phase 2.
+
+Tidy-up:
+- MacroFinance was inspected but not edited.
+- MacroFinance imports are test-only and optional.
+- Production BayesFilter code still has no MacroFinance dependency from this
+  phase.
+
+Next phase justified?
+- Yes.  Proceed to Phase 2: TF SVD/eigen linear value backend.
+- Constraint: Phase 2 is value-only.  It must not claim SVD/eigen analytic
+  derivative readiness.
+
+### Phase 2: TF SVD/eigen linear value backend
+
+Phase plan:
+- implement a production TF SVD/eigen value backend for dense and masked
+  linear Gaussian filters;
+- use symmetric PSD eigensolves for innovation covariance solves and
+  log-determinants;
+- report implemented-law diagnostics, including floor count, floor value,
+  PSD projection residual, and implemented covariance;
+- keep derivative status value-only/blocked.
+
+Execution:
+- Added PSD eigensolve helpers:
+
+```text
+bayesfilter/linear/svd_factor_tf.py
+```
+
+- Added dense and masked SVD/eigen value backends:
+
+```text
+bayesfilter/linear/kalman_svd_tf.py
+```
+
+- Added public exports in:
+
+```text
+bayesfilter/linear/__init__.py
+bayesfilter/__init__.py
+```
+
+- Added Phase 2 tests:
+
+```text
+tests/test_linear_kalman_svd_tf.py
+```
+
+Tests:
+- Focused SVD/eigen tests passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_linear_kalman_svd_tf.py
+8 passed, 2 warnings in 6.04s
+```
+
+- Widened linear/MacroFinance suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py \
+  tests/test_macrofinance_linear_compat_tf.py
+43 passed, 2 warnings in 131.80s
+```
+
+- Syntax and source-hygiene checks passed:
+  - `python -m py_compile` over modified production/test modules;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()` over
+    the linear TF modules returned no matches.
+
+Audit:
+- Phase 2 passes.
+- Regular dense SVD/eigen value matches QR value.
+- Regular masked SVD/eigen value matches masked QR value.
+- Active-floor tests prove the eigensystem reconstructs the
+  implemented/floored covariance, not necessarily the pre-regularized
+  covariance.
+- The masked all-missing case contributes zero likelihood and reports identity
+  implemented covariance under the dummy-row convention.
+- Diagnostics explicitly mark the derivative target as `blocked`; no SVD/eigen
+  analytic derivative backend is exported.
+
+Tidy-up:
+- No MacroFinance or DSGE client files were edited.
+- Production TF modules remain free of NumPy imports and `.numpy()` calls.
+
+Next phase justified?
+- Yes, with a narrow scope.  Proceed to Phase 3 only as generic TF structural
+  protocol work with affine controls and deterministic completion tests.
+- Do not start UKF, SVD sigma-point, CUT, SVD-CUT derivatives, GPU, HMC, or
+  client switch-over until Phase 3 passes.
+
+### Phase 3: TF structural nonlinear protocol
+
+Phase plan:
+- add a generic TensorFlow structural state-space contract without importing
+  DSGE economics;
+- make deterministic completion a pointwise transition contract, not only a
+  singular covariance artifact;
+- add an affine structural embedding that converts exactly to a full-state
+  TensorFlow LGSSM;
+- expose diagnostics that separate exogenous, endogenous, and deterministic
+  completion blocks;
+- test innovation-space metadata against explicitly collapsed full-state
+  metadata.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/structural_tf.py
+tests/test_structural_protocols_tf.py
+tests/test_structural_affine_lgssm_controls_tf.py
+```
+
+- Exported the new TF structural helpers from `bayesfilter/__init__.py`.
+- The protocol layer includes:
+  - `TFStructuralStateSpace`;
+  - `make_affine_structural_tf`;
+  - `affine_structural_to_linear_gaussian_tf`;
+  - `pointwise_deterministic_residuals`;
+  - `structural_block_metadata`;
+  - `structural_filter_metadata`;
+  - `structural_filter_diagnostics`.
+
+Tests:
+- Focused Phase 3 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py
+8 passed, 2 warnings in 6.91s
+```
+
+- Widened structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_tf_contracts.py
+40 passed, 2 warnings in 7.61s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over the new structural TF module and tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()` over
+    structural/linear TF modules returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 3 passes.
+- The affine AR(2) structural model converts to a full-state LGSSM whose
+  transition covariance is the declared pushforward
+  `B Omega B'`, including the zero deterministic row.
+- Deterministic lag completion holds pointwise on every propagated test point.
+- Innovation-space structural metadata and collapsed full-state singular
+  covariance metadata are distinct.
+- The protocol fails closed if a mixed model requests full-state integration
+  without explicit opt-in and an approximation label.
+- No DSGE-specific economics or MacroFinance production dependency entered
+  BayesFilter.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- Unrelated untracked files remain out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 4: generic TF UKF/cubature value filters with
+  SVD/eigen placement.
+- Constraints:
+  - no CUT4-G work until Phase 4 value gates pass;
+  - no analytic derivative claims;
+  - rank-deficient point placement must report implemented support metadata;
+  - affine LGSSM controls must match the linear backend.
+
+### Phase 4: TF SVD/eigen sigma-point value filters
+
+Phase plan:
+- implement reusable TensorFlow sigma-point rules for cubature and UKF;
+- place points with the Phase 2 SVD/eigen covariance helper;
+- report rank, floor, support residual, implemented covariance, and
+  deterministic residual diagnostics;
+- implement a generic structural SVD sigma-point value recursion using the
+  Phase 3 `TFStructuralStateSpace` contract;
+- verify affine LGSSM exactness against a linear value backend that accepts the
+  singular deterministic transition covariance.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/nonlinear/__init__.py
+bayesfilter/nonlinear/sigma_points_tf.py
+tests/test_sigma_points_tf.py
+tests/test_structural_svd_sigma_point_tf.py
+```
+
+- Exported nonlinear sigma-point objects/functions from `bayesfilter/__init__.py`.
+- Implemented:
+  - `tf_unit_sigma_point_rule` for cubature and scaled UKF standardized
+    offsets/weights;
+  - `tf_svd_sigma_point_placement`;
+  - `tf_svd_sigma_point_log_likelihood`;
+  - `tf_svd_sigma_point_filter`.
+
+Tests:
+- Focused Phase 4 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py
+10 passed, 2 warnings in 8.49s
+```
+
+- Widened structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py
+59 passed, 2 warnings in 9.85s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over new nonlinear modules and tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()`
+    returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 4 passes.
+- Cubature and UKF standardized rules reproduce first and second standard
+  normal moments.
+- SVD/eigen placement remains on the active support for a rank-deficient
+  covariance and reports the implemented covariance when a floor is active.
+- Both `tf_svd_cubature` and `tf_svd_ukf` match the affine structural LGSSM
+  linear likelihood within tolerance.
+- The affine control deliberately uses the dense covariance-form TF linear
+  value backend rather than QR, because QR/Cholesky factorization of the
+  singular process covariance returns NaN for the deterministic row.  This is
+  consistent with the Phase 2 reviewer point: singular-law value filtering is
+  valid, but factor backends must declare the implemented numerical law.
+- Deterministic completion residual is exactly zero on propagated test points.
+- Static same-shape graph reuse passed for the low-level value function.
+- SVD sigma-point derivatives remain explicitly blocked.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- No DSGE or MacroFinance production dependency was added.
+
+Next phase justified?
+- Yes.  Proceed to Phase 5: CUT4-G and SVD-CUT value filters.
+- Constraints:
+  - borrow only generic CUT4-G geometry from the DSGE experimental module;
+  - verify moment identities before using CUT in the value filter;
+  - keep point-count diagnostics explicit;
+  - no gradient/Hessian claims until Phase 6 gates.
+
+### Phase 5: CUT4-G and SVD-CUT value filters
+
+Phase plan:
+- port only the generic CUT4-G point geometry from the DSGE experimental
+  `CUTSRUKF.py` donor;
+- add positive-weight CUT4-G moment tests before using the rule in a filter;
+- combine CUT4-G with the Phase 4 SVD/eigen placement and value recursion;
+- report point count, polynomial degree, rank, support residual, and
+  deterministic residual diagnostics;
+- keep derivative claims blocked.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/nonlinear/cut_tf.py
+bayesfilter/nonlinear/svd_cut_tf.py
+tests/test_cut_rule_tf.py
+tests/test_svd_cut_filter_tf.py
+```
+
+- Added `tf_svd_sigma_point_log_likelihood_with_rule` so CUT4-G can reuse the
+  same structural SVD sigma-point recursion instead of forking filter logic.
+- Exported CUT/SVD-CUT helpers from `bayesfilter/nonlinear/__init__.py` and
+  `bayesfilter/__init__.py`.
+
+Tests:
+- Focused Phase 5 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py
+6 passed, 2 warnings in 8.17s
+```
+
+- Widened nonlinear/structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py
+65 passed, 2 warnings in 10.20s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over CUT, SVD-CUT, sigma-point, structural TF
+    modules and tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()`
+    returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 5 passes.
+- CUT4-G weights are positive and reproduce the tested Gaussian moment
+  identities: mean zero, second moments one, fourth marginal moments three,
+  cross fourth moments one, and odd fifth moments zero.
+- SVD-CUT matches the affine structural LGSSM linear likelihood within
+  tolerance.
+- Rank-deficient SVD-CUT placement reports a reduced integration rank and zero
+  support residual.
+- Point count and polynomial degree diagnostics are explicit:
+  for augmented dimension three, CUT4-G uses `14` points and degree label `5`.
+- Derivative status remains `value_only` and regularization derivative target
+  remains `blocked`.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- No DSGE or MacroFinance production dependency was added.
+
+Next phase justified?
+- Yes, but only for a narrow smooth-branch derivative certification layer.
+- Proceed to Phase 6 with these constraints:
+  - derivative target is the implemented SVD-CUT law;
+  - active floors, weak spectral gaps, or fallback branches must fail closed;
+  - finite-difference/autodiff parity and Hessian symmetry are required;
+  - no claim is made for raw-law derivatives under regularization.
+
+### Phase 6: smooth-branch SVD-CUT score/Hessian
+
+Phase plan:
+- certify only a narrow smooth branch of the implemented SVD-CUT value law;
+- use TensorFlow autodiff through the implemented value recursion as the first
+  executable derivative backend;
+- fail closed when active floors or weak spectral gaps invalidate the smooth
+  branch assumptions;
+- test finite-difference parity, direct autodiff parity, Hessian symmetry, and
+  blocked-branch diagnostics.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/nonlinear/svd_cut_derivatives_tf.py
+tests/test_svd_cut_derivatives_tf.py
+```
+
+- Added eigen-gap diagnostics to the shared SVD sigma-point recursion and
+  propagated those diagnostics through SVD-CUT value results.
+- Exported the derivative wrapper from `bayesfilter/nonlinear/__init__.py` and
+  `bayesfilter/__init__.py`.
+
+Tests:
+- Focused Phase 6 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_svd_cut_derivatives_tf.py
+4 passed, 2 warnings in 14.03s
+```
+
+- Widened nonlinear/structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py
+69 passed, 2 warnings in 18.49s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over nonlinear, structural TF, and derivative
+    tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()`
+    returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 6 passes within the declared narrow scope.
+- The SVD-CUT score/Hessian wrapper matches finite differences on a smooth
+  affine structural fixture.
+- It also matches direct TensorFlow autodiff of the same implemented SVD-CUT
+  value recursion.
+- Hessian symmetry holds in the tested smooth branch.
+- Active floors fail closed with `blocked_active_floor`.
+- Weak/repeated spectra fail closed with `blocked_weak_spectral_gap`.
+- The derivative target is explicitly `implemented_regularized_law`; there is
+  no raw-law derivative claim under regularization.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- No GPU, HMC, or client-default change was made.
+
+Next phase justified?
+- Yes, but only as a bounded Phase 7 gate:
+  - add CPU graph-compiled parity checks for promoted value and derivative
+    paths;
+  - record a client switch-over boundary;
+  - do not claim GPU/XLA-GPU performance or HMC readiness without escalated
+    device artifacts and exact target-model parity.
+
+### Phase 7: CPU compiled parity and client switch-over boundary
+
+Phase plan:
+- add CPU graph-compiled parity tests for promoted value and derivative paths;
+- record the client switch-over boundary and rollback order;
+- avoid GPU/XLA-GPU or HMC promotion without escalated device/shape artifacts
+  and exact target-model parity.
+
+Execution:
+- Added:
+
+```text
+tests/test_compiled_filter_parity_tf.py
+docs/plans/bayesfilter-client-switch-over-boundary-2026-05-09.md
+```
+
+- Updated `docs/source_map.yml` with the switch-over boundary note.
+
+Tests:
+- Focused Phase 7 CPU graph parity passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_compiled_filter_parity_tf.py
+4 passed, 2 warnings in 17.28s
+```
+
+- Broad relevant suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py \
+  tests/test_macrofinance_linear_compat_tf.py
+86 passed, 2 warnings in 146.05s
+```
+
+Audit:
+- Phase 7 passes for CPU graph parity.
+- CPU graph parity holds for:
+  - TF SVD/eigen linear value;
+  - TF SVD cubature structural value;
+  - TF SVD-CUT4 value;
+  - TF SVD-CUT4 smooth-branch score/Hessian.
+- The switch-over boundary explicitly does not authorize MacroFinance or DSGE
+  production default changes, GPU performance claims, or HMC readiness claims.
+- GPU/XLA-GPU benchmarks were not run in this pass because they require
+  escalated device artifacts and target-specific benchmark design.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- Out-of-scope untracked files remain uncommitted:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Completion status:
+- The seven-phase implementation pass has reached its justified boundary.
+- Final full-suite verification passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q
+154 passed, 2 warnings in 161.27s
+```
+
+- The two warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- Scoped files are ready to commit.  Out-of-scope untracked files remain
+  uncommitted.
+
+Next hypotheses:
+- H1: MacroFinance can switch its static linear QR filtering path to
+  BayesFilter without changing likelihood, score, Hessian, or mask semantics.
+- H2: Singular MacroFinance linear fixtures, if present, need SVD/eigen value
+  filtering first and should not automatically request SVD derivatives.
+- H3: DSGE nonlinear targets can be expressed through `TFStructuralStateSpace`
+  without BayesFilter importing DSGE economics.
+- H4: CUT4-G is practical only when the declared stochastic integration rank is
+  small; GPU/XLA can improve throughput but does not remove `2q + 2^q`.
+- H5: SVD-CUT derivatives are HMC-suitable only if separated-spectrum,
+  inactive-floor branches dominate the exact target-model posterior region.

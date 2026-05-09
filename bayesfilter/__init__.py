@@ -12,6 +12,7 @@ from bayesfilter.linear import (
     TFLinearValueBackend,
     TFQRLinearDerivativeBackend,
     TFQRLinearValueBackend,
+    TFSVDLinearValueBackend,
     TFLinearGaussianStateSpace,
     TFLinearGaussianStateSpaceDerivatives,
     tf_kalman_filter,
@@ -27,8 +28,26 @@ from bayesfilter.linear import (
     tf_qr_sqrt_masked_kalman_filter,
     tf_qr_sqrt_masked_kalman_log_likelihood,
     tf_qr_sqrt_masked_kalman_score_hessian,
+    tf_svd_kalman_log_likelihood,
+    tf_svd_linear_gaussian_log_likelihood,
+    tf_svd_masked_kalman_log_likelihood,
 )
 from bayesfilter.linear.kalman_derivatives_numpy import solve_kalman_score_hessian
+from bayesfilter.nonlinear import (
+    TFSigmaPointDiagnostics,
+    TFSigmaPointRule,
+    TFSigmaPointValueBackend,
+    TFStructuralModelBuilder,
+    tf_cut4g_sigma_point_rule,
+    tf_svd_cut4_filter,
+    tf_svd_cut4_log_likelihood,
+    tf_svd_cut4_score_hessian,
+    tf_svd_sigma_point_filter,
+    tf_svd_sigma_point_log_likelihood,
+    tf_svd_sigma_point_log_likelihood_with_rule,
+    tf_svd_sigma_point_placement,
+    tf_unit_sigma_point_rule,
+)
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
 from bayesfilter.results import FilterDerivativeResult, FilterValueResult
 from bayesfilter.results_tf import TFFilterDerivativeResult, TFFilterValueResult
@@ -37,6 +56,15 @@ from bayesfilter.structural import (
     StatePartition,
     StructuralFilterConfig,
     validate_filter_config,
+)
+from bayesfilter.structural_tf import (
+    TFStructuralStateSpace,
+    affine_structural_to_linear_gaussian_tf,
+    make_affine_structural_tf,
+    pointwise_deterministic_residuals,
+    structural_block_metadata,
+    structural_filter_diagnostics,
+    structural_filter_metadata,
 )
 
 __all__ = [
@@ -56,11 +84,24 @@ __all__ = [
     "TFLinearValueBackend",
     "TFQRLinearDerivativeBackend",
     "TFQRLinearValueBackend",
+    "TFSVDLinearValueBackend",
     "TFRegularizationDiagnostics",
+    "TFSigmaPointDiagnostics",
+    "TFSigmaPointRule",
+    "TFSigmaPointValueBackend",
+    "TFStructuralModelBuilder",
+    "TFStructuralStateSpace",
     "StructuralFilterConfig",
+    "affine_structural_to_linear_gaussian_tf",
     "audit_factor_backend",
     "certify_spectral_derivative_region",
+    "make_affine_structural_tf",
+    "pointwise_deterministic_residuals",
     "solve_kalman_score_hessian",
+    "structural_block_metadata",
+    "structural_filter_diagnostics",
+    "structural_filter_metadata",
+    "tf_cut4g_sigma_point_rule",
     "tf_kalman_filter",
     "tf_kalman_log_likelihood",
     "tf_linear_gaussian_log_likelihood",
@@ -74,5 +115,16 @@ __all__ = [
     "tf_qr_sqrt_masked_kalman_filter",
     "tf_qr_sqrt_masked_kalman_log_likelihood",
     "tf_qr_sqrt_masked_kalman_score_hessian",
+    "tf_svd_cut4_filter",
+    "tf_svd_cut4_log_likelihood",
+    "tf_svd_cut4_score_hessian",
+    "tf_svd_kalman_log_likelihood",
+    "tf_svd_linear_gaussian_log_likelihood",
+    "tf_svd_masked_kalman_log_likelihood",
+    "tf_svd_sigma_point_filter",
+    "tf_svd_sigma_point_log_likelihood",
+    "tf_svd_sigma_point_log_likelihood_with_rule",
+    "tf_svd_sigma_point_placement",
+    "tf_unit_sigma_point_rule",
     "validate_filter_config",
 ]

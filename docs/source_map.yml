@@ -331,6 +331,24 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
     status: drafted
     role: Independent audit of the filtering goals/gaps closure plan, limiting automatic execution to Phase 0 and Phase 1A masked QR derivatives.
+  - id: bayesfilter_seven_phase_filtering_implementation_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md
+    status: drafted
+    role: Execution-ready seven-phase implementation program from MacroFinance linear compatibility through SVD/eigen, structural protocols, sigma-point, CUT/SVD-CUT, derivatives, and compiled/GPU/client gates.
+  - id: bayesfilter_seven_phase_filtering_implementation_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-seven-phase-filtering-implementation-audit-2026-05-09.md
+    status: drafted
+    role: Independent audit of the seven-phase implementation plan, defining primary criteria and veto diagnostics for automatic continuation.
+  - id: bayesfilter_phase1b_macrofinance_linear_compat_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase1b-macrofinance-linear-compat-audit-2026-05-09.md
+    status: drafted
+    role: Phase 1B compatibility result proving BayesFilter static dense/masked QR value and derivatives match MacroFinance donor fixtures.
   - id: dsge_sgu_current_control_derivation_gate_result
     project: dsge_hmc
     root: /home/chakwong/python/docs/plans
@@ -709,6 +727,30 @@ chapter_mappings:
       destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; tests/test_linear_kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
       import_status: drafted
       reason: Audits the filtering closure plan and restricts this execution pass to evidence freeze plus masked QR analytic derivatives before SVD, nonlinear, CUT, GPU, HMC, or client switch-over promotion.
+
+  bayesfilter_seven_phase_filtering_implementation_plan:
+    - source_file: bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md
+      destination: tests/compat; bayesfilter/linear; bayesfilter/nonlinear; bayesfilter/structural_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Provides the ordered implementation plan and gates for Phase 1B MacroFinance compatibility, Phase 2 SVD/eigen value, Phase 3 structural protocols, Phase 4 SVD sigma-point value, Phase 5 CUT/SVD-CUT value, Phase 6 SVD-CUT derivatives, and Phase 7 compiled/GPU/HMC/client switch-over.
+
+  bayesfilter_seven_phase_filtering_implementation_audit:
+    - source_file: bayesfilter-seven-phase-filtering-implementation-audit-2026-05-09.md
+      destination: tests/test_macrofinance_linear_compat_tf.py; bayesfilter/linear/kalman_svd_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the seven-phase program and permits automatic continuation only when each phase's primary criterion passes and veto diagnostics remain clear.
+
+  bayesfilter_phase1b_macrofinance_linear_compat_audit:
+    - source_file: bayesfilter-phase1b-macrofinance-linear-compat-audit-2026-05-09.md
+      destination: tests/test_macrofinance_linear_compat_tf.py; bayesfilter/linear/kalman_qr_tf.py; bayesfilter/linear/kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Records the MacroFinance static compatibility pass and justifies starting Phase 2 SVD/eigen value work without a Phase 1C time-varying derivative gate.
+
+  bayesfilter_client_switch_over_boundary_2026_05_09:
+    - source_file: bayesfilter-client-switch-over-boundary-2026-05-09.md
+      destination: bayesfilter/linear/kalman_svd_tf.py; bayesfilter/structural_tf.py; bayesfilter/nonlinear; tests/test_compiled_filter_parity_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Records the post-implementation client switch-over boundary after linear SVD/eigen value, structural TF protocols, SVD sigma-point value, SVD-CUT value, smooth-branch SVD-CUT derivatives, and CPU graph parity passed.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
