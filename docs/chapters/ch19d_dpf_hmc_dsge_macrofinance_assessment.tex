@@ -1,0 +1,290 @@
+\chapter[DPF for HMC in DSGE and MacroFinance]{Assessing Differentiable Particle Filters for HMC in Nonlinear DSGE and MacroFinance Models}
+\label{ch:bf-dpf-hmc-assessment}
+
+This chapter asks the program-level question left open by the earlier survey and
+implementation chapters: is the current differentiable particle-filter path a
+justified route to Hamiltonian Monte Carlo for nonlinear DSGE and MacroFinance
+models?
+
+The answer from the current literature is neither a simple yes nor a simple no.
+The literature and the student baselines support differentiable particle filters
+as a serious research direction for nonlinear filtering and for
+gradient-informed parameter inference.  They do \emph{not} yet eliminate the
+need to check, rung by rung, what scalar is being differentiated, whether that
+scalar is an exact likelihood, an unbiased estimator, or a biased surrogate,
+and whether the resulting value-gradient path is stable enough for HMC in the
+structural model classes that matter to BayesFilter.
+
+\section{The HMC question is a target question}
+\label{sec:bf-dpf-hmc-question}
+
+BayesFilter's HMC doctrine in Chapter~\ref{ch:bf-hmc-for-state-space} is that an
+HMC transition is valid only relative to a declared target.  A filter that
+returns a value is not automatically an HMC backend; a filter that returns a
+differentiable value is still not automatically an HMC backend.  The decisive
+question is whether the gradient used by the integrator corresponds to the same
+log target used in the Metropolis correction.
+
+In the DPF context, this target question becomes particularly sharp.  The
+algorithm may involve:
+\begin{itemize}
+  \item a deterministic or stochastic flow approximation;
+  \item an importance-weight correction;
+  \item a relaxed resampling map;
+  \item an amortized neural surrogate for the relaxed resampling map;
+  \item frozen or evolving random numbers across leapfrog steps.
+\end{itemize}
+Each of these layers can change the object being evaluated or differentiated.
+The current literature contains valid constructions for some of these layers,
+but it does not collapse them into a universal theorem that any differentiable
+particle filter yields a valid HMC target.
+
+\section{What the literature supports by rung}
+\label{sec:bf-dpf-rung-assessment}
+
+The most useful way to assess suitability is rung by rung.
+
+\subsection{EDH alone}
+\label{sec:bf-dpf-hmc-edh}
+
+EDH is strongest as a filtering and derivation benchmark.  In the
+linear-Gaussian special case, it provides a valuable exact-recovery test against
+Kalman filtering, and in broader nonlinear settings it provides a deterministic
+transport approximation motivated by a continuous homotopy.  The literature and
+CIP derivations support EDH as a meaningful proposal or approximation tool.
+
+That is not the same as saying EDH alone defines the correct HMC target for a
+nonlinear DSGE or MacroFinance model.  Once the global Gaussian closure ceases
+to be exact, EDH becomes a controlled approximation.  It may still be a useful
+value-side likelihood surrogate or a precursor to PF-PF correction, but the
+literature does not justify treating raw EDH as a drop-in exact HMC likelihood
+path for the target models BayesFilter cares about.
+
+\subsection{EDH/PF with importance weights}
+\label{sec:bf-dpf-hmc-edhpf}
+
+This is the first rung at which a clearer target story emerges.  By using the
+flow as a proposal and then correcting with the change-of-variables weight,
+PF-PF retains a standard importance-sampling interpretation.  For BayesFilter,
+this makes EDH/PF the first rung that is plausibly aligned with HMC-compatible
+value-side development.
+
+Plausibly aligned is still not the same as ready.  Three further questions
+remain:
+\begin{enumerate}[label=(\roman*)]
+  \item Is the estimator variance small enough that repeated HMC evaluations are
+    meaningful in practice?
+  \item Is the Jacobian or log-determinant path stable enough for automatic
+    differentiation and compiled execution?
+  \item Is the resulting value-gradient path finite and reproducible in the
+    structural models of interest?
+\end{enumerate}
+The literature motivates these questions but does not close them for nonlinear
+DSGE or MacroFinance systems.
+
+\subsection{Soft or other smooth resampling relaxations}
+\label{sec:bf-dpf-hmc-soft}
+
+Soft resampling is attractive because it yields a smoother pathwise derivative.
+The literature and the CIP resampling chapter also make the main caveat plain:
+it is a relaxation that changes the resampling map.  This means it is naturally
+interpreted as a biased differentiable surrogate unless a more specific theorem
+is supplied.
+
+For BayesFilter's HMC program, that caveat matters a great deal.  HMC can still
+be useful on a biased differentiable surrogate if the project consciously
+chooses that surrogate as the target-defining object or uses it for diagnostic
+or optimization stages.  What BayesFilter should not do is quietly promote the
+surrogate posterior to an exact posterior claim.
+
+The student \texttt{advanced\_particle\_filter} notebooks are helpful here.  By
+running linear-Gaussian-reference diagnostics and then HMC experiments on a
+stochastic-volatility state-space model, they effectively show that resampling
+choice can visibly affect posterior summaries.  That is exactly the evidence one
+would expect if the resampling mechanism is part of the target definition rather
+than an invisible computational convenience.
+
+\subsection{OT resampling}
+\label{sec:bf-dpf-hmc-ot}
+
+Entropy-regularized OT resampling is more structured than simple soft
+resampling.  It has a clearer geometric interpretation and a more direct
+literature base through \citet{corenflos2021differentiable}.  For BayesFilter,
+this makes OT resampling the strongest currently available differentiable
+resampling candidate.
+
+Even here, however, the literature supports a careful formulation rather than a
+free upgrade.  The transport is regularized, finite-iteration Sinkhorn solves
+introduce their own approximation layer, and the barycentric projection is not
+identical to categorical multinomial resampling.  The advanced student repo's
+sensitivity sweeps are therefore directly relevant to BayesFilter's HMC
+decision.  If posterior summaries are sensitive to the transport regularization
+or solver budget, then the resampling layer is not just a numerical backend; it
+is part of the target specification.
+
+\subsection{LEDH plus neural OT}
+\label{sec:bf-dpf-hmc-ledh-neuralot}
+
+This is the intended final target of the program, not the currently justified
+starting point.  The literature supports the constituent ideas: local particle
+flow, transport-based differentiable resampling, and learned acceleration of OT
+maps.  The student \texttt{advanced\_particle\_filter} repository is especially
+useful here because it exposes the practical promise of the combination: large
+runtime speedups and a clear experiment path from Sinkhorn to amortized OT.
+
+For nonlinear DSGE and MacroFinance HMC, however, this rung also carries the
+largest stack of assumptions:
+\begin{enumerate}[label=(\roman*)]
+  \item local linearization adequacy in the flow;
+  \item stability of the local Jacobian and log-determinant path;
+  \item approximation error from entropic OT regularization;
+  \item approximation error from the learned OT operator;
+  \item training-distribution mismatch when the learned operator is used on new
+    model classes or state dimensions.
+\end{enumerate}
+This makes LEDH + neural OT a promising research destination, but not yet the
+best justified first production DPF target for BayesFilter.
+
+\section{Why nonlinear DSGE models are especially hard}
+\label{sec:bf-dpf-dsge-hard}
+
+Nonlinear DSGE models impose structural constraints that are not well described
+by small generic filtering benchmarks alone.  Chapter~\ref{ch:bf-structural-
+  deterministic-dynamics} showed that mixed structural models are governed by a
+pushforward law over declared stochastic coordinates and deterministic
+completion coordinates.  This already creates a subtle contract issue for
+Gaussian approximations and sigma-point methods.  It is equally important for
+particle methods.
+
+A DPF backend for nonlinear DSGE models must cope with:
+\begin{itemize}
+  \item structural state partitions rather than homogeneous latent vectors;
+  \item parameter regions where the model solution or observation map may become
+    invalid or only barely valid;
+  \item likelihood surfaces whose geometry is shaped by perturbation
+    approximations, determinacy constraints, or pruning conventions;
+  \item potentially stiff local observation Jacobians when measurements are
+    informative or nearly deterministic.
+\end{itemize}
+These features do not rule out DPFs.  They do imply that filtering quality on
+small generic SSMs is not enough.  The first HMC-relevant question is whether
+the filter respects the structural target contract at all; the second is whether
+its derivative path remains faithful and finite in the intended parameter
+region.
+
+The current literature on DPFs is much richer for geophysical and generic
+nonlinear tracking models than for nonlinear DSGE likelihood evaluation.  That
+means BayesFilter is not merely implementing an established macroeconomic
+standard.  It is carrying frontier filtering ideas into a structural-economics
+setting whose target and derivative requirements are unusually strict.
+
+\section{Why MacroFinance models are also hard}
+\label{sec:bf-dpf-macrofinance-hard}
+
+MacroFinance latent-factor models present a different but equally demanding
+regime.  Their challenges include:
+\begin{itemize}
+  \item long observation horizons;
+  \item missing-data and mixed-frequency structure;
+  \item latent-factor dimensions large enough for particle degeneracy to matter
+    materially;
+  \item sharp likelihood curvature in volatility and measurement-noise
+    directions;
+  \item HMC chains that are sensitive to compiled-path failures and finite-value
+    boundary behavior.
+\end{itemize}
+Chapter~\ref{ch:bf-nawm-design-target} explains why industrial-scale HMC should
+prefer analytic or custom derivative paths where available.  DPFs do not evade
+that concern; they intensify it.  A particle method can help represent
+non-Gaussian filtering structure, but it may also introduce Monte Carlo
+variability, transport approximation bias, and resampling-surrogate bias into
+the same log target that HMC is trying to integrate accurately.
+
+This does not make DPFs irrelevant to MacroFinance.  On the contrary, the
+non-Gaussian and nonlinear features of large latent-factor models are exactly
+why DPFs are interesting.  It does mean that BayesFilter should treat DPFs as a
+candidate track to be benchmarked against exact or controlled-approximate
+likelihood paths rather than as an automatic replacement for them.
+
+\section{Comparison against the student conclusions}
+\label{sec:bf-dpf-hmc-student-comparison}
+
+The student materials are useful precisely because they are more ambitious than
+BayesFilter's current doctrine in some places.
+
+The MLCOE report frames particle flow and differentiable particle filtering as a
+potential route toward high-dimensional financial applications and repeatedly
+emphasizes TensorFlow implementation and HMC compatibility.  This is valuable as
+a research motivation, and it surfaces literature and benchmark ideas that would
+otherwise be missing from the BayesFilter monograph.  Where BayesFilter should
+be more careful is in the inferential step from promising filtering technology
+to justified HMC target technology.  The report's application discussion is more
+forward-looking than source-backed for nonlinear DSGE or MacroFinance likelihood
+contracts.
+
+The \texttt{advanced\_particle\_filter} repository goes further by running HMC
+experiments with soft, Sinkhorn, and amortized OT resamplers on a
+stochastic-volatility SSM.  This is useful because it shows what the empirical
+questions look like when one actually tries to sample with these targets.  It is
+also a reason for caution: the repository itself is explicit that the amortized
+operator produces a measurable approximation residual and a visible posterior
+shift relative to reference comparisons.  BayesFilter should treat this as
+evidence that the target question remains active, not as evidence that the
+surrogate can be regarded as harmless.
+
+Thus BayesFilter's more conservative conclusion is not that the student work is
+wrong.  It is that the student work is experimenting on the frontier, while
+BayesFilter's doctrine is trying to define what would have to be true before the
+frontier method can be trusted inside a reusable HMC likelihood stack for
+structural models.
+
+\section{Assessment table}
+\label{sec:bf-dpf-assessment-table}
+
+Table~\ref{tab:bf-dpf-hmc-assessment} summarizes the current assessment.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.18\textwidth} p{0.19\textwidth} p{0.16\textwidth} p{0.28\textwidth}}
+\hline
+Rung & What the literature supports & Current HMC status & Main missing evidence \\
+\hline
+EDH & Exact linear-Gaussian recovery and useful nonlinear transport approximation & Benchmark / value-side only & Nonlinear target-validity story beyond approximation \\
+EDH/PF with weights & Proposal-correction path with principled weights & First serious HMC candidate & Variance, Jacobian stability, compiled-path evidence \\
+Soft differentiable resampling & Smooth surrogate gradients & Surrogate only unless target is declared approximate & Bias quantification and target interpretation \\
+OT resampling & Strongest current differentiable-resampling literature base & Plausible surrogate or approximate-target candidate & Sensitivity to regularization and solver budget \\
+LEDH + neural OT & Promising frontier research target & Not first production rung & Local-flow bias + learned-operator bias + transfer evidence \\
+\hline
+\end{tabular}
+\caption{Current assessment of the differentiable particle-filter ladder for HMC use in BayesFilter.}
+\label{tab:bf-dpf-hmc-assessment}
+\end{table}
+
+\section{Program-level recommendation}
+\label{sec:bf-dpf-program-recommendation}
+
+The literature survey, the student comparisons, and BayesFilter's current HMC
+contract together support the following recommendation.
+
+\begin{enumerate}[label=(\roman*)]
+  \item BayesFilter should continue the DPF program.  The path is technically
+    serious and the literature supports it as an important frontier for
+    nonlinear filtering and gradient-informed parameter inference.
+  \item BayesFilter should not skip directly to LEDH plus neural OT as a first
+    production backend.  That would stack too many approximations before the
+    underlying value and target contracts are audited.
+  \item The most justified next HMC-relevant rung is EDH/PF with explicit
+    importance weighting, preceded by EDH linear-Gaussian recovery.
+  \item Soft and OT resampling should be studied explicitly as target-defining or
+    target-altering relaxations, not as invisible implementation details.
+  \item For nonlinear DSGE and MacroFinance models, DPFs should be benchmarked
+    against existing exact or controlled-approximate BayesFilter paths before
+    they are trusted as production HMC backends.
+\end{enumerate}
+
+This is a positive but guarded conclusion.  The literature and the student work
+say the path is promising.  BayesFilter's doctrine adds the stronger claim that
+promising is not enough: the project still needs per-rung value, gradient,
+variance, and compiled-path evidence before a differentiable particle filter can
+be called an HMC-safe backend for the structural model classes that matter here.
