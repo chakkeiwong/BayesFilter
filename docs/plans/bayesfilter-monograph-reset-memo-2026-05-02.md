@@ -8148,3 +8148,44 @@ Next hypotheses:
   MacroFinance singular or near-singular fixture demonstrates a need.
 - H5: DSGE nonlinear adapter and GPU/HMC work should wait until MacroFinance
   Phase B2/B3 complete or are explicitly deferred with a written reason.
+
+## 2026-05-10 update: scoped sync before push
+
+User request:
+- update the reset memo;
+- commit the scoped reset-memo update;
+- fetch from origin and check whether other agents have introduced conflicts;
+- push only if the branch can be synchronized without leaving this
+  documentation/planning lane.
+
+Lane discipline:
+- Keep the current pass scoped to BayesFilter planning/reset-memo artifacts.
+- Do not stage unrelated untracked files:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+- Do not edit MacroFinance or DSGE client repositories in this sync pass.
+
+Pre-fetch state:
+- Local `main` is ahead of `origin/main` by one commit and behind by zero:
+
+```text
+git rev-list --left-right --count HEAD...origin/main
+1 0
+```
+
+- The local unpublished commit is:
+
+```text
+df1f001 Plan post-seven-phase client switch-over
+```
+
+Sync protocol:
+- Commit this scoped memo update.
+- Fetch `origin/main`.
+- Recheck ahead/behind counts.
+- If `origin/main` did not move, push the local docs commits.
+- If `origin/main` moved, inspect divergence and merge only if the conflicts
+  are absent or strictly inside this planning/reset-memo lane.
+- Stop for direction if another agent changed overlapping planning text in a
+  way that requires a substantive choice rather than a mechanical merge.
