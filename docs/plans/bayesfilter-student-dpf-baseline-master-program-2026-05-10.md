@@ -485,6 +485,10 @@ Veto diagnostics:
 
 ### MP3: Kernel PFF Debug Gate
 
+Execution plan:
+
+`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-2026-05-11.md`.
+
 Primary hypothesis:
 
 The kernel PFF timeout/failure is caused by convergence tolerance,
@@ -651,19 +655,20 @@ baseline lane.
 The next justified execution plan is MP2: nonlinear reference and proxy-metric
 spine.
 
-Active MP2 plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-2026-05-10.md`.
+Active MP3 plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-2026-05-11.md`.
 
 The reason is concrete:
 
 - MP1 closed the largest linear particle-diagnostic asymmetry by adding MLCOE
   BPF diagnostics;
-- nonlinear smoke has shown both snapshots expose runnable range-bearing paths;
-- nonlinear work still lacks shared fixtures, latent-state references,
-  method-specific target labels, and repeated-seed PF dispersion metrics.
+- MP2 closed the immediate nonlinear reference/proxy-metric gap;
+- kernel PFF remains the largest classified failure/timeout gap after the
+  linear and nonlinear panels.
 
-Kernel PFF debugging remains justified, but MP2 is the cleaner next phase
-unless the project priority shifts specifically to flow/kernel behavior.
+The current MP3 decision is to debug kernel PFF with reduced bounded
+diagnostics before any flow/DPF readiness review treats kernel paths as
+comparison evidence.
 
 ## Stop Rules
 

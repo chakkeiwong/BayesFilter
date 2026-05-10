@@ -13,7 +13,7 @@ Active master program:
 `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
 
 Active next-phase plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-2026-05-10.md`.
+`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-2026-05-11.md`.
 
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
@@ -864,3 +864,138 @@ Next justified work:
 - alternative only if project priority changes: a flow/DPF readiness review
   that inventories runnable flow paths but does not run kernel PFF in routine
   panels.
+
+## Execution log: MP3 kernel PFF debug gate started 2026-05-11
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-2026-05-11.md`.
+
+Independent audit:
+`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-audit-2026-05-11.md`.
+
+Initial audit decision:
+- proceed in the student-baseline lane only;
+- use reduced local diagnostics rather than rerunning the slow vendored tests
+  as the primary evidence;
+- distinguish completed filter runs from converged flow iterations;
+- keep kernel PFF excluded from routine panels unless bounded convergence is
+  consistently demonstrated.
+
+### MP3.0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current branch: `dpf-monograph-rebuild`;
+- unrelated monograph-lane files are dirty or untracked in the working tree;
+- the active student master program, reset memo, and MP3 plan are present;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`.
+
+Interpretation:
+- continuing is justified because MP3 edits can remain under
+  `experiments/student_dpf_baselines/` and student-baseline plan/memo files;
+- final staging must remain path-scoped and exclude monograph-lane files.
+
+Next phase justified: MP3.1 reduced diagnostic runner.
+
+### MP3.1: reduced diagnostic runner
+
+Status: passed.
+
+Files added:
+- `experiments/student_dpf_baselines/runners/run_kernel_pff_debug_gate.py`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/kernel_pff_debug_gate_2026-05-11.json`;
+- `experiments/student_dpf_baselines/reports/outputs/kernel_pff_debug_gate_summary_2026-05-11.json`;
+- `experiments/student_dpf_baselines/reports/advanced-particle-filter-kernel-pff-debug-gate-result-2026-05-11.md`.
+
+Panel:
+- fixtures: `lgssm_1d_reduced`, `lgssm_cv_2d_reduced`;
+- kernels: scalar and matrix;
+- tolerance labels: loose `1e-3`, strict `1e-5`;
+- particle counts: `64`, `128`;
+- max iterations: `40`;
+- total runs: 16.
+
+Results:
+- completed runs: 16/16;
+- failed runs: 0/16;
+- every run completed as a filter run but every time step hit the
+  `max_iterations=40` cap;
+- median average iterations: `40` for both scalar and matrix kernels;
+- maximum hit-max fraction: `1.0` for both scalar and matrix kernels;
+- median RMSE versus Kalman: approximately `0.122` for scalar and `0.130` for
+  matrix;
+- median runtime: approximately `0.148` seconds for scalar and `0.129` seconds
+  for matrix.
+
+Interpretation:
+- K1 is supported: reduced scalar and matrix kernel PFF runs are runnable;
+- the prior timeout was not a missing dependency or import failure;
+- completed filter runs do not imply converged flow iterations.
+
+Next phase justified: MP3.2 classification and report.
+
+### MP3.2: classification and report
+
+Status: passed.
+
+Result report:
+`experiments/student_dpf_baselines/reports/advanced-particle-filter-kernel-pff-debug-gate-result-2026-05-11.md`.
+
+Hypothesis outcomes:
+- K1 reduced fixtures runnable: supported;
+- K2 tolerance sensitivity: not supported.  Loose tolerance did not reduce
+  median iterations or runtime relative to strict tolerance in this bounded
+  panel;
+- K3 max-iteration failure mode: supported.  Non-converged behavior appears as
+  finite completed runs with hit-max diagnostics, not missing dependencies;
+- K4 routine-panel readiness: supported as exclusion.  Kernel PFF should remain
+  excluded from routine panels pending further debug.
+
+Readiness decision:
+`excluded_pending_debug`.
+
+Interpretation:
+- MP3 narrows the previous classification from broad
+  `algorithm_test_sensitivity_and_long_runtime` to a specific bounded finding:
+  reduced kernel PFF runs complete quickly, but flow iterations consistently
+  hit the maximum iteration cap even under loose tolerance;
+- kernel PFF can be used only as debug evidence, not as routine comparison
+  evidence.
+
+Next phase justified: MP3.3 audit, tidy, reset memo, and commit.
+
+### MP3.3: audit, tidy, and handoff
+
+Status: passed.
+
+Checks:
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `py_compile` passed for
+  `experiments/student_dpf_baselines/runners/run_kernel_pff_debug_gate.py`;
+- `git diff --check` passed for edited student-baseline files;
+- no files under `experiments/student_dpf_baselines/vendor/` were modified;
+- generated MP3 artifacts are small:
+  the panel JSON is approximately `20K`, the summary JSON is approximately
+  `4K`, and the report is approximately `4K`.
+
+Completion interpretation:
+- MP3 completed without touching production `bayesfilter/` code, monograph
+  files, or vendored student code;
+- the kernel PFF failure mode is now narrowed: reduced runs are fast and
+  runnable, but flow iterations consistently hit `max_iterations`;
+- kernel PFF remains excluded from routine comparison panels.
+
+Next justified work:
+- MP4 flow and DPF readiness review.  The review should inventory advanced and
+  MLCOE flow/DPF entry points, classify runnable paths, and select at most one
+  bounded candidate for a later comparison phase;
+- kernel PFF should stay out of routine panels unless a later algorithm-specific
+  debug plan modifies only adapter-owned experiment logic or records an
+  explicit local patch policy.
