@@ -11,6 +11,55 @@ separate from the shared monograph reset memo and from the structural SVD
 execution reset memo so that concurrent agents can work without overwriting or
 mixing handoff state.
 
+## Two-agent Coordination Boundary
+
+There are two active agents in this repository.  This memo is the reset memo
+for only this agent's lane:
+
+```text
+BayesFilter v1 external-compatibility lane
+```
+
+This lane must keep its handoff state here:
+
+```text
+docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+```
+
+Do not use these files as this lane's reset memo:
+
+```text
+docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md
+docs/plans/bayesfilter-structural-sgu-goals-gaps-next-plan-2026-05-08.md
+docs/chapters/ch18b_structural_deterministic_dynamics.tex
+```
+
+Those files are either shared monograph state, structural SVD/SGU lane state,
+or chapter content that another agent may be using.
+
+Files currently owned by this lane are limited to:
+
+```text
+docs/plans/bayesfilter-v1-*.md
+docs/benchmarks/benchmark_bayesfilter_v1_filters.py
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.*
+tests/test_v1_public_api.py
+docs/source_map.yml entries whose keys begin with bayesfilter_v1_
+```
+
+Staging rule:
+- stage only the owned files above for this lane;
+- do not stage shared reset memo changes unless the user explicitly asks this
+  lane to take ownership of that memo;
+- do not stage unrelated untracked sidecars such as `Zone.Identifier` files or
+  local images;
+- do not stage MacroFinance or DSGE worktree changes from this lane.
+
+If future work needs to edit structural SVD/SGU plans, Chapter 18/18b, the
+shared monograph reset memo, MacroFinance source, or DSGE source, stop and ask
+for a lane-boundary decision before proceeding.
+
 ## Lane Definition
 
 This lane owns:
@@ -497,3 +546,517 @@ Next justified work:
 - optionally run live MacroFinance compatibility as a separate evidence check;
 - create future v1 integration readiness plans only after API and benchmark
   gates pass.
+
+## 2026-05-10 update: DSGE claim audit and inventory result
+
+Trigger:
+- the user asked to double-check another agent's claim that the DSGE work was
+  done and to resume BayesFilter work.
+
+Plan:
+- verify the DSGE claim as a read-only external inventory;
+- distinguish a narrow SGU timing fix from production SGU filtering readiness;
+- decide whether Rotemberg or EZ now justifies BayesFilter adapter
+  implementation.
+
+Execute:
+- Added the result artifact:
+
+```text
+docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md
+```
+
+- Updated the external compatibility matrix and the DSGE inventory plan to
+  point at the result.
+
+Tests:
+- Ran deliberate CPU-only focused DSGE contracts:
+
+```bash
+cd /home/chakwong/python
+DSGE_FORCE_CPU=1 CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 \
+PYTHONPATH=/home/chakwong/python/src:/home/chakwong/BayesFilter pytest -q \
+  tests/contracts/test_sgu_marginal_utility_timing.py \
+  tests/contracts/test_sgu_causal_control_anchor_gate.py \
+  tests/contracts/test_sgu_current_control_derivation_gate.py \
+  tests/contracts/test_structural_dsge_partition.py::test_rotemberg_exposes_mixed_metadata_and_completion \
+  tests/contracts/test_structural_dsge_partition.py::test_ez_exposes_all_stochastic_metadata_after_timing_audit \
+  tests/contracts/test_structural_dsge_partition.py::test_ez_metadata_records_stability_policy_without_bk_claim \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_rotemberg_second_order_dy_completion_closes_identity_residual \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_rotemberg_second_order_dy_completion_fails_closed_when_singular \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_sgu_second_order_filter_target_is_blocked_by_foc_residual_order \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_sgu_state_identity_gate_does_not_make_quadratic_policy_better_than_linear \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_sgu_quadratic_gate_failure_is_volatility_correction_driven \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_sgu_joint_state_control_projection_is_new_target_not_gate_b \
+  tests/contracts/test_dsge_strong_structural_residual_gates.py::test_ez_timing_audit_exposes_all_stochastic_metadata
+```
+
+Observed:
+
+```text
+16 passed, 3 warnings in 14.08s
+```
+
+Audit:
+- The other agent's SGU claim is valid only for:
+
+```text
+sgu_marginal_utility_timing_contract_passed
+```
+
+- SGU still does not earn:
+
+```text
+sgu_causal_filtering_target_passed
+sgu_second_order_perturbation_filter_target_passed
+```
+
+- Rotemberg has a DSGE-owned second-order `dy` completion and is the best
+  future optional live compatibility candidate.
+- EZ has all-stochastic metadata and local analytical stability evidence, but
+  no BK/QZ determinacy certificate and no HMC readiness.
+
+Tidy:
+- No DSGE source files were edited.
+- No MacroFinance files were edited in this audit update.
+- The shared monograph reset memo remains out of scope for this v1 lane.
+
+Next phase justified?
+- Yes, but as BayesFilter-local v1 hardening, not as DSGE adapter
+  implementation:
+  - add the v1 public API import test;
+  - build CPU benchmark artifacts;
+  - keep optional live Rotemberg/EZ bridge work test-only and separate;
+  - keep SGU blocked until DSGE supplies a causal local target.
+
+## 2026-05-10 update: v1 public API import gate
+
+Plan:
+- add the smallest BayesFilter-local test that checks the declared v1 freeze
+  symbols are top-level importable;
+- ensure importing `bayesfilter` does not import external client packages.
+
+Execute:
+- Added:
+
+```text
+tests/test_v1_public_api.py
+```
+
+Expected test:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  -p no:cacheprovider
+```
+
+Observed:
+
+```text
+2 passed, 2 warnings in 3.78s
+```
+
+Interpretation:
+- Passing this gate means the v1 freeze-note candidates are importable from the
+  top-level package.
+- It does not freeze argument signatures, benchmark performance, GPU behavior,
+  client switch-over, or HMC readiness.
+
+Consolidated local compatibility subset:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_compiled_filter_parity_tf.py \
+  -p no:cacheprovider
+```
+
+Observed:
+
+```text
+31 passed, 2 warnings in 83.38s (0:01:23)
+```
+
+Next phase justified?
+- Yes.  The next BayesFilter-local hardening phase should create CPU benchmark
+  scripts/artifacts for the v1 matrix shapes.  MacroFinance/DSGE integration,
+  GPU/XLA-GPU claims, and HMC readiness remain separate gated phases.
+
+## 2026-05-10 update: v1 CPU benchmark harness and smoke artifact
+
+Plan:
+- add a BayesFilter-local CPU benchmark harness for the v1 filtering candidates;
+- record backend names, dtype, shapes, point counts, first-call timing, and
+  steady-call timing;
+- keep the artifact explicitly outside client-readiness, GPU, and HMC claims.
+
+Execute:
+- Added:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_filters.py
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.md
+```
+
+Tests/benchmarks:
+- First smoke run exposed a benchmark-harness issue: graph-mode runners cannot
+  return BayesFilter result dataclasses from `tf.function`.
+- Fixed the harness so graph-mode runners return scalar log-likelihood tensors.
+- Recorded a deliberate CPU-only artifact with:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 python \
+  docs/benchmarks/benchmark_bayesfilter_v1_filters.py \
+  --repeats 2 \
+  --timesteps 4 \
+  --state-dim 2 \
+  --observation-dim 2 \
+  --parameter-dim 2 \
+  --output docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.json
+```
+
+Observed:
+- all benchmark rows completed with `status = ok`;
+- covered `linear_qr_value`, `linear_qr_score_hessian`,
+  `linear_svd_value`, `svd_cubature_value`, `svd_ukf_value`, and
+  `svd_cut4_value`;
+- eager and graph modes were both recorded;
+- point counts were recorded for cubature, UKF, and CUT4.
+
+Audit:
+- The artifact records `CUDA_VISIBLE_DEVICES=-1` and CPU logical device only.
+- TensorFlow emitted CUDA plugin-registration and `cuInit` messages before
+  settling on CPU.  Because this was an intentional CPU-hidden run, those
+  messages are not GPU evidence.
+- The benchmark remains smoke-scale and does not justify client-scale
+  performance claims.
+
+Next phase justified?
+- Yes.  Add medium-shape benchmark artifacts and memory metadata before any
+  performance claim.  GPU/XLA-GPU benchmarks still require escalated device
+  probes and matching shapes.
+
+## 2026-05-10 update: phase-completion goals, gaps, and hypotheses plan
+
+Trigger:
+- the user asked for a summary of this phase's goals, remaining gaps,
+  hypotheses for those gaps, and a plan to complete the phase.
+
+Plan artifact:
+
+```text
+docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-10.md
+```
+
+Execute:
+- Created/updated the phase-completion plan with:
+  - an executive summary of the BayesFilter-local v1 evidence bundle;
+  - explicit phase goals under the external-compatibility pivot;
+  - ten remaining gaps with closure targets;
+  - a gap-hypothesis matrix mapping each gap to a test or evidence artifact;
+  - an eight-phase execution path:
+    `lane audit -> API gate -> local regression gate -> benchmark hardening ->
+    optional external decision -> DSGE containment -> GPU/HMC/SVD blocker
+    review -> commit and handoff`.
+- Registered the plan in `docs/source_map.yml` under a `bayesfilter_v1_` key.
+
+Interpretation:
+- The phase remains BayesFilter-local and does not switch MacroFinance or DSGE
+  over to BayesFilter.
+- MacroFinance and DSGE remain external compatibility targets.
+- GPU/XLA-GPU, HMC, and linear SVD/eigen derivative claims remain blocked until
+  separate evidence exists.
+- The next execution pass should start with the lane boundary audit and should
+  stage only lane-owned files.
+
+Next phase justified?
+- Yes.  The next pass can execute the plan if requested.  It should not touch
+  the shared monograph reset memo or client repositories unless the user opens a
+  separate lane for that work.
+
+## 2026-05-11 execution: v1 phase-completion plan
+
+User request:
+- update the lane-specific reset memo;
+- audit the plan as another developer;
+- execute every phase using
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only if primary criteria and veto diagnostics allow;
+- commit lane-owned files after the plan finishes;
+- provide detailed results and next hypotheses.
+
+Plan executed:
+
+```text
+docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-10.md
+```
+
+Independent audit:
+
+```text
+docs/plans/bayesfilter-v1-phase-completion-plan-audit-2026-05-11.md
+```
+
+Execution result:
+
+```text
+docs/plans/bayesfilter-v1-phase-completion-result-2026-05-11.md
+```
+
+### Phase A: lane boundary and plan audit
+
+Plan:
+- confirm the lane boundary;
+- review the phase-completion plan as another developer;
+- proceed only if no lane-boundary veto appears.
+
+Execute:
+- Confirmed this lane owns `docs/plans/bayesfilter-v1-*.md`, v1 benchmark
+  artifacts, `tests/test_v1_public_api.py`, and `bayesfilter_v1_` source-map
+  entries.
+- Created the independent audit artifact above.
+
+Audit:
+- Plan approved for scoped execution.
+- Required strengthening: Phase D must add benchmark memory metadata before
+  closing the benchmark gap.
+
+Tidy:
+- Shared monograph reset memo remains out of scope and must not be staged by
+  this lane.
+
+Next phase justified?
+- Yes.  No MacroFinance/DSGE edit or shared-memo edit was required.
+
+### Phase B: public API import gate
+
+Plan:
+- run the top-level v1 public API import test under CPU-only settings.
+
+Observed:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_v1_public_api.py -p no:cacheprovider
+2 passed, 2 warnings in 3.52s
+```
+
+Interpretation:
+- Declared v1 public symbols are top-level importable.
+- Importing `bayesfilter` does not import MacroFinance or DSGE modules.
+- Warnings are TensorFlow Probability `distutils` deprecation warnings.
+
+Next phase justified?
+- Yes.  API gate passed.
+
+### Phase C: local compatibility regression gate
+
+Plan:
+- run focused BayesFilter-local QR/SVD/compiled-parity tests under CPU-only
+  settings.
+
+Observed:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_compiled_filter_parity_tf.py \
+  -p no:cacheprovider
+31 passed, 2 warnings in 84.50s (0:01:24)
+```
+
+Interpretation:
+- Local v1 API, QR value, QR score/Hessian, SVD value, and compiled parity
+  evidence passes without external project checkouts.
+
+Next phase justified?
+- Yes.  Benchmark hardening is justified.
+
+### Phase D: benchmark harness hardening
+
+Plan:
+- add process-memory metadata;
+- regenerate the small CPU smoke artifact;
+- add one medium-shape CPU artifact if runtime remains reasonable.
+
+Execute:
+- Updated:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_filters.py
+```
+
+- Regenerated:
+
+```text
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.md
+```
+
+- Added:
+
+```text
+docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.md
+```
+
+Observed:
+- smoke benchmark: all rows `status = ok`;
+- medium benchmark: all rows `status = ok`;
+- all rows record timing, shape, point-count, RSS, and high-water RSS metadata.
+
+Key interpretation:
+- Medium QR score/Hessian first eager call took about 57.6 seconds and raised
+  high-water RSS by about 3335.8 MB.
+- Medium QR score/Hessian graph first call took about 11.1 seconds and raised
+  high-water RSS by about 486.3 MB.
+- Steady calls were much faster, but first-call tracing/compile and memory
+  costs are material.
+
+Audit:
+- Benchmark artifacts are CPU-only.  TensorFlow emitted CUDA initialization
+  messages despite `CUDA_VISIBLE_DEVICES=-1`; logical devices were CPU-only, so
+  these are not GPU evidence.
+- Memory metadata is process-level diagnostic metadata, not isolated allocation
+  profiling.
+
+Next phase justified?
+- Yes.  Benchmark metadata and medium-shape evidence now exist.  GPU remains a
+  separate escalated-device phase.
+
+### Phase E: optional external check decision
+
+Plan:
+- decide whether to run optional live MacroFinance in this pass.
+
+Decision:
+
+```text
+optional_live_macrofinance_status = not_run_by_policy
+```
+
+Interpretation:
+- This lane intentionally avoids client coupling.
+- `tests/test_macrofinance_linear_compat_tf.py` remains available as optional
+  live evidence but was not run in this completion pass.
+
+Next phase justified?
+- Yes.  Optional external status is explicit.
+
+### Phase F: DSGE candidate containment
+
+Plan:
+- keep DSGE evidence read-only;
+- do not implement Rotemberg/EZ bridges;
+- keep SGU blocked.
+
+Evidence:
+
+```text
+docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md
+```
+
+Interpretation:
+- SGU remains blocked for production filtering.
+- Rotemberg and EZ remain future optional live fixtures.
+- No BayesFilter production DSGE adapter is justified in this phase.
+
+Next phase justified?
+- Yes.  DSGE candidates remain contained.
+
+### Phase G: GPU/HMC/SVD-derivative blocker review
+
+Decision:
+- GPU/XLA-GPU remains blocked pending escalated probes and matching benchmark
+  artifacts.
+- HMC remains blocked pending target-specific value/score/Hessian, branch,
+  compiled-parity, and sampler evidence.
+- Linear SVD/eigen derivatives remain deferred pending real client need and
+  spectral-gap/floor diagnostics.
+
+Next phase justified?
+- Yes.  All blocked claims remain blocked with explicit evidence requirements.
+
+### Phase H: commit and handoff
+
+Pre-commit tidy requirements:
+- stage only v1-lane files;
+- do not stage the shared monograph reset memo;
+- do not stage unrelated DSGE request notes, `Zone.Identifier` files, or local
+  images;
+- run `git diff --cached --check`;
+- commit the scoped v1 phase-completion artifacts.
+
+Post-execution status before commit:
+- Phases A through G passed their primary criteria.
+- No veto diagnostics fired.
+- The scoped commit should include only v1-lane files:
+  - `docs/plans/bayesfilter-v1-*.md`;
+  - v1 benchmark script and artifacts under `docs/benchmarks`;
+  - `tests/test_v1_public_api.py`;
+  - `docs/source_map.yml` v1 provenance entries.
+- The following files remain out of lane and must not be staged by this lane:
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Final interpretation:
+- The v1 external-compatibility phase now has local API and regression
+  evidence, CPU benchmark smoke and medium artifacts with memory metadata,
+  explicit optional MacroFinance deferral, DSGE containment, and blocked
+  GPU/HMC/SVD-derivative claims.
+
+## 2026-05-11 update: active phase-completion goals, gaps, and hypotheses plan
+
+Trigger:
+- the user asked to summarize the goals for this phase, remaining gaps,
+  hypotheses for the gaps, and a plan to complete the phase, test the
+  hypotheses, and close the gaps.
+
+Active plan artifact:
+
+```text
+docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-11.md
+```
+
+Audit artifact:
+
+```text
+docs/plans/bayesfilter-v1-phase-completion-plan-audit-2026-05-11.md
+```
+
+Execute:
+- Created the May 11 active plan rather than overwriting the May 10 draft.
+- Aligned the May 11 audit so it reviews the May 11 active plan.
+- The plan keeps this work inside the BayesFilter v1 external-compatibility
+  lane and treats the structural SVD/SGU files open in the IDE as out of lane.
+- The plan lists ten remaining gaps:
+  - uncommitted lane artifacts;
+  - current-date active handoff;
+  - missing benchmark memory metadata;
+  - missing medium-shape CPU benchmark artifact;
+  - optional live MacroFinance status not final;
+  - DSGE optional bridges not implemented;
+  - missing GPU/XLA-GPU evidence;
+  - missing HMC readiness evidence;
+  - unproven need for linear SVD/eigen derivatives;
+  - final commit or handoff not done.
+- The plan maps those gaps to ten hypotheses and eight execution phases:
+  `lane boundary audit -> plan/source-map finalization -> API/local regression
+  gate -> benchmark metadata hardening -> medium-shape benchmark -> optional
+  external status decision -> blocker review -> commit or handoff`.
+
+Interpretation:
+- The phase goal is a coherent BayesFilter-local v1 evidence bundle, not
+  MacroFinance/DSGE switch-over.
+- The next executable work should start with lane-boundary audit and benchmark
+  metadata hardening.
+- GPU/XLA-GPU and HMC remain blocked behind separate target-specific evidence.

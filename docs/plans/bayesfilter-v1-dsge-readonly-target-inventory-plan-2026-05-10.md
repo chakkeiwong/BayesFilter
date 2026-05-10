@@ -68,4 +68,14 @@ Future read-only inventory should produce:
 docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-result-YYYY-MM-DD.md
 ```
 
-Do not run this inventory in the current pass unless explicitly requested.
+Execution note:
+
+```text
+docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md
+```
+
+The inventory was run after the user asked to double-check the other DSGE
+agent's completion claim.  It confirmed a narrow SGU timing fix, preserved SGU
+production blockers, and classified Rotemberg/EZ as future optional live
+compatibility candidates rather than immediate BayesFilter implementation
+targets.

@@ -801,10 +801,46 @@ chapter_mappings:
       reason: Independent audit approving the pivoted external-compatibility plan for BayesFilter-local execution while prohibiting MacroFinance/DSGE edits, GPU execution, HMC claims, or shared-reset-memo staging.
 
   bayesfilter_v1_external_compatibility_execution_artifacts_2026_05_10:
-    - source_file: bayesfilter-v1-api-freeze-criteria-2026-05-10.md; bayesfilter-v1-external-compatibility-matrix-2026-05-10.md; bayesfilter-v1-local-fixture-gap-audit-2026-05-10.md; bayesfilter-v1-optional-external-test-policy-2026-05-10.md; bayesfilter-v1-dsge-readonly-target-inventory-plan-2026-05-10.md; bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md; bayesfilter-v1-hmc-and-integration-gates-2026-05-10.md
+    - source_file: bayesfilter-v1-api-freeze-criteria-2026-05-10.md; bayesfilter-v1-external-compatibility-matrix-2026-05-10.md; bayesfilter-v1-local-fixture-gap-audit-2026-05-10.md; bayesfilter-v1-optional-external-test-policy-2026-05-10.md; bayesfilter-v1-dsge-readonly-target-inventory-plan-2026-05-10.md; bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md; bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md; bayesfilter-v1-hmc-and-integration-gates-2026-05-10.md
       destination: bayesfilter v1 API stabilization; external compatibility certification; docs/benchmarks; future MacroFinance/DSGE integration readiness plans
       import_status: drafted
       reason: Execution artifacts for the ten-phase v1 external-compatibility lane, covering API freeze criteria, compatibility matrix, fixture gap audit, optional external test policy, DSGE read-only inventory, benchmark/GPU gates, and HMC/future integration gates.
+
+  bayesfilter_v1_dsge_readonly_target_inventory_result_2026_05_10:
+    - source_file: bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compatibility-matrix-2026-05-10.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Read-only DSGE inventory result showing that the other agent's SGU timing fix is narrow, SGU production filtering remains blocked, Rotemberg is a future test-only external fixture candidate, and EZ remains metadata-only without BK/HMC certification.
+
+  bayesfilter_v1_filter_cpu_benchmark_2026_05_10:
+    - source_file: docs/benchmarks/benchmark_bayesfilter_v1_filters.py; docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.md; docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Adds a CPU-only benchmark harness plus small and medium artifacts for v1 linear QR, linear QR score/Hessian, linear SVD value, SVD cubature, SVD-UKF, and SVD-CUT value backends, with process-memory metadata and without making client, GPU, or HMC readiness claims.
+
+  bayesfilter_v1_phase_completion_plan_2026_05_10:
+    - source_file: bayesfilter-v1-phase-completion-plan-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/benchmarks; tests/test_v1_public_api.py; future BayesFilter v1 external-compatibility completion pass
+      import_status: drafted
+      reason: Summarizes the current phase goals, remaining gaps, falsifiable hypotheses, lane boundaries, and execution plan for completing the BayesFilter v1 external-compatibility phase without coupling MacroFinance or DSGE before v1.
+
+  bayesfilter_v1_phase_completion_plan_2026_05_11:
+    - source_file: bayesfilter-v1-phase-completion-plan-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/benchmarks; tests/test_v1_public_api.py; future BayesFilter v1 external-compatibility completion pass
+      import_status: drafted
+      reason: Active May 11 phase-completion plan that summarizes goals, gaps, hypotheses, tests, and an eight-phase execution path for closing the BayesFilter v1 external-compatibility phase while staying inside this agent's lane.
+
+  bayesfilter_v1_phase_completion_plan_audit_2026_05_11:
+    - source_file: bayesfilter-v1-phase-completion-plan-audit-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-11.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Independent developer-style audit approving the v1 phase-completion plan for scoped execution, with required Phase D benchmark memory metadata and lane-boundary veto diagnostics.
+
+  bayesfilter_v1_phase_completion_result_2026_05_11:
+    - source_file: bayesfilter-v1-phase-completion-result-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-11.md; docs/benchmarks
+      import_status: drafted
+      reason: Phase-by-phase execution result for the BayesFilter v1 external-compatibility completion pass, including API/local test gates, CPU benchmark memory metadata, medium-shape evidence, optional MacroFinance deferral, DSGE containment, and GPU/HMC/SVD-derivative blockers.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md

@@ -6,9 +6,9 @@
 
 ## Purpose
 
-This note defines benchmark and GPU gates for BayesFilter v1.  It does not run
-benchmarks.  It prevents performance claims from outrunning reproducible shape,
-compile-time, and device evidence.
+This note defines benchmark and GPU gates for BayesFilter v1.  It prevents
+performance claims from outrunning reproducible shape, compile-time, memory,
+and device evidence.
 
 ## CPU Benchmark Harness Requirements
 
@@ -27,6 +27,19 @@ Every benchmark artifact should record:
 - memory if available;
 - TensorFlow and TensorFlow Probability versions;
 - CPU device metadata where practical.
+
+Execution artifacts now available:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_filters.py
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.md
+docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.md
+```
+
+The artifacts are CPU-only and record process-level RSS snapshots.  RSS deltas
+are diagnostic metadata, not isolated per-backend allocation profiles.
 
 ## Candidate Benchmark Groups
 

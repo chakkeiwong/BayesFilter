@@ -47,6 +47,8 @@ Definitions:
 | SVD cubature/UKF structural value | local_ci | `tests/test_structural_svd_sigma_point_tf.py` | future read-only inventory | DSGE economics stay external. |
 | SVD-CUT value | local_ci | `tests/test_svd_cut_filter_tf.py` | future read-only inventory | Point-count and support diagnostics required. |
 | SVD-CUT derivatives | local_ci branch gate | `tests/test_svd_cut_derivatives_tf.py` | future target-specific audit | HMC readiness remains blocked. |
+| Rotemberg structural completion | optional_live_external candidate | generic structural protocol tests only | `docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md` | DSGE-owned `dy` completion is tested; future bridge must stay test-only. |
+| EZ all-stochastic metadata | optional_live_external diagnostic | generic structural protocol tests only | `docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md` | Metadata/stability only; no BK, QZ, HMC, or posterior claim. |
 | SGU production filtering | blocked | none | DSGE causal-locality gate required | SGU remains diagnostic-only until local causal target passes. |
 | DSGE adapter switch-over | deferred_v1_integration | none | future DSGE branch | Do not switch before BayesFilter v1. |
 
