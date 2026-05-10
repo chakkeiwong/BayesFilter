@@ -423,6 +423,87 @@ Next phase justified?
   proposal correction separate unless the derivation proves that one combined
   chapter remains readable.
 
+## 2026-05-10 update: fourth reader-facing DPF rewrite phase started
+
+### Phase R4: differentiable resampling and OT rewrite
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r4-resampling-ot-rewrite-plan-2026-05-10.md`
+
+Phase plan:
+- rewrite `docs/chapters/ch32_diff_resampling_neural_ot.tex` into a
+  mathematically rigorous differentiable-resampling and OT chapter;
+- cover the resampling bottleneck, pathwise nondifferentiability of standard
+  resampling, soft resampling, transport/projection formulations, entropic OT,
+  Sinkhorn structure, barycentric projection, and the bias-versus-
+  differentiability trade-off;
+- keep learned/amortized OT clearly downstream of the OT baseline rather than
+  letting it dominate this chapter;
+- compile, audit, tidy, and update this memo before the next phase proceeds.
+
+Primary criterion:
+- the rewritten chapter must be mathematically self-contained and make the
+  differentiability-versus-bias issue explicit enough that the later HMC and
+  learned-OT chapters can be written without ambiguity.
+
+Veto diagnostics:
+- if the chapter treats OT resampling as if it were identical to exact
+  multinomial resampling, stop and revise;
+- if the source of bias in soft or OT resampling remains vague, stop and revise;
+- if learned/amortized OT begins to dominate the chapter before the OT baseline
+  is mathematically clear, do not proceed to the next phase.
+
+### Phase R4 result
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r4-resampling-ot-rewrite-result-2026-05-10.md`
+
+Execution:
+- Rewrote `docs/chapters/ch32_diff_resampling_neural_ot.tex` substantially.
+- The chapter now includes:
+  1. the weighted-to-equal-weight resampling bottleneck at the level of
+     empirical measures;
+  2. standard resampling as a discontinuous categorical map;
+  3. soft resampling as a smooth relaxation;
+  4. equal-weight resampling viewed as a transport problem;
+  5. entropic OT resampling with the primal formulation;
+  6. the Sinkhorn scaling form and barycentric projection;
+  7. an explicit comparison of standard, soft, and OT resampling in terms of
+     differentiability and bias;
+  8. an explicit chapter-boundary section deferring learned/amortized OT to the
+     next stage.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed and
+  reported all targets up to date.
+- `git diff --check` passed.
+- The wording scan for high-stakes target-status language was reviewed and
+  accepted because the flagged statements are boundary statements or explicit
+  trade-off descriptions rather than overclaims.
+
+Interpretation:
+- The chapter now makes the differentiability-versus-bias problem explicit at
+  the right mathematical level.
+- This gives the rebuilt DPF block the missing middle layer between PF-PF
+  correction and the later learned/surrogate or HMC-target chapters.
+
+Audit:
+- Primary criterion: satisfied.
+- OT-equals-multinomial veto: cleared.
+- Bias-source vagueness veto: cleared.
+- Learned-OT-domination veto: cleared.
+- No phase-local formatting or citation blocker remains.
+
+Next phase justified?
+- Yes.  The next rewrite phase is justified because learned/amortized OT can now
+  be written as a further approximation on top of a clear OT baseline, and the
+  HMC-assessment chapter can later refer back to an explicit resampling-status
+  hierarchy.
+- Recommended next phase: rewrite the learned/amortized OT and implementation-
+  mathematics chapter, keeping the teacher-versus-learned map distinction
+  explicit and treating approximation residuals as part of the target-status
+  story.
+
 ## 2026-05-10 update: third reader-facing DPF rewrite phase started
 
 ### Phase R3: PF-PF and proposal-correction rewrite
