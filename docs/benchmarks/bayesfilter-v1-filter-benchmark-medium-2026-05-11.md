@@ -1,4 +1,4 @@
-# BayesFilter v1 Filter CPU Benchmark
+# BayesFilter v1 Filter Benchmark
 
 Purpose: record CPU-only timing and process-memory metadata for BayesFilter v1 filtering candidates.
 

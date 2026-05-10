@@ -1060,3 +1060,363 @@ Interpretation:
 - The next executable work should start with lane-boundary audit and benchmark
   metadata hardening.
 - GPU/XLA-GPU and HMC remain blocked behind separate target-specific evidence.
+
+## 2026-05-11 update: post-completion gap-closure plan
+
+Trigger:
+- the user asked to summarize the goals for this phase, remaining gaps,
+  hypotheses for the gaps, and a plan to complete this phase, test the
+  hypotheses, and close the gaps.
+
+Starting point:
+- The previous v1 external-compatibility phase is already committed:
+
+```text
+b83d4af Complete v1 external compatibility phase
+```
+
+New plan artifact:
+
+```text
+docs/plans/bayesfilter-v1-post-completion-gap-closure-plan-2026-05-11.md
+```
+
+Execute:
+- Created a follow-on plan rather than reopening the completed phase.
+- Registered the plan in `docs/source_map.yml`.
+- Kept structural SVD/SGU files, Chapter 18/18b files, MacroFinance, DSGE, and
+  the shared monograph reset memo out of this lane.
+
+Goals summarized in the plan:
+- diagnose QR score/Hessian first-call tracing and memory cost;
+- build a CPU benchmark shape ladder;
+- obtain escalated GPU/XLA-GPU evidence or keep GPU blocked by evidence;
+- run optional live MacroFinance read-only compatibility when appropriate;
+- design test-only DSGE fixtures for Rotemberg and EZ while keeping SGU
+  blocked;
+- select the first HMC readiness target conservatively;
+- quantify SVD-CUT branch diagnostics before derivative/HMC promotion;
+- define CI/runtime tiers;
+- commit only v1-lane artifacts.
+
+Interpretation:
+- The next phase should begin with CPU-local benchmark diagnosis before GPU or
+  optional external checks, because the medium CPU artifact already exposed a
+  concrete QR score/Hessian first-call cost.
+- GPU checks require escalated sandbox permissions.
+- MacroFinance and DSGE remain external compatibility targets, not production
+  dependencies.
+
+## 2026-05-11 execution: post-completion gap-closure pass
+
+User request:
+- reread and tighten the post-completion plan;
+- audit as another developer;
+- execute each phase with
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only if primary criteria and veto diagnostics allow;
+- commit modified files when complete;
+- summarize results and next hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-v1-post-completion-gap-closure-plan-2026-05-11.md
+```
+
+Audit artifact:
+
+```text
+docs/plans/bayesfilter-v1-post-completion-gap-closure-plan-audit-2026-05-11.md
+```
+
+### Phase A/B: lane audit, plan tightening, and harness extension
+
+Plan:
+- keep execution in the v1 external-compatibility lane;
+- reread the plan for missing gates;
+- audit as another developer;
+- tighten the benchmark harness so it can test the QR derivative cost
+  hypotheses.
+
+Execute:
+- Confirmed out-of-lane files remain present and must not be staged:
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+- Confirmed the plan belongs only to the v1 lane.
+- Audited the plan and approved scoped execution with conditional gates.
+- Tightened the benchmark harness with:
+  - `--benchmark-selector`;
+  - `--modes`;
+  - `--graph-warmup-calls`;
+  - `--device-scope`;
+  - named one-axis ladders:
+    `v1_time_ladder`, `v1_parameter_ladder`,
+    `v1_state_observation_ladder`;
+  - the prior mixed `v1_cpu_diagnostic` ladder.
+- Tightened the plan so Phase C no longer claims one-axis attribution from a
+  mixed ladder.
+
+Interpretation:
+- The plan is safe to execute if only v1-lane files are staged.
+- GPU/XLA-GPU remains conditional on escalated probes.
+- MacroFinance and DSGE checks remain read-only/optional.
+
+Next phase justified?
+- Yes.  Run CPU-local smoke and one-axis benchmark ladders.
+
+### Phase C: CPU QR derivative diagnostic ladders
+
+Plan:
+- verify the tightened benchmark harness still runs the smoke fixture;
+- run one-axis CPU ladders for QR score/Hessian graph mode;
+- stop before larger ladders if memory evidence is already strong enough or
+  runtime/memory risk becomes disproportionate.
+
+Execute:
+- Regenerated the smoke artifact:
+
+```text
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-11-smoke.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-11-smoke.md
+docs/benchmarks/bayesfilter-v1-filter-benchmark-ladder-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-ladder-2026-05-11.md
+```
+
+- Added the time ladder:
+
+```text
+docs/benchmarks/bayesfilter-v1-qr-score-hessian-time-ladder-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-qr-score-hessian-time-ladder-2026-05-11.md
+```
+
+- Added the parameter ladder:
+
+```text
+docs/benchmarks/bayesfilter-v1-qr-score-hessian-parameter-ladder-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-qr-score-hessian-parameter-ladder-2026-05-11.md
+```
+
+Observed:
+- smoke benchmark: all rows `status = ok`;
+- mixed CPU diagnostic ladder: all rows `status = ok`;
+- time ladder: all rows `status = ok`;
+- parameter ladder: all rows `status = ok`.
+
+Interpretation:
+- H1 is supported: QR score/Hessian cost is dominated by graph warmup/tracing
+  and materialization, not steady recurrence cost.  After one graph warmup,
+  measured calls were millisecond scale.
+- H2 is partially supported and sharper than before: parameter dimension is a
+  strong cost driver.  At fixed `timesteps=8`, `state_dim=2`,
+  `observation_dim=2`, high-water RSS delta rose from about 1236.8 MB
+  (`parameter_dim=2`) to about 3319.8 MB (`parameter_dim=4`), and warmup time
+  rose from about 20.4 seconds to about 64.3 seconds.
+- Time dimension also matters.  At fixed `state_dim=2`, `observation_dim=2`,
+  `parameter_dim=2`, high-water RSS delta rose from about 638.3 MB
+  (`timesteps=4`) to about 1702.1 MB (`timesteps=16`), and warmup time rose
+  from about 11.3 seconds to about 35.4 seconds.
+
+Audit:
+- The state/observation ladder was not run because the parameter ladder already
+  drove high-water RSS above 7 GB.  Continuing automatically into larger
+  ladders would add machine pressure without changing the main decision.
+- The key conclusion is diagnostic, not an optimization claim.
+
+Next phase justified?
+- Yes, but execution should move to policy/evidence phases rather than more
+  local CPU ladders.  Future optimization should target graph construction,
+  Hessian materialization, and parameter-dimension scaling.
+
+### Phase D: GPU/XLA-GPU probe and matching smoke
+
+Plan:
+- run GPU probes with escalated permissions;
+- run a small matching-shape GPU-visible benchmark only if TensorFlow sees GPU;
+- keep the result scoped to device availability and small-shape behavior.
+
+Observed probes:
+
+```text
+nvidia-smi: NVIDIA GeForce RTX 4080 SUPER visible, 16376 MiB total memory.
+TensorFlow 2.19.1 physical devices: CPU and GPU visible.
+```
+
+Execute:
+- Added GPU-visible smoke artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-filter-benchmark-gpu-visible-smoke-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-gpu-visible-smoke-2026-05-11.md
+docs/benchmarks/bayesfilter-v1-filter-benchmark-xla-visible-2026-05-11.json
+docs/benchmarks/bayesfilter-v1-filter-benchmark-xla-visible-2026-05-11.md
+```
+
+Observed:
+- all GPU-visible smoke rows `status = ok`;
+- TensorFlow logical devices include CPU and GPU;
+- XLA-visible linear value rows `status = ok`;
+- small-shape GPU-visible steady timings were slower than CPU-only timings for
+  this tiny fixture.
+
+Interpretation:
+- GPU availability is proven under escalation.
+- Small-shape GPU-visible execution works.
+- XLA-visible linear value rows complete in a GPU-visible process.
+- No broad GPU speedup, confirmed GPU placement for every XLA op, QR
+  derivative XLA, or HMC claim is justified.
+
+Next phase justified?
+- Yes.  Optional live MacroFinance can run read-only.
+
+### Phase E: optional live MacroFinance read-only compatibility
+
+Plan:
+- run the optional MacroFinance test read-only;
+- record external checkout commit;
+- do not edit MacroFinance.
+
+Observed:
+
+```text
+/home/chakwong/MacroFinance commit:
+0e81988957ef1f8b520014929bea32ffee3881f4
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_macrofinance_linear_compat_tf.py \
+  -p no:cacheprovider
+4 passed, 2 warnings in 74.54s (0:01:14)
+```
+
+Interpretation:
+- Optional live MacroFinance compatibility passes on the observed external
+  checkout.
+- The MacroFinance checkout was dirty with unrelated local edits, so this is
+  live compatibility evidence on an observed checkout, not clean release
+  certification.
+- This is compatibility evidence only; it does not authorize MacroFinance
+  default switch-over.
+- No MacroFinance files were edited.
+
+Next phase justified?
+- Yes.  Move to DSGE design-only, HMC target selection, SVD-CUT branch gate,
+  and CI tier policy.
+
+### Phase F-I: DSGE design, HMC target, SVD-CUT gate, CI tiers
+
+Plan:
+- close the remaining design/policy phases without editing external projects;
+- keep SGU blocked;
+- select a conservative first HMC target;
+- turn SVD-CUT derivative cautions into measurable branch gates;
+- define CI/runtime tiers.
+
+Execute:
+- Added:
+
+```text
+docs/plans/bayesfilter-v1-dsge-test-only-fixture-design-2026-05-11.md
+docs/plans/bayesfilter-v1-hmc-first-target-selection-2026-05-11.md
+docs/plans/bayesfilter-v1-svd-cut-branch-diagnostic-gate-2026-05-11.md
+docs/plans/bayesfilter-v1-ci-runtime-tier-policy-2026-05-11.md
+docs/plans/bayesfilter-v1-post-completion-gap-closure-result-2026-05-11.md
+```
+
+Interpretation:
+- Rotemberg is a future optional live structural fixture candidate.
+- EZ is a future metadata-only optional fixture candidate.
+- SGU remains blocked by causal locality.
+- The first HMC target should be:
+
+```text
+linear_qr_score_hessian_static_lgssm
+```
+
+- SVD-CUT derivative/HMC promotion remains blocked unless smooth separated
+  spectrum, inactive floors, and parity evidence dominate a target region.
+- CI evidence is tiered into fast local CI, focused local regression, extended
+  CPU diagnostics, optional live external, escalated GPU/XLA-GPU, and HMC
+  readiness.
+
+Next phase justified?
+- Yes.  Run final validation, stage only v1-lane files, and commit.
+
+### Phase J: final validation and commit boundary
+
+Plan:
+- validate local v1 API/regression/SVD-CUT branch behavior;
+- validate the benchmark CLI still runs after harness changes;
+- check benchmark JSON syntax and diff whitespace;
+- stage only v1-lane files.
+
+Observed:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  -p no:cacheprovider
+35 passed, 2 warnings in 92.35s (0:01:32)
+```
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 python \
+  docs/benchmarks/benchmark_bayesfilter_v1_filters.py \
+  --repeats 1 \
+  --timesteps 4 \
+  --state-dim 2 \
+  --observation-dim 2 \
+  --parameter-dim 2 \
+  --benchmark-selector linear_value \
+  --modes graph
+all rows status = ok
+```
+
+Additional checks:
+- benchmark JSON syntax checks passed for the CPU smoke, GPU-visible smoke,
+  and XLA-visible value artifacts;
+- `git diff --check` passed.
+
+Interpretation:
+- The post-completion gap-closure pass is ready for a scoped v1-lane commit.
+- The shared monograph reset memo, unrelated DSGE request note,
+  `Zone.Identifier` sidecars, and `singularity_test.png` remain out of lane and
+  must not be staged.
+
+### Final validation and commit boundary
+
+Validation:
+- `git diff --check`: passed;
+- `PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_v1_public_api.py -p no:cacheprovider`: `2 passed,
+  2 warnings`;
+- `PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 python
+  docs/benchmarks/benchmark_bayesfilter_v1_filters.py --repeats 1
+  --benchmark-selector linear_value --modes graph --graph-warmup-calls 1
+  --timesteps 4 --state-dim 2 --observation-dim 2 --parameter-dim 2
+  --output /tmp/bayesfilter-v1-final-smoke.json --markdown-output
+  /tmp/bayesfilter-v1-final-smoke.md`: all rows `status = ok`.
+
+Commit boundary:
+- stage only v1 external-compatibility files:
+  - `docs/benchmarks/benchmark_bayesfilter_v1_filters.py`;
+  - `docs/benchmarks/bayesfilter-v1-*.json`;
+  - `docs/benchmarks/bayesfilter-v1-*.md`;
+  - `docs/plans/bayesfilter-v1-*.md`;
+  - `docs/source_map.yml`.
+- Leave out-of-lane files untouched and unstaged:
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Final interpretation:
+- The post-completion gap-closure phase is ready for a scoped v1-lane commit.
+- The next executable development lane should start from QR derivative memory
+  reduction or the first HMC target, not MacroFinance switch-over.

@@ -1,0 +1,203 @@
+{
+  "benchmark": "bayesfilter_v1_filters",
+  "claim_scope": "Benchmark artifact only.  Not a client switch-over or HMC readiness claim.  GPU/XLA-GPU claims require escalated device probe evidence and matching labeled artifacts.",
+  "config": {
+    "benchmark_selector": "score_hessian",
+    "device_scope": "cpu",
+    "dtype": "float64",
+    "graph_warmup_calls": 1,
+    "modes": [
+      "graph"
+    ],
+    "observation_dim": 2,
+    "parameter_dim": 2,
+    "repeats": 2,
+    "seed": 20260510,
+    "shape_ladder": "v1_time_ladder",
+    "state_dim": 2,
+    "timesteps": 8
+  },
+  "environment": {
+    "benchmark_device_scope": "cpu",
+    "cuda_visible_devices": "-1",
+    "device_policy": "CPU is the default benchmark scope.  Device scope 'visible' is allowed only after escalated GPU probes and does not by itself certify XLA-GPU readiness.",
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      }
+    ],
+    "memory_policy": "Process-level RSS snapshots are recorded before and after each benchmark row.  max_rss is process high-water RSS, so row deltas are diagnostic metadata, not isolated allocation profiles.",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1"
+  },
+  "results": [
+    {
+      "backend": "tf_qr_sqrt",
+      "benchmark": "linear_qr_score_hessian",
+      "error": null,
+      "first_call_seconds": 0.0011023649713024497,
+      "max_rss_after_mb": 1216.90234375,
+      "max_rss_before_mb": 578.58984375,
+      "max_rss_delta_mb": 638.3125,
+      "mean_steady_seconds": 0.000711583998054266,
+      "mode": "graph",
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "point_count": null,
+      "rss_after_mb": 1216.90234375,
+      "rss_before_mb": 578.58984375,
+      "rss_delta_mb": 638.3125,
+      "second_call_seconds": 0.000711583998054266,
+      "state_dim": 2,
+      "status": "ok",
+      "stochastic_rank": null,
+      "timesteps": 4,
+      "value": -1.0055886399937946,
+      "warmup_calls": 1,
+      "warmup_seconds": 11.324025081004947
+    },
+    {
+      "backend": "tf_qr_sqrt",
+      "benchmark": "linear_qr_score_hessian",
+      "error": null,
+      "first_call_seconds": 0.0016334560350514948,
+      "max_rss_after_mb": 2196.53515625,
+      "max_rss_before_mb": 1216.90234375,
+      "max_rss_delta_mb": 979.6328125,
+      "mean_steady_seconds": 0.0013602779945358634,
+      "mode": "graph",
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "point_count": null,
+      "rss_after_mb": 2196.53515625,
+      "rss_before_mb": 1216.90234375,
+      "rss_delta_mb": 979.6328125,
+      "second_call_seconds": 0.0013602779945358634,
+      "state_dim": 2,
+      "status": "ok",
+      "stochastic_rank": null,
+      "timesteps": 8,
+      "value": -0.7028026269754346,
+      "warmup_calls": 1,
+      "warmup_seconds": 17.16673323797295
+    },
+    {
+      "backend": "tf_qr_sqrt",
+      "benchmark": "linear_qr_score_hessian",
+      "error": null,
+      "first_call_seconds": 0.002803514013066888,
+      "max_rss_after_mb": 3539.03125,
+      "max_rss_before_mb": 2196.53515625,
+      "max_rss_delta_mb": 1342.49609375,
+      "mean_steady_seconds": 0.002489870006684214,
+      "mode": "graph",
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "point_count": null,
+      "rss_after_mb": 3539.03125,
+      "rss_before_mb": 2196.53515625,
+      "rss_delta_mb": 1342.49609375,
+      "second_call_seconds": 0.002489870006684214,
+      "state_dim": 2,
+      "status": "ok",
+      "stochastic_rank": null,
+      "timesteps": 12,
+      "value": -0.47750724944795264,
+      "warmup_calls": 1,
+      "warmup_seconds": 26.479411776002962
+    },
+    {
+      "backend": "tf_qr_sqrt",
+      "benchmark": "linear_qr_score_hessian",
+      "error": null,
+      "first_call_seconds": 0.002583882014732808,
+      "max_rss_after_mb": 5241.1796875,
+      "max_rss_before_mb": 3539.03125,
+      "max_rss_delta_mb": 1702.1484375,
+      "mean_steady_seconds": 0.00222695100819692,
+      "mode": "graph",
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "point_count": null,
+      "rss_after_mb": 5241.1796875,
+      "rss_before_mb": 3539.03125,
+      "rss_delta_mb": 1702.1484375,
+      "second_call_seconds": 0.00222695100819692,
+      "state_dim": 2,
+      "status": "ok",
+      "stochastic_rank": null,
+      "timesteps": 16,
+      "value": -0.28894361535459323,
+      "warmup_calls": 1,
+      "warmup_seconds": 35.37920716300141
+    }
+  ],
+  "shape_configs": [
+    {
+      "benchmark_selector": "score_hessian",
+      "device_scope": "cpu",
+      "dtype": "float64",
+      "graph_warmup_calls": 1,
+      "modes": [
+        "graph"
+      ],
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "repeats": 2,
+      "seed": 20260510,
+      "shape_ladder": "v1_time_ladder",
+      "state_dim": 2,
+      "timesteps": 4
+    },
+    {
+      "benchmark_selector": "score_hessian",
+      "device_scope": "cpu",
+      "dtype": "float64",
+      "graph_warmup_calls": 1,
+      "modes": [
+        "graph"
+      ],
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "repeats": 2,
+      "seed": 20260510,
+      "shape_ladder": "v1_time_ladder",
+      "state_dim": 2,
+      "timesteps": 8
+    },
+    {
+      "benchmark_selector": "score_hessian",
+      "device_scope": "cpu",
+      "dtype": "float64",
+      "graph_warmup_calls": 1,
+      "modes": [
+        "graph"
+      ],
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "repeats": 2,
+      "seed": 20260510,
+      "shape_ladder": "v1_time_ladder",
+      "state_dim": 2,
+      "timesteps": 12
+    },
+    {
+      "benchmark_selector": "score_hessian",
+      "device_scope": "cpu",
+      "dtype": "float64",
+      "graph_warmup_calls": 1,
+      "modes": [
+        "graph"
+      ],
+      "observation_dim": 2,
+      "parameter_dim": 2,
+      "repeats": 2,
+      "seed": 20260510,
+      "shape_ladder": "v1_time_ladder",
+      "state_dim": 2,
+      "timesteps": 16
+    }
+  ]
+}
