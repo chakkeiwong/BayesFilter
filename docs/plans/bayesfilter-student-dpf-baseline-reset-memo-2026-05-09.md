@@ -9,6 +9,12 @@
 This is the active reset memo for the quarantined student DPF
 experimental-baseline stream.
 
+Active master program:
+`docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
+
+Active next-phase plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp1-mlcoe-particle-adapter-plan-2026-05-10.md`.
+
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
 - `experiments/controlled_dpf_baseline/`;
@@ -24,6 +30,10 @@ Explicitly out of scope:
 
 The active reset memo for reader-facing DPF monograph writing is:
 `docs/plans/bayesfilter-dpf-monograph-rebuild-reset-memo-2026-05-09.md`.
+
+This memo records continuity and phase results for the student-baseline lane.
+The master program above records durable scope, gates, current evidence, and
+next-phase ordering.
 
 ## Governing constraints
 
@@ -501,3 +511,193 @@ Next justified work:
 - Do not write reader-facing monograph rewrite status into this memo.
 - Do not write this stream's experimental status into the DPF monograph rebuild
   reset memo.
+
+## Execution log: MP1 MLCOE particle adapter gate started 2026-05-10
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp1-mlcoe-particle-adapter-plan-2026-05-10.md`.
+
+Independent audit:
+`docs/plans/bayesfilter-student-dpf-baseline-mp1-mlcoe-particle-adapter-plan-audit-2026-05-10.md`.
+
+Initial audit decision:
+- proceed in the student-baseline lane only;
+- treat MLCOE BPF resampling count as threshold-inferred, not as a direct event
+  log;
+- keep MLCOE BPF likelihood fields null because the vendored BPF path does not
+  expose a defensible likelihood estimate;
+- use explicit TensorFlow and NumPy seeding for every run.
+
+### MP1.0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current branch: `dpf-monograph-rebuild`;
+- unrelated monograph-lane files are dirty or untracked in the working tree;
+- the active student master program and MP1 plan are present;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`.
+
+Interpretation:
+- continuing is justified because all MP1 edits can remain under
+  `experiments/student_dpf_baselines/` and student-baseline plan/memo files;
+- final staging must be path-scoped and must exclude monograph-lane files.
+
+Next phase justified: MP1.1 adapter API probe.
+
+### MP1.1: adapter API probe
+
+Status: passed.
+
+Implementation:
+- added `run_bpf_fixture(...)` to
+  `experiments/student_dpf_baselines/adapters/mlcoe_adapter.py`;
+- added an adapter-local TensorFlow model bridge for existing
+  linear-Gaussian fixtures;
+- kept the existing MLCOE Kalman adapter path unchanged;
+- did not edit vendored MLCOE code.
+
+Smoke result:
+- command: direct Python smoke calling `run_bpf_fixture` on
+  `lgssm_1d_short` with seed `0` and `64` particles;
+- status: `ok`;
+- particle mean trajectory shape: `(9, 1)`;
+- particle covariance trajectory shape: `(9, 1, 1)`;
+- first ESS values: approximately `27.10`, `20.25`, `14.23`;
+- threshold-inferred resampling count: `1`;
+- runtime: approximately `2.61` seconds.
+
+Interpretation:
+- H1 is supported for the API probe: MLCOE BPF can run through a quarantined
+  adapter without vendored-code edits;
+- H2 is supported for the probe: particle means, weighted covariances, ESS, and
+  threshold-inferred resampling diagnostics are available;
+- MLCOE BPF likelihood remains unavailable and must stay null.
+
+Next phase justified: MP1.2 bounded linear particle panel.
+
+### MP1.2: bounded linear particle panel
+
+Status: passed.
+
+Files added:
+- `experiments/student_dpf_baselines/runners/run_mlcoe_particle_gate.py`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/mlcoe_particle_gate_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/outputs/mlcoe_particle_gate_summary_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-mlcoe-particle-gate-result-2026-05-10.md`.
+
+Panel:
+- fixtures: `lgssm_1d_short`, `lgssm_cv_2d_short`, `lgssm_1d_long`,
+  `lgssm_cv_2d_long`, `lgssm_cv_2d_low_noise`;
+- seeds: `0`, `1`, `2`;
+- particle counts: `64`, `128`, `512`;
+- implementations: MLCOE BPF and advanced bootstrap-PF.
+
+Results:
+- total records: 90;
+- ok records: 90;
+- `2026MLCOE` BPF: 45/45 ok;
+- `advanced_particle_filter` bootstrap-PF: 45/45 ok;
+- no vendored student code was modified.
+
+MLCOE BPF diagnostics:
+- maximum particle-mean RMSE against Kalman: approximately `0.5867`;
+- maximum particle-covariance RMSE against Kalman: approximately `0.1253`;
+- minimum average ESS: approximately `5.82`;
+- median runtime: approximately `0.146` seconds per run;
+- likelihood available runs: `0`.
+
+Advanced bootstrap-PF diagnostics in matched panel:
+- maximum particle-mean RMSE against Kalman: approximately `0.2759`;
+- maximum particle-covariance RMSE against Kalman: approximately `0.1161`;
+- minimum average ESS: approximately `10.17`;
+- median runtime: approximately `0.0110` seconds per run;
+- likelihood available runs: `45`.
+
+Interpretation:
+- H1 remains supported: MLCOE BPF runs through the quarantined adapter on all
+  planned linear fixtures;
+- H2 remains supported: MLCOE BPF exposes enough state, weight, and ESS data
+  for defensible particle diagnostics;
+- MLCOE BPF likelihood remains unavailable and must not be compared to the
+  advanced PF likelihood.
+
+Next phase justified: MP1.3 cross-student particle comparison.
+
+### MP1.3: cross-student particle comparison
+
+Status: passed.
+
+Result report:
+`experiments/student_dpf_baselines/reports/student-dpf-baseline-mlcoe-particle-gate-result-2026-05-10.md`.
+
+Cross-student matched groups:
+- matching keys: fixture, seed, particle count;
+- groups summarized: 45 underlying matched records, aggregated into 15
+  fixture/particle-count summaries.
+
+Key observations:
+- MLCOE BPF and advanced bootstrap-PF both show lower ESS under lower-noise
+  and smaller-particle settings;
+- MLCOE BPF generally has lower average ESS than advanced bootstrap-PF in the
+  matched summaries;
+- MLCOE BPF is slower in this local environment, with median runtime ratios
+  from about `6.94` to `56.29` relative to advanced bootstrap-PF depending on
+  fixture and particle count;
+- cross-student particle mean differences are nonzero and grow on harder
+  constant-velocity fixtures, which is expected for stochastic PF paths.
+
+Hypothesis outcomes:
+- H1: supported;
+- H2: supported;
+- H3: partially supported, because MLCOE BPF produced interpretable low-noise
+  stress diagnostics, but the degradation pattern was weaker than the
+  pre-specified qualitative threshold;
+- H4: supported as comparison-only evidence.
+
+Interpretation:
+- the MP1 phase closes the linear particle-diagnostic asymmetry enough to use
+  both student snapshots in a balanced linear particle baseline;
+- the evidence is still comparison-only and does not validate either
+  implementation as production quality;
+- the missing MLCOE likelihood remains a real limitation.
+
+Next phase justified: MP1.4 audit, tidy, and reset memo update.
+
+### MP1.4: audit, tidy, and handoff
+
+Status: passed.
+
+Checks:
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `py_compile` passed for
+  `experiments/student_dpf_baselines/adapters/mlcoe_adapter.py` and
+  `experiments/student_dpf_baselines/runners/run_mlcoe_particle_gate.py`;
+- `git diff --check` passed for edited student-baseline files;
+- no files under `experiments/student_dpf_baselines/vendor/` were modified;
+- generated MP1 artifacts are moderate in size:
+  `mlcoe_particle_gate_2026-05-10.json` is approximately `2.8M`,
+  the summary JSON is approximately `20K`, and the report is approximately
+  `8K`.
+
+Completion interpretation:
+- MP1 completed without touching production `bayesfilter/` code, monograph
+  files, or vendored student code;
+- the student-baseline lane now has balanced linear particle diagnostics for
+  MLCOE BPF and advanced bootstrap-PF;
+- the next major gap is nonlinear reference/proxy metrics, not another
+  Kalman-only or reproduction gate.
+
+Next justified work:
+- MP2 nonlinear reference and proxy-metric spine, unless project priority
+  shifts specifically to kernel PFF debugging;
+- explicit next hypotheses should test whether nonlinear range-bearing panels
+  can be interpreted with latent-state RMSE, EKF/UKF agreement bands, PF
+  repeated-seed dispersion, and ESS/runtime diagnostics without comparing
+  incompatible likelihood families.
