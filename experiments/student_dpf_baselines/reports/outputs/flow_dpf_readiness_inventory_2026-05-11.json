@@ -1,0 +1,933 @@
+{
+  "command": "python -m experiments.student_dpf_baselines.runners.run_flow_dpf_readiness_review",
+  "date": "2026-05-11",
+  "environment": {
+    "numpy": "2.1.3",
+    "platform": "Linux-6.8.0-111-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tensorflow_devices": [
+      {
+        "name": "/physical_device:CPU:0",
+        "type": "CPU"
+      }
+    ],
+    "tensorflow_probability": "0.25.0"
+  },
+  "execution_mode": "static_inventory_plus_import_signature_probe",
+  "instantiation_or_filter_execution": false,
+  "records": [
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "advanced_edh_flow",
+      "category": "edh_ledh_flow",
+      "comparison_role": "not_selected",
+      "family": "edh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/edh.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, Q_override: Optional[numpy.ndarray] = None, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.edh",
+      "notes": "Pure flow path; comparison value is lower than importance-corrected EDH.",
+      "object_kind": "class",
+      "object_name": "EDHFlow",
+      "object_signature": "(self, n_particles: int = 500, n_flow_steps: int = 29, flow_step_ratio: float = 1.2, redraw: bool = False, seed: Optional[int] = None)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "pure EDH flow with uniform weights"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "advanced_edh_particle_filter",
+      "category": "edh_ledh_pfpf",
+      "comparison_role": "selected_later_candidate",
+      "family": "edh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/edh.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, Q_override: Optional[numpy.ndarray] = None, return_particles: bool = False, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.edh",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "EDHParticleFilter",
+      "object_signature": "(self, n_particles: int = 500, n_flow_steps: int = 29, flow_step_ratio: float = 1.2, resample_method: Literal['systematic', 'stratified', 'multinomial', 'residual'] = 'systematic', resample_criterion: Literal['always', 'ess', 'never'] = 'ess', ess_threshold: float = 0.5, redraw: bool = False, seed: Optional[int] = None)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "EDH particle flow with importance-weight correction"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "advanced_ledh_flow",
+      "category": "edh_ledh_flow",
+      "comparison_role": "not_selected",
+      "family": "ledh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/ledh.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, Q_override: Optional[numpy.ndarray] = None, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.ledh",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "LEDHFlow",
+      "object_signature": "(self, n_particles: int = 500, n_flow_steps: int = 29, flow_step_ratio: float = 1.2, redraw: bool = False, seed: Optional[int] = None)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "local EDH flow with per-particle linearization"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "advanced_ledh_particle_filter",
+      "category": "edh_ledh_pfpf",
+      "comparison_role": "not_selected",
+      "family": "ledh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/ledh.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, Q_override: Optional[numpy.ndarray] = None, return_particles: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.ledh",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "LEDHParticleFilter",
+      "object_signature": "(self, n_particles: int = 500, n_flow_steps: int = 29, flow_step_ratio: float = 1.2, resample_method: Literal['systematic', 'stratified', 'multinomial', 'residual'] = 'systematic', resample_criterion: Literal['always', 'ess', 'never'] = 'ess', ess_threshold: float = 0.5, redraw: bool = False, seed: Optional[int] = None)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "LEDH particle flow with importance-weight correction"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'stochastic_flow'.",
+      "candidate_id": "advanced_stochastic_pff_flow",
+      "category": "stochastic_flow",
+      "comparison_role": "not_selected",
+      "family": "spf",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/stochastic_pff.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_stochastic_flow_fixture_required",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.stochastic_pff",
+      "notes": "Not selected before deterministic EDH/LEDH adapter gate.",
+      "object_kind": "class",
+      "object_name": "StochasticPFFlow",
+      "object_signature": "(self, n_particles: int = 100, n_flow_steps: int = 29, step_schedule: Literal['fine', 'exp'] = 'fine', flow_step_ratio: Optional[float] = None, Q_flow_mode: Literal['fixed', 'adaptive'] = 'adaptive', Q_flow_fixed: Optional[numpy.ndarray] = None, beta_schedule: Literal['linear', 'optimal'] = 'optimal', mu: float = 1e-07, bvp_method: str = 'Radau', bvp_max_step: float = 0.01, bvp_clip_ddot: float = 100000000.0, deterministic_dynamics: bool = False, integration_method: Literal['euler', 'semi_implicit', 'heun', 'expm'] = 'expm', seed: Optional[int] = None)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "stochastic particle flow with optimized beta schedule"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'stochastic_flow'.",
+      "candidate_id": "advanced_stochastic_pfpf",
+      "category": "stochastic_flow",
+      "comparison_role": "not_selected",
+      "family": "spf_pfpf",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/stochastic_pfpf.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_stochastic_flow_fixture_required",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, return_particles: bool = False, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.stochastic_pfpf",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "StochasticPFParticleFilter",
+      "object_signature": "(self, n_particles: int = 100, n_flow_steps: int = 29, flow_step_ratio: float = 1.2, Q_flow_mode: Literal['fixed', 'adaptive'] = 'adaptive', Q_flow_fixed: Optional[numpy.ndarray] = None, beta_schedule: Literal['linear', 'optimal'] = 'optimal', mu: float = 1e-07, bvp_method: str = 'Radau', bvp_max_step: float = 0.01, bvp_clip_ddot: float = 100000000.0, deterministic_dynamics: bool = False, integration_method: Literal['euler', 'semi_implicit', 'heun', 'expm'] = 'expm', resample_method: Literal['systematic', 'stratified', 'multinomial', 'residual'] = 'systematic', resample_criterion: Literal['always', 'ess', 'never'] = 'ess', ess_threshold: float = 0.5, seed: Optional[int] = None)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "stochastic particle-flow particle filter"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "MP3 found consistent max-iteration hits for kernel PFF diagnostics.",
+      "candidate_id": "advanced_scalar_kernel_pff",
+      "category": "kernel_pff",
+      "comparison_role": "not_selected",
+      "family": "kernel_pff",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/kernel_pff.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "linear_gaussian_debug_only",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, return_particles: bool = False, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.kernel_pff",
+      "notes": "MP3 classified kernel PFF as excluded pending debug.",
+      "object_kind": "class",
+      "object_name": "ScalarKernelPFF",
+      "object_signature": "(self, **kwargs)",
+      "probe_status": "importable",
+      "readiness_class": "excluded_pending_debug",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "scalar-kernel particle flow"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "MP3 found consistent max-iteration hits for kernel PFF diagnostics.",
+      "candidate_id": "advanced_matrix_kernel_pff",
+      "category": "kernel_pff",
+      "comparison_role": "not_selected",
+      "family": "kernel_pff",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/filters/kernel_pff.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "linear_gaussian_debug_only",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, return_particles: bool = False, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult"
+      },
+      "module_import": "advanced_particle_filter.filters.kernel_pff",
+      "notes": "MP3 classified kernel PFF as excluded pending debug.",
+      "object_kind": "class",
+      "object_name": "MatrixKernelPFF",
+      "object_signature": "(self, **kwargs)",
+      "probe_status": "importable",
+      "readiness_class": "excluded_pending_debug",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "matrix-kernel particle flow"
+    },
+    {
+      "artifact_requirements": [
+        "optional amortized OT checkpoint for amortized mode"
+      ],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'dpf'.",
+      "candidate_id": "advanced_tf_dpf",
+      "category": "dpf",
+      "comparison_role": "not_selected",
+      "family": "differentiable_particle_filter",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/tf_filters/differentiable_particle.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_dpf_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "filter": "(self, params: advanced_particle_filter.tf_models.svssm.SVSSMParams, observations: tensorflow.python.framework.tensor.Tensor, rng: tensorflow.python.ops.stateful_random_ops.Generator) -> advanced_particle_filter.tf_filters.differentiable_particle.DPFResult"
+      },
+      "module_import": "advanced_particle_filter.tf_filters.differentiable_particle",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "TFDifferentiableParticleFilter",
+      "object_signature": "(self, n_particles: int = 100, resampler: str = 'soft', alpha: float = 0.5, epsilon: float = 0.1, sinkhorn_iters: int = 50, amortized_ckpt_dir: str = None, amortized_eps: float = 0.5, amortized_d: int = None, obs_log_prob_fn=None, dtype: tensorflow.python.framework.dtypes.DType = tf.float64)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter"
+      ],
+      "target_semantics": "batched TensorFlow DPF with soft, sinkhorn, or amortized resampling"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'differentiable_resampling'.",
+      "candidate_id": "advanced_soft_resample",
+      "category": "differentiable_resampling",
+      "comparison_role": "not_selected",
+      "family": "soft_resampling",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/tf_utils/soft_resampler.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_resampling_unit_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwds)"
+      },
+      "module_import": "advanced_particle_filter.tf_utils.soft_resampler",
+      "notes": "",
+      "object_kind": "function",
+      "object_name": "soft_resample",
+      "object_signature": "(particles: tensorflow.python.framework.tensor.Tensor, log_w_norm: tensorflow.python.framework.tensor.Tensor, alpha: tensorflow.python.framework.tensor.Tensor, rng: tensorflow.python.ops.stateful_random_ops.Generator) -> Tuple[tensorflow.python.framework.tensor.Tensor, tensorflow.python.framework.tensor.Tensor]",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [
+        "tf.function"
+      ],
+      "static_found": true,
+      "static_public_methods": [],
+      "target_semantics": "soft differentiable resampling primitive"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'differentiable_resampling'.",
+      "candidate_id": "advanced_sinkhorn_resample",
+      "category": "differentiable_resampling",
+      "comparison_role": "not_selected",
+      "family": "sinkhorn_resampling",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/tf_utils/sinkhorn.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_resampling_unit_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)"
+      },
+      "module_import": "advanced_particle_filter.tf_utils.sinkhorn",
+      "notes": "",
+      "object_kind": "function",
+      "object_name": "sinkhorn_resample",
+      "object_signature": "(particles: tensorflow.python.framework.tensor.Tensor, log_w: tensorflow.python.framework.tensor.Tensor, epsilon: tensorflow.python.framework.tensor.Tensor, num_iters: int)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [],
+      "target_semantics": "entropy-regularized OT resampling primitive"
+    },
+    {
+      "artifact_requirements": [
+        "vendored checkpoint or weights"
+      ],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'neural_ot'.",
+      "candidate_id": "advanced_amortized_ot_resampler",
+      "category": "neural_ot",
+      "comparison_role": "not_selected",
+      "family": "amortized_ot",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/tf_utils/amortized_resampler.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_amortized_ot_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(self, particles: tensorflow.python.framework.tensor.Tensor, log_w: tensorflow.python.framework.tensor.Tensor)"
+      },
+      "module_import": "advanced_particle_filter.tf_utils.amortized_resampler",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "AmortizedOTResampler",
+      "object_signature": "(self, ckpt_dir: Optional[str] = None, d: int = 2, N: int = 1000, eps: float = 0.5, dtype: tensorflow.python.framework.dtypes.DType = tf.float64, model_cfg: Optional[dict] = None)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "pretrained neural OT resampling operator"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'hmc_parameter_inference'.",
+      "candidate_id": "advanced_hmc_corenflos_lg_dpf",
+      "category": "hmc_parameter_inference",
+      "comparison_role": "not_selected",
+      "family": "hmc_dpf",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/hmc/run_hmc_corenflos_lg.py",
+      "implementation_name": "advanced_particle_filter",
+      "import_error": null,
+      "likely_fixture": "separate_hmc_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)"
+      },
+      "module_import": "advanced_particle_filter.hmc.run_hmc_corenflos_lg",
+      "notes": "",
+      "object_kind": "function",
+      "object_name": "run_hmc_corenflos_lg_dpf",
+      "object_signature": "(y_obs: tensorflow.python.framework.tensor.Tensor, truth: dict, *, resampler: str, n_particles: int, alpha: float = 0.5, sinkhorn_eps: float = 0.5, sinkhorn_iters: int = 100, amortized_ckpt_dir: Optional[str] = None, amortized_eps: float = 0.5, n_mc: int = 2, B_chain: int = 4, num_burnin: int = 100, num_samples: int = 200, num_leapfrog: int = 5, initial_step_size: float = 0.01, target_accept_prob: float = 0.7, warmup_jitter: float = 0.05, seed: int = 0, verbose: bool = True) -> dict",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [],
+      "target_semantics": "HMC target built from differentiable particle filter evidence"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "mlcoe_particle_flow_filter",
+      "category": "edh_ledh_flow",
+      "comparison_role": "not_selected",
+      "family": "particle_flow_base",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flow_filters.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "init": "(self, x, P)",
+        "step": "(self, z)"
+      },
+      "module_import": "src.filters.flow_filters",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "ParticleFlowFilter",
+      "object_signature": "(self, model, N=100, mode='ledh', is_pfpf=True, mu=0.2)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "init",
+        "step"
+      ],
+      "target_semantics": "base TensorFlow particle-flow wrapper with edh/ledh/ledh_opt modes"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "mlcoe_edh",
+      "category": "edh_ledh_flow",
+      "comparison_role": "not_selected",
+      "family": "edh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flow_filters.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "init": "(self, x, P)",
+        "step": "(self, z)"
+      },
+      "module_import": "src.filters.flow_filters",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "EDH",
+      "object_signature": "(self, model, N=100, steps=30)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "pure EDH flow wrapper"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "mlcoe_ledh",
+      "category": "edh_ledh_flow",
+      "comparison_role": "not_selected",
+      "family": "ledh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flow_filters.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "init": "(self, x, P)",
+        "step": "(self, z)"
+      },
+      "module_import": "src.filters.flow_filters",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "LEDH",
+      "object_signature": "(self, model, N=100, steps=30)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "pure LEDH flow wrapper"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "mlcoe_pfpf_edh",
+      "category": "edh_ledh_pfpf",
+      "comparison_role": "selected_later_candidate",
+      "family": "edh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flow_filters.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "init": "(self, x, P)",
+        "step": "(self, z)"
+      },
+      "module_import": "src.filters.flow_filters",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "PFPF_EDH",
+      "object_signature": "(self, model, N=100, steps=30)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "EDH particle-flow particle filter wrapper"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": null,
+      "candidate_id": "mlcoe_pfpf_ledh",
+      "category": "edh_ledh_pfpf",
+      "comparison_role": "not_selected",
+      "family": "ledh",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flow_filters.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "nonlinear_gaussian_range_bearing",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "init": "(self, x, P)",
+        "step": "(self, z)"
+      },
+      "module_import": "src.filters.flow_filters",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "PFPF_LEDH",
+      "object_signature": "(self, model, N=100, steps=30)",
+      "probe_status": "importable",
+      "readiness_class": "candidate_for_bounded_comparison",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "LEDH particle-flow particle filter wrapper"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "MP3 found consistent max-iteration hits for kernel PFF diagnostics.",
+      "candidate_id": "mlcoe_kpff",
+      "category": "kernel_pff",
+      "comparison_role": "not_selected",
+      "family": "kernel_pff",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flow_filters.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "linear_gaussian_debug_only",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "update": "(self, n_steps=50, dt=0.01)"
+      },
+      "module_import": "src.filters.flow_filters",
+      "notes": "Kept out of first comparison because advanced kernel PFF is excluded.",
+      "object_kind": "class",
+      "object_name": "KPFF",
+      "object_signature": "(self, ensemble, y_obs, obs_idx, R_var, kernel_type='matrix')",
+      "probe_status": "importable",
+      "readiness_class": "excluded_pending_debug",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "get_grad_log_posterior",
+        "compute_flow",
+        "update"
+      ],
+      "target_semantics": "TensorFlow kernel particle flow filter"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Low-level solver may support an adapter but is not a complete comparison target.",
+      "candidate_id": "mlcoe_edh_solver",
+      "category": "flow_solver",
+      "comparison_role": "not_selected",
+      "family": "edh_solver",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flows/EDH.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "adapter_internal_only",
+      "method_signatures": {
+        "__call__": "(self, z, eta, P_prev, lam, model)"
+      },
+      "module_import": "src.filters.flows.EDH",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "EDHSolver",
+      "object_signature": "(self, name=None)",
+      "probe_status": "importable",
+      "readiness_class": "adapter_internal_only",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "low-level EDH drift solver, not a full filter adapter target"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Low-level solver may support an adapter but is not a complete comparison target.",
+      "candidate_id": "mlcoe_ledh_solver",
+      "category": "flow_solver",
+      "comparison_role": "not_selected",
+      "family": "ledh_solver",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flows/LEDH.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "adapter_internal_only",
+      "method_signatures": {
+        "__call__": "(self, z, eta, P_prev, lam, model)"
+      },
+      "module_import": "src.filters.flows.LEDH",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "LEDHSolver",
+      "object_signature": "(self, name=None)",
+      "probe_status": "importable",
+      "readiness_class": "adapter_internal_only",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "low-level LEDH drift solver, not a full filter adapter target"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'stochastic_flow'.",
+      "candidate_id": "mlcoe_ledh_optimized_flow",
+      "category": "stochastic_flow",
+      "comparison_role": "not_selected",
+      "family": "ledh_opt",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/flows/dai_homotopy.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_stochastic_flow_fixture_required",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)"
+      },
+      "module_import": "src.filters.flows.dai_homotopy",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "LEDHOptimizedFlow",
+      "object_signature": "(self, model, n_steps=100, mu=0.2)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "solve_dai_schedule",
+        "compute_ledh_drift"
+      ],
+      "target_semantics": "Dai-style optimized homotopy schedule"
+    },
+    {
+      "artifact_requirements": [
+        "transformer resampler model state"
+      ],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'dpf'.",
+      "candidate_id": "mlcoe_dpf",
+      "category": "dpf",
+      "comparison_role": "not_selected",
+      "family": "differentiable_particle_filter",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/DPF.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_dpf_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)"
+      },
+      "module_import": "src.filters.DPF",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "DPF",
+      "object_signature": "(self, transition_fn, observation_fn, num_particles)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "filter_step"
+      ],
+      "target_semantics": "modular TensorFlow DPF with transformer, soft, and Sinkhorn resamplers"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'dpfpf'.",
+      "candidate_id": "mlcoe_dpfpf",
+      "category": "dpfpf",
+      "comparison_role": "not_selected",
+      "family": "differentiable_particle_flow_pf",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/dpfpf.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_dpfpf_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "step": "(self, z, X_prev, W_prev, P_prev)"
+      },
+      "module_import": "src.filters.dpfpf",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "DifferentiablePFPF",
+      "object_signature": "(self, model, solver=None, resampler=None, N=30, n_steps=20)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "step"
+      ],
+      "target_semantics": "differentiable PFPF likelihood engine for gradient inference"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'differentiable_resampling'.",
+      "candidate_id": "mlcoe_soft_resampler",
+      "category": "differentiable_resampling",
+      "comparison_role": "not_selected",
+      "family": "soft_resampling",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/resampling/soft.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_resampling_unit_gate",
+      "method_signatures": {
+        "__call__": "(self, p, h, w, alpha=None)"
+      },
+      "module_import": "src.filters.resampling.soft",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "SoftResampler",
+      "object_signature": "(self, num_particles, alpha=0.5)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__"
+      ],
+      "target_semantics": "soft differentiable resampler"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'differentiable_resampling'.",
+      "candidate_id": "mlcoe_sinkhorn_resampler",
+      "category": "differentiable_resampling",
+      "comparison_role": "not_selected",
+      "family": "sinkhorn_resampling",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/resampling/optimal_transport.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_resampling_unit_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)",
+        "resample": "(self, x, lw, h=None)"
+      },
+      "module_import": "src.filters.resampling.optimal_transport",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "SinkhornResampler",
+      "object_signature": "(self, epsilon=0.05, n_iter=10, thresh=0.001)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "resample"
+      ],
+      "target_semantics": "Sinkhorn OT differentiable resampler"
+    },
+    {
+      "artifact_requirements": [
+        "trained or initialized model policy"
+      ],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'neural_resampling'.",
+      "candidate_id": "mlcoe_transformer_resampler",
+      "category": "neural_resampling",
+      "comparison_role": "not_selected",
+      "family": "transformer_resampling",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/filters/resampling/transformer.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_neural_resampling_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(self, *args, **kwargs)",
+        "predict": "(self, x, batch_size=None, verbose='auto', steps=None, callbacks=None)"
+      },
+      "module_import": "src.filters.resampling.transformer",
+      "notes": "",
+      "object_kind": "class",
+      "object_name": "TransformerResampler",
+      "object_signature": "(self, num_particles, latent_dim=128, num_heads=4)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [
+        "__init__",
+        "call"
+      ],
+      "target_semantics": "trainable transformer resampling prior"
+    },
+    {
+      "artifact_requirements": [],
+      "blocker_reason": "Requires a separate reproduction gate before comparison because category is 'hmc_parameter_inference'.",
+      "candidate_id": "mlcoe_phmc_pfpf",
+      "category": "hmc_parameter_inference",
+      "comparison_role": "not_selected",
+      "family": "phmc_dpfpf",
+      "file_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/2026MLCOE/src/inference/phmc.py",
+      "implementation_name": "2026MLCOE",
+      "import_error": null,
+      "likely_fixture": "separate_hmc_reproduction_gate",
+      "method_signatures": {
+        "__call__": "(*args, **kwargs)"
+      },
+      "module_import": "src.inference.phmc",
+      "notes": "",
+      "object_kind": "function",
+      "object_name": "hmc_pfpf",
+      "object_signature": "(model, observations, solver=None, resampler=None, num_samples=50, beta=0.1, stepsize=0.1, num_leapfrog_steps=2, callback=None)",
+      "probe_status": "importable",
+      "readiness_class": "reproduction_gate_required",
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "static_decorators": [],
+      "static_found": true,
+      "static_public_methods": [],
+      "target_semantics": "particle HMC using dPFPF likelihood gradients"
+    }
+  ],
+  "scope": "student_dpf_baseline_mp4_flow_dpf_readiness_review",
+  "summary": {
+    "candidate_decision": {
+      "adapter_scope": "adapter-owned bridges only; no vendored-code edits and no production bayesfilter imports",
+      "advanced_candidate_id": "advanced_edh_particle_filter",
+      "advanced_path": "advanced_particle_filter.filters.edh.EDHParticleFilter",
+      "blocker_plan": "If either API requires unrecorded model assumptions, stop and record blocked_missing_assumption rather than widening scope.",
+      "candidate_family": "importance_corrected_edh_pfpf",
+      "decision": "selected_bounded_candidate",
+      "fixture": "existing nonlinear Gaussian range-bearing fixture",
+      "metrics": [
+        "latent_state_rmse",
+        "final_position_rmse",
+        "average_ess_if_exposed",
+        "resampling_count_if_exposed",
+        "runtime_seconds",
+        "finite_output_checks",
+        "EKF_UKF_proxy_comparison"
+      ],
+      "mlcoe_candidate_id": "mlcoe_pfpf_edh",
+      "mlcoe_path": "src.filters.flow_filters.PFPF_EDH",
+      "runtime_cap": "short horizon, <=64 particles, <=10 flow steps for first adapter spike",
+      "selection_reason": "Both paths represent EDH particle-flow particle filters with importance correction; this is more semantically aligned than pure flow, kernel PFF, stochastic flow, neural DPF, or HMC."
+    },
+    "category_counts": {
+      "differentiable_resampling": 4,
+      "dpf": 2,
+      "dpfpf": 1,
+      "edh_ledh_flow": 5,
+      "edh_ledh_pfpf": 4,
+      "flow_solver": 2,
+      "hmc_parameter_inference": 2,
+      "kernel_pff": 3,
+      "neural_ot": 1,
+      "neural_resampling": 1,
+      "stochastic_flow": 3
+    },
+    "hypothesis_results": {
+      "F1_edh_ledh_first_candidate": "supported_with_adapter_caveat",
+      "F2_kernel_pff_excluded": "supported",
+      "F3_dpf_neural_ot_hmc_reproduction_gates": "supported",
+      "F4_import_signature_probe_sufficient": "supported",
+      "F5_reuse_existing_fixtures": "supported"
+    },
+    "next_phase_recommendation": "Create a scoped MP4 follow-up adapter spike for advanced EDHParticleFilter versus MLCOE PFPF_EDH on the existing nonlinear Gaussian range-bearing fixture.",
+    "probe_status_counts": {
+      "importable": 28
+    },
+    "readiness_class_counts": {
+      "adapter_internal_only": 2,
+      "candidate_for_bounded_comparison": 9,
+      "excluded_pending_debug": 3,
+      "reproduction_gate_required": 14
+    },
+    "records": 28
+  },
+  "working_directory": "/home/ubuntu/python/BayesFilter"
+}

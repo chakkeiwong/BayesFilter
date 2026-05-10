@@ -13,7 +13,8 @@ Active master program:
 `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
 
 Active next-phase plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-2026-05-11.md`.
+`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-2026-05-11.md`
+completed.  Next justified plan to create: scoped EDH/PFPF adapter spike.
 
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
@@ -999,3 +1000,245 @@ Next justified work:
 - kernel PFF should stay out of routine panels unless a later algorithm-specific
   debug plan modifies only adapter-owned experiment logic or records an
   explicit local patch policy.
+
+## Execution log: MP4 flow and DPF readiness review started 2026-05-11
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-2026-05-11.md`.
+
+### MP4 goal
+
+Status: planned.
+
+Goal:
+- determine whether any flow or DPF path in the two student snapshots is ready
+  for a later bounded comparison panel;
+- inventory advanced and MLCOE flow/DPF entry points;
+- classify importability, call-surface clarity, target semantics, dependency
+  blockers, artifact blockers, and runtime blockers;
+- select at most one bounded EDH/LEDH-family comparison candidate, or record a
+  blocker-only decision if no candidate satisfies the gates.
+
+Lane guard:
+- this MP4 cycle remains inside `experiments/student_dpf_baselines/` and
+  student-baseline plan/report/reset-memo files under `docs/plans/`;
+- monograph writing files, monograph reset memos, production `bayesfilter/`
+  code, `docs/references.bib`, and vendored student code remain out of scope.
+
+### MP4 remaining gaps
+
+Status: identified.
+
+Gaps:
+- flow and DPF entry points are not cataloged across the two snapshots;
+- matching labels such as EDH, LEDH, PFF, PFPF, and DPF do not guarantee
+  matching target semantics;
+- importability and constructor/call signatures are not yet recorded;
+- the first bounded comparison candidate is not selected;
+- DPF, neural OT, differentiable resampling, and HMC paths may depend on
+  training, pretrained artifacts, notebooks, plotting, or parameter-inference
+  objectives.
+
+### MP4 hypotheses
+
+Status: planned.
+
+Hypotheses:
+- F1: EDH/LEDH is the most plausible first flow candidate because both
+  snapshots expose EDH/LEDH-family entry points that may map to a shared
+  Gaussian target without vendored-code edits;
+- F2: kernel PFF remains excluded from first routine flow comparison because
+  MP3 found consistent `max_iterations` hits under reduced diagnostics;
+- F3: DPF, neural OT, differentiable resampling, and HMC paths require
+  separate reproduction gates before comparison;
+- F4: import and signature probes are sufficient to classify readiness without
+  running large experiments or editing vendored code;
+- F5: a later bounded EDH/LEDH comparison, if selected, should reuse the
+  existing linear-Gaussian or nonlinear Gaussian range-bearing fixtures with
+  explicit proxy/reference metrics.
+
+Next phase justified: MP4.0 preflight and lane guard.
+
+### MP4.0: preflight and lane guard
+
+Status: passed.
+
+Plan audit:
+`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-audit-2026-05-11.md`.
+
+Plan tightening:
+- MP4 is explicitly limited to static inventory, import probes, and signature
+  inspection;
+- MP4 must not instantiate filters, call filter/update/step methods, run
+  notebooks, execute experiment scripts, train models, run HMC, or generate
+  large artifacts;
+- kernel PFF remains excluded from first routine flow comparison because MP3
+  classified it as `excluded_pending_debug`.
+
+Observed state:
+- current working tree contains unrelated monograph-lane dirty and untracked
+  files;
+- student-baseline edits can remain path-scoped;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  are dirty.
+
+Interpretation:
+- continuing is justified because MP4 can execute fully inside the
+  student-baseline lane;
+- final staging must remain path-scoped and must exclude monograph-lane files.
+
+Next phase justified: MP4.1 static inventory and MP4.2 import/signature probe.
+
+### MP4.1: static inventory
+
+Status: passed.
+
+Runner:
+`experiments/student_dpf_baselines/runners/run_flow_dpf_readiness_review.py`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/flow_dpf_readiness_inventory_2026-05-11.json`;
+- `experiments/student_dpf_baselines/reports/outputs/flow_dpf_readiness_summary_2026-05-11.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-flow-dpf-readiness-review-result-2026-05-11.md`.
+
+Inventory scope:
+- 28 flow, DPF, resampling, neural OT, stochastic-flow, kernel PFF, and HMC
+  candidate surfaces were cataloged across the two snapshots;
+- the runner used static AST inventory plus import/signature inspection only;
+- no filter classes were instantiated;
+- no filter/update/step methods, notebooks, experiment scripts, training, or
+  HMC entry points were executed.
+
+Category counts:
+- `edh_ledh_flow`: 5;
+- `edh_ledh_pfpf`: 4;
+- `kernel_pff`: 3;
+- `stochastic_flow`: 3;
+- `dpf`: 2;
+- `dpfpf`: 1;
+- `differentiable_resampling`: 4;
+- `neural_ot`: 1;
+- `neural_resampling`: 1;
+- `hmc_parameter_inference`: 2;
+- `flow_solver`: 2.
+
+Interpretation:
+- MP4.1 closed the catalog gap without broadening scope or editing vendored
+  student snapshots;
+- static inventory is sufficient to proceed to import/signature readiness
+  classification.
+
+Next phase justified: MP4.2 import and signature probe.
+
+### MP4.2: import and signature probe
+
+Status: passed.
+
+Command:
+`python -m experiments.student_dpf_baselines.runners.run_flow_dpf_readiness_review`.
+
+Observed environment:
+- Python `3.13.13`;
+- NumPy `2.1.3`;
+- TensorFlow `2.20.0`;
+- TensorFlow Probability `0.25.0`;
+- TensorFlow physical devices: CPU only.
+
+Results:
+- records: 28;
+- probe status counts: `{'importable': 28}`;
+- readiness counts:
+  `{'candidate_for_bounded_comparison': 9, 'reproduction_gate_required': 14,
+  'excluded_pending_debug': 3, 'adapter_internal_only': 2}`.
+
+Interpretation:
+- importability is broad but not equivalent to comparison readiness;
+- deterministic EDH/LEDH and EDH/LEDH-PFPF paths have inspectable call
+  surfaces;
+- DPF, dPFPF, differentiable resampling, neural OT, neural resampling,
+  stochastic flow, and HMC paths are importable surfaces that still require
+  separate reproduction gates before comparison claims;
+- kernel PFF remains excluded from routine comparison due to MP3
+  max-iteration diagnostics.
+
+Next phase justified: MP4.3 candidate selection.
+
+### MP4.3: candidate selection
+
+Status: passed.
+
+Decision:
+`selected_bounded_candidate`.
+
+Selected later candidate:
+- family: `importance_corrected_edh_pfpf`;
+- advanced path:
+  `advanced_particle_filter.filters.edh.EDHParticleFilter`;
+- MLCOE path: `src.filters.flow_filters.PFPF_EDH`;
+- fixture: existing nonlinear Gaussian range-bearing fixture;
+- first runtime cap: short horizon, at most 64 particles, at most 10 flow
+  steps for an adapter spike;
+- adapter scope: adapter-owned bridges only, no vendored-code edits, no
+  production `bayesfilter/` imports.
+
+Metrics for the later adapter spike:
+- latent-state RMSE;
+- final-position RMSE;
+- average ESS if exposed;
+- resampling count if exposed;
+- runtime seconds;
+- finite-output checks;
+- EKF/UKF proxy comparison.
+
+Hypothesis outcomes:
+- F1 EDH/LEDH first candidate: `supported_with_adapter_caveat`;
+- F2 kernel PFF excluded: `supported`;
+- F3 DPF/neural OT/HMC reproduction gates: `supported`;
+- F4 import/signature probe sufficiency: `supported`;
+- F5 reuse existing fixtures: `supported`.
+
+Interpretation:
+- the EDH/PFPF-EDH pair is the only immediate comparison candidate;
+- it is not evidence of performance or correctness yet;
+- if either adapter requires unrecorded model assumptions, the next phase must
+  stop and record `blocked_missing_assumption` rather than widening scope.
+
+Next phase justified: MP4.4 report, audit, tidy, and reset memo.
+
+### MP4.4: report, audit, tidy, and completion
+
+Status: passed.
+
+Checks:
+- `py_compile` passed for
+  `experiments/student_dpf_baselines/runners/run_flow_dpf_readiness_review.py`;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `git diff --check` passed;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  were modified;
+- generated artifacts are small: inventory JSON approximately `44K`, summary
+  JSON approximately `2.3K`, report approximately `8K`.
+
+Completion interpretation:
+- MP4 completed without touching production code, monograph files, references,
+  or vendored student code;
+- broad flow/DPF surfaces are importable in the current environment, but only
+  EDH/PFPF-EDH is ready for a bounded adapter spike;
+- all neural/DPF/OT/HMC surfaces remain outside comparison claims until
+  separate reproduction gates are written and executed.
+
+Next justified work:
+- create a scoped EDH/PFPF adapter-spike plan comparing advanced
+  `EDHParticleFilter` against MLCOE `PFPF_EDH` on the existing nonlinear
+  Gaussian range-bearing fixture;
+- primary next hypothesis: both paths can run through adapter-owned bridges
+  with no vendored-code edits and produce finite latent-state RMSE and runtime
+  diagnostics on a reduced fixture;
+- veto diagnostics for the next phase: unrecorded target assumptions,
+  incompatible model interfaces, large runtime, missing ESS/resampling metrics
+  without structured nulls, vendored-code edits, or production-code imports.

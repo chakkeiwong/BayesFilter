@@ -524,6 +524,10 @@ Veto diagnostics:
 
 ### MP4: Flow and DPF Readiness Review
 
+Execution plan:
+
+`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-2026-05-11.md`.
+
 Primary hypothesis:
 
 Flow and DPF comparison is useful only after both snapshots have a minimal
@@ -652,23 +656,23 @@ baseline lane.
 
 ## Current Next Move
 
-The next justified execution plan is MP2: nonlinear reference and proxy-metric
-spine.
+The next justified execution plan is MP4: flow and DPF readiness review.
 
-Active MP3 plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp3-kernel-pff-debug-gate-plan-2026-05-11.md`.
+Active MP4 plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-2026-05-11.md`.
 
 The reason is concrete:
 
 - MP1 closed the largest linear particle-diagnostic asymmetry by adding MLCOE
   BPF diagnostics;
 - MP2 closed the immediate nonlinear reference/proxy-metric gap;
-- kernel PFF remains the largest classified failure/timeout gap after the
-  linear and nonlinear panels.
+- MP3 narrowed the kernel PFF failure/timeout gap and classified kernel PFF as
+  excluded from routine panels pending further debug.
 
-The current MP3 decision is to debug kernel PFF with reduced bounded
-diagnostics before any flow/DPF readiness review treats kernel paths as
-comparison evidence.
+The current MP4 decision is to inventory flow and DPF entry points, classify
+runnable and blocked paths, and select at most one bounded candidate for a later
+comparison phase.  Kernel PFF remains out of routine comparison unless a later
+algorithm-specific debug plan changes that classification with new evidence.
 
 ## Stop Rules
 
