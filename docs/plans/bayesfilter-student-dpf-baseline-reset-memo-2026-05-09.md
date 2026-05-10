@@ -13,8 +13,7 @@ Active master program:
 `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
 
 Active next-phase plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-2026-05-11.md`
-completed.  Next justified plan to create: scoped EDH/PFPF adapter spike.
+`docs/plans/bayesfilter-student-dpf-baseline-edh-pfpf-adapter-spike-plan-2026-05-11.md`.
 
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
@@ -1242,3 +1241,182 @@ Next justified work:
 - veto diagnostics for the next phase: unrecorded target assumptions,
   incompatible model interfaces, large runtime, missing ESS/resampling metrics
   without structured nulls, vendored-code edits, or production-code imports.
+
+## Execution log: EDH/PFPF adapter spike started 2026-05-11
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-edh-pfpf-adapter-spike-plan-2026-05-11.md`.
+
+Independent audit:
+`docs/plans/bayesfilter-student-dpf-baseline-edh-pfpf-adapter-spike-plan-audit-2026-05-11.md`.
+
+### Adapter-spike goal
+
+Status: planned.
+
+Goal:
+- run the bounded candidate selected by MP4:
+  `advanced_particle_filter.filters.edh.EDHParticleFilter` versus MLCOE
+  `src.filters.flow_filters.PFPF_EDH`;
+- use adapter-owned model bridges on the existing nonlinear Gaussian
+  range-bearing fixture;
+- record finite-output, RMSE, ESS/resampling availability, and runtime
+  diagnostics;
+- decide whether a replicated EDH/PFPF panel is justified.
+
+Hypotheses:
+- E1: advanced `EDHParticleFilter` runs on the reduced fixture through an
+  adapter-owned bridge;
+- E2: MLCOE `PFPF_EDH` runs on the same reduced fixture through an
+  adapter-owned TensorFlow bridge;
+- E3: proxy comparison is interpretable without treating student agreement as
+  correctness;
+- E4: the spike produces a clear next decision:
+  `edh_pfpf_panel_ready`, `adapter_spike_success_needs_replication`,
+  `blocked_missing_assumption`, or `excluded_due_to_runtime_or_numerics`.
+
+Next phase justified: S0 preflight and lane guard.
+
+### S0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current working tree contains unrelated monograph-lane dirty and untracked
+  files;
+- student-baseline edits can remain path-scoped;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  are dirty;
+- the adapter-spike plan and independent audit are present.
+
+Interpretation:
+- continuing is justified because the spike can execute fully inside the
+  student-baseline lane;
+- final staging must remain path-scoped and must exclude monograph-lane files.
+
+Next phase justified: S1 runner implementation.
+
+### S1: runner implementation
+
+Status: passed.
+
+File added:
+`experiments/student_dpf_baselines/runners/run_edh_pfpf_adapter_spike.py`.
+
+Implementation:
+- reuses the existing nonlinear Gaussian range-bearing fixture and MP2
+  adapter-owned model bridges;
+- reduces `range_bearing_gaussian_moderate` to an 8-observation fixture;
+- runs only the MP4-selected pair:
+  - advanced `EDHParticleFilter`;
+  - MLCOE `PFPF_EDH`;
+- uses 64 particles, 10 flow steps, seed 17, and a runtime-warning threshold
+  of 30 seconds;
+- records missing likelihood/covariance fields as null or structured
+  diagnostics rather than fabricating them.
+
+Interpretation:
+- S1 closes the implementation gap without editing vendored student code or
+  production `bayesfilter/` modules;
+- bounded execution is justified.
+
+Next phase justified: S2 execute, classify, and report.
+
+### S2: execute, classify, and report
+
+Status: passed.
+
+Command:
+`python -m experiments.student_dpf_baselines.runners.run_edh_pfpf_adapter_spike`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/edh_pfpf_adapter_spike_2026-05-11.json`;
+- `experiments/student_dpf_baselines/reports/outputs/edh_pfpf_adapter_spike_summary_2026-05-11.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-edh-pfpf-adapter-spike-result-2026-05-11.md`.
+
+Observed environment:
+- Python `3.13.13`;
+- NumPy `2.1.3`;
+- TensorFlow `2.20.0`;
+- TensorFlow Probability `0.25.0`;
+- TensorFlow physical devices: CPU only.
+
+Panel:
+- base fixture: `range_bearing_gaussian_moderate`;
+- reduced fixture: `range_bearing_gaussian_moderate_edh_pfpf_h8`;
+- horizon: 8 observations;
+- particles: 64;
+- flow steps: 10;
+- seed: 17.
+
+Results:
+- advanced `EDHParticleFilter`: status `ok`, runtime about `0.559` seconds,
+  state RMSE about `0.118`, position RMSE about `0.0778`, final-position error
+  about `0.108`, average ESS about `8.45`, min ESS about `2.96`, resampling
+  count `8`;
+- MLCOE `PFPF_EDH`: status `ok`, runtime about `3.91` seconds, state RMSE
+  about `0.0824`, position RMSE about `0.0710`, final-position error about
+  `0.103`, average ESS about `24.14`, min ESS about `12.84`, inferred
+  resampling count `6`;
+- both outputs had finite means;
+- no runtime warning was triggered.
+
+Hypothesis outcomes:
+- E1 advanced EDH PFPF runs: `supported`;
+- E2 MLCOE PFPF_EDH runs: `supported`;
+- E3 proxy comparison interpretable: `supported_proxy_only`;
+- E4 next-phase decision: `adapter_spike_success_needs_replication`.
+
+Interpretation:
+- the selected EDH/PFPF pair is runnable under bounded adapter-owned bridges;
+- the results are proxy diagnostics only, not correctness or performance
+  claims;
+- ESS and resampling-count semantics differ by implementation and must remain
+  labeled in any replicated panel;
+- a replicated EDH/PFPF panel is justified if it keeps the same lane and
+  reporting constraints.
+
+Next phase justified: S3 audit, tidy, reset memo, and commit.
+
+### S3: audit, tidy, and completion
+
+Status: passed.
+
+Checks:
+- `py_compile` passed for
+  `experiments/student_dpf_baselines/runners/run_edh_pfpf_adapter_spike.py`;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `git diff --check` passed;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  were modified;
+- generated artifacts are small: panel JSON approximately `5.3K`, summary JSON
+  approximately `1.9K`, report approximately `2.2K`.
+
+Completion interpretation:
+- the adapter spike completed without touching production code, monograph
+  files, references, or vendored student code;
+- both selected EDH/PFPF implementations run on the same reduced nonlinear
+  Gaussian range-bearing fixture through adapter-owned bridges;
+- the correct next step is not production work and not DPF/neural/OT/HMC work;
+  it is a replicated EDH/PFPF panel that tests robustness of this spike across
+  fixtures and seeds.
+
+Next justified work:
+- create and execute a replicated EDH/PFPF panel plan using both nonlinear
+  Gaussian range-bearing fixtures and multiple seeds;
+- primary hypotheses for that panel:
+  - R1: both EDH/PFPF paths remain runnable across moderate and low-noise
+    fixtures without vendored-code edits;
+  - R2: low observation noise reduces ESS and increases resampling pressure in
+    at least one implementation;
+  - R3: EDH/PFPF proxy RMSE remains interpretable against EKF/UKF/BPF context
+    without using student agreement as correctness evidence;
+  - R4: runtime remains bounded enough for an experimental panel;
+- veto diagnostics for the replicated panel: unbounded runtime, nonfinite
+  outputs, new unrecorded target assumptions, vendored-code edits, production
+  imports, or generated artifacts too large for normal repository history.

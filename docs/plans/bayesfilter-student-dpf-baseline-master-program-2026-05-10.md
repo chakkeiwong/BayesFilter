@@ -656,10 +656,11 @@ baseline lane.
 
 ## Current Next Move
 
-The next justified execution plan is MP4: flow and DPF readiness review.
+The next justified execution plan is the EDH/PFPF adapter spike selected by
+MP4.
 
-Active MP4 plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp4-flow-dpf-readiness-review-plan-2026-05-11.md`.
+Active adapter-spike plan:
+`docs/plans/bayesfilter-student-dpf-baseline-edh-pfpf-adapter-spike-plan-2026-05-11.md`.
 
 The reason is concrete:
 
@@ -668,11 +669,13 @@ The reason is concrete:
 - MP2 closed the immediate nonlinear reference/proxy-metric gap;
 - MP3 narrowed the kernel PFF failure/timeout gap and classified kernel PFF as
   excluded from routine panels pending further debug.
+- MP4 inventoried 28 flow/DPF-related surfaces and selected only one bounded
+  comparison candidate: advanced `EDHParticleFilter` versus MLCOE `PFPF_EDH`.
 
-The current MP4 decision is to inventory flow and DPF entry points, classify
-runnable and blocked paths, and select at most one bounded candidate for a later
-comparison phase.  Kernel PFF remains out of routine comparison unless a later
-algorithm-specific debug plan changes that classification with new evidence.
+The current decision is to run a small adapter-owned EDH/PFPF spike on the
+existing nonlinear Gaussian range-bearing fixture.  Kernel PFF, stochastic
+flow, DPF, dPFPF, neural OT, differentiable resampling, and HMC remain out of
+routine comparison unless later reproduction gates change their classifications.
 
 ## Stop Rules
 
