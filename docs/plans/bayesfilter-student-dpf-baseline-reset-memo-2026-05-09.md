@@ -13,7 +13,7 @@ Active master program:
 `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
 
 Active next-phase plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp1-mlcoe-particle-adapter-plan-2026-05-10.md`.
+`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-2026-05-10.md`.
 
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
@@ -701,3 +701,166 @@ Next justified work:
   can be interpreted with latent-state RMSE, EKF/UKF agreement bands, PF
   repeated-seed dispersion, and ESS/runtime diagnostics without comparing
   incompatible likelihood families.
+
+## Execution log: MP2 nonlinear reference spine started 2026-05-10
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-2026-05-10.md`.
+
+Independent audit:
+`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-audit-2026-05-10.md`.
+
+Initial audit decision:
+- proceed in the student-baseline lane only;
+- use a shared Gaussian range-bearing fixture for MP2 target semantics;
+- treat MLCOE origin-initialized EKF as a diagnostic, not as the main
+  comparison target;
+- keep nonlinear metrics proxy/reference labeled and comparison-only.
+
+### MP2.0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current branch: `dpf-monograph-rebuild`;
+- unrelated monograph-lane files are dirty or untracked in the working tree;
+- the active student master program, reset memo, and MP2 plan are present;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`.
+
+Interpretation:
+- continuing is justified because MP2 edits can remain under
+  `experiments/student_dpf_baselines/` and student-baseline plan/memo files;
+- final staging must remain path-scoped and exclude monograph-lane files.
+
+Next phase justified: MP2.1 fixture and method design.
+
+### MP2.1: fixture and method design
+
+Status: passed.
+
+Files added:
+- `experiments/student_dpf_baselines/fixtures/nonlinear_fixtures.py`.
+
+Fixtures:
+- `range_bearing_gaussian_moderate`;
+- `range_bearing_gaussian_low_noise`.
+
+Validation:
+- both fixtures have state shape `(21, 4)` and observation shape `(20, 2)`;
+- transition, process covariance, observation covariance, initial mean, and
+  initial covariance shapes are consistent;
+- all generated states and observations are finite;
+- range-bearing observation helper returns shape `(2,)`;
+- range-bearing Jacobian helper returns shape `(2, 4)`.
+
+Interpretation:
+- N1 is not yet decided, but the shared fixture side of N1 is satisfied;
+- runner implementation is justified because the fixture arrays are stable and
+  target semantics are explicitly Gaussian range-bearing.
+
+Next phase justified: MP2.2 nonlinear panel runner.
+
+### MP2.2: nonlinear panel runner
+
+Status: passed.
+
+Files added:
+- `experiments/student_dpf_baselines/runners/run_nonlinear_reference_panel.py`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/nonlinear_reference_panel_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/outputs/nonlinear_reference_panel_summary_2026-05-10.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-nonlinear-reference-panel-result-2026-05-10.md`.
+
+Panel:
+- fixtures: `range_bearing_gaussian_moderate`,
+  `range_bearing_gaussian_low_noise`;
+- target semantics: shared Gaussian range-bearing;
+- advanced methods: EKF, UKF, bootstrap-PF with seeds `0` through `4`;
+- MLCOE methods: EKF, UKF, BPF with seeds `0` through `4`, plus
+  origin-initialized EKF diagnostic.
+
+Results:
+- total records: 30;
+- ok records: 30;
+- `advanced_particle_filter`: 14/14 ok;
+- `2026MLCOE`: 16/16 ok;
+- no vendored student code was modified.
+
+Interpretation:
+- N1 is supported: both snapshots run EKF/UKF paths on shared nonlinear
+  fixtures without vendored-code edits;
+- the runner produced proxy/reference metrics suitable for hypothesis
+  classification.
+
+Next phase justified: MP2.3 hypothesis classification.
+
+### MP2.3: hypothesis classification
+
+Status: passed.
+
+Result report:
+`experiments/student_dpf_baselines/reports/student-dpf-baseline-nonlinear-reference-panel-result-2026-05-10.md`.
+
+Key metrics:
+- `advanced_particle_filter` position RMSE range: approximately `0.0456` to
+  `0.0692`;
+- `2026MLCOE` non-origin EKF/UKF/BPF position RMSE range: approximately
+  `0.0469` to `0.0680` for the main methods;
+- `2026MLCOE` origin-initialized EKF diagnostic position RMSE:
+  approximately `0.985` on low noise and `1.278` on moderate noise;
+- advanced BPF average ESS medians: approximately `113.9` on moderate noise
+  and `49.5` on low noise;
+- MLCOE BPF average ESS medians: approximately `70.2` on moderate noise and
+  `31.9` on low noise.
+
+Hypothesis outcomes:
+- N1 shared nonlinear fixture: supported;
+- N2 MLCOE EKF zero behavior: supported.  MLCOE EKF is usable away from the
+  origin, while the origin diagnostic is materially worse, consistent with a
+  range-bearing Jacobian initialization artifact;
+- N3 nonlinear PF degeneracy: supported for this proxy panel.  Both PF paths
+  show lower ESS or larger RMSE pressure on the low-noise fixture;
+- N4 comparison-only reporting: supported.  Records include target labels and
+  avoid direct likelihood comparison.
+
+Interpretation:
+- MP2 closes the immediate nonlinear reference/proxy-metric gap;
+- nonlinear comparison is now interpretable for shared Gaussian range-bearing
+  EKF/UKF/BPF proxy metrics;
+- these results still do not validate flow, DPF, HMC, kernel PFF, or neural OT
+  behavior.
+
+Next phase justified: MP2.4 audit, tidy, reset memo, and commit.
+
+### MP2.4: audit, tidy, and handoff
+
+Status: passed.
+
+Checks:
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `py_compile` passed for
+  `experiments/student_dpf_baselines/fixtures/nonlinear_fixtures.py` and
+  `experiments/student_dpf_baselines/runners/run_nonlinear_reference_panel.py`;
+- `git diff --check` passed for edited student-baseline files;
+- no files under `experiments/student_dpf_baselines/vendor/` were modified;
+- generated MP2 artifacts are small:
+  the panel JSON is approximately `36K`, the summary JSON is approximately
+  `8K`, and the report is approximately `8K`.
+
+Completion interpretation:
+- MP2 completed without touching production `bayesfilter/` code, monograph
+  files, or vendored student code;
+- the student-baseline lane now has both balanced linear particle diagnostics
+  and an interpretable nonlinear proxy-metric spine.
+
+Next justified work:
+- MP3 kernel PFF debug gate, because kernel PFF remains the largest classified
+  failure/timeout gap after the linear and nonlinear proxy panels;
+- alternative only if project priority changes: a flow/DPF readiness review
+  that inventories runnable flow paths but does not run kernel PFF in routine
+  panels.

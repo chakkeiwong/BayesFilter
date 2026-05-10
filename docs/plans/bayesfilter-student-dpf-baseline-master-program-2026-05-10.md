@@ -443,6 +443,10 @@ Veto diagnostics:
 
 ### MP2: Nonlinear Reference and Proxy-Metric Spine
 
+Execution plan:
+
+`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-2026-05-10.md`.
+
 Primary hypothesis:
 
 The current nonlinear smoke paths can become a meaningful comparison panel if
@@ -644,22 +648,22 @@ baseline lane.
 
 ## Current Next Move
 
-The next justified execution plan is MP1: MLCOE particle adapter gate.
+The next justified execution plan is MP2: nonlinear reference and proxy-metric
+spine.
 
-Active MP1 plan:
-`docs/plans/bayesfilter-student-dpf-baseline-mp1-mlcoe-particle-adapter-plan-2026-05-10.md`.
+Active MP2 plan:
+`docs/plans/bayesfilter-student-dpf-baseline-mp2-nonlinear-reference-spine-plan-2026-05-10.md`.
 
 The reason is concrete:
 
-- existing linear references are stable;
-- advanced bootstrap-PF diagnostics already show useful degeneracy behavior;
-- MLCOE particle diagnostics are the largest current asymmetry in the linear
-  baseline harness;
-- closing that asymmetry should happen before deeper nonlinear or flow claims.
+- MP1 closed the largest linear particle-diagnostic asymmetry by adding MLCOE
+  BPF diagnostics;
+- nonlinear smoke has shown both snapshots expose runnable range-bearing paths;
+- nonlinear work still lacks shared fixtures, latent-state references,
+  method-specific target labels, and repeated-seed PF dispersion metrics.
 
-Kernel PFF and nonlinear work remain justified, but they should not displace
-MP1 unless the project priority is specifically flow/kernel behavior rather
-than building a balanced comparison baseline.
+Kernel PFF debugging remains justified, but MP2 is the cleaner next phase
+unless the project priority shifts specifically to flow/kernel behavior.
 
 ## Stop Rules
 
