@@ -658,7 +658,9 @@ baseline lane.
 
 The replicated EDH/PFPF panel is complete and is ready as a quarantined
 experimental baseline artifact.  The full-horizon EDH/PFPF sensitivity panel is
-also complete and is ready as a quarantined experimental baseline artifact.
+also complete and is ready as a quarantined experimental baseline artifact.  The
+full-horizon EDH/PFPF confirmation panel is complete and is ready with caveats
+for clean-room controlled-baseline specification.
 
 Completed replicated-panel plan:
 `docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
@@ -671,6 +673,12 @@ Completed full-horizon sensitivity plan:
 
 Completed full-horizon sensitivity result:
 `experiments/student_dpf_baselines/reports/student-dpf-baseline-full-horizon-edh-pfpf-sensitivity-result-2026-05-12.md`.
+
+Completed full-horizon confirmation plan:
+`docs/plans/bayesfilter-student-dpf-baseline-full-horizon-edh-pfpf-confirmation-plan-2026-05-12.md`.
+
+Completed full-horizon confirmation result:
+`experiments/student_dpf_baselines/reports/student-dpf-baseline-full-horizon-edh-pfpf-confirmation-result-2026-05-12.md`.
 
 The reason is concrete:
 
@@ -690,14 +698,20 @@ The reason is concrete:
   full 20-observation fixtures with seeds `17` and `23`, particles `64` and
   `128`, and flow steps `10` and `20`.  All 32 planned records returned finite
   `ok` results with no runtime warnings.
+- the full-horizon EDH/PFPF confirmation panel ran both selected paths across
+  additional seeds `31`, `43`, `59`, `71`, and `83` with 128 particles.  All 30
+  planned records returned finite `ok` results with no runtime warnings.
+- low-noise N128/steps20 was confirmed for both implementations; moderate-noise
+  flow-step policy remains implementation-specific and should be carried forward
+  as a caveat.
 
-The current decision is to write a small full-horizon confirmation plan inside
-the student-baseline lane before clean-room controlled extraction.  That plan
-should fix a pragmatic EDH/PFPF setting from the sensitivity evidence and test
-additional seeds, rather than expanding the grid or opening new algorithms.
-Kernel PFF, stochastic flow, DPF, dPFPF, neural OT, differentiable resampling,
-and HMC remain out of routine comparison unless later reproduction gates change
-their classifications.
+The current decision is to write a caveated clean-room controlled-baseline
+specification plan inside the student-baseline lane.  That plan should describe
+fixtures, seed policy, metrics, 128-particle low-noise N20 setting, moderate
+N10/N20 diagnostic caveat, and exclusions from production.  Kernel PFF,
+stochastic flow, DPF, dPFPF, neural OT, differentiable resampling, and HMC remain
+out of routine comparison unless later reproduction gates change their
+classifications.
 
 ## Stop Rules
 

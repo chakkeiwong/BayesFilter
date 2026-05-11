@@ -1886,3 +1886,234 @@ Next justified work:
     improves at bounded runtime cost;
   - C4: a clean-room controlled baseline can be specified from the fixture,
     metric, and reporting contract without copying student code.
+
+## Execution log: full-horizon EDH/PFPF confirmation started 2026-05-12
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-full-horizon-edh-pfpf-confirmation-plan-2026-05-12.md`.
+
+### Confirmation goal
+
+Status: planned.
+
+Goal:
+- confirm the full-horizon EDH/PFPF experimental baseline over additional seeds
+  using fixed pragmatic settings selected from the sensitivity panel;
+- avoid broad grid expansion;
+- decide whether the student-baseline evidence is stable enough to inform a
+  later clean-room controlled baseline specification;
+- preserve adapter-owned bridges, implementation-specific diagnostics, and
+  comparison-only interpretation.
+
+### Drift review
+
+Status: passed.
+
+Assessment:
+- no active drift from the student experimental-baseline lane was found;
+- the plan explicitly excludes monograph work, production code, HMC, neural OT,
+  differentiable resampling, kernel PFF, and vendored-code edits;
+- the plan was tightened before execution to define low-noise material
+  degradation thresholds and moderate-noise flow-step policy rules.
+
+Independent audit:
+`docs/plans/bayesfilter-student-dpf-baseline-full-horizon-edh-pfpf-confirmation-plan-audit-2026-05-12.md`.
+
+### Remaining gaps
+
+Status: identified.
+
+Gaps:
+- selected full-horizon setting needs seed-stability confirmation;
+- low-noise 128-particle pressure reduction needs additional-seed confirmation;
+- moderate-noise 10-step versus 20-step policy remains unresolved;
+- clean-room baseline inputs are not frozen;
+- interpretation must remain proxy-only and comparison-only.
+
+### Hypotheses
+
+Status: planned.
+
+Hypotheses:
+- C1: selected full-horizon setting is seed-stable;
+- C2: low-noise 128-particle pressure reduction persists;
+- C3: moderate-noise flow-step policy can be resolved;
+- C4: clean-room baseline specification is ready without copying student code;
+- C5: next baseline decision is clear.
+
+Next phase justified: C0 preflight and lane guard.
+
+### C0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current Git status contains dirty and untracked monograph-lane files from
+  other work, plus the new student confirmation plan and audit;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  are dirty;
+- independent plan audit exists.
+
+Interpretation:
+- continuing is justified because the phase can remain fully inside the student
+  experimental-baseline lane;
+- monograph-lane files must remain untouched and unstaged.
+
+Next phase justified: C1 confirmation runner.
+
+### C1: confirmation runner
+
+Status: passed.
+
+File added:
+`experiments/student_dpf_baselines/runners/run_full_horizon_edh_pfpf_confirmation.py`.
+
+Implementation:
+- reuses the adapter-owned EDH/PFPF bridges from the prior full-horizon runner;
+- uses full 20-observation nonlinear Gaussian range-bearing fixtures;
+- runs additional seeds `31`, `43`, `59`, `71`, and `83`;
+- fixes particles at `128`;
+- uses 20 flow steps for the low-noise fixture;
+- compares 10 and 20 flow steps for the moderate-noise fixture;
+- records 30 planned records across both implementations;
+- uses a 45 second per-run runtime-warning threshold;
+- preserves implementation-specific ESS and resampling-count semantics;
+- writes the planned JSON, summary JSON, and Markdown result artifacts.
+
+Check:
+- `python -m py_compile experiments/student_dpf_baselines/runners/run_full_horizon_edh_pfpf_confirmation.py`
+  passed.
+
+Interpretation:
+- the runner remains inside the student experimental-baseline lane;
+- executing the confirmation panel is justified.
+
+Next phase justified: C2 execute, classify, and report.
+
+### C2: execute, classify, and report
+
+Status: passed.
+
+Command:
+`python -m experiments.student_dpf_baselines.runners.run_full_horizon_edh_pfpf_confirmation`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/full_horizon_edh_pfpf_confirmation_2026-05-12.json`;
+- `experiments/student_dpf_baselines/reports/outputs/full_horizon_edh_pfpf_confirmation_summary_2026-05-12.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-full-horizon-edh-pfpf-confirmation-result-2026-05-12.md`.
+
+Panel:
+- fixtures: `range_bearing_gaussian_moderate`,
+  `range_bearing_gaussian_low_noise`;
+- horizon: full fixture horizon, 20 observations;
+- seeds: `31`, `43`, `59`, `71`, `83`;
+- particles: `128`;
+- low-noise flow steps: `20`;
+- moderate-noise flow steps: `10` and `20`;
+- implementations: advanced `EDHParticleFilter`, MLCOE `PFPF_EDH`;
+- planned records: 30.
+
+Results:
+- 30/30 records returned status `ok`;
+- no runtime warnings were triggered;
+- all successful records had finite means;
+- generated artifacts are small: panel JSON about `58K`, summary JSON about
+  `17K`, report about `4.7K`.
+
+Implementation summary:
+- `advanced_particle_filter`: 15/15 ok, median runtime about `0.0780` seconds,
+  maximum runtime about `0.581` seconds, median position RMSE about `0.0653`,
+  median average ESS about `22.6`;
+- `2026MLCOE`: 15/15 ok, median runtime about `1.00` seconds, maximum runtime
+  about `3.88` seconds, median position RMSE about `0.0640`, median average ESS
+  about `59.3`.
+
+Low-noise confirmation:
+- advanced low-noise N128/steps20: median average ESS about `27.6`, median
+  position RMSE about `0.0475`, median observation proxy RMSE about `0.0162`,
+  median resampling count `18`; all material-degradation checks passed against
+  the sensitivity-panel reference;
+- MLCOE low-noise N128/steps20: median average ESS about `42.7`, median
+  position RMSE about `0.0468`, median observation proxy RMSE about `0.0156`,
+  median resampling count `17`; all material-degradation checks passed against
+  the sensitivity-panel reference.
+
+Moderate-noise flow-step policy:
+- advanced moderate N128: 20 steps did not improve median position RMSE or
+  observation proxy RMSE relative to 10 steps; runtime ratio about `1.55`;
+- MLCOE moderate N128: 20 steps improved median observation proxy RMSE but not
+  median position RMSE; runtime ratio about `1.64`;
+- policy recommendation: `moderate_keep_both_as_diagnostic`;
+- rationale: implementation-specific benefit differs.
+
+Hypothesis results:
+- C1 selected full-horizon setting seed-stable: `supported_seed_stable`;
+- C2 low-noise 128-particle pressure reduction persists:
+  `supported_low_noise_pressure_reduction_persists`;
+- C3 moderate-noise flow-step policy resolved:
+  `resolved_moderate_keep_both_as_diagnostic`;
+- C4 clean-room baseline specification ready:
+  `supported_clean_room_inputs_ready`;
+- C5 next baseline decision: `confirmation_ready_with_caveats`.
+
+Interpretation:
+- the full-horizon confirmation panel is stable enough to inform a caveated
+  clean-room controlled-baseline specification;
+- low-noise N128/steps20 is confirmed for both implementations under proxy
+  metrics and implementation-specific diagnostics;
+- moderate-noise flow-step policy must remain caveated because advanced and
+  MLCOE show different 20-step benefit patterns;
+- no production, monograph, HMC, or student-code promotion claims are supported.
+
+Next phase justified:
+- C3 audit, tidy, reset-memo completion update, and scoped commit.
+
+Proposed next phase after C3:
+- write a student-lane clean-room controlled-baseline specification plan;
+- do not copy student implementation code;
+- carry forward these explicit hypotheses:
+  - S1: a clean-room BayesFilter-owned experimental baseline can reproduce the
+    fixture contract and metrics without importing student code;
+  - S2: low-noise full-horizon baseline should use 128 particles and 20 flow
+    steps as the first clean-room target setting;
+  - S3: moderate-noise baseline should keep 10 and 20 flow steps as diagnostic
+    variants until a BayesFilter-owned implementation establishes a clearer
+    policy;
+  - S4: ESS and resampling diagnostics remain within-implementation pressure
+    metrics and must not be used as cross-implementation correctness evidence.
+
+### C3: audit, tidy, and completion
+
+Status: passed.
+
+Checks:
+- `python -m py_compile experiments/student_dpf_baselines/runners/run_full_horizon_edh_pfpf_confirmation.py`
+  passed;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `git diff --check` passed;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  were modified;
+- generated artifacts are small: panel JSON about `58K`, summary JSON about
+  `17K`, report about `4.7K`.
+
+Completion interpretation:
+- the confirmation phase completed fully inside the student
+  experimental-baseline lane;
+- the phase did not edit production `bayesfilter/`, monograph chapter files,
+  references, monograph reset memos, or vendored student snapshots;
+- known dirty and untracked monograph-lane files remain outside this lane and
+  must remain unstaged by this work;
+- the correct next step is a caveated clean-room controlled-baseline
+  specification plan, not another student-code grid expansion.
+
+Next justified work:
+- write the clean-room controlled-baseline specification plan under the student
+  baseline lane;
+- include the confirmed fixture/metric/setting contract;
+- carry forward the moderate-noise flow-step caveat;
+- keep all production implementation work behind a separate future plan.

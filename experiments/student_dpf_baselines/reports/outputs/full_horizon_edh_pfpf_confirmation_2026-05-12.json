@@ -1,0 +1,1590 @@
+{
+  "command": "python -m experiments.student_dpf_baselines.runners.run_full_horizon_edh_pfpf_confirmation",
+  "date": "2026-05-12",
+  "environment": {
+    "numpy": "2.1.3",
+    "platform": "Linux-6.8.0-111-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tensorflow_devices": [
+      {
+        "name": "/physical_device:CPU:0",
+        "type": "CPU"
+      }
+    ],
+    "tensorflow_probability": "0.25.0"
+  },
+  "panel": {
+    "fixtures": [
+      "range_bearing_gaussian_moderate",
+      "range_bearing_gaussian_low_noise"
+    ],
+    "flow_steps_by_fixture": {
+      "range_bearing_gaussian_low_noise": [
+        20
+      ],
+      "range_bearing_gaussian_moderate": [
+        10,
+        20
+      ]
+    },
+    "horizon": "full_fixture_horizon",
+    "interpretation": "comparison_only_proxy_metrics",
+    "num_particles": 128,
+    "planned_records": 30,
+    "runtime_warning_seconds": 45.0,
+    "seeds": [
+      31,
+      43,
+      59,
+      71,
+      83
+    ]
+  },
+  "records": [
+    {
+      "diagnostics": {
+        "average_ess": 21.571340347151093,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 46.53359312383995,
+        "min_ess": 1.697910712200571,
+        "resampling_count": 18,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 21.571340347151093,
+        "final_position_error": 0.09765805992330495,
+        "min_ess": 1.697910712200571,
+        "observation_proxy_rmse": 0.08220460804540859,
+        "position_rmse": 0.0687263946400234,
+        "state_rmse": 0.10544817752242247
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.5813017620239407,
+      "seed": 31,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 59.049739704204754,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 20.799842763691107,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 59.049739704204754,
+        "final_position_error": 0.12451417768406878,
+        "min_ess": 20.799842763691107,
+        "observation_proxy_rmse": 0.07554521425217729,
+        "position_rmse": 0.06551007014061322,
+        "state_rmse": 0.07285412127919673
+      },
+      "num_particles": 128,
+      "runtime_seconds": 3.8840479950304143,
+      "seed": 31,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 21.44955494720313,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 46.87385143964062,
+        "min_ess": 1.0712858309380127,
+        "resampling_count": 18,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 21.44955494720313,
+        "final_position_error": 0.047306737883262305,
+        "min_ess": 1.0712858309380127,
+        "observation_proxy_rmse": 0.08031953529327474,
+        "position_rmse": 0.06376031458688938,
+        "state_rmse": 0.1449255898188985
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07817877799971029,
+      "seed": 31,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 63.28164269888138,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 24.175496301894043,
+        "resampling_count": 10,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 63.28164269888138,
+        "final_position_error": 0.0932077887292326,
+        "min_ess": 24.175496301894043,
+        "observation_proxy_rmse": 0.06948064507262035,
+        "position_rmse": 0.06374166689339393,
+        "state_rmse": 0.09485636156712457
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0010316480183974,
+      "seed": 31,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 16.941137532183475,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 46.60954423617507,
+        "min_ess": 1.2854988541934993,
+        "resampling_count": 20,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 16.941137532183475,
+        "final_position_error": 0.1404516396784312,
+        "min_ess": 1.2854988541934993,
+        "observation_proxy_rmse": 0.08533197532665014,
+        "position_rmse": 0.06708781293430217,
+        "state_rmse": 0.09028348185839567
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.05041675898246467,
+      "seed": 43,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 59.30663868367253,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 22.54612245392814,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 59.30663868367253,
+        "final_position_error": 0.12580289426936864,
+        "min_ess": 22.54612245392814,
+        "observation_proxy_rmse": 0.07963450784078553,
+        "position_rmse": 0.06871282399675788,
+        "state_rmse": 0.08583229747746572
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.6057587019749917,
+      "seed": 43,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 18.45720282058584,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 41.05820126944706,
+        "min_ess": 1.947428005328043,
+        "resampling_count": 19,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 18.45720282058584,
+        "final_position_error": 0.1607879834660735,
+        "min_ess": 1.947428005328043,
+        "observation_proxy_rmse": 0.08835709689386494,
+        "position_rmse": 0.07479885554056817,
+        "state_rmse": 0.11126494120009857
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07843697600765154,
+      "seed": 43,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 65.51969981428589,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 24.335229103804856,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 65.51969981428589,
+        "final_position_error": 0.1350844326918234,
+        "min_ess": 24.335229103804856,
+        "observation_proxy_rmse": 0.06998782863274955,
+        "position_rmse": 0.06398132067000928,
+        "state_rmse": 0.08688599983748786
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.1604483189876191,
+      "seed": 43,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 22.645519180500095,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 39.50836791530235,
+        "min_ess": 2.662647848502978,
+        "resampling_count": 18,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 22.645519180500095,
+        "final_position_error": 0.1098276617448124,
+        "min_ess": 2.662647848502978,
+        "observation_proxy_rmse": 0.0817862132743672,
+        "position_rmse": 0.07683046800569636,
+        "state_rmse": 0.1175686249966576
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.049474154016934335,
+      "seed": 59,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 60.613601403941765,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 25.389276399024762,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 60.613601403941765,
+        "final_position_error": 0.09772869172200001,
+        "min_ess": 25.389276399024762,
+        "observation_proxy_rmse": 0.07523383067196557,
+        "position_rmse": 0.06256827814433293,
+        "state_rmse": 0.07635649142458549
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.603331076039467,
+      "seed": 59,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 19.903957799519016,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 41.21058853343661,
+        "min_ess": 2.7741633057377313,
+        "resampling_count": 20,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 19.903957799519016,
+        "final_position_error": 0.093420285040409,
+        "min_ess": 2.7741633057377313,
+        "observation_proxy_rmse": 0.08480420224042487,
+        "position_rmse": 0.07564641573275883,
+        "state_rmse": 0.13438578093644335
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07689793600002304,
+      "seed": 59,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 65.33925521655765,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 21.309354446172122,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 65.33925521655765,
+        "final_position_error": 0.12298288970162452,
+        "min_ess": 21.309354446172122,
+        "observation_proxy_rmse": 0.0744677164683111,
+        "position_rmse": 0.0689352807187,
+        "state_rmse": 0.08046365860131514
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0022227530134842,
+      "seed": 59,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 25.892949525190744,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 43.45992380865683,
+        "min_ess": 1.4202600807870753,
+        "resampling_count": 17,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 25.892949525190744,
+        "final_position_error": 0.12697210073222032,
+        "min_ess": 1.4202600807870753,
+        "observation_proxy_rmse": 0.08396370002548427,
+        "position_rmse": 0.07696993509289048,
+        "state_rmse": 0.08892063620546496
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.0495366639806889,
+      "seed": 71,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 54.23509906250844,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 11.749990867865796,
+        "resampling_count": 12,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 54.23509906250844,
+        "final_position_error": 0.08693164751886358,
+        "min_ess": 11.749990867865796,
+        "observation_proxy_rmse": 0.07748677757908665,
+        "position_rmse": 0.06609384683936731,
+        "state_rmse": 0.11114090355462074
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.6107143640401773,
+      "seed": 71,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 20.472087414938247,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 40.34781836138537,
+        "min_ess": 1.1608346407719157,
+        "resampling_count": 19,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 20.472087414938247,
+        "final_position_error": 0.15501424287236865,
+        "min_ess": 1.1608346407719157,
+        "observation_proxy_rmse": 0.08863609050333793,
+        "position_rmse": 0.07740405612162045,
+        "state_rmse": 0.12044212674882195
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07681702601257712,
+      "seed": 71,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 64.34709020916227,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 28.632206775981164,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 64.34709020916227,
+        "final_position_error": 0.12704820056894406,
+        "min_ess": 28.632206775981164,
+        "observation_proxy_rmse": 0.07321314254784966,
+        "position_rmse": 0.07067786631271095,
+        "state_rmse": 0.0772167587868168
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0063105099834502,
+      "seed": 71,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 19.771550018076354,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 45.15676149781979,
+        "min_ess": 1.3986342468542452,
+        "resampling_count": 20,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 19.771550018076354,
+        "final_position_error": 0.07938146315429652,
+        "min_ess": 1.3986342468542452,
+        "observation_proxy_rmse": 0.07823822117368229,
+        "position_rmse": 0.06531644318395999,
+        "state_rmse": 0.07025614388569704
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.05141109402757138,
+      "seed": 83,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 60.002450063853736,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 17.503374250309747,
+        "resampling_count": 12,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 10,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 60.002450063853736,
+        "final_position_error": 0.13603883564725702,
+        "min_ess": 17.503374250309747,
+        "observation_proxy_rmse": 0.08259583330898156,
+        "position_rmse": 0.07125461868083961,
+        "state_rmse": 0.13502548979226628
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.6103491060202941,
+      "seed": 83,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 25.307613287712257,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 44.24968892456776,
+        "min_ess": 1.3590489599210038,
+        "resampling_count": 19,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 25.307613287712257,
+        "final_position_error": 0.13788381678329123,
+        "min_ess": 1.3590489599210038,
+        "observation_proxy_rmse": 0.0779864158095152,
+        "position_rmse": 0.06506378214667943,
+        "state_rmse": 0.07771280770840247
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07797341898549348,
+      "seed": 83,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 62.96545824687831,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 26.08773123095402,
+        "resampling_count": 11,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 62.96545824687831,
+        "final_position_error": 0.1424853148961185,
+        "min_ess": 26.08773123095402,
+        "observation_proxy_rmse": 0.08315980076622889,
+        "position_rmse": 0.07316408352289926,
+        "state_rmse": 0.12784511014113162
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.003735214995686,
+      "seed": 83,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 27.623623388392787,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 94.1809378348954,
+        "min_ess": 2.3293622512915615,
+        "resampling_count": 18,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 27.623623388392787,
+        "final_position_error": 0.06341303004652868,
+        "min_ess": 2.3293622512915615,
+        "observation_proxy_rmse": 0.01623787410008778,
+        "position_rmse": 0.049905249363002474,
+        "state_rmse": 0.12521385716653965
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.08028535696212202,
+      "seed": 31,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 42.19567561684359,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 18.26115531079408,
+        "resampling_count": 17,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 42.19567561684359,
+        "final_position_error": 0.06280537191469826,
+        "min_ess": 18.26115531079408,
+        "observation_proxy_rmse": 0.016975658252619125,
+        "position_rmse": 0.047977098160842814,
+        "state_rmse": 0.10230839884241046
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0156468560453504,
+      "seed": 31,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 28.152312504220333,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 91.98537198308259,
+        "min_ess": 3.106229329473241,
+        "resampling_count": 19,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 28.152312504220333,
+        "final_position_error": 0.05631067316522384,
+        "min_ess": 3.106229329473241,
+        "observation_proxy_rmse": 0.013816570865882945,
+        "position_rmse": 0.046766247558905655,
+        "state_rmse": 0.11785770486533717
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.08185749698895961,
+      "seed": 43,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 42.72959497800359,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 14.962909650774112,
+        "resampling_count": 17,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 42.72959497800359,
+        "final_position_error": 0.07233346826417349,
+        "min_ess": 14.962909650774112,
+        "observation_proxy_rmse": 0.015606803862392063,
+        "position_rmse": 0.04796443481645599,
+        "state_rmse": 0.13626444832574255
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0083666479913518,
+      "seed": 43,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 29.386587633394196,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 92.44502911147013,
+        "min_ess": 2.6438216947034845,
+        "resampling_count": 16,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 29.386587633394196,
+        "final_position_error": 0.05698468137314122,
+        "min_ess": 2.6438216947034845,
+        "observation_proxy_rmse": 0.019048088750841796,
+        "position_rmse": 0.049803256481302786,
+        "state_rmse": 0.13238539310155117
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07787176000420004,
+      "seed": 59,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 44.97322298323006,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 20.304755038430816,
+        "resampling_count": 16,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 44.97322298323006,
+        "final_position_error": 0.06314950012350017,
+        "min_ess": 20.304755038430816,
+        "observation_proxy_rmse": 0.015081277475254546,
+        "position_rmse": 0.04684151332644011,
+        "state_rmse": 0.09024187899496067
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0109914140193723,
+      "seed": 59,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 23.22873137951652,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 96.27409409694698,
+        "min_ess": 4.472228925786801,
+        "resampling_count": 20,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 23.22873137951652,
+        "final_position_error": 0.0541553413313468,
+        "min_ess": 4.472228925786801,
+        "observation_proxy_rmse": 0.014783079483531332,
+        "position_rmse": 0.047542324585623866,
+        "state_rmse": 0.0997244227681345
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.07840193802258,
+      "seed": 71,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 42.54604947497027,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 23.698788291176793,
+        "resampling_count": 17,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 42.54604947497027,
+        "final_position_error": 0.04854245262808295,
+        "min_ess": 23.698788291176793,
+        "observation_proxy_rmse": 0.014172830278784009,
+        "position_rmse": 0.04653625482954608,
+        "state_rmse": 0.12890674114848455
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0115090319886804,
+      "seed": 71,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 27.28114792862533,
+        "ess_semantics": "post_filter_result_ess",
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 93.28353543265143,
+        "min_ess": 2.7506276056165166,
+        "resampling_count": 18,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 27.28114792862533,
+        "final_position_error": 0.02230111817314811,
+        "min_ess": 2.7506276056165166,
+        "observation_proxy_rmse": 0.019310039795852336,
+        "position_rmse": 0.045404802495457634,
+        "state_rmse": 0.11004267535601397
+      },
+      "num_particles": 128,
+      "runtime_seconds": 0.0801185870077461,
+      "seed": 83,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 45.3844320807188,
+        "ess_semantics": "post_step_filter_ess",
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 20.400195578423354,
+        "resampling_count": 17,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "full-horizon EDH/PFPF confirmation",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_low_noise",
+      "flow_steps": 20,
+      "horizon": 20,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 45.3844320807188,
+        "final_position_error": 0.048459260075481105,
+        "min_ess": 20.400195578423354,
+        "observation_proxy_rmse": 0.015858708979966624,
+        "position_rmse": 0.04631375887329934,
+        "state_rmse": 0.110082526878711
+      },
+      "num_particles": 128,
+      "runtime_seconds": 1.0041390339611098,
+      "seed": 83,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    }
+  ],
+  "summary": {
+    "clean_room_specification_inputs": {
+      "caveats": [
+        "comparison_only",
+        "student_code_not_production",
+        "student_agreement_not_correctness",
+        "ess_and_resampling_semantics_implementation_specific"
+      ],
+      "exclusions": [
+        "copying_student_code",
+        "production_bayesfilter_changes",
+        "hmc_claims",
+        "monograph_lane_changes",
+        "kernel_pff",
+        "neural_ot",
+        "differentiable_resampling"
+      ],
+      "fixtures": [
+        "range_bearing_gaussian_moderate",
+        "range_bearing_gaussian_low_noise"
+      ],
+      "flow_step_policy": {
+        "low_noise": 20,
+        "moderate": "moderate_keep_both_as_diagnostic"
+      },
+      "horizon": "full_fixture_horizon_20_observations",
+      "metrics": [
+        "state_rmse",
+        "position_rmse",
+        "final_position_error",
+        "observation_proxy_rmse",
+        "average_ess",
+        "min_ess",
+        "resampling_count",
+        "runtime_seconds",
+        "finite_means"
+      ],
+      "particle_count": 128,
+      "seed_policy": "use independent fixed seeds and report seed list",
+      "status": "ready_for_specification"
+    },
+    "decision": "confirmation_ready_with_caveats",
+    "failed": 0,
+    "fixture_summary": {
+      "2026MLCOE/range_bearing_gaussian_low_noise": {
+        "ess_semantics": [
+          "post_step_filter_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 17.0,
+        "max_runtime_seconds": 1.0156468560453504,
+        "median_average_ess": 42.72959497800359,
+        "median_final_position_error": 0.06280537191469826,
+        "median_observation_proxy_rmse": 0.015606803862392063,
+        "median_position_rmse": 0.04684151332644011,
+        "median_resampling_count": 17.0,
+        "median_runtime_seconds": 1.0109914140193723,
+        "median_state_rmse": 0.110082526878711,
+        "minimum_min_ess": 14.962909650774112,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "inferred_ess_lt_0.5N_after_step"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "2026MLCOE/range_bearing_gaussian_moderate": {
+        "ess_semantics": [
+          "post_step_filter_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 10,
+        "max_resampling_count": 12.0,
+        "max_runtime_seconds": 3.8840479950304143,
+        "median_average_ess": 61.78952982541004,
+        "median_final_position_error": 0.12515853597671872,
+        "median_observation_proxy_rmse": 0.07538952246207142,
+        "median_position_rmse": 0.0674033354180626,
+        "median_resampling_count": 11.0,
+        "median_runtime_seconds": 1.0016272005159408,
+        "median_state_rmse": 0.08635914865747679,
+        "minimum_min_ess": 11.749990867865796,
+        "ok": 10,
+        "resampling_count_semantics": [
+          "inferred_ess_lt_0.5N_after_step"
+        ],
+        "runs": 10,
+        "runtime_warning_count": 0
+      },
+      "advanced_particle_filter/range_bearing_gaussian_low_noise": {
+        "ess_semantics": [
+          "post_filter_result_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 20.0,
+        "max_runtime_seconds": 0.08185749698895961,
+        "median_average_ess": 27.623623388392787,
+        "median_final_position_error": 0.05631067316522384,
+        "median_observation_proxy_rmse": 0.01623787410008778,
+        "median_position_rmse": 0.047542324585623866,
+        "median_resampling_count": 18.0,
+        "median_runtime_seconds": 0.0801185870077461,
+        "median_state_rmse": 0.11785770486533717,
+        "minimum_min_ess": 2.3293622512915615,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "implementation_resampled_flags"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "advanced_particle_filter/range_bearing_gaussian_moderate": {
+        "ess_semantics": [
+          "post_filter_result_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 10,
+        "max_resampling_count": 20.0,
+        "max_runtime_seconds": 0.5813017620239407,
+        "median_average_ess": 20.96082118107069,
+        "median_final_position_error": 0.11839988123851636,
+        "median_observation_proxy_rmse": 0.08308415403544643,
+        "median_position_rmse": 0.0717626250902958,
+        "median_resampling_count": 19.0,
+        "median_runtime_seconds": 0.07685748100630008,
+        "median_state_rmse": 0.10835655936126051,
+        "minimum_min_ess": 1.0712858309380127,
+        "ok": 10,
+        "resampling_count_semantics": [
+          "implementation_resampled_flags"
+        ],
+        "runs": 10,
+        "runtime_warning_count": 0
+      }
+    },
+    "grid_summary": {
+      "2026MLCOE/range_bearing_gaussian_low_noise/N128/steps20": {
+        "ess_semantics": [
+          "post_step_filter_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 17.0,
+        "max_runtime_seconds": 1.0156468560453504,
+        "median_average_ess": 42.72959497800359,
+        "median_final_position_error": 0.06280537191469826,
+        "median_observation_proxy_rmse": 0.015606803862392063,
+        "median_position_rmse": 0.04684151332644011,
+        "median_resampling_count": 17.0,
+        "median_runtime_seconds": 1.0109914140193723,
+        "median_state_rmse": 0.110082526878711,
+        "minimum_min_ess": 14.962909650774112,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "inferred_ess_lt_0.5N_after_step"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "2026MLCOE/range_bearing_gaussian_moderate/N128/steps10": {
+        "ess_semantics": [
+          "post_step_filter_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 12.0,
+        "max_runtime_seconds": 3.8840479950304143,
+        "median_average_ess": 59.30663868367253,
+        "median_final_position_error": 0.12451417768406878,
+        "median_observation_proxy_rmse": 0.07748677757908665,
+        "median_position_rmse": 0.06609384683936731,
+        "median_resampling_count": 11.0,
+        "median_runtime_seconds": 0.6103491060202941,
+        "median_state_rmse": 0.08583229747746572,
+        "minimum_min_ess": 11.749990867865796,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "inferred_ess_lt_0.5N_after_step"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "2026MLCOE/range_bearing_gaussian_moderate/N128/steps20": {
+        "ess_semantics": [
+          "post_step_filter_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 11.0,
+        "max_runtime_seconds": 1.1604483189876191,
+        "median_average_ess": 64.34709020916227,
+        "median_final_position_error": 0.12704820056894406,
+        "median_observation_proxy_rmse": 0.07321314254784966,
+        "median_position_rmse": 0.0689352807187,
+        "median_resampling_count": 11.0,
+        "median_runtime_seconds": 1.003735214995686,
+        "median_state_rmse": 0.08688599983748786,
+        "minimum_min_ess": 21.309354446172122,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "inferred_ess_lt_0.5N_after_step"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "advanced_particle_filter/range_bearing_gaussian_low_noise/N128/steps20": {
+        "ess_semantics": [
+          "post_filter_result_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 20.0,
+        "max_runtime_seconds": 0.08185749698895961,
+        "median_average_ess": 27.623623388392787,
+        "median_final_position_error": 0.05631067316522384,
+        "median_observation_proxy_rmse": 0.01623787410008778,
+        "median_position_rmse": 0.047542324585623866,
+        "median_resampling_count": 18.0,
+        "median_runtime_seconds": 0.0801185870077461,
+        "median_state_rmse": 0.11785770486533717,
+        "minimum_min_ess": 2.3293622512915615,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "implementation_resampled_flags"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "advanced_particle_filter/range_bearing_gaussian_moderate/N128/steps10": {
+        "ess_semantics": [
+          "post_filter_result_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 20.0,
+        "max_runtime_seconds": 0.5813017620239407,
+        "median_average_ess": 21.571340347151093,
+        "median_final_position_error": 0.1098276617448124,
+        "median_observation_proxy_rmse": 0.08220460804540859,
+        "median_position_rmse": 0.0687263946400234,
+        "median_resampling_count": 18.0,
+        "median_runtime_seconds": 0.05041675898246467,
+        "median_state_rmse": 0.09028348185839567,
+        "minimum_min_ess": 1.2854988541934993,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "implementation_resampled_flags"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "advanced_particle_filter/range_bearing_gaussian_moderate/N128/steps20": {
+        "ess_semantics": [
+          "post_filter_result_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 5,
+        "max_resampling_count": 20.0,
+        "max_runtime_seconds": 0.07843697600765154,
+        "median_average_ess": 20.472087414938247,
+        "median_final_position_error": 0.13788381678329123,
+        "median_observation_proxy_rmse": 0.08480420224042487,
+        "median_position_rmse": 0.07479885554056817,
+        "median_resampling_count": 19.0,
+        "median_runtime_seconds": 0.07797341898549348,
+        "median_state_rmse": 0.12044212674882195,
+        "minimum_min_ess": 1.0712858309380127,
+        "ok": 5,
+        "resampling_count_semantics": [
+          "implementation_resampled_flags"
+        ],
+        "runs": 5,
+        "runtime_warning_count": 0
+      }
+    },
+    "hypothesis_results": {
+      "C1_selected_full_horizon_setting_seed_stable": "supported_seed_stable",
+      "C2_low_noise_128_particle_pressure_reduction_persists": "supported_low_noise_pressure_reduction_persists",
+      "C3_moderate_noise_flow_step_policy_resolved": "resolved_moderate_keep_both_as_diagnostic",
+      "C4_clean_room_baseline_specification_ready": "supported_clean_room_inputs_ready",
+      "C5_next_baseline_decision": "confirmation_ready_with_caveats"
+    },
+    "implementation_summary": {
+      "2026MLCOE": {
+        "ess_semantics": [
+          "post_step_filter_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 15,
+        "max_resampling_count": 17.0,
+        "max_runtime_seconds": 3.8840479950304143,
+        "median_average_ess": 59.30663868367253,
+        "median_final_position_error": 0.09772869172200001,
+        "median_observation_proxy_rmse": 0.07321314254784966,
+        "median_position_rmse": 0.06398132067000928,
+        "median_resampling_count": 11.0,
+        "median_runtime_seconds": 1.0041390339611098,
+        "median_state_rmse": 0.09485636156712457,
+        "minimum_min_ess": 11.749990867865796,
+        "ok": 15,
+        "resampling_count_semantics": [
+          "inferred_ess_lt_0.5N_after_step"
+        ],
+        "runs": 15,
+        "runtime_warning_count": 0
+      },
+      "advanced_particle_filter": {
+        "ess_semantics": [
+          "post_filter_result_ess"
+        ],
+        "failed": 0,
+        "failure_reasons": [],
+        "finite_means_count": 15,
+        "max_resampling_count": 20.0,
+        "max_runtime_seconds": 0.5813017620239407,
+        "median_average_ess": 22.645519180500095,
+        "median_final_position_error": 0.093420285040409,
+        "median_observation_proxy_rmse": 0.08031953529327474,
+        "median_position_rmse": 0.06531644318395999,
+        "median_resampling_count": 19.0,
+        "median_runtime_seconds": 0.07797341898549348,
+        "median_state_rmse": 0.11126494120009857,
+        "minimum_min_ess": 1.0712858309380127,
+        "ok": 15,
+        "resampling_count_semantics": [
+          "implementation_resampled_flags"
+        ],
+        "runs": 15,
+        "runtime_warning_count": 0
+      }
+    },
+    "low_noise_confirmation": {
+      "2026MLCOE": {
+        "checks": {
+          "finite_outputs_dominant": true,
+          "median_average_ess_not_materially_worse": true,
+          "median_observation_proxy_rmse_not_materially_worse": true,
+          "median_position_rmse_not_materially_worse": true,
+          "median_resampling_count_within_horizon": true
+        },
+        "confirmed": true,
+        "reference": {
+          "median_average_ess": 43.8,
+          "median_observation_proxy_rmse": 0.0166,
+          "median_position_rmse": 0.048,
+          "median_resampling_count": 17.0
+        },
+        "status": "available",
+        "summary": {
+          "finite_means_count": 5,
+          "median_average_ess": 42.72959497800359,
+          "median_observation_proxy_rmse": 0.015606803862392063,
+          "median_position_rmse": 0.04684151332644011,
+          "median_resampling_count": 17.0,
+          "median_runtime_seconds": 1.0109914140193723,
+          "minimum_min_ess": 14.962909650774112,
+          "ok": 5,
+          "runs": 5,
+          "runtime_warning_count": 0
+        },
+        "thresholds": {
+          "median_average_ess_floor": 32.849999999999994,
+          "median_observation_proxy_rmse_ceiling": 0.0249,
+          "median_position_rmse_ceiling": 0.07200000000000001,
+          "median_resampling_count_ceiling": 20.0
+        }
+      },
+      "advanced_particle_filter": {
+        "checks": {
+          "finite_outputs_dominant": true,
+          "median_average_ess_not_materially_worse": true,
+          "median_observation_proxy_rmse_not_materially_worse": true,
+          "median_position_rmse_not_materially_worse": true,
+          "median_resampling_count_within_horizon": true
+        },
+        "confirmed": true,
+        "reference": {
+          "median_average_ess": 29.6,
+          "median_observation_proxy_rmse": 0.0165,
+          "median_position_rmse": 0.0466,
+          "median_resampling_count": 18.0
+        },
+        "status": "available",
+        "summary": {
+          "finite_means_count": 5,
+          "median_average_ess": 27.623623388392787,
+          "median_observation_proxy_rmse": 0.01623787410008778,
+          "median_position_rmse": 0.047542324585623866,
+          "median_resampling_count": 18.0,
+          "median_runtime_seconds": 0.0801185870077461,
+          "minimum_min_ess": 2.3293622512915615,
+          "ok": 5,
+          "runs": 5,
+          "runtime_warning_count": 0
+        },
+        "thresholds": {
+          "median_average_ess_floor": 22.200000000000003,
+          "median_observation_proxy_rmse_ceiling": 0.02475,
+          "median_position_rmse_ceiling": 0.0699,
+          "median_resampling_count_ceiling": 20.0
+        }
+      }
+    },
+    "moderate_flow_step_policy": {
+      "details": {
+        "2026MLCOE": {
+          "bounded_benefit": true,
+          "bounded_runtime": true,
+          "observation_proxy_rmse_improved": true,
+          "position_rmse_improved": false,
+          "runtime_ratio_20_over_10": 1.6445263949683113,
+          "status": "available",
+          "steps_10": {
+            "finite_means_count": 5,
+            "median_average_ess": 59.30663868367253,
+            "median_observation_proxy_rmse": 0.07748677757908665,
+            "median_position_rmse": 0.06609384683936731,
+            "median_resampling_count": 11.0,
+            "median_runtime_seconds": 0.6103491060202941,
+            "minimum_min_ess": 11.749990867865796,
+            "ok": 5,
+            "runs": 5,
+            "runtime_warning_count": 0
+          },
+          "steps_20": {
+            "finite_means_count": 5,
+            "median_average_ess": 64.34709020916227,
+            "median_observation_proxy_rmse": 0.07321314254784966,
+            "median_position_rmse": 0.0689352807187,
+            "median_resampling_count": 11.0,
+            "median_runtime_seconds": 1.003735214995686,
+            "minimum_min_ess": 21.309354446172122,
+            "ok": 5,
+            "runs": 5,
+            "runtime_warning_count": 0
+          }
+        },
+        "advanced_particle_filter": {
+          "bounded_benefit": false,
+          "bounded_runtime": true,
+          "observation_proxy_rmse_improved": false,
+          "position_rmse_improved": false,
+          "runtime_ratio_20_over_10": 1.5465773794109459,
+          "status": "available",
+          "steps_10": {
+            "finite_means_count": 5,
+            "median_average_ess": 21.571340347151093,
+            "median_observation_proxy_rmse": 0.08220460804540859,
+            "median_position_rmse": 0.0687263946400234,
+            "median_resampling_count": 18.0,
+            "median_runtime_seconds": 0.05041675898246467,
+            "minimum_min_ess": 1.2854988541934993,
+            "ok": 5,
+            "runs": 5,
+            "runtime_warning_count": 0
+          },
+          "steps_20": {
+            "finite_means_count": 5,
+            "median_average_ess": 20.472087414938247,
+            "median_observation_proxy_rmse": 0.08480420224042487,
+            "median_position_rmse": 0.07479885554056817,
+            "median_resampling_count": 19.0,
+            "median_runtime_seconds": 0.07797341898549348,
+            "minimum_min_ess": 1.0712858309380127,
+            "ok": 5,
+            "runs": 5,
+            "runtime_warning_count": 0
+          }
+        }
+      },
+      "fixture": "range_bearing_gaussian_moderate",
+      "num_particles": 128,
+      "rationale": "implementation-specific benefit differs",
+      "recommendation": "moderate_keep_both_as_diagnostic"
+    },
+    "next_phase_recommendation": "Write a caveated clean-room specification only after explicitly carrying forward the low-noise or moderate-flow-step caveats.",
+    "ok": 30,
+    "planned_records": 30,
+    "records": 30
+  },
+  "working_directory": "/home/ubuntu/python/BayesFilter"
+}
