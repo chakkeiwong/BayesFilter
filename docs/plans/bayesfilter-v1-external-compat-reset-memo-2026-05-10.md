@@ -1519,12 +1519,11 @@ Observed:
   - `singularity_test.png`.
 
 Tightening applied:
-- a public dense QR score-only API is in scope because the first HMC target
-  needs value and gradient, not Hessian materialization, at each leapfrog step;
-- masked score-only support remains out of scope for this pass and must fail
-  closed;
-- the first HMC sampler path should use a custom-gradient target whose gradient
-  comes from the analytic QR score path;
+- no public QR score-only API should be added in this pass;
+- first-order QR score helpers may be added as private diagnostics to isolate
+  score-only cost from Hessian materialization;
+- the first HMC sampler path should use QR value plus TensorFlow autodiff
+  score;
 - the full analytic QR score/Hessian path should remain parity and curvature
   diagnostics;
 - benchmark rows must materialize score/Hessian when claiming full derivative
@@ -1576,15 +1575,15 @@ PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
 ```
 
 Interpretation:
-- Phase B closes the design ambiguity with a deliberately narrow public API:
-  dense score-only is available for HMC; masked score-only remains blocked.
+- Phase B closes the design ambiguity without expanding the public API:
+  first-order score helpers remain private diagnostics.
 - H1/H2 remain live for benchmarking: the first-order path is correct on the
   tiny fixture, but its memory/runtime advantage must be measured in Phase C.
 - H4 is supported as a design rule: Hessian is diagnostic, not required in the
   sampler log-prob path.
 
 Audit:
-- Public API test confirms the new dense score-only symbols are intentional.
+- Public API test confirms no score-only symbol was promoted.
 - QR derivative correctness tests remain green.
 - No MacroFinance, DSGE, structural SVD/SGU, or shared monograph edits are
   required by this phase.
@@ -1595,7 +1594,7 @@ Next phase justified?
 ### Phase C: QR score/Hessian diagnostic artifact
 
 Plan:
-- run focused CPU-only graph rows for the dense analytic score-only path and
+- run focused CPU-only graph rows for the private first-order score path and
   the full analytic QR score/Hessian path;
 - materialize score and Hessian tensors in the rows that claim derivative cost;
 - record JSON and Markdown artifacts under `docs/benchmarks`.
@@ -1603,8 +1602,8 @@ Plan:
 Execute:
 - Updated the benchmark harness so derivative rows materialize the tensors they
   claim to measure:
-  - `linear_qr_score` materializes log likelihood and score through the dense
-    analytic score-only helper;
+  - `linear_qr_score` materializes log likelihood and score through the private
+    first-order helper;
   - `linear_qr_score_hessian` materializes log likelihood, score, and Hessian.
 - Ran:
 
@@ -1634,12 +1633,11 @@ Observed:
 Interpretation:
 - H1 is supported for the first fixed target shape: second-order/Hessian
   materialization is the dominant warmup and process-memory driver.
-- H2 is supported for the fixed diagnostic shape: the dense analytic score-only
+- H2 is supported for the fixed diagnostic shape: the private first-order score
   path is much cheaper than the full score/Hessian path.
-- The evidence justifies using analytic score-only gradients for the first HMC
-  sampler path and keeping analytic Hessian as a curvature diagnostic.
-- Public score-only scope remains dense-only until a later API-freeze review
-  designs masked score-only semantics.
+- The evidence justifies keeping Hessian materialization out of the first HMC
+  sampler path.
+- Public score-only API promotion remains a later API-freeze review item.
 
 Audit:
 - The benchmark artifacts are CPU-only diagnostics, not client switch-over,
@@ -1656,7 +1654,7 @@ Next phase justified?
 
 Plan:
 - define the fixed target `linear_qr_score_hessian_static_lgssm`;
-- use analytic QR score through a custom-gradient target in the sampler path;
+- use QR value plus TensorFlow autodiff score in the sampler path;
 - use full analytic QR score/Hessian for parity and curvature diagnostics;
 - keep the sampler smoke tiny, fixed-seed, CPU-only, and opt-in.
 
@@ -1901,3 +1899,42 @@ Next hypotheses:
   shape and only with escalated GPU visibility;
 - H14: SVD-CUT branch smoothness should be tested on wider target regions
   before any SVD-CUT HMC plan.
+
+## 2026-05-11 addendum: readiness plan and extended artifacts
+
+After commit `7526b72` closed the v1 HMC branch diagnostics, an addendum plan
+was retained to make the readiness narrative and remaining hypotheses explicit:
+
+```text
+docs/plans/bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-plan-2026-05-11.md
+docs/plans/bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-plan-audit-2026-05-11.md
+docs/plans/bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-result-2026-05-11.md
+```
+
+This addendum does not change the implementation decision from `7526b72`:
+- first-order QR score helpers remain private diagnostics;
+- the first HMC sampler path uses QR value plus TensorFlow autodiff score;
+- full analytic QR score/Hessian remains parity and curvature evidence;
+- SVD-CUT HMC remains blocked;
+- GPU/XLA QR derivative work remains deferred.
+
+Additional artifacts recorded for the addendum:
+- `docs/benchmarks/bayesfilter-v1-qr-derivative-cost-decomposition-2026-05-11.*`;
+- `docs/benchmarks/bayesfilter-v1-qr-score-state-observation-ladder-2026-05-11.*`;
+- `docs/benchmarks/bayesfilter-v1-qr-hmc-smoke-2026-05-11.*`;
+- `docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-2026-05-11.*`;
+- `docs/benchmarks/benchmark_bayesfilter_v1_hmc_smoke.py`;
+- `docs/benchmarks/benchmark_bayesfilter_v1_svd_cut_branch_frequency.py`.
+
+Interpretation:
+- H3 remains supported: score-only diagnostics are materially cheaper than full
+  score/Hessian at the first target shape.
+- H4/H5 remain supported only inside the small score-envelope ladder.
+- HMC evidence remains a target-specific finite smoke, not convergence.
+- SVD-CUT evidence remains diagnostic-only, even when the tiny box is smooth.
+
+Next phase justified?
+- Yes, but as a separate v1 follow-up: decide whether to promote a public
+  score-only QR API, design masked score-only semantics, run longer multi-chain
+  QR HMC diagnostics, and widen SVD-CUT branch sweeps before any SVD-CUT HMC
+  plan.
