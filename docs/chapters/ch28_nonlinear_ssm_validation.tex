@@ -9,16 +9,112 @@ independent references, not large application models.
 \section{Controlled Models}
 \label{sec:bf-nonlinear-controlled-models}
 
-The source SVD-HMC validation plan recommends two simple cases:
-\begin{enumerate}[label=(\roman*)]
-  \item a linear Gaussian model, which must collapse to the exact Kalman
-    reference;
-  \item a scalar nonlinear model, such as an AR(1) latent state with a
-    quadratic observation equation, where dense quadrature or a trusted long
-    run can provide a reference.
-\end{enumerate}
-These cases isolate the sigma-point approximation, transition hook, filter
-diagnostics, and HMC wrapper from DSGE-specific adjoints.
+The first nonlinear validation suite is deliberately small.  It is designed to
+test the filtering law, structural deterministic completion, and sigma-point
+moment approximation before DSGE perturbation solvers, client adapters, or HMC
+geometry enter the picture.  The suite contains three first-rung models.
+
+\subsection{Model A: Affine Gaussian Structural Oracle}
+\label{subsec:bf-nonlinear-model-a}
+
+The affine oracle is a BayesFilter-local synthetic model:
+\[
+  x_t=(m_t,\ell_t)^\top,\qquad
+  m_t=0.35m_{t-1}-0.10\ell_{t-1}+0.25\varepsilon_t,\qquad
+  \ell_t=m_{t-1},
+\]
+\[
+  y_t=m_t+\eta_t,\qquad
+  \varepsilon_t\sim N(0,1),\qquad
+  \eta_t\sim N(0,0.15^2).
+\]
+The initial law is Gaussian and the deterministic coordinate \(\ell_t\)
+stores the previous \(m\).  The oracle is the exact linear Gaussian Kalman
+likelihood after converting the structural law to its full-state LGSSM.  The
+test must verify that SVD cubature, SVD-UKF, and SVD-CUT4 collapse to the same
+prediction-error likelihood and that deterministic-completion residuals are
+zero up to numerical tolerance.
+
+\subsection{Model B: Nonlinear Accumulation}
+\label{subsec:bf-nonlinear-model-b}
+
+The nonlinear accumulation model is a smooth BayesFilter-local structural
+fixture:
+\[
+  m_t=\rho m_{t-1}+\sigma\varepsilon_t,\qquad
+  k_t=\alpha k_{t-1}+\beta\tanh(m_t),
+\]
+\[
+  y_t=m_t+k_t+\eta_t,\qquad
+  \varepsilon_t\sim N(0,1),\qquad
+  \eta_t\sim N(0,\sigma_\eta^2).
+\]
+The first V1 defaults are
+\[
+  \rho=0.70,\qquad \sigma=0.25,\qquad \alpha=0.55,\qquad
+  \beta=0.80,\qquad \sigma_\eta=0.30.
+\]
+This model tests nonlinear deterministic completion without a time-indexed
+transition hook.  The reference oracle is a dense one-step Gaussian
+moment-projection quadrature: it integrates the augmented predictive Gaussian,
+computes the transformed prediction and observation moments, and then applies
+the same Gaussian update used by the sigma-point filters.  It is not an exact
+nonlinear likelihood.
+
+\subsection{Model C: Nonlinear Growth Benchmark}
+\label{subsec:bf-nonlinear-model-c}
+
+The scalar nonlinear growth benchmark is the standard model associated with
+Kitagawa's Monte Carlo filtering examples \citep{kitagawa1996montecarlo} and
+widely reused in sequential Monte Carlo discussions.  Its time-inhomogeneous
+law is
+\[
+  x_t=\frac{x_{t-1}}{2}
+      +\frac{25x_{t-1}}{1+x_{t-1}^2}
+      +8\cos(1.2(t-1))
+      +\sigma_x\varepsilon_t,
+\]
+\[
+  y_t=\frac{x_t^2}{20}+\sigma_y\eta_t,
+  \qquad \varepsilon_t,\eta_t\sim N(0,1).
+\]
+Because the current BayesFilter structural TensorFlow transition does not pass
+an explicit time index, the V1 testing fixture uses an autonomous deterministic
+phase coordinate:
+\[
+  \tau_t=\tau_{t-1}+1,\qquad \tau_1=1,
+\]
+\[
+  x_t=\frac{x_{t-1}}{2}
+      +\frac{25x_{t-1}}{1+x_{t-1}^2}
+      +8\cos(1.2\tau_{t-1})
+      +\sigma_x\varepsilon_t.
+\]
+The observation equation remains \(y_t=x_t^2/20+\sigma_y\eta_t\).  The first
+defaults are \(x_1\sim N(0,0.2)\), \(\sigma_x=1\), and \(\sigma_y=1\).
+As in Model B, the first oracle is dense one-step Gaussian moment projection,
+not the exact nonlinear likelihood.
+
+\subsection{Deferred Models}
+\label{subsec:bf-nonlinear-deferred-models}
+
+\begin{description}
+  \item[Bearings-only tracking.]
+    \citet{gordon1993novel} and \citet{arulampalam2002tutorial} are useful
+    sources, but the test should wait until angle residual and wrapping policy
+    are fixed.
+  \item[Radar range-bearing tracking.]
+    This should follow the bearings-only residual policy and should add
+    mixed-scale observation diagnostics.
+  \item[Stochastic volatility.]
+    This should wait until the sigma-point interface supports non-additive
+    observation noise or an explicit approximation contract, since current
+    filters assume additive observation covariance after \(h(x_t)\).
+\end{description}
+
+Deferred means that the model is useful later, not that it is rejected.  The
+first V1 suite stops at Models A--C so that value, score, branch, and benchmark
+tests share a stable set of fixtures.
 
 \section{Required Outputs}
 \label{sec:bf-nonlinear-required-outputs}

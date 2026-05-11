@@ -1,5 +1,17 @@
 """Testing fixtures for BayesFilter contracts."""
 
+from bayesfilter.testing.nonlinear_models_tf import (
+    DenseProjectionStep,
+    dense_gaussian_projection_step,
+    dense_projection_first_step,
+    make_affine_gaussian_structural_oracle_tf,
+    make_nonlinear_accumulation_model_tf,
+    make_univariate_nonlinear_growth_model_tf,
+    model_a_observations_tf,
+    model_b_observations_tf,
+    model_c_observations_tf,
+    sigma_point_projection_first_step,
+)
 from bayesfilter.testing.tf_hmc_readiness import (
     QRStaticLGSSMTarget,
     run_qr_static_lgssm_hmc_smoke,
@@ -10,8 +22,18 @@ from bayesfilter.testing.tf_svd_cut_branch_diagnostics import (
 )
 
 __all__ = [
+    "DenseProjectionStep",
     "QRStaticLGSSMTarget",
     "SVDCUTBranchSummary",
+    "dense_gaussian_projection_step",
+    "dense_projection_first_step",
+    "make_affine_gaussian_structural_oracle_tf",
+    "make_nonlinear_accumulation_model_tf",
+    "make_univariate_nonlinear_growth_model_tf",
+    "model_a_observations_tf",
+    "model_b_observations_tf",
+    "model_c_observations_tf",
     "run_qr_static_lgssm_hmc_smoke",
+    "sigma_point_projection_first_step",
     "svd_cut_branch_frequency_summary",
 ]

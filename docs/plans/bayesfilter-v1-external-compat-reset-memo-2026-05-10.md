@@ -1980,3 +1980,198 @@ Lane reminder:
   `docs/plans/bayesfilter-v1-*`, `docs/source_map.yml`, and `pytest.ini`;
 - do not stage the shared monograph memo, structural SVD/SGU plans,
   Chapter 18/18b, MacroFinance, DSGE, sidecars, or local images.
+
+## 2026-05-11 execution-ready closure plan
+
+The broad score/API/HMC/SVD-CUT follow-up has been tightened into an
+execution-ready phase plan:
+
+```text
+docs/plans/bayesfilter-v1-score-hmc-svdcut-execution-closure-plan-2026-05-11.md
+```
+
+Purpose:
+- summarize this phase's goals, current status, gaps, and hypotheses in one
+  runnable artifact;
+- make each gap falsifiable through a test, benchmark artifact, or explicit
+  blocker;
+- preserve the v1 lane boundary while other agents work on structural and
+  monograph files.
+
+Interpretation:
+- the plan does not execute code changes yet;
+- it keeps QR score-only API promotion conditional on dense and masked
+  semantics;
+- it keeps HMC and SVD-CUT claims diagnostic until stronger artifacts exist;
+- it keeps MacroFinance and DSGE read-only.
+
+Next phase justified?
+- Yes.  The next execution pass can follow the plan's phase order:
+  lane recovery and baseline tests, score-only API decision, score-only
+  implementation or blocker result, longer QR HMC diagnostic, wider SVD-CUT
+  branch sweep, optional escalated GPU/XLA derivative gate, and reset/source-map
+  cleanup.
+
+## 2026-05-11 nonlinear filtering master testing program
+
+Created the nonlinear filtering master testing plan:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-filtering-master-testing-program-2026-05-11.md
+```
+
+Purpose:
+- turn the Chapter 18 SVD sigma-point and SVD-CUT derivative derivations into
+  implementation gates;
+- remove raw `GradientTape` SVD-CUT4 derivatives from the production derivative
+  path while preserving autodiff as a testing oracle;
+- decide score-first versus Hessian implementation order;
+- search and document benchmark nonlinear SSMs before adding them to tests;
+- build a BayesFilter-local nonlinear model suite for SVD cubature, SVD-UKF,
+  and SVD-CUT4.
+
+Verification note:
+- MathDevMCP found the relevant Chapter 18 labels and provenance, but its
+  automated audit status remains unverified because matrix assumptions and
+  proof obligations require manual formalization.  The plan therefore treats
+  Chapter 18 as the source derivation and requires traceability, finite
+  difference, oracle, and branch diagnostics before derivative promotion.
+
+Next phase justified?
+- Yes.  The first execution pass should be documentation and testing
+  infrastructure only: derivation-to-code traceability, production/export
+  cleanup for raw `GradientTape`, accepted benchmark model documentation in
+  Chapter 28, and a small nonlinear TF fixture suite.
+
+## 2026-05-12 nonlinear filtering subplans
+
+Created three subplans under the nonlinear filtering master testing program:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-2026-05-12.md
+docs/plans/bayesfilter-v1-svd-filter-analytic-gradient-audit-implementation-plan-2026-05-12.md
+docs/plans/bayesfilter-v1-nonlinear-filtering-remaining-master-program-plan-2026-05-12.md
+```
+
+Interpretation:
+- the model-suite subplan makes Models A-C the first execution rung and defers
+  bearings, radar, and stochastic volatility until residual/noise contracts
+  are explicit;
+- the gradient subplan keeps the current `GradientTape` SVD-CUT4
+  score/Hessian path as a testing oracle target, not a production analytic
+  derivative path, and makes analytic score implementation the first priority;
+- the remaining-program subplan covers value-filter consolidation, branch
+  diagnostics, approximation benchmarks, CI/runtime tiers, optional escalated
+  GPU/XLA evidence, and target-specific HMC readiness;
+- MacroFinance, DSGE, structural plans, Chapter 18b, and the shared monograph
+  reset memo remain out of this lane.
+
+Next phase justified?
+- Yes.  Execute the model-suite documentation/testing-tools subplan first,
+  because analytic score tests and effectiveness benchmarks need reusable
+  model fixtures and documented oracles.
+
+### 2026-05-12 model-suite execution M0-M1
+
+Plan and audit:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-2026-05-12.md
+docs/plans/bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-audit-2026-05-12.md
+```
+
+Source/result artifact:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-model-suite-source-notes-and-result-2026-05-12.md
+```
+
+M0 result:
+- CPU-only focused nonlinear/SVD baseline passed: `20 passed, 2 warnings`;
+- warnings were TensorFlow Probability `distutils` deprecation warnings;
+- out-of-lane dirty files remain untouched.
+
+M1 result:
+- local research-assistant had no matching paper summaries for the benchmark
+  sources;
+- DOI/web metadata was used for first-pass source notes;
+- Model A and Model B are BayesFilter-local synthetic oracles;
+- Model C is documented as the standard nonlinear growth benchmark associated
+  with Kitagawa (1996), implemented for BayesFilter V1 as an autonomous
+  phase-state testing embedding because the current structural TF transition
+  does not accept an explicit time index;
+- `docs/references.bib` received minimal entries for Kitagawa (1996) and
+  Arulampalam et al. (2002); Gordon et al. (1993) and Chopin and
+  Papaspiliopoulos (2020) already existed.
+
+Next phase justified?
+- Yes.  Proceed to M2 Chapter 28 documentation, preserving the caveat that
+  dense quadrature is a one-step Gaussian moment-projection oracle, not an
+  exact nonlinear likelihood.
+
+### 2026-05-12 model-suite execution M2
+
+M2 result:
+- updated `docs/chapters/ch28_nonlinear_ssm_validation.tex` with Models A-C,
+  default parameters, oracle status, and deferred Models D-F;
+- updated `docs/references.bib` with minimal accepted benchmark citations;
+- kept Chapter 18, Chapter 18b, structural plans, MacroFinance, DSGE, and the
+  shared monograph reset memo out of this phase.
+
+Interpretation:
+- Chapter 28 now gives tests a documented law and oracle contract;
+- Model C is clearly an autonomous phase-state testing fixture, not a
+  production time-inhomogeneous transition API change.
+
+Next phase justified?
+- Yes.  Proceed to M3 testing tools.
+
+### 2026-05-12 model-suite execution M3
+
+M3 result:
+- added `bayesfilter/testing/nonlinear_models_tf.py` with Models A-C, fixed
+  observations, and dense one-step Gaussian moment-projection reference tools;
+- exported these testing helpers from `bayesfilter.testing`;
+- added nonlinear constructor, oracle, and value-filter tests under
+  `tests/test_nonlinear_*`.
+
+Interpretation:
+- the implementation remains testing-only and does not change production
+  filter APIs;
+- Model C uses the documented autonomous phase-state embedding;
+- dense quadrature remains a tiny-dimensional test oracle, not a production
+  nonlinear likelihood.
+
+Next phase justified?
+- Yes, if M4 value/oracle tests pass.
+
+### 2026-05-12 model-suite execution M4-M5
+
+M4 result:
+- new nonlinear model-suite tests passed: `11 passed, 2 warnings`;
+- focused nonlinear/SVD regression passed: `31 passed, 2 warnings`;
+- `py_compile` passed for the new fixture and tests;
+- `git diff --check` passed for touched files;
+- production NumPy scan found no NumPy imports in `bayesfilter/nonlinear`;
+- NumPy use is confined to tests and the testing-only dense quadrature oracle.
+
+M5 result:
+- registered execution provenance in `docs/source_map.yml`;
+- updated only this V1 lane reset memo;
+- did not stage or edit the shared monograph reset memo, structural plans,
+  Chapter 18b, MacroFinance, DSGE, sidecar files, or local images.
+
+Interpretation:
+- first-rung nonlinear model-suite infrastructure is now in place;
+- Model A supplies exact linear recovery;
+- Models B-C supply nonlinear structural value checks and one-step dense
+  Gaussian projection oracles;
+- this phase deliberately makes no analytic-gradient, Hessian, HMC, GPU/XLA,
+  SMC, or client switch-over claim.
+
+Next phase justified?
+- Yes.  The next phase should execute the SVD filter analytic-gradient audit
+  and implementation subplan.  Its first hypotheses are that the Chapter 18
+  score equations can be mapped to one shared fixed-rule derivative core, and
+  that the current raw `GradientTape` SVD-CUT4 score/Hessian path can move to a
+  testing oracle without losing branch diagnostics.

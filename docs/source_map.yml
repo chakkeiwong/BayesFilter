@@ -756,7 +756,10 @@ chapter_mappings:
     - source_file: bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md
       destination: MacroFinance switch-over audit; DSGE structural adapter inventory; GPU/XLA benchmark artifacts; HMC readiness audit; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
       import_status: drafted
-      reason: Defines the post-seven-phase gap closure path: push baseline, MacroFinance switch-over, DSGE target inventory, GPU/XLA evidence, HMC readiness, and conditional linear SVD/eigen derivative work.
+      reason: >
+        Defines the post-seven-phase gap closure path: push baseline,
+        MacroFinance switch-over, DSGE target inventory, GPU/XLA evidence,
+        HMC readiness, and conditional linear SVD/eigen derivative work.
 
   bayesfilter_post_seven_phase_gap_closure_plan_audit_2026_05_10:
     - source_file: bayesfilter-post-seven-phase-gap-closure-plan-audit-2026-05-10.md
@@ -901,6 +904,42 @@ chapter_mappings:
       destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; tests/test_linear_kalman_qr_derivatives_tf.py; tests/test_hmc_linear_qr_readiness_tf.py; tests/test_svd_cut_branch_diagnostics_tf.py; docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 score-only API and HMC/SVD-CUT diagnostic execution
       import_status: drafted
       reason: Next-phase v1 plan summarizing goals, gaps, hypotheses, and a gated execution path for QR score-only API promotion or blocker status, longer QR HMC diagnostics, wider SVD-CUT branch sweeps, optional escalated QR derivative GPU/XLA evidence, CI tier containment, and external-project decoupling.
+
+  bayesfilter_v1_score_hmc_svdcut_execution_closure_plan_2026_05_11:
+    - source_file: bayesfilter-v1-score-hmc-svdcut-execution-closure-plan-2026-05-11.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; bayesfilter/testing; tests/test_linear_kalman_qr_derivatives_tf.py; tests/test_hmc_linear_qr_readiness_tf.py; tests/test_svd_cut_branch_diagnostics_tf.py; docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 execution pass
+      import_status: drafted
+      reason: Execution-ready v1 closure plan that summarizes phase goals, remaining gaps, falsifiable hypotheses, test gates, continuation criteria, and lane boundaries for QR score-only API decisions, longer QR HMC diagnostics, wider SVD-CUT branch sweeps, optional escalated GPU/XLA derivative evidence, and CI containment.
+
+  bayesfilter_v1_nonlinear_filtering_master_testing_program_2026_05_11:
+    - source_file: bayesfilter-v1-nonlinear-filtering-master-testing-program-2026-05-11.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/nonlinear; bayesfilter/testing; tests/test_structural_svd_sigma_point_tf.py; tests/test_svd_cut_filter_tf.py; tests/test_svd_cut_derivatives_tf.py; future nonlinear benchmark and analytic-score execution pass
+      import_status: drafted
+      reason: Master testing program for nonlinear SVD cubature, SVD-UKF, and SVD-CUT4 implementation, covering Chapter 18 derivative traceability, removal of production raw GradientTape derivatives, literature-grounded nonlinear SSM benchmark selection, LaTeX benchmark documentation, score-first analytic implementation, optional Hessian gate, branch diagnostics, and CI/runtime tiers.
+
+  bayesfilter_v1_nonlinear_model_suite_documentation_testing_tools_plan_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-2026-05-12.md
+      destination: docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/testing; tests/test_nonlinear_benchmark_models_tf.py; tests/test_nonlinear_reference_oracles.py; tests/test_nonlinear_sigma_point_values_tf.py; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear model-suite execution pass
+      import_status: drafted
+      reason: Subplan under the nonlinear filtering master program for documenting literature-grounded nonlinear SSM benchmarks and implementing reusable BayesFilter-local testing tools, with Models A-C as the first rung and bearings, radar, and stochastic volatility deferred until their residual and observation-noise contracts are explicit.
+
+  bayesfilter_v1_nonlinear_model_suite_documentation_testing_tools_result_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-audit-2026-05-12.md; bayesfilter-v1-nonlinear-model-suite-source-notes-and-result-2026-05-12.md; bayesfilter/testing/nonlinear_models_tf.py; tests/test_nonlinear_benchmark_models_tf.py; tests/test_nonlinear_reference_oracles.py; tests/test_nonlinear_sigma_point_values_tf.py; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/references.bib
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear analytic-score, branch-diagnostic, and benchmark execution passes
+      import_status: drafted
+      reason: Execution result for the first nonlinear model-suite subplan, including tightened drift gates, source notes, Chapter 28 benchmark documentation, reusable TensorFlow testing fixtures for Models A-C, dense one-step Gaussian projection oracles, CPU value/oracle tests, and explicit deferral of tracking, stochastic volatility, gradients, HMC, and GPU/XLA claims.
+
+  bayesfilter_v1_svd_filter_analytic_gradient_audit_implementation_plan_2026_05_12:
+    - source_file: bayesfilter-v1-svd-filter-analytic-gradient-audit-implementation-plan-2026-05-12.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex; bayesfilter/nonlinear; bayesfilter/testing; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_svd_cut_derivatives_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future SVD sigma-point analytic-score implementation pass
+      import_status: drafted
+      reason: Subplan for auditing Chapter 18 SVD sigma-point derivative equations, moving raw GradientTape SVD-CUT4 derivatives to a testing oracle, implementing score-first analytic gradients for SVD cubature, SVD-UKF, and SVD-CUT4, and gating Hessian work until score and branch evidence justify it.
+
+  bayesfilter_v1_nonlinear_filtering_remaining_master_program_plan_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-filtering-remaining-master-program-plan-2026-05-12.md
+      destination: bayesfilter/nonlinear; bayesfilter/testing; tests/test_nonlinear_*; docs/benchmarks; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear value, branch, benchmark, GPU/XLA, and HMC-readiness execution passes
+      import_status: drafted
+      reason: Subplan for the remaining nonlinear filtering master-program work after model-suite and analytic-gradient streams, covering value-filter consolidation, branch diagnostics, approximation benchmarks, CI/runtime tiers, optional escalated GPU/XLA evidence, target-specific HMC readiness, and provenance cleanup.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
