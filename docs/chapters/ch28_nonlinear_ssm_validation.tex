@@ -116,6 +116,58 @@ Deferred means that the model is useful later, not that it is rejected.  The
 first V1 suite stops at Models A--C so that value, score, branch, and benchmark
 tests share a stable set of fixtures.
 
+\section{Current V1 Filter Evidence}
+\label{sec:bf-nonlinear-current-v1-evidence}
+
+The first CPU nonlinear benchmark compares three SVD/eigen sigma-point value
+filters:
+\[
+  \mathcal B=\{\text{SVD cubature},\text{SVD-UKF},\text{SVD-CUT4}\}.
+\]
+For Model A the reference is the exact Kalman prediction-error likelihood after
+structural-to-LGSSM conversion.  The benchmark rows must satisfy
+\[
+  \left|\ell_b(y_{1:T})-\ell_{\mathrm{KF}}(y_{1:T})\right|\approx 0,
+  \qquad b\in\mathcal B,
+\]
+up to floating-point tolerance, and the filtered means and covariances must
+match the exact Kalman recursion.  This verifies that the nonlinear
+sigma-point code collapses to the correct affine Gaussian law.
+
+For Models B and C the benchmark uses only a dense one-step Gaussian projection
+reference.  If \(Q_{\mathrm{dense}}\) denotes a tensor-product Gaussian rule and
+\(\Pi_b\) denotes one of the sigma-point rules, the artifact reports
+\[
+  \left|\ell^{(1)}_{\Pi_b}-\ell^{(1)}_{Q_{\mathrm{dense}}}\right|,\qquad
+  \left\|\hat x^{(1)}_{\Pi_b}-\hat x^{(1)}_{Q_{\mathrm{dense}}}\right\|_2,
+  \qquad
+  \left\|\hat P^{(1)}_{\Pi_b}-\hat P^{(1)}_{Q_{\mathrm{dense}}}\right\|_F.
+\]
+These are approximation-quality diagnostics for the first filtering step, not
+exact full-likelihood errors.  The current artifact therefore records the full
+Models B--C log likelihoods as filter outputs and blocks any claim that those
+values have been certified against an exact nonlinear likelihood.
+
+The same artifact records the shared branch diagnostics
+\[
+  r_{\mathrm{det}},\quad r_{\mathrm{supp}},\quad
+  g_{\mathrm{place}},\quad g_{\mathrm{innov}},\quad
+  c_{\mathrm{floor}},\quad N_{\mathrm{points}},
+\]
+where \(r_{\mathrm{det}}\) is the deterministic-completion residual,
+\(r_{\mathrm{supp}}\) is the residual in the inactive SVD support,
+\(g_{\mathrm{place}}\) and \(g_{\mathrm{innov}}\) are placement and innovation
+spectral-gap diagnostics, \(c_{\mathrm{floor}}\) counts active covariance
+floors, and \(N_{\mathrm{points}}\) is the rule size.  These diagnostics keep
+model-law failures separate from numerical regularization.  They are also the
+gate before analytic score or HMC claims.
+
+The analytic first-order score is currently certified only on a smooth affine
+fixture with an explicit structural derivative provider.  Models B--C remain
+value-only for analytic-score purposes until their transition and observation
+Jacobian and parameter-derivative providers are added.  Consequently, GPU/XLA
+and HMC evidence for nonlinear Models B--C is deliberately deferred.
+
 \section{Required Outputs}
 \label{sec:bf-nonlinear-required-outputs}
 

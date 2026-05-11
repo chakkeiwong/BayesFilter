@@ -2414,3 +2414,184 @@ Next phase justified?
 - Yes.  The next phase should add explicit first-derivative providers for
   nonlinear Models B-C and extend the score test ladder beyond the affine
   fixture.
+
+## 2026-05-12 execution: nonlinear filtering remaining master program
+
+User request:
+- finish the third nonlinear filtering subplan;
+- read and tighten the plan if needed;
+- audit it as another developer;
+- execute phases with `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- stay in the BayesFilter V1 lane and avoid files owned by other agents.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-filtering-remaining-master-program-plan-2026-05-12.md
+```
+
+Initial lane status:
+- branch `main` was ahead of `origin/main` by 10 commits;
+- out-of-lane dirty/untracked files existed before this pass and are not owned
+  by this lane;
+- protected structural plans, Chapter 18b, shared monograph reset memo,
+  MacroFinance, and DSGE files are not part of this pass.
+
+### Phase R0: baseline and lane audit
+
+Baseline command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `16 passed, 2 skipped, 2 warnings`;
+- warnings were TensorFlow Probability `distutils` deprecation warnings.
+
+Interpretation:
+- pre-existing value and branch baseline was clean;
+- continuation to R1 was justified.
+
+### Phase R1-R2: value consolidation and branch diagnostics
+
+Plan tightening and audit:
+- added an execution addendum to the remaining master-program plan;
+- explicitly blocked Models B-C score/HMC claims until first-derivative
+  providers exist;
+- kept GPU/XLA as an optional escalated gate and HMC as a readiness gate, not
+  an execution claim;
+- required benchmark artifacts to distinguish exact references from dense
+  one-step Gaussian projection references.
+
+Implementation:
+- added `bayesfilter/testing/nonlinear_diagnostics_tf.py`;
+- exported testing-only nonlinear diagnostic helpers from `bayesfilter.testing`;
+- added `tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py`.
+
+Validation command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `11 passed, 2 warnings`.
+
+Interpretation:
+- SVD cubature, SVD-UKF, and SVD-CUT4 now share a testing diagnostic
+  vocabulary for value results;
+- value branch summaries cover Models A-C across all three backends;
+- score branch summaries are intentionally affine-only until nonlinear Models
+  B-C derivative providers exist;
+- continuation to R3 is justified.
+
+### Phase R3: CPU approximation benchmark
+
+Implementation:
+- added `docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py`;
+- generated:
+
+```text
+docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-12.json
+docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-12.md
+```
+
+Benchmark command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 python \
+  docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py --repeats 1
+```
+
+Result:
+- Model A matches exact Kalman to roundoff for SVD cubature, SVD-UKF, and
+  SVD-CUT4;
+- Model B dense one-step projection log-likelihood errors were about
+  `1.68e-2` for cubature/UKF and `3.64e-3` for CUT4;
+- Model C dense one-step projection log-likelihood errors were about
+  `4.93e-2` for cubature, `1.49e-1` for UKF, and `3.39e-2` for CUT4;
+- all tiny value branch parameter boxes were `3/3` finite;
+- the JSON artifact is strict JSON and converts infinite scalar diagnostics to
+  null.
+
+Interpretation:
+- CUT4 improves the one-step projection diagnostics in these two nonlinear
+  examples, but at larger point count;
+- Models B-C still do not have exact full nonlinear likelihood references in
+  this pass;
+- continuation to R4-R7 is justified.
+
+### Phase R4-R7: CI tiers, deferrals, documentation, and provenance
+
+R4 result:
+- `pytest.ini` already has `extended`, `hmc`, `external`, and `gpu` markers;
+- new branch diagnostic tests are fast CPU tests;
+- benchmark scripts remain explicit artifacts outside default pytest.
+
+R5 result:
+- GPU/XLA gate deferred because this pass did not require escalated CUDA
+  execution and because nonlinear Models B-C score providers are still absent.
+
+R6 result:
+- nonlinear HMC readiness remains blocked for Models B-C pending explicit
+  derivative providers and score branch diagnostics.
+
+R7 implementation:
+- updated `docs/chapters/ch28_nonlinear_ssm_validation.tex` with current V1
+  evidence and limitations;
+- added `docs/plans/bayesfilter-v1-nonlinear-filtering-remaining-master-program-result-2026-05-12.md`;
+- registered the result and benchmark artifacts in `docs/source_map.yml`.
+
+Next phase justified?
+- Yes, but the next phase should be derivative-provider work for Models B-C,
+  not GPU/XLA or HMC.
+
+Final validation for this pass:
+- focused nonlinear suite:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `54 passed, 2 skipped, 2 warnings`.
+
+Additional checks:
+- `python -m py_compile` passed for touched Python modules/tests/scripts;
+- `git diff --check` passed;
+- `docs/source_map.yml` parsed with `yaml.safe_load`;
+- nonlinear benchmark JSON parsed with `python -m json.tool`;
+- NumPy scan in `bayesfilter/nonlinear` and the new diagnostic helper found no
+  matches;
+- `latexmk -cd -pdf -interaction=nonstopmode -halt-on-error docs/main.tex`
+  completed successfully, with pre-existing undefined citation/reference
+  warnings elsewhere in the monograph.
+
+Completion interpretation:
+- third subplan is complete for CPU value diagnostics, branch summaries,
+  benchmark artifacts, and provenance;
+- GPU/XLA and nonlinear HMC are intentionally deferred;
+- next justified phase is derivative-provider work for Models B-C.

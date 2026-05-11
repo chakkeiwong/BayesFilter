@@ -68,6 +68,25 @@ SVD-CUT4.
 Dependency D4:
 Hessian status explicitly deferred or assigned to a separate gated plan.
 
+## Execution Tightening Addendum
+
+This subplan is a value, diagnostic, benchmark, and provenance closure pass.
+It does not reopen the first two subplans.  In particular:
+
+- Models B--C may be used for value-filter and branch-diagnostic evidence, but
+  their analytic score and HMC claims remain blocked until explicit
+  first-derivative providers exist for their nonlinear transition and
+  observation maps.
+- Phase R5 is optional GPU/XLA evidence.  It must not run from a non-escalated
+  CUDA probe and is deferred unless CPU value, score, and branch artifacts are
+  already stable.
+- Phase R6 is a readiness gate, not an HMC execution promise.  It remains
+  blocked for nonlinear Models B--C in this pass because the score-provider
+  dependency is not closed.
+- Benchmark artifacts must distinguish exact likelihood references from dense
+  one-step Gaussian projection references.  Models B--C do not have an exact
+  full nonlinear likelihood reference in this pass.
+
 ## Phase Plan
 
 ### Phase R0: Baseline And Lane Audit
