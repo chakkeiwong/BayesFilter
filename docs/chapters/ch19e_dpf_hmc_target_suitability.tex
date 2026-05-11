@@ -1,0 +1,252 @@
+\chapter{DPF HMC Target Correctness and Structural-Model Suitability}
+\label{ch:bf-dpf-hmc-target-suitability}
+
+The preceding DPF chapters defined a ladder of increasingly ambitious
+constructions:
+\begin{enumerate}[label=(\roman*)]
+  \item classical particle filtering;
+  \item particle-flow transport;
+  \item PF-PF proposal correction;
+  \item differentiable resampling and OT relaxation;
+  \item learned or amortized OT as a further approximation layer.
+\end{enumerate}
+This chapter asks the question that none of the earlier chapters could answer on
+its own: if one uses one of these constructions inside Hamiltonian Monte Carlo,
+what target is HMC actually sampling, and when is that target interpretation
+acceptable for nonlinear DSGE and MacroFinance models?
+
+The central lesson is that HMC correctness is not a property of a method label
+such as ``differentiable particle filter.''  It is a property of a concrete
+value-gradient construction.  If the scalar log target and the gradient supplied
+to the integrator correspond to different mathematical objects, then even a
+smooth and numerically stable chain is exploring the wrong Hamiltonian system.
+
+\section{DPF target contract for HMC}
+\label{sec:bf-dpf-hmc-contract}
+
+Let $\ell(\theta)$ denote the scalar log target supplied to HMC and let
+$g(\theta)$ denote the gradient used by the numerical integrator.  The minimum
+contract is
+\begin{equation}
+\label{eq:bf-dpf-hmc-contract}
+  g(\theta) = \nabla_\theta \ell(\theta)
+\end{equation}
+for the same mathematical object $\ell$.  This does not force $\ell$ to be an
+exact nonlinear filtering likelihood.  It does force the user to say what
+object $\ell$ is.
+
+For the DPF ladder, the relevant target statuses are:
+\begin{enumerate}[label=(\alph*)]
+  \item exact target in a special case;
+  \item unbiased particle-based likelihood estimator used inside a corrected
+    MCMC interpretation;
+  \item approximate or relaxed target;
+  \item learned surrogate target.
+\end{enumerate}
+The first task of this chapter is to place each DPF rung into one of these
+categories.
+
+\section{Rung-by-rung target analysis}
+\label{sec:bf-dpf-hmc-rung-analysis}
+
+\subsection{EDH}
+
+At the EDH rung, the scalar is a flow-based approximate likelihood object built
+from the Gaussian-closure transport construction.  If the same object is
+ differentiated, then the value and gradient are internally consistent, but the
+object is generally not the exact nonlinear filtering likelihood outside the
+linear-Gaussian special case.  Therefore EDH supports:
+\begin{itemize}
+  \item an exact-target interpretation only in the linear-Gaussian recovery
+    benchmark;
+  \item otherwise an approximate-target or value-side benchmark interpretation.
+\end{itemize}
+Smoothness of the flow ODE does not by itself upgrade EDH to a generic exact
+HMC target.
+
+\subsection{EDH/PF and LEDH/PF with proposal correction}
+
+At the PF-PF rung, the scalar becomes a proposal-corrected particle quantity.
+The correction restores the proposal-to-target density ratio through the
+change-of-variables Jacobian and the importance weight.  If the same corrected
+object is evaluated and differentiated, then this rung is the first serious
+DPF-based HMC candidate in the BayesFilter ladder.
+
+The remaining caution is not conceptual but quantitative.  Even when the target
+interpretation is clearer than raw flow transport, the resulting HMC path may
+still be fragile because of:
+\begin{itemize}
+  \item finite-particle variability;
+  \item flow discretization error;
+  \item Jacobian or log-determinant numerical error;
+  \item compiled execution instability in repeated long-run evaluation.
+\end{itemize}
+Thus PF-PF is the first rung with a strong target story, but not automatically a
+production-ready HMC path.
+
+\subsection{Soft differentiable resampling}
+
+At the soft-resampling rung, the scalar is built from a modified resampling map.
+If HMC uses this scalar and its gradient consistently, the resulting chain may
+still be mathematically coherent, but it should be interpreted as targeting the
+soft-resampling surrogate posterior, not the exact categorical-resampling
+posterior.  The gain is pathwise differentiability; the cost is target drift.
+
+The key point is not that soft resampling is unusable.  The key point is that it
+must be classified honestly.  Its mathematical status is surrogate-target HMC,
+not exact-target HMC.
+
+\subsection{OT and entropic OT resampling}
+
+At the OT rung, the scalar is built from a transport-relaxed resampling map.
+Relative to soft resampling, the geometric structure is cleaner, because the
+relaxation is tied to an explicit transport problem.  Yet the target remains a
+relaxed one: the entropic regularization and finite Sinkhorn solve change the
+resampling law relative to exact categorical resampling.
+
+Therefore, if the OT-relaxed scalar and its gradient are used consistently, the
+appropriate interpretation is approximate-target or relaxed-target HMC.  This
+may be a respectable and useful target, but it should not be mistaken for the
+exact categorical-resampling target.
+
+\subsection{Learned or amortized OT}
+
+At the learned-OT rung, one introduces a further approximation to the OT
+baseline.  The resulting HMC path is therefore a surrogate built on top of a
+relaxed target.  If the learned scalar and its gradient are used consistently,
+then the HMC path may again be mathematically coherent, but its target status is
+farthest from the classical exact categorical-resampling interpretation.
+
+The lesson is not that learned OT cannot be useful.  The lesson is that it must
+be read as a second approximation layer, not merely as a cheap exact OT solver.
+
+\section{Summary table}
+\label{sec:bf-dpf-hmc-summary}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.16\textwidth} p{0.20\textwidth} p{0.19\textwidth} p{0.28\textwidth}}
+\hline
+Rung & Evaluated object & Differentiated object & HMC interpretation \\
+\hline
+EDH & flow-based approximate likelihood object & derivative of the same approximate flow object & exact only in the linear-Gaussian recovery benchmark; otherwise approximate-target benchmark \\
+PF-PF & proposal-corrected particle estimator & derivative of the same corrected estimator & first serious DPF HMC candidate, still limited by Monte Carlo variability and numerical Jacobian issues \\
+Soft resampling & relaxed differentiable resampling target & derivative of the same relaxed target & surrogate-target HMC \\
+OT / EOT & transport-relaxed target & gradient through the same OT-relaxed target & approximate/relaxed-target HMC \\
+Learned OT & learned approximation to OT-relaxed target & derivative of the same learned surrogate & surrogate-target HMC with an additional learned approximation layer \\
+\hline
+\end{tabular}
+\caption{Rung-by-rung target interpretation for the DPF ladder.}
+\label{tab:bf-dpf-hmc-rungs}
+\end{table}
+
+Table~\ref{tab:bf-dpf-hmc-rungs} is the main output of this chapter.  It makes
+explicit why differentiability alone is insufficient: two methods may both yield
+smooth gradients, yet those gradients may correspond to mathematically different
+targets.
+
+\section{Why nonlinear DSGE models sharpen the issue}
+\label{sec:bf-dpf-hmc-dsge}
+
+Nonlinear DSGE models make target drift especially important because the
+state-space law already depends on structural timing, determinacy restrictions,
+pruning conventions, and the split between stochastic and deterministic-
+completion coordinates.  The structural-dynamics chapter already showed that a
+filter may approximate the wrong law if it ignores that split.
+
+In the DPF context, the stresses are compounded:
+\begin{enumerate}[label=(\roman*)]
+  \item the particle-flow map may already be built under closure or local
+    linearization assumptions;
+  \item the proposal-correction or resampling layer may still introduce finite-
+    particle or relaxed-target effects;
+  \item invalid or barely valid parameter regions can interact badly with local
+    Jacobians, flow stiffness, and repeated HMC evaluations;
+  \item a small change in the latent-state law can induce a meaningful change in
+    the structural posterior.
+\end{enumerate}
+Thus nonlinear DSGE models are not a place where one can relax target discipline
+simply because the model is already complicated.  They are a place where the
+stacking of approximations makes target discipline even more important.
+
+\section{Why MacroFinance models sharpen the issue}
+\label{sec:bf-dpf-hmc-macrofinance}
+
+MacroFinance latent-factor systems create a different but equally serious target
+challenge.  The main issues include:
+\begin{itemize}
+  \item higher latent-factor dimension and stronger degeneracy pressure;
+  \item mixed-frequency and missing-data structures that complicate repeated
+    filtering evaluations;
+  \item sharp posterior curvature in volatility and measurement-noise
+    directions;
+  \item the need for compiled, reproducible long-run evaluation if HMC is to be
+    practically useful.
+\end{itemize}
+A small surrogate drift that appears harmless in a short low-dimensional
+experiment can matter materially in a large latent-factor model with long
+observation spans and repeated compiled evaluations.  This is why the DPF target
+question is not only an abstract theoretical nicety for MacroFinance; it is part
+of deciding whether the method remains industrially meaningful.
+
+\section{Relation to surrogate-HMC acceleration}
+\label{sec:bf-dpf-hmc-hnn-surrogates}
+
+The DPF path should also be compared to the earlier surrogate-HMC and
+Hamiltonian-neural-network acceleration ideas developed in the \texttt{dsge\_hmc} project.  Those
+methods try to accelerate sampling by replacing or learning parts of the
+Hamiltonian geometry while keeping close track of the target correction issue.
+
+The comparison is instructive.  Learned or surrogate HMC acceleration methods do
+not solve a filtering problem; they solve a geometric or computational problem
+for an already chosen target.  DPF methods, by contrast, may change the target
+itself through flow approximations, resampling relaxations, or learned transport
+surrogates.  Thus the two lines of work answer different questions:
+\begin{itemize}
+  \item HNN/surrogate-HMC asks: can we move through a chosen target more
+    efficiently?
+  \item DPF target analysis asks: what target have we actually chosen when the
+    filter is made differentiable?
+\end{itemize}
+This means DPF methods and surrogate-HMC methods are not simple substitutes.
+DPF concerns the likelihood construction; HNN/surrogate-HMC concerns the
+geometry of sampling once a target has been fixed.
+
+\section{BayesFilter recommendation}
+\label{sec:bf-dpf-hmc-recommendation}
+
+The rebuilt DPF block now supports a disciplined recommendation.
+
+\begin{enumerate}[label=(\roman*)]
+  \item The first justified HMC-relevant DPF development rung is proposal-
+    corrected PF-PF, not raw flow and not relaxed resampling.
+  \item Soft resampling and OT resampling are mathematically coherent only when
+    read as relaxed or surrogate targets, not as hidden exact replacements for
+    categorical resampling.
+  \item Learned or amortized OT is a further surrogate layer and must be treated
+    as such.
+  \item For nonlinear DSGE and MacroFinance models, the burden of target
+    discipline is higher than in toy systems because structural-state semantics,
+    invalid regions, and long-run compiled evaluation amplify target mismatch.
+  \item Surrogate-HMC acceleration ideas from the \texttt{dsge\_hmc} project remain relevant as a
+    complementary line of work, because they address how to sample a target more
+    efficiently once that target has been fixed.
+\end{enumerate}
+
+\section{What this chapter does and does not claim}
+\label{sec:bf-dpf-hmc-boundary}
+
+This chapter analyzes the DPF ladder as a hierarchy of target constructions for
+HMC.  It does \emph{not} yet claim:
+\begin{itemize}
+  \item that the PF-PF rung has already passed all required variance,
+    numerical-stability, or compiled-path gates in BayesFilter;
+  \item that a relaxed or learned resampling target is unusable in every
+    context;
+  \item that nonlinear DSGE or MacroFinance DPF-HMC has already been validated
+    in this repository.
+\end{itemize}
+Its role is narrower and essential: it makes the target question explicit enough
+that future experiments and implementations can be judged against a
+mathematically clear standard.

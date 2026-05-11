@@ -423,6 +423,227 @@ Next phase justified?
   proposal correction separate unless the derivation proves that one combined
   chapter remains readable.
 
+## 2026-05-10 update: sixth reader-facing DPF rewrite phase started
+
+### Phase R6: HMC-target correctness and structural-model suitability rewrite
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r6-hmc-target-suitability-plan-2026-05-10.md`
+
+Phase plan:
+- rewrite `docs/chapters/ch21_hmc_for_state_space.tex` so that the DPF-target
+  question is integrated explicitly into the reader-facing HMC chapter;
+- cover value/gradient/target consistency rung by rung across the DPF ladder;
+- state why differentiability alone is insufficient;
+- analyze nonlinear DSGE and MacroFinance structural-model difficulties;
+- conclude with BayesFilter's first justified HMC-relevant DPF development
+  rung.
+
+Primary criterion:
+- the rewritten HMC material must make the value/gradient/target correspondence
+  explicit for each DPF rung and explain why that matters more in nonlinear
+  DSGE and MacroFinance models than in toy systems.
+
+Veto diagnostics:
+- if the chapter still speaks as if differentiability nearly implies HMC
+  validity, stop and revise;
+- if the rung-by-rung table is missing or vague, stop and revise;
+- if DSGE and MacroFinance difficulties are treated only informally rather than
+  structurally, do not declare the phase complete.
+
+## 2026-05-10 update: sixth reader-facing DPF rewrite phase started
+
+### Phase R6: HMC-target correctness and structural-model suitability rewrite
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r6-hmc-target-suitability-plan-2026-05-10.md`
+
+Phase plan:
+- rewrite `docs/chapters/ch21_hmc_for_state_space.tex` so that the DPF-target
+  question is integrated explicitly into the reader-facing HMC chapter;
+- cover value/gradient/target consistency rung by rung across the DPF ladder;
+- state why differentiability alone is insufficient;
+- analyze nonlinear DSGE and MacroFinance structural-model difficulties;
+- conclude with BayesFilter's first justified HMC-relevant DPF development
+  rung.
+
+Primary criterion:
+- the rewritten HMC material must make the value/gradient/target correspondence
+  explicit for each DPF rung and explain why that matters more in nonlinear
+  DSGE and MacroFinance models than in toy systems.
+
+Veto diagnostics:
+- if the chapter still speaks as if differentiability nearly implies HMC
+  validity, stop and revise;
+- if the rung-by-rung table is missing or vague, stop and revise;
+- if DSGE and MacroFinance difficulties are treated only informally rather than
+  structurally, do not declare the phase complete.
+
+### Phase R6 result
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r6-hmc-target-suitability-result-2026-05-10.md`
+
+Execution:
+- This phase was not executed.
+
+Tests:
+- Verified the current chapter-role situation in the active DPF block.
+- Confirmed that `ch19d_dpf_hmc_dsge_macrofinance_assessment.tex` is now being
+  used in substance for learned/amortized OT and implementation mathematics.
+- Confirmed that `ch21_hmc_for_state_space.tex` still carries broader BayesFilter
+  HMC doctrine rather than a DPF-specific final assessment role.
+
+Interpretation:
+- The final DPF-specific HMC-suitability chapter does not yet have a clean
+  dedicated chapter slot in the active chapter graph.
+- Rewriting `ch21_hmc_for_state_space.tex` now would blur generic BayesFilter
+  HMC doctrine with the final DPF rung-by-rung assessment.
+
+Audit:
+- Primary criterion: not satisfied.
+- Veto diagnostics: triggered.
+- This is a real architectural blocker, not a cosmetic one.
+
+Next phase justified?
+- No, not yet.
+- The final DPF HMC-suitability rewrite is not justified until the chapter-slot
+  question is resolved.
+- The cleanest next step is to decide whether to create a new dedicated DPF HMC
+  chapter inside the Part IV DPF block or to refactor the chapter graph with an
+  explicit new slot.
+
+## 2026-05-11 update: sixth reader-facing DPF rewrite phase completed
+
+### Phase R6 result
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r6-hmc-target-suitability-plan-2026-05-10.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r6-hmc-target-suitability-result-2026-05-11.md`
+
+Execution:
+- Added a new dedicated DPF HMC chapter slot to `docs/main.tex`:
+  `\input{chapters/ch19e_dpf_hmc_target_suitability}`.
+- Created the new chapter file
+  `docs/chapters/ch19e_dpf_hmc_target_suitability.tex`.
+- Wrote the new chapter as a DPF-specific HMC-target and structural-model
+  suitability chapter covering:
+  1. the DPF target contract for HMC;
+  2. rung-by-rung target analysis across EDH, PF-PF, soft resampling, OT/EOT,
+     and learned OT;
+  3. nonlinear DSGE stress points;
+  4. MacroFinance stress points;
+  5. relation to surrogate-HMC / HNN acceleration ideas from the
+     `\texttt{dsge\_hmc}` project;
+  6. BayesFilter's recommendation for the first justified HMC-relevant DPF
+     rung;
+  7. an explicit chapter-boundary section stating what remains unclaimed.
+- Fixed the LaTeX syntax issue caused by TeX-breaking inline markup in the new
+  chapter and reran the build successfully.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- A second rerun confirmed the monograph build was stable and up to date.
+- `git diff --check` passed.
+
+Interpretation:
+- The architectural blocker is now cleared.  The final DPF-specific HMC chapter
+  has its own dedicated slot and no longer needs to be forced into either the
+  learned-OT chapter or the generic BayesFilter HMC doctrine chapter.
+- This preserves the intended mathematical sequence of the rebuilt DPF block.
+
+Audit:
+- Primary criterion: satisfied.
+- Differentiability-implies-validity veto: cleared.
+- Rung-table vagueness veto: cleared.
+- Structural-model-informality veto: cleared.
+- Architecture-slot veto: cleared.
+
+Next phase justified?
+- Yes.  The reader-facing DPF rewrite sequence is now complete enough for the
+  end-of-plan consolidation step: final summary, reset-memo closure, and the
+  final commit bundle for the accumulated uncommitted phases.
+
+## 2026-05-10 update: fifth reader-facing DPF rewrite phase started
+
+### Phase R5: learned/amortized OT and implementation-mathematics rewrite
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r5-learned-ot-implementation-plan-2026-05-10.md`
+
+Phase plan:
+- rewrite `docs/chapters/ch19d_dpf_hmc_dsge_macrofinance_assessment.tex` in
+  substance into a mathematically disciplined chapter on learned/amortized OT and
+  implementation-facing mathematics;
+- make the hierarchy explicit:
+  exact resampling -> OT relaxation -> learned OT approximation;
+- cover teacher-versus-learned map structure, approximation residuals,
+  training-distribution dependence, and implementation-facing mathematical
+  constraints;
+- keep final HMC-suitability verdicts out of this phase and reserve them for the
+  later assessment chapter.
+
+Primary criterion:
+- the rewritten chapter must be mathematically self-contained and make the
+  teacher-versus-learned map distinction explicit enough that the later HMC
+  chapter can refer to learned OT as a clearly identified surrogate layer.
+
+Veto diagnostics:
+- if the chapter treats learned OT as equivalent to the OT baseline, stop and
+  revise;
+- if approximation residuals are discussed only operationally and not
+  mathematically, stop and revise;
+- if the chapter starts making final HMC-suitability claims, defer those claims
+  to the later assessment chapter.
+
+### Phase R5 result
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-rebuild-phase-r5-learned-ot-implementation-result-2026-05-10.md`
+
+Execution:
+- Rewrote `docs/chapters/ch19d_dpf_hmc_dsge_macrofinance_assessment.tex`
+  substantially.
+- The chapter now includes:
+  1. the hierarchy of approximations:
+     exact resampling -> OT relaxation -> learned OT approximation;
+  2. the teacher-versus-learned map distinction;
+  3. a map-level approximation residual and its interpretation;
+  4. training-distribution dependence and extrapolation risks;
+  5. implementation-facing mathematical consequences for runtime,
+     deterministic evaluation, state dimension, and architecture dependence;
+  6. an explicit chapter-boundary section deferring the final HMC verdict to the
+     later assessment chapter.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- The wording scan for approximation-status language was reviewed and accepted
+  because the flagged phrases appear only in explicit approximation-hierarchy or
+  negative boundary statements.
+
+Interpretation:
+- The chapter now makes the teacher-versus-learned map distinction explicit and
+  stabilizes the approximation hierarchy of the whole DPF block.
+- This is important because the later HMC chapter can now analyze the target as
+  a layered construction rather than as a vague black box.
+
+Audit:
+- Primary criterion: satisfied.
+- Learned-OT-equals-OT veto: cleared.
+- Residual-only-operational veto: cleared.
+- Premature HMC-verdict veto: cleared.
+- No phase-local formatting or citation blocker remains.
+
+Next phase justified?
+- Yes.  The next rewrite phase is justified because the final remaining
+  reader-facing problem is now the HMC-target and structural-model suitability
+  chapter.
+- Recommended next phase: write the final rung-by-rung HMC-target correctness
+  and nonlinear DSGE/MacroFinance suitability chapter.
+
 ## 2026-05-10 update: fourth reader-facing DPF rewrite phase started
 
 ### Phase R4: differentiable resampling and OT rewrite
