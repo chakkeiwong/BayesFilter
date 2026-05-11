@@ -52,6 +52,9 @@ from bayesfilter import (  # noqa: E402
     tf_svd_linear_gaussian_log_likelihood,
     tf_svd_sigma_point_log_likelihood,
 )
+from bayesfilter.linear.kalman_qr_derivatives_tf import (  # noqa: E402
+    _tf_qr_linear_gaussian_score,
+)
 
 
 @dataclass(frozen=True)
@@ -265,6 +268,36 @@ def _materialize(value) -> float:
     return float(tf.convert_to_tensor(tensor).numpy())
 
 
+def _score_materialized_value(
+    observations: tf.Tensor,
+    model: TFLinearGaussianStateSpace,
+    derivatives: TFLinearGaussianStateSpaceDerivatives,
+) -> tf.Tensor:
+    result = _tf_qr_linear_gaussian_score(
+        observations,
+        model,
+        derivatives,
+        backend="tf_qr_sqrt",
+        jitter=tf.constant(1e-9, dtype=tf.float64),
+    )
+    return result.log_likelihood + tf.reduce_sum(result.score)
+
+
+def _score_hessian_materialized_value(
+    observations: tf.Tensor,
+    model: TFLinearGaussianStateSpace,
+    derivatives: TFLinearGaussianStateSpaceDerivatives,
+) -> tf.Tensor:
+    result = tf_qr_linear_gaussian_score_hessian(
+        observations,
+        model,
+        derivatives,
+        backend="tf_qr_sqrt",
+        jitter=tf.constant(1e-9, dtype=tf.float64),
+    )
+    return result.log_likelihood + tf.reduce_sum(result.score) + tf.reduce_sum(result.hessian)
+
+
 def _time_runner(
     name: str,
     backend: str,
@@ -382,6 +415,10 @@ def _selected_cases(
         ]
     if selector == "score_hessian":
         return [case for case in cases if "score_hessian" in case[0]]
+    if selector == "score":
+        return [case for case in cases if case[0].endswith("_score")]
+    if selector == "derivatives":
+        return [case for case in cases if "_score" in case[0]]
     raise ValueError(f"unknown benchmark selector: {selector}")
 
 
@@ -405,15 +442,27 @@ def run_benchmarks(config: BenchmarkConfig) -> list[BenchmarkResult]:
             {"stochastic_rank": None, "point_count": None, "parameter_dim": None},
         ),
         (
-            "linear_qr_score_hessian",
-            "tf_qr_sqrt",
-            lambda: tf_qr_linear_gaussian_score_hessian(
+            "linear_qr_score",
+            "tf_qr_sqrt_score",
+            lambda: _score_materialized_value(
                 observations,
                 model,
                 derivatives,
-                backend="tf_qr_sqrt",
-                jitter=tf.constant(1e-9, dtype=tf.float64),
-            ).log_likelihood,
+            ),
+            {
+                "stochastic_rank": None,
+                "point_count": None,
+                "parameter_dim": config.parameter_dim,
+            },
+        ),
+        (
+            "linear_qr_score_hessian",
+            "tf_qr_sqrt",
+            lambda: _score_hessian_materialized_value(
+                observations,
+                model,
+                derivatives,
+            ),
             {
                 "stochastic_rank": None,
                 "point_count": None,
@@ -703,7 +752,15 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260510)
     parser.add_argument(
         "--benchmark-selector",
-        choices=("all", "linear", "value", "linear_value", "score_hessian"),
+        choices=(
+            "all",
+            "linear",
+            "value",
+            "linear_value",
+            "score",
+            "score_hessian",
+            "derivatives",
+        ),
         default="all",
     )
     parser.add_argument(

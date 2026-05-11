@@ -66,7 +66,7 @@ Examples:
 
 ```text
 docs/benchmarks/benchmark_bayesfilter_v1_filters.py
-SVD-CUT branch-frequency sweeps
+tests/test_svd_cut_branch_diagnostics_tf.py
 QR score/Hessian shape ladders
 ```
 
@@ -74,6 +74,16 @@ Policy:
 - not required on every commit;
 - artifacts must state CPU-only scope;
 - failures should be recorded per backend/shape rather than hidden.
+- tests in this tier should be opt-in when they live under `tests/`.
+
+Current opt-in command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_EXTENDED_CPU=1 pytest -q \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
 
 ## Tier 4: Optional Live External
 
@@ -131,3 +141,25 @@ Policy:
 - requires value, score, Hessian, compiled parity, nonfinite, and sampler
   diagnostics;
 - SVD-CUT and DSGE HMC claims remain blocked until their separate gates pass.
+- tests in this tier must be opt-in and must not claim convergence unless a
+  separate convergence diagnostic is explicitly run and documented.
+
+Current opt-in command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_HMC_READINESS=1 pytest -q \
+  tests/test_hmc_linear_qr_readiness_tf.py \
+  -p no:cacheprovider
+```
+
+Current result:
+
+```text
+tests/test_hmc_linear_qr_readiness_tf.py: 3 passed, 2 warnings in 39.00s
+```
+
+Claim scope:
+- target-specific finite-diagnostic and tiny HMC smoke only;
+- no convergence, production sampler, GPU/XLA, MacroFinance, DSGE, or SVD-CUT
+  HMC readiness claim.

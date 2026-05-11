@@ -866,6 +866,24 @@ chapter_mappings:
       import_status: drafted
       reason: CPU smoke, mixed and one-axis QR score/Hessian ladders, escalated GPU-visible smoke, and tiny XLA-visible value artifacts showing QR derivative warmup/materialization costs, GPU availability, narrow XLA value support, and no broad GPU speedup or HMC claim.
 
+  bayesfilter_v1_hmc_branch_closure_plan_2026_05_11:
+    - source_file: bayesfilter-v1-hmc-branch-closure-plan-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md; docs/plans/bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 QR derivative memory, HMC target, and SVD-CUT branch diagnostic execution
+      import_status: drafted
+      reason: Next-phase v1 lane plan summarizing goals, remaining gaps, hypotheses, and execution phases for QR derivative memory reduction, the first linear QR HMC target, SVD-CUT branch-frequency diagnostics, optional GPU/XLA follow-up, and CI tier containment.
+
+  bayesfilter_v1_hmc_branch_closure_result_2026_05_11:
+    - source_file: bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md; bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; bayesfilter/linear/qr_factor_tf.py; bayesfilter/testing; tests/test_hmc_linear_qr_readiness_tf.py; tests/test_svd_cut_branch_diagnostics_tf.py; docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Phase-by-phase execution result for the v1 HMC and branch-diagnostic closure pass, including private QR first-order diagnostics, CPU derivative materialization artifact, first linear QR HMC smoke, SVD-CUT branch-frequency artifact, GPU/XLA deferral, and opt-in CI tier containment.
+
+  bayesfilter_v1_hmc_branch_benchmark_artifacts_2026_05_11:
+    - source_file: docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.md; docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.json; docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.md; docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.json; docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md; docs/plans/bayesfilter-v1-ci-runtime-tier-policy-2026-05-11.md
+      import_status: drafted
+      reason: CPU-only diagnostic artifacts showing first-order QR versus full score/Hessian materialization cost, target-specific linear QR HMC finite smoke diagnostics, and SVD-CUT branch-frequency telemetry with smooth-box and weak-gap-control counts.
+
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
       destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml

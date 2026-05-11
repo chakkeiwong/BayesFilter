@@ -1420,3 +1420,484 @@ Final interpretation:
 - The post-completion gap-closure phase is ready for a scoped v1-lane commit.
 - The next executable development lane should start from QR derivative memory
   reduction or the first HMC target, not MacroFinance switch-over.
+
+## 2026-05-11 update: next-phase HMC and branch-diagnostic plan
+
+Trigger:
+- the user asked to summarize the goals for this phase, remaining gaps,
+  hypotheses for the gaps, and create a plan to complete the phase, test the
+  hypotheses, and close the gaps.
+
+Plan artifact:
+
+```text
+docs/plans/bayesfilter-v1-hmc-branch-closure-plan-2026-05-11.md
+```
+
+Goals:
+- keep the v1 lane isolated from structural SVD/SGU and shared monograph work;
+- turn QR score/Hessian memory findings into a targeted implementation
+  experiment;
+- build the first target-specific HMC readiness artifact for
+  `linear_qr_score_hessian_static_lgssm`;
+- add SVD-CUT branch-frequency diagnostics before any SVD-CUT HMC promotion;
+- decide whether QR derivative XLA/GPU follow-up is justified;
+- keep MacroFinance and DSGE external/read-only.
+
+Remaining gaps:
+- QR derivative memory driver is measured but not reduced;
+- selected HMC target has no target contract or sampler smoke;
+- SVD-CUT branch-frequency evidence is missing;
+- QR derivative XLA/GPU is untested;
+- MacroFinance pass is optional evidence on a dirty checkout, not release
+  certification;
+- DSGE bridges remain design-only;
+- CI tier policy is documented but not enforced by tooling.
+
+Hypotheses:
+- H1/H2: Hessian materialization and parameter-pair contractions dominate QR
+  derivative memory, while score-only derivatives may be cheap enough for HMC;
+- H3/H4: the first HMC smoke should use value/score and keep Hessian as
+  diagnostics;
+- H5/H6: SVD-CUT HMC remains blocked unless branch-frequency evidence proves
+  smooth separated-spectrum inactive-floor dominance;
+- H7: QR derivative XLA/GPU should wait until CPU HMC and memory diagnostics
+  identify a worthwhile shape;
+- H8/H9: optional MacroFinance and DSGE evidence are not required for the first
+  local HMC target;
+- H10: CI tier documentation is enough unless tests become accidental defaults.
+
+Recommended execution:
+- start with lane audit, QR derivative memory-reduction design, and focused CPU
+  diagnostic artifacts;
+- only then implement the first HMC target contract and tiny sampler smoke;
+- keep SVD-CUT branch-frequency diagnostics in the extended CPU tier;
+- update this reset memo after each phase if/when execution begins.
+
+## 2026-05-11 execution: HMC and branch-diagnostic closure
+
+Trigger:
+- the user asked to read the plan carefully, tighten ambiguities, audit it as
+  another developer, then execute each phase with
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`, continuing
+  automatically only while primary criteria and veto diagnostics allow.
+
+Active plan:
+
+```text
+docs/plans/bayesfilter-v1-hmc-branch-closure-plan-2026-05-11.md
+```
+
+Audit artifact:
+
+```text
+docs/plans/bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md
+```
+
+### Phase A: lane and worktree audit
+
+Plan:
+- classify the dirty worktree by lane;
+- confirm that execution can proceed without editing MacroFinance, DSGE, the
+  structural SVD/SGU lane, or the shared monograph reset memo;
+- tighten plan ambiguity before implementation.
+
+Observed:
+- current branch: `main...origin/main [ahead 4]`;
+- v1-lane files currently dirty or untracked:
+  - `docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md`;
+  - `docs/source_map.yml`;
+  - `docs/plans/bayesfilter-v1-hmc-branch-closure-plan-2026-05-11.md`;
+  - `docs/plans/bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md`;
+- out-of-lane dirty or untracked files remain present and must not be staged:
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/plans/bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-plan-2026-05-11.md`
+    supersedes the earlier `hmc-branch-closure` draft and is the governing
+    plan for the final execution record;
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Tightening applied:
+- a public dense QR score-only API is in scope because the first HMC target
+  needs value and gradient, not Hessian materialization, at each leapfrog step;
+- masked score-only support remains out of scope for this pass and must fail
+  closed;
+- the first HMC sampler path should use a custom-gradient target whose gradient
+  comes from the analytic QR score path;
+- the full analytic QR score/Hessian path should remain parity and curvature
+  diagnostics;
+- benchmark rows must materialize score/Hessian when claiming full derivative
+  cost;
+- SVD-CUT branch-frequency evidence remains diagnostic-only;
+- GPU/XLA remains optional and escalated.
+
+Tests:
+- documentation/audit phase only; no code tests required.
+
+Audit:
+- Phase A passes.
+- Execution can proceed with only BayesFilter v1-lane files.
+- No veto diagnostic is active.
+
+Next phase justified?
+- Yes.  Proceed to Phase B: QR derivative memory-reduction design with
+  score-only diagnostics kept private and public API expansion blocked.
+
+### Phase B: QR derivative memory-reduction design
+
+Plan:
+- inspect `tf_qr_linear_gaussian_score_hessian`;
+- decide whether score-only can be safely promoted or should remain
+  diagnostic/private;
+- run focused QR derivative tests before proceeding to benchmark artifacts.
+
+Execute:
+- Confirmed that the existing full QR analytic derivative path propagates
+  first- and second-order tensors together through prediction, innovation,
+  Kalman gain, Joseph update, and QR/Cholesky factor derivatives.
+- Added private first-order QR diagnostic helpers:
+  `_tf_qr_sqrt_kalman_score` and `_tf_qr_linear_gaussian_score`.
+- Removed the earlier partial public score-only export from the top-level and
+  linear public API surfaces.
+- The first HMC target uses QR value plus TensorFlow autodiff score; full
+  analytic score/Hessian remains parity and curvature diagnostic evidence.
+- Added first-order QR factor helper utilities used by the private diagnostic
+  path.
+
+Tests:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  -p no:cacheprovider
+12 passed, 2 warnings in 84.95s
+```
+
+Interpretation:
+- Phase B closes the design ambiguity with a deliberately narrow public API:
+  dense score-only is available for HMC; masked score-only remains blocked.
+- H1/H2 remain live for benchmarking: the first-order path is correct on the
+  tiny fixture, but its memory/runtime advantage must be measured in Phase C.
+- H4 is supported as a design rule: Hessian is diagnostic, not required in the
+  sampler log-prob path.
+
+Audit:
+- Public API test confirms the new dense score-only symbols are intentional.
+- QR derivative correctness tests remain green.
+- No MacroFinance, DSGE, structural SVD/SGU, or shared monograph edits are
+  required by this phase.
+
+Next phase justified?
+- Yes.  Proceed to Phase C: QR score/Hessian diagnostic artifacts.
+
+### Phase C: QR score/Hessian diagnostic artifact
+
+Plan:
+- run focused CPU-only graph rows for the dense analytic score-only path and
+  the full analytic QR score/Hessian path;
+- materialize score and Hessian tensors in the rows that claim derivative cost;
+- record JSON and Markdown artifacts under `docs/benchmarks`.
+
+Execute:
+- Updated the benchmark harness so derivative rows materialize the tensors they
+  claim to measure:
+  - `linear_qr_score` materializes log likelihood and score through the dense
+    analytic score-only helper;
+  - `linear_qr_score_hessian` materializes log likelihood, score, and Hessian.
+- Ran:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 python \
+  docs/benchmarks/benchmark_bayesfilter_v1_filters.py \
+  --repeats 2 \
+  --timesteps 4 \
+  --state-dim 2 \
+  --observation-dim 2 \
+  --parameter-dim 2 \
+  --benchmark-selector derivatives \
+  --modes graph \
+  --graph-warmup-calls 1 \
+  --output docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.md
+```
+
+Observed:
+- device scope: CPU-only with `CUDA_VISIBLE_DEVICES=-1`;
+- all rows `status = ok`;
+- `linear_qr_score`: warmup `2.4352s`, mean steady `0.0025s`,
+  max-RSS delta `123.0 MB`;
+- `linear_qr_score_hessian`: warmup `11.6858s`, mean steady `0.0048s`,
+  max-RSS delta `636.0 MB`.
+
+Interpretation:
+- H1 is supported for the first fixed target shape: second-order/Hessian
+  materialization is the dominant warmup and process-memory driver.
+- H2 is supported for the fixed diagnostic shape: the dense analytic score-only
+  path is much cheaper than the full score/Hessian path.
+- The evidence justifies using analytic score-only gradients for the first HMC
+  sampler path and keeping analytic Hessian as a curvature diagnostic.
+- Public score-only scope remains dense-only until a later API-freeze review
+  designs masked score-only semantics.
+
+Audit:
+- The benchmark artifacts are CPU-only diagnostics, not client switch-over,
+  GPU/XLA, or HMC convergence claims.
+- Non-escalated CUDA initialization warnings were ignored because the run hid
+  GPU devices deliberately.
+- No veto diagnostic is active.
+
+Next phase justified?
+- Yes.  Proceed to Phases D-E: first QR HMC target contract and tiny sampler
+  smoke.
+
+### Phases D-E: first QR HMC target contract and smoke
+
+Plan:
+- define the fixed target `linear_qr_score_hessian_static_lgssm`;
+- use analytic QR score through a custom-gradient target in the sampler path;
+- use full analytic QR score/Hessian for parity and curvature diagnostics;
+- keep the sampler smoke tiny, fixed-seed, CPU-only, and opt-in.
+
+Execute:
+- Added a BayesFilter-local testing fixture:
+  `bayesfilter/testing/tf_hmc_readiness.py`.
+- Added opt-in HMC readiness tests:
+  `tests/test_hmc_linear_qr_readiness_tf.py`.
+- Added `pytest.ini` marker declarations for opt-in `extended` and `hmc`
+  diagnostics.
+- Wrote artifacts:
+  - `docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.json`;
+  - `docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.md`.
+
+Tests:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_HMC_READINESS=1 pytest -q \
+  tests/test_hmc_linear_qr_readiness_tf.py \
+  -p no:cacheprovider
+3 passed, 2 warnings in 39.00s
+```
+
+Observed artifact values:
+- initial target log-prob: `-1.3568111688046285`;
+- initial target gradient: `[-0.40893740245060484, -1.0379645721254034]`;
+- analytic-vs-autodiff value residual: `0.0`;
+- score residual: `4.44e-16`;
+- Hessian residual: `6.66e-16`;
+- target Hessian symmetry residual: `0.0`;
+- negative-Hessian eigenvalues: `[2.3467420404247332, 2.998234138312041]`;
+- HMC smoke: `12` finite samples, `0` nonfinite samples, acceptance rate `1.0`,
+  max absolute log-accept ratio `0.0004737934694076795`.
+
+Interpretation:
+- H3 is supported for this fixed target: the tiny CPU-only fixed-seed HMC smoke
+  finishes with finite samples and finite target/gradient diagnostics.
+- H4 is supported: Hessian is useful for curvature and parity, but the sampler
+  path does not need Hessian materialization.
+- This remains a target-specific smoke, not a convergence claim, not a default
+  sampler recommendation, and not a MacroFinance/DSGE/SVD-CUT/GPU/XLA claim.
+
+Audit:
+- Tests are opt-in through `BAYESFILTER_RUN_HMC_READINESS=1` and marked `hmc`.
+- The artifact explicitly limits claim scope.
+- No veto diagnostic is active.
+
+Next phase justified?
+- Yes.  Proceed to Phase F: SVD-CUT branch-frequency diagnostics.
+
+### Phase F: SVD-CUT branch-frequency diagnostics
+
+Plan:
+- add a small SVD-CUT branch-frequency diagnostic over a tiny smooth parameter
+  box;
+- include a weak spectral-gap control case;
+- keep the test opt-in and keep SVD-CUT HMC blocked.
+
+Execute:
+- Added:
+  - `bayesfilter/testing/tf_svd_cut_branch_diagnostics.py`;
+  - `tests/test_svd_cut_branch_diagnostics_tf.py`;
+  - `docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.json`;
+  - `docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.md`.
+
+Tests:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_EXTENDED_CPU=1 pytest -q \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+2 passed, 2 warnings in 11.31s
+```
+
+Observed artifact values:
+- smooth box grid: `[[0.27, 0.23], [0.31, 0.27], [0.35, 0.31]]`;
+- smooth box total count: `3`;
+- smooth count: `3`;
+- active floor count: `0`;
+- weak spectral-gap count: `0`;
+- nonfinite count: `0`;
+- minimum placement eigen gap: `0.02189900512583248`;
+- maximum support residual: `0.0`;
+- maximum deterministic residual: `0.0`;
+- weak-gap control total count: `2`;
+- weak-gap control weak spectral-gap count: `2`.
+
+Interpretation:
+- H5 is not supported inside this deliberately tiny smooth box, but the weak-gap
+  control proves the diagnostic can count branch blockers.
+- H6 governs the decision: an all-smooth tiny box is not enough to promote
+  SVD-CUT HMC in this phase.
+- SVD-CUT HMC remains blocked pending a separate target-specific SVD-CUT HMC
+  plan with wider branch evidence and sampler diagnostics.
+
+Audit:
+- The test is opt-in through `BAYESFILTER_RUN_EXTENDED_CPU=1` and marked
+  `extended`.
+- The artifact explicitly states diagnostic-only scope.
+- No veto diagnostic is active.
+
+Next phase justified?
+- Yes.  Proceed to Phases G-H: GPU/XLA and CI/external-status review.
+
+### Phases G-H: GPU/XLA and CI/external-status review
+
+Plan:
+- decide whether QR derivative GPU/XLA work is justified now;
+- verify that new HMC and SVD-CUT diagnostics are not accidental fast-CI tests;
+- keep MacroFinance and DSGE external/read-only and out of this phase.
+
+Execute:
+- Reviewed the CPU QR derivative materialization artifact and the first QR HMC
+  smoke artifact.
+- Decided not to run escalated QR derivative GPU/XLA in this phase.
+- Updated `docs/plans/bayesfilter-v1-ci-runtime-tier-policy-2026-05-11.md`
+  with current opt-in HMC and SVD-CUT branch diagnostic commands and claim
+  scopes.
+- Added/kept `pytest.ini` marker declarations for:
+  - `extended`;
+  - `hmc`;
+  - existing optional `external` and `gpu`.
+
+Interpretation:
+- H7 closes by deferral: CPU evidence identifies Hessian materialization as the
+  urgent cost driver, and the first QR HMC target already runs on CPU.  A
+  matching-shape escalated QR derivative GPU/XLA pass is useful follow-up, but
+  not required to complete this phase.
+- H8 remains closed: dirty optional MacroFinance evidence does not block local
+  BayesFilter HMC work and is not promoted to release certification.
+- H9 remains closed: DSGE optional bridges are not required for the first local
+  HMC target.
+- H10 is strengthened: tests under `tests/` that are extended/HMC now require
+  opt-in environment variables.
+
+Audit:
+- No GPU command was run in this phase, so no new GPU/XLA claim is made.
+- New HMC readiness tests require `BAYESFILTER_RUN_HMC_READINESS=1`.
+- New SVD-CUT branch diagnostics require `BAYESFILTER_RUN_EXTENDED_CPU=1`.
+- No external client code was edited.
+
+Next phase justified?
+- Yes.  Proceed to Phase I: result artifact, source-map update, validation, and
+  scoped commit.
+
+### Phase I: result, source map, validation, and commit boundary
+
+Plan:
+- write the result artifact;
+- register the plan/result/benchmark artifacts in `docs/source_map.yml`;
+- run final validation;
+- stage only v1-lane files and commit.
+
+Execute:
+- Added:
+  - `docs/plans/bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md`;
+  - source-map entries for the plan/result and benchmark artifacts.
+
+Observed validation before commit:
+
+```text
+git diff --check
+passed
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_compiled_filter_parity_tf.py \
+  -p no:cacheprovider
+16 passed, 2 warnings in 91.70s
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_hmc_linear_qr_readiness_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+5 skipped, 2 warnings in 3.47s
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_HMC_READINESS=1 pytest -q \
+  tests/test_hmc_linear_qr_readiness_tf.py \
+  -p no:cacheprovider
+3 passed, 2 warnings in 38.58s
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_EXTENDED_CPU=1 pytest -q \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+2 passed, 2 warnings in 11.09s
+```
+
+Commit boundary:
+- stage only v1-lane code, tests, benchmark artifacts, v1 plan artifacts,
+  `pytest.ini`, and `docs/source_map.yml`;
+- do not stage:
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+## 2026-05-11 final execution: v1 HMC branch closure
+
+The governing plan for the final execution pass is:
+
+```text
+docs/plans/bayesfilter-v1-hmc-branch-closure-plan-2026-05-11.md
+```
+
+Independent audit:
+
+```text
+docs/plans/bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md
+```
+
+Final interpretation:
+- no public QR score-only API was promoted;
+- private dense first-order QR score helpers were added for diagnostics;
+- the first HMC sampler path uses QR value plus TensorFlow autodiff score;
+- full analytic QR score/Hessian remains parity and curvature evidence;
+- SVD-CUT HMC remains blocked despite a smooth tiny-box diagnostic;
+- GPU/XLA QR derivative work remains deferred;
+- MacroFinance and DSGE stayed read-only and out of this lane.
+
+Artifacts:
+- `docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.*`;
+- `docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.*`;
+- `docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.*`.
+
+Next hypotheses:
+- H11: public QR score-only should be considered only if dense and masked
+  semantics are designed and tested together;
+- H12: the first QR HMC target should be stress-tested with longer multi-chain
+  CPU diagnostics;
+- H13: QR derivative GPU/XLA should be tested only at a CPU-selected medium
+  shape and only with escalated GPU visibility;
+- H14: SVD-CUT branch smoothness should be tested on wider target regions
+  before any SVD-CUT HMC plan.

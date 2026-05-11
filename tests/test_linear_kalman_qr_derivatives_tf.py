@@ -5,6 +5,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.linear.kalman_qr_derivatives_tf import (
+    _tf_qr_sqrt_kalman_score,
     tf_qr_linear_gaussian_score_hessian,
     tf_qr_sqrt_kalman_score_hessian,
     tf_qr_sqrt_masked_kalman_score_hessian,
@@ -314,6 +315,43 @@ def test_qr_score_hessian_matches_autodiff_on_tiny_model() -> None:
         rtol=1e-5,
         atol=1e-6,
     )
+
+
+def test_private_qr_score_only_matches_score_hessian_and_autodiff_reference() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float64)
+    model, derivatives = _model_and_derivatives(params)
+
+    score_only_loglik, score_only = _tf_qr_sqrt_kalman_score(
+        observations=_observations(),
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        d_initial_state_mean=derivatives.d_initial_mean,
+        d_initial_state_covariance=derivatives.d_initial_covariance,
+        d_transition_offset=derivatives.d_transition_offset,
+        d_transition_matrix=derivatives.d_transition_matrix,
+        d_transition_covariance=derivatives.d_transition_covariance,
+        d_observation_offset=derivatives.d_observation_offset,
+        d_observation_matrix=derivatives.d_observation_matrix,
+        d_observation_covariance=derivatives.d_observation_covariance,
+        jitter=tf.constant(JITTER, dtype=tf.float64),
+    )
+    full_loglik, full_score, _full_hessian = _dense_derivatives(
+        _observations(),
+        model,
+        derivatives,
+    )
+    autodiff_loglik, autodiff_score, _autodiff_hessian = _autodiff_reference(params)
+
+    np.testing.assert_allclose(score_only_loglik.numpy(), full_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(score_only_loglik.numpy(), autodiff_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(score_only.numpy(), full_score.numpy(), rtol=1e-8, atol=1e-9)
+    np.testing.assert_allclose(score_only.numpy(), autodiff_score.numpy(), rtol=1e-8, atol=1e-9)
 
 
 def test_masked_qr_all_true_score_hessian_matches_dense_qr() -> None:
