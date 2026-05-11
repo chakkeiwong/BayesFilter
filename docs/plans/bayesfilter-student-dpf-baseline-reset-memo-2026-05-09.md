@@ -1650,3 +1650,239 @@ Next justified work:
   - H4: ESS/resampling diagnostics should remain implementation-specific and
     should be used for within-implementation pressure trends, not cross-student
     correctness claims.
+
+## Execution log: full-horizon EDH/PFPF sensitivity started 2026-05-12
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-full-horizon-edh-pfpf-sensitivity-plan-2026-05-12.md`.
+
+### Full-horizon sensitivity goal
+
+Status: planned.
+
+Goal:
+- test whether the replicated EDH/PFPF baseline remains usable on the full
+  20-observation nonlinear range-bearing fixtures;
+- compare 64 versus 128 particles and 10 versus 20 flow steps;
+- preserve adapter-owned bridges, implementation-specific diagnostics, and
+  comparison-only interpretation;
+- avoid monograph, production, HMC, neural OT, differentiable resampling, and
+  vendored-code work.
+
+### Remaining gaps
+
+Status: identified.
+
+Gaps:
+- full-horizon EDH/PFPF behavior is untested;
+- particle-count sensitivity is unknown;
+- flow-step sensitivity and runtime/RMSE tradeoff are unknown;
+- ESS and resampling semantics remain implementation-specific;
+- comparison must remain proxy-only.
+
+### Hypotheses
+
+Status: planned.
+
+Hypotheses:
+- FH1: full-horizon EDH/PFPF remains runnable for both implementations without
+  vendored-code edits;
+- FH2: 128 particles reduce low-noise pressure relative to 64 particles for at
+  least one implementation;
+- FH3: 20 flow steps produce a bounded RMSE/runtime tradeoff relative to 10
+  steps;
+- FH4: proxy comparison remains interpretable with explicit labels and missing
+  metric handling;
+- FH5: the phase produces a clear decision:
+  `full_horizon_sensitivity_ready`,
+  `full_horizon_sensitivity_ready_with_caveats`, `needs_targeted_debug`, or
+  `blocked_or_excluded`.
+
+Next phase justified: FH0 preflight and lane guard.
+
+### FH0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current Git status contains dirty and untracked monograph-lane files from
+  other work, plus the new student full-horizon sensitivity plan and audit;
+- independent plan audit exists at
+  `docs/plans/bayesfilter-student-dpf-baseline-full-horizon-edh-pfpf-sensitivity-plan-audit-2026-05-12.md`;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  are dirty.
+
+Interpretation:
+- continuing is justified because the phase remains inside the student
+  experimental-baseline lane;
+- monograph-lane files must remain untouched and unstaged.
+
+Next phase justified: FH1 sensitivity runner.
+
+### FH1: full-horizon sensitivity runner
+
+Status: passed.
+
+File added:
+`experiments/student_dpf_baselines/runners/run_full_horizon_edh_pfpf_sensitivity.py`.
+
+Implementation:
+- reuses the same adapter-owned EDH/PFPF bridges as the replicated panel;
+- uses both full 20-observation nonlinear Gaussian range-bearing fixtures;
+- runs seeds `17` and `23`;
+- compares particles `64` and `128`;
+- compares flow steps `10` and `20`;
+- records 32 planned records across both implementations;
+- uses a 45 second per-run runtime-warning threshold;
+- preserves implementation-specific ESS and resampling-count semantics;
+- writes the planned JSON, summary JSON, and Markdown result artifacts.
+
+Check:
+- `python -m py_compile experiments/student_dpf_baselines/runners/run_full_horizon_edh_pfpf_sensitivity.py`
+  passed.
+
+Interpretation:
+- the runner remains inside the student experimental-baseline lane;
+- executing the panel is justified.
+
+Next phase justified: FH2 execute, classify, and report.
+
+### FH2: execute, classify, and report
+
+Status: passed.
+
+Command:
+`python -m experiments.student_dpf_baselines.runners.run_full_horizon_edh_pfpf_sensitivity`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/full_horizon_edh_pfpf_sensitivity_2026-05-12.json`;
+- `experiments/student_dpf_baselines/reports/outputs/full_horizon_edh_pfpf_sensitivity_summary_2026-05-12.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-full-horizon-edh-pfpf-sensitivity-result-2026-05-12.md`.
+
+Panel:
+- fixtures: `range_bearing_gaussian_moderate`,
+  `range_bearing_gaussian_low_noise`;
+- horizon: full fixture horizon, 20 observations;
+- seeds: `17`, `23`;
+- particles: `64`, `128`;
+- flow steps: `10`, `20`;
+- implementations: advanced `EDHParticleFilter`, MLCOE `PFPF_EDH`;
+- planned records: 32.
+
+Results:
+- 32/32 records returned status `ok`;
+- no runtime warnings were triggered;
+- all successful records had finite means;
+- generated artifacts are small: panel JSON about `77K`, summary JSON about
+  `33K`, report about `6.1K`.
+
+Implementation summary:
+- `advanced_particle_filter`: 16/16 ok, median runtime about `0.0721` seconds,
+  maximum runtime about `0.577` seconds, median position RMSE about `0.0519`,
+  median average ESS about `19.3`;
+- `2026MLCOE`: 16/16 ok, median runtime about `0.991` seconds, maximum runtime
+  about `3.67` seconds, median position RMSE about `0.0537`, median average ESS
+  about `30.4`.
+
+Low-noise particle sensitivity:
+- advanced, 10 steps: 128 particles increased median average ESS from about
+  `18.4` to `30.4` and improved observation proxy RMSE from about `0.0164` to
+  `0.0154`, while median position RMSE rose slightly from about `0.0464` to
+  `0.0473`;
+- advanced, 20 steps: 128 particles increased median average ESS from about
+  `16.3` to `29.6`, while median position RMSE improved from about `0.0479` to
+  `0.0466`;
+- MLCOE, 10 steps: 128 particles increased median average ESS from about
+  `14.2` to `28.6`, but median position RMSE rose from about `0.0470` to
+  `0.0485`;
+- MLCOE, 20 steps: 128 particles increased median average ESS from about
+  `22.4` to `43.8` and improved median observation proxy RMSE from about
+  `0.0172` to `0.0166`.
+
+Flow-step sensitivity:
+- 20 flow steps produced at least one bounded benefit signal in 7 of 8 grid
+  summaries;
+- the exception was advanced moderate-noise at 128 particles, where 20 steps
+  increased runtime and did not improve median position RMSE or observation
+  proxy RMSE;
+- runtime ratios for 20 versus 10 steps were all below the `2.5` bounded-cost
+  threshold used by the runner.
+
+Hypothesis results:
+- FH1 full horizon remains runnable: `supported_all_planned_runs_ok`;
+- FH2 more particles reduce low-noise pressure:
+  `supported_pressure_reduction_signal_observed`;
+- FH3 more flow steps have bounded benefit:
+  `supported_bounded_benefit_signal_observed`;
+- FH4 proxy comparison remains interpretable: `supported_proxy_only`;
+- FH5 decision: `full_horizon_sensitivity_ready`.
+
+Interpretation:
+- the full-horizon EDH/PFPF sensitivity panel is ready as a quarantined
+  experimental baseline artifact;
+- the evidence supports using higher particle counts for low-noise pressure
+  reduction, mostly through ESS and sometimes through proxy RMSE;
+- 20 flow steps are not uniformly better, but they remain bounded in this grid
+  and often improve observation proxy RMSE;
+- the result is not a production, correctness, HMC, or cross-student
+  superiority claim;
+- ESS and resampling-count semantics remain implementation-specific.
+
+Next phase justified:
+- FH3 audit, tidy, reset-memo completion update, and scoped commit.
+
+Proposed next experimental phase after FH3:
+- write a small confirmation plan that fixes a pragmatic setting, likely
+  full horizon with 128 particles and 20 flow steps for the low-noise fixture
+  plus 128 particles and 10 or 20 flow steps for the moderate fixture depending
+  on implementation-specific cost/benefit;
+- test additional seeds before any clean-room controlled baseline extraction;
+- hypotheses to test next:
+  - C1: the chosen full-horizon setting remains stable over additional seeds;
+  - C2: the low-noise ESS gain from 128 particles persists across seeds;
+  - C3: 20 flow steps improve observation proxy RMSE often enough to justify
+    the runtime cost, or should be reserved for low-noise cases only;
+  - C4: a clean-room controlled baseline can be specified from the fixture,
+    metric, and reporting contract without copying student implementation code.
+
+### FH3: audit, tidy, and completion
+
+Status: passed.
+
+Checks:
+- `python -m py_compile experiments/student_dpf_baselines/runners/run_full_horizon_edh_pfpf_sensitivity.py`
+  passed;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `git diff --check` passed;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  were modified;
+- generated artifacts are small: panel JSON about `77K`, summary JSON about
+  `33K`, report about `6.1K`.
+
+Completion interpretation:
+- the full-horizon EDH/PFPF sensitivity phase completed fully inside the
+  student experimental-baseline lane;
+- the phase did not edit production `bayesfilter/`, monograph chapter files,
+  references, monograph reset memos, or vendored student snapshots;
+- known dirty and untracked monograph-lane files remain outside this lane and
+  must remain unstaged by this work;
+- the full-horizon panel is ready as a quarantined experimental baseline
+  artifact with comparison-only interpretation.
+
+Next justified work:
+- write a student-lane full-horizon confirmation plan before clean-room
+  extraction;
+- fix a small number of pragmatic settings based on the sensitivity result
+  rather than expanding the grid further;
+- primary next hypotheses:
+  - C1: the selected setting remains stable over additional seeds;
+  - C2: 128 particles continue to reduce low-noise ESS pressure across seeds;
+  - C3: 20 flow steps should be used selectively where observation proxy RMSE
+    improves at bounded runtime cost;
+  - C4: a clean-room controlled baseline can be specified from the fixture,
+    metric, and reporting contract without copying student code.

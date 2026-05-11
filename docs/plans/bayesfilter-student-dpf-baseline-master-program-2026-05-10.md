@@ -657,13 +657,20 @@ baseline lane.
 ## Current Next Move
 
 The replicated EDH/PFPF panel is complete and is ready as a quarantined
-experimental baseline artifact.
+experimental baseline artifact.  The full-horizon EDH/PFPF sensitivity panel is
+also complete and is ready as a quarantined experimental baseline artifact.
 
 Completed replicated-panel plan:
 `docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
 
 Completed replicated-panel result:
 `experiments/student_dpf_baselines/reports/student-dpf-baseline-replicated-edh-pfpf-panel-result-2026-05-12.md`.
+
+Completed full-horizon sensitivity plan:
+`docs/plans/bayesfilter-student-dpf-baseline-full-horizon-edh-pfpf-sensitivity-plan-2026-05-12.md`.
+
+Completed full-horizon sensitivity result:
+`experiments/student_dpf_baselines/reports/student-dpf-baseline-full-horizon-edh-pfpf-sensitivity-result-2026-05-12.md`.
 
 The reason is concrete:
 
@@ -679,14 +686,18 @@ The reason is concrete:
 - the replicated EDH/PFPF panel ran both selected paths across the moderate and
   low-noise nonlinear range-bearing fixtures with seeds `17`, `23`, and `31`.
   All 12 planned records returned finite `ok` results with no runtime warnings.
+- the full-horizon EDH/PFPF sensitivity panel ran both selected paths across the
+  full 20-observation fixtures with seeds `17` and `23`, particles `64` and
+  `128`, and flow steps `10` and `20`.  All 32 planned records returned finite
+  `ok` results with no runtime warnings.
 
-The current decision is to write a controlled full-horizon EDH/PFPF sensitivity
-plan inside the student-baseline lane before expanding to new algorithms.  That
-plan should test full 20-observation horizons and bounded particle/flow-step
-sensitivity while preserving comparison-only interpretation.  Kernel PFF,
-stochastic flow, DPF, dPFPF, neural OT, differentiable resampling, and HMC remain
-out of routine comparison unless later reproduction gates change their
-classifications.
+The current decision is to write a small full-horizon confirmation plan inside
+the student-baseline lane before clean-room controlled extraction.  That plan
+should fix a pragmatic EDH/PFPF setting from the sensitivity evidence and test
+additional seeds, rather than expanding the grid or opening new algorithms.
+Kernel PFF, stochastic flow, DPF, dPFPF, neural OT, differentiable resampling,
+and HMC remain out of routine comparison unless later reproduction gates change
+their classifications.
 
 ## Stop Rules
 
