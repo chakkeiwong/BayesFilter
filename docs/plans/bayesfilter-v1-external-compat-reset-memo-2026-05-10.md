@@ -1938,3 +1938,45 @@ Next phase justified?
   score-only QR API, design masked score-only semantics, run longer multi-chain
   QR HMC diagnostics, and widen SVD-CUT branch sweeps before any SVD-CUT HMC
   plan.
+
+## 2026-05-11 next plan: score API, HMC, and SVD-CUT gap closure
+
+The next v1 follow-up plan is:
+
+```text
+docs/plans/bayesfilter-v1-score-api-hmc-svdcut-gap-closure-plan-2026-05-11.md
+```
+
+Goals:
+- decide whether private first-order QR score diagnostics should become a
+  public score-only API;
+- define dense and masked score-only semantics before any public promotion;
+- extend the first QR HMC smoke to longer target-specific multi-chain
+  diagnostics;
+- widen SVD-CUT branch-frequency sweeps before any SVD-CUT HMC plan;
+- decide whether one QR derivative GPU/XLA medium-shape gate is justified;
+- keep MacroFinance and DSGE read-only until BayesFilter v1 stabilizes.
+
+Primary remaining gaps:
+- public score-only QR API contract is undecided;
+- masked score-only behavior is undefined;
+- HMC evidence remains smoke-level;
+- SVD-CUT branch evidence is too narrow;
+- QR derivative GPU/XLA has no matching-shape evidence;
+- external compatibility is not a client switch-over contract.
+
+Hypotheses to test:
+- public QR score-only is safe only if dense and masked semantics are explicit;
+- masked score-only can reuse the static dummy-row convention if parity tests
+  pass;
+- longer QR HMC diagnostics remain finite but should not be labeled convergence
+  without stronger evidence;
+- SVD-CUT smoothness is local until a wider sweep proves otherwise;
+- GPU/XLA derivative testing is useful only after selecting a CPU-stable medium
+  shape.
+
+Lane reminder:
+- keep this follow-up in `bayesfilter`, `tests`, `docs/benchmarks`,
+  `docs/plans/bayesfilter-v1-*`, `docs/source_map.yml`, and `pytest.ini`;
+- do not stage the shared monograph memo, structural SVD/SGU plans,
+  Chapter 18/18b, MacroFinance, DSGE, sidecars, or local images.
