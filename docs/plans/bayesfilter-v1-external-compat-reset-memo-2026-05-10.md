@@ -2160,6 +2160,13 @@ M5 result:
 - updated only this V1 lane reset memo;
 - did not stage or edit the shared monograph reset memo, structural plans,
   Chapter 18b, MacroFinance, DSGE, sidecar files, or local images.
+- committed the first model-suite pass as
+  `14eb751 Add nonlinear model suite fixtures`.
+- final documentation sanity check:
+  `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` from
+  `docs/` produced `main.pdf`; the new Chapter 28 citations resolved, while
+  remaining warnings are pre-existing unresolved DPF citations/references
+  outside this subplan.
 
 Interpretation:
 - first-rung nonlinear model-suite infrastructure is now in place;
@@ -2168,6 +2175,7 @@ Interpretation:
   Gaussian projection oracles;
 - this phase deliberately makes no analytic-gradient, Hessian, HMC, GPU/XLA,
   SMC, or client switch-over claim.
+- the first subplan is closed against its done definition.
 
 Next phase justified?
 - Yes.  The next phase should execute the SVD filter analytic-gradient audit

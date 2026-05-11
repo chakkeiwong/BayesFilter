@@ -282,13 +282,33 @@ Next phase justified?
 
 ## Phase M5: Provenance And Reset-Memo Update
 
-Status: complete pending commit.
+Status: complete.
 
 Result:
 - registered plan/result provenance in `docs/source_map.yml`;
 - updated only the V1 lane reset memo;
 - did not stage the shared monograph reset memo, structural plans, sidecar
   files, local image artifacts, MacroFinance, or DSGE files.
+- committed the model-suite implementation and documentation in
+  `14eb751 Add nonlinear model suite fixtures`.
+
+Final validation:
+- `docs/source_map.yml` parsed successfully with PyYAML;
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` from
+  `docs/` produced `main.pdf`;
+- the new Chapter 28 citations `kitagawa1996montecarlo` and
+  `arulampalam2002tutorial` resolved in `docs/main.bbl`;
+- remaining LaTeX warnings are pre-existing unresolved DPF citations/references
+  outside this subplan.
+
+Done-definition audit:
+- Models A-C are documented in Chapter 28 with equations, citations/source
+  notes, and oracle statements;
+- reusable model builders and reference tools exist under
+  `bayesfilter/testing`;
+- CPU value/oracle tests pass;
+- `docs/source_map.yml` and the V1 reset memo record status and the next
+  justified step.
 
 Next phase justified?
 - Yes.  The next phase should be the analytic-gradient subplan, beginning with
