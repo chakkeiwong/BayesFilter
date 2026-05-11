@@ -116,18 +116,26 @@ Required contracts:
 - deterministic residual checks for structural models;
 - no GPU performance claim from CPU graph parity alone.
 
-### Smooth-branch SVD-CUT Derivatives
+### Smooth-branch SVD Sigma-point Scores
 
-Stable candidate only under branch diagnostics:
+Stable candidates only under branch diagnostics and explicit structural
+first-derivative providers:
 
 ```text
-tf_svd_cut4_score_hessian
+TFStructuralFirstDerivatives
+tf_svd_cubature_score
+tf_svd_ukf_score
+tf_svd_cut4_score
+tf_svd_sigma_point_score_with_rule
 ```
 
 Required contracts:
 
 - derivative target is the implemented regularized law;
 - active floors and weak spectral gaps fail closed;
+- the score path is TF-only and does not hide raw `GradientTape`;
+- Hessian is absent or explicitly deferred until a named consumer and memory
+  gate exist;
 - HMC readiness requires target-specific branch-frequency and sampler gates.
 
 ## Internal Or Testing-only Surface
@@ -139,6 +147,7 @@ bayesfilter.testing.*
 solve_kalman_score_hessian
 tf_solve_differentiated_kalman_reference
 tf_covariance_differentiated_kalman_reference
+tf_svd_cut4_score_hessian_autodiff_oracle
 ```
 
 Factor helper APIs are useful but should be treated as internal unless a later

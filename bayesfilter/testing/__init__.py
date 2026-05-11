@@ -20,6 +20,9 @@ from bayesfilter.testing.tf_svd_cut_branch_diagnostics import (
     SVDCUTBranchSummary,
     svd_cut_branch_frequency_summary,
 )
+from bayesfilter.testing.tf_svd_cut_autodiff_oracle import (
+    tf_svd_cut4_score_hessian_autodiff_oracle,
+)
 
 __all__ = [
     "DenseProjectionStep",
@@ -36,4 +39,5 @@ __all__ = [
     "run_qr_static_lgssm_hmc_smoke",
     "sigma_point_projection_first_step",
     "svd_cut_branch_frequency_summary",
+    "tf_svd_cut4_score_hessian_autodiff_oracle",
 ]

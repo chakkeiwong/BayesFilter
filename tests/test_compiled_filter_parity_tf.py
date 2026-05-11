@@ -4,9 +4,11 @@ import tensorflow as tf
 from bayesfilter import StatePartition
 from bayesfilter.linear.kalman_svd_tf import tf_svd_kalman_log_likelihood
 from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_log_likelihood
-from bayesfilter.nonlinear.svd_cut_derivatives_tf import tf_svd_cut4_score_hessian
 from bayesfilter.nonlinear.svd_cut_tf import tf_svd_cut4_log_likelihood
 from bayesfilter.structural_tf import make_affine_structural_tf
+from bayesfilter.testing.tf_svd_cut_autodiff_oracle import (
+    tf_svd_cut4_score_hessian,
+)
 
 
 def _linear_inputs():

@@ -37,6 +37,21 @@ and branch diagnostics and a concrete Hessian consumer is named.
 For HMC, score is required.  Hessian is optional for Newton/Laplace workflows,
 curvature diagnostics, Riemannian samplers, or release certification.
 
+## 2026-05-12 Tightening Addendum
+
+This plan must not relabel hidden TensorFlow autodiff as an analytic score.
+The production score functions must consume an explicit first-derivative
+provider for the structural model law.  That provider must give derivatives of
+the initial moments, innovation covariance, observation covariance, transition
+map, and observation map with respect to the parameter vector.  Raw
+`GradientTape` remains allowed only in testing oracles.
+
+The first implementation target is a first-order smooth-branch score.  The
+Hessian remains deferred.  A score test case with deterministic zero variance
+does not satisfy the smooth SVD/eigen branch unless it is intentionally
+branch-blocked or replaced by a positive-variance testing variant with the same
+nonlinear law.
+
 ## Lane
 
 Allowed write lane:
@@ -158,6 +173,8 @@ Veto diagnostics:
 ### Phase G3: Shared Analytic Score Core
 
 Actions:
+- define a first-order structural derivative contract before implementing the
+  production score path;
 - implement first-order derivative helpers for:
   covariance factorization on the smooth SVD/eigen branch;
   sigma-point placement;
@@ -169,10 +186,13 @@ Actions:
   machinery with different fixed standardized rules.
 
 Primary criterion:
-- analytic score exists for at least one fixed-rule backend and its tensors
-  match finite differences on Model A.
+- the first-order structural derivative contract exists and analytic score
+  tensors match finite differences for at least one fixed-rule backend on a
+  smooth positive-spectrum affine fixture.
 
 Veto diagnostics:
+- score implementation requires differentiating arbitrary callback models with
+  `GradientTape` in production;
 - active floor or weak spectral gap occurs at the default score-test point;
 - score implementation duplicates backend-specific code in a way that prevents
   SVD-CUT4 reuse.

@@ -935,6 +935,12 @@ chapter_mappings:
       import_status: drafted
       reason: Subplan for auditing Chapter 18 SVD sigma-point derivative equations, moving raw GradientTape SVD-CUT4 derivatives to a testing oracle, implementing score-first analytic gradients for SVD cubature, SVD-UKF, and SVD-CUT4, and gating Hessian work until score and branch evidence justify it.
 
+  bayesfilter_v1_svd_filter_analytic_gradient_audit_result_2026_05_12:
+    - source_file: bayesfilter-v1-svd-filter-analytic-gradient-audit-result-2026-05-12.md; bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py; bayesfilter/testing/tf_svd_cut_autodiff_oracle.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_svd_cut_derivatives_tf.py; tests/test_compiled_filter_parity_tf.py; tests/test_v1_public_api.py
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear Models B-C analytic-derivative providers, branch-grid diagnostics, and benchmark passes
+      import_status: drafted
+      reason: Execution result for the second nonlinear filtering subplan, including Chapter 18 traceability, testing-only SVD-CUT raw autodiff oracle migration, TF-only analytic smooth-branch first-order score functions for SVD cubature, SVD-UKF, and SVD-CUT4, score finite-difference/oracle tests, explicit Hessian deferral, and remaining nonlinear score-test gaps.
+
   bayesfilter_v1_nonlinear_filtering_remaining_master_program_plan_2026_05_12:
     - source_file: bayesfilter-v1-nonlinear-filtering-remaining-master-program-plan-2026-05-12.md
       destination: bayesfilter/nonlinear; bayesfilter/testing; tests/test_nonlinear_*; docs/benchmarks; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear value, branch, benchmark, GPU/XLA, and HMC-readiness execution passes

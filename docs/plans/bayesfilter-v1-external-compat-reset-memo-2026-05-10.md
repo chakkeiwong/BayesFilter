@@ -2183,3 +2183,234 @@ Next phase justified?
   score equations can be mapped to one shared fixed-rule derivative core, and
   that the current raw `GradientTape` SVD-CUT4 score/Hessian path can move to a
   testing oracle without losing branch diagnostics.
+
+## 2026-05-12 SVD filter analytic-gradient execution
+
+User request:
+- continue with the second subplan under the nonlinear filtering master
+  program;
+- read and tighten the plan if needed;
+- audit as another developer;
+- execute phase by phase with tests, audit, tidy, reset memo update, and commit;
+- stay in the BayesFilter V1 lane and avoid other agents' structural,
+  monograph, MacroFinance, and DSGE lanes.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-v1-svd-filter-analytic-gradient-audit-implementation-plan-2026-05-12.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-svd-filter-analytic-gradient-audit-result-2026-05-12.md
+```
+
+Initial lane status:
+- branch `main` was ahead of `origin/main` by 9 commits;
+- out-of-lane dirty/untracked files existed before this pass and were left
+  untouched;
+- protected structural plans, Chapter 18b, shared monograph reset memo,
+  MacroFinance, and DSGE files were not edited by this lane.
+
+### Phase G0: lane recovery and baseline
+
+Command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `20 passed, 2 warnings`;
+- warnings were TensorFlow Probability `distutils` deprecation warnings.
+
+Interpretation:
+- existing nonlinear/SVD value filters and the old branch-gated SVD-CUT
+  derivative tests were clean before implementation.
+
+Next phase justified?
+- Yes.  Proceed to G1 derivation-to-code audit.
+
+### Phase G1: derivation-to-code audit and plan tightening
+
+Audit result:
+- MathDevMCP label lookup confirmed the Chapter 18 score and reconstruction
+  labels in `docs/chapters/ch18_svd_sigma_point.tex`;
+- the existing `TFStructuralStateSpace` callback contract did not contain the
+  state, innovation, observation, or parameter derivatives needed for a true
+  analytic score;
+- the plan was tightened to forbid hidden production `GradientTape` and to
+  require an explicit first-order structural derivative provider.
+
+Interpretation:
+- G1 passed after tightening;
+- G3 could proceed only by adding a derivative-provider contract, not by
+  reusing raw autodiff.
+
+Next phase justified?
+- Yes.  Proceed to G2 oracle migration.
+
+### Phase G2: raw tape moved to testing oracle
+
+Implementation:
+- added `bayesfilter/testing/tf_svd_cut_autodiff_oracle.py`;
+- updated tests and branch diagnostics to import the raw SVD-CUT
+  score/Hessian from the testing module;
+- removed `tf_svd_cut4_score_hessian` from top-level and
+  `bayesfilter.nonlinear` public exports.
+
+Validation command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `10 passed, 2 skipped, 2 warnings`.
+
+Interpretation:
+- raw autodiff remains available as a testing oracle;
+- production public exports no longer advertise it as an analytic SVD-CUT
+  derivative backend.
+
+Next phase justified?
+- Yes.  Proceed to G3-G5 with an explicit first-order derivative contract.
+
+### Phase G3-G5: analytic score core, integration, and tests
+
+Implementation:
+- added `bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py`;
+- introduced `TFStructuralFirstDerivatives`;
+- added shared analytic smooth-branch score machinery for:
+  - `tf_svd_cubature_score`;
+  - `tf_svd_ukf_score`;
+  - `tf_svd_cut4_score`;
+  - `tf_svd_sigma_point_score_with_rule`;
+- added `tests/test_nonlinear_sigma_point_scores_tf.py`.
+
+Score contract:
+- production path is TF-only;
+- score is the derivative of the implemented sigma-point likelihood;
+- SVD/eigen factors reconstruct the implemented covariance branch;
+- active hard floors and weak spectral gaps are blockers;
+- Hessian is explicitly `None` and marked deferred.
+
+Focused validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `6 passed, 2 warnings`.
+
+Checks:
+- finite-difference score parity for SVD cubature and SVD-UKF;
+- finite-difference and testing-oracle score parity for SVD-CUT4;
+- branch blockers for active floors and weak spectral gaps;
+- eager/graph parity for the cubature score.
+
+Interpretation:
+- the shared analytic score core is functional on the smooth affine fixture;
+- Models B-C still need explicit analytic derivative providers before nonlinear
+  score claims can be extended beyond the affine smooth fixture.
+
+Next phase justified?
+- Yes for G6 Hessian gate and provenance.
+
+### Phase G6: Hessian gate
+
+Decision:
+- Hessian remains deferred.
+
+Reason:
+- HMC needs a score, not a Hessian;
+- the current production score requires only first derivatives;
+- a Hessian implementation would require second derivatives of structural
+  maps, moment/covariance tensors, and the eigensystem branch, plus memory
+  tests and a named downstream consumer.
+
+Next phase justified?
+- Yes.  Proceed to provenance, broader tests, and commit.
+
+### Phase G7: provenance, tidy, and final validation
+
+Provenance:
+- added `docs/plans/bayesfilter-v1-svd-filter-analytic-gradient-audit-result-2026-05-12.md`;
+- registered the result in `docs/source_map.yml`;
+- updated `docs/plans/bayesfilter-v1-api-freeze-criteria-2026-05-10.md` so the
+  stable nonlinear derivative candidates are score-only functions with explicit
+  structural derivative providers, while the raw SVD-CUT tape path is
+  testing-only.
+
+Post-audit tidy:
+- retained `bayesfilter/nonlinear/svd_cut_derivatives_tf.py` only as a
+  migration guard that raises a clear error;
+- the raw SVD-CUT `GradientTape` implementation itself is now only in
+  `bayesfilter.testing.tf_svd_cut_autodiff_oracle`.
+
+Final validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `43 passed, 2 skipped, 2 warnings`.
+
+Additional checks:
+- `python -m py_compile` passed for touched Python modules/tests;
+- `git diff --check` passed;
+- `docs/source_map.yml` parsed with `yaml.safe_load`;
+- production NumPy scan in `bayesfilter/nonlinear` found no NumPy imports.
+
+Interpretation:
+- second subplan is complete for the affine smooth-branch score rung;
+- raw SVD-CUT autodiff is testing-only;
+- analytic first-order smooth-branch scores exist for SVD cubature, SVD-UKF,
+  and SVD-CUT4;
+- Hessian remains explicitly deferred.
+
+Remaining hypotheses to test next:
+- H-NL1: nonlinear Models B-C can be given explicit analytic first-derivative
+  providers without changing the production structural callback contract.
+- H-NL2: SVD cubature, SVD-UKF, and SVD-CUT4 analytic scores on Models B-C match
+  finite differences of their implemented likelihoods under the same branch
+  gates.
+- H-NL3: branch-frequency diagnostics over the default nonlinear parameter
+  boxes identify a usable smooth-score region for HMC readiness.
+- H-NL4: optional GPU/XLA score benchmarks should be attempted only after the
+  CPU score branch and nonlinear finite-difference tests are stable.
+
+Next phase justified?
+- Yes.  The next phase should add explicit first-derivative providers for
+  nonlinear Models B-C and extend the score test ladder beyond the affine
+  fixture.

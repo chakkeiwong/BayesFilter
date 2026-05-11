@@ -3,9 +3,11 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter import StatePartition
-from bayesfilter.nonlinear.svd_cut_derivatives_tf import tf_svd_cut4_score_hessian
 from bayesfilter.nonlinear.svd_cut_tf import tf_svd_cut4_log_likelihood
 from bayesfilter.structural_tf import make_affine_structural_tf
+from bayesfilter.testing.tf_svd_cut_autodiff_oracle import (
+    tf_svd_cut4_score_hessian,
+)
 
 
 def _model_from_params(params: tf.Tensor, *, repeated_spectrum: bool = False):
@@ -101,10 +103,11 @@ def test_svd_cut4_score_hessian_matches_finite_differences_on_smooth_branch() ->
     np.testing.assert_allclose(result.score.numpy(), fd_score, rtol=2e-4, atol=2e-4)
     np.testing.assert_allclose(result.hessian.numpy(), fd_hessian, rtol=5e-3, atol=5e-3)
     np.testing.assert_allclose(result.hessian.numpy(), result.hessian.numpy().T, atol=1e-10)
-    assert result.metadata.filter_name == "tf_svd_cut4_score_hessian"
-    assert result.metadata.differentiability_status == "smooth_branch_score_hessian"
+    assert result.metadata.filter_name == "tf_svd_cut4_score_hessian_autodiff_oracle"
+    assert result.metadata.differentiability_status == "testing_autodiff_score_hessian"
     assert result.diagnostics.regularization.derivative_target == "implemented_regularized_law"
     assert result.diagnostics.extra["derivative_branch"] == "smooth_separated_spectrum"
+    assert result.diagnostics.extra["derivative_method"] == "tensorflow_autodiff_testing_oracle"
 
 
 def test_svd_cut4_score_hessian_matches_direct_tensorflow_autodiff() -> None:

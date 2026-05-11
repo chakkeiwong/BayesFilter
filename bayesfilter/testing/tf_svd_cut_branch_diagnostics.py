@@ -7,7 +7,9 @@ from typing import Callable
 
 import tensorflow as tf
 
-from bayesfilter.nonlinear.svd_cut_derivatives_tf import tf_svd_cut4_score_hessian
+from bayesfilter.testing.tf_svd_cut_autodiff_oracle import (
+    tf_svd_cut4_score_hessian,
+)
 from bayesfilter.structural_tf import TFStructuralStateSpace
 
 
