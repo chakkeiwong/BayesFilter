@@ -656,11 +656,14 @@ baseline lane.
 
 ## Current Next Move
 
-The next justified execution plan is the EDH/PFPF adapter spike selected by
-MP4.
+The replicated EDH/PFPF panel is complete and is ready as a quarantined
+experimental baseline artifact.
 
-Active adapter-spike plan:
-`docs/plans/bayesfilter-student-dpf-baseline-edh-pfpf-adapter-spike-plan-2026-05-11.md`.
+Completed replicated-panel plan:
+`docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
+
+Completed replicated-panel result:
+`experiments/student_dpf_baselines/reports/student-dpf-baseline-replicated-edh-pfpf-panel-result-2026-05-12.md`.
 
 The reason is concrete:
 
@@ -671,11 +674,19 @@ The reason is concrete:
   excluded from routine panels pending further debug.
 - MP4 inventoried 28 flow/DPF-related surfaces and selected only one bounded
   comparison candidate: advanced `EDHParticleFilter` versus MLCOE `PFPF_EDH`.
+- the EDH/PFPF adapter spike ran both selected paths on a reduced nonlinear
+  Gaussian range-bearing fixture and returned finite proxy metrics.
+- the replicated EDH/PFPF panel ran both selected paths across the moderate and
+  low-noise nonlinear range-bearing fixtures with seeds `17`, `23`, and `31`.
+  All 12 planned records returned finite `ok` results with no runtime warnings.
 
-The current decision is to run a small adapter-owned EDH/PFPF spike on the
-existing nonlinear Gaussian range-bearing fixture.  Kernel PFF, stochastic
-flow, DPF, dPFPF, neural OT, differentiable resampling, and HMC remain out of
-routine comparison unless later reproduction gates change their classifications.
+The current decision is to write a controlled full-horizon EDH/PFPF sensitivity
+plan inside the student-baseline lane before expanding to new algorithms.  That
+plan should test full 20-observation horizons and bounded particle/flow-step
+sensitivity while preserving comparison-only interpretation.  Kernel PFF,
+stochastic flow, DPF, dPFPF, neural OT, differentiable resampling, and HMC remain
+out of routine comparison unless later reproduction gates change their
+classifications.
 
 ## Stop Rules
 

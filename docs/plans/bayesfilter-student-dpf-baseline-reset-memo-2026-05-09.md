@@ -13,7 +13,7 @@ Active master program:
 `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
 
 Active next-phase plan:
-`docs/plans/bayesfilter-student-dpf-baseline-edh-pfpf-adapter-spike-plan-2026-05-11.md`.
+`docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
 
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
@@ -1420,3 +1420,233 @@ Next justified work:
 - veto diagnostics for the replicated panel: unbounded runtime, nonfinite
   outputs, new unrecorded target assumptions, vendored-code edits, production
   imports, or generated artifacts too large for normal repository history.
+
+## Execution log: replicated EDH/PFPF panel planning started 2026-05-11
+
+Controlling plan:
+`docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
+
+### Replicated-panel goal
+
+Status: planned.
+
+Goal:
+- test whether the EDH/PFPF adapter-spike success survives both existing
+  nonlinear Gaussian range-bearing fixtures and multiple seeds;
+- compare advanced `EDHParticleFilter` against MLCOE `PFPF_EDH` using
+  adapter-owned bridges only;
+- report latent-state RMSE, final-position error, observation proxy RMSE, ESS,
+  resampling pressure, runtime, and finite-output checks;
+- preserve comparison-only interpretation and implementation-specific
+  diagnostics.
+
+### Remaining gaps
+
+Status: identified.
+
+Gaps:
+- the adapter spike is single-seed evidence only;
+- low-noise EDH/PFPF behavior is untested;
+- ESS and resampling-count semantics differ between implementations;
+- replicated runtime and numerical stability are unknown;
+- comparison must remain proxy-only and must not become a correctness claim.
+
+### Replicated-panel hypotheses
+
+Status: planned.
+
+Hypotheses:
+- R1: both EDH/PFPF paths remain runnable across moderate and low-noise fixtures
+  without vendored-code edits;
+- R2: low observation noise increases pressure in ESS, resampling count,
+  runtime, or RMSE for at least one implementation;
+- R3: proxy comparison remains interpretable with explicit target labels and
+  missing-metric handling;
+- R4: runtime remains bounded enough for experimental use;
+- R5: the phase produces a clear decision: `replicated_panel_ready`,
+  `replicated_panel_ready_with_caveats`, `needs_targeted_debug`, or
+  `blocked_or_excluded`.
+
+Next phase justified: RP0 preflight and lane guard.
+
+### RP0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current Git status contains dirty and untracked monograph-lane files from
+  other work, plus student-baseline plan/reset/master edits;
+- the replicated EDH/PFPF panel plan has been tightened for fixed seeds,
+  runtime threshold, artifact names, and reset-memo ownership;
+- independent plan audit exists at
+  `docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-audit-2026-05-12.md`;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  are dirty.
+
+Interpretation:
+- the phase remains inside the student experimental-baseline lane;
+- known monograph-lane dirty files must remain unstaged and untouched;
+- continuing to runner implementation is justified.
+
+Next phase justified: RP1 replicated panel runner.
+
+### RP1: replicated panel runner
+
+Status: passed.
+
+File added:
+`experiments/student_dpf_baselines/runners/run_replicated_edh_pfpf_panel.py`.
+
+Implementation:
+- parameterizes the adapter-spike EDH/PFPF bridges over both existing nonlinear
+  Gaussian range-bearing fixtures;
+- uses fixed seeds `17`, `23`, and `31`;
+- reduces each fixture to 8 observations;
+- uses 64 particles, 10 flow steps, and a 30 second per-run runtime-warning
+  threshold;
+- records one structured record per implementation, fixture, and seed for 12
+  planned records total;
+- preserves implementation-specific ESS and resampling-count semantics;
+- writes the planned JSON, summary JSON, and Markdown report artifacts under
+  `experiments/student_dpf_baselines/reports/`.
+
+Check:
+- `python -m py_compile experiments/student_dpf_baselines/runners/run_replicated_edh_pfpf_panel.py`
+  passed.
+
+Interpretation:
+- the runner remains adapter-owned and does not edit vendored student code or
+  production BayesFilter code;
+- executing the panel is justified.
+
+Next phase justified: RP2 execute, classify, and report.
+
+### RP2: execute, classify, and report
+
+Status: passed.
+
+Command:
+`python -m experiments.student_dpf_baselines.runners.run_replicated_edh_pfpf_panel`.
+
+Outputs:
+- `experiments/student_dpf_baselines/reports/outputs/replicated_edh_pfpf_panel_2026-05-12.json`;
+- `experiments/student_dpf_baselines/reports/outputs/replicated_edh_pfpf_panel_summary_2026-05-12.json`;
+- `experiments/student_dpf_baselines/reports/student-dpf-baseline-replicated-edh-pfpf-panel-result-2026-05-12.md`.
+
+Panel:
+- fixtures: `range_bearing_gaussian_moderate`,
+  `range_bearing_gaussian_low_noise`;
+- reduced horizon: 8 observations;
+- seeds: `17`, `23`, `31`;
+- implementations: advanced `EDHParticleFilter`, MLCOE `PFPF_EDH`;
+- particles: 64;
+- flow steps: 10;
+- planned records: 12.
+
+Results:
+- 12/12 records returned status `ok`;
+- no runtime warnings were triggered;
+- all successful records had finite means;
+- generated artifacts are small: panel JSON about `26K`, summary JSON about
+  `8.4K`, report about `3.7K`.
+
+Implementation summary:
+- `advanced_particle_filter`: 6/6 ok, median runtime about `0.0179` seconds,
+  maximum runtime about `0.565` seconds, median position RMSE about `0.0649`,
+  median average ESS about `13.2`;
+- `2026MLCOE`: 6/6 ok, median runtime about `0.615` seconds, maximum runtime
+  about `3.67` seconds, median position RMSE about `0.0648`, median average ESS
+  about `18.3`.
+
+Fixture summary:
+- advanced moderate-noise median position RMSE about `0.0654`, median average
+  ESS about `9.26`, median resampling count `8`;
+- advanced low-noise median position RMSE about `0.0644`, median average ESS
+  about `17.3`, median resampling count `6`;
+- MLCOE moderate-noise median position RMSE about `0.0642`, median average ESS
+  about `24.1`, median resampling count `6`;
+- MLCOE low-noise median position RMSE about `0.0652`, median average ESS about
+  `11.7`, median resampling count `8`.
+
+Hypothesis results:
+- R1 runnable across fixtures and seeds: `supported_all_planned_runs_ok`;
+- R2 low-noise pressure: `supported_directional_pressure_signal_observed`;
+- R3 proxy comparison interpretability: `supported_proxy_only`;
+- R4 bounded runtime: `supported_no_runtime_warnings`;
+- R5 decision: `replicated_panel_ready`.
+
+Interpretation:
+- the replicated EDH/PFPF panel is now a usable quarantined experimental
+  baseline artifact;
+- the result remains proxy-only and does not certify correctness, production
+  quality, HMC suitability, or cross-student superiority;
+- ESS and resampling-count semantics remain implementation-specific:
+  advanced uses implementation resampled flags, while MLCOE uses an inferred
+  `ESS < 0.5N` post-step threshold;
+- low-noise pressure is clear for MLCOE across ESS, resampling count, runtime,
+  and position RMSE; for advanced it appears mainly in lower minimum ESS and
+  slightly higher runtime, while median average ESS and position RMSE did not
+  degrade in this small panel.
+
+Next phase justified:
+- RP3 audit, tidy, reset-memo completion update, and scoped commit.
+
+Proposed next experimental phase after RP3:
+- create a controlled full-horizon EDH/PFPF sensitivity plan before any
+  expansion to new algorithms;
+- hypotheses to test next:
+  - H1: the replicated-panel success survives full 20-observation horizons
+    without runtime warnings or nonfinite outputs;
+  - H2: increasing particles from 64 to 128 or 256 reduces low-noise ESS
+    pressure more reliably than increasing flow steps alone;
+  - H3: increasing flow steps from 10 to 20 improves observation-proxy RMSE or
+    position RMSE only if it does not materially increase runtime;
+  - H4: the advanced and MLCOE ESS/resampling diagnostics remain useful for
+    within-implementation pressure tracking but should not be collapsed into a
+    single cross-implementation correctness metric.
+
+### RP3: audit, tidy, and completion
+
+Status: passed.
+
+Checks:
+- `python -m py_compile experiments/student_dpf_baselines/runners/run_replicated_edh_pfpf_panel.py`
+  passed;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- `git diff --check` passed;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  were modified;
+- generated artifacts are small: panel JSON about `26K`, summary JSON about
+  `8.4K`, report about `3.7K`.
+
+Completion interpretation:
+- the replicated EDH/PFPF phase completed fully inside the student
+  experimental-baseline lane;
+- the phase did not edit production `bayesfilter/`, monograph chapter files,
+  references, monograph reset memos, or vendored student snapshots;
+- known dirty and untracked monograph-lane files remain outside this lane and
+  must remain unstaged by this work;
+- the replicated panel is ready as a quarantined experimental baseline artifact
+  with comparison-only interpretation.
+
+Next justified work:
+- write a controlled full-horizon EDH/PFPF sensitivity plan under the student
+  baseline lane;
+- do not expand to kernel PFF, stochastic flow, dPFPF, neural OT,
+  differentiable resampling, HMC, or production code until a separate plan and
+  gate justify those lanes;
+- primary next hypotheses:
+  - H1: full-horizon EDH/PFPF remains runnable for both implementations without
+    runtime warnings or nonfinite outputs;
+  - H2: particle-count increases reduce low-noise ESS pressure more reliably
+    than flow-step increases alone;
+  - H3: extra flow steps improve proxy RMSE only up to a bounded runtime/benefit
+    threshold;
+  - H4: ESS/resampling diagnostics should remain implementation-specific and
+    should be used for within-implementation pressure trends, not cross-student
+    correctness claims.
