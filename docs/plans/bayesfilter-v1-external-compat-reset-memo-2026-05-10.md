@@ -2595,3 +2595,44 @@ Completion interpretation:
   benchmark artifacts, and provenance;
 - GPU/XLA and nonlinear HMC are intentionally deferred;
 - next justified phase is derivative-provider work for Models B-C.
+
+## 2026-05-12 audit: nonlinear implementation correctness
+
+User request:
+- audit the whole implementation to ensure correctness;
+- commit the resulting scoped changes.
+
+Lane boundary:
+- stayed inside the BayesFilter V1 nonlinear-filtering lane;
+- left MacroFinance, DSGE, Chapter 18b, structural SVD/SGU plans, and the
+  shared monograph reset memo untouched;
+- ignored unrelated dirty/untracked files from other lanes.
+
+Audit artifact:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-implementation-audit-result-2026-05-12.md
+```
+
+Result:
+- no major implementation correctness issue was found in the audited nonlinear
+  filtering lane;
+- one diagnostic exposure gap was fixed: placement/innovation floor counts and
+  PSD-projection residuals are now exposed through `diagnostics.extra` for SVD
+  cubature, SVD-UKF, and SVD-CUT4 value wrappers;
+- focused tests now assert that the shared nonlinear diagnostic snapshot sees
+  those fields.
+
+Verification:
+- full default CPU suite: `185 passed, 5 skipped, 2 warnings`;
+- extended SVD-CUT CPU branch diagnostics: `2 passed, 2 warnings`;
+- focused nonlinear regression after the fix: `24 passed, 2 warnings`;
+- `py_compile`, `git diff --check`, `docs/source_map.yml` YAML parsing, and
+  nonlinear benchmark JSON parsing passed.
+
+Interpretation:
+- current V1 nonlinear claims remain valid: exact Kalman parity for Model A,
+  value-filter and dense one-step projection diagnostics for Models B-C, and
+  smooth affine score certification only;
+- derivative providers for Models B-C, nonlinear Hessian certification,
+  GPU/XLA scaling, and nonlinear HMC remain gated follow-up work.

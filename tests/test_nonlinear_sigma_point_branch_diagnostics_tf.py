@@ -190,6 +190,10 @@ def test_nonlinear_value_backends_share_required_diagnostic_vocabulary(backend) 
     assert snapshot.point_count > 0
     assert snapshot.polynomial_degree >= 3
     assert snapshot.max_integration_rank > 0
+    assert snapshot.placement_floor_count == 0
+    assert snapshot.innovation_floor_count == 0
+    assert snapshot.placement_psd_projection_residual >= 0.0
+    assert snapshot.innovation_psd_projection_residual >= 0.0
     assert snapshot.support_residual >= 0.0
     np.testing.assert_allclose(snapshot.deterministic_residual, 0.0, atol=1e-12)
     assert np.isfinite(snapshot.min_placement_eigen_gap)

@@ -487,6 +487,14 @@ def tf_svd_sigma_point_filter(
         "point_count": raw_diagnostics["point_count"],
         "polynomial_degree": raw_diagnostics["polynomial_degree"],
         "max_integration_rank": raw_diagnostics["max_integration_rank"],
+        "placement_floor_count": raw_diagnostics["placement_floor_count"],
+        "innovation_floor_count": raw_diagnostics["innovation_floor_count"],
+        "placement_psd_projection_residual": raw_diagnostics[
+            "placement_psd_projection_residual"
+        ],
+        "innovation_psd_projection_residual": raw_diagnostics[
+            "innovation_psd_projection_residual"
+        ],
         "support_residual": raw_diagnostics["support_residual"],
         "deterministic_residual": raw_diagnostics["deterministic_residual"],
         "min_placement_eigen_gap": raw_diagnostics["min_placement_eigen_gap"],
