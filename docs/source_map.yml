@@ -959,6 +959,12 @@ chapter_mappings:
       import_status: drafted
       reason: Independent implementation audit result for the BayesFilter V1 nonlinear filtering lane, recording that no major correctness issue was found, exposing already-computed floor and PSD-projection diagnostics through value-wrapper extras, and preserving derivative-provider, Hessian, GPU/XLA, and nonlinear HMC gaps as explicit future gates.
 
+  bayesfilter_v1_nonlinear_derivative_provider_gap_closure_2026_05_13:
+    - source_file: bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-audit-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-result-2026-05-13.md; bayesfilter/testing/nonlinear_models_tf.py; bayesfilter/testing/__init__.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/chapters/ch28_nonlinear_ssm_validation.tex
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future fixed-null SVD derivative, wider nonlinear branch diagnostics, Hessian, GPU/XLA, and nonlinear HMC readiness passes
+      import_status: drafted
+      reason: Executes the V1 nonlinear derivative-provider gap closure pass, adding testing-lane first-derivative providers for Models B-C, certifying Model B and smooth-phase Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4, and preserving default Model C zero phase variance as an active-floor blocker until a fixed-null derivative policy is derived.
+
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
       destination: docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml

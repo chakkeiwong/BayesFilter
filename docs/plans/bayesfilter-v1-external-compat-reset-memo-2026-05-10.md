@@ -2636,3 +2636,195 @@ Interpretation:
   smooth affine score certification only;
 - derivative providers for Models B-C, nonlinear Hessian certification,
   GPU/XLA scaling, and nonlinear HMC remain gated follow-up work.
+
+## 2026-05-13 execution start: nonlinear derivative-provider gap closure
+
+User request:
+- create a plan to close the remaining nonlinear gaps and test the hypotheses;
+- tighten and audit the plan;
+- execute phase-by-phase with plan, execute, test, audit, tidy, reset-memo
+  updates;
+- continue automatically only when primary criteria and veto diagnostics pass;
+- commit scoped V1-lane files at completion.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-2026-05-13.md
+```
+
+Audit artifact:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-audit-2026-05-13.md
+```
+
+Lane boundary:
+- stay inside the BayesFilter V1 nonlinear-filtering lane;
+- do not edit or stage MacroFinance, DSGE, Chapter 18b, structural SVD/SGU
+  plans, or the shared monograph reset memo;
+- existing unrelated dirty/untracked files remain out of scope.
+
+Tightened execution direction:
+- close derivative-provider and score-diagnostic gaps for Models B-C where the
+  current smooth SVD score branch supports the law;
+- keep Hessian, GPU/XLA, and nonlinear HMC gated until score parity and branch
+  diagnostics pass;
+- treat the default Model C zero phase variance as a branch-diagnostic issue,
+  not as something to hide with a silent numerical floor.
+
+### Phase D0: baseline and drift check
+
+Baseline command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `22 passed, 2 warnings`.
+
+Additional status:
+- branch `main` remains ahead of `origin/main` by 12 commits before this pass;
+- the shared monograph reset memo and unrelated untracked files are dirty but
+  out of lane and unstaged;
+- scan for NumPy imports in production nonlinear code and the nonlinear testing
+  helpers under this pass found no matches.
+
+Interpretation:
+- baseline is clean;
+- continuation to Model B derivative-provider implementation is justified.
+
+### Phase D1-D2: Model B and Model C derivative providers
+
+Implementation:
+- added `make_nonlinear_accumulation_first_derivatives_tf`;
+- added `make_univariate_nonlinear_growth_first_derivatives_tf`;
+- changed the testing fixtures so Model B and Model C parameters can be tensors
+  as well as Python scalars;
+- added optional `initial_phase_variance` to the Model C testing fixture while
+  preserving the default zero-variance phase benchmark;
+- exported the derivative providers from `bayesfilter.testing`.
+
+Formula audit:
+- Model B derivatives match
+  \(m_t=\rho m_{t-1}+\sigma\varepsilon_t\),
+  \(k_t=\alpha k_{t-1}+\beta\tanh(m_t)\), and \(y_t=m_t+k_t+u_t\);
+- Model C derivatives match the phase-state nonlinear growth law, quadratic
+  observation, observation variance derivative \(2\sigma_y\), and initial
+  covariance derivative with respect to \(P_{0,x}\);
+- all derivative providers obey the analytic score contract: map Jacobians and
+  parameter partials are evaluated with sigma-point inputs held fixed.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `13 passed, 2 warnings`.
+
+Interpretation:
+- H-D1 is supported: Model B has an explicit derivative provider without
+  changing the production structural callback contract;
+- H-D2 is supported: Model B analytic scores match centered finite differences
+  for SVD cubature, SVD-UKF, and SVD-CUT4 on the selected smooth branch;
+- H-D3 is partially supported: Model C analytic scores match centered finite
+  differences for all three backends on a nondegenerate phase-state testing
+  variant;
+- H-D4 is supported: the default zero-phase-variance Model C fixture blocks the
+  current smooth SVD score branch by active floor, so it is not promoted to a
+  default score-ready law.
+
+### Phase D3: branch summary extension
+
+Implementation:
+- extended score branch summaries from affine-only to affine, Model B, and
+  smooth-phase Model C;
+- added a default Model C branch-summary blocker test that counts the zero
+  phase variance as an active-floor blocker.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `12 passed, 2 warnings`.
+
+Interpretation:
+- branch diagnostics now separate score-ready nonlinear fixtures from the
+  default deterministic-degenerate Model C fixture;
+- continuation to documentation and final validation is justified.
+
+### Phase D4: documentation, hygiene, and final validation
+
+Documentation/result updates:
+- updated `docs/chapters/ch28_nonlinear_ssm_validation.tex` with Model B and
+  Model C derivative-provider equations and current score-claim boundaries;
+- added result artifact:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-derivative-provider-gap-closure-result-2026-05-13.md
+```
+
+- registered plan, audit, result, code, test, and chapter artifacts in
+  `docs/source_map.yml`.
+
+Focused nonlinear/V1 validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `62 passed, 2 skipped, 2 warnings`.
+
+Full default CPU validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+```
+
+Result:
+- `193 passed, 5 skipped, 2 warnings`.
+
+Hygiene:
+- `py_compile` passed for touched Python modules/tests;
+- `git diff --check` passed;
+- `docs/source_map.yml` parsed with `yaml.safe_load`;
+- scan for NumPy imports in production nonlinear code and the touched nonlinear
+  testing helpers found no matches.
+
+Completion interpretation:
+- derivative-provider gap is closed for Model B on the selected score branch;
+- Model C derivative-provider correctness is established on a nondegenerate
+  phase-state testing variant;
+- default Model C remains correctly blocked by the smooth SVD active-floor
+  gate;
+- Hessian, GPU/XLA, nonlinear HMC, and default-Model-C fixed-null derivative
+  work remain future phases.

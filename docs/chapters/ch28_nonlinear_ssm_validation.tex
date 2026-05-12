@@ -162,11 +162,83 @@ floors, and \(N_{\mathrm{points}}\) is the rule size.  These diagnostics keep
 model-law failures separate from numerical regularization.  They are also the
 gate before analytic score or HMC claims.
 
-The analytic first-order score is currently certified only on a smooth affine
-fixture with an explicit structural derivative provider.  Models B--C remain
-value-only for analytic-score purposes until their transition and observation
-Jacobian and parameter-derivative providers are added.  Consequently, GPU/XLA
-and HMC evidence for nonlinear Models B--C is deliberately deferred.
+The analytic first-order score now has a second rung beyond the affine fixture.
+For Model B we use
+\[
+  \theta_B=(\rho,\sigma,\beta)
+\]
+with \(\alpha\), the initial law, the innovation variance, and the observation
+variance held fixed.  The derivative provider supplies
+\[
+  \frac{\partial F}{\partial x_{t-1}}
+  =
+  \begin{bmatrix}
+    \rho & 0\\
+    \beta(1-\tanh^2 m_t)\rho & \alpha
+  \end{bmatrix},
+  \qquad
+  \frac{\partial F}{\partial \varepsilon_t}
+  =
+  \begin{bmatrix}
+    \sigma\\
+    \beta(1-\tanh^2 m_t)\sigma
+  \end{bmatrix},
+\]
+and parameter partials
+\[
+  F_\rho=
+  \begin{bmatrix}
+    m_{t-1}\\
+    \beta(1-\tanh^2 m_t)m_{t-1}
+  \end{bmatrix},\quad
+  F_\sigma=
+  \begin{bmatrix}
+    \varepsilon_t\\
+    \beta(1-\tanh^2 m_t)\varepsilon_t
+  \end{bmatrix},\quad
+  F_\beta=
+  \begin{bmatrix}
+    0\\
+    \tanh(m_t)
+  \end{bmatrix}.
+\]
+The observation derivative is \(H_x=[1,1]\).  Centered finite differences of
+the implemented SVD cubature, SVD-UKF, and SVD-CUT4 likelihoods match the
+analytic scores on the selected smooth branch.
+
+For Model C we use
+\[
+  \theta_C=(\sigma_u,\sigma_y,P_{0,x}).
+\]
+The derivative provider supplies
+\[
+  F_x =
+  \begin{bmatrix}
+  \frac12+25\frac{1-x^2}{(1+x^2)^2} & -9.6\sin(1.2\tau)\\
+  0 & 1
+  \end{bmatrix},
+  \qquad
+  F_\varepsilon =
+  \begin{bmatrix}
+    \sigma_u\\0
+  \end{bmatrix},
+\]
+\[
+  F_{\sigma_u}=(\varepsilon_t,0)',\qquad
+  \partial_{\sigma_y}R=2\sigma_y,\qquad
+  \partial_{P_{0,x}}P_0=\operatorname{diag}(1,0),
+\]
+and \(H_x=[x/10,0]\).  Score parity is certified on a nondegenerate
+phase-state testing variant with positive phase variance.  The default Model C
+value benchmark still has zero phase variance.  Under the current smooth
+simple-spectrum/no-active-floor SVD score branch, that default law is blocked
+by an active placement floor.  This is an intentional diagnostic: the default
+deterministic phase law needs a future fixed-null-direction derivative policy
+before it can be promoted to a score-ready target.
+
+Consequently, GPU/XLA and HMC evidence for nonlinear Models B--C remains
+deferred until the score-ready parameter boxes, branch diagnostics, and any
+future fixed-null derivative branch have been selected and tested.
 
 \section{Required Outputs}
 \label{sec:bf-nonlinear-required-outputs}

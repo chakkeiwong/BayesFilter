@@ -12,6 +12,14 @@ from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
 )
 from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_log_likelihood
 from bayesfilter.structural_tf import make_affine_structural_tf
+from bayesfilter.testing import (
+    make_nonlinear_accumulation_first_derivatives_tf,
+    make_nonlinear_accumulation_model_tf,
+    make_univariate_nonlinear_growth_first_derivatives_tf,
+    make_univariate_nonlinear_growth_model_tf,
+    model_b_observations_tf,
+    model_c_observations_tf,
+)
 from bayesfilter.testing.tf_svd_cut_autodiff_oracle import (
     tf_svd_cut4_score_hessian_autodiff_oracle,
 )
@@ -138,6 +146,80 @@ def _cut_value(params: tf.Tensor) -> tf.Tensor:
     return value
 
 
+def _model_b_and_derivatives(params: tf.Tensor):
+    model = make_nonlinear_accumulation_model_tf(
+        rho=params[0],
+        sigma=params[1],
+        beta=params[2],
+    )
+    derivatives = make_nonlinear_accumulation_first_derivatives_tf(
+        rho=params[0],
+        sigma=params[1],
+        beta=params[2],
+    )
+    return model, derivatives
+
+
+def _model_b_value(params: tf.Tensor, backend: str) -> tf.Tensor:
+    model, _derivatives = _model_b_and_derivatives(params)
+    if backend == "tf_svd_cut4":
+        value, _means, _covariances, _diagnostics = tf_svd_cut4_log_likelihood(
+            model_b_observations_tf(),
+            model,
+            innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+        )
+        return value
+    rule = "cubature" if backend == "tf_svd_cubature" else "unscented"
+    value, _means, _covariances, _diagnostics = tf_svd_sigma_point_log_likelihood(
+        model_b_observations_tf(),
+        model,
+        rule=rule,
+        innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+    )
+    return value
+
+
+def _model_c_and_derivatives(params: tf.Tensor, *, phase_variance: tf.Tensor | float):
+    model = make_univariate_nonlinear_growth_model_tf(
+        process_sigma=params[0],
+        observation_sigma=params[1],
+        initial_variance=params[2],
+        initial_phase_variance=phase_variance,
+    )
+    derivatives = make_univariate_nonlinear_growth_first_derivatives_tf(
+        process_sigma=params[0],
+        observation_sigma=params[1],
+    )
+    return model, derivatives
+
+
+def _model_c_value(
+    params: tf.Tensor,
+    backend: str,
+    *,
+    phase_variance: tf.Tensor | float,
+) -> tf.Tensor:
+    model, _derivatives = _model_c_and_derivatives(
+        params,
+        phase_variance=phase_variance,
+    )
+    if backend == "tf_svd_cut4":
+        value, _means, _covariances, _diagnostics = tf_svd_cut4_log_likelihood(
+            model_c_observations_tf(),
+            model,
+            innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+        )
+        return value
+    rule = "cubature" if backend == "tf_svd_cubature" else "unscented"
+    value, _means, _covariances, _diagnostics = tf_svd_sigma_point_log_likelihood(
+        model_c_observations_tf(),
+        model,
+        rule=rule,
+        innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+    )
+    return value
+
+
 def _finite_difference_score(value_fn, theta: np.ndarray, step: float = 1e-5):
     theta = np.asarray(theta, dtype=np.float64)
     score = np.zeros(theta.size, dtype=np.float64)
@@ -257,3 +339,102 @@ def test_svd_cubature_analytic_score_graph_parity() -> None:
     graph_value, graph_score = compiled()
     np.testing.assert_allclose(graph_value.numpy(), eager.log_likelihood.numpy(), atol=1e-12)
     np.testing.assert_allclose(graph_score.numpy(), eager.score.numpy(), atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    ("score_fn", "backend"),
+    [
+        (tf_svd_cubature_score, "tf_svd_cubature"),
+        (tf_svd_ukf_score, "tf_svd_ukf"),
+        (tf_svd_cut4_score, "tf_svd_cut4"),
+    ],
+)
+def test_model_b_analytic_score_matches_finite_difference(score_fn, backend) -> None:
+    params = tf.constant([0.70, 0.25, 0.80], dtype=tf.float64)
+    model, derivatives = _model_b_and_derivatives(params)
+    analytic = score_fn(
+        model_b_observations_tf(),
+        model,
+        derivatives,
+        innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+        spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+    )
+    finite_difference = _finite_difference_score(
+        lambda values: _model_b_value(values, backend),
+        params.numpy(),
+        step=2e-5,
+    )
+
+    np.testing.assert_allclose(analytic.score.numpy(), finite_difference, rtol=5e-4, atol=5e-4)
+    assert analytic.hessian is None
+    assert analytic.diagnostics.extra["derivative_provider"] == (
+        "model_b_nonlinear_accumulation_first_derivatives"
+    )
+    assert analytic.diagnostics.extra["derivative_method"] == "analytic_first_order_smooth_branch"
+    np.testing.assert_allclose(
+        analytic.diagnostics.extra["deterministic_residual"].numpy(),
+        0.0,
+        atol=1e-12,
+    )
+
+
+@pytest.mark.parametrize(
+    ("score_fn", "backend"),
+    [
+        (tf_svd_cubature_score, "tf_svd_cubature"),
+        (tf_svd_ukf_score, "tf_svd_ukf"),
+        (tf_svd_cut4_score, "tf_svd_cut4"),
+    ],
+)
+def test_model_c_smooth_phase_analytic_score_matches_finite_difference(
+    score_fn,
+    backend,
+) -> None:
+    params = tf.constant([1.0, 1.0, 0.20], dtype=tf.float64)
+    phase_variance = tf.constant(0.05, dtype=tf.float64)
+    model, derivatives = _model_c_and_derivatives(
+        params,
+        phase_variance=phase_variance,
+    )
+    analytic = score_fn(
+        model_c_observations_tf(),
+        model,
+        derivatives,
+        innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+        spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+    )
+    finite_difference = _finite_difference_score(
+        lambda values: _model_c_value(values, backend, phase_variance=phase_variance),
+        params.numpy(),
+        step=1e-5,
+    )
+
+    np.testing.assert_allclose(analytic.score.numpy(), finite_difference, rtol=1e-3, atol=1e-3)
+    assert analytic.hessian is None
+    assert analytic.diagnostics.extra["derivative_provider"] == (
+        "model_c_nonlinear_growth_first_derivatives"
+    )
+    assert analytic.diagnostics.extra["derivative_method"] == "analytic_first_order_smooth_branch"
+    np.testing.assert_allclose(
+        analytic.diagnostics.extra["deterministic_residual"].numpy(),
+        0.0,
+        atol=1e-12,
+    )
+
+
+def test_model_c_default_zero_phase_variance_blocks_smooth_score_branch() -> None:
+    params = tf.constant([1.0, 1.0, 0.20], dtype=tf.float64)
+    model, derivatives = _model_c_and_derivatives(
+        params,
+        phase_variance=tf.constant(0.0, dtype=tf.float64),
+    )
+
+    with pytest.raises(tf.errors.InvalidArgumentError, match="blocked_active_floor"):
+        tf_svd_cut4_score(
+            model_c_observations_tf(),
+            model,
+            derivatives,
+            placement_floor=tf.constant(0.0, dtype=tf.float64),
+            innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+            spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        )

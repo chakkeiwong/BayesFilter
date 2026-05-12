@@ -6,7 +6,9 @@ from bayesfilter import StatePartition
 from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import TFStructuralFirstDerivatives
 from bayesfilter.structural_tf import make_affine_structural_tf
 from bayesfilter.testing import (
+    make_nonlinear_accumulation_first_derivatives_tf,
     make_nonlinear_accumulation_model_tf,
+    make_univariate_nonlinear_growth_first_derivatives_tf,
     make_univariate_nonlinear_growth_model_tf,
     model_b_observations_tf,
     model_c_observations_tf,
@@ -159,20 +161,42 @@ def _parameterized_model_a(params: tf.Tensor, *, repeated_spectrum: bool = False
 
 
 def _parameterized_model_b(params: tf.Tensor):
-    # Eager-only testing builder for branch summaries.
     return make_nonlinear_accumulation_model_tf(
-        rho=float(params[0].numpy()),
-        sigma=float(params[1].numpy()),
-        beta=float(params[2].numpy()),
+        rho=params[0],
+        sigma=params[1],
+        beta=params[2],
+    )
+
+
+def _parameterized_model_b_derivatives(params: tf.Tensor):
+    return make_nonlinear_accumulation_first_derivatives_tf(
+        rho=params[0],
+        sigma=params[1],
+        beta=params[2],
     )
 
 
 def _parameterized_model_c(params: tf.Tensor):
-    # Eager-only testing builder for branch summaries.
     return make_univariate_nonlinear_growth_model_tf(
-        process_sigma=float(params[0].numpy()),
-        observation_sigma=float(params[1].numpy()),
-        initial_variance=float(params[2].numpy()),
+        process_sigma=params[0],
+        observation_sigma=params[1],
+        initial_variance=params[2],
+    )
+
+
+def _parameterized_model_c_smooth_phase(params: tf.Tensor):
+    return make_univariate_nonlinear_growth_model_tf(
+        process_sigma=params[0],
+        observation_sigma=params[1],
+        initial_variance=params[2],
+        initial_phase_variance=tf.constant(0.05, dtype=tf.float64),
+    )
+
+
+def _parameterized_model_c_derivatives(params: tf.Tensor):
+    return make_univariate_nonlinear_growth_first_derivatives_tf(
+        process_sigma=params[0],
+        observation_sigma=params[1],
     )
 
 
@@ -269,30 +293,67 @@ def test_value_branch_summaries_cover_models_a_b_c_and_all_backends() -> None:
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
-def test_score_branch_summary_is_affine_only_until_nonlinear_derivative_providers_exist(
+def test_score_branch_summary_covers_affine_model_b_and_smooth_model_c(
     backend,
 ) -> None:
-    observations = tf.constant([[0.2], [-0.05], [0.15]], dtype=tf.float64)
-    parameter_grid = tf.constant(
-        [[0.29, 0.25, 1.00], [0.31, 0.27, 1.05], [0.34, 0.29, 1.08]],
-        dtype=tf.float64,
-    )
+    cases = [
+        (
+            tf.constant([[0.29, 0.25, 1.00], [0.31, 0.27, 1.05]], dtype=tf.float64),
+            lambda values: _smooth_affine_model_and_derivatives(values)[0],
+            lambda values: _smooth_affine_model_and_derivatives(values)[1],
+            tf.constant([[0.2], [-0.05], [0.15]], dtype=tf.float64),
+        ),
+        (
+            tf.constant([[0.68, 0.24, 0.78], [0.70, 0.25, 0.80]], dtype=tf.float64),
+            _parameterized_model_b,
+            _parameterized_model_b_derivatives,
+            model_b_observations_tf(),
+        ),
+        (
+            tf.constant([[0.95, 1.00, 0.18], [1.00, 1.02, 0.20]], dtype=tf.float64),
+            _parameterized_model_c_smooth_phase,
+            _parameterized_model_c_derivatives,
+            model_c_observations_tf(),
+        ),
+    ]
+
+    for parameter_grid, model_builder, derivative_builder, observations in cases:
+        summary = nonlinear_sigma_point_score_branch_summary(
+            observations,
+            parameter_grid,
+            model_builder,
+            derivative_builder,
+            backend=backend,
+            spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        )
+
+        assert summary.mode == "score"
+        assert summary.total_count == int(parameter_grid.shape[0])
+        assert summary.ok_count == summary.total_count
+        assert summary.active_floor_count == 0
+        assert summary.weak_spectral_gap_count == 0
+        assert summary.nonfinite_count == 0
+        assert summary.ok_fraction == 1.0
+        assert summary.max_point_count > 0
+        np.testing.assert_allclose(summary.max_deterministic_residual, 0.0, atol=1e-12)
+
+
+def test_default_model_c_score_branch_summary_counts_active_floor_blocker() -> None:
+    parameter_grid = tf.constant([[1.0, 1.0, 0.20]], dtype=tf.float64)
 
     summary = nonlinear_sigma_point_score_branch_summary(
-        observations,
+        model_c_observations_tf(),
         parameter_grid,
-        lambda values: _smooth_affine_model_and_derivatives(values)[0],
-        lambda values: _smooth_affine_model_and_derivatives(values)[1],
-        backend=backend,
-        spectral_gap_tolerance=tf.constant(1e-7, dtype=tf.float64),
+        _parameterized_model_c,
+        _parameterized_model_c_derivatives,
+        backend="tf_svd_cut4",
+        spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
     )
 
-    assert summary.mode == "score"
-    assert summary.total_count == 3
-    assert summary.ok_count == 3
+    assert summary.total_count == 1
+    assert summary.ok_count == 0
+    assert summary.active_floor_count == 1
     assert summary.weak_spectral_gap_count == 0
-    assert summary.ok_fraction == 1.0
-    assert summary.max_point_count > 0
 
 
 def test_score_branch_summary_counts_weak_spectral_gap_blocker() -> None:

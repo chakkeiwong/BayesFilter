@@ -15,6 +15,9 @@ from bayesfilter.nonlinear.sigma_points_tf import (
     TFSigmaPointRule,
     tf_svd_sigma_point_placement,
 )
+from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
+    TFStructuralFirstDerivatives,
+)
 from bayesfilter.structural import StatePartition, StructuralFilterConfig
 from bayesfilter.structural_tf import TFStructuralStateSpace, make_affine_structural_tf
 
@@ -78,18 +81,19 @@ def make_affine_gaussian_structural_oracle_tf() -> TFStructuralStateSpace:
 
 def make_nonlinear_accumulation_model_tf(
     *,
-    rho: float = 0.70,
-    sigma: float = 0.25,
-    alpha: float = 0.55,
-    beta: float = 0.80,
-    observation_sigma: float = 0.30,
+    rho: tf.Tensor | float = 0.70,
+    sigma: tf.Tensor | float = 0.25,
+    alpha: tf.Tensor | float = 0.55,
+    beta: tf.Tensor | float = 0.80,
+    observation_sigma: tf.Tensor | float = 0.30,
 ) -> TFStructuralStateSpace:
     """Return Model B, a smooth nonlinear structural accumulation fixture."""
 
-    rho_t = tf.constant(rho, dtype=tf.float64)
-    sigma_t = tf.constant(sigma, dtype=tf.float64)
-    alpha_t = tf.constant(alpha, dtype=tf.float64)
-    beta_t = tf.constant(beta, dtype=tf.float64)
+    rho_t = _scalar64(rho, name="rho")
+    sigma_t = _scalar64(sigma, name="sigma")
+    alpha_t = _scalar64(alpha, name="alpha")
+    beta_t = _scalar64(beta, name="beta")
+    observation_sigma_t = _scalar64(observation_sigma, name="observation_sigma")
     partition = StatePartition(
         state_names=("m", "k"),
         stochastic_indices=(0,),
@@ -134,7 +138,7 @@ def make_nonlinear_accumulation_model_tf(
         initial_mean=tf.zeros([2], dtype=tf.float64),
         initial_covariance=tf.linalg.diag(tf.constant([0.25, 0.20], dtype=tf.float64)),
         innovation_covariance=tf.constant([[1.0]], dtype=tf.float64),
-        observation_covariance=tf.constant([[observation_sigma**2]], dtype=tf.float64),
+        observation_covariance=tf.reshape(tf.square(observation_sigma_t), [1, 1]),
         transition_fn=transition_fn,
         observation_fn=observation_fn,
         deterministic_residual_fn=residual_fn,
@@ -142,15 +146,121 @@ def make_nonlinear_accumulation_model_tf(
     )
 
 
+def make_nonlinear_accumulation_first_derivatives_tf(
+    *,
+    rho: tf.Tensor | float = 0.70,
+    sigma: tf.Tensor | float = 0.25,
+    alpha: tf.Tensor | float = 0.55,
+    beta: tf.Tensor | float = 0.80,
+) -> TFStructuralFirstDerivatives:
+    """Return Model B first derivatives for theta = (rho, sigma, beta)."""
+
+    rho_t = _scalar64(rho, name="rho")
+    sigma_t = _scalar64(sigma, name="sigma")
+    alpha_t = _scalar64(alpha, name="alpha")
+    beta_t = _scalar64(beta, name="beta")
+    parameter_dim = 3
+    state_dim = 2
+    innovation_dim = 1
+    observation_dim = 1
+
+    def transition_state_jacobian_fn(
+        previous_state: tf.Tensor,
+        innovation: tf.Tensor,
+    ) -> tf.Tensor:
+        previous = _as_points(previous_state, name="previous_state")
+        eps = _as_points(innovation, name="innovation")[:, 0]
+        m_next = rho_t * previous[:, 0] + sigma_t * eps
+        sech2 = 1.0 - tf.square(tf.math.tanh(m_next))
+        point_count = tf.shape(previous)[0]
+        zeros = tf.zeros([point_count], dtype=tf.float64)
+        row_m = tf.stack([tf.fill([point_count], rho_t), zeros], axis=1)
+        row_k = tf.stack(
+            [beta_t * sech2 * rho_t, tf.fill([point_count], alpha_t)],
+            axis=1,
+        )
+        return tf.stack([row_m, row_k], axis=1)
+
+    def transition_innovation_jacobian_fn(
+        previous_state: tf.Tensor,
+        innovation: tf.Tensor,
+    ) -> tf.Tensor:
+        previous = _as_points(previous_state, name="previous_state")
+        eps = _as_points(innovation, name="innovation")[:, 0]
+        m_next = rho_t * previous[:, 0] + sigma_t * eps
+        sech2 = 1.0 - tf.square(tf.math.tanh(m_next))
+        column = tf.stack(
+            [tf.fill(tf.shape(eps), sigma_t), beta_t * sech2 * sigma_t],
+            axis=1,
+        )
+        return column[:, :, tf.newaxis]
+
+    def d_transition_fn(previous_state: tf.Tensor, innovation: tf.Tensor) -> tf.Tensor:
+        previous = _as_points(previous_state, name="previous_state")
+        eps = _as_points(innovation, name="innovation")[:, 0]
+        m_next = rho_t * previous[:, 0] + sigma_t * eps
+        tanh_m = tf.math.tanh(m_next)
+        sech2 = 1.0 - tf.square(tanh_m)
+        zeros = tf.zeros_like(eps)
+        d_rho = tf.stack([previous[:, 0], beta_t * sech2 * previous[:, 0]], axis=1)
+        d_sigma = tf.stack([eps, beta_t * sech2 * eps], axis=1)
+        d_beta = tf.stack([zeros, tanh_m], axis=1)
+        return tf.stack([d_rho, d_sigma, d_beta], axis=0)
+
+    def observation_state_jacobian_fn(state_points: tf.Tensor) -> tf.Tensor:
+        states = _as_points(state_points, name="state_points")
+        point_count = tf.shape(states)[0]
+        return tf.broadcast_to(
+            tf.constant([[1.0, 1.0]], dtype=tf.float64),
+            [point_count, observation_dim, state_dim],
+        )
+
+    def d_observation_fn(state_points: tf.Tensor) -> tf.Tensor:
+        states = _as_points(state_points, name="state_points")
+        return tf.zeros(
+            [parameter_dim, tf.shape(states)[0], observation_dim],
+            dtype=tf.float64,
+        )
+
+    return TFStructuralFirstDerivatives(
+        d_initial_mean=tf.zeros([parameter_dim, state_dim], dtype=tf.float64),
+        d_initial_covariance=tf.zeros(
+            [parameter_dim, state_dim, state_dim],
+            dtype=tf.float64,
+        ),
+        d_innovation_covariance=tf.zeros(
+            [parameter_dim, innovation_dim, innovation_dim],
+            dtype=tf.float64,
+        ),
+        d_observation_covariance=tf.zeros(
+            [parameter_dim, observation_dim, observation_dim],
+            dtype=tf.float64,
+        ),
+        transition_state_jacobian_fn=transition_state_jacobian_fn,
+        transition_innovation_jacobian_fn=transition_innovation_jacobian_fn,
+        d_transition_fn=d_transition_fn,
+        observation_state_jacobian_fn=observation_state_jacobian_fn,
+        d_observation_fn=d_observation_fn,
+        name="model_b_nonlinear_accumulation_first_derivatives",
+    )
+
+
 def make_univariate_nonlinear_growth_model_tf(
     *,
-    process_sigma: float = 1.0,
-    observation_sigma: float = 1.0,
-    initial_variance: float = 0.20,
+    process_sigma: tf.Tensor | float = 1.0,
+    observation_sigma: tf.Tensor | float = 1.0,
+    initial_variance: tf.Tensor | float = 0.20,
+    initial_phase_variance: tf.Tensor | float = 0.0,
 ) -> TFStructuralStateSpace:
     """Return Model C as an autonomous phase-state testing fixture."""
 
-    process_sigma_t = tf.constant(process_sigma, dtype=tf.float64)
+    process_sigma_t = _scalar64(process_sigma, name="process_sigma")
+    observation_sigma_t = _scalar64(observation_sigma, name="observation_sigma")
+    initial_variance_t = _scalar64(initial_variance, name="initial_variance")
+    initial_phase_variance_t = _scalar64(
+        initial_phase_variance,
+        name="initial_phase_variance",
+    )
     partition = StatePartition(
         state_names=("x", "tau"),
         stochastic_indices=(0,),
@@ -201,14 +311,121 @@ def make_univariate_nonlinear_growth_model_tf(
         config=config,
         initial_mean=tf.constant([0.0, 1.0], dtype=tf.float64),
         initial_covariance=tf.linalg.diag(
-            tf.constant([initial_variance, 0.0], dtype=tf.float64)
+            tf.stack([initial_variance_t, initial_phase_variance_t])
         ),
         innovation_covariance=tf.constant([[1.0]], dtype=tf.float64),
-        observation_covariance=tf.constant([[observation_sigma**2]], dtype=tf.float64),
+        observation_covariance=tf.reshape(tf.square(observation_sigma_t), [1, 1]),
         transition_fn=transition_fn,
         observation_fn=observation_fn,
         deterministic_residual_fn=residual_fn,
         name="model_c_autonomous_nonlinear_growth",
+    )
+
+
+def make_univariate_nonlinear_growth_first_derivatives_tf(
+    *,
+    process_sigma: tf.Tensor | float = 1.0,
+    observation_sigma: tf.Tensor | float = 1.0,
+) -> TFStructuralFirstDerivatives:
+    """Return Model C first derivatives for theta = (sigma_u, sigma_y, P0x)."""
+
+    process_sigma_t = _scalar64(process_sigma, name="process_sigma")
+    observation_sigma_t = _scalar64(observation_sigma, name="observation_sigma")
+    parameter_dim = 3
+    state_dim = 2
+    innovation_dim = 1
+    observation_dim = 1
+    d_initial_covariance = tf.zeros(
+        [parameter_dim, state_dim, state_dim],
+        dtype=tf.float64,
+    )
+    d_initial_covariance = tf.tensor_scatter_nd_update(
+        d_initial_covariance,
+        [[2, 0, 0]],
+        [tf.constant(1.0, dtype=tf.float64)],
+    )
+    d_observation_covariance = tf.zeros(
+        [parameter_dim, observation_dim, observation_dim],
+        dtype=tf.float64,
+    )
+    d_observation_covariance = tf.tensor_scatter_nd_update(
+        d_observation_covariance,
+        [[1, 0, 0]],
+        [2.0 * observation_sigma_t],
+    )
+
+    def transition_state_jacobian_fn(
+        previous_state: tf.Tensor,
+        innovation: tf.Tensor,
+    ) -> tf.Tensor:
+        del innovation
+        previous = _as_points(previous_state, name="previous_state")
+        x_prev = previous[:, 0]
+        tau_prev = previous[:, 1]
+        denominator = 1.0 + tf.square(x_prev)
+        dx_dx = 0.5 + 25.0 * (1.0 - tf.square(x_prev)) / tf.square(denominator)
+        dx_dtau = -9.6 * tf.math.sin(1.2 * tau_prev)
+        zeros = tf.zeros_like(x_prev)
+        ones = tf.ones_like(x_prev)
+        row_x = tf.stack([dx_dx, dx_dtau], axis=1)
+        row_tau = tf.stack([zeros, ones], axis=1)
+        return tf.stack([row_x, row_tau], axis=1)
+
+    def transition_innovation_jacobian_fn(
+        previous_state: tf.Tensor,
+        innovation: tf.Tensor,
+    ) -> tf.Tensor:
+        del innovation
+        previous = _as_points(previous_state, name="previous_state")
+        point_count = tf.shape(previous)[0]
+        column = tf.stack(
+            [
+                tf.fill([point_count], process_sigma_t),
+                tf.zeros([point_count], dtype=tf.float64),
+            ],
+            axis=1,
+        )
+        return column[:, :, tf.newaxis]
+
+    def d_transition_fn(previous_state: tf.Tensor, innovation: tf.Tensor) -> tf.Tensor:
+        del previous_state
+        eps = _as_points(innovation, name="innovation")[:, 0]
+        zeros = tf.zeros_like(eps)
+        d_process_sigma = tf.stack([eps, zeros], axis=1)
+        d_observation_sigma = tf.zeros_like(d_process_sigma)
+        d_initial_variance = tf.zeros_like(d_process_sigma)
+        return tf.stack(
+            [d_process_sigma, d_observation_sigma, d_initial_variance],
+            axis=0,
+        )
+
+    def observation_state_jacobian_fn(state_points: tf.Tensor) -> tf.Tensor:
+        states = _as_points(state_points, name="state_points")
+        zeros = tf.zeros_like(states[:, 0])
+        row = tf.stack([states[:, 0] / 10.0, zeros], axis=1)
+        return row[:, tf.newaxis, :]
+
+    def d_observation_fn(state_points: tf.Tensor) -> tf.Tensor:
+        states = _as_points(state_points, name="state_points")
+        return tf.zeros(
+            [parameter_dim, tf.shape(states)[0], observation_dim],
+            dtype=tf.float64,
+        )
+
+    return TFStructuralFirstDerivatives(
+        d_initial_mean=tf.zeros([parameter_dim, state_dim], dtype=tf.float64),
+        d_initial_covariance=d_initial_covariance,
+        d_innovation_covariance=tf.zeros(
+            [parameter_dim, innovation_dim, innovation_dim],
+            dtype=tf.float64,
+        ),
+        d_observation_covariance=d_observation_covariance,
+        transition_state_jacobian_fn=transition_state_jacobian_fn,
+        transition_innovation_jacobian_fn=transition_innovation_jacobian_fn,
+        d_transition_fn=d_transition_fn,
+        observation_state_jacobian_fn=observation_state_jacobian_fn,
+        d_observation_fn=d_observation_fn,
+        name="model_c_nonlinear_growth_first_derivatives",
     )
 
 
@@ -457,6 +674,13 @@ def _as_points(values: tf.Tensor, *, name: str) -> tf.Tensor:
     if tensor.shape.rank == 2:
         return tensor
     raise ValueError(f"{name} must be one- or two-dimensional")
+
+
+def _scalar64(value: tf.Tensor | float, *, name: str) -> tf.Tensor:
+    tensor = tf.convert_to_tensor(value, dtype=tf.float64)
+    if tensor.shape.rank != 0:
+        raise ValueError(f"{name} must be scalar")
+    return tensor
 
 
 def _symmetrize(matrix: tf.Tensor) -> tf.Tensor:
