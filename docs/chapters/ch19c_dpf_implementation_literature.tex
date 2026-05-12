@@ -37,7 +37,10 @@ must be corrected to target the filtering posterior.
 
 This is the basic PF-PF point emphasized in the invertible particle-flow
 literature: the flow is best viewed as a proposal-improving device until its
-proposal-density effect has been accounted for.
+proposal-density effect has been accounted for.  The exact change-of-variables
+identity is not itself the approximation; the approximation enters through the
+choice of flow family, the numerical integration of the flow, and the finite
+particle system.
 
 \section{Change of variables under the flow map}
 \label{sec:bf-pfpf-change-of-variables}
@@ -180,7 +183,11 @@ The practical consequence is clear: one may integrate a scalar log-determinant
 alongside the particle-flow ODE rather than carrying a full dense Jacobian for
 every particle in the affine case.  In more general settings, the same identity
 still shows that the determinant is part of the dynamical system, not an
-external afterthought.
+external afterthought.  This also gives a direct debugging criterion: if the
+corrected weights behave inconsistently with the transported cloud, the first
+mathematical suspects are the Jacobian/log-determinant path, the numerical flow
+integration, and the finite-particle approximation rather than the formal
+change-of-variables identity itself.
 
 \section{What the correction restores, and what it does not}
 \label{sec:bf-pfpf-what-restored}
@@ -203,9 +210,13 @@ filter in the nonlinear case.  Several approximation layers may still remain:
     approximation.
 \end{itemize}
 Therefore PF-PF is mathematically stronger than raw flow transport, but it is
-not automatically equivalent to an exact nonlinear filtering likelihood.  Its
-status is better described as a proposal-corrected particle approximation whose
-value-side interpretation is clearer than that of uncorrected flow transport.
+not automatically equivalent to an exact nonlinear filtering likelihood.  The
+exact identity in this chapter is the change-of-variables correction for the
+proposal density; what remains approximate are the flow construction itself when
+closure or local linearization is used, the numerical integration of that flow,
+and the finite-particle system used to estimate the target.  Its status is
+better described as a proposal-corrected particle approximation whose value-side
+interpretation is clearer than that of uncorrected flow transport.
 
 \section{Why this chapter matters for the later HMC discussion}
 \label{sec:bf-pfpf-hmc-bridge}

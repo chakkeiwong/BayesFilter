@@ -83,15 +83,20 @@ where
 \end{equation}
 is the normalizing constant.
 
-At $\lambda=0$, the homotopy density is the predictive law,
+This definition deserves more emphasis than a short formula often receives.
+First, the endpoint interpretation is exact:
 \[
   \pi_{t,0}(x) = p_\theta(x_t=x \mid y_{1:t-1}),
-\]
-while at $\lambda=1$ it becomes the filtering law,
-\[
+  \qquad
   \pi_{t,1}(x) = p_\theta(x_t=x \mid y_{1:t}).
 \]
-Thus the interpolation is exact at the level of endpoint densities.
+Thus the family joins the predictive law to the filtering law without changing
+what the endpoints mean.  Second, the normalization is not merely a technical
+constant.  It is the term that keeps the intermediate object a probability
+density rather than an unnormalized score.  Third, the homotopy does not yet
+choose a transport field; it only chooses the density path the field is supposed
+to realize.
+
 Differentiating \eqref{eq:bf-pff-log-homotopy} with respect to $\lambda$ gives
 \begin{equation}
 \label{eq:bf-pff-log-homotopy-derivative}
@@ -100,7 +105,16 @@ Differentiating \eqref{eq:bf-pff-log-homotopy} with respect to $\lambda$ gives
 \end{equation}
 The term involving $Z_t(\lambda)$ is crucial: it keeps the intermediate density
 normalized.  Omitting it may produce a convenient algebraic simplification, but
-it changes the law being transported.
+it changes the law being transported.  This is one of the first places where a
+future implementation can quietly go wrong: if the code is written only in terms
+of an unnormalized path, the resulting transported object may no longer match
+the intended predictive-to-filtering homotopy.
+
+For debugging purposes, the main lesson of this section is simple: if a claimed
+particle-flow implementation does not recover the correct endpoint target even in
+a simple controlled case, one of the first questions to ask is whether the
+normalized homotopy was implemented or whether an unnormalized shortcut was
+silently substituted.
 
 \section{Continuity equation and transport PDE}
 \label{sec:bf-pff-continuity}
@@ -187,10 +201,24 @@ Thus the EDH pseudo-time ODE is
 \label{eq:bf-pff-edh-ode}
   \frac{dx}{d\lambda} = A_t(\lambda)x + b_t(\lambda).
 \end{equation}
-The load-bearing approximation here is the Gaussian closure itself.  The
-continuity equation is exact, but the affine solution
-\eqref{eq:bf-pff-edh-ode} is exact only when the intermediate densities are
-indeed Gaussian along the homotopy path.
+
+The Gaussian closure should be read with care.  The continuity equation and the
+homotopy construction are exact at their own level.  The approximation enters
+when one assumes that the intermediate family remains Gaussian and then chooses
+an affine velocity field that is consistent with that Gaussian family.  In other
+words, EDH is exact as a transport formula only when the closure assumption is
+exactly true; otherwise it is a mathematically structured approximation.
+
+A future implementation should therefore separate three tasks explicitly:
+\begin{enumerate}[label=(\roman*)]
+  \item evaluate the predictive Gaussian inputs $(m_{t|t-1},P_{t|t-1})$;
+  \item build the precision contribution $\Lambda_t$;
+  \item integrate the affine pseudo-time dynamics
+    \eqref{eq:bf-pff-edh-ode} using a numerically stable scheme.
+\end{enumerate}
+If the transported cloud behaves unexpectedly, the first debugging question is
+not merely whether the ODE solver was stable, but also whether the Gaussian
+closure itself was plausible for the state-space regime under study.
 
 \section{Linear-Gaussian recovery as the exact special case}
 \label{sec:bf-pff-linear-gaussian-recovery}
@@ -229,8 +257,29 @@ and define the local precision
 \label{eq:bf-pff-local-precision}
   \Lambda_t^{(i)} = (G_t^{(i)})^\top R_t^{-1} G_t^{(i)}.
 \end{equation}
-The local linearization of the observation map near particle $x^{(i)}$ produces
-particle-specific flow coefficients
+To state the local flow more concretely, write the local linear approximation of
+the observation map around particle $x^{(i)}$ as
+\begin{equation}
+\label{eq:bf-pff-local-linearization}
+  g_\theta(x)
+  \approx g_\theta(x^{(i)}) + G_t^{(i)}(x-x^{(i)}).
+\end{equation}
+This induces a local Gaussian information vector
+\begin{equation}
+\label{eq:bf-pff-local-information-vector}
+  \eta_t^{(i)}
+  = (G_t^{(i)})^\top R_t^{-1}
+    \bigl(y_t - g_\theta(x^{(i)}) + G_t^{(i)}x^{(i)}\bigr),
+\end{equation}
+which is the particle-wise analogue of the global Gaussian information term in
+EDH.  The corresponding local homotopy covariance is
+\begin{equation}
+\label{eq:bf-pff-local-homotopy-covariance}
+  P_{t,\lambda}^{(i)}
+  = \bigl(P_{t|t-1}^{-1} + \lambda \Lambda_t^{(i)}\bigr)^{-1}.
+\end{equation}
+The local linearization of the observation map near particle $x^{(i)}$ therefore
+produces particle-specific flow coefficients
 \begin{align}
 \label{eq:bf-pff-ledh-A}
   A_t^{(i)}(\lambda)
@@ -241,17 +290,31 @@ particle-specific flow coefficients
      + \bigl(I + \lambda A_t^{(i)}(\lambda)\bigr)
        P_{t,\lambda}^{(i)} \eta_t^{(i)},
 \end{align}
-where the local information vector is built from the linearized observation
-model.  The pseudo-time evolution is then
+with pseudo-time evolution
 \begin{equation}
 \label{eq:bf-pff-ledh-ode}
   \frac{dx^{(i)}}{d\lambda}
   = A_t^{(i)}(\lambda)x^{(i)} + b_t^{(i)}(\lambda).
 \end{equation}
-LEDH is therefore more adaptive to nonlinear observation geometry than EDH, but
-that adaptivity comes at the price of a stronger approximation dependence on the
-quality of the local linearization and on the numerical stability of the local
-Jacobians.
+
+This construction explains both the attraction and the danger of LEDH.  The
+attraction is that each particle uses a local approximation that can better
+track nonlinear observation geometry than a single global linearization.  The
+danger is that the transported law now depends on a family of particle-specific
+linearizations, each of which may behave poorly if the Jacobian is unstable,
+ill-conditioned, or evaluated in a region where the local approximation is
+misleading.  Hence LEDH is more adaptive than EDH, but it is also more fragile
+numerically and interpretively.
+
+From an implementation and debugging standpoint, LEDH adds at least three new
+failure routes relative to EDH:
+\begin{enumerate}[label=(\roman*)]
+  \item inaccurate or unstable local Jacobians;
+  \item poor local-information-vector construction;
+  \item path-dependent variation in stiffness across particles.
+\end{enumerate}
+These are not secondary engineering details.  They are direct consequences of
+how the local approximation enters the mathematics.
 
 \section{Stiffness and discretization}
 \label{sec:bf-pff-stiffness}
@@ -270,11 +333,35 @@ posterior end of the path.  This matters for implementation because the flow
 construction is only useful if it can be integrated stably and repeatedly inside
 a filtering recursion.
 
-For BayesFilter, the main consequence is conceptual.  Stiffness is not merely a
-performance issue.  It is one of the points at which a formally attractive flow
-construction can become numerically unreliable enough to change the practical
-behavior of the filter.  This is why later implementation-facing chapters must
-record discretization policy, stiffness diagnostics, and stress tests explicitly.
+The practical burden can be stated more concretely.  If the pseudo-time ODE is
+integrated with an explicit method such as RK4, then the local truncation error
+is governed by powers of the step size, but the stability envelope is controlled
+by the operator norm and spectral spread of the drift matrix.  In sharp-
+likelihood regimes, decreasing the observation noise or increasing the local
+precision can force the stable step size down dramatically.  For LEDH this may
+happen non-uniformly across the cloud, because different particles see different
+local Jacobians and therefore different local precision matrices.
+
+This is exactly why stiffness belongs in the monograph as more than a short
+warning.  It creates a direct literature-to-debugging bridge:
+\begin{itemize}
+  \item if a flow implementation behaves erratically only when observation noise
+    becomes small, stiffness is a prime mathematical suspect;
+  \item if certain particles show unstable trajectories while others remain well
+    behaved, the local LEDH precision field is a prime suspect;
+  \item if a nominally correct flow map fails under a coarse pseudo-time grid,
+    the first question should be whether the flow is underresolved rather than
+    whether the underlying theory is wrong.
+\end{itemize}
+
+For BayesFilter, the main consequence is therefore both conceptual and
+operational.  Stiffness is not merely a performance issue.  It is one of the
+main ways in which a formally attractive flow construction can become
+numerically unreliable enough to alter the practical behavior of the filter.
+That is why later implementation-facing chapters must record discretization
+policy, stiffness diagnostics, and stress tests explicitly, and why the
+literature pointers for stiffness should be treated as debugging tools rather
+than as optional background reading.
 
 \section{What this chapter does and does not claim}
 \label{sec:bf-pff-chapter-boundary}

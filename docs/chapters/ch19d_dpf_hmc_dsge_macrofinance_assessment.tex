@@ -14,6 +14,18 @@ in target-status terms.  If the exact resampling map is replaced by an OT
 relaxation, and the OT relaxation is then replaced by a learned operator,
 BayesFilter must keep track of both approximation layers.
 
+The source spine for this chapter is deliberately narrower than a generic neural
+transport survey.  The OT teacher map comes from the entropy-regularized
+particle-filter construction of
+\citet{corenflos2021differentiable}; the computational motivation for
+amortizing Sinkhorn comes from the Sinkhorn cost structure of
+\citet{cuturi2013sinkhorn} and \citet{peyre2019computational}; and the
+architecture discussion uses permutation-equivariant set operators as the
+relevant design family \citep{zaheer2017deep,lee2019set}.  These sources do not
+prove that a learned operator preserves the posterior target.  They identify the
+map family being approximated and the architectural constraints that any such
+approximation must respect.
+
 \section{The hierarchy of approximations}
 \label{sec:bf-learned-ot-hierarchy}
 
@@ -28,6 +40,23 @@ At each step in this hierarchy, one moves farther from the exact categorical map
 and gains a different form of smoothness or speed.  The learned-OT question is
 therefore not only whether a neural operator is fast or differentiable, but
 which map it is approximating and what error remains after that approximation.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.18\textwidth} p{0.30\textwidth} p{0.24\textwidth} p{0.16\textwidth}}
+\toprule
+Layer & Mathematical object & New approximation introduced & Main risk \\
+\midrule
+Categorical & realized ancestor law from $\mathrm{Categorical}(w)$ & none relative to classical resampling & pathwise discontinuity \\
+EOT teacher & barycentric map $T_\varepsilon$ from an entropy-regularized OT solve & entropy relative to unregularized OT and categorical resampling & relaxed target \\
+Finite teacher solve & finite Sinkhorn approximation to $T_\varepsilon$ & iteration/tolerance error & solver residual and unstable gradients \\
+Learned student & parametric map $T_\psi$ trained to imitate the teacher & statistical and architectural approximation & extrapolation and target shift \\
+\bottomrule
+\end{tabular}
+\caption{Approximation hierarchy for learned OT.}
+\label{tab:bf-learned-ot-hierarchy}
+\end{table}
 
 \section{Teacher map and learned map}
 \label{sec:bf-learned-ot-teacher}
@@ -66,6 +95,20 @@ approximation to a teacher map, not as a direct theorem about the original
 categorical resampling law.  The learned map inherits the OT interpretation only
 through the quality of that approximation.
 
+This also fixes the role of neural architecture.  If $T_\psi$ acts on an
+unordered particle cloud, then the natural invariance requirement is permutation
+equivariance:
+\begin{equation}
+\label{eq:bf-learned-ot-equivariance}
+  T_\psi(PX,Pw,\varepsilon) = P\,T_\psi(X,w,\varepsilon)
+\end{equation}
+for any particle permutation matrix $P$.  DeepSets-style shared row maps and
+global pooling \citep{zaheer2017deep}, or attention-based set operators
+\citep{lee2019set}, are relevant because they make this symmetry a design
+constraint rather than a hope.  Symmetry alone is not a target guarantee, but
+violating it creates an immediate implementation bug: the learned resampling
+measure would depend on arbitrary input ordering.
+
 \section{Approximation residuals and target shift}
 \label{sec:bf-learned-ot-residuals}
 
@@ -96,6 +139,46 @@ composition of:
   \item the learned-map residual relative to the OT baseline.
 \end{enumerate}
 This layered interpretation is essential for later HMC analysis.
+This also implies an important guardrail for later chapters and
+experiments: a map-level residual or transport-cost discrepancy does not by
+itself prove a specific posterior error size.  To make a stronger posterior
+claim one still needs additional evidence, for example posterior comparisons
+against the teacher OT baseline or against a trusted reference target.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.18\textwidth} p{0.24\textwidth} p{0.24\textwidth} p{0.20\textwidth}}
+\toprule
+Residual layer & Mathematical object & Why it matters & Relevant diagnostic \\
+\midrule
+Teacher-solve residual & finite Sinkhorn error relative to $T_\varepsilon$ & separates solver error from learning error & marginal residuals, transport-cost gap, fixed-iteration sensitivity \\
+Map residual & $R_\psi=T_\psi-T_\varepsilon$ & measures student imitation error on a cloud & held-out teacher/student error by geometry and $\varepsilon$ \\
+Distribution discrepancy & difference between empirical measures after teacher and student maps & connects map error to filtering summaries & Wasserstein/Sinkhorn divergence and test-function errors \\
+Posterior shift & change in parameter posterior under a learned filter path & target-level quantity of inferential interest & posterior comparison against teacher OT or trusted reference \\
+HMC target change & value-gradient object used by the sampler & determines whether HMC samples the intended object & value/gradient consistency and acceptance diagnostics \\
+\bottomrule
+\end{tabular}
+\caption{Residual and target-shift hierarchy for learned OT.}
+\label{tab:bf-learned-ot-residual-hierarchy}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.20\textwidth} p{0.24\textwidth} p{0.24\textwidth} p{0.18\textwidth}}
+\toprule
+Residual quantity & What it measures directly & What it does not by itself prove & Evidence needed next \\
+\midrule
+Teacher/student MSE & average map imitation error on sampled clouds & negligible filtering or posterior error & filtering comparisons under teacher and student maps \\
+Transport-cost gap & difference in OT-style objective values & equivalence of empirical measures or posterior targets & test-function and posterior sensitivity checks \\
+Sinkhorn divergence & distributional discrepancy between two clouds & HMC correctness or exact likelihood status & value-gradient target audit and posterior benchmark \\
+Posterior summary difference & empirical difference in means, variances, or intervals & global target equivalence & multiple datasets, stress regimes, and reference comparisons \\
+\bottomrule
+\end{tabular}
+\caption{Residual interpretation guardrail.}
+\label{tab:bf-learned-ot-residual-guardrail}
+\end{table}
 
 \section{Training-distribution dependence}
 \label{sec:bf-learned-ot-training-distribution}
@@ -104,7 +187,9 @@ A learned transport operator is always trained relative to a specific family of
 particle clouds, weights, dimensions, and regularization parameters.  Let
 $\mathcal D$ denote this training distribution.  The approximation guarantee one
 might hope for is therefore local to the support of $\mathcal D$, not global in
-all state-space models.
+all state-space models.  In particular, a small residual on the training family
+does not by itself imply a small target shift under all out-of-distribution
+weight geometries or state-space models.
 
 This dependence can enter through several channels:
 \begin{itemize}
@@ -117,6 +202,24 @@ This dependence can enter through several channels:
 If a learned operator is trained on low-dimensional clouds or a narrow range of
 regularization strengths, its use outside that regime becomes an extrapolation
 problem rather than a direct continuation of the training objective.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.22\textwidth} p{0.30\textwidth} p{0.32\textwidth}}
+\toprule
+Issue & Mathematical source & Why it matters \\
+\midrule
+Permutation sensitivity & $T_\psi$ is not equivariant as in \eqref{eq:bf-learned-ot-equivariance} & output depends on arbitrary particle ordering \\
+State-dimension transfer & architecture and weights encode a fixed coordinate dimension & low-dimensional training does not validate high-dimensional structural models \\
+Weight-simplex extrapolation & training distribution misses sharp or degenerate weight patterns & learned map may fail exactly when resampling is most important \\
+Regularization mismatch & student trained for one range of $\varepsilon$ & target and smoothness change when $\varepsilon$ changes \\
+Teacher drift & teacher is finite Sinkhorn rather than exact $\Pi_\varepsilon^*$ & student may reproduce solver artifacts rather than the intended relaxed map \\
+\bottomrule
+\end{tabular}
+\caption{Learned-OT implementation issue map.}
+\label{tab:bf-learned-ot-issue-map}
+\end{table}
 
 This is why the advanced student comparison source is helpful: it states
 explicitly that the learned OT operator there is trained on a restricted cloud
@@ -192,3 +295,5 @@ resampling approximations.  It does \emph{not} yet claim:
 Its role is narrower and mathematically prior: it identifies learned transport
 operators as approximations to an already relaxed transport baseline and states
 why that layered approximation must remain explicit in the monograph.
+
+\FloatBarrier

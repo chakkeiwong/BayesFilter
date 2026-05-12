@@ -513,6 +513,531 @@ Next phase justified?
   chapter inside the Part IV DPF block or to refactor the chapter graph with an
   explicit new slot.
 
+## 2026-05-11 update: enrichment round started
+
+The reader-facing DPF rewrite sequence completed the architectural rebuild of
+the DPF block, but the resulting chapters are still too compressed relative to
+the intended monograph standard.  A new enrichment round therefore begins under:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-master-program-2026-05-11.md`
+
+### Phase E0: source and claim-audit setup
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e0-source-claim-audit-plan-2026-05-11.md`
+
+Plan audit:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e0-plan-audit-2026-05-11.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e0-source-claim-audit-result-2026-05-11.md`
+
+Execution:
+- tightened the E0 plan before execution by adding a per-chapter priority
+  register so the enrichment round does not spread effort too evenly across
+  low-value and high-value claims;
+- initialized a fresh ResearchAssistant workspace for the enrichment round under
+  `/tmp/ra-bayesfilter-enrichment` and verified doctor/readiness status;
+- confirmed the active DPF chapter inventory for the enrichment round;
+- clarified the RA workflow expectations for chapter-level source and claim
+  auditing.
+
+Tests:
+- ResearchAssistant workspace initialization: passed.
+- ResearchAssistant doctor/readiness check: passed.
+- Active DPF chapter inventory: passed.
+- RA command support inspection relevant to source-label workflows: passed.
+
+Interpretation:
+- The enrichment round now has a concrete source-and-claim audit lane rather
+  than relying on informal citation memory.
+- This phase succeeded procedurally: later chapter-enrichment phases can now be
+  driven by explicit source/claim obligations rather than by memory or loose
+  summary instincts.
+
+Audit:
+- Primary criterion: satisfied at the setup level.
+- No blocker prevents the next phase.
+- The actual chapter-level claim ledgers and literature/debugging backlinks now
+  belong to the later enrichment phases themselves.
+
+Next phase justified?
+- Yes.  Phase E1 is now justified because the source-audit infrastructure is in
+  place and the particle-flow chapter is the first chapter that now needs a much
+  deeper derivation and literature expansion.
+
+### Phase E1: particle-flow theory enrichment
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e1-particle-flow-theory-plan-2026-05-11.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e1-particle-flow-theory-result-2026-05-12.md`
+
+Execution:
+- Reviewed the current particle-flow chapter against the stricter enrichment
+  standard.
+- Cross-checked the current chapter against CIP particle-flow source material.
+- Used the student report for a topic-ordering and coverage check on EDH,
+  LEDH, PF-PF, and stiffness.
+- Produced an explicit source-claim / local-derivation / debugging map for the
+  particle-flow chapter.
+- Produced exact-vs-approximate comparison findings and a debugging-relevance
+  map for key flow issues.
+
+Tests:
+- chapter inspected against E1 requirements;
+- CIP particle-flow sections inspected for richer source scaffolding;
+- student-report parsing used for topic and coverage orientation.
+
+Interpretation:
+- The chapter is structurally sound but still too brief relative to the
+  enrichment standard.
+- The key missing depth is in EDH derivation, LEDH derivation, and stiffness as
+  an implementation/debugging topic.
+
+Audit:
+- Primary criterion: only partially satisfied.
+- Veto diagnostics fired:
+  1. EDH still too compressed;
+  2. LEDH still too compressed;
+  3. stiffness still too short for a strong debugging reference.
+
+Next phase justified?
+- No, not yet.
+- The enrichment round should not proceed to E2 until `ch19b_dpf_literature_survey.tex`
+  itself has been expanded enough to clear the E1 veto diagnostics.
+- The correct next action is a direct deepening pass on the particle-flow
+  chapter rather than moving on to PF-PF enrichment.
+
+### E1 follow-up deepening pass
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e1-particle-flow-theory-followup-result-2026-05-12.md`
+
+Execution:
+- Deepened `docs/chapters/ch19b_dpf_literature_survey.tex` directly after the
+  initial E1 execution blocked progression.
+- Expanded the homotopy section to strengthen endpoint exactness,
+  normalization, and debugging relevance.
+- Expanded the EDH section to make the Gaussian-closure approximation more
+  explicit and to add stronger implementation/debugging interpretation.
+- Expanded the LEDH section to include the local linearization equation, the
+  local information-vector construction, and a clearer statement of the added
+  approximation layer and local numerical fragilities.
+- Expanded the stiffness section so that it now serves as a stronger
+  debugging-oriented discussion rather than only a short warning.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- Keyword audit confirmed that EDH, LEDH, Gaussian closure, exact special case,
+  and stiffness now appear in substantially richer form.
+
+Audit:
+- EDH-too-compressed veto: cleared.
+- LEDH-too-compressed veto: cleared.
+- stiffness-too-short veto: cleared.
+- Primary criterion: satisfied after the deepening pass.
+
+Interpretation:
+- The particle-flow chapter is now materially closer to the monograph standard
+  required by the enrichment round.
+- The stop condition in the first E1 pass did its job: it forced a real chapter
+  expansion instead of allowing a still-too-thin chapter to pass.
+
+Next phase justified?
+- Yes.  Phase E2 is now justified because the PF-PF chapter can now build on a
+  stronger particle-flow foundation rather than on a compressed summary.
+
+### Phase E2: PF-PF and Jacobian/log-det enrichment
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e2-pfpf-jacobian-plan-2026-05-11.md`
+
+Plan audit:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e2-plan-audit-2026-05-12.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e2-pfpf-jacobian-result-2026-05-12.md`
+
+Execution:
+- Tightened the E2 plan before execution by requiring an explicit separation
+  between mathematically exact identities, approximation sources, and observable
+  failure symptoms.
+- Deepened `docs/chapters/ch19c_dpf_implementation_literature.tex` directly.
+- Strengthened the discussion so that the chapter now distinguishes clearly
+  between:
+  1. the exact change-of-variables identity;
+  2. approximation introduced by the flow family;
+  3. approximation introduced by numerical integration;
+  4. approximation introduced by the finite-particle system.
+- Strengthened the Jacobian/log-det section so it now points more directly to
+  likely implementation failures and diagnostics.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- local text audit confirmed richer treatment of exact identity versus
+  approximation and debugging relevance.
+
+Interpretation:
+- The PF-PF chapter is now significantly more useful for implementation and
+  target interpretation.
+- The main gain is the explicit distinction between what the proposal correction
+  restores exactly and what remains approximate because of closure,
+  discretization, and finite-particle effects.
+
+Audit:
+- Primary criterion: satisfied.
+- Change-of-variables-sketched veto: cleared.
+- Nonlinear-filter-exactness-overclaim veto: cleared.
+- Jacobian/log-det-burden veto: cleared.
+
+Next phase justified?
+- Yes.  Phase E3 is now justified because the resampling/OT chapter can now be
+  deepened on top of a clearer PF-PF correction layer.
+
+### Phase E3: differentiable resampling and OT enrichment
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e3-resampling-ot-plan-2026-05-11.md`
+
+Plan audit:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e3-plan-audit-2026-05-12.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e3-resampling-ot-result-2026-05-12.md`
+
+Execution:
+- Tightened the E3 plan before execution by requiring an explicit separation of:
+  exact categorical resampling, exact OT interpretation, entropic OT
+  regularization, and finite-iteration Sinkhorn approximation.
+- Deepened `docs/chapters/ch32_diff_resampling_neural_ot.tex` directly.
+- Strengthened the chapter so that the mathematical transport object and the
+  numerical solver approximation are no longer blurred.
+- Strengthened the barycentric-map and bias-versus-differentiability sections so
+  that the exact / relaxed / approximated layers are explicit.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed and
+  reported all targets up to date.
+- `git diff --check` passed.
+- local text audit confirmed stronger chapter-level coverage of categorical
+  resampling law, OT formulation, Sinkhorn approximation, and explicit bias
+  language.
+
+Interpretation:
+- The chapter now distinguishes clearly among the categorical law, the OT
+  formulation, the entropic relaxation, and the finite solver approximation.
+- This makes the chapter materially more useful for implementation debugging and
+  for later HMC interpretation.
+
+Audit:
+- Primary criterion: satisfied.
+- OT-too-intuitive veto: cleared.
+- soft-resampling-bias-too-verbal veto: cleared for this phase.
+- regularization/finite-iteration disconnect veto: cleared.
+
+Next phase justified?
+- Yes.  Phase E4 is now justified because learned/amortized OT can now be
+  deepened on top of a clearer OT baseline and a more explicit approximation
+  hierarchy.
+
+### Phase E3 correction and build-integration repair
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e3-resampling-ot-result-2026-05-12.md`
+
+Execution:
+- Re-audited the active E3 state before proceeding to E4.
+- Found that `docs/chapters/ch32_diff_resampling_neural_ot.tex` was not yet
+  included in `docs/main.tex`; therefore the earlier E3 build note did not prove
+  that the target chapter compiled.
+- Added the missing `\input{chapters/ch32_diff_resampling_neural_ot}` between
+  the PF-PF chapter and the learned-OT chapter.
+- Repaired the malformed approximation-hierarchy list in the resampling/OT
+  chapter.
+- Added the unregularized OT coupling object, the soft-resampling nonlinear
+  test-function bias expansion, the required OT-object-versus-solver table, the
+  resampling-family comparison table, and implementation/source-debug tables.
+- Added minimal bibliography support for OT, Sinkhorn, stabilized Sinkhorn,
+  learned set operators, pseudo-marginal/HMC, and HNN references needed by the
+  E3--E5 enrichment pass.
+- Added `placeins` and `\FloatBarrier`, and set `hypertexnames=false`, to keep
+  table float anchors stable after the new DPF chapter slot was activated.
+
+Tests:
+- `latexmk -C main.tex` was run once from `docs/` to clear stale artifacts.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed
+  from `docs/` after the target chapter was wired into the book.
+- `git diff --check` passed.
+- Focused log scan found no undefined citations, no undefined references, no
+  duplicate Hyperref destination warnings, and no LaTeX errors after the final
+  E3 repair build.
+- Focused text audit confirmed the chapter now contains categorical resampling,
+  unregularized OT, entropic OT, finite Sinkhorn approximation, explicit
+  soft-resampling bias, and implementation-debug mappings.
+
+Interpretation:
+- This correction was necessary before E4.  The earlier E3 conclusion was
+  directionally right but build-incomplete because the chapter was not in the
+  compiled monograph.
+- E3 now satisfies the intended gate: learned/amortized OT can be discussed as a
+  further approximation layer on top of a compiled and source-supported OT
+  baseline.
+
+Next phase justified?
+- Yes.  Phase E4 is justified.
+
+### Phase E4: learned/amortized OT enrichment
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e4-learned-ot-plan-2026-05-11.md`
+
+Plan audit:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e4-plan-audit-2026-05-12.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e4-learned-ot-result-2026-05-12.md`
+
+Execution:
+- Tightened the E4 plan before execution by requiring stronger residual
+  interpretation guardrails.
+- Deepened `docs/chapters/ch19d_dpf_hmc_dsge_macrofinance_assessment.tex`
+  directly.
+- Strengthened the chapter so that map-level residuals, posterior-level
+  consequences, and required further evidence are more explicitly separated.
+- Strengthened the training-distribution discussion so that in-distribution
+  residual quality is more clearly separated from out-of-distribution target
+  reliability.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- local text audit confirmed stronger coverage of residual interpretation,
+  training-distribution dependence, and explicit non-equivalence claims.
+
+Interpretation:
+- The chapter is now much less likely to be misread as saying that a small
+  learned-map residual automatically implies a negligible posterior shift.
+- This gives the learned-OT layer the mathematical depth needed for later HMC
+  analysis.
+
+Audit:
+- Primary criterion: satisfied.
+- Teacher-versus-learned-too-compressed veto: cleared.
+- Residuals-only-empirical-error veto: cleared.
+- Training-distribution-too-casual veto: cleared.
+
+Next phase justified?
+- Yes.  Phase E5 is now justified because the DPF-specific HMC chapter can now
+  compare rungs against a clearer learned-OT approximation story.
+
+### Phase E4 verification and artifact completion
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e4-learned-ot-result-2026-05-12.md`
+
+Execution:
+- Re-audited the active E4 chapter against the E4 plan and audit note.
+- Found that the chapter contained the main residual prose but not the required
+  E4 tables/source-ledger artifacts.
+- Added a source-spine paragraph tying the teacher map to EOT/Sinkhorn sources
+  and learned maps to permutation-equivariant set operators.
+- Added the approximation-hierarchy table, residual/target-shift hierarchy
+  table, residual interpretation guardrail table, and learned-OT implementation
+  issue map.
+- Added the permutation-equivariance equation for learned set maps.
+- Added `\FloatBarrier` at the chapter end to keep E4 tables local.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed
+  from `docs/`.
+- `latexmk -pdf -g -interaction=nonstopmode -halt-on-error main.tex` forced
+  BibTeX/LaTeX convergence after the new set-operator citations.
+- `git diff --check` passed.
+- Focused log scan found no undefined citations, no undefined references, no
+  duplicate Hyperref destination warnings, and no LaTeX errors after the final
+  E4 build.
+- Focused text audit confirmed the presence of the E4 hierarchy, residual,
+  guardrail, and implementation issue tables.
+
+Interpretation:
+- The earlier E4 memo entry was directionally correct but overstated artifact
+  completion.  The chapter now contains the required tables and source-backed
+  implementation diagnostics.
+- E4 now clears the primary criterion: learned OT is explicitly a second
+  approximation layer, not a free exact acceleration of OT.
+
+Next phase justified?
+- Yes.  Phase E5 is justified.
+
+### Phase E5: DPF-specific HMC enrichment
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e5-hmc-enrichment-plan-2026-05-11.md`
+
+Plan audit:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e5-plan-audit-2026-05-12.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e5-hmc-enrichment-result-2026-05-12.md`
+
+Execution:
+- Tightened the E5 plan before execution by requiring an explicit rung-by-rung
+  promotion-evidence ladder.
+- Deepened `docs/chapters/ch19e_dpf_hmc_target_suitability.tex` directly.
+- Strengthened the recommendation and closing sections so that each DPF rung is
+  read not only by current target status but also by the evidence required for
+  future promotion.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed.
+- `git diff --check` passed.
+- Focused log scan found no undefined citations, no undefined references, no
+  duplicate Hyperref destination warnings, and no LaTeX errors.  The only match
+  to the scan pattern was the package name `rerunfilecheck`, not a rerun
+  diagnostic.
+- local text audit confirmed stronger rung-promotion language and clearer links
+  between target interpretation and next-step evidence.
+
+Interpretation:
+- The chapter is now a better bridge between mathematical interpretation and
+  future experimentation.
+- It no longer only classifies the current rung status; it also says what would
+  have to be shown next to make a stronger HMC claim.
+
+Audit:
+- Primary criterion: satisfied.
+- Differentiability-treated-as-near-validity veto: cleared.
+- DSGE/MacroFinance-too-slogan-like veto: cleared for this phase.
+- surrogate-HMC/HNN-too-superficial veto: improved enough to clear for this
+  enrichment step.
+
+Next phase justified?
+- Yes.  Phase E6 is now justified because the DPF block is rich enough that a
+  literature-to-debugging crosswalk can now be built on top of the enriched
+  chapters.
+
+### Phase E6: literature-to-debugging crosswalk
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e6-debug-crosswalk-plan-2026-05-11.md`
+
+Plan audit:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e6-plan-audit-2026-05-12.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e6-debug-crosswalk-result-2026-05-12.md`
+
+Execution:
+- Audited the E6 plan before execution and tightened it so the crosswalk became
+  reader-facing inside the monograph rather than only a private planning note.
+- Added `docs/chapters/ch19f_dpf_debugging_crosswalk.tex`.
+- Added `\input{chapters/ch19f_dpf_debugging_crosswalk}` to `docs/main.tex`
+  after the DPF HMC target chapter.
+- Added `longtable` support to `docs/preamble.tex` and converted the E6
+  crosswalk to a breakable table after the first build showed that the
+  page-sized table was too tall as a float.
+- The new chapter maps failures to mathematical layer, chapter section,
+  literature, and next diagnostic, including ESS collapse, flow stiffness,
+  EDH/LEDH mismatch, PF-PF/log-det issues, resampling bias, Sinkhorn issues,
+  learned-OT extrapolation, DPF-HMC target mismatch, and value-gradient mismatch.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` completed
+  from `docs/`.
+- After the `longtable` correction, `latexmk -pdf -interaction=nonstopmode
+  -halt-on-error main.tex` completed again.
+- `git diff --check` passed.
+- Focused log scan found no undefined citations, no undefined references, no
+  duplicate Hyperref destination warnings, no rerun requests, no `Float too
+  large` diagnostics, and no LaTeX errors.  The only match to the scan pattern
+  was the package name `rerunfilecheck`.
+- Focused text audit confirmed that the required issue categories and the
+  coding-agent issue taxonomy are present.
+
+Interpretation:
+- The DPF block is now not only a richer mathematical exposition but also a
+  troubleshooting reference: a future implementer can route an observed failure
+  to a chapter section, source cluster, and next diagnostic.
+- Dense-table overfull/underfull warnings remain in the LaTeX log; these are
+  typography cleanup items rather than E6 correctness blockers.
+
+Audit:
+- Primary criterion: satisfied.
+- Crosswalk-too-abstract veto: cleared by row-level diagnostics.
+- Issue-to-literature mapping vague veto: cleared by chapter labels and
+  citation clusters.
+- Artifact-not-useful-for-implementation-diagnosis veto: cleared by the
+  diagnostic order and coding-agent taxonomy.
+
+Next phase justified?
+- Yes.  Phase E7 is justified because the enriched chapters and reader-facing
+  debugging crosswalk are now in place for a final round-level audit.
+
+### Phase E7: final enrichment audit and consolidation
+
+Plan note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e7-final-audit-plan-2026-05-11.md`
+
+Result note:
+- `docs/plans/bayesfilter-dpf-monograph-enrichment-phase-e7-final-audit-result-2026-05-12.md`
+
+Execution:
+- Audited the full enriched DPF block:
+  - `docs/chapters/ch19_particle_filters.tex`;
+  - `docs/chapters/ch19b_dpf_literature_survey.tex`;
+  - `docs/chapters/ch19c_dpf_implementation_literature.tex`;
+  - `docs/chapters/ch32_diff_resampling_neural_ot.tex`;
+  - `docs/chapters/ch19d_dpf_hmc_dsge_macrofinance_assessment.tex`;
+  - `docs/chapters/ch19e_dpf_hmc_target_suitability.tex`;
+  - `docs/chapters/ch19f_dpf_debugging_crosswalk.tex`.
+- Created the final E7 audit note with the required table covering
+  self-containment, literature depth, derivation depth, implementation
+  usefulness, coding-agent usefulness, and remaining gaps by chapter.
+- Consolidated the round-level interpretation: the writing/enrichment phase can
+  close, but experiment-backed validation remains a separate next phase.
+- Preserved lane discipline: did not modify student-baseline files, did not
+  update the global monograph reset memo, and did not commit or push per the
+  current user instruction.
+
+Tests:
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex` reported all
+  targets up to date from `docs/`.
+- `git diff --check` passed.
+- Focused log scan found no undefined citations, no undefined references, no
+  duplicate Hyperref destination warnings, no rerun requests, no `Float too
+  large` diagnostics, and no LaTeX errors.  The only match to the scan pattern
+  was the package name `rerunfilecheck`.
+- Text audit confirmed that the reviewed DPF block is over 2,000 lines and
+  contains chapter-local derivations, boundary statements, implementation
+  diagnostics, and the reader-facing debugging crosswalk.
+
+Interpretation:
+- The enrichment round clears the primary criterion.  The DPF block is no
+  longer only a cleaner outline; it is now a source-backed technical reference
+  that separates exact, corrected-particle, approximate, relaxed, and learned
+  surrogate target statuses.
+- Dense table overfull/underfull warnings remain as typography cleanup items,
+  not as mathematical or build blockers.
+- The next justified work is targeted validation and experiment design, not
+  another broad writing pass.
+
+Audit:
+- Structurally-correct-but-too-short veto: cleared.
+- Literature-support-still-thin veto: cleared for this round.
+- Derivations-still-too-compressed veto: cleared for the load-bearing objects.
+- Not-useful-for-coding-agents veto: cleared by the E6 debugging crosswalk and
+  chapter-local diagnostic material.
+
+Next phase justified?
+- Yes, but it should be an experiment-design and validation phase.  Priority
+  hypotheses are PF-PF log-det agreement, flow stiffness sensitivity, Sinkhorn
+  relaxation sensitivity, learned-OT residual-to-posterior stability, and HMC
+  value-gradient contract consistency.
+
+
 ## 2026-05-11 update: sixth reader-facing DPF rewrite phase completed
 
 ### Phase R6 result

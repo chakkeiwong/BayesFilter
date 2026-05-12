@@ -1,0 +1,127 @@
+\chapter{DPF Literature-to-Debugging Crosswalk}
+\label{ch:bf-dpf-debug-crosswalk}
+
+The preceding DPF chapters now separate the main mathematical layers: particle
+flow, proposal correction, differentiable resampling, OT/Sinkhorn relaxation,
+learned transport, and HMC target interpretation.  This chapter turns that
+separation into a debugging crosswalk.  Its purpose is deliberately practical:
+when an implementation fails, the reader should be able to identify the likely
+mathematical layer, return to the right chapter section, and select the next
+diagnostic before changing code.
+
+The crosswalk is not a substitute for unit tests or numerical experiments.  It
+is a way to keep those tests aligned with the literature.  Particle degeneracy
+should not be debugged as a Sinkhorn problem; a value-gradient inconsistency
+should not be explained away as ordinary Monte Carlo noise; and a learned-OT
+extrapolation failure should not be treated as evidence that the OT teacher map
+itself is invalid.
+
+\section{How to read a DPF failure}
+\label{sec:bf-dpf-debug-how-to-read}
+
+Most DPF failures are ambiguous at first observation.  A collapsed cloud, for
+example, may arise from ordinary particle degeneracy, an overly aggressive flow,
+soft-resampling shrinkage, an unstable learned map, or a target mismatch in the
+HMC wrapper.  The first diagnostic step is therefore to locate the failure in
+the computation graph:
+\begin{enumerate}[label=(\roman*)]
+  \item before the flow map;
+  \item during the flow ODE;
+  \item in proposal correction and log-determinant accounting;
+  \item at the resampling or OT-relaxation layer;
+  \item inside a learned transport approximation;
+  \item or at the HMC value-gradient interface.
+\end{enumerate}
+Only after that localization should the implementation be changed.
+
+\section{Failure-mode crosswalk}
+\label{sec:bf-dpf-debug-crosswalk-table}
+
+\begin{center}
+\scriptsize
+\begin{longtable}{@{}p{0.15\textwidth} p{0.17\textwidth} p{0.20\textwidth} p{0.18\textwidth} p{0.22\textwidth}@{}}
+\caption{Literature-to-debugging crosswalk for the rebuilt DPF block.}
+\label{tab:bf-dpf-debug-crosswalk}\\
+\toprule
+Failure mode & Likely mathematical layer & Relevant chapter section & Relevant literature & Suggested next diagnostic \\
+\midrule
+\endfirsthead
+\caption[]{Literature-to-debugging crosswalk for the rebuilt DPF block,
+continued.}\\
+\toprule
+Failure mode & Likely mathematical layer & Relevant chapter section & Relevant literature & Suggested next diagnostic \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+ESS collapse or weight concentration & classical SMC degeneracy, proposal mismatch, or high-dimensional likelihood concentration & Chapter~\ref{ch:bf-particle-filters}; Chapter~\ref{ch:bf-dpf-particle-flow-foundations}, Sections~\ref{sec:bf-pff-motivation} and \ref{sec:bf-pff-stiffness} & \citet{gordon1993novel,doucet2001sequential,chopin2020introduction,bengtsson2008curse,snyder2008obstacles} & plot ESS by time and parameter region; compare bootstrap PF, flow proposal, and trusted low-dimensional reference; isolate whether collapse occurs before or after flow \\
+Flow stiffness or ODE instability & homotopy transport and numerical integration of particle-flow ODE & Chapter~\ref{ch:bf-dpf-particle-flow-foundations}, Sections~\ref{sec:bf-pff-continuity}, \ref{sec:bf-pff-edh}, and \ref{sec:bf-pff-stiffness} & \citet{daumhuang2008,li2017particle,hu2021particle} & sweep flow step size and integrator tolerance; monitor endpoint error in the linear-Gaussian recovery case; record Jacobian spectra along $\lambda$ \\
+EDH/LEDH mismatch & global Gaussian closure versus particle-local linearization & Chapter~\ref{ch:bf-dpf-particle-flow-foundations}, Sections~\ref{sec:bf-pff-edh}, \ref{sec:bf-pff-linear-gaussian-recovery}, and \ref{sec:bf-pff-ledh} & \citet{daumhuang2008,li2017particle,hu2021particle} & compare EDH and LEDH endpoint moments on the same particles; test whether local Jacobians change discontinuously across particles or parameter draws \\
+PF-PF weight or likelihood disagreement & proposal density, change of variables, and correction weight & Chapter~\ref{ch:bf-dpf-pfpf}, Sections~\ref{sec:bf-pfpf-change-of-variables}, \ref{sec:bf-pfpf-corrected-weights}, and \ref{sec:bf-pfpf-what-restored} & \citet{li2017particle,doucet2001sequential,chopin2020introduction} & verify the pre-flow and post-flow proposal densities on a synthetic affine flow; compare corrected and uncorrected weights; check normalized log weights against a brute-force reference \\
+Jacobian or log-det mismatch & determinant evolution under the flow map & Chapter~\ref{ch:bf-dpf-pfpf}, Section~\ref{sec:bf-pfpf-logdet} & \citet{li2017particle} and the change-of-variables argument in Chapter~\ref{ch:bf-dpf-pfpf} & compare integrated scalar log-det to finite-difference or automatic-differentiation Jacobian determinants in small dimension; check sign convention and time integration direction \\
+Zero or misleading resampling gradients & hard categorical resampling or a changed soft-resampling law & Chapter~\ref{ch:bf-dpf-resampling-ot}, Sections~\ref{sec:bf-dr-discontinuous-map}, \ref{sec:bf-dr-soft-resampling}, and \ref{sec:bf-dr-bias-vs-diff} & \citet{zhumurphyjonschkowski2020,corenflos2021differentiable} & trace whether ancestor selection remains discrete; test nonlinear test-function bias under soft resampling; compare gradient path to the scalar actually evaluated \\
+Sinkhorn marginal residuals or NaN gradients & entropy-regularized OT solve and finite-iteration numerical approximation & Chapter~\ref{ch:bf-dpf-resampling-ot}, Sections~\ref{sec:bf-dr-transport-view}, \ref{sec:bf-dr-entropic-ot}, and \ref{sec:bf-dr-debug-map} & \citet{villani2003topics,cuturi2013sinkhorn,peyre2019computational,schmitzer2019stabilized,corenflos2021differentiable} & monitor row and column residuals, transport-cost gap, $\varepsilon$ sensitivity, iteration budget, and log-domain stabilization; separate teacher-object error from solver error \\
+Learned-OT permutation or extrapolation failure & learned set map approximating an OT teacher & Chapter~\ref{ch:bf-dpf-learned-ot}, Sections~\ref{sec:bf-learned-ot-teacher}, \ref{sec:bf-learned-ot-residuals}, and \ref{sec:bf-learned-ot-training-distribution} & \citet{corenflos2021differentiable,zaheer2017deep,lee2019set} & permute particle order and compare outputs; evaluate teacher-student residuals under sharp weights, larger $N$, shifted state dimension, and out-of-distribution parameter regions \\
+DPF-HMC target mismatch & scalar target, gradient object, and posterior interpretation & Chapter~\ref{ch:bf-dpf-hmc-target-suitability}, Sections~\ref{sec:bf-dpf-hmc-contract}, \ref{sec:bf-dpf-hmc-rung-analysis}, and \ref{sec:bf-dpf-hmc-summary} & \citet{neal2011mcmc,andrieu2009pseudo,andrieu2010particle,betancourt2017conceptual} & audit whether $g(\theta)=\nabla_\theta\ell(\theta)$ for the same $\ell$; run finite-difference gradient checks; classify the rung as exact, corrected particle, relaxed, or learned surrogate before interpreting chains \\
+Value object versus gradient object mismatch & implementation boundary between likelihood value, autodiff path, compiled execution, and sampler interface & Chapter~\ref{ch:bf-dpf-hmc-target-suitability}, Sections~\ref{sec:bf-dpf-hmc-contract}, \ref{sec:bf-dpf-hmc-recommendation}, and \ref{sec:bf-dpf-hmc-boundary} & \citet{neal2011mcmc,betancourt2017conceptual,greydanus2019hamiltonian} & compare value-only, autodiff, and finite-difference paths on fixed random seeds; test compiled versus eager execution; verify that accept/reject uses the same scalar whose gradient drove the trajectory \\
+\end{longtable}
+\end{center}
+
+\section{Diagnostic order}
+\label{sec:bf-dpf-debug-order}
+
+The safest debugging order is from target definition outward:
+\begin{enumerate}[label=(\arabic*)]
+  \item define the scalar object being estimated or sampled;
+  \item verify that the gradient corresponds to that scalar object;
+  \item isolate whether errors enter before flow, during flow, in proposal
+    correction, at resampling, in OT/Sinkhorn, or in learned transport;
+  \item compare each layer with a special case whose answer is known;
+  \item only then tune numerical tolerances or architecture.
+\end{enumerate}
+This order matters because many DPF failures can be made numerically smoother
+without becoming mathematically correct.  A low-variance learned map, for
+example, can still be the wrong target; a stable Sinkhorn loop can still
+represent the wrong $\varepsilon$; and a clean HMC trace can still follow a
+gradient that is not the derivative of the scalar being accepted.
+
+\section{Coding-agent issue taxonomy}
+\label{sec:bf-dpf-debug-agent-taxonomy}
+
+For implementation work, the categories in
+Table~\ref{tab:bf-dpf-debug-crosswalk} should be treated as routing labels:
+\begin{itemize}
+  \item \textbf{SMC degeneracy}: ESS, log-weight variance, proposal/reference
+    comparison.
+  \item \textbf{Flow transport}: endpoint recovery, stiffness, local Jacobian
+    stability, discretization.
+  \item \textbf{Proposal correction}: density-ratio algebra, Jacobian/log-det
+    sign, corrected-weight normalization.
+  \item \textbf{Differentiable resampling}: categorical discontinuity, relaxed
+    law, nonlinear-functional bias.
+  \item \textbf{OT/Sinkhorn}: marginal residuals, regularization, finite-iteration
+    error, numerical stabilization.
+  \item \textbf{Learned transport}: teacher residual, permutation equivariance,
+    training-distribution coverage, posterior shift.
+  \item \textbf{HMC target contract}: value-gradient consistency, target-status
+    classification, compiled-path reproducibility.
+\end{itemize}
+
+These labels are also a guard against lane drift.  Debugging a learned-OT
+failure should not trigger a rewrite of the particle-flow derivation unless the
+diagnostic has shown that the teacher itself is wrong.  Debugging an HMC
+acceptance failure should not trigger a resampling change until the
+value-gradient contract has been checked.
+
+\section{Boundary of this crosswalk}
+\label{sec:bf-dpf-debug-boundary}
+
+This chapter does not validate any DPF implementation.  It gives a structured
+route from observed failures to mathematical suspects and source-backed
+diagnostics.  The next work item after this enrichment round is therefore not a
+generic rewrite of the chapters, but a set of targeted experiments that exercise
+the rows of Table~\ref{tab:bf-dpf-debug-crosswalk}: linear-Gaussian recovery,
+affine-flow Jacobian checks, Sinkhorn residual sweeps, learned-OT
+out-of-distribution tests, and HMC value-gradient consistency tests.
+
+\FloatBarrier
