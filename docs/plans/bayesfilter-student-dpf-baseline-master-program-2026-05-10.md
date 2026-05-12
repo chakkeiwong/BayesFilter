@@ -659,8 +659,9 @@ baseline lane.
 The replicated EDH/PFPF panel is complete and is ready as a quarantined
 experimental baseline artifact.  The full-horizon EDH/PFPF sensitivity panel is
 also complete and is ready as a quarantined experimental baseline artifact.  The
-full-horizon EDH/PFPF confirmation panel is complete and is ready with caveats
-for clean-room controlled-baseline specification.
+full-horizon EDH/PFPF confirmation panel is complete.  The clean-room
+controlled-baseline specification is also complete and ready for a separate
+student-lane implementation planning phase.
 
 Completed replicated-panel plan:
 `docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
@@ -679,6 +680,18 @@ Completed full-horizon confirmation plan:
 
 Completed full-horizon confirmation result:
 `experiments/student_dpf_baselines/reports/student-dpf-baseline-full-horizon-edh-pfpf-confirmation-result-2026-05-12.md`.
+
+Completed clean-room controlled-baseline specification plan:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-plan-2026-05-12.md`.
+
+Completed clean-room controlled-baseline specification:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-2026-05-13.md`.
+
+Completed clean-room controlled-baseline specification audit:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-audit-2026-05-13.md`.
+
+Completed clean-room controlled-baseline specification result:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-result-2026-05-13.md`.
 
 The reason is concrete:
 
@@ -704,11 +717,16 @@ The reason is concrete:
 - low-noise N128/steps20 was confirmed for both implementations; moderate-noise
   flow-step policy remains implementation-specific and should be carried forward
   as a caveat.
+- the clean-room controlled-baseline specification now fixes the fixture
+  contract, metric contract, first target settings, result schema, import/copy
+  prohibitions, acceptance gates, and caveats for a later BayesFilter-owned
+  experimental implementation.
 
-The current decision is to write a caveated clean-room controlled-baseline
-specification plan inside the student-baseline lane.  That plan should describe
-fixtures, seed policy, metrics, 128-particle low-noise N20 setting, moderate
-N10/N20 diagnostic caveat, and exclusions from production.  Kernel PFF,
+The current decision is to write a separate clean-room implementation plan
+inside the student-baseline lane before writing code.  The implementation plan
+should target `experiments/controlled_dpf_baseline/`, stay out of production
+`bayesfilter/`, stay out of monograph rebuild/enrichment files, avoid vendored
+student edits, and implement only the fixed first target grid.  Kernel PFF,
 stochastic flow, DPF, dPFPF, neural OT, differentiable resampling, and HMC remain
 out of routine comparison unless later reproduction gates change their
 classifications.

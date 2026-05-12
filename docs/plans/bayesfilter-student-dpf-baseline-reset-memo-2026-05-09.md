@@ -13,7 +13,9 @@ Active master program:
 `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
 
 Active next-phase plan:
-`docs/plans/bayesfilter-student-dpf-baseline-replicated-edh-pfpf-panel-plan-2026-05-11.md`.
+none yet.  The next justified action is to write a student-lane clean-room
+implementation plan for `experiments/controlled_dpf_baseline/`, based on
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-2026-05-13.md`.
 
 Owned surfaces:
 - `experiments/student_dpf_baselines/`;
@@ -93,14 +95,15 @@ Known caveats:
 
 ## Next justified action
 
-Execute the active gap-closure plan:
-`docs/plans/bayesfilter-student-dpf-baseline-gap-closure-plan-2026-05-09.md`.
+Write a student-lane clean-room implementation plan for
+`experiments/controlled_dpf_baseline/`, then audit it before implementation.
+The implementation plan should use the clean-room controlled-baseline
+specification:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-2026-05-13.md`.
 
-The immediate phase is targeted `advanced_particle_filter` reproduction.  Run
-small non-plotting tests or direct examples before building adapters.  Do not
-start adapter normalization until the advanced snapshot has at least one
-completed original-example or targeted-test baseline, or until blockers are
-recorded explicitly.
+Do not implement immediately from the specification alone.  The next plan must
+remain outside production `bayesfilter/`, outside monograph rebuild/enrichment
+files, and outside vendored student snapshots.
 
 ## Execution log: gap-closure cycle started 2026-05-10
 
@@ -2117,3 +2120,183 @@ Next justified work:
 - include the confirmed fixture/metric/setting contract;
 - carry forward the moderate-noise flow-step caveat;
 - keep all production implementation work behind a separate future plan.
+
+## Execution log: clean-room controlled-baseline specification started 2026-05-13
+
+Controlling plans:
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-plan-2026-05-12.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-completion-plan-2026-05-13.md`.
+
+### SP0: preflight and lane guard
+
+Status: passed.
+
+Observed state:
+- current Git status contains one unrelated dirty monograph reset memo:
+  `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+- current Git status also contains the student clean-room specification plan
+  files for this phase;
+- import-boundary search over `bayesfilter` and `tests` found no imports or
+  references to `experiments/student_dpf_baselines`,
+  `advanced_particle_filter`, or `2026MLCOE`;
+- no files under `experiments/student_dpf_baselines/vendor/`,
+  `experiments/student_dpf_baselines/fixtures/`,
+  `experiments/student_dpf_baselines/runners/`, or
+  `experiments/student_dpf_baselines/reports/` are dirty for this phase.
+
+Plan tightening:
+- the completion plan was updated from planned-only status to execution
+  authorized by the current user instruction;
+- the completion plan now requires one path-scoped student-lane commit and
+  explicitly forbids push unless separately requested.
+
+Drift assessment:
+- no active drift from the student experimental-baseline lane was found;
+- the unrelated monograph reset memo must remain unstaged and uncommitted by
+  this work.
+
+Interpretation:
+- continuing is justified because all required edits can remain in student
+  baseline plan/reset/master documents;
+- no production code, monograph files, references, vendored student files, or
+  experiment outputs are needed for this specification phase.
+
+Next phase justified: SP1 clean-room specification.
+
+### SP1: clean-room specification
+
+Status: passed.
+
+File added:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-2026-05-13.md`.
+
+Specification content:
+- clean-room scope and provenance;
+- explicit no-copy/no-import boundary for student code;
+- fixture contract for `range_bearing_gaussian_moderate` and
+  `range_bearing_gaussian_low_noise`;
+- state and observation conventions;
+- transition, observation, covariance, initial distribution, horizon, and seed
+  policy;
+- first target settings: low-noise N128/steps20 and moderate N128/steps10 plus
+  N128/steps20 as diagnostic variants;
+- required metrics, optional diagnostics, null-handling rules, and result
+  schema;
+- acceptance, execution, and commit gates for a later implementation phase;
+- caveats preserving proxy-only, comparison-only interpretation.
+
+Interpretation:
+- S1 through S4 remain testable by audit because the specification states the
+  fixture and metric contract without importing or copying student vendor code;
+- the moderate-noise flow-step caveat is preserved rather than flattened into a
+  single winner;
+- no production, monograph, references, vendored student, or experiment-output
+  files were needed.
+
+Next phase justified: SP2 independent audit.
+
+### SP2: independent audit
+
+Status: passed with nonblocking tightening.
+
+Audit note:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-audit-2026-05-13.md`.
+
+Audit result:
+- blocking findings: none;
+- lane boundary: passed;
+- monograph drift: passed;
+- production drift: passed;
+- vendor edit risk: passed;
+- student import/copying risk: passed;
+- fixture completeness: passed;
+- metric completeness: passed;
+- moderate-noise caveat preservation: passed;
+- proxy-only interpretation: passed;
+- future gate enforceability: passed.
+
+Tightening applied:
+- the 2026-05-12 source plan now points to the concrete 2026-05-13 execution
+  artifacts;
+- the 2026-05-13 completion plan now reflects execution authorization, scoped
+  commit authorization, and no push;
+- the specification now states that the first controlled target must be a
+  BayesFilter-owned particle-flow or flow-assisted particle filtering baseline
+  with an explicit flow-step or integration-step control; non-flow references
+  must be labeled separately.
+
+Interpretation:
+- the specification can support a later clean-room implementation planning
+  phase;
+- implementation is not yet authorized by this specification phase alone;
+- the next result should classify the phase using the H5 decision labels.
+
+Next phase justified: SP3 result note and memo/master update.
+
+### SP3: result note and continuity update
+
+Status: passed.
+
+Result note:
+`docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-result-2026-05-13.md`.
+
+Decision:
+`clean_room_spec_ready_for_implementation_plan`.
+
+Hypothesis results:
+- H1 clean-room fixture contract without student code: supported;
+- H2 first target settings fixed enough: supported with moderate caveat;
+- H3 metric contract preserves proxy-only interpretation: supported;
+- H4 implementation boundary can be audited: supported;
+- H5 next decision is clear: supported.
+
+Continuity updates:
+- this reset memo now points to the clean-room implementation planning phase as
+  the next justified action;
+- the student master program now records the completed clean-room specification,
+  audit, and result, and points to a separate implementation plan under
+  `experiments/controlled_dpf_baseline/`.
+
+Interpretation:
+- the current phase closes the planning-level fixture, metric, target-setting,
+  caveat, and clean-room-boundary gaps;
+- it does not authorize immediate production work, monograph work, or broad
+  experiment expansion;
+- the next phase should test implementation hypotheses I1 through I4 from the
+  result note.
+
+Next phase justified: SP4 verification and scoped commit.
+
+### SP4: verification and scoped commit
+
+Status: passed before commit.
+
+Checks:
+- `git diff --check` passed;
+- import-boundary search over `bayesfilter` and `tests` found no imports of
+  `experiments/student_dpf_baselines`, `advanced_particle_filter`, or
+  `2026MLCOE`;
+- no vendored student files under `experiments/student_dpf_baselines/vendor/`
+  are dirty;
+- no experiment outputs were created by this specification phase;
+- no production `bayesfilter/`, monograph chapter, reference, vendored student,
+  or generated-output files are part of the scoped commit.
+
+Known unrelated dirty file excluded from this lane:
+- `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`.
+
+Commit scope:
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-plan-2026-05-12.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-completion-plan-2026-05-13.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-2026-05-13.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-audit-2026-05-13.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-clean-room-controlled-baseline-spec-result-2026-05-13.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md`;
+- `docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md`.
+
+Completion interpretation:
+- the clean-room controlled-baseline specification phase completed inside the
+  student experimental-baseline lane;
+- the next justified phase is a separate student-lane implementation plan for
+  `experiments/controlled_dpf_baseline/`, not immediate implementation,
+  production promotion, or monograph work.
