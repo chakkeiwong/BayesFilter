@@ -3258,3 +3258,54 @@ Interpretation:
   new tests only for explicit missing matrix cells;
 - nonlinear Hessians remain status-recorded but not implemented unless P5 names
   a concrete consumer.
+
+## 2026-05-14 V1 P1 derivative-validation matrix execution
+
+Phase:
+- P1 / R2 nonlinear derivative-validation matrix.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-result-2026-05-14.md
+```
+
+Execution result:
+- built the consolidated matrix for Models A-C and SVD cubature, SVD-UKF, and
+  SVD-CUT4;
+- recorded value status, score status, score branch, derivative provider,
+  reference target, branch/null diagnostics, compiled/eager status, Hessian
+  status, and public-claim scope for every row;
+- clarified that Model A score evidence is from the parameterized smooth
+  affine structural score fixture, while Model A value evidence is from the
+  fixed affine Gaussian structural oracle;
+- kept production nonlinear Hessians deferred and kept the SVD-CUT4 autodiff
+  score/Hessian oracle as testing-only evidence;
+- confirmed default Model C score certification only under the Chapter 18
+  structural fixed-support branch with `allow_fixed_null_support=True`.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `41 passed, 2 warnings`.
+
+Interpretation:
+- P1 passes: no matrix cell has unknown value or score status, and Hessian
+  status is explicit without implying production Hessian support;
+- P2 is justified next: run wider nonlinear score branch diagnostics for
+  Model B and default Model C, with default Model C using
+  `allow_fixed_null_support=True`.
