@@ -1,349 +1,252 @@
-\chapter[DPF Implementation Literature]{Differentiable Particle Filters for Implementation: Literature, Engineering Patterns, and Comparison Baselines}
-\label{ch:bf-dpf-implementation-literature}
+\chapter{Particle-Flow Particle Filters and Proposal Correction}
+\label{ch:bf-dpf-pfpf}
 
-This chapter translates the literature surveyed in
-Chapter~\ref{ch:bf-dpf-literature-survey} into implementation obligations for
-BayesFilter.  The central question is not only which differentiable
-particle-filter methods exist, but which parts of that literature are actually
-useful for building a production-quality reusable filtering component for
-BayesFilter, DSGE-HMC, and MacroFinance.
+The previous chapter developed particle flow as a transport construction.  The
+main unresolved question left there was whether the transported cloud itself may
+already be treated as the corrected filtering object.  In general, the answer is
+no.  Outside exact special cases, the flow should be interpreted first as a
+proposal mechanism.  The role of the present chapter is to make that proposal
+interpretation explicit and to derive the corresponding importance correction.
 
-BayesFilter's implementation target is narrower than the frontier literature and
-narrower than the student research codebases.  A method is useful to this
-project only if it can be located on the current BayesFilter contract surface:
-\begin{itemize}
-  \item the generic structural state-space interface in
-    \texttt{bayesfilter/structural.py};
-  \item result and provenance metadata such as
-    \texttt{FilterRunMetadata};
-  \item the current reference particle backend in
-    \texttt{bayesfilter/filters/particles.py};
-  \item the existing adapter boundaries for DSGE and MacroFinance;
-  \item the repo-wide distinction between value-side reference evidence,
-    differentiable target candidates, and HMC-eligible targets.
-\end{itemize}
-The literature and student repositories are therefore useful only insofar as
-they help us fill or test one of these implementation obligations.
+This chapter is therefore the mathematical bridge between raw flow transport and
+a more principled particle-based likelihood interpretation.  It does not yet
+introduce differentiable resampling or optimal transport relaxations.  Instead,
+it asks a prior question: once a particle has been moved by a deterministic flow
+map, what density does that transported particle actually have, and what
+importance weight is required to target the intended posterior law?
 
-\section{Current BayesFilter contract surface}
-\label{sec:bf-dpf-current-contract-surface}
+\section{Why proposal correction is needed}
+\label{sec:bf-pfpf-why-correction}
 
-The current BayesFilter nonlinear-filter surface is already more structured than
-most exploratory research repositories.  The core protocol in
-\texttt{bayesfilter/structural.py} asks a structural nonlinear model to provide:
-\begin{align*}
-  &\texttt{initial\_mean(theta)},\qquad
-  \texttt{initial\_cov(theta)},\qquad
-  \texttt{innovation\_cov(theta)},\\
-  &\texttt{observation\_cov(theta)},\qquad
-  \texttt{transition(previous\_state, innovation, theta)},\qquad
-  \texttt{observe(state\_points, theta)}.
-\end{align*}
-The same module records state-role metadata through
-\texttt{StatePartition} and backend provenance through
-\texttt{FilterRunMetadata}.  The existing bootstrap particle backend in
-\texttt{bayesfilter/filters/particles.py} returns
-\texttt{filter\_name="structural\_bootstrap\_particle"} with
-\texttt{differentiability\_status="monte\_carlo\_value\_only"} and
-\texttt{compiled\_status="eager\_numpy"}.  That is a useful starting point,
-because it already distinguishes a value-side Monte Carlo reference path from a
-future differentiable TensorFlow/TFP path.
+In the linear-Gaussian special case studied in the previous chapter, EDH can
+recover the exact Kalman update.  Outside that case, however, the transport map
+is typically built under Gaussian closure or local linearization.  Even if the
+transport moves particles toward high posterior density, the moved cloud is not
+automatically distributed according to the exact filtering law.
 
-This implies an important implementation boundary.  The first production DPF
-backend should not invent a completely new model interface.  It should consume
-the same structural-model protocol and return the same style of result object,
-augmented with DPF-specific metadata such as:
-\begin{itemize}
-  \item flow family (EDH, LEDH, other);
-  \item proposal / weighting policy;
-  \item resampling family;
-  \item likelihood-status label;
-  \item differentiability-status label;
-  \item random-number or common-random-number policy;
-  \item eager versus compiled TensorFlow status.
-\end{itemize}
-
-\section{Algorithm ladder as an implementation ladder}
-\label{sec:bf-dpf-implementation-ladder}
-
-The agreed development ladder,
+The right interpretation is therefore proposal-theoretic.  Let
+$x_{t,0}$ denote a pre-flow particle sampled from a proposal law, and let the
+flow map transport it to
 \begin{equation}
-\label{eq:bf-dpf-implementation-ladder}
-  \text{EDH}
-  \rightarrow
-  \text{EDH/PF with weights}
-  \rightarrow
-  \text{soft or differentiable resampling}
-  \rightarrow
-  \text{OT resampling}
-  \rightarrow
-  \text{LEDH + neural OT},
+\label{eq:bf-pfpf-flow-map}
+  x_{t,1} = \Phi_t(x_{t,0}).
 \end{equation}
-is not only a research ordering.  It is also the right implementation ordering.
-Each rung adds a new class of obligations.
+The question is then not merely where the particle moved, but which density on
+$x_{t,1}$ is induced by the transformation and how that induced proposal density
+must be corrected to target the filtering posterior.
 
-\subsection{Rung 1: EDH linear-Gaussian recovery}
-\label{sec:bf-dpf-rung1}
+This is the basic PF-PF point emphasized in the invertible particle-flow
+literature: the flow is best viewed as a proposal-improving device until its
+proposal-density effect has been accounted for.  The exact change-of-variables
+identity is not itself the approximation; the approximation enters through the
+choice of flow family, the numerical integration of the flow, and the finite
+particle system.
 
-The first rung is not yet a full production DPF.  It is a verification rung.
-The literature supports a linear-Gaussian recovery property for EDH under exact
-Gaussian closure, and the CIP survey chapter presents this as a necessary
-correctness check.  For BayesFilter, the implementation obligation is:
-\begin{enumerate}[label=(\roman*)]
-  \item implement the flow in TensorFlow/TFP using the generic state-space
-    contract;
-  \item compare the resulting filtered mean, covariance, and log-likelihood
-    quantities against the Kalman reference backend;
-  \item confirm that the complete value path is finite and numerically stable;
-  \item avoid making any differentiable-resampling claim at this stage.
-\end{enumerate}
-This rung is useful because it turns the literature's exact special case into a
-regression oracle anchored to BayesFilter's existing exact linear-Gaussian
-infrastructure.
+\section{Change of variables under the flow map}
+\label{sec:bf-pfpf-change-of-variables}
 
-\subsection{Rung 2: EDH/PF with importance weights}
-\label{sec:bf-dpf-rung2}
+Assume that for each fixed time step and observation, the flow map
+$\Phi_t: \mathbb{R}^{n_x} \to \mathbb{R}^{n_x}$ is a differentiable bijection on
+the region of interest.  Let the pre-flow proposal density be
+\begin{equation}
+\label{eq:bf-pfpf-preflo-density}
+  q_{t,0}(x_{t,0} \mid x_{t-1}, y_t).
+\end{equation}
+Then the transported particle density is given by the standard
+change-of-variables formula,
+\begin{equation}
+\label{eq:bf-pfpf-postflow-density}
+  q_{t,1}(x_{t,1} \mid x_{t-1}, y_t)
+  = q_{t,0}(x_{t,0} \mid x_{t-1}, y_t)
+    \left|\det D\Phi_t(x_{t,0})\right|^{-1},
+\end{equation}
+where $x_{t,0} = \Phi_t^{-1}(x_{t,1})$.
 
-The second rung converts the flow from a pure transport approximation into a
-proposal mechanism with an explicit correction policy.  The literature support
-comes from PF-PF formulations such as \citet{li2017particle} and from the CIP
-LEDH/PF-PF chapter.  The implementation obligation is to compute a corrected
-weight of the form shown in
-\eqref{eq:bf-dpf-pfpf-weight} and to record the corresponding Jacobian or
-log-determinant policy.
+Thus the Jacobian determinant is not an optional numerical decoration.  It is
+part of the proposal density itself.  Any flow-based importance scheme that
+forgets this factor changes the proposal law and therefore changes the targeting
+relationship of the resulting importance weights.
 
-The main engineering challenge here is not conceptual elegance but numerical
-accounting.  A production backend must decide:
+\section{Proposal-corrected PF-PF weights}
+\label{sec:bf-pfpf-corrected-weights}
+
+Let the intended one-step filtering target be proportional to
+\begin{equation}
+\label{eq:bf-pfpf-target-density}
+  \gamma_t(x_t)
+  \propto p_\theta(y_t \mid x_t)
+          p_\theta(x_t \mid x_{t-1}).
+\end{equation}
+If the pre-flow particle is sampled from the transition prior,
+\begin{equation}
+\label{eq:bf-pfpf-preflo-prior}
+  q_{t,0}(x_{t,0} \mid x_{t-1}, y_t)
+  = p_\theta(x_{t,0} \mid x_{t-1}),
+\end{equation}
+and then transported to $x_{t,1}=\Phi_t(x_{t,0})$, the post-flow proposal
+density is
+\begin{equation}
+\label{eq:bf-pfpf-postflow-prior}
+  q_{t,1}(x_{t,1} \mid x_{t-1}, y_t)
+  = p_\theta(x_{t,0} \mid x_{t-1})
+    \left|\det D\Phi_t(x_{t,0})\right|^{-1}.
+\end{equation}
+The corresponding unnormalized importance weight is therefore
+\begin{equation}
+\label{eq:bf-pfpf-weight}
+  \tilde w_t
+  \propto
+  \frac{p_\theta(y_t \mid x_{t,1})
+        p_\theta(x_{t,1} \mid x_{t-1})}
+       {q_{t,1}(x_{t,1} \mid x_{t-1}, y_t)}
+  =
+  \frac{p_\theta(y_t \mid x_{t,1})
+        p_\theta(x_{t,1} \mid x_{t-1})
+        \left|\det D\Phi_t(x_{t,0})\right|}
+       {p_\theta(x_{t,0} \mid x_{t-1})}.
+\end{equation}
+Equation \eqref{eq:bf-pfpf-weight} is the central correction formula for the
+PF-PF viewpoint.  It shows exactly what proposal correction restores: once the
+transformation of proposal density has been accounted for, the flow-transported
+particle may be reweighted against the desired posterior factor in the usual
+importance-sampling way.
+
+\section{EDH/PF and LEDH/PF}
+\label{sec:bf-pfpf-edh-ledh}
+
+The correction formula is structurally the same whether the flow map comes from
+EDH or LEDH.  The difference lies in how the map itself is built.
+
+\subsection{EDH/PF}
+
+For EDH/PF, the transport map is generated by the global affine ODE from the
+previous chapter.  The resulting proposal is easier to analyze because the flow
+field is common across the cloud.  The main approximation point is the Gaussian
+closure used to derive the affine coefficients.
+
+\subsection{LEDH/PF}
+
+For LEDH/PF, the map is particle-specific: each particle evolves under a local
+linearization and therefore under its own drift coefficients.  This generally
+improves adaptation to nonlinear observation structure, but it also makes the
+proposal analysis more delicate.  The local map remains proposal-correctable in
+principle through the same change-of-variables logic, but the numerical burden
+of evaluating Jacobians or log-determinants becomes more significant.
+
+The important mathematical point is that EDH/PF and LEDH/PF are not merely flow
+algorithms.  They are proposal-corrected particle methods.  That is why they
+occupy a different target-status category from raw flow transport.
+
+\section{Jacobian determinant and log-determinant evolution}
+\label{sec:bf-pfpf-logdet}
+
+Directly forming a full Jacobian matrix for every particle and time step may be
+numerically and computationally burdensome.  A more useful identity is obtained
+by differentiating the Jacobian matrix along the flow.
+
+Let
+\begin{equation}
+\label{eq:bf-pfpf-jacobian-matrix}
+  J_t(\lambda)
+  = \frac{\partial x_t(\lambda)}{\partial x_t(0)}.
+\end{equation}
+If the flow satisfies
+\begin{equation}
+\label{eq:bf-pfpf-general-flow}
+  \frac{dx_t(\lambda)}{d\lambda} = v_{t,\lambda}(x_t(\lambda)),
+\end{equation}
+then differentiation with respect to the initial point gives
+\begin{equation}
+\label{eq:bf-pfpf-jacobian-ode}
+  \frac{dJ_t(\lambda)}{d\lambda}
+  = \nabla v_{t,\lambda}(x_t(\lambda)) J_t(\lambda),
+  \qquad
+  J_t(0)=I.
+\end{equation}
+Applying Jacobi's formula yields the log-determinant evolution equation
+\begin{equation}
+\label{eq:bf-pfpf-logdet-ode}
+  \frac{d}{d\lambda}
+  \log \left|\det J_t(\lambda)\right|
+  = \operatorname{tr}
+    \bigl(\nabla v_{t,\lambda}(x_t(\lambda))\bigr).
+\end{equation}
+For an affine flow
+$v_{t,\lambda}(x)=A_t(\lambda)x+b_t(\lambda)$, this simplifies to
+\begin{equation}
+\label{eq:bf-pfpf-logdet-affine}
+  \frac{d}{d\lambda}
+  \log \left|\det J_t(\lambda)\right|
+  = \operatorname{tr}(A_t(\lambda)).
+\end{equation}
+The practical consequence is clear: one may integrate a scalar log-determinant
+alongside the particle-flow ODE rather than carrying a full dense Jacobian for
+every particle in the affine case.  In more general settings, the same identity
+still shows that the determinant is part of the dynamical system, not an
+external afterthought.  This also gives a direct debugging criterion: if the
+corrected weights behave inconsistently with the transported cloud, the first
+mathematical suspects are the Jacobian/log-determinant path, the numerical flow
+integration, and the finite-particle approximation rather than the formal
+change-of-variables identity itself.
+
+\section{What the correction restores, and what it does not}
+\label{sec:bf-pfpf-what-restored}
+
+The proposal correction in \eqref{eq:bf-pfpf-weight} restores a clearer
+importance-sampling interpretation.  More precisely, it restores the correct
+proposal-to-target density ratio for the transported proposal generated by the
+flow map.  This is mathematically important: it distinguishes PF-PF from a pure
+transport approximation that simply declares the endpoint cloud to be posterior-
+like without density correction.
+
+What the correction does \emph{not} automatically restore is an exact analytic
+filter in the nonlinear case.  Several approximation layers may still remain:
 \begin{itemize}
-  \item whether it tracks a full Jacobian, a log-determinant ODE, or another
-    stable change-of-variables summary;
-  \item how it integrates the flow without hidden Python-side graph breaks;
-  \item what diagnostics it records when the flow becomes stiff or nearly
-    singular;
-  \item how Monte Carlo variability is reported alongside the likelihood value.
+  \item the flow may itself be derived under Gaussian closure or local
+    linearization;
+  \item the ODE is integrated numerically rather than in closed form;
+  \item the particle system still uses a finite number of particles;
+  \item Jacobian or log-determinant quantities may be computed with numerical
+    approximation.
 \end{itemize}
-The student MLCOE report is helpful because it treats PF-PF consistency and the
-Jacobian correction as core parts of the method rather than optional additions.
-The \texttt{advanced\_particle\_filter} repository is also useful because it
-maintains separate classical-filter and HMC threads, which makes it easier to
-see where the corrected proposal logic ends and where differentiable-surrogate
-logic begins.
+Therefore PF-PF is mathematically stronger than raw flow transport, but it is
+not automatically equivalent to an exact nonlinear filtering likelihood.  The
+exact identity in this chapter is the change-of-variables correction for the
+proposal density; what remains approximate are the flow construction itself when
+closure or local linearization is used, the numerical integration of that flow,
+and the finite-particle system used to estimate the target.  Its status is
+better described as a proposal-corrected particle approximation whose value-side
+interpretation is clearer than that of uncorrected flow transport.
 
-\subsection{Rung 3: soft or differentiable resampling}
-\label{sec:bf-dpf-rung3}
+\section{Why this chapter matters for the later HMC discussion}
+\label{sec:bf-pfpf-hmc-bridge}
 
-This rung adds pathwise differentiability by changing the resampling operator.
-From an implementation standpoint, this is the first stage where the target and
-gradient contract become materially more delicate.  BayesFilter should require
-that a soft-resampling implementation state, in its metadata and docs, that it
-is a biased differentiable surrogate unless and until a stronger theorem is
-supplied.
+This chapter is the first point in the rebuilt DPF block where a sharper target
+question becomes possible.  Raw flow transport gives a geometrically appealing
+approximation, but PF-PF introduces an explicit proposal density and an explicit
+correction factor.  That is why later HMC-suitability analysis will treat
+proposal-corrected EDH/PF or LEDH/PF as more serious value-side candidates than
+uncorrected flow or relaxed-resampling surrogates.
 
-The literature gives useful formulas and bias stories, but the student
-\texttt{advanced\_particle\_filter} repository adds a practical lesson: a
-linear-Gaussian-observation diagnostic where Kalman filtering gives the ground
-truth can isolate DPF gradient error from observation-model nonlinearity.  That
-kind of benchmark should become part of BayesFilter's implementation ladder,
-because it directly answers a question the papers often leave implicit: not only
-whether the method is differentiable, but how far its value and gradient drift
-from a reference target in a case where the reference is known.
+The key lesson is not that PF-PF solves all target issues.  The key lesson is
+that it restores the proposal-correction logic that a valid particle method
+requires.  This is exactly the right place in the monograph to separate
+flow-as-transport from flow-as-proposal.
 
-\subsection{Rung 4: OT resampling}
-\label{sec:bf-dpf-rung4}
+\section{What this chapter does and does not claim}
+\label{sec:bf-pfpf-chapter-boundary}
 
-The OT rung replaces categorical resampling by a differentiable transport map.
-The literature base here is stronger and more explicit than in the soft case,
-especially through \citet{corenflos2021differentiable}.  For BayesFilter, the
-implementation obligations are:
-\begin{enumerate}[label=(\roman*)]
-  \item choose a transport-cost convention and regularization policy;
-  \item implement or reuse a stable differentiable Sinkhorn or equivalent OT
-    solver;
-  \item expose regularization strength and solver-tolerance diagnostics;
-  \item state clearly that the resampling step is a relaxed transport rather
-    than exact multinomial resampling.
-\end{enumerate}
-The \texttt{advanced\_particle\_filter} repository is especially helpful at
-this rung because it contains both a Sinkhorn parameter sweep and a direct HMC
-comparison between soft and OT resamplers.  Those experiments do not certify a
-production target, but they do identify the engineering axes BayesFilter must
-make explicit: sensitivity to the entropy parameter, sensitivity to iteration
-budget, runtime scaling, and the possibility that an apparently small transport
-approximation still yields visible posterior shifts.
-
-\subsection{Rung 5: LEDH with neural amortized OT}
-\label{sec:bf-dpf-rung5}
-
-The final target combines local particle flow with a learned OT surrogate.  The
-\texttt{advanced\_particle\_filter} repository is valuable here because it is
-more explicit than the main literature about architecture, training
-distribution, checkpointing, and approximation residuals.  Its amortized-OT
-architecture note is an engineering document that BayesFilter should read
-carefully.  In particular, it records:
+This chapter derives the proposal-correction structure for flow-based particle
+methods.  It does \emph{not} yet claim:
 \begin{itemize}
-  \item the exact network structure used to amortize the OT barycentric map;
-  \item the training-distribution restrictions (for example fixed state
-dimension and a bounded $\varepsilon$ range);
-  \item forward-pass speedups relative to Sinkhorn;
-  \item a measurable approximation residual and a corresponding posterior shift.
+  \item that differentiable resampling has been resolved;
+  \item that the resulting method is already the final HMC target for nonlinear
+    DSGE or MacroFinance models;
+  \item that OT or learned transport relaxations have been introduced;
+  \item that finite-particle, discretization, and Jacobian numerical issues are
+    negligible.
 \end{itemize}
-For BayesFilter, this means the neural OT rung should be treated as an
-acceleration layer on top of an already-audited OT path.  It is not the place
-to discover the first target contract.  The learned operator introduces an
-extra approximation layer, an extra training-data distribution, and an extra
-failure mode under extrapolation.
-
-\section{Engineering patterns extracted from the student baselines}
-\label{sec:bf-dpf-student-engineering-patterns}
-
-The two student tracks suggest several engineering patterns that BayesFilter can
-reuse conceptually without importing their code into the production path.
-
-\subsection{Thread separation is useful}
-\label{sec:bf-dpf-thread-separation}
-
-The \texttt{advanced\_particle\_filter} repository organizes its work into
-three threads: classical filters and particle flows, HMC with differentiable
-resampling, and neural acceleration of OT resampling.  This separation is a good
-pattern.  It prevents an exploratory HMC notebook from being mistaken for a
-production filter contract and prevents a learned acceleration device from being
-silently treated as part of the core filtering law.
-
-BayesFilter should adopt the same conceptual separation, even if the codebase
-layout differs:
-\begin{enumerate}[label=(\roman*)]
-  \item reference filtering behavior and diagnostics;
-  \item differentiable/HMC target-candidate experiments;
-  \item acceleration or surrogate experiments.
-\end{enumerate}
-This aligns well with BayesFilter's existing distinction between value-side
-reference backends, differentiable target candidates, and surrogate geometry
-work.
-
-\subsection{Linear-Gaussian diagnostic isolation is high-value}
-\label{sec:bf-dpf-linear-gaussian-diagnostics}
-
-One of the strongest ideas in the advanced student track is its explicit use of
-a linear-Gaussian-observation diagnostic notebook for HMC with DPF.  The key
-insight is that when Kalman filtering provides the exact reference, one can
-separate three different errors:
-\begin{enumerate}[label=(\roman*)]
-  \item filtering approximation error,
-  \item resampling-relaxation bias,
-  \item gradient-path error.
-\end{enumerate}
-That diagnostic is more useful to BayesFilter than a generic end-to-end HMC
-notebook, because it turns an otherwise qualitative research claim into a
-measurable discrepancy against a known reference.
-
-\subsection{Notebook-first results must be translated into contracts}
-\label{sec:bf-dpf-notebook-contracts}
-
-The student codebases are notebook-heavy.  That is not a criticism; it is a
-normal frontier-research pattern.  But it highlights a translation problem.
-Notebook claims are often specified by example, while BayesFilter needs API and
-metadata contracts.  For example, the advanced repository's README clearly
-separates CPU-only NumPy paths from Colab GPU TensorFlow paths, and its
-amortized-OT note clearly states training-distribution restrictions.  Those are
-excellent engineering disclosures.  For BayesFilter, however, they need to be
-rephrased as reusable backend contracts:
-\begin{itemize}
-  \item fixed shape policy,
-  \item dtype policy,
-  \item random-number policy,
-  \item supported state-dimension regime,
-  \item compiled versus eager status,
-  \item approximation label.
-\end{itemize}
-
-\section{TensorFlow and TFP implications}
-\label{sec:bf-dpf-tf-tfp-implications}
-
-The production target for BayesFilter is TensorFlow and TensorFlow Probability,
-not only because autodiff is needed, but because the intended long-run use is an
-HMC likelihood path with static-shape and compilation requirements.  The
-student repositories surface several implementation hazards that the literature
-mentions only abstractly.
-
-\subsection{Randomness must be part of the contract}
-\label{sec:bf-dpf-randomness-contract}
-
-A differentiable particle filter is not automatically deterministic as a
-function of $\theta$.  If particle propagation and any residual stochastic
-resampling depend on uncontrolled randomness, then repeated evaluations of the
-same parameter can yield different values and gradients.  The
-\texttt{advanced\_particle\_filter} amortized-OT note explicitly discusses
-threading a seed through the DPF so that HMC evaluations within one MCMC
-iteration use frozen randomness.  This is exactly the kind of policy BayesFilter
-should expose at the backend contract level rather than leaving to notebook
-convention.
-
-\subsection{Compiled execution is a gate, not an optimization}
-\label{sec:bf-dpf-compiled-gate}
-
-Both student baselines show that frontier DPF work often mixes local CPU runs,
-Colab GPU runs, and notebook-only code paths.  BayesFilter should take the
-opposite stance for production promotion: eager-only success can justify
-algorithm exploration or value-side debugging, but it does not justify HMC
-promotion.  The DPF backend should therefore track whether the full
-value-and-gradient path is compiled, partly compiled, or eager-only.  This is in
-line with the repo's existing HMC and XLA chapters.
-
-\subsection{Numerical diagnostics must be richer than sampler summaries}
-\label{sec:bf-dpf-numerical-diagnostics}
-
-The current NumPy reference backend in BayesFilter already reports basic Monte
-Carlo diagnostics such as resampling counts and effective sample size.  A
-TensorFlow/TFP DPF backend needs more.  The literature and student baselines
-collectively suggest at least the following:
-\begin{itemize}
-  \item minimum ESS by time;
-  \item flow-step counts and stiffness warnings;
-  \item log-determinant or Jacobian diagnostics;
-  \item Sinkhorn or OT convergence diagnostics;
-  \item approximation-label metadata for soft, OT, and neural-OT resampling;
-  \item seed and common-random-number settings.
-\end{itemize}
-Without these, downstream HMC diagnostics become hard to interpret: one cannot
-tell whether a poor chain is failing because of posterior geometry, Monte Carlo
-variance, resampling bias, or a silent graph break.
-
-\section{What the literature does \emph{not} yet justify for implementation}
-\label{sec:bf-dpf-not-yet-justified}
-
-The literature and student baselines are helpful precisely because they show how
-easily one can slide from a reasonable implementation experiment into an
-unsupported production claim.  For BayesFilter, the following statements remain
-unjustified unless a later phase supplies stronger evidence:
-\begin{enumerate}[label=(\roman*)]
-  \item that a differentiable resampling rule automatically defines an HMC-safe
-    likelihood target;
-  \item that a learned OT operator may replace Sinkhorn in HMC with only a
-    runtime interpretation and no target-approximation interpretation;
-  \item that LEDH plus neural OT should be the first production rung rather
-    than the final research target;
-  \item that notebook-level posterior comparisons on small models transfer
-    directly to nonlinear DSGE or MacroFinance targets;
-  \item that current DPF research code should be imported directly into the
-    BayesFilter production package.
-\end{enumerate}
-This is not a rejection of the DPF program.  It is the reason the program is
-being pursued as a ladder rather than as a single monolithic implementation.
-
-\section{Implementation implication for BayesFilter}
-\label{sec:bf-dpf-implementation-implication}
-
-The literature and the student baselines together support a concrete
-implementation conclusion.  The first BayesFilter production DPF rung should be:
-\begin{quote}
-EDH linear-Gaussian recovery together with an EDH/PF importance-weight skeleton,
-implemented in TensorFlow/TFP against the generic structural state-space-model
-contract, with Kalman value comparison and no differentiable-resampling claim
-yet.
-\end{quote}
-That rung is the strongest common denominator across the literature, the CIP
-chapters, the current BayesFilter architecture, and the student baselines.  It
-uses the student work as intended: not as a drop-in code source, but as a
-comparison layer that highlights missing diagnostics, hidden assumptions, and
-later-rung research ideas that BayesFilter can approach deliberately rather than
-all at once.
+Those belong to the later resampling and HMC-assessment chapters.  The role of
+this chapter is more specific: it explains mathematically how a particle flow is
+turned into a proposal-corrected particle method and what that correction does
+and does not restore.

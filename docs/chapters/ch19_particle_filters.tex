@@ -1,59 +1,295 @@
-\chapter{Particle Filters}
+\chapter{Particle-Filter Foundations}
 \label{ch:bf-particle-filters}
 
-Particle filters approximate the filtering distribution with weighted
-particles rather than a Gaussian moment closure.  They are important for
-nonlinear and non-Gaussian state-space models, but they occupy a different
-place in BayesFilter's HMC program than EKF or sigma-point filters.  Standard
-resampling is discrete, and differentiating a particle-filter likelihood is
-not the same problem as differentiating a Kalman recursion.
+This chapter develops the particle-filter baseline for the differentiable
+particle-filter program.  The goal is not yet to make the filter
+differentiable.  The goal is to establish, in BayesFilter notation, the
+nonlinear filtering recursion, the empirical particle approximation, the
+bootstrap particle-filter likelihood estimator, and the exact point at which the
+later differentiable program departs from the classical construction.
 
-\section{Separation of Roles}
-\label{sec:bf-pf-separation}
+Particle methods matter because the nonlinear filtering problem is generally not
+closed under finite-dimensional moments.  When the predictive law or filtering
+law is materially non-Gaussian, a Gaussian closure such as the EKF or UKF may be
+a useful approximation but no longer defines the exact filtering object.  The
+particle filter instead approximates the filtering law directly as a weighted
+random measure.  This makes it the natural baseline for any later attempt to
+construct particle-flow, resampling-relaxed, or differentiable particle
+methods.
 
-BayesFilter should separate three roles:
+\section{Nonlinear state-space model and filtering recursion}
+\label{sec:bf-pf-ssm-recursion}
+
+Let $x_t \in \mathbb{R}^{n_x}$ denote the latent state and
+$y_t \in \mathbb{R}^{n_y}$ the observation at time $t$.  Fix a parameter vector
+$\theta \in \Theta \subset \mathbb{R}^{d_\theta}$.  The nonlinear state-space
+model is specified by a transition density and an observation density,
+\begin{align}
+\label{eq:bf-pf-transition-density}
+  x_t \mid x_{t-1} &\sim p_\theta(x_t \mid x_{t-1}), \\
+\label{eq:bf-pf-observation-density}
+  y_t \mid x_t &\sim p_\theta(y_t \mid x_t).
+\end{align}
+Write $y_{1:t}=(y_1,\ldots,y_t)$ for the observation history.  The predictive
+law and the filtering law satisfy the standard Bayesian recursion
+\begin{align}
+\label{eq:bf-pf-predictive-law}
+  p_\theta(x_t \mid y_{1:t-1})
+  &= \int p_\theta(x_t \mid x_{t-1})
+     p_\theta(x_{t-1} \mid y_{1:t-1})\,dx_{t-1}, \\
+\label{eq:bf-pf-filtering-law}
+  p_\theta(x_t \mid y_{1:t})
+  &= \frac{p_\theta(y_t \mid x_t)
+           p_\theta(x_t \mid y_{1:t-1})}
+          {p_\theta(y_t \mid y_{1:t-1})},
+\end{align}
+where the one-step predictive density of the observation is
+\begin{equation}
+\label{eq:bf-pf-predictive-observation}
+  p_\theta(y_t \mid y_{1:t-1})
+  = \int p_\theta(y_t \mid x_t)
+      p_\theta(x_t \mid y_{1:t-1})\,dx_t.
+\end{equation}
+The marginal likelihood then factorizes as
+\begin{equation}
+\label{eq:bf-pf-marginal-factorization}
+  p_\theta(y_{1:T})
+  = \prod_{t=1}^T p_\theta(y_t \mid y_{1:t-1}).
+\end{equation}
+
+Equations \eqref{eq:bf-pf-predictive-law}--\eqref{eq:bf-pf-marginal-factorization}
+are exact.  The difficulty is computational rather than conceptual: outside
+special classes such as the linear-Gaussian case, the integrals are rarely
+available in closed form.  Particle filters replace these exact distributions by
+random empirical approximations whose quality improves with particle count under
+appropriate assumptions.
+
+\section{Empirical filtering measures}
+\label{sec:bf-pf-empirical-measures}
+
+A particle filter represents the filtering law by a weighted empirical measure.
+At time $t$, let
+$\{(x_t^{(i)},w_t^{(i)})\}_{i=1}^N$ be particles and normalized weights, with
+$w_t^{(i)}\ge 0$ and $\sum_{i=1}^N w_t^{(i)}=1$.  The empirical filtering
+measure is
+\begin{equation}
+\label{eq:bf-pf-empirical-measure}
+  \hat\pi_t^N(dx)
+  = \sum_{i=1}^N w_t^{(i)}\,\delta_{x_t^{(i)}}(dx),
+\end{equation}
+where $\delta_z$ is the Dirac point mass at $z$.  The approximation of a test
+function $\varphi$ under the filtering law is then
+\begin{equation}
+\label{eq:bf-pf-test-function-approx}
+  \int \varphi(x)\,\hat\pi_t^N(dx)
+  = \sum_{i=1}^N w_t^{(i)}\varphi(x_t^{(i)}).
+\end{equation}
+Thus the filter approximates the entire posterior law by a finite atomic
+measure, not only its first two moments.
+
+This is the main structural distinction between particle methods and the
+Gaussian-approximation filters of the previous chapters.  The particle filter is
+not built by closing the recursion in a finite-dimensional moment family.
+Instead, it propagates a random discrete approximation to the law itself.
+
+\section{Sequential importance sampling}
+\label{sec:bf-pf-sis}
+
+To derive the basic particle recursion, introduce a proposal density
+$q_\theta(x_t \mid x_{0:t-1}, y_{1:t})$ from which particles can be sampled.
+Suppose a full trajectory proposal factors as
+\begin{equation}
+\label{eq:bf-pf-trajectory-proposal}
+  q_\theta(x_{0:t} \mid y_{1:t})
+  = q_\theta(x_0 \mid y_1)
+    \prod_{s=1}^t q_\theta(x_s \mid x_{0:s-1}, y_{1:s}).
+\end{equation}
+The target filtering distribution over trajectories is proportional to
+\begin{equation}
+\label{eq:bf-pf-trajectory-target}
+  p_\theta(x_{0:t}, y_{1:t})
+  = p_\theta(x_0)
+    \prod_{s=1}^t p_\theta(x_s \mid x_{s-1})
+    p_\theta(y_s \mid x_s).
+\end{equation}
+The unnormalized importance weight is therefore
+\begin{equation}
+\label{eq:bf-pf-importance-weight}
+  \tilde w_t(x_{0:t})
+  = \frac{p_\theta(x_{0:t},y_{1:t})}
+         {q_\theta(x_{0:t} \mid y_{1:t})}.
+\end{equation}
+Using the factorization in
+\eqref{eq:bf-pf-trajectory-proposal}--\eqref{eq:bf-pf-trajectory-target}, one
+obtains the recursive update
+\begin{equation}
+\label{eq:bf-pf-sis-recursion}
+  \tilde w_t^{(i)}
+  = \tilde w_{t-1}^{(i)}
+    \frac{p_\theta(y_t \mid x_t^{(i)})
+          p_\theta(x_t^{(i)} \mid x_{t-1}^{(i)})}
+         {q_\theta(x_t^{(i)} \mid x_{0:t-1}^{(i)}, y_{1:t})}.
+\end{equation}
+Normalizing gives
+\begin{equation}
+\label{eq:bf-pf-normalized-weights}
+  w_t^{(i)}
+  = \frac{\tilde w_t^{(i)}}{\sum_{j=1}^N \tilde w_t^{(j)}}.
+\end{equation}
+
+Equation \eqref{eq:bf-pf-sis-recursion} is the generic sequential importance
+sampling (SIS) update.  It already shows the two main mathematical stresses of
+particle filtering:
 \begin{enumerate}[label=(\roman*)]
-  \item a particle filter as a likelihood estimator for likelihood comparison
-    or particle MCMC;
-  \item a differentiable particle filter as an approximate differentiable
-    filtering backend;
-  \item a particle method as a simulation-based diagnostic for nonlinear
-    filters.
+  \item the proposal must be chosen carefully to avoid explosive weight
+    variability;
+  \item even when the estimator is well defined, the normalized weights tend to
+    concentrate over time, which leads to degeneracy.
 \end{enumerate}
-These roles have different validity conditions.  A stochastic likelihood
-estimator may be useful for pseudo-marginal methods, but BayesFilter does not
-yet have accepted primary-source support in this monograph pass for strong
-pseudo-marginal HMC claims.  A differentiable resampling relaxation may support
-gradients, but it generally changes the filtering approximation and needs its
-own bias and convergence assumptions.
 
-\section{Differentiable Frontier}
-\label{sec:bf-differentiable-pf-frontier}
+\section{Sequential importance resampling and the bootstrap filter}
+\label{sec:bf-pf-sir-bootstrap}
 
-The Phase 2B literature gate accepted the entropy-regularized optimal-transport
-particle-filter source only as frontier support.  It justifies discussing
-differentiable particle filters under their stated assumptions.  It does not
-certify arbitrary differentiable resampling, and it does not make particle
-filters a drop-in HMC backend for BayesFilter.
+Sequential importance sampling alone is typically unstable over long horizons,
+because the weights become increasingly uneven.  Sequential importance
+resampling (SIR) introduces a resampling step to refresh the cloud when the
+weight distribution becomes too concentrated.
 
-Therefore this chapter should remain conservative until the literature gate is
-completed:
+The most classical special case is the bootstrap particle filter, which uses the
+transition prior itself as the proposal:
+\begin{equation}
+\label{eq:bf-pf-bootstrap-proposal}
+  q_\theta(x_t \mid x_{0:t-1}, y_{1:t})
+  = p_\theta(x_t \mid x_{t-1}).
+\end{equation}
+Substituting \eqref{eq:bf-pf-bootstrap-proposal} into
+\eqref{eq:bf-pf-sis-recursion} gives the simplified incremental weight
+\begin{equation}
+\label{eq:bf-pf-bootstrap-weight}
+  \tilde w_t^{(i)}
+  \propto w_{t-1}^{(i)} p_\theta(y_t \mid x_t^{(i)}).
+\end{equation}
+The bootstrap recursion at time $t$ can therefore be written as:
+\begin{enumerate}[label=\textbf{Step \arabic*:}]
+  \item \textbf{Propagate:}
+    sample
+    $x_t^{(i)} \sim p_\theta(x_t \mid x_{t-1}^{(a_{t-1}^{(i)})})$.
+  \item \textbf{Weight:}
+    compute
+    $\tilde w_t^{(i)} = p_\theta(y_t \mid x_t^{(i)})$
+    and normalize the weights.
+  \item \textbf{Resample:}
+    draw ancestor indices using the normalized weights and reset weights to
+    $1/N$.
+\end{enumerate}
+This yields the standard bootstrap/SIR particle filter of
+\citet{gordon1993novel}, elaborated in the SMC text of
+\citet{doucet2001sequential}.
+
+\section{The bootstrap particle-filter likelihood estimator}
+\label{sec:bf-pf-likelihood-estimator}
+
+The bootstrap particle filter supplies a natural estimator of the factors in the
+marginal-likelihood decomposition
+\eqref{eq:bf-pf-marginal-factorization}.  Define the average incremental weight
+at time $t$ by
+\begin{equation}
+\label{eq:bf-pf-average-weight}
+  Z_t^N = \frac{1}{N}\sum_{i=1}^N \tilde w_t^{(i)}.
+\end{equation}
+The corresponding likelihood estimator is
+\begin{equation}
+\label{eq:bf-pf-bootstrap-likelihood-estimator}
+  \hat p_\theta^N(y_{1:T}) = \prod_{t=1}^T Z_t^N.
+\end{equation}
+The estimator-status result BayesFilter needs at this stage is the following.
+
+\begin{proposition}[Bootstrap particle-filter likelihood-estimator status]
+\label{prop:bf-pf-bootstrap-likelihood-status}
+Under the standard bootstrap-particle-filter assumptions, the estimator
+\eqref{eq:bf-pf-bootstrap-likelihood-estimator} is an unbiased estimator of the
+marginal likelihood:
+\[
+  \mathbb{E}\bigl[\hat p_\theta^N(y_{1:T})\bigr] = p_\theta(y_{1:T}).
+\]
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Conditional on the resampled cloud at time $t-1$, the bootstrap proposal draws
+particles from the transition prior.  Therefore
+\[
+  \mathbb{E}\left[Z_t^N \mid x_{t-1}^{(1:N)}\right]
+  = \frac{1}{N}\sum_{i=1}^N
+    \int p_\theta(y_t \mid x_t)
+         p_\theta(x_t \mid x_{t-1}^{(i)})\,dx_t.
+\]
+The integral equals the one-step predictive observation density conditional on
+$x_{t-1}^{(i)}$.  Iterating this argument through the resampling step yields the
+usual telescoping expectation identity for the product
+$\prod_{t=1}^T Z_t^N$, giving the likelihood
+$p_\theta(y_{1:T})$; see \citet{doucet2001sequential} and
+\citet{andrieu2010particle} for the formal particle-system argument.
+\end{proof}
+
+This proposition is mathematically central for the later DPF program.  It tells
+us that the classical bootstrap particle filter supplies an unbiased estimator
+of the marginal likelihood, even though it does not supply a pathwise differentiable
+likelihood map.  Later differentiable constructions must therefore be compared
+against this baseline carefully: a differentiable surrogate may be smoother to
+optimize or differentiate, but it need not preserve this exact estimator
+status.
+
+\section{Degeneracy and effective sample size}
+\label{sec:bf-pf-degeneracy}
+
+The main numerical weakness of the particle filter is weight degeneracy.  As the
+observation sequence grows, the normalized weights frequently concentrate on a
+small subset of particles.  A standard summary is the effective sample size
+(ESS),
+\begin{equation}
+\label{eq:bf-pf-ess}
+  \mathrm{ESS}_t = \frac{1}{\sum_{i=1}^N (w_t^{(i)})^2}.
+\end{equation}
+The extreme cases are informative:
 \begin{itemize}
-  \item do not claim generic unbiased differentiable likelihood gradients;
-  \item do not claim pseudo-marginal HMC correctness without primary PMCMC and
-    pseudo-marginal support;
-  \item do not replace the linear Gaussian derivative spine with a particle
-    approximation when exact or controlled approximate filters are available;
-  \item use particle methods as reference diagnostics only when the Monte Carlo
-    error is measured and reported.
+  \item if all weights are equal, then $\mathrm{ESS}_t=N$;
+  \item if one particle carries almost all the mass, then
+    $\mathrm{ESS}_t \approx 1$.
 \end{itemize}
+When ESS collapses, the atomic approximation
+\eqref{eq:bf-pf-empirical-measure} still exists, but its practical variance may
+become extremely large.  Resampling alleviates this by discarding low-weight
+particles and duplicating high-weight particles, but resampling does not remove
+the deeper dimensionality problem.  The classical literature shows that in many
+high-dimensional settings the number of particles needed to stabilize the weight
+distribution can grow very rapidly with the effective dimension of the
+observation problem \citep{bengtsson2008curse,snyder2008obstacles}.
 
-\section{Validation Requirements}
-\label{sec:bf-pf-validation-requirements}
+This is the exact point where the later chapters enter.  Particle-flow methods,
+PF-PF corrections, differentiable resampling, OT relaxations, and learned OT
+operators are all responses to some combination of:
+\begin{enumerate}[label=(\roman*)]
+  \item degeneracy under standard resampling;
+  \item lack of differentiability of the resampling step;
+  \item computational burden of high-quality resampling or transport maps;
+  \item mismatch between a useful learning objective and a valid HMC target.
+\end{enumerate}
+A mathematically clean DPF monograph must therefore begin here: by making the
+classical particle-filter object precise before modifying it.
 
-A BayesFilter particle backend needs diagnostics beyond sampler summaries:
-effective sample size, log-likelihood estimator variance, resampling counts,
-random-seed reproducibility policy, particle degeneracy warnings, and
-comparison to exact or dense-reference cases where possible.  If a relaxed
-resampling method is used, the validation report must state the relaxed target
-being differentiated and how it differs from the intended filtering target.
+\section{What this chapter does and does not claim}
+\label{sec:bf-pf-chapter-boundary}
+
+This chapter establishes the exact nonlinear filtering recursion and the
+classical bootstrap particle-filter baseline.  It does \emph{not} yet claim any
+of the following:
+\begin{itemize}
+  \item a pathwise differentiable likelihood map;
+  \item a particle-flow approximation;
+  \item a proposal-corrected flow filter;
+  \item a differentiable resampling rule;
+  \item an HMC-ready particle backend.
+\end{itemize}
+Those belong to the later chapters.  The role of the present chapter is more
+basic and more important: it fixes the reference object against which every
+later DPF construction must be interpreted.

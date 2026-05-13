@@ -1,0 +1,55 @@
+{
+  "candidate_decision": {
+    "adapter_scope": "adapter-owned bridges only; no vendored-code edits and no production bayesfilter imports",
+    "advanced_candidate_id": "advanced_edh_particle_filter",
+    "advanced_path": "advanced_particle_filter.filters.edh.EDHParticleFilter",
+    "blocker_plan": "If either API requires unrecorded model assumptions, stop and record blocked_missing_assumption rather than widening scope.",
+    "candidate_family": "importance_corrected_edh_pfpf",
+    "decision": "selected_bounded_candidate",
+    "fixture": "existing nonlinear Gaussian range-bearing fixture",
+    "metrics": [
+      "latent_state_rmse",
+      "final_position_rmse",
+      "average_ess_if_exposed",
+      "resampling_count_if_exposed",
+      "runtime_seconds",
+      "finite_output_checks",
+      "EKF_UKF_proxy_comparison"
+    ],
+    "mlcoe_candidate_id": "mlcoe_pfpf_edh",
+    "mlcoe_path": "src.filters.flow_filters.PFPF_EDH",
+    "runtime_cap": "short horizon, <=64 particles, <=10 flow steps for first adapter spike",
+    "selection_reason": "Both paths represent EDH particle-flow particle filters with importance correction; this is more semantically aligned than pure flow, kernel PFF, stochastic flow, neural DPF, or HMC."
+  },
+  "category_counts": {
+    "differentiable_resampling": 4,
+    "dpf": 2,
+    "dpfpf": 1,
+    "edh_ledh_flow": 5,
+    "edh_ledh_pfpf": 4,
+    "flow_solver": 2,
+    "hmc_parameter_inference": 2,
+    "kernel_pff": 3,
+    "neural_ot": 1,
+    "neural_resampling": 1,
+    "stochastic_flow": 3
+  },
+  "hypothesis_results": {
+    "F1_edh_ledh_first_candidate": "supported_with_adapter_caveat",
+    "F2_kernel_pff_excluded": "supported",
+    "F3_dpf_neural_ot_hmc_reproduction_gates": "supported",
+    "F4_import_signature_probe_sufficient": "supported",
+    "F5_reuse_existing_fixtures": "supported"
+  },
+  "next_phase_recommendation": "Create a scoped MP4 follow-up adapter spike for advanced EDHParticleFilter versus MLCOE PFPF_EDH on the existing nonlinear Gaussian range-bearing fixture.",
+  "probe_status_counts": {
+    "importable": 28
+  },
+  "readiness_class_counts": {
+    "adapter_internal_only": 2,
+    "candidate_for_bounded_comparison": 9,
+    "excluded_pending_debug": 3,
+    "reproduction_gate_required": 14
+  },
+  "records": 28
+}

@@ -1,0 +1,148 @@
+{
+  "command": "python -m experiments.student_dpf_baselines.runners.run_edh_pfpf_adapter_spike",
+  "date": "2026-05-11",
+  "environment": {
+    "numpy": "2.1.3",
+    "platform": "Linux-6.8.0-111-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tensorflow_devices": [
+      {
+        "name": "/physical_device:CPU:0",
+        "type": "CPU"
+      }
+    ],
+    "tensorflow_probability": "0.25.0"
+  },
+  "panel": {
+    "base_fixture": "range_bearing_gaussian_moderate",
+    "fixture": "range_bearing_gaussian_moderate_edh_pfpf_h8",
+    "flow_steps": 10,
+    "horizon": 8,
+    "num_particles": 64,
+    "runtime_warning_seconds": 30.0,
+    "seed": 17,
+    "target": "gaussian_range_bearing"
+  },
+  "records": [
+    {
+      "diagnostics": {
+        "average_ess": 8.445686955928494,
+        "finite_covariances": true,
+        "finite_means": true,
+        "likelihood_status": "implementation_specific_not_cross_compared",
+        "log_likelihood": 12.806451440061576,
+        "min_ess": 2.963479252925866,
+        "resampling_count": 8,
+        "resampling_count_semantics": "implementation_resampled_flags",
+        "runtime_warning": false,
+        "selected_by": "MP4 flow and DPF readiness review",
+        "target_label": "advanced/EDHParticleFilter/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate_edh_pfpf_h8",
+      "flow_steps": 10,
+      "implementation_name": "advanced_particle_filter",
+      "method": "EDHParticleFilter",
+      "metrics": {
+        "average_ess": 8.445686955928494,
+        "final_position_error": 0.1077265150087038,
+        "min_ess": 2.963479252925866,
+        "observation_proxy_rmse": 0.06845082575755,
+        "position_rmse": 0.0778454340966835,
+        "state_rmse": 0.11803095150088956
+      },
+      "num_particles": 64,
+      "runtime_seconds": 0.5594313690089621,
+      "seed": 17,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    },
+    {
+      "diagnostics": {
+        "average_ess": 24.14372052909958,
+        "finite_covariances": null,
+        "finite_means": true,
+        "likelihood_status": "not_exposed_by_mlcoe_pfpf_edh",
+        "log_likelihood": null,
+        "min_ess": 12.8388409207028,
+        "resampling_count": 6,
+        "resampling_count_semantics": "inferred_ess_lt_0.5N_after_step",
+        "runtime_warning": false,
+        "selected_by": "MP4 flow and DPF readiness review",
+        "target_label": "mlcoe/PFPF_EDH/gaussian_range_bearing"
+      },
+      "fixture_name": "range_bearing_gaussian_moderate_edh_pfpf_h8",
+      "flow_steps": 10,
+      "implementation_name": "2026MLCOE",
+      "method": "PFPF_EDH",
+      "metrics": {
+        "average_ess": 24.14372052909958,
+        "final_position_error": 0.10251391094515158,
+        "min_ess": 12.8388409207028,
+        "observation_proxy_rmse": 0.07244604724275781,
+        "position_rmse": 0.07101758662036603,
+        "state_rmse": 0.08243081629055639
+      },
+      "num_particles": 64,
+      "runtime_seconds": 3.9079428590193857,
+      "seed": 17,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "target": "gaussian_range_bearing"
+    }
+  ],
+  "summary": {
+    "cross_summary": {
+      "interpretation": "Differences are proxy diagnostics only and are not correctness claims.",
+      "position_rmse_difference": 0.00682784747631747,
+      "runtime_ratio_first_over_second": 0.14315239224079632,
+      "state_rmse_difference": 0.03560013521033317,
+      "status": "available_proxy_only"
+    },
+    "decision": "adapter_spike_success_needs_replication",
+    "failed": 0,
+    "hypothesis_results": {
+      "E1_advanced_edh_pfpf_runs": "supported",
+      "E2_mlcoe_pfpf_edh_runs": "supported",
+      "E3_proxy_comparison_interpretable": "supported_proxy_only",
+      "E4_next_phase_decision": "adapter_spike_success_needs_replication"
+    },
+    "implementation_summary": {
+      "2026MLCOE": {
+        "average_ess": 24.14372052909958,
+        "failure_reason": null,
+        "final_position_error": 0.10251391094515158,
+        "finite_means": true,
+        "method": "PFPF_EDH",
+        "min_ess": 12.8388409207028,
+        "observation_proxy_rmse": 0.07244604724275781,
+        "position_rmse": 0.07101758662036603,
+        "resampling_count": 6,
+        "runtime_seconds": 3.9079428590193857,
+        "runtime_warning": false,
+        "state_rmse": 0.08243081629055639,
+        "status": "ok"
+      },
+      "advanced_particle_filter": {
+        "average_ess": 8.445686955928494,
+        "failure_reason": null,
+        "final_position_error": 0.1077265150087038,
+        "finite_means": true,
+        "method": "EDHParticleFilter",
+        "min_ess": 2.963479252925866,
+        "observation_proxy_rmse": 0.06845082575755,
+        "position_rmse": 0.0778454340966835,
+        "resampling_count": 8,
+        "runtime_seconds": 0.5594313690089621,
+        "runtime_warning": false,
+        "state_rmse": 0.11803095150088956,
+        "status": "ok"
+      }
+    },
+    "next_phase_recommendation": "Create a replicated EDH/PFPF panel with both nonlinear fixtures, multiple seeds, and the same adapter-owned bridges.",
+    "ok": 2,
+    "records": 2
+  },
+  "working_directory": "/home/ubuntu/python/BayesFilter"
+}

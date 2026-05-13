@@ -1,0 +1,372 @@
+\chapter{Differentiable Resampling and Optimal Transport}
+\label{ch:bf-dpf-resampling-ot}
+
+The previous chapter showed how a particle flow may be turned into a proposal-
+corrected particle method.  The present chapter addresses a different
+mathematical difficulty: the standard resampling step is discrete and therefore
+not pathwise differentiable.  If one wants a differentiable particle method,
+one must either abandon pathwise differentiation at the resampling step or
+replace the resampling mechanism by a smooth relaxation.
+
+This chapter studies the main relaxations relevant to the BayesFilter DPF
+program.  The key point is that differentiability is not obtained for free.  It
+is obtained by changing the resampling map, and therefore by changing the object
+whose gradient is computed.  The chapter is organized to make that trade-off
+explicit.  Its source spine is the differentiable-resampling literature
+\citep{zhumurphyjonschkowski2020,corenflos2021differentiable} together with
+the optimal-transport and Sinkhorn background in
+\citet{villani2003topics}, \citet{cuturi2013sinkhorn}, and
+\citet{peyre2019computational}.
+
+\section{The resampling bottleneck}
+\label{sec:bf-dr-bottleneck}
+
+At time $t$, suppose the particle system after propagation and weighting is
+represented by the weighted empirical measure
+\begin{equation}
+\label{eq:bf-dr-weighted-empirical}
+  \hat \pi_t^N(dx)
+  = \sum_{i=1}^N w_t^{(i)}\,\delta_{x_t^{(i)}}(dx),
+  \qquad
+  w_t^{(i)} \ge 0,
+  \quad
+  \sum_{i=1}^N w_t^{(i)}=1.
+\end{equation}
+Classical resampling attempts to replace this weighted cloud by an equally
+weighted empirical measure
+\begin{equation}
+\label{eq:bf-dr-equal-weight-empirical}
+  \hat \pi_{t,\mathrm{eq}}^N(dx)
+  = \frac{1}{N}\sum_{j=1}^N \delta_{\tilde x_t^{(j)}}(dx),
+\end{equation}
+while preserving the filtering information carried by the weighted cloud as well
+as possible.
+
+For standard multinomial resampling, the new support points are selected by
+random ancestor indices
+$a_j \sim \mathrm{Categorical}(w_t^{(1:N)})$ and then setting
+$\tilde x_t^{(j)} = x_t^{(a_j)}$.  This map is perfectly natural as a sampling
+operation, but it is not pathwise differentiable with respect to the weights.
+That is the resampling bottleneck.
+
+\section{Standard resampling as a discontinuous map}
+\label{sec:bf-dr-discontinuous-map}
+
+Let $U_j \sim \mathrm{Uniform}(0,1)$ and write the cumulative weights as
+\[
+  C_k = \sum_{i=1}^k w_t^{(i)}.
+\]
+Multinomial resampling chooses the ancestor index $a_j$ such that
+\begin{equation}
+\label{eq:bf-dr-categorical-selection}
+  C_{a_j-1} < U_j \le C_{a_j}.
+\end{equation}
+Thus the map from weights to ancestors is piecewise constant.  Away from the
+measure-zero boundaries where a uniform draw lands exactly on a cumulative
+weight break, the selected index does not change under an infinitesimal weight
+perturbation.  Consequently, the pathwise derivative of the resampled particle
+with respect to the weights is zero almost everywhere.
+
+This is the precise sense in which standard resampling blocks a naive pathwise
+autodiff chain.  The issue is not that gradients are numerically inconvenient.
+It is that the ancestor-selection map itself is discontinuous.  Score-function
+or common-random-number estimators can still be designed around the discrete
+operation, but they are not the same as differentiating the realized ancestor
+selection path.  BayesFilter's DPF question is specifically about the latter:
+whether the filtering likelihood path supplied to an HMC or training routine is
+a smooth value-gradient computation.
+
+\section{Soft resampling}
+\label{sec:bf-dr-soft-resampling}
+
+A simple differentiable replacement is soft resampling.  Instead of selecting a
+new support point only from the categorical ancestor, one interpolates between
+the ancestor particle and the weighted mean of the cloud
+\citep{zhumurphyjonschkowski2020}.  A representative form is
+\begin{equation}
+\label{eq:bf-dr-soft-resampling}
+  \tilde x_t^{(j)}
+  = \alpha x_t^{(a_j)} + (1-\alpha)\bar x_t,
+  \qquad
+  \bar x_t = \sum_{i=1}^N w_t^{(i)}x_t^{(i)},
+\end{equation}
+where $\alpha \in [0,1]$ is an interpolation parameter.
+
+The key structural point is immediate:
+\begin{itemize}
+  \item if $\alpha=1$, one recovers standard multinomial resampling and loses
+    pathwise differentiability;
+  \item if $\alpha<1$, the resampled particle depends smoothly on the weighted
+    mean, and the pathwise derivative can flow through that smooth part.
+\end{itemize}
+
+The benefit is therefore differentiability.  The cost is bias.  The weighted
+mean is preserved,
+\[
+  \mathbb E[\tilde x_t^{(j)} \mid x_t^{(1:N)}, w_t^{(1:N)}] = \bar x_t,
+\]
+but nonlinear functionals of the cloud need not be preserved.  Soft resampling
+changes the resampling law by shrinking the cloud toward its weighted center.
+More explicitly, for a smooth scalar test function $\varphi$,
+\[
+  \E[\varphi(\tilde x_t^{(j)}) \mid X,w]
+  = \sum_i w_i
+      \varphi\!\left(\alpha x_i+(1-\alpha)\bar x\right).
+\]
+A first-order Taylor expansion around $x_i$ gives
+\begin{equation}
+\label{eq:bf-dr-soft-test-bias}
+  \E[\varphi(\tilde x_t^{(j)}) \mid X,w]
+  - \sum_i w_i\varphi(x_i)
+  =
+  -(1-\alpha)\sum_i w_i
+  \nabla\varphi(x_i)'(x_i-\bar x)
+  + O((1-\alpha)^2).
+\end{equation}
+Thus the linear test-function case is preserved, but nonlinear summaries are
+generally shifted.  Hence soft resampling is naturally interpreted as a
+differentiable surrogate rather than as an exact replacement for multinomial
+resampling.
+
+\section{Resampling as a transport problem}
+\label{sec:bf-dr-transport-view}
+
+A more geometric way to formulate equal-weight resampling is to view it as a
+transport problem.  The starting measure is the weighted empirical measure
+$\hat \pi_t^N$ in \eqref{eq:bf-dr-weighted-empirical}; the target class is the
+set of equal-weight empirical measures of size $N$
+\citep{villani2003topics,reich2013nonparametric}.
+
+This makes it natural to ask for a transport plan that moves the weighted cloud
+to an equally weighted cloud while minimizing a transport cost.  In particular,
+one may interpret equal-weighting as a projection problem in the Wasserstein
+geometry of probability measures.  Standard resampling does not solve this
+projection problem exactly; it samples ancestor locations from the original
+support.  Transport-based resampling instead tries to produce an equally
+weighted cloud through an explicit coupling between the weighted and uniform
+measures.
+
+With source atoms $x_i$, target weights $u_j=1/N$, and squared cost $C_{ij}$,
+the unregularized coupling problem is
+\begin{equation}
+\label{eq:bf-dr-unregularized-ot}
+  \Pi_0^*
+  \in
+  \arg\min_{\Pi \in \mathcal U(w,u)}
+  \sum_{i=1}^N\sum_{j=1}^N \Pi_{ij} C_{ij}.
+\end{equation}
+This is an exact linear-programming object, not a statement that categorical
+resampling has become differentiable.  It is useful because it provides a
+deterministic transport baseline against which smoother relaxations can be
+defined.
+
+This transport view is mathematically useful because it makes the relaxation
+explicit: a differentiable transport map is not the same object as the discrete
+categorical selection map.  It also separates two levels that are often blurred
+in implementation discussions: the mathematical transport problem one wishes to
+solve, and the numerical or regularized surrogate one actually computes.
+
+\section{Entropic optimal transport resampling}
+\label{sec:bf-dr-entropic-ot}
+
+Let $w=(w_1,\ldots,w_N)$ be the source weights and let
+$u=(1/N,\ldots,1/N)$ be the target equal weights.  Let the transport cost matrix
+be
+\begin{equation}
+\label{eq:bf-dr-cost-matrix}
+  C_{ij} = \|x_t^{(i)} - z_j\|^2,
+\end{equation}
+where $z_j$ are target support points or, in the barycentric form, support
+locations constructed from the transport plan itself.
+
+Following the entropy-regularized OT construction used by
+\citet{corenflos2021differentiable}, the entropic optimal transport problem is
+\begin{equation}
+\label{eq:bf-dr-eot-primal}
+  \Pi_\varepsilon^*
+  = \arg\min_{\Pi \in \mathcal U(w,u)}
+      \langle \Pi, C \rangle - \varepsilon H(\Pi),
+\end{equation}
+where $\mathcal U(w,u)$ is the set of couplings with marginals $w$ and $u$, and
+$H(\Pi)$ is the entropy term.  The entropic penalty $\varepsilon>0$ makes the
+problem strictly convex and yields a smooth scaling form for the optimal plan.
+It also changes the mathematical object: $\Pi_\varepsilon^*$ solves a
+regularized problem, whereas $\Pi_0^*$ solves
+\eqref{eq:bf-dr-unregularized-ot}.  The two should be expected to approach one
+another as $\varepsilon$ becomes small, but a small $\varepsilon$ is not free
+numerically because the Gibbs kernel becomes ill-conditioned.
+
+In the Sinkhorn representation, the optimal plan can be written as
+\begin{equation}
+\label{eq:bf-dr-sinkhorn-form}
+  \Pi_\varepsilon^* = \operatorname{diag}(a) K_\varepsilon \operatorname{diag}(b),
+  \qquad
+  (K_\varepsilon)_{ij} = \exp(-C_{ij}/\varepsilon),
+\end{equation}
+with scaling vectors $a,b$ chosen to satisfy the marginal constraints.  The
+Sinkhorn iterations alternate updates to these scaling vectors until the desired
+marginals are matched to tolerance \citep{cuturi2013sinkhorn}.  In practice,
+the implementation computes a finite-iteration approximation
+$\Pi_{\varepsilon,K}$.  This approximation can have residual marginal error,
+transport-cost error, and gradient error.  For small $\varepsilon$, stable
+implementations usually work in the log domain to avoid underflow in
+$\exp(-C_{ij}/\varepsilon)$ \citep{schmitzer2019stabilized}.
+
+The resulting equally weighted cloud is obtained by barycentric projection,
+\begin{equation}
+\label{eq:bf-dr-barycentric-map}
+  \tilde x_t^{(j)} = N \sum_{i=1}^N \Pi_{ij}^* x_t^{(i)}.
+\end{equation}
+This map is differentiable with respect to the particles and weights, provided
+the Sinkhorn solve itself is treated as a differentiable computation.  At this
+point the chapter must keep four layers distinct: the exact categorical
+resampling law, the unregularized OT problem, the entropically regularized OT
+problem, and the finite-iteration Sinkhorn solve used to approximate the
+regularized OT optimum in practice.
+
+\section{Bias versus differentiability}
+\label{sec:bf-dr-bias-vs-diff}
+
+The central mathematical trade-off of this chapter is now explicit.
+
+\subsection{Standard multinomial resampling}
+
+Standard multinomial resampling preserves the intended categorical resampling
+law, but it is not pathwise differentiable because the selected ancestor index is
+locally constant in the weights except at discontinuity boundaries.
+
+\subsection{Soft resampling}
+
+Soft resampling is pathwise differentiable through the mean-interpolation term,
+but it changes the resampling map by shrinking particles toward the weighted
+mean.  Equation~\eqref{eq:bf-dr-soft-test-bias} is the local expression of the
+resulting nonlinear-functional bias.
+
+\subsection{Entropic OT resampling}
+
+Entropic OT resampling is differentiable through the Sinkhorn/transport solve,
+but it replaces categorical resampling by a relaxed transport projection.  It
+therefore introduces approximation through the entropic regularization and, in
+practice, through finite Sinkhorn iteration budgets.
+
+Thus differentiability is obtained by replacing the exact categorical resampling
+map with a smoother object.  The smoother object may be a useful approximation,
+but it is not the same map.  More precisely, one should distinguish:
+\begin{enumerate}[label=(\roman*)]
+  \item the exact categorical resampling law;
+  \item the exact solution of the unregularized OT problem when such a transport
+    interpretation is used;
+  \item the entropically regularized OT problem actually chosen for smoothness;
+  \item the finite-iteration Sinkhorn approximation used in code.
+\end{enumerate}
+This distinction is essential for later HMC interpretation: if one differentiates
+through a relaxed resampling operator, one must be explicit about whether the
+resulting chain is intended to target the original posterior, a relaxed
+posterior, or a surrogate objective.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.17\textwidth} p{0.23\textwidth} p{0.22\textwidth} p{0.24\textwidth}}
+\toprule
+Layer & Mathematical object & Exact or approximate? & Source of approximation \\
+\midrule
+Categorical resampling & ancestor draw from $\mathrm{Categorical}(w)$ & exact for the classical resampling law & no pathwise derivative through realized ancestors \\
+Unregularized OT & coupling $\Pi_0^*$ solving \eqref{eq:bf-dr-unregularized-ot} & exact for the chosen transport projection & it is already a transport formulation, not categorical resampling \\
+Entropic OT & coupling $\Pi_\varepsilon^*$ solving \eqref{eq:bf-dr-eot-primal} & exact for the regularized problem & entropy changes the unregularized OT objective \\
+Finite Sinkhorn & numerical plan $\Pi_{\varepsilon,K}$ & approximate & finite iterations, tolerance, log-domain stabilization, floating-point error \\
+\bottomrule
+\end{tabular}
+\caption{OT object versus solver approximation.}
+\label{tab:bf-dr-ot-object-solver}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.16\textwidth} p{0.19\textwidth} p{0.18\textwidth} p{0.20\textwidth} p{0.16\textwidth}}
+\toprule
+Method & Exactness status & Differentiability source & Bias source & Runtime issue \\
+\midrule
+Categorical & exact resampling law & none pathwise & none relative to the classical resampling law & cheap but discontinuous \\
+Soft & surrogate law & smooth mean interpolation & shrinkage toward $\bar x$ for nonlinear functionals & cheap but diversity-reducing \\
+EOT & exact for regularized OT & smooth Sinkhorn scaling & entropy relative to unregularized OT and categorical law & $O(N^2K)$ Sinkhorn work \\
+Finite Sinkhorn & numerical approximation to EOT & unrolled or implicit differentiated iterations & solver residual and tolerance choice & stability, memory, iteration count \\
+\bottomrule
+\end{tabular}
+\caption{Resampling family comparison.}
+\label{tab:bf-dr-family-comparison}
+\end{table}
+
+\section{Implementation debug map}
+\label{sec:bf-dr-debug-map}
+
+The main implementation failures are diagnostic of different mathematical
+layers.  A gradient that vanishes at resampling points points to accidental hard
+ancestor selection.  Marginal mismatch in the transport plan points to an
+incomplete Sinkhorn solve.  Exploding or NaN gradients at small $\varepsilon$
+usually point to unstabilized kernel scaling rather than to the OT formulation
+itself.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.22\textwidth} p{0.32\textwidth} p{0.30\textwidth}}
+\toprule
+Problem & Likely mathematical cause & Relevant literature \\
+\midrule
+Zero pathwise gradient at resampling & hard categorical ancestor selection & differentiable resampling in \citet{zhumurphyjonschkowski2020} \\
+Particle cloud collapses toward one point & soft-resampling shrinkage too strong & soft-resampling bias analysis; equation~\eqref{eq:bf-dr-soft-test-bias} \\
+Sinkhorn rows or columns do not match desired marginals & finite-iteration residual or numerical underflow & \citet{cuturi2013sinkhorn,peyre2019computational} \\
+NaN or unstable gradients for small $\varepsilon$ & Gibbs kernel underflow or unstable scaling & stabilized/log-domain Sinkhorn \citep{schmitzer2019stabilized} \\
+Posterior shifts after adopting EOT & relaxed resampling target differs from categorical law & EOT resampling \citep{corenflos2021differentiable} and HMC target analysis in Chapter~\ref{ch:bf-dpf-hmc-target-suitability} \\
+\bottomrule
+\end{tabular}
+\caption{Implementation debug map for differentiable resampling and OT.}
+\label{tab:bf-dr-debug-map}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{0.18\textwidth} p{0.24\textwidth} p{0.24\textwidth} p{0.20\textwidth}}
+\toprule
+Item & Source claim & Local derivation task & Debugging relevance \\
+\midrule
+Soft resampling & differentiable relaxation of hard resampling & derive preserved mean and nonlinear bias in \eqref{eq:bf-dr-soft-test-bias} & explains shrinkage and diversity loss \\
+OT projection & equal-weighting can be posed as a transport coupling & separate \eqref{eq:bf-dr-unregularized-ot} from categorical resampling & prevents exactness overclaims \\
+EOT/Sinkhorn & entropy gives smooth scaling form & identify $\Pi_\varepsilon^*$ and barycentric map & locates regularization and solver errors \\
+Finite solver & implementation computes $\Pi_{\varepsilon,K}$ & distinguish numerical residual from OT definition & gives tolerance and stability diagnostics \\
+\bottomrule
+\end{tabular}
+\caption{Source claim, local derivation, and debugging use for E3.}
+\label{tab:bf-dr-source-claim-map}
+\end{table}
+
+\FloatBarrier
+
+\section{Why learned or amortized OT comes later}
+\label{sec:bf-dr-why-learned-later}
+
+A learned or amortized OT operator is a further approximation layer on top of
+the OT baseline developed above.  It does not replace the need to understand the
+OT resampling map itself.  For this reason, the present chapter stops at the OT
+and Sinkhorn level.  The next chapter will treat learned or amortized transport
+operators explicitly as approximations to an already relaxed transport map.
+
+\section{What this chapter does and does not claim}
+\label{sec:bf-dr-chapter-boundary}
+
+This chapter develops the mathematical structure of differentiable resampling
+and transport-based equal-weighting.  It does \emph{not} yet claim:
+\begin{itemize}
+  \item that soft resampling preserves the exact categorical resampling law;
+  \item that OT resampling is identical to standard multinomial resampling;
+  \item that learned/amortized OT is already covered by the same mathematics as
+    the exact OT relaxation;
+  \item that any of these relaxed resampling schemes are automatically final
+    HMC targets for nonlinear structural models.
+\end{itemize}
+Its role is narrower and prior to those questions: it makes explicit how
+resampling is modified to obtain differentiability and where the resulting bias
+or relaxation enters.

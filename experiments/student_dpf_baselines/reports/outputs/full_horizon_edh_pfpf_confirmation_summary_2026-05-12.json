@@ -1,0 +1,493 @@
+{
+  "clean_room_specification_inputs": {
+    "caveats": [
+      "comparison_only",
+      "student_code_not_production",
+      "student_agreement_not_correctness",
+      "ess_and_resampling_semantics_implementation_specific"
+    ],
+    "exclusions": [
+      "copying_student_code",
+      "production_bayesfilter_changes",
+      "hmc_claims",
+      "monograph_lane_changes",
+      "kernel_pff",
+      "neural_ot",
+      "differentiable_resampling"
+    ],
+    "fixtures": [
+      "range_bearing_gaussian_moderate",
+      "range_bearing_gaussian_low_noise"
+    ],
+    "flow_step_policy": {
+      "low_noise": 20,
+      "moderate": "moderate_keep_both_as_diagnostic"
+    },
+    "horizon": "full_fixture_horizon_20_observations",
+    "metrics": [
+      "state_rmse",
+      "position_rmse",
+      "final_position_error",
+      "observation_proxy_rmse",
+      "average_ess",
+      "min_ess",
+      "resampling_count",
+      "runtime_seconds",
+      "finite_means"
+    ],
+    "particle_count": 128,
+    "seed_policy": "use independent fixed seeds and report seed list",
+    "status": "ready_for_specification"
+  },
+  "decision": "confirmation_ready_with_caveats",
+  "failed": 0,
+  "fixture_summary": {
+    "2026MLCOE/range_bearing_gaussian_low_noise": {
+      "ess_semantics": [
+        "post_step_filter_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 17.0,
+      "max_runtime_seconds": 1.0156468560453504,
+      "median_average_ess": 42.72959497800359,
+      "median_final_position_error": 0.06280537191469826,
+      "median_observation_proxy_rmse": 0.015606803862392063,
+      "median_position_rmse": 0.04684151332644011,
+      "median_resampling_count": 17.0,
+      "median_runtime_seconds": 1.0109914140193723,
+      "median_state_rmse": 0.110082526878711,
+      "minimum_min_ess": 14.962909650774112,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "inferred_ess_lt_0.5N_after_step"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "2026MLCOE/range_bearing_gaussian_moderate": {
+      "ess_semantics": [
+        "post_step_filter_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 10,
+      "max_resampling_count": 12.0,
+      "max_runtime_seconds": 3.8840479950304143,
+      "median_average_ess": 61.78952982541004,
+      "median_final_position_error": 0.12515853597671872,
+      "median_observation_proxy_rmse": 0.07538952246207142,
+      "median_position_rmse": 0.0674033354180626,
+      "median_resampling_count": 11.0,
+      "median_runtime_seconds": 1.0016272005159408,
+      "median_state_rmse": 0.08635914865747679,
+      "minimum_min_ess": 11.749990867865796,
+      "ok": 10,
+      "resampling_count_semantics": [
+        "inferred_ess_lt_0.5N_after_step"
+      ],
+      "runs": 10,
+      "runtime_warning_count": 0
+    },
+    "advanced_particle_filter/range_bearing_gaussian_low_noise": {
+      "ess_semantics": [
+        "post_filter_result_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 20.0,
+      "max_runtime_seconds": 0.08185749698895961,
+      "median_average_ess": 27.623623388392787,
+      "median_final_position_error": 0.05631067316522384,
+      "median_observation_proxy_rmse": 0.01623787410008778,
+      "median_position_rmse": 0.047542324585623866,
+      "median_resampling_count": 18.0,
+      "median_runtime_seconds": 0.0801185870077461,
+      "median_state_rmse": 0.11785770486533717,
+      "minimum_min_ess": 2.3293622512915615,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "implementation_resampled_flags"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "advanced_particle_filter/range_bearing_gaussian_moderate": {
+      "ess_semantics": [
+        "post_filter_result_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 10,
+      "max_resampling_count": 20.0,
+      "max_runtime_seconds": 0.5813017620239407,
+      "median_average_ess": 20.96082118107069,
+      "median_final_position_error": 0.11839988123851636,
+      "median_observation_proxy_rmse": 0.08308415403544643,
+      "median_position_rmse": 0.0717626250902958,
+      "median_resampling_count": 19.0,
+      "median_runtime_seconds": 0.07685748100630008,
+      "median_state_rmse": 0.10835655936126051,
+      "minimum_min_ess": 1.0712858309380127,
+      "ok": 10,
+      "resampling_count_semantics": [
+        "implementation_resampled_flags"
+      ],
+      "runs": 10,
+      "runtime_warning_count": 0
+    }
+  },
+  "grid_summary": {
+    "2026MLCOE/range_bearing_gaussian_low_noise/N128/steps20": {
+      "ess_semantics": [
+        "post_step_filter_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 17.0,
+      "max_runtime_seconds": 1.0156468560453504,
+      "median_average_ess": 42.72959497800359,
+      "median_final_position_error": 0.06280537191469826,
+      "median_observation_proxy_rmse": 0.015606803862392063,
+      "median_position_rmse": 0.04684151332644011,
+      "median_resampling_count": 17.0,
+      "median_runtime_seconds": 1.0109914140193723,
+      "median_state_rmse": 0.110082526878711,
+      "minimum_min_ess": 14.962909650774112,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "inferred_ess_lt_0.5N_after_step"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "2026MLCOE/range_bearing_gaussian_moderate/N128/steps10": {
+      "ess_semantics": [
+        "post_step_filter_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 12.0,
+      "max_runtime_seconds": 3.8840479950304143,
+      "median_average_ess": 59.30663868367253,
+      "median_final_position_error": 0.12451417768406878,
+      "median_observation_proxy_rmse": 0.07748677757908665,
+      "median_position_rmse": 0.06609384683936731,
+      "median_resampling_count": 11.0,
+      "median_runtime_seconds": 0.6103491060202941,
+      "median_state_rmse": 0.08583229747746572,
+      "minimum_min_ess": 11.749990867865796,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "inferred_ess_lt_0.5N_after_step"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "2026MLCOE/range_bearing_gaussian_moderate/N128/steps20": {
+      "ess_semantics": [
+        "post_step_filter_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 11.0,
+      "max_runtime_seconds": 1.1604483189876191,
+      "median_average_ess": 64.34709020916227,
+      "median_final_position_error": 0.12704820056894406,
+      "median_observation_proxy_rmse": 0.07321314254784966,
+      "median_position_rmse": 0.0689352807187,
+      "median_resampling_count": 11.0,
+      "median_runtime_seconds": 1.003735214995686,
+      "median_state_rmse": 0.08688599983748786,
+      "minimum_min_ess": 21.309354446172122,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "inferred_ess_lt_0.5N_after_step"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "advanced_particle_filter/range_bearing_gaussian_low_noise/N128/steps20": {
+      "ess_semantics": [
+        "post_filter_result_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 20.0,
+      "max_runtime_seconds": 0.08185749698895961,
+      "median_average_ess": 27.623623388392787,
+      "median_final_position_error": 0.05631067316522384,
+      "median_observation_proxy_rmse": 0.01623787410008778,
+      "median_position_rmse": 0.047542324585623866,
+      "median_resampling_count": 18.0,
+      "median_runtime_seconds": 0.0801185870077461,
+      "median_state_rmse": 0.11785770486533717,
+      "minimum_min_ess": 2.3293622512915615,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "implementation_resampled_flags"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "advanced_particle_filter/range_bearing_gaussian_moderate/N128/steps10": {
+      "ess_semantics": [
+        "post_filter_result_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 20.0,
+      "max_runtime_seconds": 0.5813017620239407,
+      "median_average_ess": 21.571340347151093,
+      "median_final_position_error": 0.1098276617448124,
+      "median_observation_proxy_rmse": 0.08220460804540859,
+      "median_position_rmse": 0.0687263946400234,
+      "median_resampling_count": 18.0,
+      "median_runtime_seconds": 0.05041675898246467,
+      "median_state_rmse": 0.09028348185839567,
+      "minimum_min_ess": 1.2854988541934993,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "implementation_resampled_flags"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    },
+    "advanced_particle_filter/range_bearing_gaussian_moderate/N128/steps20": {
+      "ess_semantics": [
+        "post_filter_result_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 5,
+      "max_resampling_count": 20.0,
+      "max_runtime_seconds": 0.07843697600765154,
+      "median_average_ess": 20.472087414938247,
+      "median_final_position_error": 0.13788381678329123,
+      "median_observation_proxy_rmse": 0.08480420224042487,
+      "median_position_rmse": 0.07479885554056817,
+      "median_resampling_count": 19.0,
+      "median_runtime_seconds": 0.07797341898549348,
+      "median_state_rmse": 0.12044212674882195,
+      "minimum_min_ess": 1.0712858309380127,
+      "ok": 5,
+      "resampling_count_semantics": [
+        "implementation_resampled_flags"
+      ],
+      "runs": 5,
+      "runtime_warning_count": 0
+    }
+  },
+  "hypothesis_results": {
+    "C1_selected_full_horizon_setting_seed_stable": "supported_seed_stable",
+    "C2_low_noise_128_particle_pressure_reduction_persists": "supported_low_noise_pressure_reduction_persists",
+    "C3_moderate_noise_flow_step_policy_resolved": "resolved_moderate_keep_both_as_diagnostic",
+    "C4_clean_room_baseline_specification_ready": "supported_clean_room_inputs_ready",
+    "C5_next_baseline_decision": "confirmation_ready_with_caveats"
+  },
+  "implementation_summary": {
+    "2026MLCOE": {
+      "ess_semantics": [
+        "post_step_filter_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 15,
+      "max_resampling_count": 17.0,
+      "max_runtime_seconds": 3.8840479950304143,
+      "median_average_ess": 59.30663868367253,
+      "median_final_position_error": 0.09772869172200001,
+      "median_observation_proxy_rmse": 0.07321314254784966,
+      "median_position_rmse": 0.06398132067000928,
+      "median_resampling_count": 11.0,
+      "median_runtime_seconds": 1.0041390339611098,
+      "median_state_rmse": 0.09485636156712457,
+      "minimum_min_ess": 11.749990867865796,
+      "ok": 15,
+      "resampling_count_semantics": [
+        "inferred_ess_lt_0.5N_after_step"
+      ],
+      "runs": 15,
+      "runtime_warning_count": 0
+    },
+    "advanced_particle_filter": {
+      "ess_semantics": [
+        "post_filter_result_ess"
+      ],
+      "failed": 0,
+      "failure_reasons": [],
+      "finite_means_count": 15,
+      "max_resampling_count": 20.0,
+      "max_runtime_seconds": 0.5813017620239407,
+      "median_average_ess": 22.645519180500095,
+      "median_final_position_error": 0.093420285040409,
+      "median_observation_proxy_rmse": 0.08031953529327474,
+      "median_position_rmse": 0.06531644318395999,
+      "median_resampling_count": 19.0,
+      "median_runtime_seconds": 0.07797341898549348,
+      "median_state_rmse": 0.11126494120009857,
+      "minimum_min_ess": 1.0712858309380127,
+      "ok": 15,
+      "resampling_count_semantics": [
+        "implementation_resampled_flags"
+      ],
+      "runs": 15,
+      "runtime_warning_count": 0
+    }
+  },
+  "low_noise_confirmation": {
+    "2026MLCOE": {
+      "checks": {
+        "finite_outputs_dominant": true,
+        "median_average_ess_not_materially_worse": true,
+        "median_observation_proxy_rmse_not_materially_worse": true,
+        "median_position_rmse_not_materially_worse": true,
+        "median_resampling_count_within_horizon": true
+      },
+      "confirmed": true,
+      "reference": {
+        "median_average_ess": 43.8,
+        "median_observation_proxy_rmse": 0.0166,
+        "median_position_rmse": 0.048,
+        "median_resampling_count": 17.0
+      },
+      "status": "available",
+      "summary": {
+        "finite_means_count": 5,
+        "median_average_ess": 42.72959497800359,
+        "median_observation_proxy_rmse": 0.015606803862392063,
+        "median_position_rmse": 0.04684151332644011,
+        "median_resampling_count": 17.0,
+        "median_runtime_seconds": 1.0109914140193723,
+        "minimum_min_ess": 14.962909650774112,
+        "ok": 5,
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "thresholds": {
+        "median_average_ess_floor": 32.849999999999994,
+        "median_observation_proxy_rmse_ceiling": 0.0249,
+        "median_position_rmse_ceiling": 0.07200000000000001,
+        "median_resampling_count_ceiling": 20.0
+      }
+    },
+    "advanced_particle_filter": {
+      "checks": {
+        "finite_outputs_dominant": true,
+        "median_average_ess_not_materially_worse": true,
+        "median_observation_proxy_rmse_not_materially_worse": true,
+        "median_position_rmse_not_materially_worse": true,
+        "median_resampling_count_within_horizon": true
+      },
+      "confirmed": true,
+      "reference": {
+        "median_average_ess": 29.6,
+        "median_observation_proxy_rmse": 0.0165,
+        "median_position_rmse": 0.0466,
+        "median_resampling_count": 18.0
+      },
+      "status": "available",
+      "summary": {
+        "finite_means_count": 5,
+        "median_average_ess": 27.623623388392787,
+        "median_observation_proxy_rmse": 0.01623787410008778,
+        "median_position_rmse": 0.047542324585623866,
+        "median_resampling_count": 18.0,
+        "median_runtime_seconds": 0.0801185870077461,
+        "minimum_min_ess": 2.3293622512915615,
+        "ok": 5,
+        "runs": 5,
+        "runtime_warning_count": 0
+      },
+      "thresholds": {
+        "median_average_ess_floor": 22.200000000000003,
+        "median_observation_proxy_rmse_ceiling": 0.02475,
+        "median_position_rmse_ceiling": 0.0699,
+        "median_resampling_count_ceiling": 20.0
+      }
+    }
+  },
+  "moderate_flow_step_policy": {
+    "details": {
+      "2026MLCOE": {
+        "bounded_benefit": true,
+        "bounded_runtime": true,
+        "observation_proxy_rmse_improved": true,
+        "position_rmse_improved": false,
+        "runtime_ratio_20_over_10": 1.6445263949683113,
+        "status": "available",
+        "steps_10": {
+          "finite_means_count": 5,
+          "median_average_ess": 59.30663868367253,
+          "median_observation_proxy_rmse": 0.07748677757908665,
+          "median_position_rmse": 0.06609384683936731,
+          "median_resampling_count": 11.0,
+          "median_runtime_seconds": 0.6103491060202941,
+          "minimum_min_ess": 11.749990867865796,
+          "ok": 5,
+          "runs": 5,
+          "runtime_warning_count": 0
+        },
+        "steps_20": {
+          "finite_means_count": 5,
+          "median_average_ess": 64.34709020916227,
+          "median_observation_proxy_rmse": 0.07321314254784966,
+          "median_position_rmse": 0.0689352807187,
+          "median_resampling_count": 11.0,
+          "median_runtime_seconds": 1.003735214995686,
+          "minimum_min_ess": 21.309354446172122,
+          "ok": 5,
+          "runs": 5,
+          "runtime_warning_count": 0
+        }
+      },
+      "advanced_particle_filter": {
+        "bounded_benefit": false,
+        "bounded_runtime": true,
+        "observation_proxy_rmse_improved": false,
+        "position_rmse_improved": false,
+        "runtime_ratio_20_over_10": 1.5465773794109459,
+        "status": "available",
+        "steps_10": {
+          "finite_means_count": 5,
+          "median_average_ess": 21.571340347151093,
+          "median_observation_proxy_rmse": 0.08220460804540859,
+          "median_position_rmse": 0.0687263946400234,
+          "median_resampling_count": 18.0,
+          "median_runtime_seconds": 0.05041675898246467,
+          "minimum_min_ess": 1.2854988541934993,
+          "ok": 5,
+          "runs": 5,
+          "runtime_warning_count": 0
+        },
+        "steps_20": {
+          "finite_means_count": 5,
+          "median_average_ess": 20.472087414938247,
+          "median_observation_proxy_rmse": 0.08480420224042487,
+          "median_position_rmse": 0.07479885554056817,
+          "median_resampling_count": 19.0,
+          "median_runtime_seconds": 0.07797341898549348,
+          "minimum_min_ess": 1.0712858309380127,
+          "ok": 5,
+          "runs": 5,
+          "runtime_warning_count": 0
+        }
+      }
+    },
+    "fixture": "range_bearing_gaussian_moderate",
+    "num_particles": 128,
+    "rationale": "implementation-specific benefit differs",
+    "recommendation": "moderate_keep_both_as_diagnostic"
+  },
+  "next_phase_recommendation": "Write a caveated clean-room specification only after explicitly carrying forward the low-noise or moderate-flow-step caveats.",
+  "ok": 30,
+  "planned_records": 30,
+  "records": 30
+}
