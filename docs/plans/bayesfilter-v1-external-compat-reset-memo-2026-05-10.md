@@ -3358,3 +3358,76 @@ Interpretation:
 - P3 is justified next: refresh nonlinear benchmark artifacts with score
   branch metadata and keep exactness claims tied to the actual reference type;
 - HMC, Hessians, GPU/XLA, and external integration remain gated.
+
+## 2026-05-14 V1 P3 benchmark refresh execution
+
+Phase:
+- P3 / R4 nonlinear benchmark refresh with score metadata.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p3-benchmark-refresh-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p3-benchmark-refresh-result-2026-05-14.md
+```
+
+Implementation:
+- refreshed `docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py`
+  so benchmark rows include score status, score branch labels, finite-score
+  status, failure labels, structural-null diagnostics, and
+  `score_allow_fixed_null_support`;
+- corrected the benchmark's parameterized affine score branch grid to avoid a
+  repeated-spectrum weak-gap artifact;
+- removed stale benchmark blocked claim that Models B-C analytic scores are
+  blocked; retained blocked claims for exact full nonlinear likelihood,
+  nonlinear HMC readiness, GPU/XLA speedup, and nonlinear Hessian readiness.
+
+Generated:
+
+```text
+docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.json
+docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.md
+```
+
+Validation:
+
+```bash
+python -m py_compile docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- syntax check passed;
+- `23 passed, 2 warnings`.
+
+Benchmark command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+MPLCONFIGDIR=/tmp/matplotlib-bayesfilter \
+python docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py \
+  --repeats 1 \
+  --output docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.md
+```
+
+Result:
+- benchmark completed with CPU-only logical devices in the JSON artifact;
+- all Model A, Model B, and default Model C rows have value branch `3/3` and
+  score branch `3/3` for SVD cubature, SVD-UKF, and SVD-CUT4.
+
+Interpretation:
+- P3 passes;
+- P4 is justified next with Model B as the first nonlinear HMC target
+  candidate;
+- HMC convergence, nonlinear Hessians, GPU/XLA speedups, and external
+  integration remain gated.
