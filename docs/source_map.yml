@@ -319,6 +319,36 @@ sources:
     entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md
     status: drafted
     role: Consolidated filtering backend completion plan covering TF linear spine, SVD value, structural protocols, sigma-point/CUT filters, derivatives, compiled/GPU gates, and client switch-over.
+  - id: bayesfilter_filtering_gap_closure_execution_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-gap-closure-execution-plan-2026-05-09.md
+    status: drafted
+    role: Operational execution plan translating filtering goals, gaps, and hypotheses into ordered closure phases and stop rules.
+  - id: bayesfilter_filtering_goals_gaps_hypotheses_closure_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
+    status: drafted
+    role: Independent audit of the filtering goals/gaps closure plan, limiting automatic execution to Phase 0 and Phase 1A masked QR derivatives.
+  - id: bayesfilter_seven_phase_filtering_implementation_plan
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md
+    status: drafted
+    role: Execution-ready seven-phase implementation program from MacroFinance linear compatibility through SVD/eigen, structural protocols, sigma-point, CUT/SVD-CUT, derivatives, and compiled/GPU/client gates.
+  - id: bayesfilter_seven_phase_filtering_implementation_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-seven-phase-filtering-implementation-audit-2026-05-09.md
+    status: drafted
+    role: Independent audit of the seven-phase implementation plan, defining primary criteria and veto diagnostics for automatic continuation.
+  - id: bayesfilter_phase1b_macrofinance_linear_compat_audit
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/bayesfilter-phase1b-macrofinance-linear-compat-audit-2026-05-09.md
+    status: drafted
+    role: Phase 1B compatibility result proving BayesFilter static dense/masked QR value and derivatives match MacroFinance donor fixtures.
   - id: dsge_sgu_current_control_derivation_gate_result
     project: dsge_hmc
     root: /home/chakwong/python/docs/plans
@@ -685,6 +715,255 @@ chapter_mappings:
       destination: bayesfilter/linear/kalman_qr_tf.py; bayesfilter/linear/kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
       import_status: drafted
       reason: Defines the post-SGU implementation route for remaining generic filtering gaps while keeping SGU in the diagnostic lane until a causal local value target exists.
+
+  bayesfilter_filtering_gap_closure_execution_plan:
+    - source_file: bayesfilter-filtering-gap-closure-execution-plan-2026-05-09.md
+      destination: docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md; docs/plans/bayesfilter-structural-svd-12-phase-execution-reset-memo-2026-05-06.md; docs/source_map.yml
+      import_status: drafted
+      reason: Converts the consolidated filtering goals and blockers into executable phases, with masked QR derivatives first and SGU production filtering kept in the model-owned derivation lane.
+
+  bayesfilter_filtering_goals_gaps_hypotheses_closure_audit:
+    - source_file: bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; tests/test_linear_kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the filtering closure plan and restricts this execution pass to evidence freeze plus masked QR analytic derivatives before SVD, nonlinear, CUT, GPU, HMC, or client switch-over promotion.
+
+  bayesfilter_seven_phase_filtering_implementation_plan:
+    - source_file: bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md
+      destination: tests/compat; bayesfilter/linear; bayesfilter/nonlinear; bayesfilter/structural_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Provides the ordered implementation plan and gates for Phase 1B MacroFinance compatibility, Phase 2 SVD/eigen value, Phase 3 structural protocols, Phase 4 SVD sigma-point value, Phase 5 CUT/SVD-CUT value, Phase 6 SVD-CUT derivatives, and Phase 7 compiled/GPU/HMC/client switch-over.
+
+  bayesfilter_seven_phase_filtering_implementation_audit:
+    - source_file: bayesfilter-seven-phase-filtering-implementation-audit-2026-05-09.md
+      destination: tests/test_macrofinance_linear_compat_tf.py; bayesfilter/linear/kalman_svd_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the seven-phase program and permits automatic continuation only when each phase's primary criterion passes and veto diagnostics remain clear.
+
+  bayesfilter_phase1b_macrofinance_linear_compat_audit:
+    - source_file: bayesfilter-phase1b-macrofinance-linear-compat-audit-2026-05-09.md
+      destination: tests/test_macrofinance_linear_compat_tf.py; bayesfilter/linear/kalman_qr_tf.py; bayesfilter/linear/kalman_qr_derivatives_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Records the MacroFinance static compatibility pass and justifies starting Phase 2 SVD/eigen value work without a Phase 1C time-varying derivative gate.
+
+  bayesfilter_client_switch_over_boundary_2026_05_09:
+    - source_file: bayesfilter-client-switch-over-boundary-2026-05-09.md
+      destination: bayesfilter/linear/kalman_svd_tf.py; bayesfilter/structural_tf.py; bayesfilter/nonlinear; tests/test_compiled_filter_parity_tf.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Records the post-implementation client switch-over boundary after linear SVD/eigen value, structural TF protocols, SVD sigma-point value, SVD-CUT value, smooth-branch SVD-CUT derivatives, and CPU graph parity passed.
+
+  bayesfilter_post_seven_phase_gap_closure_plan_2026_05_10:
+    - source_file: bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md
+      destination: MacroFinance switch-over audit; DSGE structural adapter inventory; GPU/XLA benchmark artifacts; HMC readiness audit; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: >
+        Defines the post-seven-phase gap closure path: push baseline,
+        MacroFinance switch-over, DSGE target inventory, GPU/XLA evidence,
+        HMC readiness, and conditional linear SVD/eigen derivative work.
+
+  bayesfilter_post_seven_phase_gap_closure_plan_audit_2026_05_10:
+    - source_file: bayesfilter-post-seven-phase-gap-closure-plan-audit-2026-05-10.md
+      destination: docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the post-seven-phase gap closure plan and restricts automatic execution to BayesFilter sync plus read-only MacroFinance audit before any MacroFinance write boundary.
+
+  macrofinance_bayesfilter_switch_over_audit_2026_05_10:
+    - source_file: macrofinance-bayesfilter-switch-over-audit-2026-05-10.md
+      destination: /home/chakwong/MacroFinance/inference/hmc.py; /home/chakwong/MacroFinance/tests/test_tf_kalman.py; /home/chakwong/MacroFinance/tests/test_production_lgssm_backend_fixture.py; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Records the read-only MacroFinance adapter audit and selects dense static tf_direct_qr value dispatch as the first BayesFilter-backed switch-over pilot before masked QR, analytic derivatives, SVD value, GPU, or HMC promotion.
+
+  bayesfilter_goals_status_gaps_closure_plan_2026_05_10:
+    - source_file: bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md
+      destination: /home/chakwong/MacroFinance/inference/hmc.py; /home/chakwong/python; docs/benchmarks; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Consolidates current goals, completed filtering status, remaining MacroFinance/DSGE/GPU/HMC/SVD-derivative gaps, and a ten-phase execution path for closing them without changing client defaults prematurely.
+
+  bayesfilter_goals_status_gaps_closure_plan_audit_2026_05_10:
+    - source_file: bayesfilter-goals-status-gaps-closure-plan-audit-2026-05-10.md
+      destination: docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md; docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md
+      import_status: drafted
+      reason: Audits the goals/status/gaps closure plan, approves the phase order, and records that automatic execution must stop before MacroFinance edits unless the client-repo write boundary is explicitly authorized.
+
+  bayesfilter_v1_external_compat_reset_memo_2026_05_10:
+    - source_file: bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compatibility-gap-closure-plan-2026-05-10.md; docs/source_map.yml
+      import_status: drafted
+      reason: Creates a lane-specific reset memo for BayesFilter v1 external compatibility work, separating MacroFinance/DSGE compatibility certification from shared monograph and structural SVD execution memos.
+
+  bayesfilter_v1_external_compatibility_gap_closure_2026_05_10:
+    - source_file: bayesfilter-v1-external-compatibility-gap-closure-plan-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/plans/bayesfilter-v1-api-freeze-criteria-2026-05-10.md; docs/plans/bayesfilter-v1-external-compatibility-matrix-2026-05-10.md; docs/plans/bayesfilter-v1-local-fixture-gap-audit-2026-05-10.md; docs/plans/bayesfilter-v1-optional-external-test-policy-2026-05-10.md; docs/plans/bayesfilter-v1-dsge-readonly-target-inventory-plan-2026-05-10.md; docs/plans/bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md; docs/plans/bayesfilter-v1-hmc-and-integration-gates-2026-05-10.md
+      import_status: drafted
+      reason: Pivoted v1 plan that replaces immediate MacroFinance switch-over with BayesFilter-local API stabilization, external compatibility certification, fixture coverage, benchmark/GPU/HMC gates, and future integration criteria.
+
+  bayesfilter_v1_external_compatibility_gap_closure_audit_2026_05_10:
+    - source_file: bayesfilter-v1-external-compatibility-gap-closure-plan-audit-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compatibility-gap-closure-plan-2026-05-10.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Independent audit approving the pivoted external-compatibility plan for BayesFilter-local execution while prohibiting MacroFinance/DSGE edits, GPU execution, HMC claims, or shared-reset-memo staging.
+
+  bayesfilter_v1_external_compatibility_execution_artifacts_2026_05_10:
+    - source_file: bayesfilter-v1-api-freeze-criteria-2026-05-10.md; bayesfilter-v1-external-compatibility-matrix-2026-05-10.md; bayesfilter-v1-local-fixture-gap-audit-2026-05-10.md; bayesfilter-v1-optional-external-test-policy-2026-05-10.md; bayesfilter-v1-dsge-readonly-target-inventory-plan-2026-05-10.md; bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md; bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md; bayesfilter-v1-hmc-and-integration-gates-2026-05-10.md
+      destination: bayesfilter v1 API stabilization; external compatibility certification; docs/benchmarks; future MacroFinance/DSGE integration readiness plans
+      import_status: drafted
+      reason: Execution artifacts for the ten-phase v1 external-compatibility lane, covering API freeze criteria, compatibility matrix, fixture gap audit, optional external test policy, DSGE read-only inventory, benchmark/GPU gates, and HMC/future integration gates.
+
+  bayesfilter_v1_dsge_readonly_target_inventory_result_2026_05_10:
+    - source_file: bayesfilter-v1-dsge-readonly-target-inventory-result-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compatibility-matrix-2026-05-10.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Read-only DSGE inventory result showing that the other agent's SGU timing fix is narrow, SGU production filtering remains blocked, Rotemberg is a future test-only external fixture candidate, and EZ remains metadata-only without BK/HMC certification.
+
+  bayesfilter_v1_filter_cpu_benchmark_2026_05_10:
+    - source_file: docs/benchmarks/benchmark_bayesfilter_v1_filters.py; docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-10.md; docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-medium-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Adds a CPU-only benchmark harness plus small and medium artifacts for v1 linear QR, linear QR score/Hessian, linear SVD value, SVD cubature, SVD-UKF, and SVD-CUT value backends, with process-memory metadata and without making client, GPU, or HMC readiness claims.
+
+  bayesfilter_v1_phase_completion_plan_2026_05_10:
+    - source_file: bayesfilter-v1-phase-completion-plan-2026-05-10.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/benchmarks; tests/test_v1_public_api.py; future BayesFilter v1 external-compatibility completion pass
+      import_status: drafted
+      reason: Summarizes the current phase goals, remaining gaps, falsifiable hypotheses, lane boundaries, and execution plan for completing the BayesFilter v1 external-compatibility phase without coupling MacroFinance or DSGE before v1.
+
+  bayesfilter_v1_phase_completion_plan_2026_05_11:
+    - source_file: bayesfilter-v1-phase-completion-plan-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/benchmarks; tests/test_v1_public_api.py; future BayesFilter v1 external-compatibility completion pass
+      import_status: drafted
+      reason: Active May 11 phase-completion plan that summarizes goals, gaps, hypotheses, tests, and an eight-phase execution path for closing the BayesFilter v1 external-compatibility phase while staying inside this agent's lane.
+
+  bayesfilter_v1_phase_completion_plan_audit_2026_05_11:
+    - source_file: bayesfilter-v1-phase-completion-plan-audit-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-11.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Independent developer-style audit approving the v1 phase-completion plan for scoped execution, with required Phase D benchmark memory metadata and lane-boundary veto diagnostics.
+
+  bayesfilter_v1_phase_completion_result_2026_05_11:
+    - source_file: bayesfilter-v1-phase-completion-result-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/plans/bayesfilter-v1-phase-completion-plan-2026-05-11.md; docs/benchmarks
+      import_status: drafted
+      reason: Phase-by-phase execution result for the BayesFilter v1 external-compatibility completion pass, including API/local test gates, CPU benchmark memory metadata, medium-shape evidence, optional MacroFinance deferral, DSGE containment, and GPU/HMC/SVD-derivative blockers.
+
+  bayesfilter_v1_post_completion_gap_closure_plan_2026_05_11:
+    - source_file: bayesfilter-v1-post-completion-gap-closure-plan-2026-05-11.md
+      destination: docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 diagnostic and integration-readiness passes
+      import_status: drafted
+      reason: Follow-on plan after the committed v1 external-compatibility phase, targeting QR score/Hessian first-call cost, CPU benchmark ladder, escalated GPU/XLA evidence, optional live MacroFinance certification, DSGE test-only fixture design, first HMC target selection, SVD-CUT branch diagnostics, and CI tiering.
+
+  bayesfilter_v1_post_completion_gap_closure_audit_2026_05_11:
+    - source_file: bayesfilter-v1-post-completion-gap-closure-plan-audit-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-post-completion-gap-closure-plan-2026-05-11.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Independent developer-style audit approving the post-completion gap-closure plan with conditional GPU, optional external, DSGE design-only, SVD-CUT branch, and lane-boundary gates.
+
+  bayesfilter_v1_post_completion_gap_closure_result_2026_05_11:
+    - source_file: bayesfilter-v1-post-completion-gap-closure-result-2026-05-11.md; bayesfilter-v1-dsge-test-only-fixture-design-2026-05-11.md; bayesfilter-v1-hmc-first-target-selection-2026-05-11.md; bayesfilter-v1-svd-cut-branch-diagnostic-gate-2026-05-11.md; bayesfilter-v1-ci-runtime-tier-policy-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/benchmarks; future BayesFilter v1 HMC and integration-readiness passes
+      import_status: drafted
+      reason: Execution result and design/policy artifacts for the post-completion v1 gap-closure pass, closing CPU QR derivative diagnostics, GPU-visible smoke evidence, optional live MacroFinance certification, DSGE test-only fixture design, first HMC target selection, SVD-CUT branch gates, and CI runtime tiers.
+
+  bayesfilter_v1_post_completion_benchmark_artifacts_2026_05_11:
+    - source_file: docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-11-smoke.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-2026-05-11-smoke.md; docs/benchmarks/bayesfilter-v1-filter-benchmark-ladder-2026-05-11.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-ladder-2026-05-11.md; docs/benchmarks/bayesfilter-v1-qr-score-hessian-time-ladder-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-score-hessian-time-ladder-2026-05-11.md; docs/benchmarks/bayesfilter-v1-qr-score-hessian-parameter-ladder-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-score-hessian-parameter-ladder-2026-05-11.md; docs/benchmarks/bayesfilter-v1-filter-benchmark-gpu-visible-smoke-2026-05-11.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-gpu-visible-smoke-2026-05-11.md; docs/benchmarks/bayesfilter-v1-filter-benchmark-xla-visible-2026-05-11.json; docs/benchmarks/bayesfilter-v1-filter-benchmark-xla-visible-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-post-completion-gap-closure-result-2026-05-11.md; docs/plans/bayesfilter-v1-benchmark-and-gpu-gates-2026-05-10.md
+      import_status: drafted
+      reason: CPU smoke, mixed and one-axis QR score/Hessian ladders, escalated GPU-visible smoke, and tiny XLA-visible value artifacts showing QR derivative warmup/materialization costs, GPU availability, narrow XLA value support, and no broad GPU speedup or HMC claim.
+
+  bayesfilter_v1_hmc_branch_closure_plan_2026_05_11:
+    - source_file: bayesfilter-v1-hmc-branch-closure-plan-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md; docs/plans/bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 QR derivative memory, HMC target, and SVD-CUT branch diagnostic execution
+      import_status: drafted
+      reason: Next-phase v1 lane plan summarizing goals, remaining gaps, hypotheses, and execution phases for QR derivative memory reduction, the first linear QR HMC target, SVD-CUT branch-frequency diagnostics, optional GPU/XLA follow-up, and CI tier containment.
+
+  bayesfilter_v1_hmc_branch_closure_result_2026_05_11:
+    - source_file: bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md; bayesfilter-v1-hmc-branch-closure-plan-audit-2026-05-11.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; bayesfilter/linear/qr_factor_tf.py; bayesfilter/testing; tests/test_hmc_linear_qr_readiness_tf.py; tests/test_svd_cut_branch_diagnostics_tf.py; docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md
+      import_status: drafted
+      reason: Phase-by-phase execution result for the v1 HMC and branch-diagnostic closure pass, including private QR first-order diagnostics, CPU derivative materialization artifact, first linear QR HMC smoke, SVD-CUT branch-frequency artifact, GPU/XLA deferral, and opt-in CI tier containment.
+
+  bayesfilter_v1_hmc_branch_benchmark_artifacts_2026_05_11:
+    - source_file: docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-derivative-materialization-diagnostic-2026-05-11.md; docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.json; docs/benchmarks/bayesfilter-v1-linear-qr-hmc-readiness-smoke-2026-05-11.md; docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.json; docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-diagnostic-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-hmc-branch-closure-result-2026-05-11.md; docs/plans/bayesfilter-v1-ci-runtime-tier-policy-2026-05-11.md
+      import_status: drafted
+      reason: CPU-only diagnostic artifacts showing first-order QR versus full score/Hessian materialization cost, target-specific linear QR HMC finite smoke diagnostics, and SVD-CUT branch-frequency telemetry with smooth-box and weak-gap-control counts.
+
+  bayesfilter_v1_hmc_readiness_gap_closure_addendum_2026_05_11:
+    - source_file: bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-plan-2026-05-11.md; bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-plan-audit-2026-05-11.md; bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-result-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; docs/benchmarks; future BayesFilter v1 HMC, QR score-only API, and SVD-CUT branch-readiness passes
+      import_status: drafted
+      reason: Addendum to the committed v1 HMC branch closure pass, recording the tightened readiness plan, independent audit, phase result, remaining hypotheses, and the decision to keep first-order QR score helpers private while using QR value autodiff for the first HMC smoke.
+
+  bayesfilter_v1_hmc_readiness_benchmark_artifacts_2026_05_11:
+    - source_file: docs/benchmarks/benchmark_bayesfilter_v1_hmc_smoke.py; docs/benchmarks/benchmark_bayesfilter_v1_svd_cut_branch_frequency.py; docs/benchmarks/bayesfilter-v1-qr-derivative-cost-decomposition-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-derivative-cost-decomposition-2026-05-11.md; docs/benchmarks/bayesfilter-v1-qr-score-state-observation-ladder-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-score-state-observation-ladder-2026-05-11.md; docs/benchmarks/bayesfilter-v1-qr-hmc-smoke-2026-05-11.json; docs/benchmarks/bayesfilter-v1-qr-hmc-smoke-2026-05-11.md; docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-2026-05-11.json; docs/benchmarks/bayesfilter-v1-svd-cut-branch-frequency-2026-05-11.md
+      destination: docs/plans/bayesfilter-v1-hmc-readiness-and-diagnostic-gap-closure-result-2026-05-11.md; docs/plans/bayesfilter-v1-ci-runtime-tier-policy-2026-05-11.md
+      import_status: drafted
+      reason: CPU-only readiness addendum artifacts for QR score-vs-Hessian cost decomposition, small state/observation score-envelope behavior, target-specific QR HMC smoke with QR value autodiff score, and diagnostic-only SVD-CUT branch-frequency telemetry.
+
+  bayesfilter_v1_score_api_hmc_svdcut_gap_closure_plan_2026_05_11:
+    - source_file: bayesfilter-v1-score-api-hmc-svdcut-gap-closure-plan-2026-05-11.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; tests/test_linear_kalman_qr_derivatives_tf.py; tests/test_hmc_linear_qr_readiness_tf.py; tests/test_svd_cut_branch_diagnostics_tf.py; docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 score-only API and HMC/SVD-CUT diagnostic execution
+      import_status: drafted
+      reason: Next-phase v1 plan summarizing goals, gaps, hypotheses, and a gated execution path for QR score-only API promotion or blocker status, longer QR HMC diagnostics, wider SVD-CUT branch sweeps, optional escalated QR derivative GPU/XLA evidence, CI tier containment, and external-project decoupling.
+
+  bayesfilter_v1_score_hmc_svdcut_execution_closure_plan_2026_05_11:
+    - source_file: bayesfilter-v1-score-hmc-svdcut-execution-closure-plan-2026-05-11.md
+      destination: bayesfilter/linear/kalman_qr_derivatives_tf.py; bayesfilter/testing; tests/test_linear_kalman_qr_derivatives_tf.py; tests/test_hmc_linear_qr_readiness_tf.py; tests/test_svd_cut_branch_diagnostics_tf.py; docs/benchmarks; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter v1 execution pass
+      import_status: drafted
+      reason: Execution-ready v1 closure plan that summarizes phase goals, remaining gaps, falsifiable hypotheses, test gates, continuation criteria, and lane boundaries for QR score-only API decisions, longer QR HMC diagnostics, wider SVD-CUT branch sweeps, optional escalated GPU/XLA derivative evidence, and CI containment.
+
+  bayesfilter_v1_nonlinear_filtering_master_testing_program_2026_05_11:
+    - source_file: bayesfilter-v1-nonlinear-filtering-master-testing-program-2026-05-11.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/nonlinear; bayesfilter/testing; tests/test_structural_svd_sigma_point_tf.py; tests/test_svd_cut_filter_tf.py; tests/test_svd_cut_derivatives_tf.py; future nonlinear benchmark and analytic-score execution pass
+      import_status: drafted
+      reason: Master testing program for nonlinear SVD cubature, SVD-UKF, and SVD-CUT4 implementation, covering Chapter 18 derivative traceability, removal of production raw GradientTape derivatives, literature-grounded nonlinear SSM benchmark selection, LaTeX benchmark documentation, score-first analytic implementation, optional Hessian gate, branch diagnostics, and CI/runtime tiers.
+
+  bayesfilter_v1_nonlinear_model_suite_documentation_testing_tools_plan_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-2026-05-12.md
+      destination: docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/testing; tests/test_nonlinear_benchmark_models_tf.py; tests/test_nonlinear_reference_oracles.py; tests/test_nonlinear_sigma_point_values_tf.py; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear model-suite execution pass
+      import_status: drafted
+      reason: Subplan under the nonlinear filtering master program for documenting literature-grounded nonlinear SSM benchmarks and implementing reusable BayesFilter-local testing tools, with Models A-C as the first rung and bearings, radar, and stochastic volatility deferred until their residual and observation-noise contracts are explicit.
+
+  bayesfilter_v1_nonlinear_model_suite_documentation_testing_tools_result_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-model-suite-documentation-and-testing-tools-plan-audit-2026-05-12.md; bayesfilter-v1-nonlinear-model-suite-source-notes-and-result-2026-05-12.md; bayesfilter/testing/nonlinear_models_tf.py; tests/test_nonlinear_benchmark_models_tf.py; tests/test_nonlinear_reference_oracles.py; tests/test_nonlinear_sigma_point_values_tf.py; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/references.bib
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear analytic-score, branch-diagnostic, and benchmark execution passes
+      import_status: drafted
+      reason: Execution result for the first nonlinear model-suite subplan, including tightened drift gates, source notes, Chapter 28 benchmark documentation, reusable TensorFlow testing fixtures for Models A-C, dense one-step Gaussian projection oracles, CPU value/oracle tests, and explicit deferral of tracking, stochastic volatility, gradients, HMC, and GPU/XLA claims.
+
+  bayesfilter_v1_svd_filter_analytic_gradient_audit_implementation_plan_2026_05_12:
+    - source_file: bayesfilter-v1-svd-filter-analytic-gradient-audit-implementation-plan-2026-05-12.md
+      destination: docs/chapters/ch18_svd_sigma_point.tex; bayesfilter/nonlinear; bayesfilter/testing; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_svd_cut_derivatives_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future SVD sigma-point analytic-score implementation pass
+      import_status: drafted
+      reason: Subplan for auditing Chapter 18 SVD sigma-point derivative equations, moving raw GradientTape SVD-CUT4 derivatives to a testing oracle, implementing score-first analytic gradients for SVD cubature, SVD-UKF, and SVD-CUT4, and gating Hessian work until score and branch evidence justify it.
+
+  bayesfilter_v1_svd_filter_analytic_gradient_audit_result_2026_05_12:
+    - source_file: bayesfilter-v1-svd-filter-analytic-gradient-audit-result-2026-05-12.md; bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py; bayesfilter/testing/tf_svd_cut_autodiff_oracle.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_svd_cut_derivatives_tf.py; tests/test_compiled_filter_parity_tf.py; tests/test_v1_public_api.py
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear Models B-C analytic-derivative providers, branch-grid diagnostics, and benchmark passes
+      import_status: drafted
+      reason: Execution result for the second nonlinear filtering subplan, including Chapter 18 traceability, testing-only SVD-CUT raw autodiff oracle migration, TF-only analytic smooth-branch first-order score functions for SVD cubature, SVD-UKF, and SVD-CUT4, score finite-difference/oracle tests, explicit Hessian deferral, and remaining nonlinear score-test gaps.
+
+  bayesfilter_v1_nonlinear_filtering_remaining_master_program_plan_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-filtering-remaining-master-program-plan-2026-05-12.md
+      destination: bayesfilter/nonlinear; bayesfilter/testing; tests/test_nonlinear_*; docs/benchmarks; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear value, branch, benchmark, GPU/XLA, and HMC-readiness execution passes
+      import_status: drafted
+      reason: Subplan for the remaining nonlinear filtering master-program work after model-suite and analytic-gradient streams, covering value-filter consolidation, branch diagnostics, approximation benchmarks, CI/runtime tiers, optional escalated GPU/XLA evidence, target-specific HMC readiness, and provenance cleanup.
+
+  bayesfilter_v1_nonlinear_filtering_remaining_master_program_result_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-filtering-remaining-master-program-result-2026-05-12.md; bayesfilter/testing/nonlinear_diagnostics_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py; docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-12.json; docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-12.md; docs/chapters/ch28_nonlinear_ssm_validation.tex
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear Models B-C derivative-provider, GPU/XLA, and HMC-readiness execution passes
+      import_status: drafted
+      reason: Execution result for the third nonlinear filtering subplan, adding shared nonlinear value/score diagnostic helpers, branch summaries across value backends, a CPU benchmark artifact for Models A-C, exact Kalman evidence for Model A, dense one-step projection diagnostics for Models B-C, CI-tier confirmation, and explicit deferral of nonlinear Models B-C score, GPU/XLA, and HMC claims.
+
+  bayesfilter_v1_nonlinear_implementation_audit_result_2026_05_12:
+    - source_file: bayesfilter-v1-nonlinear-implementation-audit-result-2026-05-12.md; bayesfilter/nonlinear/sigma_points_tf.py; bayesfilter/nonlinear/svd_cut_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future nonlinear Models B-C derivative-provider, Hessian, GPU/XLA, and HMC-readiness passes
+      import_status: drafted
+      reason: Independent implementation audit result for the BayesFilter V1 nonlinear filtering lane, recording that no major correctness issue was found, exposing already-computed floor and PSD-projection diagnostics through value-wrapper extras, and preserving derivative-provider, Hessian, GPU/XLA, and nonlinear HMC gaps as explicit future gates.
+
+  bayesfilter_v1_nonlinear_derivative_provider_gap_closure_2026_05_13:
+    - source_file: bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-audit-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-result-2026-05-13.md; bayesfilter/testing/nonlinear_models_tf.py; bayesfilter/testing/__init__.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/chapters/ch28_nonlinear_ssm_validation.tex
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future fixed-null SVD derivative, wider nonlinear branch diagnostics, Hessian, GPU/XLA, and nonlinear HMC readiness passes
+      import_status: drafted
+      reason: Executes the V1 nonlinear derivative-provider gap closure pass, adding testing-lane first-derivative providers for Models B-C, certifying Model B and smooth-phase Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4, and preserving default Model C zero phase variance as an active-floor blocker until a fixed-null derivative policy is derived.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md

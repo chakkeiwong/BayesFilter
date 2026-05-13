@@ -20,6 +20,13 @@ from bayesfilter.linear.kalman_qr_derivatives_tf import (
     TFQRLinearDerivativeBackend,
     tf_qr_linear_gaussian_score_hessian,
     tf_qr_sqrt_kalman_score_hessian,
+    tf_qr_sqrt_masked_kalman_score_hessian,
+)
+from bayesfilter.linear.kalman_svd_tf import (
+    TFSVDLinearValueBackend,
+    tf_svd_kalman_log_likelihood,
+    tf_svd_linear_gaussian_log_likelihood,
+    tf_svd_masked_kalman_log_likelihood,
 )
 from bayesfilter.linear.qr_factor_tf import (
     cholesky_factor,
@@ -52,6 +59,7 @@ __all__ = [
     "TFQRLinearValueBackend",
     "TFQRLinearDerivativeBackend",
     "TFLinearValueBackend",
+    "TFSVDLinearValueBackend",
     "tf_qr_linear_gaussian_log_likelihood",
     "tf_qr_linear_gaussian_score_hessian",
     "tf_qr_sqrt_kalman_filter",
@@ -59,11 +67,15 @@ __all__ = [
     "tf_qr_sqrt_kalman_score_hessian",
     "tf_qr_sqrt_masked_kalman_filter",
     "tf_qr_sqrt_masked_kalman_log_likelihood",
+    "tf_qr_sqrt_masked_kalman_score_hessian",
     "tf_kalman_filter",
     "tf_kalman_log_likelihood",
     "tf_linear_gaussian_log_likelihood",
     "tf_masked_kalman_filter",
     "tf_masked_kalman_log_likelihood",
+    "tf_svd_kalman_log_likelihood",
+    "tf_svd_linear_gaussian_log_likelihood",
+    "tf_svd_masked_kalman_log_likelihood",
     "cholesky_factor",
     "cholesky_factor_derivatives",
     "factor_covariance_derivatives",

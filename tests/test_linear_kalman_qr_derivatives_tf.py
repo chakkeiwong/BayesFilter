@@ -5,10 +5,15 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.linear.kalman_qr_derivatives_tf import (
+    _tf_qr_sqrt_kalman_score,
     tf_qr_linear_gaussian_score_hessian,
     tf_qr_sqrt_kalman_score_hessian,
+    tf_qr_sqrt_masked_kalman_score_hessian,
 )
-from bayesfilter.linear.kalman_qr_tf import tf_qr_sqrt_kalman_log_likelihood
+from bayesfilter.linear.kalman_qr_tf import (
+    tf_qr_sqrt_kalman_log_likelihood,
+    tf_qr_sqrt_masked_kalman_log_likelihood,
+)
 from bayesfilter.linear.types_tf import (
     TFLinearGaussianStateSpace,
     TFLinearGaussianStateSpaceDerivatives,
@@ -92,6 +97,26 @@ def _qr_log_likelihood(observations: tf.Tensor, model: TFLinearGaussianStateSpac
     )
 
 
+def _masked_qr_log_likelihood(
+    observations: tf.Tensor,
+    model: TFLinearGaussianStateSpace,
+    observation_mask: tf.Tensor,
+) -> tf.Tensor:
+    return tf_qr_sqrt_masked_kalman_log_likelihood(
+        observations=observations,
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        observation_mask=observation_mask,
+        jitter=tf.constant(JITTER, dtype=tf.float64),
+    )
+
+
 def _autodiff_reference(params: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     with tf.GradientTape() as hessian_tape:
         hessian_tape.watch(params)
@@ -102,6 +127,93 @@ def _autodiff_reference(params: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Ten
         gradient = gradient_tape.gradient(value, params)
     hessian = hessian_tape.jacobian(gradient, params)
     return value, gradient, hessian
+
+
+def _autodiff_masked_reference(
+    params: tf.Tensor,
+    observation_mask: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    with tf.GradientTape() as hessian_tape:
+        hessian_tape.watch(params)
+        with tf.GradientTape() as gradient_tape:
+            gradient_tape.watch(params)
+            model, _ = _model_and_derivatives(params)
+            value = _masked_qr_log_likelihood(_observations(), model, observation_mask)
+        gradient = gradient_tape.gradient(value, params)
+    hessian = hessian_tape.jacobian(gradient, params)
+    return value, gradient, hessian
+
+
+def _dense_derivatives(
+    observations: tf.Tensor,
+    model: TFLinearGaussianStateSpace,
+    derivatives: TFLinearGaussianStateSpaceDerivatives,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    return tf_qr_sqrt_kalman_score_hessian(
+        observations=observations,
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        d_initial_state_mean=derivatives.d_initial_mean,
+        d_initial_state_covariance=derivatives.d_initial_covariance,
+        d_transition_offset=derivatives.d_transition_offset,
+        d_transition_matrix=derivatives.d_transition_matrix,
+        d_transition_covariance=derivatives.d_transition_covariance,
+        d_observation_offset=derivatives.d_observation_offset,
+        d_observation_matrix=derivatives.d_observation_matrix,
+        d_observation_covariance=derivatives.d_observation_covariance,
+        d2_initial_state_mean=derivatives.d2_initial_mean,
+        d2_initial_state_covariance=derivatives.d2_initial_covariance,
+        d2_transition_offset=derivatives.d2_transition_offset,
+        d2_transition_matrix=derivatives.d2_transition_matrix,
+        d2_transition_covariance=derivatives.d2_transition_covariance,
+        d2_observation_offset=derivatives.d2_observation_offset,
+        d2_observation_matrix=derivatives.d2_observation_matrix,
+        d2_observation_covariance=derivatives.d2_observation_covariance,
+        jitter=tf.constant(JITTER, dtype=tf.float64),
+    )
+
+
+def _masked_derivatives(
+    observations: tf.Tensor,
+    model: TFLinearGaussianStateSpace,
+    derivatives: TFLinearGaussianStateSpaceDerivatives,
+    observation_mask: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    return tf_qr_sqrt_masked_kalman_score_hessian(
+        observations=observations,
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        d_initial_state_mean=derivatives.d_initial_mean,
+        d_initial_state_covariance=derivatives.d_initial_covariance,
+        d_transition_offset=derivatives.d_transition_offset,
+        d_transition_matrix=derivatives.d_transition_matrix,
+        d_transition_covariance=derivatives.d_transition_covariance,
+        d_observation_offset=derivatives.d_observation_offset,
+        d_observation_matrix=derivatives.d_observation_matrix,
+        d_observation_covariance=derivatives.d_observation_covariance,
+        d2_initial_state_mean=derivatives.d2_initial_mean,
+        d2_initial_state_covariance=derivatives.d2_initial_covariance,
+        d2_transition_offset=derivatives.d2_transition_offset,
+        d2_transition_matrix=derivatives.d2_transition_matrix,
+        d2_transition_covariance=derivatives.d2_transition_covariance,
+        d2_observation_offset=derivatives.d2_observation_offset,
+        d2_observation_matrix=derivatives.d2_observation_matrix,
+        d2_observation_covariance=derivatives.d2_observation_covariance,
+        observation_mask=observation_mask,
+        jitter=tf.constant(JITTER, dtype=tf.float64),
+    )
 
 
 def test_qr_score_hessian_matches_value_and_solve_reference() -> None:
@@ -205,6 +317,119 @@ def test_qr_score_hessian_matches_autodiff_on_tiny_model() -> None:
     )
 
 
+def test_private_qr_score_only_matches_score_hessian_and_autodiff_reference() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float64)
+    model, derivatives = _model_and_derivatives(params)
+
+    score_only_loglik, score_only = _tf_qr_sqrt_kalman_score(
+        observations=_observations(),
+        transition_offset=model.transition_offset,
+        transition_matrix=model.transition_matrix,
+        transition_covariance=model.transition_covariance,
+        observation_offset=model.observation_offset,
+        observation_matrix=model.observation_matrix,
+        observation_covariance=model.observation_covariance,
+        initial_state_mean=model.initial_mean,
+        initial_state_covariance=model.initial_covariance,
+        d_initial_state_mean=derivatives.d_initial_mean,
+        d_initial_state_covariance=derivatives.d_initial_covariance,
+        d_transition_offset=derivatives.d_transition_offset,
+        d_transition_matrix=derivatives.d_transition_matrix,
+        d_transition_covariance=derivatives.d_transition_covariance,
+        d_observation_offset=derivatives.d_observation_offset,
+        d_observation_matrix=derivatives.d_observation_matrix,
+        d_observation_covariance=derivatives.d_observation_covariance,
+        jitter=tf.constant(JITTER, dtype=tf.float64),
+    )
+    full_loglik, full_score, _full_hessian = _dense_derivatives(
+        _observations(),
+        model,
+        derivatives,
+    )
+    autodiff_loglik, autodiff_score, _autodiff_hessian = _autodiff_reference(params)
+
+    np.testing.assert_allclose(score_only_loglik.numpy(), full_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(score_only_loglik.numpy(), autodiff_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(score_only.numpy(), full_score.numpy(), rtol=1e-8, atol=1e-9)
+    np.testing.assert_allclose(score_only.numpy(), autodiff_score.numpy(), rtol=1e-8, atol=1e-9)
+
+
+def test_masked_qr_all_true_score_hessian_matches_dense_qr() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float64)
+    model, derivatives = _model_and_derivatives(params)
+    observations = _observations()
+    mask = tf.ones(tf.shape(observations), dtype=tf.bool)
+
+    dense_loglik, dense_score, dense_hessian = _dense_derivatives(
+        observations,
+        model,
+        derivatives,
+    )
+    masked_loglik, masked_score, masked_hessian = _masked_derivatives(
+        observations,
+        model,
+        derivatives,
+        mask,
+    )
+
+    np.testing.assert_allclose(masked_loglik.numpy(), dense_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(masked_score.numpy(), dense_score.numpy(), atol=1e-8)
+    np.testing.assert_allclose(masked_hessian.numpy(), dense_hessian.numpy(), atol=1e-7)
+    np.testing.assert_allclose(masked_hessian.numpy(), masked_hessian.numpy().T, atol=1e-12)
+
+
+def test_masked_qr_sparse_score_hessian_matches_autodiff_reference() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float64)
+    model, derivatives = _model_and_derivatives(params)
+    mask = tf.constant([[True], [False], [True], [False]], dtype=tf.bool)
+
+    masked_loglik, masked_score, masked_hessian = _masked_derivatives(
+        _observations(),
+        model,
+        derivatives,
+        mask,
+    )
+    value_loglik = _masked_qr_log_likelihood(_observations(), model, mask)
+    autodiff_loglik, autodiff_score, autodiff_hessian = _autodiff_masked_reference(
+        params,
+        mask,
+    )
+
+    np.testing.assert_allclose(masked_loglik.numpy(), value_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(masked_loglik.numpy(), autodiff_loglik.numpy(), atol=1e-10)
+    np.testing.assert_allclose(
+        masked_score.numpy(),
+        autodiff_score.numpy(),
+        rtol=1e-5,
+        atol=1e-7,
+    )
+    np.testing.assert_allclose(
+        masked_hessian.numpy(),
+        autodiff_hessian.numpy(),
+        rtol=1e-5,
+        atol=1e-6,
+    )
+    np.testing.assert_allclose(masked_hessian.numpy(), masked_hessian.numpy().T, atol=1e-12)
+
+
+def test_masked_qr_all_missing_series_has_zero_likelihood_score_hessian() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float64)
+    model, derivatives = _model_and_derivatives(params)
+    observations = _observations()
+    mask = tf.zeros(tf.shape(observations), dtype=tf.bool)
+
+    masked_loglik, masked_score, masked_hessian = _masked_derivatives(
+        observations,
+        model,
+        derivatives,
+        mask,
+    )
+
+    np.testing.assert_allclose(masked_loglik.numpy(), 0.0, atol=1e-10)
+    np.testing.assert_allclose(masked_score.numpy(), np.zeros([2]), atol=1e-10)
+    np.testing.assert_allclose(masked_hessian.numpy(), np.zeros([2, 2]), atol=1e-10)
+
+
 def test_qr_derivative_wrapper_metadata_and_backend_validation() -> None:
     params = tf.constant([0.25, -1.1], dtype=tf.float64)
     model, derivatives = _model_and_derivatives(params)
@@ -222,6 +447,30 @@ def test_qr_derivative_wrapper_metadata_and_backend_validation() -> None:
     assert result.diagnostics.regularization.branch_label == "qr_square_root"
     assert result.hessian is not None
 
+    mask = tf.constant([[True], [False], [True], [False]], dtype=tf.bool)
+    masked_result = tf_qr_linear_gaussian_score_hessian(
+        _observations(),
+        model,
+        derivatives,
+        backend="tf_masked_qr_sqrt",
+        observation_mask=mask,
+        jitter=tf.constant(JITTER, dtype=tf.float64),
+    )
+    assert (
+        masked_result.metadata.filter_name
+        == "tf_qr_sqrt_masked_differentiated_kalman"
+    )
+    assert masked_result.diagnostics.mask_convention == "static_dummy_row"
+    assert masked_result.hessian is not None
+
+    with pytest.raises(ValueError, match="requires an observation mask"):
+        tf_qr_linear_gaussian_score_hessian(
+            _observations(),
+            model,
+            derivatives,
+            backend="tf_masked_qr_sqrt",
+        )
+
     with pytest.raises(ValueError, match="unknown TensorFlow QR derivative backend"):
         tf_qr_linear_gaussian_score_hessian(
             _observations(),
@@ -229,6 +478,27 @@ def test_qr_derivative_wrapper_metadata_and_backend_validation() -> None:
             derivatives,
             backend="not_qr_sqrt",
         )
+
+
+def test_masked_qr_derivative_tf_function_reuses_same_shape_concrete_function() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float64)
+    model, derivatives = _model_and_derivatives(params)
+    observations = _observations()
+    mask_a = tf.constant([[True], [False], [True], [False]], dtype=tf.bool)
+    mask_b = tf.constant([[False], [True], [True], [False]], dtype=tf.bool)
+
+    @tf.function(reduce_retracing=True)
+    def compiled(mask: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        return _masked_derivatives(observations, model, derivatives, mask)
+
+    first = compiled(mask_a)
+    second = compiled(mask_b)
+
+    assert len(compiled._list_all_concrete_functions_for_serialization()) == 1
+    for values in (first, second):
+        assert np.isfinite(values[0].numpy())
+        assert np.all(np.isfinite(values[1].numpy()))
+        assert np.all(np.isfinite(values[2].numpy()))
 
 
 def test_qr_derivative_tf_function_reuses_same_shape_concrete_function() -> None:

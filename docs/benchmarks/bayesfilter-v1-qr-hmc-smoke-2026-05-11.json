@@ -1,0 +1,112 @@
+{
+  "benchmark": "bayesfilter_v1_qr_hmc_smoke",
+  "claim_scope": "target_specific_smoke_only",
+  "config": {
+    "num_burnin_steps": 6,
+    "num_leapfrog_steps": 3,
+    "num_results": 12,
+    "seed": [
+      20260511,
+      17
+    ],
+    "step_size": 0.03
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      }
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0"
+  },
+  "gradient_path": "qr_value_autodiff_score",
+  "initial_parameters": [
+    0.2,
+    -1.05
+  ],
+  "result": {
+    "acceptance_rate": 1.0,
+    "finite_sample_count": 12,
+    "initial_gradient": [
+      -0.40893740245060484,
+      -1.0379645721254034
+    ],
+    "initial_gradient_finite": true,
+    "initial_hessian_symmetry_residual": 0.0,
+    "initial_negative_hessian_eigenvalues": [
+      2.3467420404247332,
+      2.998234138312041
+    ],
+    "initial_target_log_prob": -1.3568111688046285,
+    "max_abs_log_accept_ratio": 0.0004737934694076795,
+    "max_target_log_prob": -1.3779646491198383,
+    "min_target_log_prob": -2.0503443541033963,
+    "nonfinite_sample_count": 0,
+    "sample_mean": [
+      0.25445034129324,
+      -0.8762790772857921
+    ],
+    "sample_stddev": [
+      0.16146046675518105,
+      0.0957829416423149
+    ],
+    "samples": [
+      [
+        0.049518779613362,
+        -0.9053131332561571
+      ],
+      [
+        0.025399543872221608,
+        -0.9122193565608551
+      ],
+      [
+        0.050041509124108666,
+        -0.8533847667594247
+      ],
+      [
+        0.20413207997497723,
+        -0.7860983869105125
+      ],
+      [
+        0.21004136812063579,
+        -0.6307816369309129
+      ],
+      [
+        0.33424759970750945,
+        -0.8861016226268594
+      ],
+      [
+        0.3442784295075566,
+        -0.9536946387086789
+      ],
+      [
+        0.4414335818456739,
+        -0.876197905226336
+      ],
+      [
+        0.4854717442893832,
+        -0.8576714553554777
+      ],
+      [
+        0.47810176298446094,
+        -0.8492634837479894
+      ],
+      [
+        0.30548135220308026,
+        -0.995307283269375
+      ],
+      [
+        0.12525634427591037,
+        -1.0093152580769262
+      ]
+    ]
+  },
+  "runtime_seconds": 21.952132305013947,
+  "status": "ok",
+  "target": "linear_qr_score_hessian_static_lgssm"
+}

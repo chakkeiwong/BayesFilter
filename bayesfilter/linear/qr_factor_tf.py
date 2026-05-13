@@ -172,6 +172,25 @@ def stack_qr_lower_factor_derivatives(
     return factor, dfactor, d2factor, tf.reduce_min(tf.linalg.diag_part(factor))
 
 
+def stack_qr_lower_factor_first_derivatives(
+    stack: tf.Tensor,
+    dstack: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Factor ``stack @ stack.T`` and return only first derivatives."""
+
+    matrix = tf.transpose(stack)
+    dmatrix = tf.linalg.matrix_transpose(dstack)
+    _, r = qr_positive(matrix)
+    dr_values = []
+    parameter_dim = int(dmatrix.shape[0])
+    for i in range(parameter_dim):
+        _, _, _, dr_i = qr_factor_derivatives(matrix, dmatrix[i])
+        dr_values.append(dr_i)
+    factor = tf.transpose(r)
+    dfactor = tf.linalg.matrix_transpose(tf.stack(dr_values, axis=0))
+    return factor, dfactor, tf.reduce_min(tf.linalg.diag_part(factor))
+
+
 def cholesky_factor(covariance: tf.Tensor, jitter: tf.Tensor | float = 0.0) -> tf.Tensor:
     """Return a lower Cholesky factor of a symmetrized covariance matrix."""
 
@@ -235,6 +254,32 @@ def cholesky_factor_derivatives(
     return factor, dfactor, tf.stack(d2factor_rows, axis=0)
 
 
+def cholesky_factor_first_derivatives(
+    covariance: tf.Tensor,
+    dcovariance: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Differentiate ``covariance + jitter I = L L.T`` to first order."""
+
+    covariance = symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
+    dcovariance = tf.convert_to_tensor(dcovariance, dtype=tf.float64)
+    factor = cholesky_factor(covariance, jitter=jitter)
+    parameter_dim = int(dcovariance.shape[0])
+    dfactor_values = []
+    for i in range(parameter_dim):
+        left = tf.linalg.triangular_solve(
+            factor,
+            symmetrize(dcovariance[i]),
+            lower=True,
+        )
+        b_i = right_solve_upper(left, tf.transpose(factor))
+        g_i = tf.linalg.band_part(b_i, -1, 0) - 0.5 * tf.linalg.diag(
+            tf.linalg.diag_part(b_i)
+        )
+        dfactor_values.append(factor @ g_i)
+    return factor, tf.stack(dfactor_values, axis=0)
+
+
 def factor_covariance_derivatives(
     factor: tf.Tensor,
     dfactor: tf.Tensor,
@@ -265,6 +310,24 @@ def factor_covariance_derivatives(
             )
         d2covariance_rows.append(tf.stack(d2covariance_values, axis=0))
     return covariance, tf.stack(dcovariance_values, axis=0), tf.stack(d2covariance_rows, axis=0)
+
+
+def factor_covariance_first_derivatives(
+    factor: tf.Tensor,
+    dfactor: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Convert first factor derivatives into first covariance derivatives."""
+
+    factor = tf.convert_to_tensor(factor, dtype=tf.float64)
+    dfactor = tf.convert_to_tensor(dfactor, dtype=tf.float64)
+    covariance = factor @ tf.transpose(factor)
+    parameter_dim = int(dfactor.shape[0])
+    dcovariance_values = []
+    for i in range(parameter_dim):
+        dcovariance_values.append(
+            symmetrize(dfactor[i] @ tf.transpose(factor) + factor @ tf.transpose(dfactor[i]))
+        )
+    return covariance, tf.stack(dcovariance_values, axis=0)
 
 
 def stack_covariance_derivatives(

@@ -7179,3 +7179,1303 @@ Audit:
 - The final commit should exclude unrelated pre-existing changes:
   `docs/main.tex`, `docs/source_map.yml`, and the `docs/chapters/ch19*.tex`
   files.
+
+## 2026-05-09 update: filtering goals/gaps closure plan execution
+
+User request:
+- update the reset memo;
+- audit the goals/gaps/hypotheses closure plan as another developer;
+- execute phases with the cycle:
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only when the next phase remains justified;
+- commit modified files after the justified plan finishes;
+- provide a detailed result summary and next hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-plan-2026-05-09.md
+```
+
+Initial audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-filtering-goals-gaps-hypotheses-closure-audit-2026-05-09.md
+```
+
+- Audit verdict: the closure plan is sound as a master plan, but its full
+  sequence is too broad for one safe automatic pass.
+- Safe automatic boundary for this pass:
+  1. Phase 0: evidence freeze and scope guard;
+  2. Phase 1A: masked QR analytic derivatives.
+- Stop after Phase 1A unless explicitly directed to continue, because
+  time-varying derivatives, SVD value, nonlinear structural protocols,
+  CUT/SVD-CUT, GPU/XLA, and client switch-over each require separate gates.
+
+Next phase justified?
+- Yes.  Proceed to Phase 0 evidence freeze and scope guard.
+
+### Phase 0: evidence freeze and scope guard
+
+Phase plan:
+- record branch and dirty-file state;
+- run production TF source hygiene;
+- run a CPU-only BayesFilter test baseline;
+- preserve unrelated Windows/WSL sidecar files and avoid client-repo edits.
+
+Execution:
+- Current branch is synced with `origin/main`:
+  `git rev-list --left-right --count HEAD...origin/main` returned `0 0`.
+- Current HEAD at the start of this execution pass:
+  `fc19956 Plan filtering backend gap closure`.
+- Pre-existing local planning/provenance edits were present:
+  - `docs/source_map.yml`;
+  - `docs/plans/bayesfilter-filtering-gap-closure-execution-plan-2026-05-09.md`.
+- Existing untracked Windows/WSL sidecars remain out of scope:
+  - `docs/plans/templates/experiment-plan-template.md:Zone.Identifier`;
+  - `docs/plans/templates/experiment-result-template.md:Zone.Identifier`;
+  - `docs/plans/templates/reset-memo-template.md:Zone.Identifier`.
+- Initial bare `pytest -q` attempted to collect vendored student experiment
+  snapshots under `experiments/` and failed during collection before reaching
+  the intended BayesFilter suite.
+- Added `pytest.ini` so project-level pytest discovery is scoped to `tests/`
+  and does not recurse into `experiments/`, `docs/`, `.research`, or cache
+  directories.  Explicit vendored experiment tests can still be run by naming
+  their paths directly.
+
+Tests:
+- Production TF source hygiene passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\("` over the TF production linear
+  modules, result containers, and diagnostics returned no matches.
+- CPU-only project baseline passed after adding `pytest.ini`:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q` reported
+  `106 passed, 2 warnings in 51.11s`.
+
+Audit:
+- Phase 0 passes after the pytest scope guard fix.
+- The vendored experiment collection failure was not a BayesFilter backend
+  failure; it was a test-discovery boundary issue introduced by experimental
+  snapshots.
+- Adding `pytest.ini` is in scope because it restores the meaning of the
+  project baseline gate and prevents future false blockers.
+
+Tidy-up:
+- No client repositories were edited.
+- Windows/WSL sidecars remain untracked and out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 1A: masked QR analytic derivatives.
+
+### Phase 1A: masked QR analytic derivatives
+
+Phase plan:
+- extend the dense QR/square-root analytic score-Hessian backend to the
+  existing static dummy-row mask semantics;
+- keep production code in TensorFlow only, with no NumPy imports and no
+  `.numpy()` calls;
+- expose the masked derivative backend through the public linear API and
+  wrapper metadata;
+- test all-true, sparse, and all-missing masks against dense QR, value, and
+  autodiff references.
+
+Execution:
+- Added `tf_qr_sqrt_masked_kalman_score_hessian` in:
+
+```text
+bayesfilter/linear/kalman_qr_derivatives_tf.py
+```
+
+- The masked derivative recursion keeps the prediction step identical to the
+  dense QR derivative recursion, and replaces only the observation block by:
+  - `masked_observation_matrix = Z * row_weight[:, None]`;
+  - `masked_observation_covariance =
+    (H + jitter I) * row_outer + diag(missing_weight)`;
+  - first and second derivatives of the masked observation covariance and
+    observation matrix multiplied by the same fixed mask tensors;
+  - innovation, innovation derivatives, Kalman gain, Joseph update, and
+    update-stack derivatives computed from the masked observation block.
+- The log-likelihood contribution subtracts the static dummy-row normalizer
+  for missing coordinates.  Because this normalizer is parameter-independent,
+  score and Hessian contributions require no additional dummy term.
+- Added public exports in:
+
+```text
+bayesfilter/linear/__init__.py
+bayesfilter/__init__.py
+```
+
+- Extended `tf_qr_linear_gaussian_score_hessian` so:
+  - `backend="tf_qr_sqrt"` remains the dense default;
+  - an explicit or model-attached observation mask dispatches to masked QR;
+  - `backend="tf_masked_qr_sqrt"` requires a mask and reports
+    `mask_convention="static_dummy_row"`;
+  - metadata identifies the masked derivative backend as
+    `tf_qr_sqrt_masked_differentiated_kalman`.
+- Added `pytest.ini` during Phase 0 to keep default pytest collection scoped to
+  BayesFilter's `tests/` directory rather than vendored experiment snapshots.
+
+Tests:
+- Syntax check passed:
+  `python -m py_compile bayesfilter/linear/kalman_qr_derivatives_tf.py
+  bayesfilter/linear/__init__.py bayesfilter/__init__.py
+  tests/test_linear_kalman_qr_derivatives_tf.py`.
+- Production TF source hygiene passed:
+  `rg -n "import numpy|from numpy|\\.numpy\\("` over the production TF linear
+  modules, result containers, and diagnostics returned no matches.
+- Focused derivative tests passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py`
+  reported `9 passed, 2 warnings in 68.57s`.
+- Focused linear/contract suite passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q
+  tests/test_linear_kalman_qr_derivatives_tf.py
+  tests/test_linear_kalman_qr_tf.py tests/test_linear_qr_factor_tf.py
+  tests/test_linear_kalman_tf.py tests/test_tf_contracts.py`
+  reported `35 passed, 2 warnings in 67.95s`.
+- Full CPU-only BayesFilter suite passed:
+  `CUDA_VISIBLE_DEVICES=-1 pytest -q`
+  reported `110 passed, 2 warnings in 80.26s`.
+
+Audit:
+- Phase 1A passes.
+- Acceptance criteria satisfied:
+  - all-true mask matches dense QR likelihood, score, and Hessian;
+  - sparse mask matches the masked QR value backend and TensorFlow autodiff on
+    a smooth small fixture;
+  - all-missing observation series reports zero likelihood, score, and Hessian;
+  - Hessian symmetry is checked;
+  - same-shape graph reuse is checked;
+  - production source hygiene remains TensorFlow-only.
+- The all-missing-series test verifies the neutral likelihood case.  Sparse
+  mask tests also cover a missing period followed by later observations, so
+  prediction derivatives continue to propagate through later observed
+  likelihood terms.
+- The implementation deliberately uses the same static dummy-row law as the
+  existing masked QR value backend; it does not introduce a new missing-data
+  convention.
+- Remaining engineering risk: the masked derivative function duplicates much
+  of the dense QR derivative recursion.  Refactoring should wait until the next
+  backend boundary so that this phase remains easy to audit against the dense
+  formula.
+
+Tidy-up:
+- No edits were made to MacroFinance or `/home/chakwong/python`.
+- Windows/WSL `:Zone.Identifier` sidecars remain untracked and out of scope.
+- The unrelated untracked `singularity_test.png` remains untracked and out of
+  scope.
+
+Next phase justified?
+- No automatic continuation in this pass.  The audited safe boundary was
+  Phase 0 plus Phase 1A only.
+- Phase 1B remains a good candidate next if the user wants MacroFinance linear
+  compatibility smoke tests and a decision on time-varying derivative support.
+- Phase 2 remains justified only as a separate gate after deciding the SVD/eigen
+  value backend diagnostics and implemented-law semantics.
+
+Completion status:
+- The scoped plan execution for this pass is complete.
+
+## 2026-05-09 update: seven-phase filtering implementation execution
+
+User request:
+- update the reset memo;
+- audit the seven-phase filtering implementation plan as another developer;
+- execute each phase using the cycle:
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- after each phase, record results, interpretation, and whether the next phase
+  remains justified;
+- continue automatically only if the phase primary criterion and veto
+  diagnostics allow continuation;
+- commit modified files after the justified execution boundary finishes;
+- provide a detailed result summary with next hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md
+```
+
+Initial state:
+- Branch is synced with `origin/main`:
+  `git rev-list --left-right --count HEAD...origin/main` returned `0 0`.
+- Current HEAD:
+  `16912d3 Add masked QR analytic derivatives`.
+- In-scope uncommitted planning edits already present from plan drafting:
+  - `docs/plans/bayesfilter-seven-phase-filtering-implementation-plan-2026-05-09.md`;
+  - `docs/source_map.yml`.
+- Out-of-scope untracked files remain uncommitted unless a later phase proves
+  they are relevant:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Next action:
+- Write an independent audit of the seven-phase plan before executing Phase
+  1B.  The audit must decide whether automatic execution may continue beyond
+  Phase 1B or whether an intermediate Phase 1C/time-varying derivative gate is
+  required.
+
+Initial audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-seven-phase-filtering-implementation-audit-2026-05-09.md
+```
+
+- Audit verdict: the seven-phase program is sound as a master program, but
+  later phases must be unlocked by primary criteria and veto diagnostics.
+- Automatic execution boundary:
+  - proceed through Phase 1B;
+  - continue to Phase 2 only if Phase 1B passes and no Phase 1C
+    time-varying derivative gate is required.
+
+### Phase 1B: MacroFinance linear compatibility
+
+Phase plan:
+- inspect MacroFinance TF/TFP linear filtering code and tests read-only;
+- identify the smallest static dense/masked likelihood and derivative fixture;
+- add BayesFilter-side compatibility tests without adding MacroFinance as a
+  production dependency;
+- decide whether time-varying derivatives are required before SVD/eigen work.
+
+Execution:
+- Inspected MacroFinance donor files:
+
+```text
+/home/chakwong/MacroFinance/tests/test_generic_lgssm_autodiff_validation.py
+/home/chakwong/MacroFinance/tests/test_tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/tests/test_masked_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/filters/tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/filters/masked_qr_sqrt_differentiated_kalman.py
+```
+
+- Added BayesFilter compatibility tests:
+
+```text
+tests/test_macrofinance_linear_compat_tf.py
+```
+
+- Added Phase 1B audit note:
+
+```text
+docs/plans/bayesfilter-phase1b-macrofinance-linear-compat-audit-2026-05-09.md
+```
+
+Tests:
+- Focused Phase 1B test passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_macrofinance_linear_compat_tf.py
+4 passed, 2 warnings in 71.49s
+```
+
+Audit:
+- Phase 1B passes for the first MacroFinance static target.
+- BayesFilter dense QR value matches MacroFinance TF direct-QR value.
+- BayesFilter masked QR value matches MacroFinance TF masked direct-QR value
+  under the static dummy-row convention.
+- BayesFilter dense QR score/Hessian matches MacroFinance TF direct-QR
+  differentiated backend.
+- BayesFilter masked QR score/Hessian matches MacroFinance masked QR sparse
+  oracle.
+- The tested donor fixture uses static matrices/covariances and
+  parameter-major derivative tensors, so no Phase 1C time-varying derivative
+  gate is required before Phase 2.
+
+Tidy-up:
+- MacroFinance was inspected but not edited.
+- MacroFinance imports are test-only and optional.
+- Production BayesFilter code still has no MacroFinance dependency from this
+  phase.
+
+Next phase justified?
+- Yes.  Proceed to Phase 2: TF SVD/eigen linear value backend.
+- Constraint: Phase 2 is value-only.  It must not claim SVD/eigen analytic
+  derivative readiness.
+
+### Phase 2: TF SVD/eigen linear value backend
+
+Phase plan:
+- implement a production TF SVD/eigen value backend for dense and masked
+  linear Gaussian filters;
+- use symmetric PSD eigensolves for innovation covariance solves and
+  log-determinants;
+- report implemented-law diagnostics, including floor count, floor value,
+  PSD projection residual, and implemented covariance;
+- keep derivative status value-only/blocked.
+
+Execution:
+- Added PSD eigensolve helpers:
+
+```text
+bayesfilter/linear/svd_factor_tf.py
+```
+
+- Added dense and masked SVD/eigen value backends:
+
+```text
+bayesfilter/linear/kalman_svd_tf.py
+```
+
+- Added public exports in:
+
+```text
+bayesfilter/linear/__init__.py
+bayesfilter/__init__.py
+```
+
+- Added Phase 2 tests:
+
+```text
+tests/test_linear_kalman_svd_tf.py
+```
+
+Tests:
+- Focused SVD/eigen tests passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_linear_kalman_svd_tf.py
+8 passed, 2 warnings in 6.04s
+```
+
+- Widened linear/MacroFinance suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py \
+  tests/test_macrofinance_linear_compat_tf.py
+43 passed, 2 warnings in 131.80s
+```
+
+- Syntax and source-hygiene checks passed:
+  - `python -m py_compile` over modified production/test modules;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()` over
+    the linear TF modules returned no matches.
+
+Audit:
+- Phase 2 passes.
+- Regular dense SVD/eigen value matches QR value.
+- Regular masked SVD/eigen value matches masked QR value.
+- Active-floor tests prove the eigensystem reconstructs the
+  implemented/floored covariance, not necessarily the pre-regularized
+  covariance.
+- The masked all-missing case contributes zero likelihood and reports identity
+  implemented covariance under the dummy-row convention.
+- Diagnostics explicitly mark the derivative target as `blocked`; no SVD/eigen
+  analytic derivative backend is exported.
+
+Tidy-up:
+- No MacroFinance or DSGE client files were edited.
+- Production TF modules remain free of NumPy imports and `.numpy()` calls.
+
+Next phase justified?
+- Yes, with a narrow scope.  Proceed to Phase 3 only as generic TF structural
+  protocol work with affine controls and deterministic completion tests.
+- Do not start UKF, SVD sigma-point, CUT, SVD-CUT derivatives, GPU, HMC, or
+  client switch-over until Phase 3 passes.
+
+### Phase 3: TF structural nonlinear protocol
+
+Phase plan:
+- add a generic TensorFlow structural state-space contract without importing
+  DSGE economics;
+- make deterministic completion a pointwise transition contract, not only a
+  singular covariance artifact;
+- add an affine structural embedding that converts exactly to a full-state
+  TensorFlow LGSSM;
+- expose diagnostics that separate exogenous, endogenous, and deterministic
+  completion blocks;
+- test innovation-space metadata against explicitly collapsed full-state
+  metadata.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/structural_tf.py
+tests/test_structural_protocols_tf.py
+tests/test_structural_affine_lgssm_controls_tf.py
+```
+
+- Exported the new TF structural helpers from `bayesfilter/__init__.py`.
+- The protocol layer includes:
+  - `TFStructuralStateSpace`;
+  - `make_affine_structural_tf`;
+  - `affine_structural_to_linear_gaussian_tf`;
+  - `pointwise_deterministic_residuals`;
+  - `structural_block_metadata`;
+  - `structural_filter_metadata`;
+  - `structural_filter_diagnostics`.
+
+Tests:
+- Focused Phase 3 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py
+8 passed, 2 warnings in 6.91s
+```
+
+- Widened structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_tf_contracts.py
+40 passed, 2 warnings in 7.61s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over the new structural TF module and tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()` over
+    structural/linear TF modules returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 3 passes.
+- The affine AR(2) structural model converts to a full-state LGSSM whose
+  transition covariance is the declared pushforward
+  `B Omega B'`, including the zero deterministic row.
+- Deterministic lag completion holds pointwise on every propagated test point.
+- Innovation-space structural metadata and collapsed full-state singular
+  covariance metadata are distinct.
+- The protocol fails closed if a mixed model requests full-state integration
+  without explicit opt-in and an approximation label.
+- No DSGE-specific economics or MacroFinance production dependency entered
+  BayesFilter.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- Unrelated untracked files remain out of scope.
+
+Next phase justified?
+- Yes.  Proceed to Phase 4: generic TF UKF/cubature value filters with
+  SVD/eigen placement.
+- Constraints:
+  - no CUT4-G work until Phase 4 value gates pass;
+  - no analytic derivative claims;
+  - rank-deficient point placement must report implemented support metadata;
+  - affine LGSSM controls must match the linear backend.
+
+### Phase 4: TF SVD/eigen sigma-point value filters
+
+Phase plan:
+- implement reusable TensorFlow sigma-point rules for cubature and UKF;
+- place points with the Phase 2 SVD/eigen covariance helper;
+- report rank, floor, support residual, implemented covariance, and
+  deterministic residual diagnostics;
+- implement a generic structural SVD sigma-point value recursion using the
+  Phase 3 `TFStructuralStateSpace` contract;
+- verify affine LGSSM exactness against a linear value backend that accepts the
+  singular deterministic transition covariance.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/nonlinear/__init__.py
+bayesfilter/nonlinear/sigma_points_tf.py
+tests/test_sigma_points_tf.py
+tests/test_structural_svd_sigma_point_tf.py
+```
+
+- Exported nonlinear sigma-point objects/functions from `bayesfilter/__init__.py`.
+- Implemented:
+  - `tf_unit_sigma_point_rule` for cubature and scaled UKF standardized
+    offsets/weights;
+  - `tf_svd_sigma_point_placement`;
+  - `tf_svd_sigma_point_log_likelihood`;
+  - `tf_svd_sigma_point_filter`.
+
+Tests:
+- Focused Phase 4 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py
+10 passed, 2 warnings in 8.49s
+```
+
+- Widened structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py
+59 passed, 2 warnings in 9.85s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over new nonlinear modules and tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()`
+    returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 4 passes.
+- Cubature and UKF standardized rules reproduce first and second standard
+  normal moments.
+- SVD/eigen placement remains on the active support for a rank-deficient
+  covariance and reports the implemented covariance when a floor is active.
+- Both `tf_svd_cubature` and `tf_svd_ukf` match the affine structural LGSSM
+  linear likelihood within tolerance.
+- The affine control deliberately uses the dense covariance-form TF linear
+  value backend rather than QR, because QR/Cholesky factorization of the
+  singular process covariance returns NaN for the deterministic row.  This is
+  consistent with the Phase 2 reviewer point: singular-law value filtering is
+  valid, but factor backends must declare the implemented numerical law.
+- Deterministic completion residual is exactly zero on propagated test points.
+- Static same-shape graph reuse passed for the low-level value function.
+- SVD sigma-point derivatives remain explicitly blocked.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- No DSGE or MacroFinance production dependency was added.
+
+Next phase justified?
+- Yes.  Proceed to Phase 5: CUT4-G and SVD-CUT value filters.
+- Constraints:
+  - borrow only generic CUT4-G geometry from the DSGE experimental module;
+  - verify moment identities before using CUT in the value filter;
+  - keep point-count diagnostics explicit;
+  - no gradient/Hessian claims until Phase 6 gates.
+
+### Phase 5: CUT4-G and SVD-CUT value filters
+
+Phase plan:
+- port only the generic CUT4-G point geometry from the DSGE experimental
+  `CUTSRUKF.py` donor;
+- add positive-weight CUT4-G moment tests before using the rule in a filter;
+- combine CUT4-G with the Phase 4 SVD/eigen placement and value recursion;
+- report point count, polynomial degree, rank, support residual, and
+  deterministic residual diagnostics;
+- keep derivative claims blocked.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/nonlinear/cut_tf.py
+bayesfilter/nonlinear/svd_cut_tf.py
+tests/test_cut_rule_tf.py
+tests/test_svd_cut_filter_tf.py
+```
+
+- Added `tf_svd_sigma_point_log_likelihood_with_rule` so CUT4-G can reuse the
+  same structural SVD sigma-point recursion instead of forking filter logic.
+- Exported CUT/SVD-CUT helpers from `bayesfilter/nonlinear/__init__.py` and
+  `bayesfilter/__init__.py`.
+
+Tests:
+- Focused Phase 5 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py
+6 passed, 2 warnings in 8.17s
+```
+
+- Widened nonlinear/structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py
+65 passed, 2 warnings in 10.20s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over CUT, SVD-CUT, sigma-point, structural TF
+    modules and tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()`
+    returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 5 passes.
+- CUT4-G weights are positive and reproduce the tested Gaussian moment
+  identities: mean zero, second moments one, fourth marginal moments three,
+  cross fourth moments one, and odd fifth moments zero.
+- SVD-CUT matches the affine structural LGSSM linear likelihood within
+  tolerance.
+- Rank-deficient SVD-CUT placement reports a reduced integration rank and zero
+  support residual.
+- Point count and polynomial degree diagnostics are explicit:
+  for augmented dimension three, CUT4-G uses `14` points and degree label `5`.
+- Derivative status remains `value_only` and regularization derivative target
+  remains `blocked`.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- No DSGE or MacroFinance production dependency was added.
+
+Next phase justified?
+- Yes, but only for a narrow smooth-branch derivative certification layer.
+- Proceed to Phase 6 with these constraints:
+  - derivative target is the implemented SVD-CUT law;
+  - active floors, weak spectral gaps, or fallback branches must fail closed;
+  - finite-difference/autodiff parity and Hessian symmetry are required;
+  - no claim is made for raw-law derivatives under regularization.
+
+### Phase 6: smooth-branch SVD-CUT score/Hessian
+
+Phase plan:
+- certify only a narrow smooth branch of the implemented SVD-CUT value law;
+- use TensorFlow autodiff through the implemented value recursion as the first
+  executable derivative backend;
+- fail closed when active floors or weak spectral gaps invalidate the smooth
+  branch assumptions;
+- test finite-difference parity, direct autodiff parity, Hessian symmetry, and
+  blocked-branch diagnostics.
+
+Execution:
+- Added:
+
+```text
+bayesfilter/nonlinear/svd_cut_derivatives_tf.py
+tests/test_svd_cut_derivatives_tf.py
+```
+
+- Added eigen-gap diagnostics to the shared SVD sigma-point recursion and
+  propagated those diagnostics through SVD-CUT value results.
+- Exported the derivative wrapper from `bayesfilter/nonlinear/__init__.py` and
+  `bayesfilter/__init__.py`.
+
+Tests:
+- Focused Phase 6 suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_svd_cut_derivatives_tf.py
+4 passed, 2 warnings in 14.03s
+```
+
+- Widened nonlinear/structural/linear gate passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py
+69 passed, 2 warnings in 18.49s
+```
+
+- Syntax and hygiene passed:
+  - `python -m py_compile` over nonlinear, structural TF, and derivative
+    tests;
+  - production TF scan for `import numpy`, `from numpy`, and `.numpy()`
+    returned no matches;
+  - `git diff --check` passed.
+
+Audit:
+- Phase 6 passes within the declared narrow scope.
+- The SVD-CUT score/Hessian wrapper matches finite differences on a smooth
+  affine structural fixture.
+- It also matches direct TensorFlow autodiff of the same implemented SVD-CUT
+  value recursion.
+- Hessian symmetry holds in the tested smooth branch.
+- Active floors fail closed with `blocked_active_floor`.
+- Weak/repeated spectra fail closed with `blocked_weak_spectral_gap`.
+- The derivative target is explicitly `implemented_regularized_law`; there is
+  no raw-law derivative claim under regularization.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- No GPU, HMC, or client-default change was made.
+
+Next phase justified?
+- Yes, but only as a bounded Phase 7 gate:
+  - add CPU graph-compiled parity checks for promoted value and derivative
+    paths;
+  - record a client switch-over boundary;
+  - do not claim GPU/XLA-GPU performance or HMC readiness without escalated
+    device artifacts and exact target-model parity.
+
+### Phase 7: CPU compiled parity and client switch-over boundary
+
+Phase plan:
+- add CPU graph-compiled parity tests for promoted value and derivative paths;
+- record the client switch-over boundary and rollback order;
+- avoid GPU/XLA-GPU or HMC promotion without escalated device/shape artifacts
+  and exact target-model parity.
+
+Execution:
+- Added:
+
+```text
+tests/test_compiled_filter_parity_tf.py
+docs/plans/bayesfilter-client-switch-over-boundary-2026-05-09.md
+```
+
+- Updated `docs/source_map.yml` with the switch-over boundary note.
+
+Tests:
+- Focused Phase 7 CPU graph parity passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q tests/test_compiled_filter_parity_tf.py
+4 passed, 2 warnings in 17.28s
+```
+
+- Broad relevant suite passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_structural_protocols_tf.py \
+  tests/test_structural_affine_lgssm_controls_tf.py \
+  tests/test_structural_partition.py \
+  tests/test_structural_ar_p.py \
+  tests/test_structural_sigma_points.py \
+  tests/test_linear_kalman_svd_tf.py \
+  tests/test_linear_kalman_qr_tf.py \
+  tests/test_linear_kalman_qr_derivatives_tf.py \
+  tests/test_linear_kalman_tf.py \
+  tests/test_tf_contracts.py \
+  tests/test_macrofinance_linear_compat_tf.py
+86 passed, 2 warnings in 146.05s
+```
+
+Audit:
+- Phase 7 passes for CPU graph parity.
+- CPU graph parity holds for:
+  - TF SVD/eigen linear value;
+  - TF SVD cubature structural value;
+  - TF SVD-CUT4 value;
+  - TF SVD-CUT4 smooth-branch score/Hessian.
+- The switch-over boundary explicitly does not authorize MacroFinance or DSGE
+  production default changes, GPU performance claims, or HMC readiness claims.
+- GPU/XLA-GPU benchmarks were not run in this pass because they require
+  escalated device artifacts and target-specific benchmark design.
+
+Tidy-up:
+- CPU-only tests were deliberate and used `CUDA_VISIBLE_DEVICES=-1`.
+- The only warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- Out-of-scope untracked files remain uncommitted:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Completion status:
+- The seven-phase implementation pass has reached its justified boundary.
+- Final full-suite verification passed:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q
+154 passed, 2 warnings in 161.27s
+```
+
+- The two warnings were the known TensorFlow Probability `distutils`
+  deprecation warnings.
+- Scoped files are ready to commit.  Out-of-scope untracked files remain
+  uncommitted.
+
+Next hypotheses:
+- H1: MacroFinance can switch its static linear QR filtering path to
+  BayesFilter without changing likelihood, score, Hessian, or mask semantics.
+- H2: Singular MacroFinance linear fixtures, if present, need SVD/eigen value
+  filtering first and should not automatically request SVD derivatives.
+- H3: DSGE nonlinear targets can be expressed through `TFStructuralStateSpace`
+  without BayesFilter importing DSGE economics.
+- H4: CUT4-G is practical only when the declared stochastic integration rank is
+  small; GPU/XLA can improve throughput but does not remove `2q + 2^q`.
+- H5: SVD-CUT derivatives are HMC-suitable only if separated-spectrum,
+  inactive-floor branches dominate the exact target-model posterior region.
+
+## 2026-05-10 update: post-seven-phase gap-closure execution
+
+User request:
+- update the reset memo;
+- audit the post-seven-phase gap-closure plan as another developer;
+- execute phases with the cycle
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only when primary criteria and veto diagnostics allow;
+- commit scoped modified files at the justified boundary;
+- summarize results, remaining suggestions, and hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md
+```
+
+Initial state:
+- Current HEAD before execution:
+  `68e1792 Implement TF SVD and CUT filtering gates`.
+- Local branch is ahead of `origin/main` by one commit and behind by zero:
+  `git rev-list --left-right --count HEAD...origin/main` returned `1 0`.
+- Scoped uncommitted files at execution start:
+  - `docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md`;
+  - `docs/source_map.yml`.
+- Out-of-scope untracked files remain uncommitted unless a later phase proves
+  they are relevant:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Initial independent audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-audit-2026-05-10.md
+```
+
+- Audit verdict: the plan is sound, but automatic execution in this workspace
+  should proceed only through:
+  - Phase A1: BayesFilter push/sync;
+  - Phase B1: read-only MacroFinance adapter audit.
+- Phase B2 edits MacroFinance, which is outside the BayesFilter writable root;
+  therefore B2 requires an explicit write/permission boundary unless the
+  workspace grants MacroFinance write access.
+
+### Phase A1: push/sync BayesFilter baseline
+
+Phase plan:
+- verify local branch relation to `origin/main`;
+- push the completed BayesFilter implementation baseline;
+- verify remote sync;
+- leave out-of-scope untracked files unstaged.
+
+Execution:
+- Before push, `git rev-list --left-right --count HEAD...origin/main`
+  returned `1 0`.
+- Ran:
+
+```text
+git push
+```
+
+- Push result:
+
+```text
+16912d3..68e1792  main -> main
+```
+
+Tests:
+- No code changed in Phase A1, so no test rerun was required.
+- The prior full-suite baseline remains:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 pytest -q
+154 passed, 2 warnings in 161.27s
+```
+
+Audit:
+- Phase A1 passes.
+- `origin/main` now points to:
+
+```text
+68e1792 Implement TF SVD and CUT filtering gates
+```
+
+- Post-push `git rev-list --left-right --count HEAD...origin/main` returned
+  `0 0`.
+- Unrelated untracked files remained unstaged.
+
+Tidy-up:
+- No file edits were made by the push operation.
+- Current in-progress local edits are documentation-only for this gap-closure
+  execution pass.
+
+Next phase justified?
+- Yes.  Proceed to Phase B1: read-only MacroFinance adapter audit.
+
+### Phase B1: read-only MacroFinance adapter audit
+
+Phase plan:
+- inspect MacroFinance filtering entry points without editing MacroFinance;
+- identify the smallest production switch-over target;
+- record parity tests, import strategy, rollback boundary, and veto diagnostic
+  status;
+- stop before Phase B2 if the next step requires cross-repository edits outside
+  the BayesFilter writable root.
+
+Execution:
+- Added the audit artifact:
+
+```text
+docs/plans/macrofinance-bayesfilter-switch-over-audit-2026-05-10.md
+```
+
+- Inspected MacroFinance read-only files:
+
+```text
+/home/chakwong/MacroFinance/inference/hmc.py
+/home/chakwong/MacroFinance/filters/tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/filters/tf_svd_kalman.py
+/home/chakwong/MacroFinance/tests/test_tf_kalman.py
+/home/chakwong/MacroFinance/tests/test_production_lgssm_backend_fixture.py
+/home/chakwong/MacroFinance/tests/test_tf_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/tests/test_one_country_analytic_backend_parity.py
+/home/chakwong/MacroFinance/tests/test_tf_masked_kalman.py
+/home/chakwong/MacroFinance/tests/test_masked_qr_sqrt_differentiated_kalman.py
+/home/chakwong/MacroFinance/tests/helpers_large_scale_lgssm.py
+```
+
+- Updated `docs/source_map.yml` with the Phase B1 audit artifact.
+
+Tests:
+- No code changed in Phase B1, and MacroFinance was inspected read-only.
+- Existing BayesFilter evidence for the selected client target remains:
+
+```text
+tests/test_macrofinance_linear_compat_tf.py
+```
+
+- That existing test file covers BayesFilter parity with MacroFinance for:
+  dense QR value, masked QR value, dense QR score/Hessian, and masked QR
+  score/Hessian on static fixtures.
+
+Audit:
+- Phase B1 passes.
+- The smallest safe MacroFinance switch-over target is:
+
+```text
+inference/hmc.py::tf_lgssm_log_likelihood_backend(
+    backend="tf_direct_qr",
+    observation_mask=None,
+    ...
+)
+```
+
+- The Phase B2 pilot should add an explicit MacroFinance-side option such as
+  `backend="bayesfilter_tf_direct_qr"` or an off-by-default feature flag that
+  wraps:
+
+```text
+bayesfilter.linear.kalman_qr_tf.tf_qr_linear_gaussian_log_likelihood(
+    observations,
+    model,
+    backend="tf_qr",
+    jitter=jitter,
+)
+```
+
+- Phase B2 should initially guard only dense static value parity through
+  MacroFinance tests such as:
+
+```text
+/home/chakwong/MacroFinance/tests/test_tf_kalman.py::test_tf_lgssm_backend_selector_direct_qr_matches_default
+/home/chakwong/MacroFinance/tests/test_production_lgssm_backend_fixture.py::test_production_shaped_surrogate_exercises_default_and_direct_qr_backends
+```
+
+- Masked QR value, QR analytic score/Hessian, one-country analytical posterior
+  behavior, and SVD value should remain later rungs.
+
+Veto diagnostics:
+- Time-varying derivative tensors are not needed for the first dense value
+  pilot.
+- No circular import is required if MacroFinance optionally imports BayesFilter
+  and BayesFilter does not import MacroFinance.
+- Mask convention is irrelevant for the first dense target; later masked QR
+  must preserve the static dummy-row convention.
+- Jitter can be passed directly from MacroFinance into BayesFilter.
+- Derivative tensor ordering is irrelevant for dense value and remains a
+  separate gate for analytic score/Hessian.
+- SVD regularization policy is not part of the first target.
+
+Tidy-up:
+- MacroFinance was not edited.
+- BayesFilter production code was not changed.
+- Out-of-scope untracked files remain unstaged:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Next phase justified?
+- Phase B2 is justified mathematically and architecturally as a
+  MacroFinance-side, feature-flagged dense QR value pilot.
+- Phase B2 is not automatically executable in the current BayesFilter
+  workspace because it requires editing `/home/chakwong/MacroFinance`, which is
+  outside the declared writable root.
+- Stop at this boundary, commit the scoped BayesFilter documentation artifacts,
+  and request a MacroFinance write/permission decision before executing B2.
+
+Completion boundary:
+- Automatic execution stops after Phase B1 because the next justified phase is
+  a MacroFinance edit.
+- `git diff --check` passed for the scoped BayesFilter documentation changes.
+- The scoped files to commit are:
+  - `docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-2026-05-10.md`;
+  - `docs/plans/bayesfilter-post-seven-phase-gap-closure-plan-audit-2026-05-10.md`;
+  - `docs/plans/macrofinance-bayesfilter-switch-over-audit-2026-05-10.md`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/source_map.yml`.
+- Out-of-scope untracked files remain uncommitted.
+
+Next hypotheses:
+- H1: MacroFinance dense static `tf_direct_qr` value dispatch can call
+  BayesFilter through an explicit client-side wrapper without changing the
+  likelihood value, default backend behavior, or graph reuse.
+- H2: After dense value dispatch passes, masked QR can switch through the same
+  dependency direction if the static dummy-row mask convention remains visible
+  in diagnostics.
+- H3: QR analytic score/Hessian can switch after value parity because
+  BayesFilter already matches static MacroFinance derivative fixtures, but the
+  client adapter must still prove parameter ordering and HMC/MAP behavior.
+- H4: Linear SVD/eigen value should remain an optional client backend until a
+  MacroFinance singular or near-singular fixture demonstrates a need.
+- H5: DSGE nonlinear adapter and GPU/HMC work should wait until MacroFinance
+  Phase B2/B3 complete or are explicitly deferred with a written reason.
+
+## 2026-05-10 update: scoped sync before push
+
+User request:
+- update the reset memo;
+- commit the scoped reset-memo update;
+- fetch from origin and check whether other agents have introduced conflicts;
+- push only if the branch can be synchronized without leaving this
+  documentation/planning lane.
+
+Lane discipline:
+- Keep the current pass scoped to BayesFilter planning/reset-memo artifacts.
+- Do not stage unrelated untracked files:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+- Do not edit MacroFinance or DSGE client repositories in this sync pass.
+
+Pre-fetch state:
+- Local `main` is ahead of `origin/main` by one commit and behind by zero:
+
+```text
+git rev-list --left-right --count HEAD...origin/main
+1 0
+```
+
+- The local unpublished commit is:
+
+```text
+df1f001 Plan post-seven-phase client switch-over
+```
+
+Sync protocol:
+- Commit this scoped memo update.
+- Fetch `origin/main`.
+- Recheck ahead/behind counts.
+- If `origin/main` did not move, push the local docs commits.
+- If `origin/main` moved, inspect divergence and merge only if the conflicts
+  are absent or strictly inside this planning/reset-memo lane.
+- Stop for direction if another agent changed overlapping planning text in a
+  way that requires a substantive choice rather than a mechanical merge.
+
+Fetch/conflict check result:
+- Ran `git fetch origin`.
+- After fetch, local `main` is ahead of `origin/main` by two commits and behind
+  by zero:
+
+```text
+git rev-list --left-right --count HEAD...origin/main
+2 0
+```
+
+- Remote `origin/main` did not introduce competing commits during this check.
+- No merge or conflict resolution was required.
+- The two local commits already present at fetch-check time were:
+
+```text
+3ebe7fb docs: record scoped sync boundary
+df1f001 Plan post-seven-phase client switch-over
+```
+
+- This fetch-check result is itself a scoped reset-memo update and should be
+  committed before the final pre-push fetch/check.
+
+## 2026-05-10 update: goals/status/gaps closure execution
+
+User request:
+- update the specific reset memo and stay out of other agents' lanes;
+- audit the new goals/status/gaps closure plan as if written by another
+  developer;
+- execute the phases one by one using
+  `plan -> execute -> test -> audit -> tidy -> update reset memo`;
+- continue automatically only when the primary criterion and veto diagnostics
+  permit;
+- commit scoped modified files after the justified boundary;
+- summarize results, remaining gaps, and explicit hypotheses.
+
+Plan under execution:
+
+```text
+docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md
+```
+
+Initial state:
+- Local `main` is synchronized with `origin/main`:
+
+```text
+git rev-list --left-right --count HEAD...origin/main
+0 0
+```
+
+- Scoped in-lane files currently modified or created:
+  - `docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md`;
+  - `docs/source_map.yml`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`.
+- Out-of-lane untracked files must remain unstaged:
+  - `docs/plans/dsge-sgu-marginal-utility-timing-implementation-request-2026-05-09.md`;
+  - `docs/plans/templates/*:Zone.Identifier`;
+  - `singularity_test.png`.
+
+Lane discipline:
+- This execution pass is restricted to BayesFilter planning/reset-memo
+  artifacts unless a phase has an explicit writable-root and client-repo
+  authorization.
+- Do not edit `/home/chakwong/MacroFinance` in this pass unless Phase 1 is
+  explicitly authorized beyond this BayesFilter workspace boundary.
+- Do not edit `/home/chakwong/python` in this pass.
+- Do not stage unrelated untracked files.
+
+Execution expectation:
+- Audit the plan first.
+- If the audit confirms that Phase 1 requires MacroFinance edits, stop before
+  implementing Phase 1 and commit the scoped BayesFilter planning/audit/memo
+  artifacts.
+
+Independent audit:
+- Added:
+
+```text
+docs/plans/bayesfilter-goals-status-gaps-closure-plan-audit-2026-05-10.md
+```
+
+- Audit verdict: approved with an execution-boundary correction.
+- The ten-phase ordering is sound because it starts with MacroFinance, the
+  nearest real client, and keeps GPU/HMC/SVD-derivative claims behind
+  client-side value and derivative parity.
+- The audit confirms that Phase 1 requires editing:
+
+```text
+/home/chakwong/MacroFinance
+```
+
+- That path is outside the current BayesFilter writable root, so Phase 1 cannot
+  be executed automatically in this pass without explicit MacroFinance
+  authorization.
+
+### Phase 1: MacroFinance dense QR value pilot
+
+Phase plan:
+- add a MacroFinance-side optional backend such as
+  `bayesfilter_tf_direct_qr`;
+- wrap BayesFilter dense QR value filtering through MacroFinance's
+  `tf_lgssm_log_likelihood_backend`;
+- prove parity against MacroFinance's existing `tf_direct_qr` dense value path;
+- keep MacroFinance defaults unchanged.
+
+Execution:
+- Not executed in this pass.
+- The first implementation action would edit `/home/chakwong/MacroFinance`,
+  outside this BayesFilter workspace's writable root and outside the declared
+  lane for the current pass.
+
+Tests:
+- No tests were run for Phase 1 because no code was changed.
+- Existing relevant BayesFilter evidence remains:
+
+```text
+tests/test_macrofinance_linear_compat_tf.py
+```
+
+Audit:
+- Phase 1 remains justified, but it is blocked by the client-repo write
+  boundary.
+- No primary criterion can be evaluated until the MacroFinance-side optional
+  backend and parity tests exist.
+
+Tidy-up:
+- MacroFinance was not edited.
+- `/home/chakwong/python` was not edited.
+- Out-of-lane untracked files remain unstaged.
+- `docs/source_map.yml` was updated to register the new plan and audit
+  artifacts.
+
+Next phase justified?
+- Phase 2 is not justified before Phase 1 because masked QR switch-over should
+  not precede dense QR value dispatch.
+- Phase 7 CPU benchmark harness is a valid BayesFilter-only fallback only if
+  MacroFinance Phase 1 is explicitly deferred.
+- Stop here, commit the scoped BayesFilter planning/audit/source-map/reset-memo
+  artifacts, and ask whether to authorize MacroFinance Phase 1 or defer to the
+  BayesFilter-only benchmark fallback.
+
+Completion boundary:
+- Automatic execution stops at Phase 1's client-repo write boundary.
+- Scoped files for this commit:
+  - `docs/plans/bayesfilter-goals-status-gaps-closure-plan-2026-05-10.md`;
+  - `docs/plans/bayesfilter-goals-status-gaps-closure-plan-audit-2026-05-10.md`;
+  - `docs/plans/bayesfilter-monograph-reset-memo-2026-05-02.md`;
+  - `docs/source_map.yml`.
+
+Next hypotheses:
+- H1: MacroFinance dense static `tf_direct_qr` value dispatch can call
+  BayesFilter through an explicit optional backend without changing likelihood
+  values, default behavior, dtype, or graph reuse.
+- H2: If H1 passes, masked QR can switch next provided the static dummy-row
+  convention remains explicit in diagnostics.
+- H3: QR score/Hessian switch-over should wait for value parity and must prove
+  parameter-major derivative ordering and one-country posterior-adapter
+  behavior.
+- H4: Linear SVD/eigen value should remain optional until a singular or
+  near-singular MacroFinance fixture demonstrates QR/Cholesky insufficiency.
+- H5: Generic CPU benchmarks can proceed as a BayesFilter-only fallback, but
+  must not be labeled client-readiness evidence unless MacroFinance or DSGE
+  target parity is already established.
