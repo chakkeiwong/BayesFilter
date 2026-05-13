@@ -356,6 +356,52 @@ def test_default_model_c_score_branch_summary_counts_active_floor_blocker() -> N
     assert summary.weak_spectral_gap_count == 0
 
 
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_default_model_c_structural_fixed_support_score_branch_summary_passes(
+    backend,
+) -> None:
+    parameter_grid = tf.constant([[1.0, 1.0, 0.20]], dtype=tf.float64)
+
+    summary = nonlinear_sigma_point_score_branch_summary(
+        model_c_observations_tf(),
+        parameter_grid,
+        _parameterized_model_c,
+        _parameterized_model_c_derivatives,
+        backend=backend,
+        spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        allow_fixed_null_support=True,
+    )
+
+    assert summary.total_count == 1
+    assert summary.ok_count == 1
+    assert summary.active_floor_count == 0
+    assert summary.weak_spectral_gap_count == 0
+    assert summary.nonfinite_count == 0
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_default_model_c_structural_fixed_support_diagnostics(backend) -> None:
+    params = tf.constant([1.0, 1.0, 0.20], dtype=tf.float64)
+    result = tf_nonlinear_sigma_point_score(
+        model_c_observations_tf(),
+        _parameterized_model_c(params),
+        _parameterized_model_c_derivatives(params),
+        backend=backend,
+        spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        allow_fixed_null_support=True,
+    )
+    snapshot = nonlinear_sigma_point_diagnostic_snapshot(result, mode="score")
+
+    assert snapshot.derivative_branch == "structural_fixed_support_no_active_floor"
+    assert snapshot.derivative_method == "analytic_first_order_structural_fixed_support"
+    assert snapshot.sigma_point_variable == "pre_transition_structural"
+    assert snapshot.structural_null_count == 1
+    assert snapshot.placement_floor_count == 0
+    np.testing.assert_allclose(snapshot.structural_null_covariance_residual, 0.0, atol=1e-12)
+    np.testing.assert_allclose(snapshot.fixed_null_derivative_residual, 0.0, atol=1e-12)
+    np.testing.assert_allclose(snapshot.deterministic_residual, 0.0, atol=1e-12)
+
+
 def test_score_branch_summary_counts_weak_spectral_gap_blocker() -> None:
     observations = tf.constant([[0.2]], dtype=tf.float64)
     parameter_grid = tf.constant([[0.31, 0.27, 1.05]], dtype=tf.float64)

@@ -230,15 +230,21 @@ The derivative provider supplies
 \]
 and \(H_x=[x/10,0]\).  Score parity is certified on a nondegenerate
 phase-state testing variant with positive phase variance.  The default Model C
-value benchmark still has zero phase variance.  Under the current smooth
-simple-spectrum/no-active-floor SVD score branch, that default law is blocked
-by an active placement floor.  This is an intentional diagnostic: the default
-deterministic phase law needs a future fixed-null-direction derivative policy
-before it can be promoted to a score-ready target.
+value benchmark still has zero phase variance.  Under the smooth
+simple-spectrum/no-active-floor SVD score branch, that default law remains
+blocked by an active placement floor.  This is an intentional diagnostic.  The
+structural fixed-support branch in Chapter~\ref{ch:bf-svd-sigma-point} instead
+keeps the phase direction as a declared structural null direction: the factor
+column and its derivative are zero, the pre-transition sigma-point variable is
+\((x_{t-1},\varepsilon_t)\), and the propagated phase coordinate is completed
+pointwise by the transition map.  On that branch, default Model C is now a
+score-ready testing target for SVD cubature, SVD-UKF, and SVD-CUT4, subject to
+the fixed-null covariance, fixed-null derivative, active-gap, and
+finite-difference diagnostics.
 
 Consequently, GPU/XLA and HMC evidence for nonlinear Models B--C remains
-deferred until the score-ready parameter boxes, branch diagnostics, and any
-future fixed-null derivative branch have been selected and tested.
+deferred until the score-ready parameter boxes and branch diagnostics have
+been selected and tested.
 
 \section{Required Outputs}
 \label{sec:bf-nonlinear-required-outputs}

@@ -2826,5 +2826,381 @@ Completion interpretation:
   phase-state testing variant;
 - default Model C remains correctly blocked by the smooth SVD active-floor
   gate;
-- Hessian, GPU/XLA, nonlinear HMC, and default-Model-C fixed-null derivative
-  work remain future phases.
+- Hessian, GPU/XLA, nonlinear HMC, and default-Model-C structural sigma-point
+  score work remain future phases.
+
+## 2026-05-13 master consolidation
+
+User request:
+- create one single coherent V1 master program because the direction had become
+  dispersed and could cause drift.
+
+Created:
+
+```text
+docs/plans/bayesfilter-v1-master-program-2026-05-13.md
+```
+
+Role:
+- this is now the controlling roadmap for the BayesFilter V1 lane;
+- earlier V1 plans remain supporting evidence, not competing control documents;
+- future subplans should cite the master and name the gap they close.
+
+Master-program ordering:
+1. Chapter 18b structural sigma-point score derivation and implementation for
+   deterministic-completion models, with default Model C as the first target;
+2. wider nonlinear score branch diagnostics;
+3. nonlinear benchmark refresh with score metadata;
+4. Model B nonlinear HMC readiness plan and tiny CPU smoke;
+5. optional nonlinear GPU/XLA scaling diagnostics;
+6. nonlinear Hessian need assessment;
+7. optional exact-reference strengthening for Models B-C;
+8. future MacroFinance/DSGE integration plan.
+
+Anti-drift rules recorded:
+- do not start GPU/XLA, HMC, Hessian, or external-client work before its
+  predecessor gate passes;
+- do not promote diagnostic artifacts to certified claims;
+- do not edit MacroFinance, DSGE, Chapter 18b, structural SVD/SGU plans, or the
+  shared monograph reset memo from this lane;
+- do not add production NumPy dependencies;
+- every future V1 subplan must name the master-program gap it closes.
+
+## 2026-05-13 structural sigma-point score pivot
+
+User correction:
+- the next phase should not invent a separate fixed-null SVD derivative theory;
+- Chapter 18b already gives the correct structural sigma-point filtering
+  derivation and should govern the solution.
+
+Master update:
+- replaced the old fixed-null phrasing in
+  `docs/plans/bayesfilter-v1-master-program-2026-05-13.md`;
+- R1 is now Chapter 18b structural sigma-point score implementation for
+  deterministic-completion models, with default Model C as the first target.
+
+New subplan:
+
+```text
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
+```
+
+Subplan phases:
+1. derive the needed structural score mathematics from Chapter 18b with
+   MathDevMCP support and write the concrete document block;
+2. update the master/subplan from the derivation result;
+3. implement the derivative according to that derivation;
+4. audit code-document consistency with MathDevMCP/code comparison tools;
+5. test against default Model C;
+6. finish with result artifacts, source-map updates, tests, and scoped commit.
+
+Interpretation:
+- default Model C should be treated as a structural deterministic-completion
+  score problem, not as a collapsed full-state SVD null-space problem;
+- HMC, GPU/XLA, and nonlinear Hessian remain blocked until this structural
+  score phase resolves.
+
+## 2026-05-13 structural sigma-point score execution: plan tightening and audit
+
+Phase:
+- pre-S0 plan tightening and independent audit.
+
+Files updated:
+
+```text
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-audit-2026-05-13.md
+```
+
+Result:
+- tightened the plan to preserve the backend's declared sigma-rule dimension
+  while representing structurally null phase directions by zero factor columns
+  and zero factor derivatives;
+- recorded an independent audit finding that resizing the CUT4 rule to the
+  active rank would drift from the current V1 backend comparison;
+- confirmed that HMC, GPU/XLA, Hessian, MacroFinance, DSGE, and SGU work stay
+  out of this phase.
+
+Interpretation:
+- continuation to S0 is justified because the plan now has a concrete
+  non-drift path: derive the structural pre-transition score, then implement a
+  structural fixed-support placement check without adding any fake phase
+  nugget.
+
+## 2026-05-13 structural sigma-point score execution: S0 derivation
+
+Phase:
+- S0, derivation from Chapter 18b with MathDevMCP support.
+
+Files updated:
+
+```text
+docs/chapters/ch18_svd_sigma_point.tex
+```
+
+MathDevMCP evidence:
+- looked up `prop:bf-structural-ukf-pushforward`;
+- looked up `eq:bf-structural-ukf-moment-objects`;
+- looked up `eq:bf-structural-ukf-loglik-object`;
+- checked the Gaussian innovation score algebra against the Chapter 18b
+  likelihood sign convention.
+
+Derivation result:
+- added `sec:bf-svd-sp-structural-fixed-support-score` to Chapter 18;
+- stated the structural score variable as
+  \(A_t=(x_{t-1},\varepsilon_t)\), with state completion
+  \(X_t^{(r)}=F_\theta(A_t^{(r)})\) and observation points
+  \(Z_t^{(r)}=h_\theta(X_t^{(r)})\);
+- derived the fixed-support spectral branch for structural zero directions:
+  active columns use the usual simple-spectrum eigenderivative formula, fixed
+  null columns are zero and have zero derivative, and the null derivative block
+  must be checked rather than floored;
+- derived the structural point, moment, innovation, and likelihood score
+  equations.
+
+Interpretation:
+- S0 gives a concrete implementation contract, so S1/S2 remain justified;
+- the default Model C path should be a structural fixed-support score branch,
+  not a positive phase nugget and not a collapsed full-state regularization
+  branch;
+- HMC, GPU/XLA, and nonlinear Hessian remain blocked.
+
+## 2026-05-13 structural sigma-point score execution: S1 plan update
+
+Phase:
+- S1, update the controlling V1 plan from the S0 derivation.
+
+Files updated:
+
+```text
+docs/plans/bayesfilter-v1-master-program-2026-05-13.md
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
+```
+
+Result:
+- the master now points R1 to the Chapter 18 structural fixed-support score
+  subsection;
+- the subplan now records the concrete S2 contract: preserve declared
+  sigma-rule dimension, keep structural null factor columns at zero, and block
+  moving-null, floor-regularized, or weak-gap branches.
+
+Interpretation:
+- S2 implementation is justified because the derivation has produced an
+  auditable code contract and a falsifiable default Model C test.
+
+## 2026-05-13 structural sigma-point score execution: S2 implementation
+
+Phase:
+- S2, implement the structural fixed-support score path.
+
+Files updated:
+
+```text
+bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py
+bayesfilter/testing/nonlinear_diagnostics_tf.py
+tests/test_nonlinear_sigma_point_scores_tf.py
+tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+```
+
+Implementation:
+- added an opt-in `allow_fixed_null_support` branch to the SVD sigma-point
+  score path;
+- preserved the declared sigma-rule dimension for cubature, UKF, and CUT4;
+- represented structural zero directions by zero factor columns and zero
+  factor derivatives;
+- separated `structural_null_count` from true placement floor activation;
+- added diagnostics for `sigma_point_variable`,
+  `fixed_null_derivative_residual`, and the structural fixed-support branch;
+- left the old smooth no-active-floor branch unchanged unless the new option is
+  explicitly requested.
+
+Validation:
+
+```bash
+python -m py_compile \
+  bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py \
+  bayesfilter/testing/nonlinear_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `py_compile` passed;
+- focused pytest result: `35 passed, 2 warnings`.
+
+Interpretation:
+- S2 supports H-S1 on the focused test scope: default Model C now has an
+  analytic structural fixed-support score path for SVD cubature, SVD-UKF, and
+  SVD-CUT4;
+- the old smooth branch still blocks default Model C, which is the desired
+  guard against accidental promotion without the structural option;
+- continuation to S3 is justified.
+
+## 2026-05-13 structural sigma-point score execution: S3 audit
+
+Phase:
+- S3, code-document consistency audit.
+
+Tool status:
+- MathDevMCP `compare_label_code`, `compare_doc_code`, and one
+  `extract_latex_context` call failed internally on the new local label, so
+  those calls are not counted as certifying evidence;
+- MathDevMCP `search_code_docs` did find the implementation terms
+  `pre_transition_structural`, `structural_fixed_support_no_active_floor`, and
+  `fixed_null_derivative_residual` in the code;
+- manual audit checked the code against
+  `sec:bf-svd-sp-structural-fixed-support-score`.
+
+Manual audit result:
+- code places points on the augmented pre-transition variable
+  `[state, innovation]`;
+- code completes state points with `model.transition` and observation points
+  with `model.observe`;
+- code reports `sigma_point_variable = pre_transition_structural`;
+- code keeps structural null factor columns at zero in the opt-in branch;
+- code blocks positive placement floors, positive covariance in a structural
+  null direction, moving null derivative blocks, and weak active spectral gaps;
+- code reports `structural_null_count`,
+  `structural_null_covariance_residual`,
+  `fixed_null_derivative_residual`,
+  `factor_derivative_reconstruction_residual`, and
+  `deterministic_residual`.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py::test_model_c_default_structural_fixed_support_score_matches_finite_difference \
+  tests/test_nonlinear_sigma_point_scores_tf.py::test_model_c_structural_fixed_support_blocks_positive_placement_floor \
+  tests/test_nonlinear_sigma_point_scores_tf.py::test_model_c_structural_fixed_support_blocks_moving_null_covariance \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py::test_default_model_c_structural_fixed_support_score_branch_summary_passes \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py::test_default_model_c_structural_fixed_support_diagnostics \
+  -p no:cacheprovider
+```
+
+Result:
+- `11 passed, 2 warnings`;
+- `git diff --check` passed.
+
+Interpretation:
+- code-document consistency is supported by manual audit and targeted tests,
+  with transparent tool limitation noted;
+- continuation to S4 is justified.
+
+## 2026-05-13 structural sigma-point score execution: S4 default Model C validation
+
+Phase:
+- S4, test against default Model C and focused V1 regressions.
+
+Documentation update:
+- updated `docs/chapters/ch28_nonlinear_ssm_validation.tex` so default Model C
+  is no longer described as waiting for a future fixed-null branch;
+- Chapter 28 now states that default Model C is score-ready under the
+  structural fixed-support branch, while the old smooth branch still blocks it.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `73 passed, 2 skipped, 2 warnings`.
+
+Full default CPU validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+```
+
+Result:
+- `204 passed, 5 skipped, 2 warnings`.
+
+Interpretation:
+- default Model C structural fixed-support score is validated against finite
+  differences for SVD cubature, SVD-UKF, and SVD-CUT4;
+- R1 is closed for the local V1 testing target;
+- continuation to S5 finishing and commit is justified.
+
+## 2026-05-13 structural sigma-point score execution: S5 completion
+
+Phase:
+- S5, finish artifacts and update provenance.
+
+Artifacts:
+
+```text
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md
+docs/source_map.yml
+```
+
+Completion interpretation:
+- R1 is closed on the tested V1 scope;
+- wider branch-grid diagnostics are still justified as the next phase;
+- nonlinear HMC, GPU/XLA scaling, nonlinear Hessians, and external switch-over
+  remain blocked or deferred until their master-program gates are reached.
+
+## 2026-05-13 structural sigma-point score execution: final pre-commit check
+
+Phase:
+- final lane audit before commit.
+
+Lane status:
+- staged scope should include only V1 structural sigma-point score files,
+  tests, Chapter 18/28 updates, V1 plan/result/audit artifacts, the V1 reset
+  memo, and `docs/source_map.yml`;
+- the shared monograph reset memo and unrelated structural/DSGE/MacroFinance
+  untracked files remain out of lane and must not be staged.
+
+Validation rerun:
+
+```bash
+python -m py_compile \
+  bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py \
+  bayesfilter/testing/nonlinear_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+
+git diff --check
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map ok')"
+```
+
+Result:
+- `py_compile` passed;
+- `git diff --check` passed;
+- focused score/branch tests: `36 passed, 2 warnings`;
+- full default CPU suite: `204 passed, 5 skipped, 2 warnings`;
+- `source_map ok`.
+
+Completion interpretation:
+- the structural fixed-support score branch is ready to commit for the V1
+  lane;
+- the next justified phase remains wider nonlinear branch-grid diagnostics for
+  Model B and default Model C before nonlinear HMC, GPU/XLA, or Hessian work.

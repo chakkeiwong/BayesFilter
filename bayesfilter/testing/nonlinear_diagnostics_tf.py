@@ -54,6 +54,10 @@ class NonlinearSigmaPointDiagnosticSnapshot:
     regularization_derivative_target: str
     derivative_branch: str
     derivative_method: str
+    structural_null_count: int
+    structural_null_covariance_residual: float
+    fixed_null_derivative_residual: float
+    sigma_point_variable: str
 
 
 @dataclass(frozen=True)
@@ -127,7 +131,9 @@ def tf_nonlinear_sigma_point_score(
     innovation_floor: tf.Tensor | float = 1e-12,
     rank_tolerance: tf.Tensor | float = 1e-12,
     spectral_gap_tolerance: tf.Tensor | float = 1e-8,
+    fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
+    allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
     """Dispatch to one of the analytic first-order sigma-point scores."""
 
@@ -136,7 +142,9 @@ def tf_nonlinear_sigma_point_score(
         "innovation_floor": innovation_floor,
         "rank_tolerance": rank_tolerance,
         "spectral_gap_tolerance": spectral_gap_tolerance,
+        "fixed_null_tolerance": fixed_null_tolerance,
         "jitter": jitter,
+        "allow_fixed_null_support": allow_fixed_null_support,
     }
     if backend == "tf_svd_cubature":
         return tf_svd_cubature_score(observations, model, derivatives, **kwargs)
@@ -191,6 +199,14 @@ def nonlinear_sigma_point_diagnostic_snapshot(
         regularization_derivative_target=str(regularization.derivative_target),
         derivative_branch=str(extra.get("derivative_branch", "value_only")),
         derivative_method=str(extra.get("derivative_method", "value_only")),
+        structural_null_count=_to_int(extra.get("structural_null_count", 0)),
+        structural_null_covariance_residual=_to_float(
+            extra.get("structural_null_covariance_residual", 0.0)
+        ),
+        fixed_null_derivative_residual=_to_float(
+            extra.get("fixed_null_derivative_residual", 0.0)
+        ),
+        sigma_point_variable=str(extra.get("sigma_point_variable", "not_declared")),
     )
 
 
@@ -238,7 +254,9 @@ def nonlinear_sigma_point_score_branch_summary(
     innovation_floor: tf.Tensor | float = 1e-12,
     rank_tolerance: tf.Tensor | float = 1e-12,
     spectral_gap_tolerance: tf.Tensor | float = 1e-8,
+    fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
+    allow_fixed_null_support: bool = False,
 ) -> NonlinearSigmaPointBranchSummary:
     """Aggregate analytic score branch diagnostics over a small parameter grid."""
 
@@ -252,7 +270,9 @@ def nonlinear_sigma_point_score_branch_summary(
             innovation_floor=innovation_floor,
             rank_tolerance=rank_tolerance,
             spectral_gap_tolerance=spectral_gap_tolerance,
+            fixed_null_tolerance=fixed_null_tolerance,
             jitter=jitter,
+            allow_fixed_null_support=allow_fixed_null_support,
         )
 
     return _branch_summary_from_grid(

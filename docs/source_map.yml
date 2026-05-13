@@ -911,6 +911,18 @@ chapter_mappings:
       import_status: drafted
       reason: Execution-ready v1 closure plan that summarizes phase goals, remaining gaps, falsifiable hypotheses, test gates, continuation criteria, and lane boundaries for QR score-only API decisions, longer QR HMC diagnostics, wider SVD-CUT branch sweeps, optional escalated GPU/XLA derivative evidence, and CI containment.
 
+  bayesfilter_v1_master_program_2026_05_13:
+    - source_file: bayesfilter-v1-master-program-2026-05-13.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter V1 subplans and execution gates
+      import_status: drafted
+      reason: Single coherent master roadmap for BayesFilter V1, consolidating API, linear, structural, nonlinear, Hessian, GPU/XLA, HMC, and external-compatibility directions into one anti-drift control document with explicit remaining gaps and execution order.
+
+  bayesfilter_v1_structural_sigma_point_score_model_c_plan_2026_05_13:
+    - source_file: bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md; bayesfilter-v1-structural-sigma-point-score-model-c-plan-audit-2026-05-13.md; bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md
+      destination: docs/plans/bayesfilter-v1-master-program-2026-05-13.md; docs/chapters/ch18b_structural_deterministic_dynamics.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py; bayesfilter/testing/nonlinear_diagnostics_tf.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+      import_status: drafted
+      reason: Focused V1 execution pass for replacing the abandoned fixed-null framing with the Chapter 18b structural sigma-point score derivation, documenting the structural fixed-support score equations in Chapter 18, implementing an opt-in fixed-support SVD score branch for default Model C, auditing code-document consistency, and certifying default Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4.
+
   bayesfilter_v1_nonlinear_filtering_master_testing_program_2026_05_11:
     - source_file: bayesfilter-v1-nonlinear-filtering-master-testing-program-2026-05-11.md
       destination: docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/nonlinear; bayesfilter/testing; tests/test_structural_svd_sigma_point_tf.py; tests/test_svd_cut_filter_tf.py; tests/test_svd_cut_derivatives_tf.py; future nonlinear benchmark and analytic-score execution pass
@@ -961,9 +973,9 @@ chapter_mappings:
 
   bayesfilter_v1_nonlinear_derivative_provider_gap_closure_2026_05_13:
     - source_file: bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-audit-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-result-2026-05-13.md; bayesfilter/testing/nonlinear_models_tf.py; bayesfilter/testing/__init__.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/chapters/ch28_nonlinear_ssm_validation.tex
-      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future fixed-null SVD derivative, wider nonlinear branch diagnostics, Hessian, GPU/XLA, and nonlinear HMC readiness passes
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future Chapter 18b structural sigma-point score pass for default Model C, wider nonlinear branch diagnostics, Hessian, GPU/XLA, and nonlinear HMC readiness passes
       import_status: drafted
-      reason: Executes the V1 nonlinear derivative-provider gap closure pass, adding testing-lane first-derivative providers for Models B-C, certifying Model B and smooth-phase Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4, and preserving default Model C zero phase variance as an active-floor blocker until a fixed-null derivative policy is derived.
+      reason: Executes the V1 nonlinear derivative-provider gap closure pass, adding testing-lane first-derivative providers for Models B-C, certifying Model B and smooth-phase Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4, and preserving default Model C zero phase variance as an active-floor blocker until the Chapter 18b structural sigma-point score path is derived and implemented.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md
