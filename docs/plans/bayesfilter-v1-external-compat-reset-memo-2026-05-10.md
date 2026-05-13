@@ -3499,3 +3499,47 @@ Interpretation:
 - nonlinear Hessians are not needed for this ordinary score-only HMC target;
 - P5 is justified as a decision-only Hessian consumer assessment, and should
   keep Hessian work deferred unless a concrete consumer is named.
+
+## 2026-05-14 V1 P5 Hessian consumer assessment
+
+Phase:
+- P5 / R6 nonlinear Hessian consumer assessment.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-result-2026-05-14.md
+```
+
+Decision:
+- no concrete V1 nonlinear Hessian consumer is currently named;
+- P4's Model B SVD-CUT4 HMC smoke used ordinary score-only HMC dynamics and
+  therefore did not create a Hessian requirement;
+- production nonlinear SVD sigma-point results keep `hessian=None` and
+  Hessian-deferred status;
+- the SVD-CUT4 autodiff Hessian-like path remains testing-only in
+  `bayesfilter.testing.tf_svd_cut_autodiff_oracle`;
+- no nonlinear Hessian implementation subplan was opened.
+
+Validation:
+
+```bash
+git diff --check
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map ok')"
+```
+
+Result:
+- whitespace check passed;
+- source-map YAML parsed successfully.
+
+Interpretation:
+- P5 passes by the explicit-deferral branch;
+- P6 remains optional and diagnostic only;
+- any P6 GPU/CUDA/XLA command must use escalated sandbox permissions and any
+  speedup claim must be limited to the tested shapes.
