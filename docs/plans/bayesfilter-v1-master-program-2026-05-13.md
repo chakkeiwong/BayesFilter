@@ -156,12 +156,13 @@ Current status:
 - Model B score parity is `certified` on the selected smooth branch;
 - Model C score parity is `certified` only on a nondegenerate phase-state
   testing variant;
-- default Model C with zero phase variance is `blocked` by the active-floor
-  gate in the current collapsed SVD score path.  The next remedy is not a
-  separate numerical fixed-null theory; it is the Chapter 18b structural
-  sigma-point score path, where sigma points are placed on the pre-transition
-  uncertainty and deterministic coordinates are completed by the structural
-  map.
+- default Model C with zero phase variance is `certified` on the opt-in
+  Chapter 18b structural fixed-support score branch for SVD cubature,
+  SVD-UKF, and SVD-CUT4, at the local finite-difference scope recorded in
+  `docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md`;
+- the old collapsed smooth no-active-floor score path still correctly blocks
+  default Model C through the active-floor gate unless the structural
+  fixed-support contract is explicitly requested.
 
 ### G6. Hessian Policy
 
@@ -207,8 +208,10 @@ Minimum gate for an HMC target:
 Current status:
 
 - first linear QR HMC target has `diagnostic` smoke evidence;
-- nonlinear HMC is `blocked` until wider score branch diagnostics and default
-  Model C structural sigma-point score decisions are made.
+- nonlinear HMC is `blocked` until wider nonlinear score branch diagnostics
+  identify a stable target parameter box.  The default Model C structural
+  score decision is now made, but it still needs branch-box evidence before it
+  can be considered as an HMC target.
 
 ### G9. External Compatibility
 
@@ -222,78 +225,90 @@ Current status:
 - SGU remains blocked as a production filtering target;
 - actual client switch-over is `deferred` until V1 local gates pass.
 
+## Completed Gates
+
+C1. Chapter 18b structural sigma-point score implementation for default Model C.
+
+Status:
+- `certified` at local finite-difference scope.
+
+Evidence:
+- commit `e13be5a`, `Close structural Model C score branch`;
+- `docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md`;
+- `docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-audit-2026-05-13.md`;
+- `docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md`;
+- Chapter 18 label `sec:bf-svd-sp-structural-fixed-support-score`;
+- full default CPU validation: `204 passed, 5 skipped, 2 warnings`.
+
+Interpretation:
+- the correct default Model C score path is the Chapter 18b structural
+  sigma-point recursion, not a fake phase nugget and not a separate numerical
+  fixed-null theory;
+- sigma points are placed on the pre-transition structural variable
+  \(A_t=(x_{t-1},\varepsilon_t)\), deterministic coordinates are completed
+  pointwise by \(F_\theta\), and the score differentiates the implemented
+  structural sigma-point likelihood;
+- this closes the former R1 gap but does not certify nonlinear HMC, nonlinear
+  Hessians, GPU/XLA scaling, or external client switch-over.
+
+Tooling lesson:
+- MathDevMCP was useful for Chapter 18b lookup and score-sign checks, but
+  label/code comparison failed internally on the new local label.  Future
+  code-document gates should use MathDevMCP when available but require manual
+  audit plus finite-difference or reference tests as the certifying evidence.
+
 ## Current Remaining Gaps
-
-R1. Chapter 18b structural sigma-point score implementation.
-
-Hypothesis:
-The correct way to score default Model C is to implement the Chapter 18b
-structural sigma-point recursion: place sigma points on the pre-transition
-uncertainty \((x_{t-1},\varepsilon_t)\), or an equivalent support-reduced
-parameterization, then complete deterministic coordinates pointwise through the
-structural map \(F_\theta\).  This should avoid treating the deterministic
-phase coordinate as an independently perturbed full-state SVD direction.
-
-Test:
-derive the structural score equations from Chapter 18b, write the concrete
-document block, implement the derivative path, audit code-document consistency,
-and compare scores against finite differences of the implemented structural
-law on default Model C.
-
-Controlling subplan:
-
-```text
-docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
-```
-
-Immediate subtargets:
-
-1. Use Chapter 18b's predictive-pushforward proposition and UKF moment
-   equations as the mathematical source of truth.
-2. Write the structural score equations for the same implemented likelihood:
-   sigma points on \(A_t=(x_{t-1},\varepsilon_t)\), pointwise completion
-   \(X_t^{(j)}=F_\theta(A_t^{(j)})\), observation points
-   \(Z_t^{(j)}=h_\theta(X_t^{(j)})\), moment closure, innovation likelihood,
-   and first-order score recursion.  This is now documented in
-   `sec:bf-svd-sp-structural-fixed-support-score` of Chapter 18.
-3. Implement the structural fixed-support score path: preserve the declared
-   sigma-rule dimension, keep structurally null factor columns at zero with
-   zero derivatives, and block moving-null or floor-regularized branches.
-4. Test default Model C without a phase nugget against finite differences of
-   the same structural sigma-point likelihood.
 
 R2. Wider nonlinear score branch diagnostics.
 
 Hypothesis:
-Model B and smooth-phase Model C have practical parameter boxes where all
-three nonlinear score backends remain finite with no active floors or weak
-spectral gaps.
+Model B and default Model C have practical parameter boxes where the selected
+score branches remain finite across SVD cubature, SVD-UKF, and SVD-CUT4.
+Smooth-phase Model C should remain as a comparison/control case, but default
+Model C must be tested through `allow_fixed_null_support=True`.
 
 Test:
 run CPU branch grids over selected boxes and report ok fraction, active-floor
-count, weak-gap count, deterministic residuals, and score finiteness.
+count, weak-gap count, structural-null diagnostics, deterministic residuals,
+finite value/score status, and backend-specific failure labels.
 
-R3. Nonlinear HMC target selection.
+R3. Nonlinear benchmark refresh with score-branch metadata.
 
 Hypothesis:
-Model B is the first viable nonlinear HMC candidate because it is smooth,
-score-certified, and already uses the structural pre-transition uncertainty
-path without the default Model C deterministic-phase obstruction.
+The existing nonlinear benchmark suite can expose value accuracy,
+score-branch stability, deterministic residuals, and support diagnostics in
+one coherent artifact without claiming exact nonlinear likelihood
+certification.
 
 Test:
-write a target-specific readiness plan for Model B only after R2 passes.
+refresh benchmark outputs for Models B-C after R2, adding backend, branch,
+point-count, polynomial-degree, deterministic residual, structural-null, and
+finite-score metadata.
 
-R4. Nonlinear Hessian need assessment.
+R4. Nonlinear HMC target selection and first smoke.
+
+Hypothesis:
+Model B is the first viable nonlinear HMC candidate because it is smooth and
+score-certified.  Default Model C can become a second candidate only if R2
+shows a stable structural fixed-support branch box.
+
+Test:
+write a target-specific readiness plan after R2/R3; run only a tiny CPU smoke
+when value, score, branch, and compiled-parity gates are satisfied.
+
+R5. Nonlinear Hessian need assessment.
 
 Hypothesis:
 V1 can proceed with score-first nonlinear workflows and defer nonlinear
-Hessians unless optimization or Laplace approximation becomes a concrete
-consumer.
+Hessians unless optimization, Laplace approximation, Riemannian HMC, or
+observed-information diagnostics becomes a concrete consumer.
 
 Test:
-record whether any V1 integration path actually needs nonlinear Hessians.
+record the named consumer, required mathematical branch, expected tensor
+shapes, and an implementation/test plan before any nonlinear Hessian code is
+started.
 
-R5. GPU/XLA point-axis scaling.
+R6. GPU/XLA point-axis scaling.
 
 Hypothesis:
 CUT4's larger point count becomes less costly under batched point-axis
@@ -301,9 +316,10 @@ vectorization on GPU/XLA for moderate shapes.
 
 Test:
 run escalated GPU-visible and XLA-visible benchmarks only after R2 defines
-stable nonlinear score/value boxes.
+stable nonlinear score/value boxes; non-escalated GPU failures are sandbox
+evidence only.
 
-R6. Exact nonlinear reference gap.
+R7. Exact nonlinear reference strengthening.
 
 Hypothesis:
 For short horizons, dense quadrature or high-particle seeded SMC can provide
@@ -314,31 +330,261 @@ Test:
 add optional reference artifacts that clearly distinguish exact, dense
 projection, and Monte Carlo evidence.
 
-R7. External client integration.
+R8. External client integration.
 
 Hypothesis:
 MacroFinance/DSGE switch-over should wait until V1 has stable local API,
-benchmark, branch, and optional live compatibility evidence.
+benchmark, branch, optional GPU/HMC evidence, and optional live compatibility
+evidence.
 
 Test:
 write a separate future integration plan; do not modify external source in the
 V1 stabilization lane.
 
-## Execution Order
+## Safe Execution Ladder
 
-Future work should follow this order unless the user explicitly changes the
-priority:
+Each phase must follow the cycle:
+plan for the phase, execute, test, audit, tidy up, update the V1 reset memo,
+then decide whether the next phase is justified.  Continue automatically only
+when the primary gate passes and no veto diagnostic fires.
 
-1. Chapter 18b structural sigma-point score derivation and implementation for
-   deterministic-completion models, with default Model C as the first target.
-2. Wider nonlinear score branch diagnostics for Model B and smooth/default
-   Model C.
-3. Nonlinear benchmark refresh with score-branch metadata.
-4. Model B nonlinear HMC readiness plan and tiny smoke, CPU-only.
-5. Optional nonlinear GPU/XLA scaling diagnostics.
-6. Nonlinear Hessian need assessment.
-7. Optional exact-reference strengthening for Models B-C.
-8. Future MacroFinance/DSGE integration plan.
+### Phase P0: Master Reconciliation And Lane Check
+
+Purpose:
+- keep this master aligned with completed results before starting new work.
+
+Entry condition:
+- a phase result has landed or a new user decision changes priority.
+
+Required actions:
+- update the master status table and remaining gaps;
+- verify `git status --short` and identify out-of-lane dirty files;
+- update only V1-lane reset memo entries when a reset memo update is needed.
+
+Primary gate:
+- master names exactly one next active phase and no completed phase remains in
+  "Current Remaining Gaps."
+
+Veto diagnostics:
+- out-of-lane files staged;
+- shared monograph reset memo staged from this lane;
+- master contradicts latest result artifacts.
+
+Subplan status:
+- this master section is the controlling P0 plan.
+
+### Phase P1: Wider Nonlinear Score Branch Diagnostics
+
+Purpose:
+- close R2 by finding stable score branch boxes for Model B and default Model C.
+
+Entry condition:
+- C1 remains green on focused and full CPU tests.
+
+Required actions:
+- create a fresh R2 subplan before execution;
+- design CPU grids for Model B, smooth-phase Model C, and default Model C with
+  `allow_fixed_null_support=True`;
+- run branch summaries for SVD cubature, SVD-UKF, and SVD-CUT4;
+- record ok fractions, active floors, weak active gaps, nonfinite failures,
+  structural-null counts, fixed-null derivative residuals, structural-null
+  covariance residuals, support residuals, deterministic residuals, and score
+  finiteness.
+
+Primary gate:
+- at least one practical Model B box passes for all selected backends, and
+  default Model C has a clearly reported pass/fail structural branch box.
+
+Veto diagnostics:
+- branch summaries hide failure labels;
+- default Model C is tested without the structural fixed-support option;
+- active floors or weak gaps are treated as success;
+- production NumPy dependency is introduced.
+
+Artifacts:
+- R2 plan, audit, and result files under `docs/plans/bayesfilter-v1-*`;
+- updated V1 reset memo;
+- tests or benchmark diagnostics if new code is required.
+
+### Phase P2: Nonlinear Benchmark Refresh With Score Metadata
+
+Purpose:
+- close R3 by turning the branch evidence into benchmark-style artifacts.
+
+Entry condition:
+- P1 passes or records a narrowed benchmark scope.
+
+Required actions:
+- refresh Model B-C benchmark outputs with score branch metadata;
+- separate implemented-filter value evidence from exact nonlinear likelihood
+  claims;
+- include backend, point count, polynomial degree, branch label,
+  deterministic residual, structural-null metadata, finite-score status, and
+  failure labels.
+
+Primary gate:
+- benchmark artifacts reproduce from documented commands and make no exactness
+  claim beyond their reference type.
+
+Veto diagnostics:
+- diagnostic projection errors are described as exact likelihood errors;
+- missing branch metadata for any nonlinear score row;
+- benchmark requires GPU or external projects by default.
+
+Artifacts:
+- benchmark command/result artifact under `docs/benchmarks` or `docs/plans`;
+- updated Chapter 28 text if claims change.
+
+### Phase P3: Nonlinear HMC Target Selection And Tiny CPU Smoke
+
+Purpose:
+- close R4 conservatively, with Model B as the default first target.
+
+Entry condition:
+- P1 passes and P2 provides target metadata.
+
+Required actions:
+- create a target-specific HMC readiness subplan;
+- choose Model B unless P1 gives a stronger reason to choose another target;
+- verify finite value and score on the target box;
+- verify branch stability and compiled parity for the intended execution mode;
+- run only a tiny CPU HMC smoke when readiness gates pass.
+
+Primary gate:
+- HMC smoke produces finite chains and explicit diagnostics at the tiny-scope
+  level, without claiming convergence unless convergence diagnostics were run.
+
+Veto diagnostics:
+- HMC starts before finite score and branch gates pass;
+- default Model C is selected before its structural branch box is stable;
+- smoke output is promoted to convergence certification;
+- GPU is used without escalated sandbox permissions.
+
+Artifacts:
+- HMC readiness plan, audit, and result files;
+- opt-in test marker or environment gate if code/tests are added.
+
+### Phase P4: Nonlinear Hessian Need Assessment
+
+Purpose:
+- decide whether nonlinear Hessians are needed in V1.
+
+Entry condition:
+- a concrete consumer is named, or P3 shows score-only workflows are
+  insufficient.
+
+Required actions:
+- document the consumer and why scores are not enough;
+- identify the derivative branch and covariance-factor contract;
+- decide whether Hessians should be analytic, autodiff testing-only, or
+  deferred;
+- write an implementation plan only if the consumer justifies it.
+
+Primary gate:
+- either a named consumer justifies a Hessian implementation plan, or Hessian
+  work remains explicitly deferred.
+
+Veto diagnostics:
+- Hessian code starts before a consumer is named;
+- testing-only autodiff is exposed as production API;
+- SVD/eigen Hessian claims ignore branch gaps or structural null contracts.
+
+Artifacts:
+- Hessian assessment plan/result, and implementation subplan only if needed.
+
+### Phase P5: Optional GPU/XLA Scaling Diagnostics
+
+Purpose:
+- test whether point-axis vectorization improves CUT4 cost on real GPU/XLA.
+
+Entry condition:
+- P1 identifies stable nonlinear boxes and P2 gives benchmark commands.
+
+Required actions:
+- run GPU/CUDA probes and GPU/XLA benchmarks only with escalated sandbox
+  permissions;
+- compare CPU eager, CPU graph, GPU eager, and XLA where feasible;
+- record shape, point count, backend, warmup policy, and device visibility.
+
+Primary gate:
+- diagnostic artifact states whether GPU/XLA improves the tested shapes and
+  clearly limits the claim to those shapes.
+
+Veto diagnostics:
+- non-escalated GPU failure is treated as real CUDA failure;
+- broad speedup claim is made from one tiny artifact;
+- benchmark changes production behavior.
+
+Artifacts:
+- GPU/XLA diagnostic result under `docs/benchmarks` or `docs/plans`.
+
+### Phase P6: Optional Exact Nonlinear Reference Strengthening
+
+Purpose:
+- close R7 by adding stronger references for short nonlinear benchmarks.
+
+Entry condition:
+- P2 identifies where current references are too weak for the claim being
+  made.
+
+Required actions:
+- choose dense quadrature or seeded high-particle SMC as an optional reference;
+- document approximation/error status;
+- keep reference code out of production dependencies unless explicitly
+  approved.
+
+Primary gate:
+- reference artifact improves claim clarity for Models B-C without turning
+  Monte Carlo diagnostics into exact certification.
+
+Veto diagnostics:
+- stochastic reference lacks seed/reproducibility metadata;
+- dense projection is mislabeled as exact full nonlinear likelihood;
+- reference dependency leaks into production imports.
+
+Artifacts:
+- optional reference tests/results and Chapter 28 claim update if warranted.
+
+### Phase P7: External Client Integration Plan
+
+Purpose:
+- prepare, but not execute, future MacroFinance/DSGE switch-over.
+
+Entry condition:
+- focused/full CPU tests pass, P1/P2 nonlinear claims are current, and any
+  desired optional GPU/HMC evidence is labeled at its true scope.
+
+Required actions:
+- write a separate integration plan;
+- keep MacroFinance and DSGE as external compatibility targets;
+- specify test-only adapters before any production coupling;
+- define rollback and ownership boundaries.
+
+Primary gate:
+- integration plan can be reviewed without requiring changes to external
+  source trees.
+
+Veto diagnostics:
+- V1 imports MacroFinance or DSGE as a production dependency;
+- external source is modified from the V1 lane;
+- SGU economics are promoted without the structural/DSGE lane being reopened.
+
+Artifacts:
+- future integration plan under `docs/plans`, with explicit external-owner
+  gates.
+
+## Phase/Subplan Matrix
+
+| Phase | Gap | Status | Current subplan |
+| --- | --- | --- | --- |
+| P0 | Master reconciliation | active governance | this master |
+| P1 | R2 branch diagnostics | next | create fresh R2 subplan before execution |
+| P2 | R3 benchmark refresh | pending | create after P1 gate |
+| P3 | R4 nonlinear HMC | blocked until P1/P2 | create target-specific plan after P1/P2 |
+| P4 | R5 Hessian assessment | deferred | create only if a consumer is named |
+| P5 | R6 GPU/XLA scaling | deferred | create after P1 stable boxes |
+| P6 | R7 exact references | optional/deferred | create after P2 identifies reference gaps |
+| P7 | R8 external integration | deferred | create after local V1 gates stabilize |
 
 ## Anti-drift Rules
 
