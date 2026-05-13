@@ -26,7 +26,9 @@ from bayesfilter.testing.nonlinear_diagnostics_tf import (
     tf_nonlinear_sigma_point_value_filter,
 )
 from bayesfilter.testing.tf_hmc_readiness import (
+    ModelBNonlinearSVDTarget,
     QRStaticLGSSMTarget,
+    run_model_b_nonlinear_svd_cut4_hmc_smoke,
     run_qr_static_lgssm_hmc_smoke,
 )
 from bayesfilter.testing.tf_svd_cut_branch_diagnostics import (
@@ -41,6 +43,7 @@ __all__ = [
     "DenseProjectionStep",
     "NonlinearSigmaPointBranchSummary",
     "NonlinearSigmaPointDiagnosticSnapshot",
+    "ModelBNonlinearSVDTarget",
     "QRStaticLGSSMTarget",
     "SVDCUTBranchSummary",
     "TFNonlinearBranchMode",
@@ -58,6 +61,7 @@ __all__ = [
     "nonlinear_sigma_point_diagnostic_snapshot",
     "nonlinear_sigma_point_score_branch_summary",
     "nonlinear_sigma_point_value_branch_summary",
+    "run_model_b_nonlinear_svd_cut4_hmc_smoke",
     "run_qr_static_lgssm_hmc_smoke",
     "sigma_point_projection_first_step",
     "svd_cut_branch_frequency_summary",

@@ -3431,3 +3431,71 @@ Interpretation:
   candidate;
 - HMC convergence, nonlinear Hessians, GPU/XLA speedups, and external
   integration remain gated.
+
+## 2026-05-14 V1 P4 nonlinear HMC target execution
+
+Phase:
+- P4 / R5 nonlinear HMC target selection and tiny CPU smoke.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-result-2026-05-14.md
+```
+
+Implementation:
+- selected Model B nonlinear accumulation with SVD-CUT4 analytic score as the
+  first nonlinear HMC target;
+- added opt-in testing helper `ModelBNonlinearSVDTarget` and
+  `run_model_b_nonlinear_svd_cut4_hmc_smoke`;
+- added opt-in tests in
+  `tests/test_hmc_nonlinear_model_b_readiness_tf.py`;
+- wrote tiny-smoke diagnostics to
+  `docs/benchmarks/bayesfilter-v1-model-b-nonlinear-hmc-smoke-2026-05-14.json`.
+
+Validation:
+
+```bash
+python -m py_compile \
+  bayesfilter/testing/tf_hmc_readiness.py \
+  tests/test_hmc_nonlinear_model_b_readiness_tf.py
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_hmc_nonlinear_model_b_readiness_tf.py \
+  -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_HMC_READINESS=1 pytest -q \
+  tests/test_hmc_nonlinear_model_b_readiness_tf.py \
+  -p no:cacheprovider
+```
+
+Results:
+- syntax check passed;
+- default HMC test behavior: `3 skipped, 2 warnings`;
+- public API guard: `2 passed, 2 warnings`;
+- opt-in HMC readiness: `3 passed, 2 warnings`.
+
+Tiny-smoke diagnostics:
+- finite samples: `8`;
+- nonfinite samples: `0`;
+- acceptance rate: `1.0`;
+- branch diagnostics: `5/5`, no active floors, no weak spectral gaps, no
+  nonfinite branch rows;
+- convergence was not claimed.
+
+Interpretation:
+- P4 passes at tiny CPU smoke scope;
+- nonlinear Hessians are not needed for this ordinary score-only HMC target;
+- P5 is justified as a decision-only Hessian consumer assessment, and should
+  keep Hessian work deferred unless a concrete consumer is named.
