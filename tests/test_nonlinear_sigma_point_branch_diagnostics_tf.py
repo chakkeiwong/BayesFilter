@@ -286,9 +286,11 @@ def test_value_branch_summaries_cover_models_a_b_c_and_all_backends() -> None:
             assert summary.ok_count == summary.total_count
             assert summary.active_floor_count == 0
             assert summary.nonfinite_count == 0
+            assert summary.failure_labels == ()
             assert summary.ok_fraction == 1.0
             assert summary.max_point_count > 0
             assert summary.max_integration_rank > 0
+            assert summary.max_structural_null_count == 0
             np.testing.assert_allclose(summary.max_deterministic_residual, 0.0, atol=1e-12)
 
 
@@ -333,6 +335,7 @@ def test_score_branch_summary_covers_affine_model_b_and_smooth_model_c(
         assert summary.active_floor_count == 0
         assert summary.weak_spectral_gap_count == 0
         assert summary.nonfinite_count == 0
+        assert summary.failure_labels == ()
         assert summary.ok_fraction == 1.0
         assert summary.max_point_count > 0
         np.testing.assert_allclose(summary.max_deterministic_residual, 0.0, atol=1e-12)
@@ -354,6 +357,7 @@ def test_default_model_c_score_branch_summary_counts_active_floor_blocker() -> N
     assert summary.ok_count == 0
     assert summary.active_floor_count == 1
     assert summary.weak_spectral_gap_count == 0
+    assert summary.failure_labels == ("blocked_active_floor",)
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
@@ -377,6 +381,18 @@ def test_default_model_c_structural_fixed_support_score_branch_summary_passes(
     assert summary.active_floor_count == 0
     assert summary.weak_spectral_gap_count == 0
     assert summary.nonfinite_count == 0
+    assert summary.failure_labels == ()
+    assert summary.max_structural_null_count == 1
+    np.testing.assert_allclose(
+        summary.max_structural_null_covariance_residual,
+        0.0,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        summary.max_fixed_null_derivative_residual,
+        0.0,
+        atol=1e-12,
+    )
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
@@ -425,3 +441,4 @@ def test_score_branch_summary_counts_weak_spectral_gap_blocker() -> None:
     assert summary.total_count == 1
     assert summary.ok_count == 0
     assert summary.weak_spectral_gap_count == 1
+    assert summary.failure_labels == ("blocked_weak_spectral_gap",)

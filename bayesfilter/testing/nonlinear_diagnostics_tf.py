@@ -76,8 +76,12 @@ class NonlinearSigmaPointBranchSummary:
     min_innovation_eigen_gap: float
     max_support_residual: float
     max_deterministic_residual: float
+    max_structural_null_covariance_residual: float
+    max_fixed_null_derivative_residual: float
+    max_structural_null_count: int
     max_integration_rank: int
     max_point_count: int
+    failure_labels: tuple[str, ...]
 
     @property
     def ok_fraction(self) -> float:
@@ -302,8 +306,12 @@ def _branch_summary_from_grid(
     min_innovation_gap = float("inf")
     max_support_residual = 0.0
     max_deterministic_residual = 0.0
+    max_structural_null_covariance_residual = 0.0
+    max_fixed_null_derivative_residual = 0.0
+    max_structural_null_count = 0
     max_integration_rank = 0
     max_point_count = 0
+    failure_labels: list[str] = []
 
     for row in tf.unstack(grid, axis=0):
         try:
@@ -330,18 +338,34 @@ def _branch_summary_from_grid(
                 max_deterministic_residual,
                 snapshot.deterministic_residual,
             )
+            max_structural_null_covariance_residual = max(
+                max_structural_null_covariance_residual,
+                snapshot.structural_null_covariance_residual,
+            )
+            max_fixed_null_derivative_residual = max(
+                max_fixed_null_derivative_residual,
+                snapshot.fixed_null_derivative_residual,
+            )
+            max_structural_null_count = max(
+                max_structural_null_count,
+                snapshot.structural_null_count,
+            )
             max_integration_rank = max(max_integration_rank, snapshot.max_integration_rank)
             max_point_count = max(max_point_count, snapshot.point_count)
         except tf.errors.InvalidArgumentError as exc:
             message = str(exc)
             if "blocked_active_floor" in message:
                 active_floor_count += 1
+                _append_failure_label(failure_labels, "blocked_active_floor")
             elif "blocked_weak_spectral_gap" in message:
                 weak_spectral_gap_count += 1
+                _append_failure_label(failure_labels, "blocked_weak_spectral_gap")
             elif "blocked_nonfinite" in message:
                 nonfinite_count += 1
+                _append_failure_label(failure_labels, "blocked_nonfinite")
             else:
                 other_blocked_count += 1
+                _append_failure_label(failure_labels, _failure_label(message))
 
     total_count = int(grid.shape[0])
     if ok_count == 0:
@@ -360,9 +384,33 @@ def _branch_summary_from_grid(
         min_innovation_eigen_gap=min_innovation_gap,
         max_support_residual=max_support_residual,
         max_deterministic_residual=max_deterministic_residual,
+        max_structural_null_covariance_residual=max_structural_null_covariance_residual,
+        max_fixed_null_derivative_residual=max_fixed_null_derivative_residual,
+        max_structural_null_count=max_structural_null_count,
         max_integration_rank=max_integration_rank,
         max_point_count=max_point_count,
+        failure_labels=tuple(failure_labels),
     )
+
+
+def _append_failure_label(labels: list[str], label: str, *, limit: int = 5) -> None:
+    if label not in labels and len(labels) < limit:
+        labels.append(label)
+
+
+def _failure_label(message: str) -> str:
+    for marker in (
+        "blocked_structural_null_covariance",
+        "blocked_fixed_null_derivative",
+        "blocked_active_floor",
+        "blocked_weak_spectral_gap",
+        "blocked_nonfinite_value",
+        "blocked_nonfinite_score",
+    ):
+        if marker in message:
+            return marker
+    first_line = message.splitlines()[0] if message else "blocked_unknown"
+    return first_line[:80]
 
 
 def _as_tensor(value: object) -> tf.Tensor:

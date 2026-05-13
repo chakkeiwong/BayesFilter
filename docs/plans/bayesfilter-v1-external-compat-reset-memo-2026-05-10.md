@@ -3309,3 +3309,52 @@ Interpretation:
 - P2 is justified next: run wider nonlinear score branch diagnostics for
   Model B and default Model C, with default Model C using
   `allow_fixed_null_support=True`.
+
+## 2026-05-14 V1 P2 branch diagnostics execution
+
+Phase:
+- P2 / R3 wider nonlinear score branch diagnostics.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p2-branch-diagnostics-result-2026-05-14.md
+```
+
+Implementation:
+- extended the V1 testing diagnostic summary with structural-null residual
+  maxima and bounded representative failure labels;
+- tightened branch diagnostic tests so active-floor, weak-gap, and structural
+  fixed-support diagnostics remain visible.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `18 passed, 2 warnings`.
+
+Branch grid result:
+- Model B passed `5/5` score rows for SVD cubature, SVD-UKF, and SVD-CUT4;
+- smooth-phase Model C passed `5/5` score rows for all three backends;
+- default Model C passed `5/5` score rows for all three backends only under
+  `allow_fixed_null_support=True`;
+- no active floors, weak spectral gaps, nonfinite scores, or hidden failure
+  labels appeared on the tested boxes;
+- default Model C structural-null residuals remained at numerical zero scale.
+
+Interpretation:
+- P2 passes;
+- P3 is justified next: refresh nonlinear benchmark artifacts with score
+  branch metadata and keep exactness claims tied to the actual reference type;
+- HMC, Hessians, GPU/XLA, and external integration remain gated.
