@@ -145,10 +145,13 @@ Current status:
 - dense one-step projection errors for Models B-C are `diagnostic`, not exact
   full nonlinear likelihood certification.
 
-### G5. Nonlinear Analytic Scores
+### G5. Nonlinear Analytic Scores And Derivative Validation
 
-Smooth-branch first-order scores for SVD cubature, SVD-UKF, and SVD-CUT4 must
-match centered finite differences of the same implemented value filters.
+First-order scores for SVD cubature, SVD-UKF, and SVD-CUT4 must match centered
+finite differences of the same implemented value filters on the accepted
+nonlinear model suite.  Every backend/model cell must also state its Hessian
+status: implemented, testing-oracle only, deferred pending a named consumer,
+or unsupported on the current branch.
 
 Current status:
 
@@ -162,7 +165,11 @@ Current status:
   `docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md`;
 - the old collapsed smooth no-active-floor score path still correctly blocks
   default Model C through the active-floor gate unless the structural
-  fixed-support contract is explicitly requested.
+  fixed-support contract is explicitly requested;
+- a consolidated derivative-validation matrix over Models A-C is still
+  missing.  The existing tests certify many cells, but the master program now
+  requires a single auditable matrix before nonlinear HMC, GPU/XLA, or external
+  integration work.
 
 ### G6. Hessian Policy
 
@@ -259,7 +266,23 @@ Tooling lesson:
 
 ## Current Remaining Gaps
 
-R2. Wider nonlinear score branch diagnostics.
+R2. Nonlinear derivative-validation matrix.
+
+Hypothesis:
+The accepted nonlinear testing suite can support a complete derivative-status
+matrix for SVD cubature, SVD-UKF, and SVD-CUT4 across Models A-C.  The matrix
+should certify implemented first-order scores where tests already exist,
+identify any missing score cells, and record Hessian status without forcing a
+production Hessian implementation.
+
+Test:
+build and run a derivative-validation matrix covering value, score, branch,
+compiled/eager, and Hessian-status evidence for Models A-C and the three SVD
+sigma-point backends.  The matrix must distinguish smooth branches,
+structural fixed-support branches, active-floor blockers, testing-only
+autodiff oracles, and production exports.
+
+R3. Wider nonlinear score branch diagnostics.
 
 Hypothesis:
 Model B and default Model C have practical parameter boxes where the selected
@@ -272,7 +295,7 @@ run CPU branch grids over selected boxes and report ok fraction, active-floor
 count, weak-gap count, structural-null diagnostics, deterministic residuals,
 finite value/score status, and backend-specific failure labels.
 
-R3. Nonlinear benchmark refresh with score-branch metadata.
+R4. Nonlinear benchmark refresh with score-branch metadata.
 
 Hypothesis:
 The existing nonlinear benchmark suite can expose value accuracy,
@@ -281,22 +304,22 @@ one coherent artifact without claiming exact nonlinear likelihood
 certification.
 
 Test:
-refresh benchmark outputs for Models B-C after R2, adding backend, branch,
+refresh benchmark outputs for Models B-C after R3, adding backend, branch,
 point-count, polynomial-degree, deterministic residual, structural-null, and
 finite-score metadata.
 
-R4. Nonlinear HMC target selection and first smoke.
+R5. Nonlinear HMC target selection and first smoke.
 
 Hypothesis:
 Model B is the first viable nonlinear HMC candidate because it is smooth and
-score-certified.  Default Model C can become a second candidate only if R2
+score-certified.  Default Model C can become a second candidate only if R3
 shows a stable structural fixed-support branch box.
 
 Test:
-write a target-specific readiness plan after R2/R3; run only a tiny CPU smoke
+write a target-specific readiness plan after R2/R3/R4; run only a tiny CPU smoke
 when value, score, branch, and compiled-parity gates are satisfied.
 
-R5. Nonlinear Hessian need assessment.
+R6. Nonlinear Hessian consumer assessment.
 
 Hypothesis:
 V1 can proceed with score-first nonlinear workflows and defer nonlinear
@@ -308,18 +331,18 @@ record the named consumer, required mathematical branch, expected tensor
 shapes, and an implementation/test plan before any nonlinear Hessian code is
 started.
 
-R6. GPU/XLA point-axis scaling.
+R7. GPU/XLA point-axis scaling.
 
 Hypothesis:
 CUT4's larger point count becomes less costly under batched point-axis
 vectorization on GPU/XLA for moderate shapes.
 
 Test:
-run escalated GPU-visible and XLA-visible benchmarks only after R2 defines
+run escalated GPU-visible and XLA-visible benchmarks only after R3 defines
 stable nonlinear score/value boxes; non-escalated GPU failures are sandbox
 evidence only.
 
-R7. Exact nonlinear reference strengthening.
+R8. Exact nonlinear reference strengthening.
 
 Hypothesis:
 For short horizons, dense quadrature or high-particle seeded SMC can provide
@@ -330,7 +353,7 @@ Test:
 add optional reference artifacts that clearly distinguish exact, dense
 projection, and Monte Carlo evidence.
 
-R8. External client integration.
+R9. External client integration.
 
 Hypothesis:
 MacroFinance/DSGE switch-over should wait until V1 has stable local API,
@@ -373,16 +396,58 @@ Veto diagnostics:
 Subplan status:
 - this master section is the controlling P0 plan.
 
-### Phase P1: Wider Nonlinear Score Branch Diagnostics
+### Phase P1: Nonlinear Derivative-Validation Matrix
 
 Purpose:
-- close R2 by finding stable score branch boxes for Model B and default Model C.
+- close R2 by making derivative status explicit for every accepted nonlinear
+  model/backend cell before branch sweeps, HMC, GPU/XLA, or external
+  integration.
 
 Entry condition:
 - C1 remains green on focused and full CPU tests.
 
 Required actions:
-- create a fresh R2 subplan before execution;
+- execute the existing R2 derivative-validation matrix subplan:
+  `docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md`;
+- enumerate Models A-C and backends SVD cubature, SVD-UKF, and SVD-CUT4;
+- for each cell, record value status, score status, score branch, derivative
+  provider, finite-difference target, branch diagnostics, compiled/eager
+  parity if available, and Hessian status;
+- run or cite the focused tests that certify existing score cells;
+- add missing lightweight tests only when a matrix cell lacks evidence and the
+  needed fixture already exists;
+- keep nonlinear Hessian implementation deferred unless the matrix identifies
+  an already implemented Hessian cell or a named consumer.
+
+Primary gate:
+- the matrix has no unknown score-status cells for Models A-C across the three
+  backends, and Hessian status is explicit for every cell.
+
+Veto diagnostics:
+- a score cell is marked certified without finite-difference, exact affine, or
+  documented oracle evidence;
+- default Model C is certified without `allow_fixed_null_support=True`;
+- a testing-only autodiff oracle is exposed or described as production API;
+- nonlinear Hessian implementation starts without a named consumer;
+- production NumPy dependency is introduced.
+
+Artifacts:
+- R2 derivative-validation matrix plan, audit, and result files under
+  `docs/plans/bayesfilter-v1-*`;
+- updated V1 reset memo;
+- tests only if needed to close explicit matrix holes.
+
+### Phase P2: Wider Nonlinear Score Branch Diagnostics
+
+Purpose:
+- close R3 by finding stable score branch boxes for Model B and default Model C.
+
+Entry condition:
+- P1 derivative-validation matrix passes and C1 remains green.
+
+Required actions:
+- execute the existing R3 branch-diagnostics subplan:
+  `docs/plans/bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md`;
 - design CPU grids for Model B, smooth-phase Model C, and default Model C with
   `allow_fixed_null_support=True`;
 - run branch summaries for SVD cubature, SVD-UKF, and SVD-CUT4;
@@ -402,17 +467,18 @@ Veto diagnostics:
 - production NumPy dependency is introduced.
 
 Artifacts:
-- R2 plan, audit, and result files under `docs/plans/bayesfilter-v1-*`;
+- R3 plan, audit, and result files under `docs/plans/bayesfilter-v1-*`;
 - updated V1 reset memo;
 - tests or benchmark diagnostics if new code is required.
 
-### Phase P2: Nonlinear Benchmark Refresh With Score Metadata
+### Phase P3: Nonlinear Benchmark Refresh With Score Metadata
 
 Purpose:
-- close R3 by turning the branch evidence into benchmark-style artifacts.
+- close R4 by turning derivative and branch evidence into benchmark-style
+  artifacts.
 
 Entry condition:
-- P1 passes or records a narrowed benchmark scope.
+- P1 and P2 pass or record a narrowed benchmark scope.
 
 Required actions:
 - refresh Model B-C benchmark outputs with score branch metadata;
@@ -435,13 +501,14 @@ Artifacts:
 - benchmark command/result artifact under `docs/benchmarks` or `docs/plans`;
 - updated Chapter 28 text if claims change.
 
-### Phase P3: Nonlinear HMC Target Selection And Tiny CPU Smoke
+### Phase P4: Nonlinear HMC Target Selection And Tiny CPU Smoke
 
 Purpose:
-- close R4 conservatively, with Model B as the default first target.
+- close R5 conservatively, with Model B as the default first target.
 
 Entry condition:
-- P1 passes and P2 provides target metadata.
+- P1 passes, P2 identifies a stable target box, and P3 provides target
+  metadata.
 
 Required actions:
 - create a target-specific HMC readiness subplan;
@@ -464,13 +531,14 @@ Artifacts:
 - HMC readiness plan, audit, and result files;
 - opt-in test marker or environment gate if code/tests are added.
 
-### Phase P4: Nonlinear Hessian Need Assessment
+### Phase P5: Nonlinear Hessian Consumer Assessment
 
 Purpose:
-- decide whether nonlinear Hessians are needed in V1.
+- close R6 by deciding whether nonlinear Hessians are needed in V1 production,
+  after the derivative-validation matrix has recorded Hessian status.
 
 Entry condition:
-- a concrete consumer is named, or P3 shows score-only workflows are
+- a concrete consumer is named, or P4 shows score-only workflows are
   insufficient.
 
 Required actions:
@@ -492,13 +560,13 @@ Veto diagnostics:
 Artifacts:
 - Hessian assessment plan/result, and implementation subplan only if needed.
 
-### Phase P5: Optional GPU/XLA Scaling Diagnostics
+### Phase P6: Optional GPU/XLA Scaling Diagnostics
 
 Purpose:
 - test whether point-axis vectorization improves CUT4 cost on real GPU/XLA.
 
 Entry condition:
-- P1 identifies stable nonlinear boxes and P2 gives benchmark commands.
+- P2 identifies stable nonlinear boxes and P3 gives benchmark commands.
 
 Required actions:
 - run GPU/CUDA probes and GPU/XLA benchmarks only with escalated sandbox
@@ -518,13 +586,13 @@ Veto diagnostics:
 Artifacts:
 - GPU/XLA diagnostic result under `docs/benchmarks` or `docs/plans`.
 
-### Phase P6: Optional Exact Nonlinear Reference Strengthening
+### Phase P7: Optional Exact Nonlinear Reference Strengthening
 
 Purpose:
-- close R7 by adding stronger references for short nonlinear benchmarks.
+- close R8 by adding stronger references for short nonlinear benchmarks.
 
 Entry condition:
-- P2 identifies where current references are too weak for the claim being
+- P3 identifies where current references are too weak for the claim being
   made.
 
 Required actions:
@@ -545,13 +613,13 @@ Veto diagnostics:
 Artifacts:
 - optional reference tests/results and Chapter 28 claim update if warranted.
 
-### Phase P7: External Client Integration Plan
+### Phase P8: External Client Integration Plan
 
 Purpose:
 - prepare, but not execute, future MacroFinance/DSGE switch-over.
 
 Entry condition:
-- focused/full CPU tests pass, P1/P2 nonlinear claims are current, and any
+- focused/full CPU tests pass, P1/P2/P3 nonlinear claims are current, and any
   desired optional GPU/HMC evidence is labeled at its true scope.
 
 Required actions:
@@ -578,13 +646,14 @@ Artifacts:
 | Phase | Gap | Status | Current subplan |
 | --- | --- | --- | --- |
 | P0 | Master reconciliation | active governance | this master |
-| P1 | R2 branch diagnostics | next | create fresh R2 subplan before execution |
-| P2 | R3 benchmark refresh | pending | create after P1 gate |
-| P3 | R4 nonlinear HMC | blocked until P1/P2 | create target-specific plan after P1/P2 |
-| P4 | R5 Hessian assessment | deferred | create only if a consumer is named |
-| P5 | R6 GPU/XLA scaling | deferred | create after P1 stable boxes |
-| P6 | R7 exact references | optional/deferred | create after P2 identifies reference gaps |
-| P7 | R8 external integration | deferred | create after local V1 gates stabilize |
+| P1 | R2 derivative-validation matrix | next | `docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md` |
+| P2 | R3 branch diagnostics | pending after P1 | `docs/plans/bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md` |
+| P3 | R4 benchmark refresh | pending after P1/P2 | `docs/plans/bayesfilter-v1-p3-benchmark-refresh-plan-2026-05-14.md` |
+| P4 | R5 nonlinear HMC | blocked until P1/P2/P3 | `docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-plan-2026-05-14.md` |
+| P5 | R6 Hessian consumer assessment | deferred | `docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-plan-2026-05-14.md` |
+| P6 | R7 GPU/XLA scaling | deferred | `docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-plan-2026-05-14.md` |
+| P7 | R8 exact references | optional/deferred | `docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md` |
+| P8 | R9 external integration | deferred | `docs/plans/bayesfilter-v1-p8-external-integration-plan-2026-05-14.md` |
 
 ## Anti-drift Rules
 

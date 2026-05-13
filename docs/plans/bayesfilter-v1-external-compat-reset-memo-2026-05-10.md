@@ -3204,3 +3204,57 @@ Completion interpretation:
   lane;
 - the next justified phase remains wider nonlinear branch-grid diagnostics for
   Model B and default Model C before nonlinear HMC, GPU/XLA, or Hessian work.
+  This next-phase statement was superseded by the 2026-05-14 master
+  reconciliation below, which inserts P1 derivative-validation matrix before
+  branch-grid diagnostics.
+
+## 2026-05-14 V1 master derivative-validation reconciliation
+
+User request:
+- rewrite the master program and affected subplans after identifying that the
+  master did not explicitly include a derivative-validation matrix for the
+  nonlinear model suite.
+
+Files updated:
+
+```text
+docs/plans/bayesfilter-v1-master-program-2026-05-13.md
+docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p3-benchmark-refresh-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p8-external-integration-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-master-and-subplans-audit-2026-05-14.md
+docs/source_map.yml
+```
+
+Result:
+- the master now makes P1 a nonlinear derivative-validation matrix over
+  Models A-C and SVD cubature, SVD-UKF, and SVD-CUT4;
+- the matrix must record value status, score status, branch label, derivative
+  provider, reference target, compiled/eager parity where available, and
+  Hessian status for every model/backend cell;
+- wider branch diagnostics moved to P2;
+- benchmark refresh moved to P3;
+- nonlinear HMC, Hessian consumer assessment, GPU/XLA, exact references, and
+  external integration shifted to P4-P8 with explicit gates;
+- fresh master-aligned subplans now exist for all remaining phases.
+- post-audit tightening updated the master phase table and P1/P2 action text
+  so the master points to the existing subplans instead of implying they still
+  need to be created.
+
+Audit:
+- `docs/plans/bayesfilter-v1-master-and-subplans-audit-2026-05-14.md`
+  confirms that the rewrite fixes the derivative-validation planning gap,
+  preserves Hessian deferral unless a consumer is named, keeps default Model C
+  tied to the structural fixed-support branch, and stays inside the V1 lane.
+
+Interpretation:
+- P1, not branch-grid diagnostics, is now the next safe execution phase;
+- P1 is documentation/test-evidence consolidation first and should implement
+  new tests only for explicit missing matrix cells;
+- nonlinear Hessians remain status-recorded but not implemented unless P5 names
+  a concrete consumer.
