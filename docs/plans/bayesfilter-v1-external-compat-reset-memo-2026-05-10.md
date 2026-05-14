@@ -3753,3 +3753,39 @@ Interpretation:
 - remaining work should proceed through opt-in MacroFinance compatibility,
   longer nonlinear HMC diagnostics, larger/batched GPU ladders, and
   consumer-gated Hessian/reference phases.
+
+## 2026-05-15 V1 Model B/C BC0 baseline reconciliation
+
+Phase:
+- BC0 / baseline reconciliation for the Model B/C thorough testing master
+  program.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc0-baseline-reconciliation-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc0-baseline-matrix-result-2026-05-15.md
+```
+
+Execution:
+- read the current nonlinear benchmark, HMC smoke, GPU/XLA diagnostic, and
+  P1-P7 result artifacts;
+- populated the six Model B/C x SVD-filter baseline rows;
+- did not run new numerical experiments.
+
+Gate result:
+- BC0 passed;
+- no Model B/C/filter cell has unknown status;
+- default Model C rows explicitly use the structural fixed-support branch with
+  `allow_fixed_null_support=True`;
+- dense one-step projection remains diagnostic only;
+- tiny HMC smoke and one-shape GPU/XLA rows remain diagnostic only;
+- nonlinear Hessians remain deferred because no consumer is named.
+
+Continuation:
+- BC1 is justified for wider branch-box testing.
