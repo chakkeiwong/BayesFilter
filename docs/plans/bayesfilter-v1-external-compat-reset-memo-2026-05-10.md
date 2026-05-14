@@ -4047,3 +4047,37 @@ Gate result:
 Continuation:
 - BC7 is justified;
 - BC6 did not name a nonlinear Hessian consumer.
+
+## 2026-05-15 V1 Model B/C BC7 Hessian consumer decision
+
+Phase:
+- BC7 / Hessian consumer decision.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc7-hessian-consumer-decision-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc7-hessian-consumer-result-2026-05-15.md
+```
+
+Execution:
+- reviewed BC1-BC6 for named nonlinear Hessian consumers;
+- checked candidate consumers: Newton/trust-region optimization, Laplace
+  approximation, observed information, Riemannian or curvature-aware HMC, and
+  curvature diagnostics;
+- made no production Hessian edits.
+
+Gate result:
+- BC7 passed;
+- no BC phase named a concrete nonlinear Hessian consumer;
+- all Model B/C x filter Hessian statuses are `deferred_no_consumer`;
+- testing-only or linear QR Hessian evidence was not promoted to nonlinear
+  production readiness.
+
+Continuation:
+- BC8 consolidation is justified.
