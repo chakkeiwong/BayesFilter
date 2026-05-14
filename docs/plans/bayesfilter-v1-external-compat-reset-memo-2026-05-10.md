@@ -3789,3 +3789,47 @@ Gate result:
 
 Continuation:
 - BC1 is justified for wider branch-box testing.
+
+## 2026-05-15 V1 Model B/C BC1 branch boxes
+
+Phase:
+- BC1 / wider value-score branch boxes.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc1-wider-branch-boxes-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc1-branch-boxes-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-model-bc-branch-boxes-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-branch-boxes-2026-05-15.md
+docs/benchmarks/benchmark_bayesfilter_v1_model_bc_testing.py
+```
+
+Execution:
+- added a BayesFilter-local Model B/C testing harness for row-level BC1-BC3
+  artifacts;
+- ran the predeclared deterministic and seeded BC1 branch boxes on CPU with
+  `CUDA_VISIBLE_DEVICES=-1`;
+- used seed `20260515` for seeded random rows.
+
+Gate result:
+- BC1 passed;
+- all 60 predeclared rows were stable;
+- Model B stayed on the smooth simple-spectrum score branch;
+- Model C score rows used structural fixed support with
+  `allow_fixed_null_support=True`;
+- no row reported active score floors, weak gaps, nonfinite values/scores, or
+  unlabeled failures.
+
+Continuation:
+- BC2 is justified for all six Model B/C x filter cells.
