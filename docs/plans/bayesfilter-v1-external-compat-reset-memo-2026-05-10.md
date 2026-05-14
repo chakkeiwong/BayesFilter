@@ -3833,3 +3833,45 @@ Gate result:
 
 Continuation:
 - BC2 is justified for all six Model B/C x filter cells.
+
+## 2026-05-15 V1 Model B/C BC2 score stress
+
+Phase:
+- BC2 / score accuracy stress tests.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc2-score-accuracy-stress-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc2-score-stress-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-model-bc-score-stress-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-score-stress-2026-05-15.md
+```
+
+Execution:
+- ran centered finite-difference score checks over the BC1 deterministic and
+  seeded rows;
+- used predeclared tolerance and step ladders from the harness;
+- checked compiled/eager parity for every row.
+
+Gate result:
+- BC2 passed;
+- all 60 rows passed;
+- no finite-difference row crossed a branch change;
+- maximum Model B absolute residual was `1.4409583748431487e-08`;
+- maximum Model C absolute residual was `3.328899023102849e-08`;
+- compiled/eager residuals were at numerical noise scale;
+- Model C used structural fixed support with `allow_fixed_null_support=True`.
+
+Continuation:
+- BC3 is justified for horizon/noise robustness testing.
