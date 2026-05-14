@@ -4081,3 +4081,43 @@ Gate result:
 
 Continuation:
 - BC8 consolidation is justified.
+
+## 2026-05-15 V1 Model B/C BC8 consolidation and release gate
+
+Phase:
+- BC8 / consolidation and release-candidate gate.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc8-consolidation-release-gate-plan-2026-05-14.md
+```
+
+Final summary:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-final-testing-summary-2026-05-15.md
+```
+
+Validation:
+- fast public API: `2 passed, 2 warnings`;
+- focused nonlinear B/C: `51 passed, 2 warnings`;
+- full default CPU: `204 passed, 8 skipped, 2 warnings`.
+
+Gate result:
+- BC8 passed;
+- final matrix records value, score, reference, HMC, GPU/XLA, and Hessian
+  status for every Model B/C x filter cell;
+- Model B/C value and analytic-score readiness are supported at the tested
+  boxes and documented robustness envelopes;
+- Model C SVD-UKF has an explicit selected `T=32`
+  `blocked_moving_structural_null` boundary;
+- HMC remains readiness-candidate only, not convergence;
+- GPU/XLA remains shape-specific diagnostic evidence, not broad speedup;
+- nonlinear Hessians remain `deferred_no_consumer`.
+
+Continuation:
+- stop automatic execution under this Model B/C master program;
+- recommended next phases are a predeclared HMC convergence ladder, batched
+  GPU/XLA scaling, optional exact-reference work if a future claim needs it,
+  and a Model C long-horizon structural-support decision.
