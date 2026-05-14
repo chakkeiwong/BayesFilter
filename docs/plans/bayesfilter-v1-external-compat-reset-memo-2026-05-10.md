@@ -3875,3 +3875,50 @@ Gate result:
 
 Continuation:
 - BC3 is justified for horizon/noise robustness testing.
+
+## 2026-05-15 V1 Model B/C BC3 horizon/noise robustness
+
+Phase:
+- BC3 / horizon and observation-noise robustness.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc3-horizon-noise-robustness-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc3-horizon-noise-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-model-bc-horizon-noise-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-horizon-noise-2026-05-15.md
+```
+
+Execution:
+- ran horizons `T in {3, 8, 16, 32}`;
+- ran observation-noise scales `{1.0, 0.5, 0.25}`;
+- separated deterministic tiled panels from seeded stochastic panels with seed
+  `20260515`;
+- preserved the exact `blocked_moving_structural_null` label for structural
+  support failures.
+
+Gate result:
+- BC3 passed with an explicit envelope boundary;
+- 141 of 144 rows were stable;
+- five of six model/filter cells passed the full ladder;
+- Model C + SVD-UKF had three score blockers at selected `T=32` rows, all
+  labeled `blocked_moving_structural_null`;
+- Model C rows used structural fixed support with
+  `allow_fixed_null_support=True`.
+
+Continuation:
+- BC4 is justified;
+- BC5 must treat Model C + SVD-UKF at the blocked `T=32` rows as unavailable
+  for HMC target promotion unless a later structural-support decision changes
+  the contract.

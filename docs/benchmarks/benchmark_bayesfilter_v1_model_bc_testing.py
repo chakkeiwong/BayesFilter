@@ -405,6 +405,7 @@ def _blocked_snapshot(exc: Exception) -> EvaluationSnapshot:
 
 def _failure_label(message: str) -> str:
     for marker in (
+        "blocked_moving_structural_null",
         "blocked_structural_null_covariance",
         "blocked_fixed_null_derivative",
         "blocked_active_floor",
