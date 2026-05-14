@@ -3696,3 +3696,60 @@ Interpretation:
 - P8 passes as a reviewable integration plan;
 - final validation should now run the master-program focused/default gates
   before final summary and push.
+
+## 2026-05-14 V1 master execution closeout
+
+Final summary artifact:
+
+```text
+docs/plans/bayesfilter-v1-master-program-execution-summary-2026-05-14.md
+```
+
+Final validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `2 passed, 2 warnings`.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `73 passed, 2 skipped, 2 warnings`.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+```
+
+Result:
+- `204 passed, 8 skipped, 2 warnings`.
+
+Interpretation:
+- the BayesFilter V1 master program P1-P8 execution is complete at the scoped
+  evidence level;
+- nonlinear value/score evidence is current;
+- tiny nonlinear HMC, GPU/XLA, Hessian, exact-reference, and external-client
+  claims are all labeled at their true scope;
+- remaining work should proceed through opt-in MacroFinance compatibility,
+  longer nonlinear HMC diagnostics, larger/batched GPU ladders, and
+  consumer-gated Hessian/reference phases.
