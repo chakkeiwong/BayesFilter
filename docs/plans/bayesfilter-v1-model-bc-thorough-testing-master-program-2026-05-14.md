@@ -22,6 +22,11 @@ docs/plans/bayesfilter-v1-master-program-execution-summary-2026-05-14.md
 This is a control document for future execution.  It does not execute tests by
 itself.
 
+Plan-review artifacts are allowed to update this master program, add BC0-BC8
+subplans, register source-map provenance, and record supervisor audits.  They
+must not update the V1 reset memo or claim new numerical evidence.  Reset-memo
+updates occur during phase execution only.
+
 ## Lane Boundaries
 
 Stay inside the BayesFilter V1 lane:
@@ -108,10 +113,33 @@ Never promote:
 | BC2 | Score accuracy stress tests | finite-difference score residual tables |
 | BC3 | Horizon/noise robustness | value/score stability over horizon/noise ladders |
 | BC4 | Approximation-quality references | stronger reference decision/artifact |
-| BC5 | HMC readiness and convergence ladder | opt-in HMC diagnostics by target |
+| BC5 | HMC readiness ladder | opt-in HMC diagnostics by target |
 | BC6 | GPU/XLA scaling ladder | escalated shape/batch timing diagnostics |
 | BC7 | Hessian consumer decision | consumer-gated Hessian decision |
 | BC8 | Consolidation and release-candidate gate | final matrix, docs, reset memo, commit |
+
+Phase dependency note:
+- BC0-BC4 are sequential.
+- BC5 and BC6 are independent downstream diagnostics once their own entry
+  gates pass.  BC6 does not depend on HMC classification from BC5; it depends
+  on stable BC1/BC3 shapes and escalated GPU permissions.
+- BC7 and BC8 run after BC5/BC6 are completed, blocked, or explicitly
+  deferred.
+
+Subplans:
+- BC0: `docs/plans/bayesfilter-v1-model-bc-bc0-baseline-reconciliation-plan-2026-05-14.md`
+- BC1: `docs/plans/bayesfilter-v1-model-bc-bc1-wider-branch-boxes-plan-2026-05-14.md`
+- BC2: `docs/plans/bayesfilter-v1-model-bc-bc2-score-accuracy-stress-plan-2026-05-14.md`
+- BC3: `docs/plans/bayesfilter-v1-model-bc-bc3-horizon-noise-robustness-plan-2026-05-14.md`
+- BC4: `docs/plans/bayesfilter-v1-model-bc-bc4-reference-decision-plan-2026-05-14.md`
+- BC5: `docs/plans/bayesfilter-v1-model-bc-bc5-hmc-ladder-plan-2026-05-14.md`
+- BC6: `docs/plans/bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-plan-2026-05-14.md`
+- BC7: `docs/plans/bayesfilter-v1-model-bc-bc7-hessian-consumer-decision-plan-2026-05-14.md`
+- BC8: `docs/plans/bayesfilter-v1-model-bc-bc8-consolidation-release-gate-plan-2026-05-14.md`
+
+Supervisor review:
+- `docs/plans/bayesfilter-v1-model-bc-subplans-supervisor-audit-2026-05-14.md`
+- `docs/plans/bayesfilter-v1-model-bc-supervisor-audit-evaluation-2026-05-15.md`
 
 ## Phase BC0: Baseline Reconciliation
 
@@ -163,6 +191,15 @@ Primary gate:
 - each model/filter has either a stable box with passing diagnostics or a
   narrowed box with explicit blocked labels.
 
+Stop and narrowing rules:
+- predeclare deterministic grid rows and seeded random rows before execution;
+- allow at most one planned narrowed-box proposal per model/filter after the
+  full box is evaluated;
+- the narrowed box must retain a named scientific/use-case rationale and must
+  not be selected solely to remove failing rows;
+- if the narrowed box still fails a veto diagnostic, classify the cell as
+  `blocked` and stop rather than narrowing again.
+
 Veto diagnostics:
 - active floors are hidden by regularization;
 - default Model C is evaluated without `allow_fixed_null_support=True`;
@@ -189,6 +226,15 @@ Primary gate:
 - analytic score residuals are below model/filter-specific tolerances on the
   declared stable boxes, or rows are blocked with exact failure labels.
 
+Tolerance rule:
+- set absolute and relative tolerances before execution from the P1/P2
+  finite-difference baseline, machine precision, parameter scale, and finite
+  difference step ladder;
+- record the tolerance table in the BC2 result before interpreting pass/fail;
+- maximum absolute residual and maximum relative residual are pass/fail
+  metrics; step-sensitivity plots and per-parameter residual distributions are
+  explanatory unless predeclared as veto diagnostics.
+
 Veto diagnostics:
 - finite-difference residuals are computed across active branch changes;
 - compiled/eager mismatch is ignored;
@@ -214,6 +260,14 @@ Actions:
 
 Primary gate:
 - each model/filter has a documented robustness envelope or a declared blocker.
+
+Stop rules:
+- run the planned horizon ladder \(T\in\{3,8,16,32\}\) and predeclared noise
+  scales once per deterministic/seeded panel family;
+- if low-noise rows fail, report the largest passing envelope and exact
+  blocker labels instead of repeatedly changing the ladder;
+- do not add new stochastic seeds after seeing failures unless the result is
+  explicitly labeled exploratory and not used for promotion.
 
 Veto diagnostics:
 - stochastic panels omit seeds;
@@ -245,6 +299,14 @@ Primary gate:
   nonlinear references remain explicitly deferred because no current claim
   needs them.
 
+Required decision table:
+- claim;
+- current comparator/reference basis;
+- comparator type: exact, deterministic approximation, Monte Carlo, or
+  diagnostic-only;
+- why the comparator is sufficient for that claim;
+- what remains out of scope.
+
 Veto diagnostics:
 - Monte Carlo reference has no seed/particle metadata;
 - dense projection is called exact full likelihood;
@@ -254,7 +316,7 @@ Artifacts:
 - BC4 decision/result file;
 - optional reference artifact/test only if justified.
 
-## Phase BC5: HMC Readiness And Convergence Ladder
+## Phase BC5: HMC Readiness Ladder
 
 Purpose:
 - move beyond tiny smoke only where target gates pass.
@@ -279,7 +341,8 @@ Actions:
 
 Primary gate:
 - HMC target can be classified as `diagnostic`, `blocked`, or `candidate`
-  without claiming convergence unless convergence diagnostics pass.
+  without claiming convergence unless convergence diagnostics, posterior
+  recovery, and the predeclared target-specific acceptance criteria pass.
 
 Veto diagnostics:
 - HMC starts before score/branch gates pass;
@@ -298,7 +361,8 @@ Purpose:
 - test whether point-axis, horizon, or batch scaling makes GPU/XLA useful.
 
 Entry gate:
-- BC1 stable boxes exist for the shapes tested.
+- BC1 stable boxes and BC3 horizon/noise envelopes exist for the shapes tested.
+- BC6 does not require BC5 HMC classification.
 
 Actions:
 - run only with escalated GPU permissions;
@@ -431,10 +495,16 @@ Use this prompt when ready to execute:
 ```text
 Execute the BayesFilter V1 Model B/C thorough testing master program from
 docs/plans/bayesfilter-v1-model-bc-thorough-testing-master-program-2026-05-14.md.
-Treat it as the controlling roadmap for this phase.  Execute BC0-BC8 in order,
-using plan, audit, execute, test, audit result, tidy, reset-memo update, result
+Treat it as the controlling roadmap for this phase.  Execute BC0-BC4 in order;
+execute BC5 and BC6 only when their independent entry gates pass; then execute
+BC7 and BC8 after BC5/BC6 are completed, blocked, or explicitly deferred.  Use
+plan, audit, execute, test, audit result, tidy, reset-memo update, result
 artifact, commit, and continuation decision for each phase.  Continue
 automatically only when the primary gate passes and no veto diagnostic fires.
 Stay inside the BayesFilter V1 lane and update only
 docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md.
 ```
+
+If the execution starts from the planning-review commit, first verify that the
+working tree is clean and that the reset memo has not already been edited by
+another lane.
