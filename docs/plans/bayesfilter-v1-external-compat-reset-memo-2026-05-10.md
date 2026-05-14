@@ -3654,3 +3654,45 @@ Interpretation:
 - P7 passes by explicit deferral;
 - P8 is justified as planning-only external integration because local V1
   evidence is current and optional claims are scoped.
+
+## 2026-05-14 V1 P8 external integration planning
+
+Phase:
+- P8 / R9 external client integration plan.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p8-external-integration-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p8-external-integration-result-2026-05-14.md
+```
+
+Decision:
+- MacroFinance linear QR compatibility remains the first external client
+  target;
+- the first bridge should be test-only or optional-live, not a production
+  switch-over;
+- DSGE remains future/test-only, with Rotemberg preferred over SGU if the DSGE
+  lane supplies a causal local filtering law and residual contract;
+- SGU remains blocked as a V1 production filtering target;
+- no MacroFinance, DSGE, shared monograph, structural-lane, or Chapter 18b file
+  was edited.
+
+Integration gates:
+- BayesFilter default CPU and focused V1 suites must pass on a release
+  candidate;
+- optional live MacroFinance compatibility should run on a clean recorded
+  external checkout before any client switch-over branch;
+- client adapters must pin parameter order, dtype, Hessian sign convention,
+  deterministic-completion diagnostics, and regularization metadata;
+- optional external checks remain outside default CI.
+
+Interpretation:
+- P8 passes as a reviewable integration plan;
+- final validation should now run the master-program focused/default gates
+  before final summary and push.
