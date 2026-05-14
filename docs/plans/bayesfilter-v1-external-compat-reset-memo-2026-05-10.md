@@ -3922,3 +3922,34 @@ Continuation:
 - BC5 must treat Model C + SVD-UKF at the blocked `T=32` rows as unavailable
   for HMC target promotion unless a later structural-support decision changes
   the contract.
+
+## 2026-05-15 V1 Model B/C BC4 reference decision
+
+Phase:
+- BC4 / approximation-quality reference decision.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc4-reference-decision-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc4-reference-decision-result-2026-05-15.md
+```
+
+Decision:
+- no stronger reference artifact is required for current BC1-BC3 claims;
+- dense one-step projection remains diagnostic only;
+- finite differences remain deterministic score diagnostics only;
+- exact full nonlinear likelihood for Models B-C remains deferred;
+- no reference dependency entered production imports.
+
+Gate result:
+- BC4 passed with explicit non-promotional reference status.
+
+Continuation:
+- BC5 is justified for HMC readiness classification on targets whose BC1-BC3
+  gates passed.
