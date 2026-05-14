@@ -3608,3 +3608,49 @@ Interpretation:
 - future GPU work should test larger horizons, larger dimensions, batched
   parameter points, or batched independent filters before making performance
   claims.
+
+## 2026-05-14 V1 P7 exact-reference strengthening assessment
+
+Phase:
+- P7 / R8 optional exact nonlinear reference strengthening.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-result-2026-05-14.md
+```
+
+Plan tightening:
+- P7 now explicitly allows a deferral branch when no current V1 claim requires
+  a stronger nonlinear reference than exact Model A and dense one-step
+  projection diagnostics for Models B-C.
+
+Decision:
+- no dense multi-step quadrature, high-particle SMC, or production reference
+  dependency was added;
+- Model A keeps exact Kalman reference status;
+- Models B-C remain dense one-step Gaussian projection diagnostics only;
+- exact full nonlinear likelihood for Models B-C remains blocked/deferred.
+
+Validation:
+
+```bash
+git diff --check
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map ok')"
+```
+
+Result:
+- whitespace check passed;
+- source-map YAML parsed successfully after replacing a colon-bearing
+  provenance sentence with YAML-safe wording.
+
+Interpretation:
+- P7 passes by explicit deferral;
+- P8 is justified as planning-only external integration because local V1
+  evidence is current and optional claims are scoped.

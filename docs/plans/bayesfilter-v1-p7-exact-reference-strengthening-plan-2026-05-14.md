@@ -18,6 +18,10 @@ P7 starts only if P3 identifies a claim that needs stronger nonlinear
 reference evidence than the current exact affine and dense one-step projection
 oracles.
 
+If P3 identifies only a blocked future claim, and no current V1 claim depends
+on exact full nonlinear likelihood evidence, P7 should close by explicit
+deferral rather than adding reference code.
+
 ## Motivation
 
 Models B-C are nonlinear, so dense one-step Gaussian projection diagnostics do
@@ -41,7 +45,8 @@ Not allowed without a separate plan:
 
 P7 passes if the new reference artifact improves claim clarity for Models B-C
 and labels exact, deterministic approximation, and Monte Carlo evidence
-correctly.
+correctly, or if the phase result explicitly records that no current claim
+requires a stronger reference and keeps exact nonlinear references deferred.
 
 ## Veto Diagnostics
 
