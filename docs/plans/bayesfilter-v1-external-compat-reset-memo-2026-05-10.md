@@ -3543,3 +3543,68 @@ Interpretation:
 - P6 remains optional and diagnostic only;
 - any P6 GPU/CUDA/XLA command must use escalated sandbox permissions and any
   speedup claim must be limited to the tested shapes.
+
+## 2026-05-14 V1 P6 GPU/XLA scaling diagnostic
+
+Phase:
+- P6 / R7 optional GPU/XLA scaling diagnostics.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-result-2026-05-14.md
+```
+
+Implementation:
+- added benchmark-only diagnostic harness
+  `docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py`;
+- generated CPU-hidden control artifacts:
+  `docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.json`
+  and `.md`;
+- generated GPU-visible diagnostic artifacts:
+  `docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.json`
+  and `.md`;
+- no production filter behavior or public API was changed.
+
+Validation:
+
+```bash
+python -m py_compile docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py
+nvidia-smi  # escalated
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+python docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py \
+  --device-scope cpu --repeats 2 --warmup-calls 1 --timesteps 24 \
+  --backends tf_svd_cut4 --modes eager,graph,xla --devices cpu \
+  --output docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.md
+python docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py \
+  --device-scope visible --repeats 2 --warmup-calls 1 --timesteps 24 \
+  --backends tf_svd_cut4 --modes eager,graph,xla --devices cpu,gpu \
+  --output docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.md
+```
+
+Result:
+- escalated `nvidia-smi` saw the NVIDIA GPU;
+- GPU-visible TensorFlow saw `/device:GPU:0`;
+- all Model B SVD-CUT4 rows had branch `3/3` with no active floors, weak
+  spectral gaps, or nonfinite rows;
+- CPU-hidden control steady seconds: eager `0.088768`, graph `0.004820`,
+  XLA `0.000391`;
+- GPU-visible steady seconds: CPU eager `0.086636`, CPU graph `0.005458`,
+  CPU XLA `0.022035`, GPU eager `0.305209`, GPU graph `0.061104`, GPU XLA
+  `0.022038`.
+
+Interpretation:
+- P6 passes as a diagnostic artifact;
+- GPU/XLA is operational for this tested Model B SVD-CUT4 shape;
+- this tiny shape does not support a broad GPU speedup claim;
+- future GPU work should test larger horizons, larger dimensions, batched
+  parameter points, or batched independent filters before making performance
+  claims.
