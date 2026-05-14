@@ -3953,3 +3953,50 @@ Gate result:
 Continuation:
 - BC5 is justified for HMC readiness classification on targets whose BC1-BC3
   gates passed.
+
+## 2026-05-15 V1 Model B/C BC5 HMC readiness ladder
+
+Phase:
+- BC5 / HMC readiness ladder.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc5-hmc-ladder-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc5-hmc-ladder-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_model_bc_hmc_ladder.py
+docs/benchmarks/bayesfilter-v1-model-bc-hmc-ladder-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-hmc-ladder-2026-05-15.md
+```
+
+Execution:
+- tightened the benchmark harness to record compiled/eager value and gradient
+  parity before sampling;
+- ran CPU-only HMC readiness diagnostics with
+  `CUDA_VISIBLE_DEVICES=-1`;
+- ran the existing opt-in Model B HMC readiness smoke.
+
+Gate result:
+- BC5 passed;
+- all six default short Model B/C x filter targets were classified
+  `candidate`;
+- every row had finite samples, finite initial analytic score, and
+  compiled/eager parity;
+- Model C rows used structural fixed support with
+  `allow_fixed_null_support=True`;
+- R-hat values were about 2.0 on tiny draws, so this remains readiness
+  classification only and not convergence.
+
+Continuation:
+- BC6 remains justified as an independent GPU/XLA scaling diagnostic, subject
+  to escalated GPU permissions.
