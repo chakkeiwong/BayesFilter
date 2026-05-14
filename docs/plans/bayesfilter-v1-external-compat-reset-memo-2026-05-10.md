@@ -4000,3 +4000,50 @@ Gate result:
 Continuation:
 - BC6 remains justified as an independent GPU/XLA scaling diagnostic, subject
   to escalated GPU permissions.
+
+## 2026-05-15 V1 Model B/C BC6 GPU/XLA scaling
+
+Phase:
+- BC6 / GPU-XLA scaling ladder.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_model_bc_gpu_xla.py
+docs/benchmarks/bayesfilter-v1-model-bc-gpu-xla-scaling-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-gpu-xla-scaling-2026-05-15.md
+```
+
+Execution:
+- added a benchmark-only Model B/C GPU-XLA harness that records value and score
+  branch metadata before timing rows;
+- ran escalated `nvidia-smi`;
+- ran an escalated TensorFlow GPU probe;
+- ran the escalated visible-device ladder over both models, all three filters,
+  `T in {8, 16}`, CPU/GPU, and graph/XLA modes.
+
+Gate result:
+- BC6 passed;
+- TensorFlow saw CPU and GPU devices under escalation;
+- all 48 timing rows had `status = ok`;
+- all rows had score branch metadata `3/3`;
+- Model C rows used structural fixed support;
+- GPU graph was slower than CPU graph on these small scalar shapes;
+- GPU XLA reduced GPU overhead and was competitive with CPU XLA on selected
+  Model C rows, but no broad speedup claim is made.
+
+Continuation:
+- BC7 is justified;
+- BC6 did not name a nonlinear Hessian consumer.
