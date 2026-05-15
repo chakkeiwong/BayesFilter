@@ -17,6 +17,176 @@ random measure.  This makes it the natural baseline for any later attempt to
 construct particle-flow, resampling-relaxed, or differentiable particle
 methods.
 
+\section{Objects, assumptions, and claim-status vocabulary}
+\label{sec:bf-pf-objects}
+
+The later DPF chapters rely on this chapter as the reference object.  The
+following notation is therefore fixed before introducing any differentiable
+relaxation.
+
+\begin{center}
+\small
+\begin{tabular}{p{0.25\textwidth} p{0.65\textwidth}}
+\toprule
+Object & Meaning in this chapter \\
+\midrule
+$x_t\in\mathbb{R}^{n_x}$ & latent state at time $t$ \\
+$y_t\in\mathbb{R}^{n_y}$ & observation at time $t$ \\
+$\theta\in\Theta$ & fixed model parameter while the filtering recursion is
+defined \\
+$p_\theta(x_t\mid x_{t-1})$ & transition density or Markov kernel density \\
+$p_\theta(y_t\mid x_t)$ & observation density, evaluated at the realized
+observation $y_t$ \\
+$p_\theta(x_t\mid y_{1:t-1})$ & predictive law before assimilating $y_t$ \\
+$p_\theta(x_t\mid y_{1:t})$ & filtering law after assimilating $y_t$ \\
+$p_\theta(y_t\mid y_{1:t-1})$ & one-step likelihood factor \\
+$q_\theta(x_t\mid x_{0:t-1},y_{1:t})$ & sequential proposal density \\
+$\tilde w_t^{(i)},w_t^{(i)}$ & unnormalized and normalized particle weights \\
+$a_{t-1}^{(i)}$ & ancestor index selected during resampling \\
+$\hat\pi_t^N$ & weighted empirical approximation to the filtering law \\
+$Z_t^N$ & average incremental bootstrap weight at time $t$ \\
+$\hat p_\theta^N(y_{1:T})$ & bootstrap particle-filter estimator of the
+marginal likelihood \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The standing assumptions for the formulas below are the standard ones needed
+to make the displayed densities and expectations well defined: the transition
+and observation kernels are dominated by reference measures; the proposal has
+support wherever the trajectory target has support; the relevant integrals are
+finite; and resampling schemes are conditionally unbiased in the sense that the
+expected empirical measure after resampling equals the normalized empirical
+measure before resampling.  These assumptions are not cosmetic.  They mark the
+difference between an exact model identity, a finite-particle Monte Carlo
+estimator statement, and an implementation diagnostic.
+
+The chapter uses the following claim-status vocabulary.  The filtering
+recursion and likelihood factorization are exact model identities.  Weighted
+particles are finite-$N$ Monte Carlo approximations.  The bootstrap likelihood
+estimator is an unbiased estimator of the likelihood, not of the log likelihood
+and not of the score.  ESS and ancestor-count summaries are diagnostics, not
+proofs of posterior correctness or failure.
+
+\section{DPF-block notation and claim-status index}
+\label{sec:bf-dpf-block-notation-index}
+
+This chapter begins the DPF block, so the following index fixes the notation
+used across the later particle-flow, PF-PF, resampling/OT, learned-OT, HMC, and
+debugging chapters.  A symbol may acquire a method-specific subscript in a
+later chapter, but its mathematical role should not change silently.
+
+\begin{center}
+\scriptsize
+\begin{longtable}{@{}p{0.20\textwidth} p{0.24\textwidth} p{0.38\textwidth}@{}}
+\caption{DPF-block notation index.}
+\label{tab:bf-dpf-notation-index}\\
+\toprule
+Category & Symbols & Fixed role across the DPF block \\
+\midrule
+\endfirsthead
+\toprule
+Category & Symbols & Fixed role across the DPF block \\
+\midrule
+\endhead
+State and observations &
+$x_t$, $x_{0:t}$, $y_t$, $y_{1:t}$ &
+Latent state, latent trajectory, current observation, and observation history
+for the state-space model. \\
+Parameters &
+$\theta$, $u$ &
+Structural/model parameter and, in HMC chapters, unconstrained sampler
+coordinate after any parameter transform. \\
+Filtering laws &
+$p_\theta(x_t\mid y_{1:t-1})$, $p_\theta(x_t\mid y_{1:t})$ &
+Predictive and filtering laws; these are the reference statistical objects. \\
+Particles and ancestors &
+$x_t^{(i)}$, $\tilde x_t^{(j)}$, $a_{t-1}^{(i)}$, $a_j$ &
+Pre- or post-update particles, equal-weight output particles, and discrete
+ancestor indices. \\
+Weights and empirical measures &
+$\tilde w_t^{(i)}$, $w_t^{(i)}$, $\hat\pi_t^N$, $\hat\pi_{t,\mathrm{eq}}^N$ &
+Unnormalized/normalized weights and weighted/equal-weight empirical measures. \\
+Likelihood estimates &
+$Z_t^N$, $\hat p_\theta^N(y_{1:T})$, $\widehat L(y\mid\theta,\omega)$ &
+Average incremental particle weight, bootstrap likelihood estimator, and
+generic randomized likelihood estimator used in pseudo-marginal discussion. \\
+Proposals &
+$q_\theta$, $q_{t,0}$, $q_{t,1}$, $\gamma_t$ &
+Sequential proposal, pre-flow proposal, post-flow proposal, and unnormalized
+one-step target density. \\
+Flow maps and Jacobians &
+$\pi_{t,\lambda}$, $v_{t,\lambda}$, $\Phi_t$, $J_t$, $D\Phi_t$ &
+Homotopy density, pseudo-time velocity field, flow map, and forward Jacobian of
+the flow. \\
+Transport couplings &
+$\Pi$, $\Pi_0^\star$, $\Pi_\varepsilon^\star$, $\Pi_{\varepsilon,K}$ &
+Unregularized, entropy-regularized, and finite-Sinkhorn transport couplings. \\
+Sinkhorn scalings &
+$C$, $K_\varepsilon$, $a$, $b$, $\varepsilon$, $K$ &
+Cost matrix, Gibbs kernel, row/column scalings, regularization level, and
+finite iteration count. \\
+Learned maps &
+$T_\psi$, $Y_\tau$, $R_{\psi,\tau}$, $\mathcal D$ &
+Learned student map, teacher output, student-teacher residual, and training
+distribution. \\
+HMC scalar and gradient &
+$\ell_\star(u)$, $U_\star(u)$, $g(u)$, $H_\star(u,p)$ &
+Named log target, potential, gradient used by the integrator, and Hamiltonian.
+The value and gradient must refer to the same scalar. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{center}
+\scriptsize
+\begin{longtable}{@{}p{0.20\textwidth} p{0.32\textwidth} p{0.36\textwidth}@{}}
+\caption{DPF-block claim-status vocabulary.}
+\label{tab:bf-dpf-claim-status-index}\\
+\toprule
+Status phrase & Use only when & Disallowed shortcut \\
+\midrule
+\endfirsthead
+\toprule
+Status phrase & Use only when & Disallowed shortcut \\
+\midrule
+\endhead
+Exact model identity &
+The statement follows from the specified state-space model, Bayes' rule,
+change of variables, or a named exact special case. &
+Calling a closure, relaxation, solver, or learned map exact because it is
+written in equations. \\
+Unbiased particle estimator &
+The expectation is taken over the stated particle randomness and the target
+object is the likelihood or normalizing constant. &
+Inferring unbiased log likelihood, score, pathwise gradient, or HMC validity. \\
+Consistent approximation &
+A convergence regime and target object are stated. &
+Treating increasing $N$ or decreasing tolerance as a finite-sample proof. \\
+Approximate closure &
+A Gaussian, local-linear, finite-particle, or numerical closure replaces the
+reference filtering object. &
+Delaying the approximation label until a later chapter. \\
+Relaxed target &
+A smooth resampling or transport object replaces the classical categorical
+operation and the scalar target is the relaxed object. &
+Implying the original posterior is preserved without a correction. \\
+Learned surrogate &
+A trained map approximates a named teacher under a declared training
+distribution. &
+Using runtime, smoothness, or training loss as posterior validity evidence. \\
+Engineering hypothesis &
+The claim is a bounded recommendation or diagnostic rule, with required tests
+stated. &
+Presenting implementation preference as mathematical validation. \\
+Unsupported claim &
+The statement lacks a local derivation, reviewed source support, or documented
+test evidence. &
+Leaving the statement in the main argument without weakening or removing it. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
 \section{Nonlinear state-space model and filtering recursion}
 \label{sec:bf-pf-ssm-recursion}
 
@@ -50,6 +220,38 @@ where the one-step predictive density of the observation is
   = \int p_\theta(y_t \mid x_t)
       p_\theta(x_t \mid y_{1:t-1})\,dx_t.
 \end{equation}
+
+The prediction equation is the Chapman--Kolmogorov identity applied to the
+conditional law of $x_{t-1}$ given the observations already seen.  For any
+measurable set $B$,
+\[
+  \mathbb{P}_\theta(x_t\in B\mid y_{1:t-1})
+  =
+  \int \mathbb{P}_\theta(x_t\in B\mid x_{t-1})
+       p_\theta(x_{t-1}\mid y_{1:t-1})\,dx_{t-1}.
+\]
+When the transition kernel has density $p_\theta(x_t\mid x_{t-1})$, this set
+identity gives \eqref{eq:bf-pf-predictive-law}.  The update equation is Bayes'
+rule with the predictive law as prior and the observation density as
+likelihood:
+\[
+  p_\theta(x_t\mid y_{1:t})
+  =
+  \frac{p_\theta(y_t\mid x_t,y_{1:t-1})
+        p_\theta(x_t\mid y_{1:t-1})}
+       {p_\theta(y_t\mid y_{1:t-1})}.
+\]
+The conditional-independence convention of the state-space model reduces
+$p_\theta(y_t\mid x_t,y_{1:t-1})$ to $p_\theta(y_t\mid x_t)$, giving
+\eqref{eq:bf-pf-filtering-law}.  Finally, repeated use of the chain rule gives
+the marginal likelihood factorization
+\[
+  p_\theta(y_{1:T})
+  =
+  p_\theta(y_1)\prod_{t=2}^T p_\theta(y_t\mid y_{1:t-1}),
+\]
+with the same notation covering $t=1$ by interpreting $y_{1:0}$ as the empty
+history.
 The marginal likelihood then factorizes as
 \begin{equation}
 \label{eq:bf-pf-marginal-factorization}
@@ -97,6 +299,9 @@ Instead, it propagates a random discrete approximation to the law itself.
 
 To derive the basic particle recursion, introduce a proposal density
 $q_\theta(x_t \mid x_{0:t-1}, y_{1:t})$ from which particles can be sampled.
+Assume that the proposal is positive whenever the trajectory target below is
+positive.  Without this support condition the importance ratio is not a valid
+correction; particles may miss regions that carry target probability.
 Suppose a full trajectory proposal factors as
 \begin{equation}
 \label{eq:bf-pf-trajectory-proposal}
@@ -119,6 +324,11 @@ The unnormalized importance weight is therefore
   = \frac{p_\theta(x_{0:t},y_{1:t})}
          {q_\theta(x_{0:t} \mid y_{1:t})}.
 \end{equation}
+This ratio is a trajectory-level object.  It is not yet a resampling rule and
+not yet a differentiable likelihood map.  It is the Radon--Nikodym correction
+that converts expectations under the proposal path law into expectations under
+the unnormalized trajectory target, provided the support and integrability
+conditions above hold.
 Using the factorization in
 \eqref{eq:bf-pf-trajectory-proposal}--\eqref{eq:bf-pf-trajectory-target}, one
 obtains the recursive update
@@ -171,6 +381,9 @@ Substituting \eqref{eq:bf-pf-bootstrap-proposal} into
 \end{equation}
 The bootstrap recursion at time $t$ can therefore be written as:
 \begin{enumerate}[label=\textbf{Step \arabic*:}]
+  \item \textbf{Select ancestors:}
+    if resampling is performed before propagation, draw $a_{t-1}^{(i)}$ from
+    the current normalized weights; otherwise keep $a_{t-1}^{(i)}=i$.
   \item \textbf{Propagate:}
     sample
     $x_t^{(i)} \sim p_\theta(x_t \mid x_{t-1}^{(a_{t-1}^{(i)})})$.
@@ -179,12 +392,18 @@ The bootstrap recursion at time $t$ can therefore be written as:
     $\tilde w_t^{(i)} = p_\theta(y_t \mid x_t^{(i)})$
     and normalize the weights.
   \item \textbf{Resample:}
-    draw ancestor indices using the normalized weights and reset weights to
-    $1/N$.
+    after recording the likelihood factor, either resample using the normalized
+    weights and reset weights to $1/N$, or carry the weighted cloud forward
+    until the next resampling decision.
 \end{enumerate}
 This yields the standard bootstrap/SIR particle filter of
 \citet{gordon1993novel}, elaborated in the SMC text of
-\citet{doucet2001sequential}.
+\citet{doucet2001sequential}.  The particle-MCMC literature
+\citep{andrieu2009pseudo,andrieu2010particle} later uses the likelihood
+estimator generated by this construction, but that pseudo-marginal role is a
+statement about an unbiased value-side estimator inside a Metropolis--Hastings
+construction.  It is not a statement that the realized resampling path is
+smooth in $\theta$.
 
 \section{The bootstrap particle-filter likelihood estimator}
 \label{sec:bf-pf-likelihood-estimator}
@@ -206,29 +425,125 @@ The estimator-status result BayesFilter needs at this stage is the following.
 
 \begin{proposition}[Bootstrap particle-filter likelihood-estimator status]
 \label{prop:bf-pf-bootstrap-likelihood-status}
-Under the standard bootstrap-particle-filter assumptions, the estimator
+Fix the observations $y_{1:T}$ and the parameter $\theta$.  Assume the model
+densities are dominated and integrable, the bootstrap propagation step samples
+from $p_\theta(x_t\mid x_{t-1})$, and the Feynman--Kac quantities used below
+are finite: for every bounded measurable $\varphi$ used in the induction,
+the operator $Q_t\varphi$ is well defined, the incremental weights have finite
+conditional expectation, and the displayed conditional expectations are finite.
+Assume also that every resampling step used by the algorithm is conditionally
+unbiased for the current normalized empirical measure.  Here conditional
+unbiasedness means that, for every bounded measurable test function $\psi$ in
+the same finite-expectation class, the expected post-resampling empirical
+average equals the pre-resampling weighted empirical average, conditional on
+the current weighted cloud.  Biased or deterministic approximation schemes that
+do not satisfy this identity are not covered by the proposition.  Then the
+estimator
 \eqref{eq:bf-pf-bootstrap-likelihood-estimator} is an unbiased estimator of the
 marginal likelihood:
 \[
   \mathbb{E}\bigl[\hat p_\theta^N(y_{1:T})\bigr] = p_\theta(y_{1:T}).
 \]
+This claim is about the likelihood itself.  It does not claim that
+$\log \hat p_\theta^N(y_{1:T})$ is an unbiased estimator of
+$\log p_\theta(y_{1:T})$, and it does not claim that differentiating a realized
+particle system gives an unbiased score.
 \end{proposition}
 
-\begin{proof}[Proof sketch]
-Conditional on the resampled cloud at time $t-1$, the bootstrap proposal draws
-particles from the transition prior.  Therefore
+\begin{proof}
+For compactness, define the bootstrap Feynman--Kac operator
 \[
-  \mathbb{E}\left[Z_t^N \mid x_{t-1}^{(1:N)}\right]
-  = \frac{1}{N}\sum_{i=1}^N
-    \int p_\theta(y_t \mid x_t)
-         p_\theta(x_t \mid x_{t-1}^{(i)})\,dx_t.
+  (Q_t\varphi)(x_{t-1})
+  =
+  \int \varphi(x_t)
+       p_\theta(y_t\mid x_t)
+       p_\theta(x_t\mid x_{t-1})\,dx_t
 \]
-The integral equals the one-step predictive observation density conditional on
-$x_{t-1}^{(i)}$.  Iterating this argument through the resampling step yields the
-usual telescoping expectation identity for the product
-$\prod_{t=1}^T Z_t^N$, giving the likelihood
-$p_\theta(y_{1:T})$; see \citet{doucet2001sequential} and
-\citet{andrieu2010particle} for the formal particle-system argument.
+for bounded measurable test functions $\varphi$.  Also define the unnormalized
+filtering functional
+\[
+  \gamma_t(\varphi)
+  =
+  p_\theta(y_{1:t})
+  \int \varphi(x_t)p_\theta(x_t\mid y_{1:t})\,dx_t .
+\]
+The prediction/update recursion implies
+$\gamma_t(\varphi)=\gamma_{t-1}(Q_t\varphi)$ and
+$\gamma_t(1)=p_\theta(y_{1:t})$.
+
+The filtration convention is as follows.  At the end of time $t-1$ the
+algorithm has a weighted empirical measure $\hat\pi_{t-1}^N$ and a
+normalizing-constant estimate $\prod_{s=1}^{t-1}Z_s^N$.  Any resampling
+randomness used to choose the particles propagated at time $t$ is then drawn,
+and the transition propagation at time $t$ is conditionally independent across
+particles given that post-resampling cloud.  All test functions in the induction
+are bounded measurable, or otherwise integrable enough that the conditional
+expectations below are finite.
+
+Let $\mathcal F_{t-1}^N$ denote the sigma-field generated by the particle
+system just before propagation at time $t$, after any resampling decision at
+time $t-1$.  Let $\bar\pi_{t-1}^N$ be the empirical measure of the particles
+from which the transition propagation is drawn.  If resampling is used, the
+assumption of conditional unbiasedness means
+\[
+  \mathbb E[\bar\pi_{t-1}^N(\psi)\mid \hat\pi_{t-1}^N]
+  =
+  \hat\pi_{t-1}^N(\psi)
+\]
+for bounded $\psi$; if resampling is not used, then
+$\bar\pi_{t-1}^N=\hat\pi_{t-1}^N$.
+
+After bootstrap propagation and weighting,
+\[
+  Z_t^N \hat\pi_t^N(\varphi)
+  =
+  \frac{1}{N}\sum_{i=1}^N
+  p_\theta(y_t\mid x_t^{(i)})\varphi(x_t^{(i)}).
+\]
+Conditional on $\mathcal F_{t-1}^N$, the propagated particles are drawn from
+the transition kernel, so
+\[
+  \mathbb E\!\left[
+    Z_t^N\hat\pi_t^N(\varphi)\mid \mathcal F_{t-1}^N
+  \right]
+  =
+  \bar\pi_{t-1}^N(Q_t\varphi).
+\]
+Taking the conditional expectation over any resampling randomness replaces
+$\bar\pi_{t-1}^N$ by $\hat\pi_{t-1}^N$ in expectation.  Multiplying by the
+previous normalizing-constant estimate, which is measurable with respect to the
+previous particle history, gives
+\[
+  \mathbb E\!\left[
+    \left(\prod_{s=1}^t Z_s^N\right)\hat\pi_t^N(\varphi)
+  \right]
+  =
+  \mathbb E\!\left[
+    \left(\prod_{s=1}^{t-1} Z_s^N\right)
+    \hat\pi_{t-1}^N(Q_t\varphi)
+  \right].
+\]
+Iterating this identity and using
+$\gamma_t(\varphi)=\gamma_{t-1}(Q_t\varphi)$ gives
+\[
+  \mathbb E\!\left[
+    \left(\prod_{s=1}^t Z_s^N\right)\hat\pi_t^N(\varphi)
+  \right]
+  =
+  \gamma_t(\varphi).
+\]
+Taking $\varphi\equiv 1$ yields
+\[
+  \mathbb{E}\left[\prod_{s=1}^t Z_s^N\right]
+  =
+  \gamma_t(1)
+  =
+  p_\theta(y_{1:t}).
+\]
+Setting $t=T$ proves the displayed likelihood-unbiasedness identity.  This is
+the local BayesFilter version of the standard SMC normalizing-constant
+unbiasedness argument; see \citet{doucet2001sequential} and
+\citet{andrieu2010particle} for the full particle-system treatment.
 \end{proof}
 
 This proposition is mathematically central for the later DPF program.  It tells
@@ -238,6 +553,32 @@ likelihood map.  Later differentiable constructions must therefore be compared
 against this baseline carefully: a differentiable surrogate may be smoother to
 optimize or differentiate, but it need not preserve this exact estimator
 status.
+
+\section{Differentiability boundary}
+\label{sec:bf-pf-differentiability-boundary}
+
+The unbiasedness result above is a value-side Monte Carlo statement.  It should
+not be read as a pathwise differentiability statement.  For a fixed random seed,
+the propagation step may be reparameterizable in some models, but the
+resampling step is a categorical map from weights to ancestor indices.  Small
+changes in $\theta$ can leave the selected ancestor unchanged over an interval
+and then switch it discontinuously when a cumulative weight boundary is crossed.
+The realized resampled cloud is therefore not a smooth function of $\theta$.
+
+This distinction creates three separate objects that later chapters must not
+blur:
+\begin{enumerate}[label=(\roman*)]
+  \item the true likelihood $p_\theta(y_{1:T})$;
+  \item an unbiased randomized estimator
+    $\hat p_\theta^N(y_{1:T})$ of that likelihood;
+  \item a pathwise differentiable scalar produced by a relaxed, transported, or
+    learned particle computation.
+\end{enumerate}
+The first object is the statistical target, the second can support
+pseudo-marginal value-side constructions under their own assumptions, and the
+third may be useful for optimization or HMC only after its target status is
+stated.  A gradient through the third object is not automatically a gradient of
+the first or of the expectation of the second.
 
 \section{Degeneracy and effective sample size}
 \label{sec:bf-pf-degeneracy}
@@ -276,6 +617,57 @@ operators are all responses to some combination of:
 \end{enumerate}
 A mathematically clean DPF monograph must therefore begin here: by making the
 classical particle-filter object precise before modifying it.
+
+\section{Baseline audit table}
+\label{sec:bf-pf-audit-table}
+
+\begin{center}
+\scriptsize
+\begin{longtable}{@{}p{0.20\textwidth} p{0.23\textwidth} p{0.24\textwidth} p{0.23\textwidth}@{}}
+\caption{Classical particle-filter baseline audit.}
+\label{tab:bf-pf-baseline-audit}\\
+\toprule
+Object or claim & Status & Assumptions & Implementation diagnostic \\
+\midrule
+\endfirsthead
+\toprule
+Object or claim & Status & Assumptions & Implementation diagnostic \\
+\midrule
+\endhead
+Filtering recursion and likelihood factorization &
+Exact model identity &
+Dominated transition and observation kernels; fixed $\theta$; finite
+normalizers. &
+Compare predictive and filtering factors against a Kalman reference in a
+linear-Gaussian model. \\
+Trajectory importance ratio &
+Exact algebraic identity for the specified target/proposal pair &
+Proposal support covers target support; finite weights. &
+Check target and proposal log densities separately on a small trajectory. \\
+Weighted empirical measure &
+Finite-$N$ Monte Carlo approximation &
+Particle system generated by the declared proposal and weighting rule. &
+Compare bounded test-function expectations across increasing $N$. \\
+Bootstrap likelihood estimator &
+Unbiased estimator of likelihood, not log likelihood or score &
+Bootstrap proposal; conditionally unbiased resampling; integrable likelihood
+factors. &
+In a controlled model, average repeated estimates and compare to the analytic
+likelihood. \\
+ESS and ancestor diagnostics &
+Engineering diagnostic, not posterior-validity proof &
+Weights normalized and finite; diagnostic interpreted with model dimension and
+observation informativeness. &
+Track ESS, log-weight variance, and unique ancestor count by time and
+parameter region. \\
+Pathwise gradient through resampling &
+Not supplied by the classical bootstrap filter &
+Categorical ancestor map is used without relaxation. &
+Finite-difference a fixed-seed resampled path and identify discontinuities or
+zero-almost-everywhere regions. \\
+\bottomrule
+\end{longtable}
+\end{center}
 
 \section{What this chapter does and does not claim}
 \label{sec:bf-pf-chapter-boundary}

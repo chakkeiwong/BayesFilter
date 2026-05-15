@@ -18,6 +18,51 @@ the optimal-transport and Sinkhorn background in
 \citet{villani2003topics}, \citet{cuturi2013sinkhorn}, and
 \citet{peyre2019computational}.
 
+\section{Objects, conventions, and source roles}
+\label{sec:bf-dr-objects}
+
+The chapter uses the following objects.  Naming them up front is important
+because several objects below are sometimes all called ``resampling'' even
+though they are different mathematical maps.
+
+\begin{center}
+\small
+\begin{tabular}{p{0.25\textwidth} p{0.65\textwidth}}
+\toprule
+Object & Meaning \\
+\midrule
+$\hat\pi_t^N$ & weighted empirical measure before resampling \\
+$\hat\pi_{t,\mathrm{eq}}^N$ & equal-weight empirical measure after a
+resampling or transport step \\
+$a_j$ & discrete ancestor index selected by a categorical resampling rule \\
+$\alpha$ & soft-resampling interpolation parameter \\
+$\Pi$ & transport coupling between source particles and equal target masses \\
+$\mathcal U(w,u)$ & feasible set of nonnegative couplings with source marginal
+$w$ and target marginal $u$ \\
+$C$ & transport cost matrix \\
+$H(\Pi)$ & entropy convention, defined below as
+$-\sum_{ij}\Pi_{ij}(\log \Pi_{ij}-1)$ \\
+$\Pi_\varepsilon^*$ & exact optimizer of the entropic OT problem for fixed
+$\varepsilon>0$ \\
+$a,b$ & Sinkhorn scaling vectors in the factorization
+$\Pi=\diag(a)K_\varepsilon\diag(b)$ \\
+$\tilde x_t^{(j)}$ & barycentric output particle after the coupling is converted
+to a deterministic equal-weight cloud \\
+$\Pi_{\varepsilon,K}$ & finite-iteration Sinkhorn approximation computed in
+code \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The source roles are deliberately limited.  The differentiable-resampling
+sources motivate the need for a smooth replacement of hard ancestor selection;
+the OT sources justify the coupling formulation; the Sinkhorn sources justify
+the entropic scaling form and numerical caveats.  None of these citations by
+itself proves that a relaxed resampling operator preserves the original
+categorical law, preserves a pseudo-marginal likelihood estimator, or supplies
+an HMC-valid target.  Those statuses must be established by the local equations
+and by later target analysis.
+
 \section{The resampling bottleneck}
 \label{sec:bf-dr-bottleneck}
 
@@ -67,6 +112,24 @@ weight break, the selected index does not change under an infinitesimal weight
 perturbation.  Consequently, the pathwise derivative of the resampled particle
 with respect to the weights is zero almost everywhere.
 
+The one-dimensional two-particle case makes the discontinuity concrete.  Let
+$N=2$, $w=(p,1-p)$, and draw a fixed common random number $U\in(0,1)$.  The
+first ancestor is selected when $U\le p$ and the second ancestor is selected
+when $U>p$:
+\begin{equation}
+\label{eq:bf-dr-two-particle-discontinuity}
+  a(U,p)
+  =
+  \begin{cases}
+    1, & U\le p,\\
+    2, & U>p.
+  \end{cases}
+\end{equation}
+For any fixed $U$, the realized map $p\mapsto a(U,p)$ is a step function.  Its
+classical derivative is zero away from $p=U$ and undefined at $p=U$.  Reusing
+the same $U$ makes the discontinuity visible; redrawing $U$ changes the random
+map rather than supplying a pathwise derivative of the realized map.
+
 This is the precise sense in which standard resampling blocks a naive pathwise
 autodiff chain.  The issue is not that gradients are numerically inconvenient.
 It is that the ancestor-selection map itself is discontinuous.  Score-function
@@ -92,28 +155,64 @@ the ancestor particle and the weighted mean of the cloud
 \end{equation}
 where $\alpha \in [0,1]$ is an interpolation parameter.
 
+For the bias calculation below, take $x_i,\bar x\in\R^{n_x}$, weights
+$w_i\ge0$ with $\sum_iw_i=1$, and a scalar test function
+$\varphi:\R^{n_x}\to\R$ that is twice continuously differentiable on a
+neighborhood containing the line segments between $x_i$ and $\bar x$.  The
+gradient $\nabla\varphi(x_i)$ is treated as a column vector, so
+$\nabla\varphi(x_i)'(x_i-\bar x)$ is a scalar directional derivative.
+
 The key structural point is immediate:
 \begin{itemize}
   \item if $\alpha=1$, one recovers standard multinomial resampling and loses
     pathwise differentiability;
-  \item if $\alpha<1$, the resampled particle depends smoothly on the weighted
-    mean, and the pathwise derivative can flow through that smooth part.
+  \item if $\alpha<1$, the interpolation term depends smoothly on the weighted
+    mean, but the sampled ancestor $a_j$ is still a discrete random index unless
+    the method also replaces or conditions on that draw.
 \end{itemize}
 
-The benefit is therefore differentiability.  The cost is bias.  The weighted
-mean is preserved,
-\[
-  \mathbb E[\tilde x_t^{(j)} \mid x_t^{(1:N)}, w_t^{(1:N)}] = \bar x_t,
-\]
-but nonlinear functionals of the cloud need not be preserved.  Soft resampling
-changes the resampling law by shrinking the cloud toward its weighted center.
-More explicitly, for a smooth scalar test function $\varphi$,
-\[
+The benefit is therefore a smoother surrogate path, not an exact pathwise
+derivative of categorical resampling.  If the ancestor draw is held fixed, the
+map is differentiable only on that conditional branch; if the ancestor draw is
+also relaxed, the target object has changed further and must be named.  The
+cost is bias.  The weighted mean is preserved because, conditional on the
+current weighted cloud,
+\begin{align}
+\label{eq:bf-dr-soft-mean-preserved}
+  \E[\tilde x_t^{(j)} \mid X,w]
+  &=
+  \alpha \sum_{i=1}^N w_i x_i
+  +(1-\alpha)\bar x
+  =
+  \bar x .
+\end{align}
+Consequently every affine test function $\varphi(x)=c+d'x$ is preserved in
+conditional expectation.  Nonlinear functionals of the cloud need not be
+preserved, because the argument of the test function is changed before the
+expectation is taken.  For a smooth scalar test function $\varphi$,
+\begin{equation}
+\label{eq:bf-dr-soft-test-expectation}
   \E[\varphi(\tilde x_t^{(j)}) \mid X,w]
   = \sum_i w_i
       \varphi\!\left(\alpha x_i+(1-\alpha)\bar x\right).
+\end{equation}
+A first-order Taylor expansion around $x_i$ gives the displayed bias.  To see
+the sign and order explicitly, write
+$d_i=(1-\alpha)(\bar x-x_i)$.  Then
+\[
+  \alpha x_i+(1-\alpha)\bar x=x_i+d_i
 \]
-A first-order Taylor expansion around $x_i$ gives
+and, for each $i$,
+\[
+  \varphi(x_i+d_i)
+  =
+  \varphi(x_i)
+  + \nabla\varphi(x_i)'d_i
+  + \frac{1}{2}d_i'\nabla^2\varphi(\xi_i)d_i
+\]
+for some point $\xi_i$ on the segment between $x_i$ and
+$\alpha x_i+(1-\alpha)\bar x$.  If the Hessian is bounded on the segment
+neighborhood, summing the remainders gives $O((1-\alpha)^2)$.  Therefore
 \begin{equation}
 \label{eq:bf-dr-soft-test-bias}
   \E[\varphi(\tilde x_t^{(j)}) \mid X,w]
@@ -126,7 +225,10 @@ A first-order Taylor expansion around $x_i$ gives
 Thus the linear test-function case is preserved, but nonlinear summaries are
 generally shifted.  Hence soft resampling is naturally interpreted as a
 differentiable surrogate rather than as an exact replacement for multinomial
-resampling.
+resampling.  The shrinkage can also reduce cloud diversity: if
+$\alpha<1$, each selected ancestor is pulled toward the same weighted mean.
+This may stabilize gradients, but it changes the empirical distribution whose
+downstream likelihood or loss is being differentiated.
 
 \section{Resampling as a transport problem}
 \label{sec:bf-dr-transport-view}
@@ -146,8 +248,19 @@ support.  Transport-based resampling instead tries to produce an equally
 weighted cloud through an explicit coupling between the weighted and uniform
 measures.
 
-With source atoms $x_i$, target weights $u_j=1/N$, and squared cost $C_{ij}$,
-the unregularized coupling problem is
+With source atoms $x_i$, target weights $u_j=1/N$, and nonnegative cost
+$C_{ij}$, the coupling feasible set is
+\begin{equation}
+\label{eq:bf-dr-coupling-set}
+  \mathcal U(w,u)
+  =
+  \left\{
+    \Pi\in\R_+^{N\times N}:
+    \sum_{j=1}^N \Pi_{ij}=w_i,\ 
+    \sum_{i=1}^N \Pi_{ij}=u_j
+  \right\}.
+\end{equation}
+The unregularized coupling problem is
 \begin{equation}
 \label{eq:bf-dr-unregularized-ot}
   \Pi_0^*
@@ -155,10 +268,15 @@ the unregularized coupling problem is
   \arg\min_{\Pi \in \mathcal U(w,u)}
   \sum_{i=1}^N\sum_{j=1}^N \Pi_{ij} C_{ij}.
 \end{equation}
-This is an exact linear-programming object, not a statement that categorical
-resampling has become differentiable.  It is useful because it provides a
-deterministic transport baseline against which smoother relaxations can be
-defined.
+This is an exact linear-programming object for the chosen cost and feasible set.
+It is not a statement that categorical resampling has become differentiable, and
+it is not a proof that the categorical resampling law has been preserved.
+Categorical resampling samples support points from the source cloud according to
+ancestor indices.  The OT formulation instead chooses a coupling with prescribed
+marginals and then usually converts that coupling into a deterministic output
+cloud.  The equality of total mass and target weights is exact within
+\eqref{eq:bf-dr-coupling-set}; equivalence to categorical resampling is not
+being claimed.
 
 This transport view is mathematically useful because it makes the relaxation
 explicit: a differentiable transport map is not the same object as the discrete
@@ -179,6 +297,13 @@ be
 where $z_j$ are target support points or, in the barycentric form, support
 locations constructed from the transport plan itself.
 
+Assume for the derivation that $w_i>0$, $u_j>0$, $\sum_iw_i=\sum_ju_j=1$, and
+that all entries of $C\in\R^{N\times N}$ are finite.  A coupling
+$\Pi\in\R_+^{N\times N}$ has row sums in $\R^N$ and column sums in $\R^N$.
+The scaling vectors $a,b$ used below also lie in $\R_+^N$; consequently
+$K_\varepsilon b$, $K_\varepsilon' a$, and the elementwise products in
+\eqref{eq:bf-dr-sinkhorn-marginals} are conformable $N$-vectors.
+
 Following the entropy-regularized OT construction used by
 \citet{corenflos2021differentiable}, the entropic optimal transport problem is
 \begin{equation}
@@ -187,42 +312,194 @@ Following the entropy-regularized OT construction used by
   = \arg\min_{\Pi \in \mathcal U(w,u)}
       \langle \Pi, C \rangle - \varepsilon H(\Pi),
 \end{equation}
-where $\mathcal U(w,u)$ is the set of couplings with marginals $w$ and $u$, and
-$H(\Pi)$ is the entropy term.  The entropic penalty $\varepsilon>0$ makes the
-problem strictly convex and yields a smooth scaling form for the optimal plan.
-It also changes the mathematical object: $\Pi_\varepsilon^*$ solves a
-regularized problem, whereas $\Pi_0^*$ solves
-\eqref{eq:bf-dr-unregularized-ot}.  The two should be expected to approach one
-another as $\varepsilon$ becomes small, but a small $\varepsilon$ is not free
-numerically because the Gibbs kernel becomes ill-conditioned.
+where this chapter uses the convention
+\begin{equation}
+\label{eq:bf-dr-entropy-convention}
+  H(\Pi)
+  =
+  -\sum_{i=1}^N\sum_{j=1}^N
+    \Pi_{ij}(\log \Pi_{ij}-1),
+  \qquad
+  \Pi_{ij}>0.
+\end{equation}
+With this convention, minimizing
+$\langle\Pi,C\rangle-\varepsilon H(\Pi)$ is equivalent, up to constants, to
+minimizing
+$\sum_{ij}\Pi_{ij}C_{ij}
+ + \varepsilon\sum_{ij}\Pi_{ij}(\log\Pi_{ij}-1)$
+over the coupling polytope.  For fixed positive marginals and
+$\varepsilon>0$, the entropy term makes the objective strictly convex on the
+positive part of the feasible set, giving a unique optimizer for the regularized
+problem.  It also changes the mathematical object:
+$\Pi_\varepsilon^*$ solves a regularized problem, whereas $\Pi_0^*$ solves
+\eqref{eq:bf-dr-unregularized-ot}.
 
-In the Sinkhorn representation, the optimal plan can be written as
+The scaling form follows from the Lagrange first-order conditions.  Introduce
+row and column multipliers $\lambda_i$ and $\mu_j$ and form
+\[
+  \mathcal L(\Pi,\lambda,\mu)
+  =
+  \sum_{i,j}\Pi_{ij}C_{ij}
+  + \varepsilon\sum_{i,j}\Pi_{ij}(\log\Pi_{ij}-1)
+  + \sum_i\lambda_i\left(\sum_j\Pi_{ij}-w_i\right)
+  + \sum_j\mu_j\left(\sum_i\Pi_{ij}-u_j\right).
+\]
+For an interior optimizer, differentiating with respect to $\Pi_{ij}$ gives
+the stationarity condition
+\begin{equation}
+\label{eq:bf-dr-eot-stationarity}
+  C_{ij}
+  + \varepsilon \log \Pi_{ij}
+  + \lambda_i + \mu_j
+  = 0 .
+\end{equation}
+Therefore
+\begin{equation}
+\label{eq:bf-dr-gibbs-factorization}
+  \Pi_{ij}
+  =
+  \exp(-\lambda_i/\varepsilon)
+  \exp(-C_{ij}/\varepsilon)
+  \exp(-\mu_j/\varepsilon).
+\end{equation}
+Absorbing the multiplier exponentials into positive scaling vectors gives the
+Sinkhorn representation
 \begin{equation}
 \label{eq:bf-dr-sinkhorn-form}
-  \Pi_\varepsilon^* = \operatorname{diag}(a) K_\varepsilon \operatorname{diag}(b),
+  \Pi_\varepsilon^* = \diag(a) K_\varepsilon \diag(b),
   \qquad
   (K_\varepsilon)_{ij} = \exp(-C_{ij}/\varepsilon),
 \end{equation}
-with scaling vectors $a,b$ chosen to satisfy the marginal constraints.  The
-Sinkhorn iterations alternate updates to these scaling vectors until the desired
-marginals are matched to tolerance \citep{cuturi2013sinkhorn}.  In practice,
-the implementation computes a finite-iteration approximation
-$\Pi_{\varepsilon,K}$.  This approximation can have residual marginal error,
-transport-cost error, and gradient error.  For small $\varepsilon$, stable
-implementations usually work in the log domain to avoid underflow in
-$\exp(-C_{ij}/\varepsilon)$ \citep{schmitzer2019stabilized}.
+with $a_i>0$ and $b_j>0$ chosen to satisfy the marginal constraints.
+Substituting \eqref{eq:bf-dr-sinkhorn-form} into
+\eqref{eq:bf-dr-coupling-set} gives the scaling equations
+\begin{align}
+\label{eq:bf-dr-sinkhorn-marginals}
+  a \odot (K_\varepsilon b) &= w,\\
+  b \odot (K_\varepsilon' a) &= u.
+\end{align}
+The classical Sinkhorn updates are therefore
+\begin{align}
+\label{eq:bf-dr-sinkhorn-updates}
+  a^{(k+1)} &= w \oslash (K_\varepsilon b^{(k)}),\\
+  b^{(k+1)} &= u \oslash (K_\varepsilon' a^{(k+1)}),
+\end{align}
+where $\odot$ and $\oslash$ denote elementwise multiplication and division.
+These updates solve the exact EOT problem only in the limit of convergence and
+only for the stated kernel, marginals, cost matrix, and regularization
+\citep{cuturi2013sinkhorn}.
 
-The resulting equally weighted cloud is obtained by barycentric projection,
+The resulting equally weighted cloud is obtained by barycentric projection.  In
+general, a column with mass $u_j>0$ has conditional source weights
+$\Pi_{ij}^*/u_j$, so its barycenter is
+\[
+  \tilde x_t^{(j)}
+  =
+  \frac{1}{u_j}\sum_{i=1}^N \Pi_{ij}^*x_t^{(i)}.
+\]
+For the equal-weight target $u_j=1/N$, this becomes
 \begin{equation}
 \label{eq:bf-dr-barycentric-map}
   \tilde x_t^{(j)} = N \sum_{i=1}^N \Pi_{ij}^* x_t^{(i)}.
 \end{equation}
-This map is differentiable with respect to the particles and weights, provided
-the Sinkhorn solve itself is treated as a differentiable computation.  At this
-point the chapter must keep four layers distinct: the exact categorical
+The factor $N$ appears because the target marginal is $u_j=1/N$, so
+$N\Pi_{ij}^*$ are the conditional weights of source atoms contributing to the
+$j$th output particle.  If $x_i\in\R^{n_x}$, then
+$\tilde x_t^{(j)}\in\R^{n_x}$ and the full output cloud again has $N$ support
+points with equal weights.  This barycentric step converts a coupling into a
+deterministic support cloud.  It is a map derived from the coupling, not the
+coupling itself, and not a categorical ancestor draw.
+
+This map is differentiable with respect to the particles and weights only after
+one specifies what is being differentiated: the exact EOT optimizer
+$\Pi_\varepsilon^*$ via an implicit differentiation argument, or a finite
+unrolled Sinkhorn computation.  These are related but not identical objects.
+At this point the chapter must keep four layers distinct: the exact categorical
 resampling law, the unregularized OT problem, the entropically regularized OT
 problem, and the finite-iteration Sinkhorn solve used to approximate the
 regularized OT optimum in practice.
+
+\begin{center}
+\scriptsize
+\begin{tabular}{p{0.20\textwidth} p{0.25\textwidth} p{0.23\textwidth} p{0.22\textwidth}}
+\toprule
+Differentiated object & Value object & Derivative route & Non-claim \\
+\midrule
+Exact regularized EOT optimizer &
+$\Pi_\varepsilon^\star$ and its barycentric projection for fixed
+$C,w,u,\varepsilon$ &
+Implicit differentiation of the optimality or scaling equations, under
+regularity and positive-marginal conditions &
+Not a derivative of categorical resampling and not an unregularized OT claim. \\
+Finite unrolled Sinkhorn solver &
+$\Pi_{\varepsilon,K}$ produced by exactly $K$ implemented iterations &
+Autodiff through the implemented computational graph &
+Not a derivative of the converged EOT optimizer unless convergence and
+truncation error are separately controlled. \\
+Implicit fixed-point solver &
+A fixed point satisfying the stated Sinkhorn equations to a declared tolerance &
+Linearized fixed-point or KKT system &
+Not valid without the fixed-point regularity, residual, and linear-solve
+conditions. \\
+HMC or training scalar in code &
+Whatever scalar value actually uses the transport layer &
+Derivative of that same scalar only &
+Not a gradient of the original filtering likelihood unless a correction or
+equivalence proof is supplied. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Numerical-analysis obligations for Sinkhorn}
+\label{sec:bf-dr-sinkhorn-numerics}
+
+The limit $\varepsilon\downarrow0$ connects EOT heuristically to the
+unregularized OT objective, but it is not a harmless numerical limit.  The
+kernel entries
+\[
+  (K_\varepsilon)_{ij}=\exp(-C_{ij}/\varepsilon)
+\]
+can underflow when costs are large relative to $\varepsilon$.  Underflow changes
+the effective support of the kernel and can make the scaling equations
+\eqref{eq:bf-dr-sinkhorn-marginals} numerically singular.  Stabilized
+implementations therefore often work in log-scaled dual variables rather than
+forming all entries of $K_\varepsilon$ in floating point
+\citep{schmitzer2019stabilized}.
+
+In practice, code computes a finite-iteration plan
+$\Pi_{\varepsilon,K}$ rather than the exact optimizer
+$\Pi_\varepsilon^*$.  The relevant residuals are
+\begin{align}
+\label{eq:bf-dr-sinkhorn-residuals}
+  r_{\mathrm{row}}
+  &= \left\|\Pi_{\varepsilon,K}\mathbf 1 - w\right\|_1,\\
+  r_{\mathrm{col}}
+  &= \left\|\Pi_{\varepsilon,K}'\mathbf 1 - u\right\|_1 .
+\end{align}
+Here $\mathbf1\in\R^N$, so both residual arguments are $N$-vectors.  The
+row-residual checks the source marginal and the column-residual checks the
+equal-weight target marginal.
+Small residuals are necessary for a credible transport computation, but they do
+not remove entropic bias relative to \eqref{eq:bf-dr-unregularized-ot} or the
+target change relative to categorical resampling.
+
+The gradient path must also be named.  Unrolled differentiation treats the
+$K$ Sinkhorn iterations as the computational graph.  It is transparent but
+requires memory proportional to the number of stored iterations, unless
+checkpointing or recomputation is used.  Implicit differentiation instead
+differentiates the fixed-point or optimality equations; it can reduce memory
+but requires solving a linearized system and is valid only under the regularity
+conditions of that fixed-point representation.  Either way, the gradient is the
+gradient of the selected numerical or regularized object, not automatically the
+gradient of a categorical-resampling likelihood estimator.
+
+The leading memory footprint of a dense Sinkhorn layer is $O(N^2)$ for the cost,
+kernel, or plan matrices, and the naive runtime is $O(N^2K)$ for $K$ scaling
+iterations.  Those costs matter in banking-scale state-space applications
+because large particle counts, long time series, and repeated HMC evaluations
+compound the expense.  A reviewer should therefore see the numerical route,
+the residual tolerance, the stabilization method, and the gradient path before
+accepting any claim about differentiable-resampling suitability.
 
 \section{Bias versus differentiability}
 \label{sec:bf-dr-bias-vs-diff}
@@ -257,7 +534,9 @@ but it is not the same map.  More precisely, one should distinguish:
   \item the exact solution of the unregularized OT problem when such a transport
     interpretation is used;
   \item the entropically regularized OT problem actually chosen for smoothness;
-  \item the finite-iteration Sinkhorn approximation used in code.
+  \item the finite-iteration Sinkhorn approximation used in code;
+  \item the solver-differentiated objective defined by unrolling or implicitly
+    differentiating the chosen Sinkhorn computation.
 \end{enumerate}
 This distinction is essential for later HMC interpretation: if one differentiates
 through a relaxed resampling operator, one must be explicit about whether the
@@ -275,6 +554,7 @@ Categorical resampling & ancestor draw from $\mathrm{Categorical}(w)$ & exact fo
 Unregularized OT & coupling $\Pi_0^*$ solving \eqref{eq:bf-dr-unregularized-ot} & exact for the chosen transport projection & it is already a transport formulation, not categorical resampling \\
 Entropic OT & coupling $\Pi_\varepsilon^*$ solving \eqref{eq:bf-dr-eot-primal} & exact for the regularized problem & entropy changes the unregularized OT objective \\
 Finite Sinkhorn & numerical plan $\Pi_{\varepsilon,K}$ & approximate & finite iterations, tolerance, log-domain stabilization, floating-point error \\
+Solver-differentiated objective & scalar produced by differentiating a finite or implicit Sinkhorn path & exact only for the selected computational graph or fixed-point equations & gradient belongs to the relaxed numerical object, not automatically to categorical resampling \\
 \bottomrule
 \end{tabular}
 \caption{OT object versus solver approximation.}
@@ -292,6 +572,7 @@ Categorical & exact resampling law & none pathwise & none relative to the classi
 Soft & surrogate law & smooth mean interpolation & shrinkage toward $\bar x$ for nonlinear functionals & cheap but diversity-reducing \\
 EOT & exact for regularized OT & smooth Sinkhorn scaling & entropy relative to unregularized OT and categorical law & $O(N^2K)$ Sinkhorn work \\
 Finite Sinkhorn & numerical approximation to EOT & unrolled or implicit differentiated iterations & solver residual and tolerance choice & stability, memory, iteration count \\
+Solver gradient & selected computational objective & autodiff or implicit fixed-point derivative & mismatch if reported as original likelihood gradient & memory or linear-solve burden \\
 \bottomrule
 \end{tabular}
 \caption{Resampling family comparison.}
@@ -320,6 +601,7 @@ Particle cloud collapses toward one point & soft-resampling shrinkage too strong
 Sinkhorn rows or columns do not match desired marginals & finite-iteration residual or numerical underflow & \citet{cuturi2013sinkhorn,peyre2019computational} \\
 NaN or unstable gradients for small $\varepsilon$ & Gibbs kernel underflow or unstable scaling & stabilized/log-domain Sinkhorn \citep{schmitzer2019stabilized} \\
 Posterior shifts after adopting EOT & relaxed resampling target differs from categorical law & EOT resampling \citep{corenflos2021differentiable} and HMC target analysis in Chapter~\ref{ch:bf-dpf-hmc-target-suitability} \\
+Gradient changes when iteration budget changes & differentiated scalar is tied to $\Pi_{\varepsilon,K}$ or to an implicit solver tolerance & numerical-analysis obligations in Section~\ref{sec:bf-dr-sinkhorn-numerics} \\
 \bottomrule
 \end{tabular}
 \caption{Implementation debug map for differentiable resampling and OT.}
@@ -337,6 +619,7 @@ Soft resampling & differentiable relaxation of hard resampling & derive preserve
 OT projection & equal-weighting can be posed as a transport coupling & separate \eqref{eq:bf-dr-unregularized-ot} from categorical resampling & prevents exactness overclaims \\
 EOT/Sinkhorn & entropy gives smooth scaling form & identify $\Pi_\varepsilon^*$ and barycentric map & locates regularization and solver errors \\
 Finite solver & implementation computes $\Pi_{\varepsilon,K}$ & distinguish numerical residual from OT definition & gives tolerance and stability diagnostics \\
+Solver differentiation & code differentiates an unrolled or implicit solver path & identify the differentiated scalar and residual contract & prevents gradient-object overclaims \\
 \bottomrule
 \end{tabular}
 \caption{Source claim, local derivation, and debugging use for E3.}
@@ -364,6 +647,8 @@ and transport-based equal-weighting.  It does \emph{not} yet claim:
   \item that OT resampling is identical to standard multinomial resampling;
   \item that learned/amortized OT is already covered by the same mathematics as
     the exact OT relaxation;
+  \item that finite Sinkhorn is a black-box differentiable layer whose gradient
+    has the same status as the original categorical resampling likelihood;
   \item that any of these relaxed resampling schemes are automatically final
     HMC targets for nonlinear structural models.
 \end{itemize}

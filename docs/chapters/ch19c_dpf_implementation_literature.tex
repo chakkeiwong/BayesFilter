@@ -15,6 +15,43 @@ it asks a prior question: once a particle has been moved by a deterministic flow
 map, what density does that transported particle actually have, and what
 importance weight is required to target the intended posterior law?
 
+\section{Objects, assumptions, and source roles}
+\label{sec:bf-pfpf-objects}
+
+The PF-PF argument depends on naming the target and proposal objects before
+writing any weight.  This chapter uses:
+
+\begin{center}
+\small
+\begin{tabular}{p{0.24\textwidth} p{0.66\textwidth}}
+\toprule
+Object & Meaning \\
+\midrule
+$x_{t-1}$ & ancestor state after the previous filtering step \\
+$x_{t,0}$ & pre-flow particle sampled from a one-step proposal \\
+$x_{t,1}$ & post-flow particle after applying the flow map \\
+$q_{t,0}$ & pre-flow proposal density for $x_{t,0}$ conditional on
+$(x_{t-1},y_t)$ \\
+$\Phi_t$ & differentiable flow map from pre-flow to post-flow coordinates \\
+$\Phi_t^{-1}$ & inverse map used to express the pre-image of a post-flow
+particle \\
+$J_t=D\Phi_t$ & forward Jacobian matrix of the flow map \\
+$q_{t,1}$ & induced post-flow proposal density for $x_{t,1}$ \\
+$\gamma_t$ & unnormalized one-step filtering target density \\
+$\tilde w_t$ & unnormalized importance weight correcting $q_{t,1}$ to
+$\gamma_t$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The source role is narrow.  General SMC references
+\citep{doucet2001sequential,chopin2020introduction} supply the proposal and
+importance-weight framework.  Invertible particle-flow particle filtering
+\citep{li2017particle} motivates treating particle flow as a proposal
+transformation with a Jacobian correction.  These sources do not remove the
+need to state the target/proposal ratio locally, and they do not imply that
+finite-particle, numerical, or HMC target issues have disappeared.
+
 \section{Why proposal correction is needed}
 \label{sec:bf-pfpf-why-correction}
 
@@ -47,7 +84,11 @@ particle system.
 
 Assume that for each fixed time step and observation, the flow map
 $\Phi_t: \mathbb{R}^{n_x} \to \mathbb{R}^{n_x}$ is a differentiable bijection on
-the region of interest.  Let the pre-flow proposal density be
+the region of interest and that its forward Jacobian
+$D\Phi_t(x_{t,0})$ is an $n_x\times n_x$ nonsingular matrix along the proposal
+paths being weighted.  Equivalently, the calculation below is a local
+diffeomorphism calculation on the support actually used by the proposal.  Let
+the pre-flow proposal density be
 \begin{equation}
 \label{eq:bf-pfpf-preflo-density}
   q_{t,0}(x_{t,0} \mid x_{t-1}, y_t).
@@ -61,6 +102,19 @@ change-of-variables formula,
     \left|\det D\Phi_t(x_{t,0})\right|^{-1},
 \end{equation}
 where $x_{t,0} = \Phi_t^{-1}(x_{t,1})$.
+The determinant in \eqref{eq:bf-pfpf-postflow-density} is the determinant of
+the \emph{forward} map from $x_{t,0}$ to $x_{t,1}$.  Equivalently,
+\[
+  q_{t,1}(x_{t,1}\mid x_{t-1},y_t)
+  =
+  q_{t,0}(\Phi_t^{-1}(x_{t,1})\mid x_{t-1},y_t)
+  \left|\det D\Phi_t^{-1}(x_{t,1})\right|.
+\]
+These two forms are identical because
+$|\det D\Phi_t^{-1}(x_{t,1})|
+=|\det D\Phi_t(x_{t,0})|^{-1}$.  The chapter uses the forward-map convention
+because the flow ODE naturally evolves $x_{t,0}$ to $x_{t,1}$ and the
+log-determinant ODE below accumulates $\log|\det D\Phi_t(x_{t,0})|$.
 
 Thus the Jacobian determinant is not an optional numerical decoration.  It is
 part of the proposal density itself.  Any flow-based importance scheme that
@@ -77,6 +131,28 @@ Let the intended one-step filtering target be proportional to
   \propto p_\theta(y_t \mid x_t)
           p_\theta(x_t \mid x_{t-1}).
 \end{equation}
+This target is conditional on the ancestor state.  In a full particle filter,
+the ancestor itself is random and selected from the previous weighted cloud.
+The present derivation is therefore a one-step conditional density-ratio
+calculation; the full likelihood estimator also depends on ancestor selection,
+resampling policy, particle count, and time recursion.
+
+For a generic pre-flow proposal $q_{t,0}$, the corrected importance weight is
+\begin{equation}
+\label{eq:bf-pfpf-generic-weight}
+  \tilde w_t
+  \propto
+  \frac{\gamma_t(x_{t,1})}
+       {q_{t,1}(x_{t,1}\mid x_{t-1},y_t)}
+  =
+  \frac{p_\theta(y_t\mid x_{t,1})
+        p_\theta(x_{t,1}\mid x_{t-1})
+        \left|\det D\Phi_t(x_{t,0})\right|}
+       {q_{t,0}(x_{t,0}\mid x_{t-1},y_t)}.
+\end{equation}
+The bootstrap/prior-proposal formula below is the special case
+$q_{t,0}=p_\theta(\cdot\mid x_{t-1})$.
+
 If the pre-flow particle is sampled from the transition prior,
 \begin{equation}
 \label{eq:bf-pfpf-preflo-prior}
@@ -111,6 +187,13 @@ transformation of proposal density has been accounted for, the flow-transported
 particle may be reweighted against the desired posterior factor in the usual
 importance-sampling way.
 
+The formula also shows exactly what is \emph{not} optional in code.  A PF-PF
+implementation must evaluate, on the same path, the observation density at the
+post-flow particle, the transition density at the post-flow particle, the
+pre-flow proposal density at the pre-image, and the forward log determinant.
+Changing any one of these objects changes the proposal-to-target ratio being
+computed.
+
 \section{EDH/PF and LEDH/PF}
 \label{sec:bf-pfpf-edh-ledh}
 
@@ -122,16 +205,20 @@ EDH or LEDH.  The difference lies in how the map itself is built.
 For EDH/PF, the transport map is generated by the global affine ODE from the
 previous chapter.  The resulting proposal is easier to analyze because the flow
 field is common across the cloud.  The main approximation point is the Gaussian
-closure used to derive the affine coefficients.
+closure used to derive the affine coefficients.  If the affine ODE is integrated
+with a common map $\Phi_t$, the same forward log determinant applies to every
+particle up to its path through the time-varying affine field.
 
 \subsection{LEDH/PF}
 
 For LEDH/PF, the map is particle-specific: each particle evolves under a local
-linearization and therefore under its own drift coefficients.  This generally
-improves adaptation to nonlinear observation structure, but it also makes the
+linearization and therefore under its own drift coefficients.  This can improve
+local adaptation to nonlinear observation structure, but it also makes the
 proposal analysis more delicate.  The local map remains proposal-correctable in
 principle through the same change-of-variables logic, but the numerical burden
-of evaluating Jacobians or log-determinants becomes more significant.
+of evaluating particle-specific Jacobians or log-determinants becomes more
+significant.  A code path that reuses an EDH log determinant for LEDH has
+changed the proposal density unless the local maps are actually identical.
 
 The important mathematical point is that EDH/PF and LEDH/PF are not merely flow
 algorithms.  They are proposal-corrected particle methods.  That is why they
@@ -150,6 +237,11 @@ Let
   J_t(\lambda)
   = \frac{\partial x_t(\lambda)}{\partial x_t(0)}.
 \end{equation}
+The terminal forward determinant in
+\eqref{eq:bf-pfpf-postflow-density} is $\det J_t(1)$.  The inverse-density form
+would use $-\log|\det J_t(1)|$ instead.  This sign distinction is one of the
+most common PF-PF implementation errors.
+
 If the flow satisfies
 \begin{equation}
 \label{eq:bf-pfpf-general-flow}
@@ -163,7 +255,9 @@ then differentiation with respect to the initial point gives
   \qquad
   J_t(0)=I.
 \end{equation}
-Applying Jacobi's formula yields the log-determinant evolution equation
+The derivation is direct: differentiate the flow equation with respect to the
+initial coordinate $x_t(0)$ and apply the chain rule.  Applying Jacobi's formula
+$d\log|\det J|/d\lambda=\operatorname{tr}(J^{-1}dJ/d\lambda)$ then yields
 \begin{equation}
 \label{eq:bf-pfpf-logdet-ode}
   \frac{d}{d\lambda}
@@ -171,6 +265,15 @@ Applying Jacobi's formula yields the log-determinant evolution equation
   = \operatorname{tr}
     \bigl(\nabla v_{t,\lambda}(x_t(\lambda))\bigr).
 \end{equation}
+because $J_t^{-1}(\nabla v_{t,\lambda})J_t$ has the same trace as
+$\nabla v_{t,\lambda}$.  Thus
+\[
+  \log|\det D\Phi_t(x_{t,0})|
+  =
+  \int_0^1
+  \operatorname{tr}
+  \bigl(\nabla v_{t,\lambda}(x_t(\lambda))\bigr)\,d\lambda.
+\]
 For an affine flow
 $v_{t,\lambda}(x)=A_t(\lambda)x+b_t(\lambda)$, this simplifies to
 \begin{equation}
@@ -218,6 +321,41 @@ and the finite-particle system used to estimate the target.  Its status is
 better described as a proposal-corrected particle approximation whose value-side
 interpretation is clearer than that of uncorrected flow transport.
 
+At trajectory level, this one-step correction is multiplied through the
+filtering recursion in the same spirit as ordinary sequential importance
+sampling.  For a particle path and ancestor history, the product of incremental
+corrections defines the path proposal weight.  That statement is still
+conditional on using the stated proposal, the stated flow map, and the stated
+determinant convention at each time step.  It is not a separate theorem that the
+finite-particle likelihood estimate is exact in the nonlinear case.
+
+\section{Implementation audit obligations}
+\label{sec:bf-pfpf-audit-obligations}
+
+The formulas above imply concrete checks before PF-PF can be used as a
+value-side candidate in later HMC experiments.
+
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Affine density check}: choose a low-dimensional affine map with
+    known determinant and compare \eqref{eq:bf-pfpf-postflow-density} against a
+    direct transformed-density calculation.
+  \item \textbf{Forward/inverse sign check}: verify that the proposal density
+    uses $-\log|\det D\Phi_t|$ while the numerator form in
+    \eqref{eq:bf-pfpf-weight} contributes $+\log|\det D\Phi_t|$.
+  \item \textbf{Jacobian ODE check}: compare the integrated trace in
+    \eqref{eq:bf-pfpf-logdet-ode} with an automatic-differentiation or
+    finite-difference determinant in small dimension.
+  \item \textbf{Corrected versus uncorrected weights}: run the same transported
+    cloud with and without the determinant/proposal-density term to confirm that
+    the diagnostic detects the expected discrepancy.
+  \item \textbf{Path consistency}: on fixed random seeds, verify that the scalar
+    value and any autodiff gradient use the same proposal density, flow map, and
+    log-determinant path.
+\end{enumerate}
+
+These are not tuning diagnostics.  They are algebraic and numerical checks of
+the target/proposal object itself.
+
 \section{Why this chapter matters for the later HMC discussion}
 \label{sec:bf-pfpf-hmc-bridge}
 
@@ -225,8 +363,9 @@ This chapter is the first point in the rebuilt DPF block where a sharper target
 question becomes possible.  Raw flow transport gives a geometrically appealing
 approximation, but PF-PF introduces an explicit proposal density and an explicit
 correction factor.  That is why later HMC-suitability analysis will treat
-proposal-corrected EDH/PF or LEDH/PF as more serious value-side candidates than
-uncorrected flow or relaxed-resampling surrogates.
+proposal-corrected EDH/PF or LEDH/PF as the first rungs in this ladder with an
+explicit proposal-corrected value-side interpretation.  That is a narrower
+statement than saying they are HMC-ready.
 
 The key lesson is not that PF-PF solves all target issues.  The key lesson is
 that it restores the proposal-correction logic that a valid particle method

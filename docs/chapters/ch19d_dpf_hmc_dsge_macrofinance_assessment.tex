@@ -2,298 +2,541 @@
 \label{ch:bf-dpf-learned-ot}
 
 The previous chapter developed differentiable resampling up to the level of
-entropic optimal transport and barycentric projection.  This chapter studies a
-further approximation layer: learned or amortized transport operators that are
-trained to imitate a previously defined transport map.  The central mathematical
-point is simple but essential: a learned operator is not just a faster solver.
-It is a new approximation to an already relaxed target construction.
+entropic optimal transport, finite Sinkhorn iteration, and barycentric
+projection.  This chapter studies a further approximation layer: learned or
+amortized transport operators trained to imitate a previously defined transport
+map.  The central point is deliberately conservative.  A learned operator is not
+a speed trick that automatically preserves target correctness.  It is a student
+map trained against a teacher object, and the teacher object may already be a
+relaxed or finite-solver approximation.
 
-This distinction matters because the DPF literature often presents neural
-transport acceleration in computational terms, while the monograph must treat it
-in target-status terms.  If the exact resampling map is replaced by an OT
-relaxation, and the OT relaxation is then replaced by a learned operator,
-BayesFilter must keep track of both approximation layers.
+The source spine is correspondingly narrow.  The entropy-regularized
+particle-filter teacher comes from the differentiable PF construction of
+\citet{corenflos2021differentiable}; Sinkhorn and computational OT background
+comes from \citet{cuturi2013sinkhorn} and
+\citet{peyre2019computational}; and the architecture discussion uses
+permutation-aware set operators such as DeepSets and Set Transformer
+\citep{zaheer2017deep,lee2019set}.  These sources identify plausible teacher
+and architecture families.  They do not prove posterior preservation, HMC
+target correctness, out-of-distribution reliability, or banking suitability for
+a learned map.
 
-The source spine for this chapter is deliberately narrower than a generic neural
-transport survey.  The OT teacher map comes from the entropy-regularized
-particle-filter construction of
-\citet{corenflos2021differentiable}; the computational motivation for
-amortizing Sinkhorn comes from the Sinkhorn cost structure of
-\citet{cuturi2013sinkhorn} and \citet{peyre2019computational}; and the
-architecture discussion uses permutation-equivariant set operators as the
-relevant design family \citep{zaheer2017deep,lee2019set}.  These sources do not
-prove that a learned operator preserves the posterior target.  They identify the
-map family being approximated and the architectural constraints that any such
-approximation must respect.
+\section{Objects and conventions}
+\label{sec:bf-learned-ot-objects}
 
-\section{The hierarchy of approximations}
+Let $X=(x_1,\ldots,x_N)^\top\in\mathbb{R}^{N\times d_x}$ be a particle cloud
+and let $w\in\Delta_N$ be normalized weights.  Let
+$u=(1/N,\ldots,1/N)$ be the equal-weight target marginal.  The cost matrix is
+$C(X,Z)\in\mathbb{R}^{N\times M}$ for source cloud $X$ and target support
+$Z=(z_1,\ldots,z_M)^\top$.  In the square resampling case used below,
+$M=N$ and the barycentric output is an equal-weight cloud
+$\tilde X\in\mathbb{R}^{N\times d_x}$.
+
+\begin{longtable}{@{}p{0.18\textwidth} p{0.37\textwidth} p{0.36\textwidth}@{}}
+\caption{Learned-OT object inventory.}
+\label{tab:bf-learned-ot-object-inventory}\\
+\toprule
+Object & Definition & Audit question \\
+\midrule
+\endfirsthead
+\toprule
+Object & Definition & Audit question \\
+\midrule
+\endhead
+Categorical baseline &
+Realized ancestor resampling from weights $w$. &
+Is the learned map being compared with categorical resampling, or only with an
+OT teacher? \\
+Unregularized OT teacher &
+Optimizer $\Pi_0^\star$ of a transport objective with marginals $(w,u)$. &
+Is the teacher the unregularized coupling, or is this only a limiting reference? \\
+EOT teacher &
+Optimizer $\Pi_\varepsilon^\star$ of an entropy-regularized OT objective. &
+Is $\varepsilon$ fixed and recorded, and is the entropy convention stated? \\
+Finite Sinkhorn teacher &
+Finite-iteration coupling $\Pi_{\varepsilon,K}$ computed by a declared solver. &
+Is the student trained on a numerical teacher rather than the exact EOT
+optimizer? \\
+Barycentric teacher output &
+Equal-weight cloud $B(\Pi) \in \mathbb{R}^{N\times d_x}$ derived from a
+coupling. &
+Is the student imitating the coupling, the barycentric cloud, or a scalar
+summary? \\
+Learned student map &
+Parametric map $T_\psi$ from weighted particle data and settings to an output
+cloud or coupling. &
+Are inputs, outputs, architecture class, particle count, dimension, and
+$\varepsilon$ dependence declared? \\
+Training distribution &
+Distribution $\mathcal D$ over clouds, weights, model regimes, and solver
+settings used to generate supervision. &
+Is every learned-map claim restricted to the support or stress envelope of
+$\mathcal D$? \\
+Loss function &
+Empirical objective used to fit the student to the teacher. &
+Does the loss measure the object later claimed, or only a proxy such as map
+MSE? \\
+Permutation action &
+Permutation matrix $P$ acting on particle rows and weights. &
+Does the architecture respect row relabeling of an unordered particle cloud? \\
+Residuals &
+Teacher-object, solver, learning, distribution-shift, filtering, posterior, and
+HMC value-gradient errors. &
+Is each residual tied to a mathematical object and a stated ``does not prove''
+limit? \\
+\bottomrule
+\end{longtable}
+
+\section{Teacher variants}
 \label{sec:bf-learned-ot-hierarchy}
 
-The resampling constructions of the rebuilt DPF block now form a clear
-hierarchy:
-\begin{enumerate}[label=(\roman*)]
-  \item standard categorical resampling;
-  \item transport-based or entropic-OT relaxation of categorical resampling;
-  \item learned or amortized approximation to the OT map.
-\end{enumerate}
-At each step in this hierarchy, one moves farther from the exact categorical map
-and gains a different form of smoothness or speed.  The learned-OT question is
-therefore not only whether a neural operator is fast or differentiable, but
-which map it is approximating and what error remains after that approximation.
+There is no single object called ``the OT teacher'' unless the variant is named.
+For a cost matrix $C$ and feasible set
+\[
+  \mathcal U(w,u)=
+  \left\{\Pi\in\mathbb{R}_+^{N\times N}:
+  \Pi\mathbf 1=w,\ \Pi^\top\mathbf 1=u\right\},
+\]
+the unregularized teacher is
+\begin{equation}
+\label{eq:bf-learned-ot-unregularized-teacher}
+  \Pi_0^\star
+  \in
+  \arg\min_{\Pi\in\mathcal U(w,u)}
+  \langle C(X), \Pi\rangle .
+\end{equation}
+This teacher is a transport projection, not categorical ancestor sampling.  The
+EOT teacher for the entropy convention used in the preceding chapter is
+\begin{equation}
+\label{eq:bf-learned-ot-eot-teacher}
+  \Pi_\varepsilon^\star
+  \in
+  \arg\min_{\Pi\in\mathcal U(w,u)}
+  \left\{
+    \langle C(X), \Pi\rangle
+    + \varepsilon\sum_{i,j}\Pi_{ij}(\log \Pi_{ij}-1)
+  \right\},
+  \qquad \varepsilon>0 .
+\end{equation}
+The finite numerical teacher is the output of a declared Sinkhorn procedure:
+\begin{equation}
+\label{eq:bf-learned-ot-finite-teacher}
+  \Pi_{\varepsilon,K}=\operatorname{Sinkhorn}_K(C(X),w,u,\varepsilon),
+\end{equation}
+where $K$ records the iteration budget and the implementation also fixes
+stabilization, tolerances, and stopping policy.  In many amortized designs the
+student is trained on $\Pi_{\varepsilon,K}$ or on its barycentric projection,
+not on $\Pi_\varepsilon^\star$ and not on $\Pi_0^\star$.
 
-\begin{table}[ht]
-\centering
-\small
-\begin{tabular}{p{0.18\textwidth} p{0.30\textwidth} p{0.24\textwidth} p{0.16\textwidth}}
+For a coupling $\Pi$, define the equal-weight barycentric output, for
+$j\in\{1,\ldots,N\}$, by
+\begin{equation}
+\label{eq:bf-learned-ot-barycentric-teacher}
+  B(\Pi)_j
+  =
+  \frac{\sum_{i=1}^N \Pi_{ij} x_i}{\sum_{i=1}^N \Pi_{ij}},
+\end{equation}
+whenever the denominator is positive.  For the target marginal $u_j=1/N$, this
+is $B(\Pi)_j=N\sum_i \Pi_{ij}x_i$.  A training set must state whether its
+teacher output is $B(\Pi_0^\star)$, $B(\Pi_\varepsilon^\star)$,
+$B(\Pi_{\varepsilon,K})$, the coupling itself, or a lower-dimensional summary.
+
+\begin{longtable}{@{}p{0.18\textwidth} p{0.30\textwidth} p{0.24\textwidth} p{0.20\textwidth}@{}}
+\caption{Teacher variants and what they do not prove.}
+\label{tab:bf-learned-ot-teacher-variants}\\
 \toprule
-Layer & Mathematical object & New approximation introduced & Main risk \\
+Teacher variant & Object actually used & Direct status & Does not prove \\
 \midrule
-Categorical & realized ancestor law from $\mathrm{Categorical}(w)$ & none relative to classical resampling & pathwise discontinuity \\
-EOT teacher & barycentric map $T_\varepsilon$ from an entropy-regularized OT solve & entropy relative to unregularized OT and categorical resampling & relaxed target \\
-Finite teacher solve & finite Sinkhorn approximation to $T_\varepsilon$ & iteration/tolerance error & solver residual and unstable gradients \\
-Learned student & parametric map $T_\psi$ trained to imitate the teacher & statistical and architectural approximation & extrapolation and target shift \\
+\endfirsthead
+\toprule
+Teacher variant & Object actually used & Direct status & Does not prove \\
+\midrule
+\endhead
+Categorical baseline &
+Ancestor draw from $\operatorname{Categorical}(w)$. &
+Classical resampling law, discontinuous pathwise. &
+Pathwise differentiability or learned-map correctness. \\
+Unregularized OT &
+$\Pi_0^\star$ or $B(\Pi_0^\star)$. &
+Exact for the chosen OT projection. &
+Equivalence to categorical resampling or EOT. \\
+EOT &
+$\Pi_\varepsilon^\star$ or $B(\Pi_\varepsilon^\star)$. &
+Exact for the regularized objective. &
+Small $\varepsilon$ stability, finite-solver accuracy, or posterior invariance. \\
+Finite Sinkhorn &
+$\Pi_{\varepsilon,K}$ or $B(\Pi_{\varepsilon,K})$. &
+Numerical approximation to the EOT teacher. &
+Convergence to EOT, absence of stabilization artifacts, or HMC validity. \\
+Learned student supervision &
+Samples from whichever teacher was computed. &
+Empirical approximation problem on $\mathcal D$. &
+Out-of-distribution accuracy, posterior preservation, or bank-facing evidence. \\
 \bottomrule
-\end{tabular}
-\caption{Approximation hierarchy for learned OT.}
-\label{tab:bf-learned-ot-hierarchy}
-\end{table}
+\end{longtable}
 
-\section{Teacher map and learned map}
+\section{Student map and training objective}
 \label{sec:bf-learned-ot-teacher}
 
-Let $T_\varepsilon$ denote the entropically regularized OT barycentric map from
-the previous chapter.  Given a weighted particle cloud
-$\{(x_i,w_i)\}_{i=1}^N$, the transport-relaxed equal-weight cloud is
-\begin{equation}
-\label{eq:bf-learned-ot-teacher-map}
-  \tilde X_{\mathrm{OT}} = T_\varepsilon(X,w),
-\end{equation}
-where $X=(x_1,\ldots,x_N)$ collects the particle locations and $w$ the weight
-vector.
-
-A learned or amortized operator introduces a parametric approximation
+A learned or amortized transport operator is a parametric map.  In the
+barycentric-output version, write
 \begin{equation}
 \label{eq:bf-learned-ot-student-map}
-  \tilde X_{\psi} = T_\psi(X,w,\varepsilon),
+  \tilde X_\psi
+  =
+  T_\psi(X,w;\varepsilon,N,d_x,a),
 \end{equation}
-with trainable parameters $\psi$.  The training objective is typically to make
-$T_\psi$ imitate $T_\varepsilon$ on a chosen distribution of particle clouds.
-Thus the teacher-student relationship is explicit:
+where $\psi$ are trainable parameters and $a$ records architecture choices such
+as shared-row networks, pooling, attention blocks, depth, width, and positional
+or feature encodings.  The dependence on $N$, $d_x$, and $\varepsilon$ is not a
+software detail.  It says which mathematical family of maps is being fit.
+
+If the teacher output is
+\[
+  Y_\tau(X,w,\varepsilon)=B(\Pi_\tau(X,w,\varepsilon)),
+\]
+where $\tau\in\{0,\varepsilon,(\varepsilon,K)\}$ names the teacher variant, a
+supervised objective has the form
 \begin{equation}
 \label{eq:bf-learned-ot-training-objective}
-  \psi^* \in \arg\min_\psi
-  \mathbb E_{(X,w) \sim \mathcal D}
-  \bigl[ \mathcal L\bigl(T_\psi(X,w,\varepsilon),
-  T_\varepsilon(X,w)\bigr) \bigr],
+  \psi^\star
+  \in
+  \arg\min_\psi
+  \mathbb E_{(X,w,\varepsilon,m)\sim \mathcal D}
+  \left[
+    \mathcal L\{T_\psi(X,w;\varepsilon,N,d_x,a),Y_\tau(X,w,\varepsilon)\}
+  \right],
 \end{equation}
-for some training distribution $\mathcal D$ and some discrepancy functional
-$\mathcal L$.
+where $m$ denotes the state-space model or regime that generated the cloud.  In
+practice the expectation is replaced by an empirical average:
+\begin{equation}
+\label{eq:bf-learned-ot-empirical-training-objective}
+  \widehat J(\psi)
+  =
+  \frac{1}{S}
+  \sum_{s=1}^S
+  \mathcal L\{T_\psi(X^{(s)},w^{(s)};\varepsilon^{(s)},N^{(s)},d_x^{(s)},a),
+  Y_\tau(X^{(s)},w^{(s)},\varepsilon^{(s)})\}.
+\end{equation}
 
-The mathematical significance of
-\eqref{eq:bf-learned-ot-training-objective} is that it defines learned OT as an
-approximation to a teacher map, not as a direct theorem about the original
-categorical resampling law.  The learned map inherits the OT interpretation only
-through the quality of that approximation.
+Equations~\eqref{eq:bf-learned-ot-training-objective} and
+\eqref{eq:bf-learned-ot-empirical-training-objective} prove only what they
+define: an empirical teacher-student fitting problem.  They do not prove small
+filtering error, posterior error, HMC target correctness, or validity outside
+the training distribution.  Those require additional diagnostics tied to the
+filtering recursion and posterior target.
 
-This also fixes the role of neural architecture.  If $T_\psi$ acts on an
-unordered particle cloud, then the natural invariance requirement is permutation
-equivariance:
+\section{Permutation symmetry}
+\label{sec:bf-learned-ot-symmetry}
+
+Particle labels are arbitrary.  Let $P\in\mathbb{R}^{N\times N}$ be a
+permutation matrix.  For output clouds whose rows are tied to the same particle
+ordering convention, the natural requirement is permutation equivariance:
 \begin{equation}
 \label{eq:bf-learned-ot-equivariance}
-  T_\psi(PX,Pw,\varepsilon) = P\,T_\psi(X,w,\varepsilon)
+  T_\psi(PX,Pw;\varepsilon,N,d_x,a)
+  =
+  P\,T_\psi(X,w;\varepsilon,N,d_x,a).
 \end{equation}
-for any particle permutation matrix $P$.  DeepSets-style shared row maps and
-global pooling \citep{zaheer2017deep}, or attention-based set operators
-\citep{lee2019set}, are relevant because they make this symmetry a design
-constraint rather than a hope.  Symmetry alone is not a target guarantee, but
-violating it creates an immediate implementation bug: the learned resampling
-measure would depend on arbitrary input ordering.
+For scalar summaries $s_\psi(X,w)$, the corresponding requirement is
+permutation invariance:
+\begin{equation}
+\label{eq:bf-learned-ot-invariance}
+  s_\psi(PX,Pw)=s_\psi(X,w).
+\end{equation}
+DeepSets-style shared row maps and global aggregation
+\citep{zaheer2017deep}, and attention-based set operators
+\citep{lee2019set}, are relevant because they can encode such symmetries.
+
+Symmetry is necessary but not target-sufficient.  A perfectly equivariant
+student can still approximate the wrong teacher, extrapolate outside
+$\mathcal D$, collapse the output cloud, or produce a value-gradient path that
+does not match the scalar target used by HMC.  Conversely, symmetry violation is
+already a mathematical failure: the output measure depends on arbitrary input
+ordering rather than on the empirical measure represented by the cloud.
 
 \section{Approximation residuals and target shift}
 \label{sec:bf-learned-ot-residuals}
 
-Let
+Residuals must be named by object.  A small residual at one layer does not
+automatically bound a later residual.  The map-level residual against the
+teacher $\tau$ is
 \begin{equation}
 \label{eq:bf-learned-ot-residual}
-  R_\psi(X,w,\varepsilon)
-  = T_\psi(X,w,\varepsilon) - T_\varepsilon(X,w)
+  R_{\psi,\tau}(X,w,\varepsilon)
+  =
+  T_\psi(X,w;\varepsilon,N,d_x,a)-Y_\tau(X,w,\varepsilon).
 \end{equation}
-define the map-level approximation residual.  This residual is not yet the same
-thing as posterior error, because the learned operator acts only on one layer of
-the filtering recursion.  Nevertheless, it is mathematically important because
-it tells us how far the learned resampling map is from the OT baseline that the
-previous chapter already identified as a relaxed transport construction.
+If the teacher is finite Sinkhorn, there is also a teacher-object residual:
+\begin{equation}
+\label{eq:bf-learned-ot-teacher-object-residual}
+  E_{\mathrm{teach}}(X,w,\varepsilon,K)
+  =
+  B(\Pi_{\varepsilon,K})-B(\Pi_\varepsilon^\star).
+\end{equation}
+A filtering-summary residual can be written for a test function $\varphi$ as
+\begin{equation}
+\label{eq:bf-learned-ot-filtering-summary-residual}
+  E_\varphi
+  =
+  \frac{1}{N}\sum_{j=1}^N \varphi\{T_\psi(X,w)_j\}
+  -
+  \frac{1}{N}\sum_{j=1}^N \varphi\{Y_\tau(X,w)_j\}.
+\end{equation}
+An HMC value-gradient residual for a learned scalar $\ell_\psi$ and a teacher
+scalar $\ell_\tau$ is different again:
+\begin{equation}
+\label{eq:bf-learned-ot-hmc-gradient-residual}
+  E_{\nabla}
+  =
+  \nabla_\theta \ell_\psi(\theta)-\nabla_\theta \ell_\tau(\theta).
+\end{equation}
+This residual does not decide whether HMC is correct.  It measures discrepancy
+between two targets.  HMC target correctness still requires the gradient used by
+the integrator to be the derivative of the same scalar value used in the
+Metropolis correction.
 
-The key interpretive rule is therefore:
-\begin{itemize}
-  \item the OT baseline already differs from exact categorical resampling;
-  \item the learned map differs from that OT baseline by the residual
-    \eqref{eq:bf-learned-ot-residual};
-  \item any later posterior discrepancy may reflect both layers.
-\end{itemize}
-Thus a reported posterior shift under learned OT should not be described only as
-"neural approximation error" in a vague sense.  It is better understood as the
-composition of:
-\begin{enumerate}[label=(\roman*)]
-  \item the OT relaxation relative to the exact resampling mechanism;
-  \item the learned-map residual relative to the OT baseline.
-\end{enumerate}
-This layered interpretation is essential for later HMC analysis.
-This also implies an important guardrail for later chapters and
-experiments: a map-level residual or transport-cost discrepancy does not by
-itself prove a specific posterior error size.  To make a stronger posterior
-claim one still needs additional evidence, for example posterior comparisons
-against the teacher OT baseline or against a trusted reference target.
-
-\begin{table}[ht]
-\centering
-\small
-\begin{tabular}{p{0.18\textwidth} p{0.24\textwidth} p{0.24\textwidth} p{0.20\textwidth}}
+\begin{longtable}{@{}p{0.16\textwidth} p{0.25\textwidth} p{0.26\textwidth} p{0.24\textwidth}@{}}
+\caption{Residual hierarchy for learned OT.}
+\label{tab:bf-learned-ot-residual-hierarchy}\\
 \toprule
-Residual layer & Mathematical object & Why it matters & Relevant diagnostic \\
+Residual layer & Direct object & Does not prove & Required next diagnostic \\
 \midrule
-Teacher-solve residual & finite Sinkhorn error relative to $T_\varepsilon$ & separates solver error from learning error & marginal residuals, transport-cost gap, fixed-iteration sensitivity \\
-Map residual & $R_\psi=T_\psi-T_\varepsilon$ & measures student imitation error on a cloud & held-out teacher/student error by geometry and $\varepsilon$ \\
-Distribution discrepancy & difference between empirical measures after teacher and student maps & connects map error to filtering summaries & Wasserstein/Sinkhorn divergence and test-function errors \\
-Posterior shift & change in parameter posterior under a learned filter path & target-level quantity of inferential interest & posterior comparison against teacher OT or trusted reference \\
-HMC target change & value-gradient object used by the sampler & determines whether HMC samples the intended object & value/gradient consistency and acceptance diagnostics \\
-\bottomrule
-\end{tabular}
-\caption{Residual and target-shift hierarchy for learned OT.}
-\label{tab:bf-learned-ot-residual-hierarchy}
-\end{table}
-
-\begin{table}[ht]
-\centering
-\small
-\begin{tabular}{p{0.20\textwidth} p{0.24\textwidth} p{0.24\textwidth} p{0.18\textwidth}}
+\endfirsthead
 \toprule
-Residual quantity & What it measures directly & What it does not by itself prove & Evidence needed next \\
+Residual layer & Direct object & Does not prove & Required next diagnostic \\
 \midrule
-Teacher/student MSE & average map imitation error on sampled clouds & negligible filtering or posterior error & filtering comparisons under teacher and student maps \\
-Transport-cost gap & difference in OT-style objective values & equivalence of empirical measures or posterior targets & test-function and posterior sensitivity checks \\
-Sinkhorn divergence & distributional discrepancy between two clouds & HMC correctness or exact likelihood status & value-gradient target audit and posterior benchmark \\
-Posterior summary difference & empirical difference in means, variances, or intervals & global target equivalence & multiple datasets, stress regimes, and reference comparisons \\
+\endhead
+Teacher-object error &
+$B(\Pi_{\varepsilon,K})-B(\Pi_\varepsilon^\star)$ or EOT versus unregularized OT. &
+That the teacher matches categorical resampling or the exact posterior. &
+Solver residuals, $\varepsilon$ sensitivity, and teacher-target comparison. \\
+Finite-solver error &
+Marginal residuals, cost gap, and stopping residuals of Sinkhorn. &
+That the learned student is accurate or stable. &
+Fixed-iteration sensitivity and stabilized versus unstabilized comparisons. \\
+Supervised learning error &
+$R_{\psi,\tau}$ on training and held-out clouds. &
+Small filtering-summary error or posterior error. &
+Stratified errors by weight degeneracy, dimension, particle count, and
+$\varepsilon$. \\
+Distribution shift &
+Difference between deployment clouds and $\mathcal D$. &
+That held-out in-distribution residuals transfer. &
+Stress sets for sharp weights, high dimension, particle-count shift, and model
+regions. \\
+Filtering-summary error &
+Test-function errors such as $E_\varphi$. &
+Global target equivalence. &
+Multiple nonlinear test functions and full filtering likelihood comparisons. \\
+Posterior error &
+Parameter posterior difference under learned and teacher filters. &
+HMC value-gradient consistency or production suitability. &
+Posterior comparisons against teacher OT and trusted references. \\
+HMC value-gradient error &
+Difference between gradients or scalar paths used by HMC. &
+Correctness for either target unless the value-gradient contract is satisfied. &
+Same-scalar value/gradient checks, finite differences, and accept/reject audit. \\
 \bottomrule
-\end{tabular}
-\caption{Residual interpretation guardrail.}
-\label{tab:bf-learned-ot-residual-guardrail}
-\end{table}
+\end{longtable}
 
 \section{Training-distribution dependence}
 \label{sec:bf-learned-ot-training-distribution}
 
-A learned transport operator is always trained relative to a specific family of
-particle clouds, weights, dimensions, and regularization parameters.  Let
-$\mathcal D$ denote this training distribution.  The approximation guarantee one
-might hope for is therefore local to the support of $\mathcal D$, not global in
-all state-space models.  In particular, a small residual on the training family
-does not by itself imply a small target shift under all out-of-distribution
-weight geometries or state-space models.
+The training distribution must be part of the mathematical claim.  Write
+\[
+  \mathcal D
+  =
+  \mathcal D(N,d_x,\varepsilon,m,\eta),
+\]
+where $m$ is the model class or simulation regime and $\eta$ records weight
+geometry, particle degeneracy, missing-data pattern, and other cloud-generating
+features.  A claim about $T_\psi$ is local to the support and stress envelope of
+this distribution unless a separate generalization argument is given.
 
-This dependence can enter through several channels:
+Important distribution coordinates include:
 \begin{itemize}
-  \item state dimension;
-  \item number of particles;
-  \item geometry of the weight simplex;
-  \item regularization parameter $\varepsilon$;
-  \item cloud geometry induced by the underlying state-space model.
+  \item state dimension $d_x$ and latent-factor structure;
+  \item particle count $N$ and any batching or padding convention;
+  \item weight-simplex geometry, especially sharp or nearly collapsed weights;
+  \item regularization range for $\varepsilon$ and Sinkhorn iteration budget
+    $K$;
+  \item structural-model region, including invalid or near-boundary parameter
+    values;
+  \item missing-data, mixed-frequency, and long-panel regimes;
+  \item hardware or compiled-execution regime if the learned map is used inside
+    repeated likelihood evaluations.
 \end{itemize}
-If a learned operator is trained on low-dimensional clouds or a narrow range of
-regularization strengths, its use outside that regime becomes an extrapolation
-problem rather than a direct continuation of the training objective.
 
-\begin{table}[ht]
-\centering
-\small
-\begin{tabular}{p{0.22\textwidth} p{0.30\textwidth} p{0.32\textwidth}}
+The phrase ``the learned map works'' is therefore not acceptable by itself.  A
+defensible statement has the form: relative to teacher $\tau$, training
+distribution $\mathcal D$, architecture class $a$, particle count and dimension
+envelope, and recorded stress tests, the student residuals remain below stated
+thresholds.  Even that statement remains a teacher-student statement until
+filtering and posterior diagnostics are added.
+
+\section{Failure regimes}
+\label{sec:bf-learned-ot-failure-regimes}
+
+\begin{longtable}{@{}p{0.18\textwidth} p{0.29\textwidth} p{0.24\textwidth} p{0.21\textwidth}@{}}
+\caption{Failure regimes for learned OT.}
+\label{tab:bf-learned-ot-failure-regimes}\\
 \toprule
-Issue & Mathematical source & Why it matters \\
+Regime & Why it is hard & Likely failure mode & Required diagnostic \\
 \midrule
-Permutation sensitivity & $T_\psi$ is not equivariant as in \eqref{eq:bf-learned-ot-equivariance} & output depends on arbitrary particle ordering \\
-State-dimension transfer & architecture and weights encode a fixed coordinate dimension & low-dimensional training does not validate high-dimensional structural models \\
-Weight-simplex extrapolation & training distribution misses sharp or degenerate weight patterns & learned map may fail exactly when resampling is most important \\
-Regularization mismatch & student trained for one range of $\varepsilon$ & target and smoothness change when $\varepsilon$ changes \\
-Teacher drift & teacher is finite Sinkhorn rather than exact $\Pi_\varepsilon^*$ & student may reproduce solver artifacts rather than the intended relaxed map \\
+\endfirsthead
+\toprule
+Regime & Why it is hard & Likely failure mode & Required diagnostic \\
+\midrule
+\endhead
+Sharp weights &
+Mass concentrates on few particles. &
+Student smooths or collapses the cloud when resampling matters most. &
+Residuals stratified by ESS and maximum weight. \\
+High dimension &
+Transport geometry and network capacity change with $d_x$. &
+Low-dimensional residuals do not transfer. &
+Dimension ladder and coordinate-scaling tests. \\
+Particle-count shift &
+Deployment $N$ differs from training $N$. &
+Architecture, normalization, or attention cost changes the learned map. &
+Train/test ladders in $N$ with fixed model and fixed $\varepsilon$. \\
+$\varepsilon$ shift &
+Regularization controls both teacher smoothness and target drift. &
+Student trained at one smoothness level is used at another. &
+Sensitivity over $\varepsilon$ and teacher residual comparisons. \\
+Structural-model regions &
+Invalid, near-determinacy, or stiff parameter regions change cloud geometry. &
+Student extrapolates where the filter is already fragile. &
+DSGE/MacroFinance stress clouds, invalid-region policy, and failure logging. \\
+Learned-map collapse &
+Network maps diverse inputs to low-diversity outputs. &
+Particle diversity and likelihood curvature are distorted. &
+Output covariance, duplicate-count, and nonlinear test-function diagnostics. \\
+Compiled repetition &
+The map is used repeatedly inside a likelihood or HMC path. &
+Tiny deterministic biases accumulate across long panels. &
+Long-panel repeated-evaluation tests and seed/hardware reproducibility. \\
 \bottomrule
-\end{tabular}
-\caption{Learned-OT implementation issue map.}
-\label{tab:bf-learned-ot-issue-map}
-\end{table}
-
-This is why the advanced student comparison source is helpful: it states
-explicitly that the learned OT operator there is trained on a restricted cloud
-family and a restricted regularization range, and it records a nonzero
-approximation residual together with a posterior-level shift.  BayesFilter
-should preserve that kind of honesty in the monograph.  The correct mathematical
-reading is not that the learned operator "works in general," but that it works
-relative to the teacher map on the training family to the recorded level of
-approximation.
+\end{longtable}
 
 \section{Implementation-facing mathematics}
 \label{sec:bf-learned-ot-implementation-math}
 
-The implementation consequences of learned OT are not purely engineering
-convenience.  They follow from the mathematics of what is being approximated.
+Runtime gains are real engineering evidence, but they are not target evidence.
+If $T_\psi$ replaces a Sinkhorn solve by a single forward pass, the cost can
+fall substantially.  The reason is that the computation has changed from a
+solver for a declared teacher to an evaluation of a fitted student.  A runtime
+table must therefore sit next to teacher residuals, filtering-summary
+diagnostics, and posterior comparisons.  It cannot replace them.
 
-\subsection{Runtime interpretation}
+Deterministic evaluation is similarly double-edged.  A deterministic learned
+map can simplify autodiff and repeated HMC likelihood evaluation compared with a
+stochastic resampling path.  But determinism only makes the surrogate easier to
+differentiate; it does not identify the posterior.  The HMC question remains:
+what scalar value is being evaluated, and is the supplied gradient the
+derivative of that same scalar?
 
-If $T_\psi$ replaces the iterative Sinkhorn solve by a single forward pass, then
-a substantial runtime reduction is possible.  That reduction is real, but it
-must be interpreted correctly: the runtime is reduced because one is evaluating a
-trained approximation to the OT map, not because the exact OT computation has
-somehow become free.
+Architecture choices also have mathematical status.  Shared-row maps, pooling,
+attention blocks, equivariance constraints, fixed particle counts, padding, and
+normalization layers define the class of transport maps available to the
+student.  They are not software-only details.  When a learned OT result is
+reported, the architecture is part of the approximation theorem that the work
+does not yet have.
 
-\subsection{Deterministic evaluation}
+\section{Internal evidence ladder for bank-facing use}
+\label{sec:bf-learned-ot-banking-evidence}
 
-A learned operator is typically deterministic conditional on its inputs and its
-parameters.  This can simplify later gradient propagation and repeated HMC
-likelihood evaluations compared with stochastic inner resampling schemes.  But
-this determinism does not eliminate the target issue; it only changes the nature
-of the approximation.
+\begin{longtable}{@{}p{0.18\textwidth} p{0.27\textwidth} p{0.27\textwidth} p{0.19\textwidth}@{}}
+\caption{Internal evidence ladder for learned-OT use in bank-facing filtering.}
+\label{tab:bf-learned-ot-banking-evidence}\\
+\toprule
+Gate & Evidence required & What the evidence supports & What it does not support \\
+\midrule
+\endfirsthead
+\toprule
+Gate & Evidence required & What the evidence supports & What it does not support \\
+\midrule
+\endhead
+Teacher residual tests &
+Marginal residuals, cost gaps, $\varepsilon$ sensitivity, and finite-Sinkhorn
+stability. &
+The teacher computation is numerically interpretable. &
+Learned-map accuracy or posterior preservation. \\
+Student residual tests &
+Train/held-out residuals by $N$, $d_x$, ESS, $\varepsilon$, and model regime. &
+The student imitates the chosen teacher on the tested envelope. &
+Global generalization or HMC target correctness. \\
+Filtering stress tests &
+Test-function errors, likelihood comparisons, cloud-diversity diagnostics, and
+failure logs. &
+The learned map is not visibly breaking the filtering summaries tested. &
+Posterior equivalence or bank-facing deployment. \\
+Posterior comparison &
+Teacher versus student posterior summaries on named datasets and model classes. &
+Credible research evidence for the tested posterior quantities. &
+Production readiness or untested structural regimes. \\
+Gradient and HMC checks &
+Same-scalar value/gradient checks, finite differences, compiled repetition, and
+accept/reject path audit. &
+HMC coherence for the learned scalar if the target contract passes. &
+Correctness for the original posterior unless corrected. \\
+Governance limitations &
+Versioned model, data, architecture, weights, diagnostics, monitoring, and
+rollback plan. &
+A controlled internal research or governance package after review. &
+Automatic approval from speed, smoothness, or a small residual table. \\
+\bottomrule
+\end{longtable}
 
-\subsection{State-dimension and architecture dependence}
-
-A learned set-based operator may be intrinsically tied to a fixed state
-dimension, particle count regime, or attention architecture.  Those are not
-merely software choices; they define the class of maps the learned operator can
-represent.  Hence the mathematical object being approximated depends partly on
-the architecture family itself.
+This internal ladder intentionally prevents a common overclaim.  It is not a
+substitute for a bank's formal model-risk or production-governance framework.
+A learned map can be fast, smooth, equivariant, and close to a finite Sinkhorn
+teacher on a held-out set, while still lacking evidence for posterior
+preservation under nonlinear DSGE or MacroFinance targets.  Bank-facing
+credibility requires the later gates, not only the early ones, and formal use
+would require a separate institution-specific governance process.
 
 \section{Why this chapter stops short of an HMC verdict}
 \label{sec:bf-learned-ot-no-hmc-verdict}
 
-The chapter has now identified learned or amortized OT as a second approximation
-layer above the OT baseline.  That is enough to prepare the later HMC chapter,
-but not enough to settle the HMC question.  The unresolved issue is no longer
-how the learned map is trained, but what posterior object HMC would target if it
-used the learned operator inside the likelihood path.
-
-That question belongs to the later HMC-suitability chapter because it requires a
-joint analysis of:
+This chapter identifies learned or amortized OT as a layered surrogate above an
+OT or finite-Sinkhorn teacher.  That is enough to prepare the HMC target
+chapter, but it does not settle the HMC question.  The unresolved HMC question
+requires a joint analysis of:
 \begin{itemize}
-  \item the baseline particle-filter target;
-  \item the particle-flow proposal layer;
+  \item the baseline particle-filter or structural filtering target;
   \item the OT relaxation layer;
-  \item the learned-operator approximation layer;
-  \item and the value-gradient path seen by HMC.
+  \item the finite-solver layer, if the teacher is numerical;
+  \item the learned-student approximation layer;
+  \item the scalar value and gradient path supplied to HMC;
+  \item the correction mechanism, if any.
 \end{itemize}
+If HMC uses the learned scalar and its matching gradient, the result may be
+coherent for the learned target.  It is not thereby coherent for the original
+categorical or structural posterior unless a correction or posterior-error
+argument is supplied.
 
 \section{What this chapter does and does not claim}
 \label{sec:bf-learned-ot-boundary}
 
-This chapter develops the teacher-versus-learned-map distinction for OT-based
-resampling approximations.  It does \emph{not} yet claim:
+This chapter claims that learned OT must be documented as a teacher-student
+surrogate with explicit residual and extrapolation risks.  It does not claim:
 \begin{itemize}
-  \item that learned OT is equivalent to the OT baseline;
-  \item that the OT baseline is equivalent to exact categorical resampling;
-  \item that a small map-level residual implies negligible posterior shift in all
-    models;
-  \item that learned OT is already justified as a final HMC target for nonlinear
-    DSGE or MacroFinance models.
+  \item that learned OT is equivalent to the OT teacher;
+  \item that an OT teacher is equivalent to categorical resampling;
+  \item that a finite Sinkhorn teacher is the exact EOT optimizer;
+  \item that a small map-level residual implies small filtering or posterior
+    error;
+  \item that permutation equivariance implies target correctness;
+  \item that runtime improvement is evidence of posterior preservation;
+  \item that learned OT is justified as a final HMC target for nonlinear DSGE or
+    MacroFinance models;
+  \item that learned OT is ready for bank-facing or production-governance use.
 \end{itemize}
-Its role is narrower and mathematically prior: it identifies learned transport
-operators as approximations to an already relaxed transport baseline and states
-why that layered approximation must remain explicit in the monograph.
+The chapter's role is narrower and mathematically prior: it identifies the
+teacher actually being approximated, the student map being trained, the
+distribution on which the claim is local, and the residual ladder that must be
+closed before stronger target or banking language would be defensible.
 
 \FloatBarrier
