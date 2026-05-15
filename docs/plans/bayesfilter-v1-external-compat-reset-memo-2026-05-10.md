@@ -4121,3 +4121,47 @@ Continuation:
 - recommended next phases are a predeclared HMC convergence ladder, batched
   GPU/XLA scaling, optional exact-reference work if a future claim needs it,
   and a Model C long-horizon structural-support decision.
+
+## 2026-05-16 V1 nonlinear performance NP0-NP7 execution
+
+Program:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-performance-master-program-2026-05-15.md
+```
+
+Final summary:
+
+```text
+docs/plans/bayesfilter-v1-nonlinear-performance-final-summary-2026-05-16.md
+```
+
+Execution:
+- ran the supervised Codex/Claude review-execute-audit loop for NP0-NP7;
+- upgraded the NP1 nonlinear benchmark harness schema and wrote CPU-only smoke
+  JSON/Markdown artifacts;
+- added a focused CPU-only XLA parity test for static Model B/C value cells;
+- ran trusted GPU pre-probes and a narrow trusted Model B T=3 CPU/GPU timing
+  ladder for existing production TensorFlow value paths;
+- wrote NP2/NP3 structured deferrals, the NP6 reference-path no-rewrite
+  decision, and the NP7 final no-default-change consolidation.
+
+Gate result:
+- NP7 closed with
+  `NP7_COMPLETE_NO_DEFAULT_CHANGE_NO_OPTIMIZATION_PROMOTION`;
+- value and score fast-path optimizations remain deferred or blocked pending
+  promotion-grade ladders, proof/derivation artifacts, focused parity, and
+  branch/fixed-support preservation evidence;
+- NP4 supports only CPU static-shape value XLA cells listed in its matrix;
+- NP5 supports only exact Model B T=3 CPU/GPU timing statements and no broad
+  GPU/default claim;
+- NumPy reference paths remain reference-only because no concrete unmet
+  TensorFlow downstream need was shown.
+
+Continuation:
+- do not change production nonlinear defaults from this program;
+- reopen value/score optimizations only through a new evidence plan with the
+  missing repair labels from the final summary;
+- keep broad GPU speedup, score XLA readiness, HMC convergence/readiness,
+  nonlinear Hessian readiness, exact Model B/C nonlinear likelihood quality,
+  client switch-over, and production deployment as non-claims.
