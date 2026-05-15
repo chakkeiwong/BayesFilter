@@ -146,26 +146,36 @@ Before each execution phase:
 5. keep this reviewer-grade DPF revision separate from student experimental
    workstreams.
 
-At the time this program was created, the branch was `dpf-monograph-rebuild`,
-and the worktree included unrelated student-baseline changes plus an untracked
-DPF reboot handoff memo.
+The live state is not fixed by this master document.  The first execution
+artifact supersedes the original snapshot:
+
+- `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p0-preflight-result-2026-05-15.md`
+
+That result records `main` as the active branch, `main` ahead of `origin/main`
+by two commits, unrelated dirty student-baseline files, and untracked
+reviewer-grade DPF planning artifacts.  Every later phase must rerun the branch
+and worktree checks because the dirty set may change between agents.
 
 ## Required tool lanes
 
 ### ResearchAssistant lane
 
 Use the local ResearchAssistant MCP before and during source-facing phases.
-Current status at program creation:
+Current status established by P0/P2:
 
 - workspace root: `/home/ubuntu/python/ResearchAssistant`;
 - mode: read-only;
 - offline mode: enabled;
-- generic DPF keyword searches returned no stored paper summaries.
+- generic DPF keyword searches returned no stored paper summaries;
+- P2 found no local ResearchAssistant paper summaries for the DPF source
+  families and did not ingest sources because write/fetch workflows were not
+  authorized.
 
-This means the first phase must not assume ResearchAssistant already contains
-all DPF source records.  It must instead record which sources are available
-locally, which are only present through bibliography entries or existing
-chapters, and which require future source intake or manual inspection.
+This means the reviewer-grade revision must not describe DPF claims as
+ResearchAssistant-reviewed unless a later artifact records a reviewed local
+source summary.  Until then, source grounding is bibliography-spine plus local
+chapter/source-map review, and load-bearing mathematical claims must be derived
+locally or explicitly weakened.
 
 Required ResearchAssistant outputs for this program:
 
@@ -173,6 +183,9 @@ Required ResearchAssistant outputs for this program:
 - a claim-support register for every major method family;
 - a list of source gaps that prevent strong claims;
 - review status of any local paper summaries used.
+
+If ResearchAssistant remains empty for a source family, the phase result must
+say so and must not use "source-grounded" to mean paper-reviewed support.
 
 ### MathDevMCP lane
 
@@ -187,6 +200,10 @@ Required MathDevMCP outputs for this program:
 - audit evidence for selected load-bearing equations;
 - conservative notes for obligations that cannot be mechanically verified;
 - implementation-brief checks where a chapter makes code-facing claims.
+
+Every derivation-heavy phase must record either MathDevMCP evidence or a
+specific reason that the obligation was unsuitable for the tool and was checked
+manually.  A phase cannot pass by silently skipping the mandated tool lane.
 
 ### Bibliography and chapter-source lane
 
@@ -252,7 +269,21 @@ This program must produce:
 7. an implementation-test map tied to equations and approximation layers;
 8. a compile and cross-reference audit;
 9. an independent final reviewer-readiness audit;
-10. an updated DPF reset memo or a new reviewer-grade reset memo.
+10. an updated DPF reset memo or a new reviewer-grade reset memo;
+11. a final supervisor audit showing that the master program and phase subplans
+    agree on taxonomy, artifacts, source limits, build gates, and lane safety.
+
+Result artifact naming rule:
+
+- Plan filenames keep their original creation date.
+- Result, audit, and closeout artifacts use the actual completion date in the
+  filename.
+- Existing completed results are:
+  - `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p0-preflight-result-2026-05-15.md`;
+  - `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p1-claim-ledger-2026-05-15.md`;
+  - `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p2-source-grounding-2026-05-15.md`.
+  Future subplans should name result artifacts as `{YYYY-MM-DD}` patterns unless
+  the artifact already exists.
 
 ## Required claim-status vocabulary
 
@@ -291,7 +322,141 @@ reason is recorded:
 9. skeptical-reviewer limitations;
 10. transition to the next chapter.
 
-## Phase R0: preflight and evidence inventory
+## Governing phase taxonomy
+
+The executable taxonomy for this reviewer-grade round is **P0-P13**.  The
+earlier R0-R12 outline in predecessor discussion is superseded and must not be
+used as a parallel execution plan.  If any older note mentions an R phase, map
+it through the table below and then follow the P-phase subplan.
+
+| Governing phase | Artifact | Status | Role |
+|---|---|---|---|
+| P0 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p0-preflight-plan-2026-05-14.md` | completed; result dated `2026-05-15` | worktree, build, source, label, and evidence inventory |
+| P1 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p1-claim-ledger-plan-2026-05-14.md` | completed; result dated `2026-05-15` | skeptical-reader argument map and claim ledger |
+| P2 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p2-source-grounding-plan-2026-05-14.md` | completed; result dated `2026-05-15` | source roles, source gaps, and ResearchAssistant-empty fallback |
+| P3 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p3-smc-baseline-expansion-plan-2026-05-14.md` | next gating phase | classical filtering and SMC baseline expansion |
+| P4 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p4-edh-ledh-derivation-plan-2026-05-14.md` | provisional result dated `2026-05-15`; requires P3 impact reconciliation | EDH/LEDH derivation expansion |
+| P5 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p5-pfpf-jacobian-audit-plan-2026-05-14.md` | provisional result dated `2026-05-15`; requires P3 impact reconciliation | PF-PF proposal correction and Jacobian audit |
+| P6 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p6-resampling-ot-sinkhorn-plan-2026-05-14.md` | blocked until P3 passes, P4/P5 reconciliation passes, and any existing `ch32` partial diff is audited | differentiable resampling and OT/Sinkhorn expansion |
+| P7 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p7-learned-ot-defensibility-plan-2026-05-14.md` | pending P6 gate | learned/amortized OT defensibility expansion |
+| P8 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p8-hmc-banking-target-plan-2026-05-14.md` | pending P7 gate | HMC target correctness and banking suitability expansion |
+| P9 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p9-debugging-verification-contract-plan-2026-05-14.md` | pending P8 gate | equation-indexed debugging and verification contract |
+| P10 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p10-notation-claim-consolidation-plan-2026-05-14.md` | pending P9 gate | cross-chapter notation, claim-status, and literature consolidation |
+| P11 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p11-derivation-audit-plan-2026-05-14.md` | pending P10 gate | mathematical derivation audit |
+| P12 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p12-hostile-reader-audit-plan-2026-05-14.md` | pending P11 gate | build, PDF review, and hostile-reader audit |
+| P13 | `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p13-final-readiness-plan-2026-05-14.md` | pending P12 gate | final readiness report and reset memo update |
+
+Historical crosswalk:
+
+- R0 maps to P0 and P2.
+- R1 maps to P1.
+- R2 maps to P3.
+- R3 maps to P4.
+- R4 maps to P5.
+- R5 maps to P6.
+- R6 maps to P7.
+- R7 maps to P8.
+- R8 maps to P9.
+- R9 maps to P2 and P10.
+- R10 maps to P11 and P12.
+- R11 maps to P12.
+- R12 maps to P13.
+
+## Common execution contract for P3-P13
+
+Every remaining phase must begin by recording:
+
+1. `git branch --show-current`;
+2. `git status --short`;
+3. whether any dirty or untracked file is outside the reviewer-grade DPF lane;
+4. the exact allowed write set for that phase.
+
+Allowed write sets:
+
+- P3-P9 may edit only their named DPF chapter plus their phase result artifact,
+  unless the phase result records a specific reason to touch a shared file such
+  as `docs/references.bib`.
+- P10-P13 may edit reviewer-grade DPF planning artifacts, the reviewer-grade
+  reset memo, and DPF chapters as required by audit repair.
+- Student-baseline files under `docs/plans/bayesfilter-student-dpf-baseline-*`
+  are out of lane and must not be edited, staged, reverted, or summarized as
+  DPF monograph evidence unless a later user instruction explicitly changes the
+  lane.
+
+Source-grounding contract:
+
+- P2 is the governing source register until superseded by a later source-intake
+  artifact.
+- ResearchAssistant currently has no local DPF paper summaries.  Therefore
+  P3-P9 must treat source roles as bibliography-spine support, not
+  ResearchAssistant-reviewed support.
+- A phase may strengthen a mathematical claim only if the local text derives it
+  in BayesFilter notation or the phase result records a reviewed primary-source
+  path with assumptions and limits.
+- If source support is unavailable, the claim must be weakened, marked as an
+  engineering hypothesis, or recorded as unresolved.
+
+Out-of-order P4/P5 reconciliation:
+
+- P4 and P5 result artifacts dated `2026-05-15` are present in the worktree.
+  They are in-lane artifacts and must not be reverted merely because this master
+  now makes P3 the next gating phase.
+- Because P3 baseline definitions were not completed before those results, P4
+  and P5 remain provisional until P3 is completed and a bounded reconciliation
+  note confirms that P3 did not change baseline notation, estimator status, or
+  source boundaries in a way that invalidates P4/P5.
+- If P3 changes any symbol, definition, estimator-status claim, or
+  differentiability boundary used by P4/P5, repair P4/P5 before P6.
+- P6 may start only after the P3 result and the P4/P5 reconciliation note both
+  pass their veto checks.
+
+Existing P6 partial-diff rule:
+
+- `docs/chapters/ch32_diff_resampling_neural_ot.tex` may already contain
+  in-lane partial P6 edits without a P6 result artifact.  Do not revert those
+  edits solely because they predate the tightened plan.
+- The P6 phase must begin by auditing the existing `ch32` diff, deciding whether
+  to adopt, repair, or supersede it, and recording that decision in the P6
+  result.
+- P6 is not complete until it has a dated result artifact, build/layout status,
+  derivation-obligation evidence, and a disposition for the pre-existing
+  partial diff.
+
+Tool-evidence contract:
+
+- P3-P11 must create an explicit derivation-obligation table in the phase
+  result for load-bearing formulas touched in that phase.
+- For each obligation, record `MathDevMCP`, `manual`, or `blocked` as the audit
+  method.  If MathDevMCP is not used for a listed obligation, the result must
+  explain why the obligation was unsuitable for bounded tool checking.
+- ResearchAssistant queries must be recorded in source-facing phases.  Empty
+  results are valid evidence only for source unavailability, not for claim
+  support.
+
+Build and layout contract:
+
+- P3, P4, P5, P6, P8, P9, P10, P12, and P13 must run the established LaTeX
+  build or record why it could not be run.
+- P6 and P10 must additionally inspect table/layout risks because P0 already
+  found DPF-local table readability warnings.
+- A phase that adds substantial tables may not defer layout truth until P12
+  unless its result records a bounded reason and a follow-up gate.
+
+Result artifact contract:
+
+- P3-P13 result artifacts must use the actual completion date in the filename:
+  `docs/plans/bayesfilter-dpf-monograph-reviewer-grade-phase-p{N}-<slug>-result-{YYYY-MM-DD}.md`
+  when the phase has a numbered phase result.
+- Audit and closeout artifacts may use their descriptive names, but still use
+  the actual completion date.
+
+## Historical R-phase outline superseded by P0-P13
+
+The remaining R-phase text below is retained only as historical design context.
+It is not executable.  When it conflicts with the P0-P13 taxonomy or the common
+execution contract above, the P-phase subplan and the common contract govern.
+
+### Historical R0: preflight and evidence inventory
 
 Purpose:
 
@@ -321,7 +486,7 @@ Veto diagnostics:
 - dirty worktree files are not classified;
 - central chapters are revised before the gap register exists.
 
-## Phase R1: skeptical-reader architecture and chapter contract
+### Historical R1: skeptical-reader architecture and chapter contract
 
 Purpose:
 
@@ -352,7 +517,7 @@ Veto diagnostics:
 - target-status distinctions are introduced only late in the sequence;
 - learned or relaxed methods are discussed before the exact baseline is clear.
 
-## Phase R2: classical filtering and SMC foundation deepening
+### Historical R2: classical filtering and SMC foundation deepening
 
 Target:
 
@@ -388,7 +553,7 @@ Veto diagnostics:
 - resampling is described only informally;
 - later DPF claims rely on terms not defined here.
 
-## Phase R3: EDH and LEDH particle-flow deepening
+### Historical R3: EDH and LEDH particle-flow deepening
 
 Target:
 
@@ -427,7 +592,7 @@ Veto diagnostics:
 - LEDH is treated as a minor variant without local-linearization assumptions;
 - raw flow is implied to be a corrected posterior sampler.
 
-## Phase R4: PF-PF proposal correction and Jacobian deepening
+### Historical R4: PF-PF proposal correction and Jacobian deepening
 
 Target:
 
@@ -465,7 +630,7 @@ Veto diagnostics:
 - "corrected" is used without specifying the corrected object;
 - PF-PF is promoted to HMC-ready without variance and smoothness caveats.
 
-## Phase R5: differentiable resampling, OT, and Sinkhorn deepening
+### Historical R5: differentiable resampling, OT, and Sinkhorn deepening
 
 Target:
 
@@ -507,7 +672,7 @@ Veto diagnostics:
 - the finite solver path is not distinguished from the mathematical EOT
   problem.
 
-## Phase R6: learned and amortized OT deepening
+### Historical R6: learned and amortized OT deepening
 
 Target:
 
@@ -545,7 +710,7 @@ Veto diagnostics:
 - training-distribution dependence is vague;
 - student residuals are not connected to filtering or HMC quantities.
 
-## Phase R7: DPF-HMC target correctness and banking suitability deepening
+### Historical R7: DPF-HMC target correctness and banking suitability deepening
 
 Target:
 
@@ -586,7 +751,7 @@ Veto diagnostics:
 - pseudo-marginal and differentiable-surrogate arguments are blurred;
 - banking suitability is argued from plausibility rather than evidence.
 
-## Phase R8: debugging crosswalk and implementation contract revision
+### Historical R8: debugging crosswalk and implementation contract revision
 
 Target:
 
@@ -619,7 +784,7 @@ Veto diagnostics:
 - tests are not tied to equations;
 - implementation advice ignores target-status distinctions.
 
-## Phase R9: literature synthesis and source gap closure
+### Historical R9: literature synthesis and source gap closure
 
 Purpose:
 
@@ -651,7 +816,7 @@ Veto diagnostics:
 - source identity or metadata is uncertain;
 - local claims exceed the cited source.
 
-## Phase R10: claim boundary and skeptical-reviewer audit
+### Historical R10: claim boundary and skeptical-reviewer audit
 
 Purpose:
 
@@ -680,7 +845,7 @@ Veto diagnostics:
 - caveats are hidden in later chapters instead of local to the claim;
 - limitations are softened to preserve narrative momentum.
 
-## Phase R11: build, reference, and consistency audit
+### Historical R11: build, reference, and consistency audit
 
 Purpose:
 
@@ -706,7 +871,7 @@ Veto diagnostics:
 - notation changes across chapters without warning;
 - compilation succeeds but the chapter argument is inconsistent.
 
-## Phase R12: final reviewer-readiness report
+### Historical R12: final reviewer-readiness report
 
 Purpose:
 
@@ -733,26 +898,30 @@ Veto diagnostics:
 - remaining experimental gaps are hidden;
 - unresolved mathematical weaknesses are rephrased as future polish.
 
-## Initial priority order
+## Governing execution order
 
-The first execution pass should not attempt to rewrite every chapter at once.
-The recommended order is:
+The first execution pass must follow completed evidence setup before chapter
+rewrites.  The governing order is:
 
-1. R0 evidence inventory.
-2. R1 skeptical-reader architecture.
-3. R3 EDH/LEDH particle-flow deepening.
-4. R4 PF-PF correction and Jacobian deepening.
-5. R5 differentiable resampling, OT, and Sinkhorn deepening.
-6. R7 DPF-HMC target correctness and banking suitability deepening.
-7. R6 learned/amortized OT deepening.
-8. R2 classical SMC foundation deepening if later chapters expose missing
-   definitions.
-9. R8 debugging crosswalk revision.
-10. R9-R12 audits and closeout.
+1. P0 preflight and evidence inventory: completed.
+2. P1 skeptical-reader argument map and claim ledger: completed.
+3. P2 source-grounding and literature synthesis: completed.
+4. P3 classical filtering and SMC baseline expansion: next gating phase.
+5. P4/P5 impact reconciliation because P4 and P5 provisional results already
+   exist out of the tightened prerequisite order.
+6. P6 differentiable resampling and OT/Sinkhorn expansion.
+7. P7 learned/amortized OT defensibility expansion.
+8. P8 HMC target correctness and banking suitability expansion.
+9. P9 debugging crosswalk into verification contract.
+10. P10 cross-chapter notation, claim-status, and literature consolidation.
+11. P11 mathematical derivation audit.
+12. P12 build, PDF review, and hostile-reader audit.
+13. P13 final readiness report and reviewer-grade reset memo update.
 
-This order prioritizes the sections most likely to draw skeptical academic
-review: particle-flow derivations, correction weights, differentiable
-resampling target drift, and HMC target correctness.
+P3 remains the next gate because P1 identified baseline definitions and
+estimator status as prerequisites for later target-status claims.  Existing P4
+and P5 work should be preserved, but it cannot unlock P6 until P3 confirms or
+repairs the baseline assumptions they depend on.
 
 ## Definition of success
 
@@ -764,4 +933,3 @@ find themselves.
 It is acceptable for the final document to say that some DPF-for-banking claims
 remain unvalidated.  It is not acceptable for the document to imply validation
 through polished prose, citation density, or architectural neatness.
-
