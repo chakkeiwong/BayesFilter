@@ -1,0 +1,293 @@
+{
+  "artifact_paths": [
+    "experiments/dpf_monograph_evidence/reports/outputs/linear_gaussian_recovery.json",
+    "experiments/dpf_monograph_evidence/reports/linear-gaussian-recovery-result.md"
+  ],
+  "blocker_class": "none",
+  "cap_non_applicability_reasons": {
+    "max_finite_difference_evaluations": "IE3 does not use finite-difference probes.",
+    "max_sinkhorn_iterations": "IE3 does not instantiate Sinkhorn transport."
+  },
+  "cap_values": {
+    "max_finite_difference_evaluations": null,
+    "max_particles": 256,
+    "max_replications": 5,
+    "max_sinkhorn_iterations": null,
+    "max_time_steps": 1,
+    "max_wall_clock_seconds": 30
+  },
+  "chapter_label": "Chapter 26",
+  "command": "python -m experiments.dpf_monograph_evidence.runners.run_linear_gaussian_recovery",
+  "comparator_id": "analytic_kalman_reference",
+  "continuation_veto_status": "not_triggered",
+  "coverage": {
+    "hmc_value_gradient": "missing",
+    "learned_map_residual": "missing",
+    "linear_gaussian_recovery": "passed",
+    "pfpf_algebra_parity": "missing",
+    "posterior_sensitivity_summary": "missing",
+    "sinkhorn_residual": "missing",
+    "soft_resampling_bias": "missing",
+    "synthetic_affine_flow": "missing"
+  },
+  "cpu_gpu_mode": {
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true
+  },
+  "diagnostic_id": "linear_gaussian_recovery",
+  "diagnostic_role": "promotion_criterion",
+  "environment": {
+    "branch": "main",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "gpu_hidden_before_import": true,
+    "import_boundary_checked_modules": [
+      "experiments.dpf_monograph_evidence.fixtures.linear_gaussian",
+      "experiments.dpf_monograph_evidence.results",
+      "experiments.dpf_monograph_evidence.runners.run_linear_gaussian_recovery"
+    ],
+    "package_versions": {
+      "numpy": "2.1.3",
+      "python": "3.13.13"
+    },
+    "python_version": "3.13.13"
+  },
+  "explanatory_only_diagnostics": [
+    "Bootstrap PF summaries are replicated descriptive engineering evidence only.",
+    "RMSE slope across 64 and 256 particles is descriptive and not a promotion criterion."
+  ],
+  "finite_checks": {
+    "analytic_fixture": {
+      "log_likelihood": -1.4836092551089233,
+      "posterior_mean": -0.03763082231167336,
+      "posterior_variance": 0.33258654399079934,
+      "predictive_mean": 0.315,
+      "predictive_variance": 1.2910000000000001
+    },
+    "bootstrap_pf": {
+      "absolute_error_summary": {
+        "256": {
+          "log_likelihood_abs_error_mcse": 0.006658639687658765,
+          "log_likelihood_abs_error_mean": 0.03572846326060497,
+          "posterior_mean_abs_error_mcse": 0.008668251925634984,
+          "posterior_mean_abs_error_mean": 0.021578810032793067,
+          "posterior_variance_abs_error_mcse": 0.005908684794412823,
+          "posterior_variance_abs_error_mean": 0.02099596057851556,
+          "replication_count": 5
+        },
+        "64": {
+          "log_likelihood_abs_error_mcse": 0.03906714126646333,
+          "log_likelihood_abs_error_mean": 0.11182427771465857,
+          "posterior_mean_abs_error_mcse": 0.010103964909747012,
+          "posterior_mean_abs_error_mean": 0.044946453464729905,
+          "posterior_variance_abs_error_mcse": 0.018151820950350187,
+          "posterior_variance_abs_error_mean": 0.06614690680009669,
+          "replication_count": 5
+        }
+      },
+      "convergence_summary": {
+        "log_likelihood_error_ratio_64_to_256": 3.12983732043014,
+        "mean_error_ratio_64_to_256": 2.082897685109851,
+        "rmse_log2_ratio_64_to_256": 1.6369453299823131,
+        "variance_error_ratio_64_to_256": 3.1504587062228784
+      },
+      "particle_counts": [
+        64,
+        256
+      ],
+      "replications": {
+        "256": [
+          {
+            "log_likelihood": -1.5325069234022648,
+            "log_likelihood_abs_error": 0.04889766829334152,
+            "mean_abs_error": 0.052074078569631074,
+            "posterior_mean": -0.08970490088130444,
+            "posterior_variance": 0.37274443608602503,
+            "seed": 101,
+            "variance_abs_error": 0.04015789209522569
+          },
+          {
+            "log_likelihood": -1.522215136244444,
+            "log_likelihood_abs_error": 0.03860588113552077,
+            "mean_abs_error": 0.01185425830470625,
+            "posterior_mean": -0.025776564006967113,
+            "posterior_variance": 0.3505557472354906,
+            "seed": 102,
+            "variance_abs_error": 0.017969203244691256
+          },
+          {
+            "log_likelihood": -1.457409275721666,
+            "log_likelihood_abs_error": 0.026199979387257377,
+            "mean_abs_error": 0.008776603461437334,
+            "posterior_mean": -0.046407425773110696,
+            "posterior_variance": 0.31711268377844365,
+            "seed": 103,
+            "variance_abs_error": 0.015473860212355695
+          },
+          {
+            "log_likelihood": -1.4339205831892485,
+            "log_likelihood_abs_error": 0.04968867191967474,
+            "mean_abs_error": 0.029481489941300468,
+            "posterior_mean": -0.06711231225297383,
+            "posterior_variance": 0.3060551191167182,
+            "seed": 104,
+            "variance_abs_error": 0.026531424874081166
+          },
+          {
+            "log_likelihood": -1.4988593706761537,
+            "log_likelihood_abs_error": 0.015250115567230438,
+            "mean_abs_error": 0.005707619886890211,
+            "posterior_mean": -0.03192320242478315,
+            "posterior_variance": 0.32773912152457535,
+            "seed": 105,
+            "variance_abs_error": 0.004847422466223994
+          }
+        ],
+        "64": [
+          {
+            "log_likelihood": -1.7168596831583092,
+            "log_likelihood_abs_error": 0.2332504280493859,
+            "mean_abs_error": 0.023970881416908743,
+            "posterior_mean": -0.013659940894764619,
+            "posterior_variance": 0.45933519624146724,
+            "seed": 101,
+            "variance_abs_error": 0.1267486522506679
+          },
+          {
+            "log_likelihood": -1.6349988201597025,
+            "log_likelihood_abs_error": 0.15138956505077927,
+            "mean_abs_error": 0.038526785527787474,
+            "posterior_mean": -0.07615760783946084,
+            "posterior_variance": 0.3860713577581234,
+            "seed": 102,
+            "variance_abs_error": 0.05348481376732406
+          },
+          {
+            "log_likelihood": -1.598060071097817,
+            "log_likelihood_abs_error": 0.11445081598889373,
+            "mean_abs_error": 0.06967623978743645,
+            "posterior_mean": 0.03204541747576309,
+            "posterior_variance": 0.3780205211399869,
+            "seed": 103,
+            "variance_abs_error": 0.045433977149187565
+          },
+          {
+            "log_likelihood": -1.4738768258416692,
+            "log_likelihood_abs_error": 0.009732429267254039,
+            "mean_abs_error": 0.06802200354407449,
+            "posterior_mean": 0.030391181232401133,
+            "posterior_variance": 0.2487704215255011,
+            "seed": 104,
+            "variance_abs_error": 0.08381612246529824
+          },
+          {
+            "log_likelihood": -1.4333111048919434,
+            "log_likelihood_abs_error": 0.05029815021697992,
+            "mean_abs_error": 0.024536357047442392,
+            "posterior_mean": -0.062167179359115754,
+            "posterior_variance": 0.3113355756227937,
+            "seed": 105,
+            "variance_abs_error": 0.021250968368005663
+          }
+        ]
+      },
+      "seed_list": [
+        101,
+        102,
+        103,
+        104,
+        105
+      ]
+    },
+    "edh_affine_recovery": {
+      "posterior_mean": -0.0376308223116734,
+      "posterior_mean_abs_error": 3.469446951953614e-17,
+      "posterior_variance": 0.33258654399079934,
+      "posterior_variance_abs_error": 0.0
+    },
+    "edh_posterior_mean_abs_error": 3.469446951953614e-17,
+    "edh_posterior_variance_abs_error": 0.0,
+    "pf_log_likelihood_error_256": 0.03572846326060497,
+    "pf_log_likelihood_error_64": 0.11182427771465857,
+    "pf_mean_error_256": 0.021578810032793067,
+    "pf_mean_error_64": 0.044946453464729905,
+    "pf_variance_error_256": 0.02099596057851556,
+    "pf_variance_error_64": 0.06614690680009669
+  },
+  "mcse_or_interval": {
+    "log_likelihood_abs_error_mcse": {
+      "256": 0.006658639687658765,
+      "64": 0.03906714126646333
+    },
+    "posterior_mean_abs_error_mcse": {
+      "256": 0.008668251925634984,
+      "64": 0.010103964909747012
+    },
+    "posterior_variance_abs_error_mcse": {
+      "256": 0.005908684794412823,
+      "64": 0.018151820950350187
+    },
+    "summary": "MCSE is reported across five fixed seeds for descriptive PF errors; EDH recovery is deterministic and reported separately via absolute tolerance."
+  },
+  "non_implication": "This IE3 recovery result does not validate production bayesfilter code, does not justify DPF-HMC or banking-readiness claims, and does not upgrade replicated PF summaries into a statistically supported ranking or convergence proof.",
+  "phase_id": "IE3",
+  "post_run_red_team_note": "The EDH equality check could still pass while the chosen closed form is only an algebraic special case; PF error reduction across two particle counts is descriptive only and could look favorable without establishing asymptotic rate or downstream DPF correctness.",
+  "promotion_criterion_status": "pass",
+  "promotion_veto_status": "not_triggered",
+  "repair_trigger": "Re-open IE3 if the schema stops carrying PF uncertainty fields, EDH special-case tolerances fail, or the CPU-only manifest proof drifts.",
+  "replication_count": 5,
+  "row_level_source_support_class": "bibliography_spine_only",
+  "run_manifest": {
+    "artifact_paths": [
+      "experiments/dpf_monograph_evidence/reports/outputs/linear_gaussian_recovery.json",
+      "experiments/dpf_monograph_evidence/reports/linear-gaussian-recovery-result.md"
+    ],
+    "branch": "main",
+    "command": "python -m experiments.dpf_monograph_evidence.runners.run_linear_gaussian_recovery",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "ended_at_utc": "2026-05-15T18:15:29Z",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true,
+    "package_versions": {
+      "numpy": "2.1.3",
+      "python": "3.13.13"
+    },
+    "pre_import_cuda_visible_devices": "-1",
+    "pre_import_gpu_hiding_assertion": true,
+    "python_version": "3.13.13",
+    "seed_policy": "fixed_seeds_[101,102,103,104,105]_particle_counts_[64,256]",
+    "started_at_utc": "2026-05-15T18:15:29Z",
+    "wall_clock_cap_seconds": 30
+  },
+  "runtime_seconds": 0.03477600900805555,
+  "seed_policy": "fixed_seeds_[101,102,103,104,105]_particle_counts_[64,256]",
+  "shape_checks": {
+    "observation_dimension": 1,
+    "particle_count_ladder": [
+      64,
+      256
+    ],
+    "replication_count": 5,
+    "state_dimension": 1,
+    "time_steps": 1
+  },
+  "source_family": "Classical SMC / bootstrap PF; EDH / LEDH particle flow",
+  "source_support_class": "bibliography_spine_only",
+  "status": "pass",
+  "tolerance": {
+    "edh_posterior_mean_abs_error_max": 1e-12,
+    "edh_posterior_variance_abs_error_max": 1e-12,
+    "pf_interpretation": "descriptive_only_against_analytic_reference",
+    "pf_replications_required": 5
+  },
+  "uncertainty_status": "pass",
+  "wall_clock_cap_seconds": 30,
+  "wall_time_seconds": 0.03477600900805555
+}

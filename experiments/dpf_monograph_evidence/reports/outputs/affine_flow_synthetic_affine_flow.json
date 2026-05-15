@@ -1,0 +1,209 @@
+{
+  "artifact_paths": [
+    "experiments/dpf_monograph_evidence/reports/outputs/affine_flow_synthetic_affine_flow.json",
+    "experiments/dpf_monograph_evidence/reports/affine-flow-pfpf-result.md"
+  ],
+  "blocker_class": "none",
+  "cap_non_applicability_reasons": {
+    "max_finite_difference_evaluations": "IE4 does not use finite-difference probes.",
+    "max_replications": "IE4 is deterministic and records replication_count=1.",
+    "max_sinkhorn_iterations": "IE4 does not instantiate Sinkhorn transport.",
+    "max_time_steps": "IE4 evaluates single-step affine parity only and does not roll out a time-series filter."
+  },
+  "cap_values": {
+    "max_finite_difference_evaluations": null,
+    "max_particles": 3,
+    "max_replications": null,
+    "max_sinkhorn_iterations": null,
+    "max_time_steps": null,
+    "max_wall_clock_seconds": 30
+  },
+  "chapter_label": "Chapter 26",
+  "command": "python -m experiments.dpf_monograph_evidence.runners.run_affine_flow_pfpf",
+  "comparator_id": "analytic_affine_pushforward_density_reference",
+  "continuation_veto_status": "not_triggered",
+  "coverage": {
+    "hmc_value_gradient": "missing",
+    "learned_map_residual": "missing",
+    "linear_gaussian_recovery": "passed",
+    "pfpf_algebra_parity": "passed",
+    "posterior_sensitivity_summary": "missing",
+    "sinkhorn_residual": "missing",
+    "soft_resampling_bias": "missing",
+    "synthetic_affine_flow": "passed"
+  },
+  "cpu_gpu_mode": {
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true
+  },
+  "diagnostic_id": "synthetic_affine_flow",
+  "diagnostic_role": "promotion_criterion",
+  "environment": {
+    "branch": "main",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "gpu_hidden_before_import": true,
+    "import_boundary_checked_modules": [
+      "experiments.dpf_monograph_evidence.fixtures.affine_flow",
+      "experiments.dpf_monograph_evidence.diagnostics.affine_flow_pfpf",
+      "experiments.dpf_monograph_evidence.results",
+      "experiments.dpf_monograph_evidence.runners.run_affine_flow_pfpf"
+    ],
+    "package_versions": {
+      "numpy": "2.1.3",
+      "python": "3.13.13"
+    },
+    "python_version": "3.13.13"
+  },
+  "explanatory_only_diagnostics": [
+    "Affine-only fixture parity does not support nonlinear-flow integration claims.",
+    "Affine-only fixture parity does not support filtering or posterior-quality claims."
+  ],
+  "finite_checks": {
+    "finite_summary": true,
+    "residuals": {
+      "corrected_log_weight_abs_max": {
+        "finite": true,
+        "observed": 4.440892098500626e-16,
+        "threshold": 1e-12
+      },
+      "forward_reconstruction_abs_max": {
+        "finite": true,
+        "observed": 0.0,
+        "threshold": 1e-12
+      },
+      "inverse_reconstruction_abs_max": {
+        "finite": true,
+        "observed": 2.220446049250313e-16,
+        "threshold": 1e-12
+      },
+      "log_det_abs_max": {
+        "finite": true,
+        "observed": 1.6653345369377348e-16,
+        "threshold": 1e-12
+      },
+      "normalized_weight_abs_max": {
+        "finite": true,
+        "observed": 1.1102230246251565e-16,
+        "threshold": 1e-12
+      },
+      "probability_sum_abs_max": {
+        "finite": true,
+        "observed": 2.220446049250313e-16,
+        "threshold": 1e-12
+      },
+      "proposal_log_density_abs_max": {
+        "finite": true,
+        "observed": 4.440892098500626e-16,
+        "threshold": 1e-12
+      },
+      "pushforward_log_density_abs_max": {
+        "finite": true,
+        "observed": 8.881784197001252e-16,
+        "threshold": 1e-12
+      }
+    }
+  },
+  "mcse_or_interval": {
+    "summary": "Not applicable because IE4 uses deterministic affine fixtures with replication_count=1."
+  },
+  "non_implication": "IE4 synthetic affine-flow checks validate only closed-form affine pushforward-density, inverse-map, and Jacobian-sign parity on deterministic clean-room fixtures. They do not validate nonlinear flow integration, solver stability, PF-PF filtering correctness, production bayesfilter code, real DPF-HMC targets, posterior quality, banking use, model-risk use, or production readiness.",
+  "phase_id": "IE4",
+  "post_run_red_team_note": "These affine checks could still pass while nonlinear flow integration, solver stability, and downstream filtering logic remain wrong because the fixture never leaves closed-form affine algebra.",
+  "promotion_criterion_status": "pass",
+  "promotion_veto_status": "not_triggered",
+  "repair_trigger": "none",
+  "replication_count": 1,
+  "row_level_source_support_class": "bibliography_spine_only",
+  "run_manifest": {
+    "artifact_paths": [
+      "experiments/dpf_monograph_evidence/reports/outputs/affine_flow_synthetic_affine_flow.json",
+      "experiments/dpf_monograph_evidence/reports/affine-flow-pfpf-result.md"
+    ],
+    "branch": "main",
+    "command": "python -m experiments.dpf_monograph_evidence.runners.run_affine_flow_pfpf",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "ended_at_utc": "2026-05-15T18:37:03Z",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true,
+    "package_versions": {
+      "numpy": "2.1.3",
+      "python": "3.13.13"
+    },
+    "pre_import_cuda_visible_devices": "-1",
+    "pre_import_gpu_hiding_assertion": true,
+    "python_version": "3.13.13",
+    "seed_policy": "deterministic_no_rng_affine_fixture",
+    "started_at_utc": "2026-05-15T18:37:03Z",
+    "wall_clock_cap_seconds": 30
+  },
+  "runtime_seconds": 0.018742871994618326,
+  "seed_policy": "deterministic_no_rng_affine_fixture",
+  "shape_checks": {
+    "matrix_shape": [
+      2,
+      2
+    ],
+    "observation_particle_count": 3,
+    "offset_shape": [
+      2
+    ],
+    "particle_count": 3,
+    "state_dimension": 2
+  },
+  "source_family": "Chapter 26 PF-PF proposal correction diagnostics on deterministic affine clean-room fixtures",
+  "source_support_class": "bibliography_spine_only",
+  "status": "pass",
+  "tolerance": {
+    "corrected_log_weight_abs_max": {
+      "finite": true,
+      "observed": 4.440892098500626e-16,
+      "threshold": 1e-12
+    },
+    "forward_reconstruction_abs_max": {
+      "finite": true,
+      "observed": 0.0,
+      "threshold": 1e-12
+    },
+    "inverse_reconstruction_abs_max": {
+      "finite": true,
+      "observed": 2.220446049250313e-16,
+      "threshold": 1e-12
+    },
+    "log_det_abs_max": {
+      "finite": true,
+      "observed": 1.6653345369377348e-16,
+      "threshold": 1e-12
+    },
+    "normalized_weight_abs_max": {
+      "finite": true,
+      "observed": 1.1102230246251565e-16,
+      "threshold": 1e-12
+    },
+    "probability_sum_abs_max": {
+      "finite": true,
+      "observed": 2.220446049250313e-16,
+      "threshold": 1e-12
+    },
+    "proposal_log_density_abs_max": {
+      "finite": true,
+      "observed": 4.440892098500626e-16,
+      "threshold": 1e-12
+    },
+    "pushforward_log_density_abs_max": {
+      "finite": true,
+      "observed": 8.881784197001252e-16,
+      "threshold": 1e-12
+    }
+  },
+  "uncertainty_status": "not_applicable",
+  "wall_clock_cap_seconds": 30,
+  "wall_time_seconds": 0.018742871994618326
+}

@@ -1,0 +1,235 @@
+{
+  "artifact_inventory": {
+    "final_closeout": "docs/plans/bayesfilter-dpf-monograph-implementation-evidence-final-closeout-2026-05-16.md",
+    "ie8_result": "docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-result-2026-05-16.md",
+    "research_evidence_note": "experiments/dpf_monograph_evidence/reports/dpf-monograph-research-evidence-note.md",
+    "row_json_files": {
+      "hmc_value_gradient": "experiments/dpf_monograph_evidence/reports/outputs/hmc_value_gradient.json",
+      "learned_map_residual": "experiments/dpf_monograph_evidence/reports/outputs/learned_ot_residual.json",
+      "linear_gaussian_recovery": "experiments/dpf_monograph_evidence/reports/outputs/linear_gaussian_recovery.json",
+      "pfpf_algebra_parity": "experiments/dpf_monograph_evidence/reports/outputs/affine_flow_pfpf_algebra_parity.json",
+      "sinkhorn_residual": "experiments/dpf_monograph_evidence/reports/outputs/sinkhorn_residual.json",
+      "soft_resampling_bias": "experiments/dpf_monograph_evidence/reports/outputs/soft_resampling_bias.json",
+      "synthetic_affine_flow": "experiments/dpf_monograph_evidence/reports/outputs/affine_flow_synthetic_affine_flow.json"
+    },
+    "summary_json": "experiments/dpf_monograph_evidence/reports/outputs/dpf_monograph_evidence_summary.json"
+  },
+  "canonical_diagnostic_rows": [
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/linear_gaussian_recovery.json",
+        "experiments/dpf_monograph_evidence/reports/linear-gaussian-recovery-result.md"
+      ],
+      "claim_ceiling": "controlled_fixture_supported",
+      "comparator_or_reference_id": "analytic_kalman_reference",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "passed",
+      "diagnostic_id": "linear_gaussian_recovery",
+      "execution_occurred": true,
+      "non_implication": "This IE3 recovery result does not validate production bayesfilter code, does not justify DPF-HMC or banking-readiness claims, and does not upgrade replicated PF summaries into a statistically supported ranking or convergence proof.",
+      "phase_id": "IE3",
+      "phase_status": "pass",
+      "promotion_criterion_status": "pass",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "analytic_reference",
+      "repair_trigger": "Re-open IE3 if the schema stops carrying PF uncertainty fields, EDH special-case tolerances fail, or the CPU-only manifest proof drifts.",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": true,
+      "why_not_validation": "The row is controlled-fixture evidence only and does not instantiate real target posterior validation."
+    },
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/affine_flow_synthetic_affine_flow.json",
+        "experiments/dpf_monograph_evidence/reports/affine-flow-pfpf-result.md"
+      ],
+      "claim_ceiling": "controlled_fixture_supported",
+      "comparator_or_reference_id": "analytic_affine_pushforward_density_reference",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "passed",
+      "diagnostic_id": "synthetic_affine_flow",
+      "execution_occurred": true,
+      "non_implication": "IE4 synthetic affine-flow checks validate only closed-form affine pushforward-density, inverse-map, and Jacobian-sign parity on deterministic clean-room fixtures. They do not validate nonlinear flow integration, solver stability, PF-PF filtering correctness, production bayesfilter code, real DPF-HMC targets, posterior quality, banking use, model-risk use, or production readiness.",
+      "phase_id": "IE4",
+      "phase_status": "pass",
+      "promotion_criterion_status": "pass",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "analytic_reference",
+      "repair_trigger": "none",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": true,
+      "why_not_validation": "The row is controlled-fixture evidence only and does not instantiate real target posterior validation."
+    },
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/affine_flow_pfpf_algebra_parity.json",
+        "experiments/dpf_monograph_evidence/reports/affine-flow-pfpf-result.md"
+      ],
+      "claim_ceiling": "controlled_fixture_supported",
+      "comparator_or_reference_id": "closed_form_pfpf_log_weight_reference",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "passed",
+      "diagnostic_id": "pfpf_algebra_parity",
+      "execution_occurred": true,
+      "non_implication": "IE4 PF-PF algebra parity checks validate only closed-form proposal-density, Jacobian-sign, unnormalized corrected-log-weight, and normalized-weight parity on deterministic affine clean-room fixtures. They do not validate nonlinear flow integration, solver stability, filtering correctness, production bayesfilter code, real DPF-HMC targets, posterior quality, banking use, model-risk use, or production readiness.",
+      "phase_id": "IE4",
+      "phase_status": "pass",
+      "promotion_criterion_status": "pass",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "analytic_reference",
+      "repair_trigger": "none",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": true,
+      "why_not_validation": "The row is controlled-fixture evidence only and does not instantiate real target posterior validation."
+    },
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/soft_resampling_bias.json",
+        "experiments/dpf_monograph_evidence/reports/resampling-sinkhorn-result.md"
+      ],
+      "claim_ceiling": "controlled_fixture_supported",
+      "comparator_or_reference_id": "closed_form_two_particle_soft_resampling_reference",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "passed",
+      "diagnostic_id": "soft_resampling_bias",
+      "execution_occurred": true,
+      "non_implication": "IE5 soft-resampling diagnostics validate only deterministic two-particle relaxed-target expectation arithmetic for selected affine and nonlinear test functions. They do not validate categorical resampling law preservation, unbiasedness for nonlinear observables, posterior equivalence, production bayesfilter code, banking use, model-risk use, or production readiness.",
+      "phase_id": "IE5",
+      "phase_status": "pass",
+      "promotion_criterion_status": "pass",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "analytic_reference",
+      "repair_trigger": "none",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": true,
+      "why_not_validation": "The row is controlled-fixture evidence only and does not instantiate real target posterior validation."
+    },
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/sinkhorn_residual.json",
+        "experiments/dpf_monograph_evidence/reports/resampling-sinkhorn-result.md"
+      ],
+      "claim_ceiling": "controlled_fixture_supported",
+      "comparator_or_reference_id": "manual_balanced_sinkhorn_marginal_reference",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "passed",
+      "diagnostic_id": "sinkhorn_residual",
+      "execution_occurred": true,
+      "non_implication": "IE5 Sinkhorn diagnostics validate only finite-budget marginal residuals for a small deterministic regularized transport fixture. They do not validate exact unregularized OT equivalence, exact EOT equivalence at finite epsilon/iteration budget, posterior equivalence, production bayesfilter code, banking use, model-risk use, or production readiness.",
+      "phase_id": "IE5",
+      "phase_status": "pass",
+      "promotion_criterion_status": "pass",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "analytic_reference",
+      "repair_trigger": "none",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": true,
+      "why_not_validation": "The row is controlled-fixture evidence only and does not instantiate real target posterior validation."
+    },
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/learned_ot_residual.json",
+        "experiments/dpf_monograph_evidence/reports/learned-ot-residual-result.md"
+      ],
+      "claim_ceiling": "deferred_evidence_gap",
+      "comparator_or_reference_id": "no_approved_teacher_student_artifact",
+      "continuation_veto_status": "fail",
+      "coverage_status": "deferred",
+      "diagnostic_id": "learned_map_residual",
+      "execution_occurred": false,
+      "non_implication": "IE6 learned-OT diagnostics were deferred because no approved pre-existing teacher/student artifact with provenance was available. This deferral does not validate or invalidate learned OT, neural OT, surrogate-map quality, posterior quality, production bayesfilter code, banking use, model-risk use, or production readiness.",
+      "phase_id": "IE6",
+      "phase_status": "deferred",
+      "promotion_criterion_status": "not_triggered",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "no_trusted_reference_exploratory_only",
+      "repair_trigger": "missing artifact provenance",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": false,
+      "why_not_validation": "The diagnostic is deferred with a recorded evidence gap, not validation or method failure."
+    },
+    {
+      "artifact_paths": [
+        "experiments/dpf_monograph_evidence/reports/outputs/hmc_value_gradient.json",
+        "experiments/dpf_monograph_evidence/reports/hmc-value-gradient-result.md"
+      ],
+      "claim_ceiling": "exploratory_only",
+      "comparator_or_reference_id": "fixed_scalar_same_callable_finite_difference_reference",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "passed",
+      "diagnostic_id": "hmc_value_gradient",
+      "execution_occurred": true,
+      "non_implication": "IE7 fixed-scalar value-gradient diagnostics validate only same-scalar, finite-difference, repeatability, and fixed-target leapfrog/energy-smoke checks on a deterministic clean-room fixture. They do not validate HMC correctness, DPF-HMC correctness, posterior/reference agreement, tuning readiness beyond controlled-fixture eligibility, production bayesfilter code, banking use, model-risk use, or production readiness.",
+      "phase_id": "IE7",
+      "phase_status": "pass",
+      "promotion_criterion_status": "pass",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "no_trusted_reference_exploratory_only",
+      "repair_trigger": "none",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": false,
+      "why_not_validation": "IE7 is a fixed-scalar value-gradient gate only and does not validate HMC correctness or posterior agreement."
+    },
+    {
+      "artifact_paths": [],
+      "claim_ceiling": "not_tested",
+      "comparator_or_reference_id": "no_ie8_posterior_sensitivity_executed",
+      "continuation_veto_status": "not_triggered",
+      "coverage_status": "missing",
+      "diagnostic_id": "posterior_sensitivity_summary",
+      "execution_occurred": false,
+      "non_implication": "The DPF monograph implementation-evidence program provides clean-room controlled-fixture and governance evidence only. It does not validate real DPF-HMC targets, DSGE or MacroFinance posterior inference, banking use, model-risk use, production bayesfilter code, or production readiness.",
+      "phase_id": "IE8",
+      "phase_status": "not_tested",
+      "promotion_criterion_status": "not_triggered",
+      "promotion_veto_status": "not_triggered",
+      "reference_class": "no_trusted_reference_exploratory_only",
+      "repair_trigger": "not tested",
+      "source_support_class": "bibliography_spine_only",
+      "trusted_reference_present": false,
+      "why_not_validation": "IE8 intentionally ran no posterior sensitivity; no posterior validation is claimed."
+    }
+  ],
+  "master_program_compliance": {
+    "claim_ceiling_enforced": true,
+    "every_phase_has_result_or_blocker": true,
+    "ie6_deferred_visible": true,
+    "no_production_or_student_imports_introduced": true,
+    "posterior_sensitivity_not_run": true,
+    "source_support_caveat_preserved": true
+  },
+  "non_implication": "The DPF monograph implementation-evidence program provides clean-room controlled-fixture and governance evidence only. It does not validate real DPF-HMC targets, DSGE or MacroFinance posterior inference, banking use, model-risk use, production bayesfilter code, or production readiness.",
+  "post_run_red_team_note": "The strongest reason not to over-read this closeout is that it aggregates clean-room controlled fixtures and one deferred learned-OT gap; it does not instantiate real DPF-HMC posterior targets or production code paths.",
+  "posterior_sensitivity_executed": false,
+  "posterior_sensitivity_execution_reason": "No posterior sensitivity executed by default; current artifacts do not authorize real DPF-HMC, HMC-chain, DSGE, MacroFinance, or posterior validation runs.",
+  "program_exit_label": "dpf_monograph_evidence_program_complete_with_blockers",
+  "program_status": "complete_with_blockers",
+  "run_manifest": {
+    "artifact_paths": [
+      "experiments/dpf_monograph_evidence/reports/outputs/dpf_monograph_evidence_summary.json",
+      "experiments/dpf_monograph_evidence/reports/dpf-monograph-research-evidence-note.md",
+      "docs/plans/bayesfilter-dpf-monograph-implementation-evidence-final-closeout-2026-05-16.md",
+      "docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-result-2026-05-16.md"
+    ],
+    "branch": "main",
+    "command": "python -m experiments.dpf_monograph_evidence.runners.run_evidence_summary",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "ended_at_utc": "2026-05-15T19:21:57Z",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true,
+    "package_versions": {
+      "python": "3.13.13",
+      "stdlib": "builtin"
+    },
+    "pre_import_cuda_visible_devices": "-1",
+    "pre_import_gpu_hiding_assertion": true,
+    "python_version": "3.13.13",
+    "runtime_seconds": 5.45599905308336e-05,
+    "seed_policy": "deterministic_aggregation_no_rng",
+    "started_at_utc": "2026-05-15T19:21:57Z",
+    "wall_clock_cap_seconds": 30
+  },
+  "source_support_ceiling": "Program-level source-support ceiling: bibliography-spine support unless a row explicitly records a stronger reviewed-source artifact. IE1 did not identify reviewed local DPF source summaries, so this program does not upgrade source provenance to paper-reviewed support."
+}

@@ -1,0 +1,155 @@
+{
+  "artifact_paths": [
+    "experiments/dpf_monograph_evidence/reports/outputs/learned_ot_residual.json",
+    "experiments/dpf_monograph_evidence/reports/learned-ot-residual-result.md"
+  ],
+  "blocker_class": "source",
+  "cap_non_applicability_reasons": {
+    "max_finite_difference_evaluations": "No finite-difference probe was instantiated.",
+    "max_particles": "No learned-map residual fixture was instantiated because no approved artifact was available.",
+    "max_replications": "No stochastic replication was run because the phase deferred.",
+    "max_sinkhorn_iterations": "No Sinkhorn teacher or residual execution was instantiated.",
+    "max_time_steps": "No filtering rollout was instantiated."
+  },
+  "cap_values": {
+    "max_finite_difference_evaluations": null,
+    "max_particles": null,
+    "max_replications": null,
+    "max_sinkhorn_iterations": null,
+    "max_time_steps": null,
+    "max_wall_clock_seconds": 30
+  },
+  "chapter_label": "Chapter 26",
+  "command": "python -m experiments.dpf_monograph_evidence.runners.run_learned_ot_residual",
+  "comparator_id": "no_approved_teacher_student_artifact",
+  "continuation_veto_status": "fail",
+  "coverage": {
+    "hmc_value_gradient": "missing",
+    "learned_map_residual": "deferred",
+    "linear_gaussian_recovery": "passed",
+    "pfpf_algebra_parity": "passed",
+    "posterior_sensitivity_summary": "missing",
+    "sinkhorn_residual": "passed",
+    "soft_resampling_bias": "passed",
+    "synthetic_affine_flow": "passed"
+  },
+  "cpu_gpu_mode": {
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true
+  },
+  "diagnostic_id": "learned_map_residual",
+  "diagnostic_role": "continuation_veto",
+  "environment": {
+    "branch": "main",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "gpu_hidden_before_import": true,
+    "import_boundary_checked_modules": [
+      "experiments.dpf_monograph_evidence.results",
+      "experiments.dpf_monograph_evidence.runners.run_learned_ot_residual"
+    ],
+    "package_versions": {
+      "python": "3.13.13",
+      "stdlib": "builtin"
+    },
+    "python_version": "3.13.13"
+  },
+  "explanatory_only_diagnostics": [
+    "Deferred learned-OT residual row records an evidence gap only.",
+    "No teacher quality, student quality, posterior quality, or method failure claim is supported."
+  ],
+  "finite_checks": {
+    "artifact_gate": {
+      "approval_date": null,
+      "approval_source": null,
+      "artifact_mode": "missing_artifact_deferred",
+      "artifact_provenance_missing_flag": 1,
+      "checkpoint_mutation_flag": 0,
+      "optimizer_step_count": 0,
+      "student_checkpoint_id": null,
+      "teacher_artifact_path_or_id": null,
+      "teacher_origin_class": "unknown_or_missing",
+      "teacher_output_object": "unknown",
+      "teacher_variant": "unknown",
+      "training_commit": null,
+      "training_data_envelope": null,
+      "training_run_id": null
+    },
+    "envelope_tags": [
+      {
+        "envelope_tag": "deferred",
+        "evaluation_envelope_id": "not_applicable_no_artifact",
+        "reason": "No approved teacher/student artifact with provenance was available.",
+        "shift_axis": "none",
+        "training_envelope_id": "not_applicable_no_artifact"
+      }
+    ],
+    "finite_summary": true,
+    "residuals_executed": false
+  },
+  "mcse_or_interval": {
+    "summary": "Not applicable because IE6 deferred before residual execution; no stochastic output was produced."
+  },
+  "non_implication": "IE6 learned-OT diagnostics were deferred because no approved pre-existing teacher/student artifact with provenance was available. This deferral does not validate or invalidate learned OT, neural OT, surrogate-map quality, posterior quality, production bayesfilter code, banking use, model-risk use, or production readiness.",
+  "phase_id": "IE6",
+  "post_run_red_team_note": "The strongest reason not to over-read IE6 is that a clean deferral records only the absence of an approved teacher/student artifact. It says nothing about whether learned OT would pass or fail under a provenance-bearing artifact.",
+  "promotion_criterion_status": "not_triggered",
+  "promotion_veto_status": "not_triggered",
+  "repair_trigger": "missing artifact provenance",
+  "replication_count": 0,
+  "row_level_source_support_class": "bibliography_spine_only",
+  "run_manifest": {
+    "artifact_paths": [
+      "experiments/dpf_monograph_evidence/reports/outputs/learned_ot_residual.json",
+      "experiments/dpf_monograph_evidence/reports/learned-ot-residual-result.md"
+    ],
+    "branch": "main",
+    "command": "python -m experiments.dpf_monograph_evidence.runners.run_learned_ot_residual",
+    "commit": "0684d6fe4350664c34826e83df59b2413d7be89c",
+    "cpu_only": true,
+    "cuda_visible_devices": "-1",
+    "dirty_state_summary": "M docs/plans/bayesfilter-dpf-monograph-reviewer-grade-reset-memo-2026-05-15.md\n M docs/plans/bayesfilter-student-dpf-baseline-master-program-2026-05-10.md\n M docs/plans/bayesfilter-student-dpf-baseline-reset-memo-2026-05-09.md\n M experiments/controlled_dpf_baseline/README.md\n M experiments/controlled_dpf_baseline/fixtures/README.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-program-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-master-subplans-supervisor-audit-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie0-preflight-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-intake-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie1-source-review-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie2-diagnostic-harness-design-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie3-linear-gaussian-recovery-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie4-affine-flow-pfpf-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie5-resampling-sinkhorn-result-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie6-learned-ot-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie7-hmc-value-gradient-plan-2026-05-16.md\n?? docs/plans/bayesfilter-dpf-monograph-implementation-evidence-phase-ie8-posterior-sensitivity-governance-plan-2026-05-16.md\n?? docs/plans/bayesfilter-student-dpf-baseline-blocker-debug-master-program-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-future-work-usability-gates-plan-2026-05-15.md\n?? docs/plans/bayesfilter-student-dpf-baseline-master-program-and-final-subplans-audit-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp5-clean-room-implementation-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp6-clean-room-fixed-grid-execution-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp7-clean-room-comparison-audit-result.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-plan-2026-05-13.md\n?? docs/plans/bayesfilter-student-dpf-baseline-mp8-final-archive-and-closeout-result.md\n?? experiments/controlled_dpf_baseline/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/__init__.py\n?? experiments/controlled_dpf_baseline/fixtures/range_bearing.py\n?? experiments/controlled_dpf_baseline/metrics.py\n?? experiments/controlled_dpf_baseline/prototypes/__init__.py\n?? experiments/controlled_dpf_baseline/prototypes/particle_flow_baseline.py\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-comparison-audit.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-fixed-grid-result.md\n?? experiments/controlled_dpf_baseline/reports/controlled-dpf-baseline-smoke-result.md\n?? experiments/controlled_dpf_baseline/reports/outputs/\n?? experiments/controlled_dpf_baseline/results.py\n?? experiments/controlled_dpf_baseline/runners/__init__.py\n?? experiments/controlled_dpf_baseline/runners/run_fixed_grid.py\n?? experiments/controlled_dpf_baseline/runners/run_smoke.py\n?? experiments/controlled_dpf_baseline/runners/validate_results.py\n?? experiments/dpf_monograph_evidence/\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/outputs/future_work_usability_gates_summary_2026-05-15.json\n?? experiments/student_dpf_baselines/reports/student-dpf-baseline-future-work-usability-gates-result-2026-05-15.md\n?? experiments/student_dpf_baselines/runners/run_future_work_usability_gates.py",
+    "ended_at_utc": "2026-05-15T19:04:11Z",
+    "gpu_devices_visible": [],
+    "gpu_hidden_before_import": true,
+    "package_versions": {
+      "python": "3.13.13",
+      "stdlib": "builtin"
+    },
+    "pre_import_cuda_visible_devices": "-1",
+    "pre_import_gpu_hiding_assertion": true,
+    "python_version": "3.13.13",
+    "seed_policy": "deterministic_no_rng_deferred_no_artifact",
+    "started_at_utc": "2026-05-15T19:04:11Z",
+    "wall_clock_cap_seconds": 30
+  },
+  "runtime_seconds": 1.366098877042532e-05,
+  "seed_policy": "deterministic_no_rng_deferred_no_artifact",
+  "shape_checks": {
+    "envelope_slice_count": 0,
+    "map_input_shape": "not_applicable_no_artifact",
+    "map_output_shape": "not_applicable_no_artifact",
+    "residual_vector_shape": [
+      0
+    ],
+    "support_size": 0,
+    "test_point_count": 0
+  },
+  "source_family": "Chapter 26 learned/amortized OT diagnostics; no approved teacher/student artifact available",
+  "source_support_class": "bibliography_spine_only",
+  "status": "deferred",
+  "tolerance": {
+    "deferred_no_artifact": {
+      "finite": true,
+      "observed": 0.0,
+      "threshold": 0.0
+    }
+  },
+  "uncertainty_status": "not_applicable",
+  "wall_clock_cap_seconds": 30,
+  "wall_time_seconds": 1.366098877042532e-05
+}
