@@ -1,0 +1,3357 @@
+{
+  "benchmark": "bayesfilter_v1_model_bc_testing",
+  "claim_scope": "analytic_score_vs_centered_finite_difference_on_bc1_boxes",
+  "config": {
+    "backends": [
+      "tf_svd_cubature",
+      "tf_svd_ukf",
+      "tf_svd_cut4"
+    ],
+    "model_c_score_allow_fixed_null_support": true,
+    "models": [
+      "model_b_nonlinear_accumulation",
+      "model_c_autonomous_nonlinear_growth"
+    ],
+    "pass_fail_metric": "primary_step_max_abs_and_relative_residual",
+    "seed": 20260515,
+    "tolerances": {
+      "model_b_nonlinear_accumulation": {
+        "absolute_tolerance": 0.002,
+        "primary_step": 2e-05,
+        "relative_tolerance": 0.002,
+        "source": "P1 baseline used 5e-4 at the center; widened box gets a 4x finite-difference margin.",
+        "step_ladder": [
+          5e-05,
+          2e-05,
+          1e-05
+        ]
+      },
+      "model_c_autonomous_nonlinear_growth": {
+        "absolute_tolerance": 0.01,
+        "primary_step": 1e-05,
+        "relative_tolerance": 0.01,
+        "source": "P1 baseline used 1e-3 at the center; structural fixed-support box gets a conservative 10x finite-difference margin.",
+        "step_ladder": [
+          3e-05,
+          1e-05,
+          3e-06
+        ]
+      }
+    }
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      }
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1"
+  },
+  "phase": "BC2",
+  "rows": [
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.2370230511152358,
+        -4.77055280001276,
+        -0.9084969174115035
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 1.1102230246251565e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.237023050928987,
+        -4.770552785603177,
+        -0.9084969173775436
+      ],
+      "ladder_max_abs_residuals": [
+        9.007211509981516e-08,
+        1.4409583748431487e-08,
+        3.6140521686434113e-09
+      ],
+      "ladder_max_relative_residuals": [
+        1.888085487693884e-08,
+        3.0205270442437916e-09,
+        7.575751323062066e-10
+      ],
+      "max_abs_residual": 1.4409583748431487e-08,
+      "max_relative_residual": 3.0205270442437916e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.135496127724087,
+        -5.31676397190331,
+        -1.1111158284501887
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.1354961276299758,
+        -5.316763968332694,
+        -1.1111158280563416
+      ],
+      "ladder_max_abs_residuals": [
+        2.2375573394128878e-08,
+        3.5706158030279767e-09,
+        8.949783136813494e-10
+      ],
+      "ladder_max_relative_residuals": [
+        4.208494774711395e-09,
+        6.715768881028131e-10,
+        1.683313982736312e-10
+      ],
+      "max_abs_residual": 3.5706158030279767e-09,
+      "max_relative_residual": 6.715768881028131e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.779914057630249,
+        -4.204787642578449,
+        -1.101475238326382
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.7799140576136842,
+        -4.204787643080632,
+        -1.1014752383520232
+      ],
+      "ladder_max_abs_residuals": [
+        3.1822615653709363e-09,
+        5.021831839258084e-10,
+        1.3580958579950675e-10
+      ],
+      "ladder_max_relative_residuals": [
+        7.568186156985382e-10,
+        1.194312832307233e-10,
+        3.2298797784669925e-11
+      ],
+      "max_abs_residual": 5.021831839258084e-10,
+      "max_relative_residual": 1.194312832307233e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.4,
+        1.1
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.698861970891841,
+        -4.743517875745184,
+        -1.122280512261525
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 4.440892098500626e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.6988619707715137,
+        -4.743517876948378,
+        -1.1222805122779178
+      ],
+      "ladder_max_abs_residuals": [
+        7.440426941229816e-09,
+        1.2031939888856868e-09,
+        2.595044179543038e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.5685461980872809e-09,
+        2.5365014322655643e-10,
+        5.4707165596870475e-11
+      ],
+      "max_abs_residual": 1.2031939888856868e-09,
+      "max_relative_residual": 2.5365014322655643e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.4,
+        1.1
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.54842861838948,
+        -3.8159682984975394,
+        -1.0335116897716814
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 1.1102230246251565e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.5484286181782767,
+        -3.8159682873739604,
+        -1.0335116897991492
+      ],
+      "ladder_max_abs_residuals": [
+        6.952908115920309e-08,
+        1.1123578946836687e-08,
+        2.758048456286133e-09
+      ],
+      "ladder_max_relative_residuals": [
+        1.822056047650573e-08,
+        2.9150082172371222e-09,
+        7.22765033811224e-10
+      ],
+      "max_abs_residual": 1.1123578946836687e-08,
+      "max_relative_residual": 2.9150082172371222e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.15,
+        0.45
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.0759389954139422,
+        -5.4740953647890525,
+        -1.0580022382319532
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 1.7763568394002505e-15,
+      "compiled_value_residual": 4.440892098500626e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.0759389953152176,
+        -5.474095362689723,
+        -1.0580022382633558
+      ],
+      "ladder_max_abs_residuals": [
+        1.3143827359840543e-08,
+        2.0993295990479055e-09,
+        5.117106738339317e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.4010957946376675e-09,
+        3.8350256236882426e-10,
+        9.347858225587393e-11
+      ],
+      "max_abs_residual": 2.0993295990479055e-09,
+      "max_relative_residual": 3.8350256236882426e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7027849983952755,
+        0.26813452423945394,
+        1.0039640729416228
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.8686045307542987,
+        -5.00530976887765,
+        -1.123339816783213
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.8686045306349753,
+        -5.00530976905722,
+        -1.1233398167997954
+      ],
+      "ladder_max_abs_residuals": [
+        1.0233396352532509e-09,
+        1.7957013653813192e-10,
+        4.6343373583113134e-11
+      ],
+      "ladder_max_relative_residuals": [
+        6.522302697931082e-10,
+        1.1932332899533549e-10,
+        2.4645029912011264e-11
+      ],
+      "max_abs_residual": 1.7957013653813192e-10,
+      "max_relative_residual": 1.1932332899533549e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.6616421981929393,
+        0.34084589032659024,
+        1.0118563282458748
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.7758960580707814,
+        -4.810658036791559,
+        -1.2801844805254703
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.7758960579251627,
+        -4.8106580367690555,
+        -1.2801844805454543
+      ],
+      "ladder_max_abs_residuals": [
+        8.472795798297739e-10,
+        1.456187392889774e-10,
+        4.410960485756732e-11
+      ],
+      "ladder_max_relative_residuals": [
+        8.472795798297739e-10,
+        1.456187392889774e-10,
+        3.459643682646174e-11
+      ],
+      "max_abs_residual": 1.456187392889774e-10,
+      "max_relative_residual": 1.456187392889774e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.5632293251915992,
+        0.3625165014182133,
+        0.6747400325628936
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.217880294407765,
+        -4.326903992073881,
+        -1.235009934958734
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2178802943074718,
+        -4.326903987889041,
+        -1.2350099349911492
+      ],
+      "ladder_max_abs_residuals": [
+        2.6123957219681415e-08,
+        4.184840030063697e-09,
+        1.0262555250051264e-09
+      ],
+      "ladder_max_relative_residuals": [
+        6.037563409665631e-09,
+        9.671672950750883e-10,
+        2.371801008030324e-10
+      ],
+      "max_abs_residual": 4.184840030063697e-09,
+      "max_relative_residual": 9.671672950750883e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8427971372759281,
+        0.24701732939074028,
+        0.46539196221393453
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.262404994850326,
+        -4.734283567738613,
+        -1.1181556317066028
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 2.220446049250313e-16,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.262404994750721,
+        -4.734283562390917,
+        -1.1181556317019226
+      ],
+      "ladder_max_abs_residuals": [
+        3.347408572551558e-08,
+        5.347695619661863e-09,
+        1.339790500765048e-09
+      ],
+      "ladder_max_relative_residuals": [
+        7.070570498485133e-09,
+        1.1295680841982716e-09,
+        2.8299751833517967e-10
+      ],
+      "max_abs_residual": 5.347695619661863e-09,
+      "max_relative_residual": 1.1295680841982716e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8164398325845215,
+        0.22711210412902585,
+        0.6451214946856423
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.2370300980372875,
+        -4.770565307277355,
+        -0.9084992769503589
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 5.551115123125783e-17,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2370300978475912,
+        -4.770565292869233,
+        -0.9084992769137211
+      ],
+      "ladder_max_abs_residuals": [
+        9.007148626949402e-08,
+        1.440812180675266e-08,
+        3.6056517771498875e-09
+      ],
+      "ladder_max_relative_residuals": [
+        1.888067356128479e-08,
+        3.020212674748106e-09,
+        7.55812266451855e-10
+      ],
+      "max_abs_residual": 1.440812180675266e-08,
+      "max_relative_residual": 3.020212674748106e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.1355531146145685,
+        -5.3168526492364165,
+        -1.1111252763895456
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.135553114517407,
+        -5.316852645664838,
+        -1.1111252759932189
+      ],
+      "ladder_max_abs_residuals": [
+        2.2374315733486583e-08,
+        3.5715785884349316e-09,
+        8.959410990883043e-10
+      ],
+      "ladder_max_relative_residuals": [
+        4.208188040851553e-09,
+        6.717467690115253e-10,
+        1.6850967258176237e-10
+      ],
+      "max_abs_residual": 3.5715785884349316e-09,
+      "max_relative_residual": 6.717467690115253e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.7801581364678527,
+        -4.205034854952879,
+        -1.1014913479760335
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.7801581364264009,
+        -4.205034855453427,
+        -1.1014913480100752
+      ],
+      "ladder_max_abs_residuals": [
+        3.178405982851018e-09,
+        5.005480474551405e-10,
+        1.0086775859008412e-10
+      ],
+      "ladder_max_relative_residuals": [
+        7.558572259406905e-10,
+        1.1903540985064358e-10,
+        2.3987377528834987e-11
+      ],
+      "max_abs_residual": 5.005480474551405e-10,
+      "max_relative_residual": 1.1903540985064358e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.4,
+        1.1
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.6989394998988498,
+        -4.743597919707919,
+        -1.122285847993767
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.6989394997658492,
+        -4.743597920897624,
+        -1.122285847998672
+      ],
+      "ladder_max_abs_residuals": [
+        7.440260851865332e-09,
+        1.189705223225701e-09,
+        2.9042457327932425e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.5684847169031395e-09,
+        2.508022903848003e-10,
+        6.638722904739325e-11
+      ],
+      "max_abs_residual": 1.189705223225701e-09,
+      "max_relative_residual": 2.508022903848003e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.4,
+        1.1
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.5484741347472948,
+        -3.8160254071467827,
+        -1.0335266722833343
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.5484741345411777,
+        -3.816025396025102,
+        -1.033526672306051
+      ],
+      "ladder_max_abs_residuals": [
+        6.952718312192019e-08,
+        1.1121680909553788e-08,
+        2.7617015341263595e-09
+      ],
+      "ladder_max_relative_residuals": [
+        1.821979041117161e-08,
+        2.91446720682853e-09,
+        7.237115164260046e-10
+      ],
+      "max_abs_residual": 1.1121680909553788e-08,
+      "max_relative_residual": 2.91446720682853e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.15,
+        0.45
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.0760101055740925,
+        -5.4742040718450795,
+        -1.0580079298058092
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 1.7763568394002505e-15,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.076010105488523,
+        -5.47420406973309,
+        -1.0580079298327938
+      ],
+      "ladder_max_abs_residuals": [
+        1.3147605670837947e-08,
+        2.111989694242311e-09,
+        5.243707690283372e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.401738316344233e-09,
+        3.858076291135536e-10,
+        9.578940831330721e-11
+      ],
+      "max_abs_residual": 2.111989694242311e-09,
+      "max_relative_residual": 3.858076291135536e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7027849983952755,
+        0.26813452423945394,
+        1.0039640729416228
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.8686935066519494,
+        -5.005422093981946,
+        -1.1233476818176948
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.8686935065393974,
+        -5.005422094161993,
+        -1.1233476818417465
+      ],
+      "ladder_max_abs_residuals": [
+        1.0282574791631305e-09,
+        1.8004708834951089e-10,
+        5.704092753688883e-11
+      ],
+      "ladder_max_relative_residuals": [
+        6.521203577136703e-10,
+        1.1255207876814666e-10,
+        5.704092753688883e-11
+      ],
+      "max_abs_residual": 1.8004708834951089e-10,
+      "max_relative_residual": 1.1255207876814666e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.6616421981929393,
+        0.34084589032659024,
+        1.0118563282458748
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.7759493275643401,
+        -4.810720596487323,
+        -1.2801973195904466
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.7759493274250849,
+        -4.810720596470919,
+        -1.2801973196197025
+      ],
+      "ladder_max_abs_residuals": [
+        8.475773416449783e-10,
+        1.3925516295643092e-10,
+        3.9335090740166834e-11
+      ],
+      "ladder_max_relative_residuals": [
+        8.475773416449783e-10,
+        1.3925516295643092e-10,
+        3.9335090740166834e-11
+      ],
+      "max_abs_residual": 1.3925516295643092e-10,
+      "max_relative_residual": 1.3925516295643092e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.5632293251915992,
+        0.3625165014182133,
+        0.6747400325628936
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.21795436959711,
+        -4.327000559709134,
+        -1.2350403536348091
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2179543694923467,
+        -4.3270005555318125,
+        -1.235040353664285
+      ],
+      "ladder_max_abs_residuals": [
+        2.6129761465654155e-08,
+        4.177321599740935e-09,
+        1.040941555174868e-09
+      ],
+      "ladder_max_relative_residuals": [
+        6.0387700683381994e-09,
+        9.654081486926685e-10,
+        2.405688515198254e-10
+      ],
+      "max_abs_residual": 4.177321599740935e-09,
+      "max_relative_residual": 9.654081486926685e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8427971372759281,
+        0.24701732939074028,
+        0.46539196221393453
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.2624807953217383,
+        -4.7343923249563735,
+        -1.1181716791110357
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 4.440892098500626e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2624807952221762,
+        -4.734392319621916,
+        -1.1181716791097696
+      ],
+      "ladder_max_abs_residuals": [
+        3.3473059879440825e-08,
+        5.334457320316233e-09,
+        1.3321033165425433e-09
+      ],
+      "ladder_max_relative_residuals": [
+        7.070191395629485e-09,
+        1.1267459378464983e-09,
+        2.8136732765483654e-10
+      ],
+      "max_abs_residual": 5.334457320316233e-09,
+      "max_relative_residual": 1.1267459378464983e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8164398325845215,
+        0.22711210412902585,
+        0.6451214946856423
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.222790424527544,
+        -4.703689259598777,
+        -0.8956395457489034
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2227904243627963,
+        -4.703689245588727,
+        -0.895639545708815
+      ],
+      "ladder_max_abs_residuals": [
+        8.755233338320068e-08,
+        1.4010050009005681e-08,
+        3.485135735559197e-09
+      ],
+      "ladder_max_relative_residuals": [
+        1.8613545357940772e-08,
+        2.9785237152763646e-09,
+        7.409366442409247e-10
+      ],
+      "max_abs_residual": 1.4010050009005681e-08,
+      "max_relative_residual": 2.9785237152763646e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.1188526419893134,
+        -5.239542318258787,
+        -1.0900616076399845
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.1188526418626221,
+        -5.239542314816603,
+        -1.0900616079168035
+      ],
+      "ladder_max_abs_residuals": [
+        2.1589888987705308e-08,
+        3.442183427182499e-09,
+        8.775682402983875e-10
+      ],
+      "ladder_max_relative_residuals": [
+        4.120567728304959e-09,
+        6.569626158351959e-10,
+        1.674894841941123e-10
+      ],
+      "max_abs_residual": 3.442183427182499e-09,
+      "max_relative_residual": 6.569626158351959e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.7611609489585484,
+        -4.202955914234767,
+        -1.0971095846243772
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 1.1102230246251565e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.7611609489033276,
+        -4.202955914578421,
+        -1.0971095847245316
+      ],
+      "ladder_max_abs_residuals": [
+        1.8380141852958332e-09,
+        3.4365399415037245e-10,
+        1.327116194715927e-10
+      ],
+      "ladder_max_relative_residuals": [
+        7.692975860866173e-10,
+        9.128926651352455e-11,
+        3.157578194382871e-11
+      ],
+      "max_abs_residual": 3.4365399415037245e-10,
+      "max_relative_residual": 9.128926651352455e-11,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.4,
+        1.1
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.6435769617935537,
+        -4.774241199976896,
+        -1.114775828930809
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.6435769616897069,
+        -4.774241200977691,
+        -1.1147758289586918
+      ],
+      "ladder_max_abs_residuals": [
+        6.249929462853743e-09,
+        1.0007950024260026e-09,
+        2.2363888518839303e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.3090937790705345e-09,
+        2.0962388792192885e-10,
+        4.6842812461800083e-11
+      ],
+      "max_abs_residual": 1.0007950024260026e-09,
+      "max_relative_residual": 2.0962388792192885e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.4,
+        1.1
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.5447269248487134,
+        -3.724588854230587,
+        -1.0203840783920268
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 2.220446049250313e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.5447269246571247,
+        -3.7245888435455394,
+        -1.0203840784206442
+      ],
+      "ladder_max_abs_residuals": [
+        6.664028751046658e-08,
+        1.0685047513447898e-08,
+        2.6581350454080166e-09
+      ],
+      "ladder_max_relative_residuals": [
+        1.7891984892446044e-08,
+        2.8687857725051317e-09,
+        7.13672072123817e-10
+      ],
+      "max_abs_residual": 1.0685047513447898e-08,
+      "max_relative_residual": 2.8687857725051317e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.15,
+        0.45
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.0558613754730044,
+        -5.403386345988297,
+        -1.0480110446548307
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 1.7763568394002505e-15,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.0558613753486323,
+        -5.4033863439495455,
+        -1.048011044668673
+      ],
+      "ladder_max_abs_residuals": [
+        1.2836780527436531e-08,
+        2.0387513899322585e-09,
+        4.622346949645362e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.3756917802050376e-09,
+        3.773099422079848e-10,
+        8.554537198838629e-11
+      ],
+      "max_abs_residual": 2.0387513899322585e-09,
+      "max_relative_residual": 3.773099422079848e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7027849983952755,
+        0.26813452423945394,
+        1.0039640729416228
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.8332630687741334,
+        -4.990271775495943,
+        -1.113329138779653
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.8332630686669339,
+        -4.990271775506816,
+        -1.1133291388243372
+      ],
+      "ladder_max_abs_residuals": [
+        6.6453131886135e-10,
+        1.0719947152182385e-10,
+        4.417977095272363e-11
+      ],
+      "ladder_max_relative_residuals": [
+        6.6453131886135e-10,
+        1.0719947152182385e-10,
+        2.9483859798062895e-11
+      ],
+      "max_abs_residual": 1.0719947152182385e-10,
+      "max_relative_residual": 1.0719947152182385e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.6616421981929393,
+        0.34084589032659024,
+        1.0118563282458748
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -0.731800163948167,
+        -4.813881806427714,
+        -1.2641889677453915
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.7318001638334514,
+        -4.813881806259301,
+        -1.2641889677533769
+      ],
+      "ladder_max_abs_residuals": [
+        1.013292560969603e-09,
+        1.6841283922985895e-10,
+        3.642353085808736e-11
+      ],
+      "ladder_max_relative_residuals": [
+        7.34220018117071e-10,
+        1.1471568139853616e-10,
+        2.8811777184740537e-11
+      ],
+      "max_abs_residual": 1.6841283922985895e-10,
+      "max_relative_residual": 1.1471568139853616e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.5632293251915992,
+        0.3625165014182133,
+        0.6747400325628936
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.2086045202699398,
+        -4.252707870694049,
+        -1.2113564215989503
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2086045201420426,
+        -4.252707866686523,
+        -1.2113564216265083
+      ],
+      "ladder_max_abs_residuals": [
+        2.5069567755053868e-08,
+        4.007526754890023e-09,
+        1.015475703525226e-09
+      ],
+      "ladder_max_relative_residuals": [
+        5.89496587052486e-09,
+        9.423470590365258e-10,
+        2.3878331980501133e-10
+      ],
+      "max_abs_residual": 4.007526754890023e-09,
+      "max_relative_residual": 9.423470590365258e-10,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8427971372759281,
+        0.24701732939074028,
+        0.46539196221393453
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.002,
+      "allow_fixed_null_support": false,
+      "analytic_score": [
+        -1.2541299032017685,
+        -4.639346238977188,
+        -1.103935144453371
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "smooth_simple_spectrum_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -1.2541299030832675,
+        -4.639346233881181,
+        -1.103935144453061
+      ],
+      "ladder_max_abs_residuals": [
+        3.183239805082394e-08,
+        5.09600717180092e-09,
+        1.2879421973366334e-09
+      ],
+      "ladder_max_relative_residuals": [
+        6.861397363142669e-09,
+        1.0984321732633626e-09,
+        2.776128641824714e-10
+      ],
+      "max_abs_residual": 5.09600717180092e-09,
+      "max_relative_residual": 1.0984321732633626e-09,
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8164398325845215,
+        0.22711210412902585,
+        0.6451214946856423
+      ],
+      "phase": "BC2",
+      "primary_step": 2e-05,
+      "relative_tolerance": 0.002,
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        5e-05,
+        2e-05,
+        1e-05
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.010113682809350377,
+        -0.1307272476855324,
+        -4.700916782190132
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 6.938893903907228e-18,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.010113682735735097,
+        -0.130727247693585,
+        -4.700916811639644
+      ],
+      "ladder_max_abs_residuals": [
+        2.648908079549983e-07,
+        2.944951216221625e-08,
+        2.537706045302457e-09
+      ],
+      "ladder_max_relative_residuals": [
+        5.63487518077954e-08,
+        6.2646316329823514e-09,
+        5.398321564735758e-10
+      ],
+      "max_abs_residual": 2.944951216221625e-08,
+      "max_relative_residual": 6.2646316329823514e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        0.6,
+        0.1
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        0.0030236501598226648,
+        -0.17956331771283307,
+        -1.3115638944883996
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 4.440892098500626e-16,
+      "compiled_value_residual": 8.881784197001252e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        0.0030236501302738357,
+        -0.17956331772595033,
+        -1.3115638970884191
+      ],
+      "ladder_max_abs_residuals": [
+        2.307253210709348e-08,
+        2.600019533005593e-09,
+        1.8713475213871789e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.7591618523632946e-08,
+        1.9823811396283904e-09,
+        1.4268062188843102e-10
+      ],
+      "max_abs_residual": 2.600019533005593e-09,
+      "max_relative_residual": 1.9823811396283904e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        0.005061973530132952,
+        -0.21856272624096884,
+        0.2650217980115995
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.7755575615628914e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        0.005061973507025641,
+        -0.21856272622855497,
+        0.2650217978406033
+      ],
+      "ladder_max_abs_residuals": [
+        1.3996429570894975e-09,
+        1.70996161674708e-10,
+        1.9482776503210175e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.3996429570894975e-09,
+        1.70996161674708e-10,
+        1.9482776503210175e-10
+      ],
+      "max_abs_residual": 1.70996161674708e-10,
+      "max_relative_residual": 1.70996161674708e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        1.4,
+        0.5
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.013390933580414823,
+        -0.18446931554336884,
+        0.2787523523950111
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 5.551115123125783e-17,
+      "compiled_value_residual": 8.881784197001252e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.013390933562007488,
+        -0.18446931551174825,
+        0.27875235222296624
+      ],
+      "ladder_max_abs_residuals": [
+        1.3562827527735521e-09,
+        1.7204487834376891e-10,
+        2.128324183559016e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.3562827527735521e-09,
+        1.7204487834376891e-10,
+        2.128324183559016e-10
+      ],
+      "max_abs_residual": 1.7204487834376891e-10,
+      "max_relative_residual": 1.7204487834376891e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        1.4,
+        0.5
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        0.050913531567475384,
+        -0.1837044483305463,
+        -4.365121178874308
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        0.05091353152408828,
+        -0.18370444827553453,
+        -4.3651211862894
+      ],
+      "ladder_max_abs_residuals": [
+        6.58868382075184e-08,
+        7.41509253998629e-09,
+        7.537543922353507e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.509393084707402e-08,
+        1.6987140158391657e-09,
+        1.7267662482157614e-10
+      ],
+      "max_abs_residual": 7.41509253998629e-09,
+      "max_relative_residual": 1.6987140158391657e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        0.6,
+        0.1
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.007992717987137672,
+        -0.2189365718049991,
+        -1.3207403433206133
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 4.440892098500626e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.007992717954152795,
+        -0.21893657176086376,
+        -1.3207403465109735
+      ],
+      "ladder_max_abs_residuals": [
+        2.871068671694843e-08,
+        3.190360198246367e-09,
+        1.7790929840444392e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.1738327475211018e-08,
+        2.415584718581821e-09,
+        1.7790929840444392e-10
+      ],
+      "max_abs_residual": 3.190360198246367e-09,
+      "max_relative_residual": 2.415584718581821e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.2099268593184842,
+        1.3962414110809145,
+        0.19335881064339963
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.0004950961510871085,
+        -0.15506961720769444,
+        0.20626376583478728
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 3.3306690738754696e-16,
+      "compiled_value_residual": 1.7763568394002505e-15,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.0004950961418614952,
+        -0.1550696172358812,
+        0.2062637655342314
+      ],
+      "ladder_max_abs_residuals": [
+        2.5061989428198927e-09,
+        3.005558857349655e-10,
+        1.0919817600065634e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.5061989428198927e-09,
+        3.005558857349655e-10,
+        1.0919817600065634e-10
+      ],
+      "max_abs_residual": 3.005558857349655e-10,
+      "max_relative_residual": 3.005558857349655e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0194556805483035,
+        0.9570599813663845,
+        0.43901361617463686
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.006681737647680562,
+        -0.10974785156383723,
+        0.1668455282101327
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 6.938893903907228e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.006681737607650006,
+        -0.10974785156214749,
+        0.16684552788248652
+      ],
+      "ladder_max_abs_residuals": [
+        3.2882409295442727e-09,
+        3.276461879586634e-10,
+        1.5001050401863836e-10
+      ],
+      "ladder_max_relative_residuals": [
+        3.2882409295442727e-09,
+        3.276461879586634e-10,
+        1.5001050401863836e-10
+      ],
+      "max_abs_residual": 3.276461879586634e-10,
+      "max_relative_residual": 3.276461879586634e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0480912649469476,
+        0.6987447619580658,
+        0.41496690746351617
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.0020212312448541145,
+        -0.149137270005131,
+        -0.05336048207802979
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.7755575615628914e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.0020212312268341748,
+        -0.14913727000021026,
+        -0.0533604826991052
+      ],
+      "ladder_max_abs_residuals": [
+        5.4468448223987664e-09,
+        6.21075406381788e-10,
+        2.319268388450979e-10
+      ],
+      "ladder_max_relative_residuals": [
+        5.4468448223987664e-09,
+        6.21075406381788e-10,
+        2.319268388450979e-10
+      ],
+      "max_abs_residual": 6.21075406381788e-10,
+      "max_relative_residual": 6.21075406381788e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.137962473367498,
+        0.9470310056281456,
+        0.348928110419897
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.006181202579594295,
+        -0.17919167148717294,
+        -0.9403839349653595
+      ],
+      "backend": "tf_svd_cubature",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 1.5612511283791264e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.006181202572008714,
+        -0.17919167145663548,
+        -0.9403839371202593
+      ],
+      "ladder_max_abs_residuals": [
+        1.883785105682989e-08,
+        2.154899703121771e-09,
+        2.0090729080379788e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.883785105682989e-08,
+        2.154899703121771e-09,
+        2.0090729080379788e-10
+      ],
+      "max_abs_residual": 2.154899703121771e-09,
+      "max_relative_residual": 2.154899703121771e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.7041537211370633,
+        1.1326458458679487,
+        0.22555402237044314
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.05034572712935384,
+        -0.07553769714821786,
+        -5.849454449017189
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 1.3877787807814457e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.050345727098388686,
+        -0.07553769716395209,
+        -5.849454465245429
+      ],
+      "ladder_max_abs_residuals": [
+        1.4569504713790593e-07,
+        1.6228239196891536e-08,
+        1.4252661273417289e-09
+      ],
+      "ladder_max_relative_residuals": [
+        2.4907458426912258e-08,
+        2.7743166979607626e-09,
+        2.4365795809110385e-10
+      ],
+      "max_abs_residual": 1.6228239196891536e-08,
+      "max_relative_residual": 2.7743166979607626e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        0.6,
+        0.1
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.07659596820320269,
+        -0.08991050920276189,
+        -1.6423187703002864
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 6.661338147750939e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07659596823472725,
+        -0.08991050917117603,
+        -1.6423187741310128
+      ],
+      "ladder_max_abs_residuals": [
+        3.426564032515955e-08,
+        3.830726402753726e-09,
+        3.0761881930629897e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.0864183147568683e-08,
+        2.3325108761425735e-09,
+        1.873076194534595e-10
+      ],
+      "max_abs_residual": 3.830726402753726e-09,
+      "max_relative_residual": 2.3325108761425735e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.09951541194221786,
+        -0.10825031804726445,
+        0.33835590014526723
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 5.551115123125783e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.09951541191099976,
+        -0.1082503180427352,
+        0.33835589996478177
+      ],
+      "ladder_max_abs_residuals": [
+        1.690388773400997e-09,
+        1.8048545991078413e-10,
+        1.7924782491629543e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.690388773400997e-09,
+        1.8048545991078413e-10,
+        1.7924782491629543e-10
+      ],
+      "max_abs_residual": 1.8048545991078413e-10,
+      "max_relative_residual": 1.8048545991078413e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        1.4,
+        0.5
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.0412125011855251,
+        -0.11989594056443836,
+        0.3429214152894673
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 1.3877787807814457e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.04121250118949149,
+        -0.11989594064232277,
+        0.34292141508629465
+      ],
+      "ladder_max_abs_residuals": [
+        1.713075903353456e-09,
+        2.0317264537439428e-10,
+        2.1807821520836157e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.713075903353456e-09,
+        2.0317264537439428e-10,
+        2.1807821520836157e-10
+      ],
+      "max_abs_residual": 2.0317264537439428e-10,
+      "max_relative_residual": 2.0317264537439428e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        1.4,
+        0.5
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.12475230514815738,
+        -0.06573789737233074,
+        -5.820577950477247
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.7755575615628914e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.12475230515285317,
+        -0.06573789734787283,
+        -5.820577969029016
+      ],
+      "ladder_max_abs_residuals": [
+        1.6693677817869457e-07,
+        1.8551769009889085e-08,
+        1.587562081795113e-09
+      ],
+      "ladder_max_relative_residuals": [
+        2.868044630811715e-08,
+        3.1872726572175573e-09,
+        2.727499047121148e-10
+      ],
+      "max_abs_residual": 1.8551769009889085e-08,
+      "max_relative_residual": 3.1872726572175573e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        0.6,
+        0.1
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.08690317512398882,
+        -0.1187340569987532,
+        -1.7199165693607086
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.220446049250313e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.08690317510051669,
+        -0.11873405698636928,
+        -1.7199165733394748
+      ],
+      "ladder_max_abs_residuals": [
+        3.574594775734852e-08,
+        3.978766205392503e-09,
+        3.964466532835331e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.0783535463995255e-08,
+        2.3133483722801362e-09,
+        2.3050342106972648e-10
+      ],
+      "max_abs_residual": 3.978766205392503e-09,
+      "max_relative_residual": 2.3133483722801362e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.2099268593184842,
+        1.3962414110809145,
+        0.19335881064339963
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.07676429789043519,
+        -0.08028081900777348,
+        0.2448642046581576
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 8.326672684688674e-17,
+      "compiled_value_residual": 8.881784197001252e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07676429794045703,
+        -0.08028081892597072,
+        0.24486420429070674
+      ],
+      "ladder_max_abs_residuals": [
+        2.854350422687446e-09,
+        3.6745087528267106e-10,
+        1.3883967586725277e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.854350422687446e-09,
+        3.6745087528267106e-10,
+        1.3883967586725277e-10
+      ],
+      "max_abs_residual": 3.6745087528267106e-10,
+      "max_relative_residual": 3.6745087528267106e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0194556805483035,
+        0.9570599813663845,
+        0.43901361617463686
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.08159145561439574,
+        -0.05891249912813031,
+        0.18675456065222298
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.7755575615628914e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.08159145563624293,
+        -0.05891249905687345,
+        0.18675456030514678
+      ],
+      "ladder_max_abs_residuals": [
+        3.5593214764428893e-09,
+        3.4707620111262827e-10,
+        1.9519667132650298e-10
+      ],
+      "ladder_max_relative_residuals": [
+        3.5593214764428893e-09,
+        3.4707620111262827e-10,
+        1.9519667132650298e-10
+      ],
+      "max_abs_residual": 3.4707620111262827e-10,
+      "max_relative_residual": 3.4707620111262827e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0480912649469476,
+        0.6987447619580658,
+        0.41496690746351617
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.08588544820953042,
+        -0.07746426086996455,
+        -0.0619238784186036
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 5.551115123125783e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.0858854482199689,
+        -0.07746426087251734,
+        -0.06192387909109697
+      ],
+      "ladder_max_abs_residuals": [
+        6.386441209205174e-09,
+        6.7249337348807e-10,
+        6.176469058427614e-11
+      ],
+      "ladder_max_relative_residuals": [
+        6.386441209205174e-09,
+        6.7249337348807e-10,
+        6.176469058427614e-11
+      ],
+      "max_abs_residual": 6.7249337348807e-10,
+      "max_relative_residual": 6.7249337348807e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.137962473367498,
+        0.9470310056281456,
+        0.348928110419897
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.05163436552946757,
+        -0.1015338369176087,
+        -1.176433265545346
+      ],
+      "backend": "tf_svd_ukf",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 4.440892098500626e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.0516343654943796,
+        -0.10153383693811689,
+        -1.1764332682240308
+      ],
+      "ladder_max_abs_residuals": [
+        2.429102630152613e-08,
+        2.6786848295046184e-09,
+        5.174507489158486e-10
+      ],
+      "ladder_max_relative_residuals": [
+        2.0648026973892177e-08,
+        2.2769543346461285e-09,
+        4.3984709022009896e-10
+      ],
+      "max_abs_residual": 2.6786848295046184e-09,
+      "max_relative_residual": 2.2769543346461285e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.7041537211370633,
+        1.1326458458679487,
+        0.22555402237044314
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.047691607913528736,
+        -0.1562255599237065,
+        -3.9954424784393514
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.7755575615628914e-17,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.04769160790729642,
+        -0.15622555995520315,
+        -3.9954425117283416
+      ],
+      "ladder_max_abs_residuals": [
+        2.9915039734262905e-07,
+        3.328899023102849e-08,
+        2.868879800388413e-09
+      ],
+      "ladder_max_relative_residuals": [
+        7.487290245290199e-08,
+        8.331740510171525e-09,
+        7.18038068076268e-10
+      ],
+      "max_abs_residual": 3.328899023102849e-08,
+      "max_relative_residual": 8.331740510171525e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        0.6,
+        0.1
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.06777472117434227,
+        -0.13723875364718155,
+        -1.622618496487041
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 4.440892098500626e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.06777472121299866,
+        -0.13723875360582838,
+        -1.6226184972545352
+      ],
+      "ladder_max_abs_residuals": [
+        6.777501670995889e-09,
+        7.674942903435067e-10,
+        1.1616352324494983e-10
+      ],
+      "ladder_max_relative_residuals": [
+        4.176891646040181e-09,
+        4.729973753177992e-10,
+        7.97674010177829e-11
+      ],
+      "max_abs_residual": 7.674942903435067e-10,
+      "max_relative_residual": 4.729973753177992e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.07863629297940353,
+        -0.14860651603457542,
+        0.19931570005675192
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 8.049116928532385e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07863629298832109,
+        -0.1486065160261063,
+        0.19931569985587314
+      ],
+      "ladder_max_abs_residuals": [
+        1.740388028137474e-09,
+        2.0087878582764063e-10,
+        9.515169208107466e-11
+      ],
+      "ladder_max_relative_residuals": [
+        1.740388028137474e-09,
+        2.0087878582764063e-10,
+        9.515169208107466e-11
+      ],
+      "max_abs_residual": 2.0087878582764063e-10,
+      "max_relative_residual": 2.0087878582764063e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        1.4,
+        0.5
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.03445676906778693,
+        -0.17057586727640703,
+        0.183178596552165
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.498001805406602e-16,
+      "compiled_value_residual": 8.881784197001252e-16,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.0344567690824249,
+        -0.1705758672532198,
+        0.1831785963801735
+      ],
+      "ladder_max_abs_residuals": [
+        1.7115007466816934e-09,
+        1.7199150437186006e-10,
+        7.384986372427349e-11
+      ],
+      "ladder_max_relative_residuals": [
+        1.7115007466816934e-09,
+        1.7199150437186006e-10,
+        7.384986372427349e-11
+      ],
+      "max_abs_residual": 1.7199150437186006e-10,
+      "max_relative_residual": 1.7199150437186006e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        1.4,
+        0.5
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.10260804333850115,
+        -0.15902793687371916,
+        -3.7539891321501244
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 8.881784197001252e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.10260804335082695,
+        -0.15902793686350947,
+        -3.7539891582394342
+      ],
+      "ladder_max_abs_residuals": [
+        2.3473722388089868e-07,
+        2.6089309823618123e-08,
+        2.2121136034058964e-09
+      ],
+      "ladder_max_relative_residuals": [
+        6.253007159568302e-08,
+        6.949756305597224e-09,
+        5.892701135326303e-10
+      ],
+      "max_abs_residual": 2.6089309823618123e-08,
+      "max_relative_residual": 6.949756305597224e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        0.6,
+        0.1
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "seed": null,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.07305022866533516,
+        -0.21182818376723428,
+        -1.3963802088994253
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 0.0,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07305022871051392,
+        -0.21182818374931853,
+        -1.3963802107497256
+      ],
+      "ladder_max_abs_residuals": [
+        1.6031549421313684e-08,
+        1.850300357375545e-09,
+        1.9236745529838117e-10
+      ],
+      "ladder_max_relative_residuals": [
+        1.1480790930067883e-08,
+        1.3250691632059914e-09,
+        1.6360254817548991e-10
+      ],
+      "max_abs_residual": 1.850300357375545e-09,
+      "max_relative_residual": 1.3250691632059914e-09,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.2099268593184842,
+        1.3962414110809145,
+        0.19335881064339963
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.07062503257977318,
+        -0.07953902910624497,
+        0.09645213629424726
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 5.551115123125783e-17,
+      "compiled_value_residual": 1.7763568394002505e-15,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07062503262211806,
+        -0.07953902905200039,
+        0.09645213601139345
+      ],
+      "ladder_max_abs_residuals": [
+        3.051009875298938e-09,
+        2.828538098187394e-10,
+        2.0517758325677704e-10
+      ],
+      "ladder_max_relative_residuals": [
+        3.051009875298938e-09,
+        2.828538098187394e-10,
+        2.0517758325677704e-10
+      ],
+      "max_abs_residual": 2.828538098187394e-10,
+      "max_relative_residual": 2.828538098187394e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0194556805483035,
+        0.9570599813663845,
+        0.43901361617463686
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.07532054084892793,
+        -0.0493461188600459,
+        0.02702129283870378
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 6.938893903907228e-18,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07532054082659556,
+        -0.04934611892437601,
+        0.027021292403617277
+      ],
+      "ladder_max_abs_residuals": [
+        3.795361521591323e-09,
+        4.3508650154899797e-10,
+        2.1451521114990157e-10
+      ],
+      "ladder_max_relative_residuals": [
+        3.795361521591323e-09,
+        4.3508650154899797e-10,
+        2.1451521114990157e-10
+      ],
+      "max_abs_residual": 4.3508650154899797e-10,
+      "max_relative_residual": 4.3508650154899797e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0480912649469476,
+        0.6987447619580658,
+        0.41496690746351617
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.0784123768480842,
+        -0.07750667539029535,
+        -0.24864595254530603
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 4.0245584642661925e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.07841237685823899,
+        -0.07750667538886091,
+        -0.24864595329354697
+      ],
+      "ladder_max_abs_residuals": [
+        6.106917416204283e-09,
+        7.482409414283353e-10,
+        1.251344861064041e-10
+      ],
+      "ladder_max_relative_residuals": [
+        6.106917416204283e-09,
+        7.482409414283353e-10,
+        1.251344861064041e-10
+      ],
+      "max_abs_residual": 7.482409414283353e-10,
+      "max_relative_residual": 7.482409414283353e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.137962473367498,
+        0.9470310056281456,
+        0.348928110419897
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    },
+    {
+      "absolute_tolerance": 0.01,
+      "allow_fixed_null_support": true,
+      "analytic_score": [
+        -0.04665610753341923,
+        -0.1525284805899363,
+        -1.206660026593159
+      ],
+      "backend": "tf_svd_cut4",
+      "branch_label": "structural_fixed_support_no_active_floor",
+      "compiled_score_residual": 2.220446049250313e-16,
+      "compiled_value_residual": 0.0,
+      "error": null,
+      "failure_label": null,
+      "finite_difference_score": [
+        -0.04665610755516524,
+        -0.15252848060143265,
+        -1.2066600275417727
+      ],
+      "ladder_max_abs_residuals": [
+        8.853401567421315e-09,
+        9.486136320902006e-10,
+        7.732148255001903e-11
+      ],
+      "ladder_max_relative_residuals": [
+        7.337113443178591e-09,
+        7.861482194141556e-10,
+        7.732148255001903e-11
+      ],
+      "max_abs_residual": 9.486136320902006e-10,
+      "max_relative_residual": 7.861482194141556e-10,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.7041537211370633,
+        1.1326458458679487,
+        0.22555402237044314
+      ],
+      "phase": "BC2",
+      "primary_step": 1e-05,
+      "relative_tolerance": 0.01,
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "seed": 20260515,
+      "status": "ok",
+      "step_ladder": [
+        3e-05,
+        1e-05,
+        3e-06
+      ]
+    }
+  ]
+}

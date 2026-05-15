@@ -32,6 +32,7 @@ import tensorflow as tf  # noqa: E402
 
 from bayesfilter import (  # noqa: E402
     StatePartition,
+    TFStructuralFirstDerivatives,
     affine_structural_to_linear_gaussian_tf,
     make_affine_structural_tf,
 )
@@ -41,12 +42,15 @@ from bayesfilter.nonlinear.sigma_points_tf import tf_unit_sigma_point_rule  # no
 from bayesfilter.testing import (  # noqa: E402
     dense_projection_first_step,
     make_affine_gaussian_structural_oracle_tf,
+    make_nonlinear_accumulation_first_derivatives_tf,
     make_nonlinear_accumulation_model_tf,
+    make_univariate_nonlinear_growth_first_derivatives_tf,
     make_univariate_nonlinear_growth_model_tf,
     model_a_observations_tf,
     model_b_observations_tf,
     model_c_observations_tf,
     nonlinear_sigma_point_diagnostic_snapshot,
+    nonlinear_sigma_point_score_branch_summary,
     nonlinear_sigma_point_value_branch_summary,
     sigma_point_projection_first_step,
     tf_nonlinear_sigma_point_value_filter,
@@ -68,6 +72,10 @@ class NonlinearBenchmarkRow:
     point_count: int
     polynomial_degree: int
     max_integration_rank: int
+    value_status: str
+    score_status: str
+    score_branch_label: str
+    finite_score_status: str
     log_likelihood: float
     reference_log_likelihood: float | None
     abs_log_likelihood_error: float | None
@@ -87,6 +95,21 @@ class NonlinearBenchmarkRow:
     branch_active_floor_count: int
     branch_weak_spectral_gap_count: int
     branch_nonfinite_count: int
+    branch_failure_labels: tuple[str, ...]
+    value_branch_structural_null_count: int
+    value_branch_structural_null_covariance_residual: float
+    value_branch_fixed_null_derivative_residual: float
+    score_branch_ok_count: int
+    score_branch_total_count: int
+    score_branch_ok_fraction: float
+    score_branch_active_floor_count: int
+    score_branch_weak_spectral_gap_count: int
+    score_branch_nonfinite_count: int
+    score_branch_failure_labels: tuple[str, ...]
+    score_branch_structural_null_count: int
+    score_branch_structural_null_covariance_residual: float
+    score_branch_fixed_null_derivative_residual: float
+    score_allow_fixed_null_support: bool
     first_call_seconds: float
     mean_steady_seconds: float
     max_rss_before_mb: float
@@ -112,7 +135,7 @@ def _model_a_builder(params: tf.Tensor):
     return make_affine_structural_tf(
         partition=partition,
         initial_mean=tf.zeros([2], dtype=tf.float64),
-        initial_covariance=tf.eye(2, dtype=tf.float64),
+        initial_covariance=tf.linalg.diag(tf.constant([1.2, 0.7], dtype=tf.float64)),
         transition_offset=tf.zeros([2], dtype=tf.float64),
         transition_matrix=tf.stack(
             [
@@ -131,19 +154,112 @@ def _model_a_builder(params: tf.Tensor):
     )
 
 
+def _model_a_derivative_builder(params: tf.Tensor):
+    phi = params[0]
+    sigma = params[1]
+    obs_scale = params[2]
+    transition_matrix = tf.stack(
+        [
+            tf.stack([phi, tf.constant(-0.10, dtype=tf.float64)]),
+            tf.constant([1.0, 0.0], dtype=tf.float64),
+        ]
+    )
+    innovation_matrix = tf.reshape(
+        tf.stack([sigma, tf.constant(0.0, dtype=tf.float64)]),
+        [2, 1],
+    )
+    observation_matrix = tf.reshape(tf.stack([obs_scale, 0.0]), [1, 2])
+    p = 3
+    state_dim = 2
+    innovation_dim = 1
+    observation_dim = 1
+    d_transition_matrix = tf.zeros([p, state_dim, state_dim], dtype=tf.float64)
+    d_transition_matrix = tf.tensor_scatter_nd_update(
+        d_transition_matrix,
+        [[0, 0, 0]],
+        [tf.constant(1.0, dtype=tf.float64)],
+    )
+    d_innovation_matrix = tf.zeros([p, state_dim, innovation_dim], dtype=tf.float64)
+    d_innovation_matrix = tf.tensor_scatter_nd_update(
+        d_innovation_matrix,
+        [[1, 0, 0]],
+        [tf.constant(1.0, dtype=tf.float64)],
+    )
+    d_observation_matrix = tf.zeros([p, observation_dim, state_dim], dtype=tf.float64)
+    d_observation_matrix = tf.tensor_scatter_nd_update(
+        d_observation_matrix,
+        [[2, 0, 0]],
+        [tf.constant(1.0, dtype=tf.float64)],
+    )
+
+    def transition_state_jacobian(previous: tf.Tensor, innovation: tf.Tensor) -> tf.Tensor:
+        del innovation
+        point_count = tf.shape(previous)[0]
+        return tf.broadcast_to(transition_matrix[tf.newaxis, :, :], [point_count, 2, 2])
+
+    def transition_innovation_jacobian(
+        previous: tf.Tensor,
+        innovation: tf.Tensor,
+    ) -> tf.Tensor:
+        del previous
+        point_count = tf.shape(innovation)[0]
+        return tf.broadcast_to(innovation_matrix[tf.newaxis, :, :], [point_count, 2, 1])
+
+    def d_transition(previous: tf.Tensor, innovation: tf.Tensor) -> tf.Tensor:
+        return (
+            tf.einsum("pij,rj->pri", d_transition_matrix, previous)
+            + tf.einsum("piq,rq->pri", d_innovation_matrix, innovation)
+        )
+
+    def observation_state_jacobian(states: tf.Tensor) -> tf.Tensor:
+        point_count = tf.shape(states)[0]
+        return tf.broadcast_to(observation_matrix[tf.newaxis, :, :], [point_count, 1, 2])
+
+    def d_observation(states: tf.Tensor) -> tf.Tensor:
+        return tf.einsum("pmj,rj->prm", d_observation_matrix, states)
+
+    return TFStructuralFirstDerivatives(
+        d_initial_mean=tf.zeros([p, state_dim], dtype=tf.float64),
+        d_initial_covariance=tf.zeros([p, state_dim, state_dim], dtype=tf.float64),
+        d_innovation_covariance=tf.zeros([p, innovation_dim, innovation_dim], dtype=tf.float64),
+        d_observation_covariance=tf.zeros([p, observation_dim, observation_dim], dtype=tf.float64),
+        transition_state_jacobian_fn=transition_state_jacobian,
+        transition_innovation_jacobian_fn=transition_innovation_jacobian,
+        d_transition_fn=d_transition,
+        observation_state_jacobian_fn=observation_state_jacobian,
+        d_observation_fn=d_observation,
+        name="model_a_affine_benchmark_first_derivatives",
+    )
+
+
 def _model_b_builder(params: tf.Tensor):
     return make_nonlinear_accumulation_model_tf(
-        rho=float(params[0].numpy()),
-        sigma=float(params[1].numpy()),
-        beta=float(params[2].numpy()),
+        rho=params[0],
+        sigma=params[1],
+        beta=params[2],
+    )
+
+
+def _model_b_derivative_builder(params: tf.Tensor):
+    return make_nonlinear_accumulation_first_derivatives_tf(
+        rho=params[0],
+        sigma=params[1],
+        beta=params[2],
     )
 
 
 def _model_c_builder(params: tf.Tensor):
     return make_univariate_nonlinear_growth_model_tf(
-        process_sigma=float(params[0].numpy()),
-        observation_sigma=float(params[1].numpy()),
-        initial_variance=float(params[2].numpy()),
+        process_sigma=params[0],
+        observation_sigma=params[1],
+        initial_variance=params[2],
+    )
+
+
+def _model_c_derivative_builder(params: tf.Tensor):
+    return make_univariate_nonlinear_growth_first_derivatives_tf(
+        process_sigma=params[0],
+        observation_sigma=params[1],
     )
 
 
@@ -159,6 +275,8 @@ def _model_cases() -> tuple[dict[str, Any], ...]:
                 dtype=tf.float64,
             ),
             "builder": _model_a_builder,
+            "derivative_builder": _model_a_derivative_builder,
+            "score_allow_fixed_null_support": False,
         },
         {
             "name": "model_b_nonlinear_accumulation",
@@ -170,6 +288,8 @@ def _model_cases() -> tuple[dict[str, Any], ...]:
                 dtype=tf.float64,
             ),
             "builder": _model_b_builder,
+            "derivative_builder": _model_b_derivative_builder,
+            "score_allow_fixed_null_support": False,
         },
         {
             "name": "model_c_autonomous_nonlinear_growth",
@@ -181,6 +301,8 @@ def _model_cases() -> tuple[dict[str, Any], ...]:
                 dtype=tf.float64,
             ),
             "builder": _model_c_builder,
+            "derivative_builder": _model_c_derivative_builder,
+            "score_allow_fixed_null_support": True,
         },
     )
 
@@ -278,6 +400,14 @@ def _run_row(case: dict[str, Any], backend: str, repeats: int) -> NonlinearBench
             case["builder"],
             backend=backend,
         )
+        score_branch = nonlinear_sigma_point_score_branch_summary(
+            observations,
+            case["branch_grid"],
+            case["builder"],
+            case["derivative_builder"],
+            backend=backend,
+            allow_fixed_null_support=case["score_allow_fixed_null_support"],
+        )
         if reference is None:
             reference_log_likelihood = None
             abs_error = None
@@ -291,6 +421,7 @@ def _run_row(case: dict[str, Any], backend: str, repeats: int) -> NonlinearBench
     except Exception as exc:  # pragma: no cover - benchmark artifact path.
         snapshot = None
         branch = None
+        score_branch = None
         reference_log_likelihood = None
         abs_error = None
         first_step_errors = {
@@ -319,6 +450,10 @@ def _run_row(case: dict[str, Any], backend: str, repeats: int) -> NonlinearBench
             point_count=0,
             polynomial_degree=0,
             max_integration_rank=0,
+            value_status="error",
+            score_status="error",
+            score_branch_label="error",
+            finite_score_status="error",
             log_likelihood=float("nan"),
             reference_log_likelihood=reference_log_likelihood,
             abs_log_likelihood_error=abs_error,
@@ -338,6 +473,21 @@ def _run_row(case: dict[str, Any], backend: str, repeats: int) -> NonlinearBench
             branch_active_floor_count=0,
             branch_weak_spectral_gap_count=0,
             branch_nonfinite_count=0,
+            branch_failure_labels=(),
+            value_branch_structural_null_count=0,
+            value_branch_structural_null_covariance_residual=0.0,
+            value_branch_fixed_null_derivative_residual=0.0,
+            score_branch_ok_count=0,
+            score_branch_total_count=0,
+            score_branch_ok_fraction=0.0,
+            score_branch_active_floor_count=0,
+            score_branch_weak_spectral_gap_count=0,
+            score_branch_nonfinite_count=0,
+            score_branch_failure_labels=(),
+            score_branch_structural_null_count=0,
+            score_branch_structural_null_covariance_residual=0.0,
+            score_branch_fixed_null_derivative_residual=0.0,
+            score_allow_fixed_null_support=case["score_allow_fixed_null_support"],
             first_call_seconds=first_seconds,
             mean_steady_seconds=steady_seconds,
             max_rss_before_mb=rss_before,
@@ -357,6 +507,22 @@ def _run_row(case: dict[str, Any], backend: str, repeats: int) -> NonlinearBench
         point_count=snapshot.point_count,
         polynomial_degree=snapshot.polynomial_degree,
         max_integration_rank=snapshot.max_integration_rank,
+        value_status="finite_implemented_filter",
+        score_status=(
+            "finite_analytic_score_branch"
+            if score_branch.ok_count == score_branch.total_count
+            else "blocked_or_partial_score_branch"
+        ),
+        score_branch_label=(
+            "structural_fixed_support_no_active_floor"
+            if case["score_allow_fixed_null_support"]
+            else "smooth_simple_spectrum_no_active_floor"
+        ),
+        finite_score_status=(
+            "finite_on_branch_grid"
+            if score_branch.ok_count == score_branch.total_count
+            else "not_finite_on_all_branch_grid_rows"
+        ),
         log_likelihood=float(result.log_likelihood.numpy()),
         reference_log_likelihood=reference_log_likelihood,
         abs_log_likelihood_error=abs_error,
@@ -382,6 +548,29 @@ def _run_row(case: dict[str, Any], backend: str, repeats: int) -> NonlinearBench
         branch_active_floor_count=branch.active_floor_count,
         branch_weak_spectral_gap_count=branch.weak_spectral_gap_count,
         branch_nonfinite_count=branch.nonfinite_count,
+        branch_failure_labels=branch.failure_labels,
+        value_branch_structural_null_count=branch.max_structural_null_count,
+        value_branch_structural_null_covariance_residual=(
+            branch.max_structural_null_covariance_residual
+        ),
+        value_branch_fixed_null_derivative_residual=(
+            branch.max_fixed_null_derivative_residual
+        ),
+        score_branch_ok_count=score_branch.ok_count,
+        score_branch_total_count=score_branch.total_count,
+        score_branch_ok_fraction=score_branch.ok_fraction,
+        score_branch_active_floor_count=score_branch.active_floor_count,
+        score_branch_weak_spectral_gap_count=score_branch.weak_spectral_gap_count,
+        score_branch_nonfinite_count=score_branch.nonfinite_count,
+        score_branch_failure_labels=score_branch.failure_labels,
+        score_branch_structural_null_count=score_branch.max_structural_null_count,
+        score_branch_structural_null_covariance_residual=(
+            score_branch.max_structural_null_covariance_residual
+        ),
+        score_branch_fixed_null_derivative_residual=(
+            score_branch.max_fixed_null_derivative_residual
+        ),
+        score_allow_fixed_null_support=case["score_allow_fixed_null_support"],
         first_call_seconds=first_seconds,
         mean_steady_seconds=steady_seconds,
         max_rss_before_mb=rss_before,
@@ -420,23 +609,27 @@ def _markdown(payload: dict[str, Any], json_path: Path | None) -> str:
         "",
         "## Rows",
         "",
-        "| Model | Backend | Reference | Loglik Error | First-Step Error | Points | Branch OK | Steady Seconds |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Model | Backend | Reference | Loglik Error | First-Step Error | Points | Value Branch OK | Score Branch | Score OK | Steady Seconds |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |",
     ]
     for row in payload["rows"]:
         log_error = row["abs_log_likelihood_error"]
         first_error = row["first_step_abs_log_likelihood_error"]
         lines.append(
             "| {model} | {backend} | {reference} | {log_error} | {first_error} | "
-            "{points} | {ok}/{total} | {seconds:.6f} |".format(
+            "{points} | {value_ok}/{value_total} | {score_branch} | "
+            "{score_ok}/{score_total} | {seconds:.6f} |".format(
                 model=row["model"],
                 backend=row["backend"],
                 reference=row["reference_kind"],
                 log_error="n/a" if log_error is None else f"{log_error:.3e}",
                 first_error="n/a" if first_error is None else f"{first_error:.3e}",
                 points=row["point_count"],
-                ok=row["branch_ok_count"],
-                total=row["branch_total_count"],
+                value_ok=row["branch_ok_count"],
+                value_total=row["branch_total_count"],
+                score_branch=row["score_branch_label"],
+                score_ok=row["score_branch_ok_count"],
+                score_total=row["score_branch_total_count"],
                 seconds=row["mean_steady_seconds"],
             )
         )
@@ -492,9 +685,9 @@ def main() -> None:
         "rows": [asdict(row) for row in rows],
         "blocked_claims": [
             "full_exact_nonlinear_likelihood_for_models_b_c",
-            "nonlinear_models_b_c_analytic_score",
             "nonlinear_hmc_readiness",
             "gpu_xla_speedup",
+            "nonlinear_hessian_readiness",
         ],
     })
     args.output.write_text(

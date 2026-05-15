@@ -220,6 +220,14 @@ def _model_c_value(
     return value
 
 
+def _model_c_structural_fixed_support_value(params: tf.Tensor, backend: str) -> tf.Tensor:
+    return _model_c_value(
+        params,
+        backend,
+        phase_variance=tf.constant(0.0, dtype=tf.float64),
+    )
+
+
 def _finite_difference_score(value_fn, theta: np.ndarray, step: float = 1e-5):
     theta = np.asarray(theta, dtype=np.float64)
     score = np.zeros(theta.size, dtype=np.float64)
@@ -437,4 +445,108 @@ def test_model_c_default_zero_phase_variance_blocks_smooth_score_branch() -> Non
             placement_floor=tf.constant(0.0, dtype=tf.float64),
             innovation_floor=tf.constant(1e-12, dtype=tf.float64),
             spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        )
+
+
+@pytest.mark.parametrize(
+    ("score_fn", "backend"),
+    [
+        (tf_svd_cubature_score, "tf_svd_cubature"),
+        (tf_svd_ukf_score, "tf_svd_ukf"),
+        (tf_svd_cut4_score, "tf_svd_cut4"),
+    ],
+)
+def test_model_c_default_structural_fixed_support_score_matches_finite_difference(
+    score_fn,
+    backend,
+) -> None:
+    params = tf.constant([1.0, 1.0, 0.20], dtype=tf.float64)
+    model, derivatives = _model_c_and_derivatives(
+        params,
+        phase_variance=tf.constant(0.0, dtype=tf.float64),
+    )
+    analytic = score_fn(
+        model_c_observations_tf(),
+        model,
+        derivatives,
+        innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+        spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        allow_fixed_null_support=True,
+    )
+    finite_difference = _finite_difference_score(
+        lambda values: _model_c_structural_fixed_support_value(values, backend),
+        params.numpy(),
+        step=1e-5,
+    )
+
+    np.testing.assert_allclose(analytic.score.numpy(), finite_difference, rtol=1e-3, atol=1e-3)
+    assert analytic.hessian is None
+    assert analytic.metadata.differentiability_status == (
+        "analytic_score_structural_fixed_support_hessian_deferred"
+    )
+    assert analytic.diagnostics.extra["derivative_method"] == (
+        "analytic_first_order_structural_fixed_support"
+    )
+    assert analytic.diagnostics.extra["derivative_branch"] == (
+        "structural_fixed_support_no_active_floor"
+    )
+    assert analytic.diagnostics.extra["sigma_point_variable"] == (
+        "pre_transition_structural"
+    )
+    assert int(analytic.diagnostics.extra["structural_null_count"].numpy()) == 1
+    assert int(analytic.diagnostics.extra["placement_floor_count"].numpy()) == 0
+    np.testing.assert_allclose(
+        analytic.diagnostics.extra["structural_null_covariance_residual"].numpy(),
+        0.0,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        analytic.diagnostics.extra["fixed_null_derivative_residual"].numpy(),
+        0.0,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        analytic.diagnostics.extra["deterministic_residual"].numpy(),
+        0.0,
+        atol=1e-12,
+    )
+
+
+def test_model_c_structural_fixed_support_blocks_positive_placement_floor() -> None:
+    params = tf.constant([1.0, 1.0, 0.20], dtype=tf.float64)
+    model, derivatives = _model_c_and_derivatives(
+        params,
+        phase_variance=tf.constant(0.0, dtype=tf.float64),
+    )
+
+    with pytest.raises(tf.errors.InvalidArgumentError, match="blocked_active_floor"):
+        tf_svd_cut4_score(
+            model_c_observations_tf(),
+            model,
+            derivatives,
+            placement_floor=tf.constant(1e-10, dtype=tf.float64),
+            innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+            allow_fixed_null_support=True,
+        )
+
+
+def test_model_c_structural_fixed_support_blocks_moving_null_covariance() -> None:
+    params = tf.constant([1.0, 1.0, 0.20], dtype=tf.float64)
+    model, derivatives = _model_c_and_derivatives(
+        params,
+        phase_variance=tf.constant(1e-11, dtype=tf.float64),
+    )
+
+    with pytest.raises(
+        tf.errors.InvalidArgumentError,
+        match="blocked_structural_null_covariance",
+    ):
+        tf_svd_cut4_score(
+            model_c_observations_tf(),
+            model,
+            derivatives,
+            innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+            rank_tolerance=tf.constant(1e-10, dtype=tf.float64),
+            fixed_null_tolerance=tf.constant(1e-12, dtype=tf.float64),
+            allow_fixed_null_support=True,
         )

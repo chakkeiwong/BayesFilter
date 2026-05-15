@@ -2826,5 +2826,1298 @@ Completion interpretation:
   phase-state testing variant;
 - default Model C remains correctly blocked by the smooth SVD active-floor
   gate;
-- Hessian, GPU/XLA, nonlinear HMC, and default-Model-C fixed-null derivative
-  work remain future phases.
+- Hessian, GPU/XLA, nonlinear HMC, and default-Model-C structural sigma-point
+  score work remain future phases.
+
+## 2026-05-13 master consolidation
+
+User request:
+- create one single coherent V1 master program because the direction had become
+  dispersed and could cause drift.
+
+Created:
+
+```text
+docs/plans/bayesfilter-v1-master-program-2026-05-13.md
+```
+
+Role:
+- this is now the controlling roadmap for the BayesFilter V1 lane;
+- earlier V1 plans remain supporting evidence, not competing control documents;
+- future subplans should cite the master and name the gap they close.
+
+Master-program ordering:
+1. Chapter 18b structural sigma-point score derivation and implementation for
+   deterministic-completion models, with default Model C as the first target;
+2. wider nonlinear score branch diagnostics;
+3. nonlinear benchmark refresh with score metadata;
+4. Model B nonlinear HMC readiness plan and tiny CPU smoke;
+5. optional nonlinear GPU/XLA scaling diagnostics;
+6. nonlinear Hessian need assessment;
+7. optional exact-reference strengthening for Models B-C;
+8. future MacroFinance/DSGE integration plan.
+
+Anti-drift rules recorded:
+- do not start GPU/XLA, HMC, Hessian, or external-client work before its
+  predecessor gate passes;
+- do not promote diagnostic artifacts to certified claims;
+- do not edit MacroFinance, DSGE, Chapter 18b, structural SVD/SGU plans, or the
+  shared monograph reset memo from this lane;
+- do not add production NumPy dependencies;
+- every future V1 subplan must name the master-program gap it closes.
+
+## 2026-05-13 structural sigma-point score pivot
+
+User correction:
+- the next phase should not invent a separate fixed-null SVD derivative theory;
+- Chapter 18b already gives the correct structural sigma-point filtering
+  derivation and should govern the solution.
+
+Master update:
+- replaced the old fixed-null phrasing in
+  `docs/plans/bayesfilter-v1-master-program-2026-05-13.md`;
+- R1 is now Chapter 18b structural sigma-point score implementation for
+  deterministic-completion models, with default Model C as the first target.
+
+New subplan:
+
+```text
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
+```
+
+Subplan phases:
+1. derive the needed structural score mathematics from Chapter 18b with
+   MathDevMCP support and write the concrete document block;
+2. update the master/subplan from the derivation result;
+3. implement the derivative according to that derivation;
+4. audit code-document consistency with MathDevMCP/code comparison tools;
+5. test against default Model C;
+6. finish with result artifacts, source-map updates, tests, and scoped commit.
+
+Interpretation:
+- default Model C should be treated as a structural deterministic-completion
+  score problem, not as a collapsed full-state SVD null-space problem;
+- HMC, GPU/XLA, and nonlinear Hessian remain blocked until this structural
+  score phase resolves.
+
+## 2026-05-13 structural sigma-point score execution: plan tightening and audit
+
+Phase:
+- pre-S0 plan tightening and independent audit.
+
+Files updated:
+
+```text
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-audit-2026-05-13.md
+```
+
+Result:
+- tightened the plan to preserve the backend's declared sigma-rule dimension
+  while representing structurally null phase directions by zero factor columns
+  and zero factor derivatives;
+- recorded an independent audit finding that resizing the CUT4 rule to the
+  active rank would drift from the current V1 backend comparison;
+- confirmed that HMC, GPU/XLA, Hessian, MacroFinance, DSGE, and SGU work stay
+  out of this phase.
+
+Interpretation:
+- continuation to S0 is justified because the plan now has a concrete
+  non-drift path: derive the structural pre-transition score, then implement a
+  structural fixed-support placement check without adding any fake phase
+  nugget.
+
+## 2026-05-13 structural sigma-point score execution: S0 derivation
+
+Phase:
+- S0, derivation from Chapter 18b with MathDevMCP support.
+
+Files updated:
+
+```text
+docs/chapters/ch18_svd_sigma_point.tex
+```
+
+MathDevMCP evidence:
+- looked up `prop:bf-structural-ukf-pushforward`;
+- looked up `eq:bf-structural-ukf-moment-objects`;
+- looked up `eq:bf-structural-ukf-loglik-object`;
+- checked the Gaussian innovation score algebra against the Chapter 18b
+  likelihood sign convention.
+
+Derivation result:
+- added `sec:bf-svd-sp-structural-fixed-support-score` to Chapter 18;
+- stated the structural score variable as
+  \(A_t=(x_{t-1},\varepsilon_t)\), with state completion
+  \(X_t^{(r)}=F_\theta(A_t^{(r)})\) and observation points
+  \(Z_t^{(r)}=h_\theta(X_t^{(r)})\);
+- derived the fixed-support spectral branch for structural zero directions:
+  active columns use the usual simple-spectrum eigenderivative formula, fixed
+  null columns are zero and have zero derivative, and the null derivative block
+  must be checked rather than floored;
+- derived the structural point, moment, innovation, and likelihood score
+  equations.
+
+Interpretation:
+- S0 gives a concrete implementation contract, so S1/S2 remain justified;
+- the default Model C path should be a structural fixed-support score branch,
+  not a positive phase nugget and not a collapsed full-state regularization
+  branch;
+- HMC, GPU/XLA, and nonlinear Hessian remain blocked.
+
+## 2026-05-13 structural sigma-point score execution: S1 plan update
+
+Phase:
+- S1, update the controlling V1 plan from the S0 derivation.
+
+Files updated:
+
+```text
+docs/plans/bayesfilter-v1-master-program-2026-05-13.md
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md
+```
+
+Result:
+- the master now points R1 to the Chapter 18 structural fixed-support score
+  subsection;
+- the subplan now records the concrete S2 contract: preserve declared
+  sigma-rule dimension, keep structural null factor columns at zero, and block
+  moving-null, floor-regularized, or weak-gap branches.
+
+Interpretation:
+- S2 implementation is justified because the derivation has produced an
+  auditable code contract and a falsifiable default Model C test.
+
+## 2026-05-13 structural sigma-point score execution: S2 implementation
+
+Phase:
+- S2, implement the structural fixed-support score path.
+
+Files updated:
+
+```text
+bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py
+bayesfilter/testing/nonlinear_diagnostics_tf.py
+tests/test_nonlinear_sigma_point_scores_tf.py
+tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+```
+
+Implementation:
+- added an opt-in `allow_fixed_null_support` branch to the SVD sigma-point
+  score path;
+- preserved the declared sigma-rule dimension for cubature, UKF, and CUT4;
+- represented structural zero directions by zero factor columns and zero
+  factor derivatives;
+- separated `structural_null_count` from true placement floor activation;
+- added diagnostics for `sigma_point_variable`,
+  `fixed_null_derivative_residual`, and the structural fixed-support branch;
+- left the old smooth no-active-floor branch unchanged unless the new option is
+  explicitly requested.
+
+Validation:
+
+```bash
+python -m py_compile \
+  bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py \
+  bayesfilter/testing/nonlinear_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `py_compile` passed;
+- focused pytest result: `35 passed, 2 warnings`.
+
+Interpretation:
+- S2 supports H-S1 on the focused test scope: default Model C now has an
+  analytic structural fixed-support score path for SVD cubature, SVD-UKF, and
+  SVD-CUT4;
+- the old smooth branch still blocks default Model C, which is the desired
+  guard against accidental promotion without the structural option;
+- continuation to S3 is justified.
+
+## 2026-05-13 structural sigma-point score execution: S3 audit
+
+Phase:
+- S3, code-document consistency audit.
+
+Tool status:
+- MathDevMCP `compare_label_code`, `compare_doc_code`, and one
+  `extract_latex_context` call failed internally on the new local label, so
+  those calls are not counted as certifying evidence;
+- MathDevMCP `search_code_docs` did find the implementation terms
+  `pre_transition_structural`, `structural_fixed_support_no_active_floor`, and
+  `fixed_null_derivative_residual` in the code;
+- manual audit checked the code against
+  `sec:bf-svd-sp-structural-fixed-support-score`.
+
+Manual audit result:
+- code places points on the augmented pre-transition variable
+  `[state, innovation]`;
+- code completes state points with `model.transition` and observation points
+  with `model.observe`;
+- code reports `sigma_point_variable = pre_transition_structural`;
+- code keeps structural null factor columns at zero in the opt-in branch;
+- code blocks positive placement floors, positive covariance in a structural
+  null direction, moving null derivative blocks, and weak active spectral gaps;
+- code reports `structural_null_count`,
+  `structural_null_covariance_residual`,
+  `fixed_null_derivative_residual`,
+  `factor_derivative_reconstruction_residual`, and
+  `deterministic_residual`.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py::test_model_c_default_structural_fixed_support_score_matches_finite_difference \
+  tests/test_nonlinear_sigma_point_scores_tf.py::test_model_c_structural_fixed_support_blocks_positive_placement_floor \
+  tests/test_nonlinear_sigma_point_scores_tf.py::test_model_c_structural_fixed_support_blocks_moving_null_covariance \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py::test_default_model_c_structural_fixed_support_score_branch_summary_passes \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py::test_default_model_c_structural_fixed_support_diagnostics \
+  -p no:cacheprovider
+```
+
+Result:
+- `11 passed, 2 warnings`;
+- `git diff --check` passed.
+
+Interpretation:
+- code-document consistency is supported by manual audit and targeted tests,
+  with transparent tool limitation noted;
+- continuation to S4 is justified.
+
+## 2026-05-13 structural sigma-point score execution: S4 default Model C validation
+
+Phase:
+- S4, test against default Model C and focused V1 regressions.
+
+Documentation update:
+- updated `docs/chapters/ch28_nonlinear_ssm_validation.tex` so default Model C
+  is no longer described as waiting for a future fixed-null branch;
+- Chapter 28 now states that default Model C is score-ready under the
+  structural fixed-support branch, while the old smooth branch still blocks it.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `73 passed, 2 skipped, 2 warnings`.
+
+Full default CPU validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+```
+
+Result:
+- `204 passed, 5 skipped, 2 warnings`.
+
+Interpretation:
+- default Model C structural fixed-support score is validated against finite
+  differences for SVD cubature, SVD-UKF, and SVD-CUT4;
+- R1 is closed for the local V1 testing target;
+- continuation to S5 finishing and commit is justified.
+
+## 2026-05-13 structural sigma-point score execution: S5 completion
+
+Phase:
+- S5, finish artifacts and update provenance.
+
+Artifacts:
+
+```text
+docs/plans/bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md
+docs/source_map.yml
+```
+
+Completion interpretation:
+- R1 is closed on the tested V1 scope;
+- wider branch-grid diagnostics are still justified as the next phase;
+- nonlinear HMC, GPU/XLA scaling, nonlinear Hessians, and external switch-over
+  remain blocked or deferred until their master-program gates are reached.
+
+## 2026-05-13 structural sigma-point score execution: final pre-commit check
+
+Phase:
+- final lane audit before commit.
+
+Lane status:
+- staged scope should include only V1 structural sigma-point score files,
+  tests, Chapter 18/28 updates, V1 plan/result/audit artifacts, the V1 reset
+  memo, and `docs/source_map.yml`;
+- the shared monograph reset memo and unrelated structural/DSGE/MacroFinance
+  untracked files remain out of lane and must not be staged.
+
+Validation rerun:
+
+```bash
+python -m py_compile \
+  bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py \
+  bayesfilter/testing/nonlinear_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+
+git diff --check
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map ok')"
+```
+
+Result:
+- `py_compile` passed;
+- `git diff --check` passed;
+- focused score/branch tests: `36 passed, 2 warnings`;
+- full default CPU suite: `204 passed, 5 skipped, 2 warnings`;
+- `source_map ok`.
+
+Completion interpretation:
+- the structural fixed-support score branch is ready to commit for the V1
+  lane;
+- the next justified phase remains wider nonlinear branch-grid diagnostics for
+  Model B and default Model C before nonlinear HMC, GPU/XLA, or Hessian work.
+  This next-phase statement was superseded by the 2026-05-14 master
+  reconciliation below, which inserts P1 derivative-validation matrix before
+  branch-grid diagnostics.
+
+## 2026-05-14 V1 master derivative-validation reconciliation
+
+User request:
+- rewrite the master program and affected subplans after identifying that the
+  master did not explicitly include a derivative-validation matrix for the
+  nonlinear model suite.
+
+Files updated:
+
+```text
+docs/plans/bayesfilter-v1-master-program-2026-05-13.md
+docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p3-benchmark-refresh-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-p8-external-integration-plan-2026-05-14.md
+docs/plans/bayesfilter-v1-master-and-subplans-audit-2026-05-14.md
+docs/source_map.yml
+```
+
+Result:
+- the master now makes P1 a nonlinear derivative-validation matrix over
+  Models A-C and SVD cubature, SVD-UKF, and SVD-CUT4;
+- the matrix must record value status, score status, branch label, derivative
+  provider, reference target, compiled/eager parity where available, and
+  Hessian status for every model/backend cell;
+- wider branch diagnostics moved to P2;
+- benchmark refresh moved to P3;
+- nonlinear HMC, Hessian consumer assessment, GPU/XLA, exact references, and
+  external integration shifted to P4-P8 with explicit gates;
+- fresh master-aligned subplans now exist for all remaining phases.
+- post-audit tightening updated the master phase table and P1/P2 action text
+  so the master points to the existing subplans instead of implying they still
+  need to be created.
+
+Audit:
+- `docs/plans/bayesfilter-v1-master-and-subplans-audit-2026-05-14.md`
+  confirms that the rewrite fixes the derivative-validation planning gap,
+  preserves Hessian deferral unless a consumer is named, keeps default Model C
+  tied to the structural fixed-support branch, and stays inside the V1 lane.
+
+Interpretation:
+- P1, not branch-grid diagnostics, is now the next safe execution phase;
+- P1 is documentation/test-evidence consolidation first and should implement
+  new tests only for explicit missing matrix cells;
+- nonlinear Hessians remain status-recorded but not implemented unless P5 names
+  a concrete consumer.
+
+## 2026-05-14 V1 P1 derivative-validation matrix execution
+
+Phase:
+- P1 / R2 nonlinear derivative-validation matrix.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p1-derivative-validation-matrix-result-2026-05-14.md
+```
+
+Execution result:
+- built the consolidated matrix for Models A-C and SVD cubature, SVD-UKF, and
+  SVD-CUT4;
+- recorded value status, score status, score branch, derivative provider,
+  reference target, branch/null diagnostics, compiled/eager status, Hessian
+  status, and public-claim scope for every row;
+- clarified that Model A score evidence is from the parameterized smooth
+  affine structural score fixture, while Model A value evidence is from the
+  fixed affine Gaussian structural oracle;
+- kept production nonlinear Hessians deferred and kept the SVD-CUT4 autodiff
+  score/Hessian oracle as testing-only evidence;
+- confirmed default Model C score certification only under the Chapter 18
+  structural fixed-support branch with `allow_fixed_null_support=True`.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `41 passed, 2 warnings`.
+
+Interpretation:
+- P1 passes: no matrix cell has unknown value or score status, and Hessian
+  status is explicit without implying production Hessian support;
+- P2 is justified next: run wider nonlinear score branch diagnostics for
+  Model B and default Model C, with default Model C using
+  `allow_fixed_null_support=True`.
+
+## 2026-05-14 V1 P2 branch diagnostics execution
+
+Phase:
+- P2 / R3 wider nonlinear score branch diagnostics.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p2-branch-diagnostics-result-2026-05-14.md
+```
+
+Implementation:
+- extended the V1 testing diagnostic summary with structural-null residual
+  maxima and bounded representative failure labels;
+- tightened branch diagnostic tests so active-floor, weak-gap, and structural
+  fixed-support diagnostics remain visible.
+
+Validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `18 passed, 2 warnings`.
+
+Branch grid result:
+- Model B passed `5/5` score rows for SVD cubature, SVD-UKF, and SVD-CUT4;
+- smooth-phase Model C passed `5/5` score rows for all three backends;
+- default Model C passed `5/5` score rows for all three backends only under
+  `allow_fixed_null_support=True`;
+- no active floors, weak spectral gaps, nonfinite scores, or hidden failure
+  labels appeared on the tested boxes;
+- default Model C structural-null residuals remained at numerical zero scale.
+
+Interpretation:
+- P2 passes;
+- P3 is justified next: refresh nonlinear benchmark artifacts with score
+  branch metadata and keep exactness claims tied to the actual reference type;
+- HMC, Hessians, GPU/XLA, and external integration remain gated.
+
+## 2026-05-14 V1 P3 benchmark refresh execution
+
+Phase:
+- P3 / R4 nonlinear benchmark refresh with score metadata.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p3-benchmark-refresh-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p3-benchmark-refresh-result-2026-05-14.md
+```
+
+Implementation:
+- refreshed `docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py`
+  so benchmark rows include score status, score branch labels, finite-score
+  status, failure labels, structural-null diagnostics, and
+  `score_allow_fixed_null_support`;
+- corrected the benchmark's parameterized affine score branch grid to avoid a
+  repeated-spectrum weak-gap artifact;
+- removed stale benchmark blocked claim that Models B-C analytic scores are
+  blocked; retained blocked claims for exact full nonlinear likelihood,
+  nonlinear HMC readiness, GPU/XLA speedup, and nonlinear Hessian readiness.
+
+Generated:
+
+```text
+docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.json
+docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.md
+```
+
+Validation:
+
+```bash
+python -m py_compile docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- syntax check passed;
+- `23 passed, 2 warnings`.
+
+Benchmark command:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+MPLCONFIGDIR=/tmp/matplotlib-bayesfilter \
+python docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_filters.py \
+  --repeats 1 \
+  --output docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-nonlinear-filter-benchmark-2026-05-14.md
+```
+
+Result:
+- benchmark completed with CPU-only logical devices in the JSON artifact;
+- all Model A, Model B, and default Model C rows have value branch `3/3` and
+  score branch `3/3` for SVD cubature, SVD-UKF, and SVD-CUT4.
+
+Interpretation:
+- P3 passes;
+- P4 is justified next with Model B as the first nonlinear HMC target
+  candidate;
+- HMC convergence, nonlinear Hessians, GPU/XLA speedups, and external
+  integration remain gated.
+
+## 2026-05-14 V1 P4 nonlinear HMC target execution
+
+Phase:
+- P4 / R5 nonlinear HMC target selection and tiny CPU smoke.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p4-nonlinear-hmc-target-result-2026-05-14.md
+```
+
+Implementation:
+- selected Model B nonlinear accumulation with SVD-CUT4 analytic score as the
+  first nonlinear HMC target;
+- added opt-in testing helper `ModelBNonlinearSVDTarget` and
+  `run_model_b_nonlinear_svd_cut4_hmc_smoke`;
+- added opt-in tests in
+  `tests/test_hmc_nonlinear_model_b_readiness_tf.py`;
+- wrote tiny-smoke diagnostics to
+  `docs/benchmarks/bayesfilter-v1-model-b-nonlinear-hmc-smoke-2026-05-14.json`.
+
+Validation:
+
+```bash
+python -m py_compile \
+  bayesfilter/testing/tf_hmc_readiness.py \
+  tests/test_hmc_nonlinear_model_b_readiness_tf.py
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_hmc_nonlinear_model_b_readiness_tf.py \
+  -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+BAYESFILTER_RUN_HMC_READINESS=1 pytest -q \
+  tests/test_hmc_nonlinear_model_b_readiness_tf.py \
+  -p no:cacheprovider
+```
+
+Results:
+- syntax check passed;
+- default HMC test behavior: `3 skipped, 2 warnings`;
+- public API guard: `2 passed, 2 warnings`;
+- opt-in HMC readiness: `3 passed, 2 warnings`.
+
+Tiny-smoke diagnostics:
+- finite samples: `8`;
+- nonfinite samples: `0`;
+- acceptance rate: `1.0`;
+- branch diagnostics: `5/5`, no active floors, no weak spectral gaps, no
+  nonfinite branch rows;
+- convergence was not claimed.
+
+Interpretation:
+- P4 passes at tiny CPU smoke scope;
+- nonlinear Hessians are not needed for this ordinary score-only HMC target;
+- P5 is justified as a decision-only Hessian consumer assessment, and should
+  keep Hessian work deferred unless a concrete consumer is named.
+
+## 2026-05-14 V1 P5 Hessian consumer assessment
+
+Phase:
+- P5 / R6 nonlinear Hessian consumer assessment.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p5-hessian-consumer-assessment-result-2026-05-14.md
+```
+
+Decision:
+- no concrete V1 nonlinear Hessian consumer is currently named;
+- P4's Model B SVD-CUT4 HMC smoke used ordinary score-only HMC dynamics and
+  therefore did not create a Hessian requirement;
+- production nonlinear SVD sigma-point results keep `hessian=None` and
+  Hessian-deferred status;
+- the SVD-CUT4 autodiff Hessian-like path remains testing-only in
+  `bayesfilter.testing.tf_svd_cut_autodiff_oracle`;
+- no nonlinear Hessian implementation subplan was opened.
+
+Validation:
+
+```bash
+git diff --check
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map ok')"
+```
+
+Result:
+- whitespace check passed;
+- source-map YAML parsed successfully.
+
+Interpretation:
+- P5 passes by the explicit-deferral branch;
+- P6 remains optional and diagnostic only;
+- any P6 GPU/CUDA/XLA command must use escalated sandbox permissions and any
+  speedup claim must be limited to the tested shapes.
+
+## 2026-05-14 V1 P6 GPU/XLA scaling diagnostic
+
+Phase:
+- P6 / R7 optional GPU/XLA scaling diagnostics.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p6-gpu-xla-scaling-result-2026-05-14.md
+```
+
+Implementation:
+- added benchmark-only diagnostic harness
+  `docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py`;
+- generated CPU-hidden control artifacts:
+  `docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.json`
+  and `.md`;
+- generated GPU-visible diagnostic artifacts:
+  `docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.json`
+  and `.md`;
+- no production filter behavior or public API was changed.
+
+Validation:
+
+```bash
+python -m py_compile docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py
+nvidia-smi  # escalated
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 \
+python docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py \
+  --device-scope cpu --repeats 2 --warmup-calls 1 --timesteps 24 \
+  --backends tf_svd_cut4 --modes eager,graph,xla --devices cpu \
+  --output docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.md
+python docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py \
+  --device-scope visible --repeats 2 --warmup-calls 1 --timesteps 24 \
+  --backends tf_svd_cut4 --modes eager,graph,xla --devices cpu,gpu \
+  --output docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.json \
+  --markdown-output docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.md
+```
+
+Result:
+- escalated `nvidia-smi` saw the NVIDIA GPU;
+- GPU-visible TensorFlow saw `/device:GPU:0`;
+- all Model B SVD-CUT4 rows had branch `3/3` with no active floors, weak
+  spectral gaps, or nonfinite rows;
+- CPU-hidden control steady seconds: eager `0.088768`, graph `0.004820`,
+  XLA `0.000391`;
+- GPU-visible steady seconds: CPU eager `0.086636`, CPU graph `0.005458`,
+  CPU XLA `0.022035`, GPU eager `0.305209`, GPU graph `0.061104`, GPU XLA
+  `0.022038`.
+
+Interpretation:
+- P6 passes as a diagnostic artifact;
+- GPU/XLA is operational for this tested Model B SVD-CUT4 shape;
+- this tiny shape does not support a broad GPU speedup claim;
+- future GPU work should test larger horizons, larger dimensions, batched
+  parameter points, or batched independent filters before making performance
+  claims.
+
+## 2026-05-14 V1 P7 exact-reference strengthening assessment
+
+Phase:
+- P7 / R8 optional exact nonlinear reference strengthening.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p7-exact-reference-strengthening-result-2026-05-14.md
+```
+
+Plan tightening:
+- P7 now explicitly allows a deferral branch when no current V1 claim requires
+  a stronger nonlinear reference than exact Model A and dense one-step
+  projection diagnostics for Models B-C.
+
+Decision:
+- no dense multi-step quadrature, high-particle SMC, or production reference
+  dependency was added;
+- Model A keeps exact Kalman reference status;
+- Models B-C remain dense one-step Gaussian projection diagnostics only;
+- exact full nonlinear likelihood for Models B-C remains blocked/deferred.
+
+Validation:
+
+```bash
+git diff --check
+python -c "import yaml; yaml.safe_load(open('docs/source_map.yml')); print('source_map ok')"
+```
+
+Result:
+- whitespace check passed;
+- source-map YAML parsed successfully after replacing a colon-bearing
+  provenance sentence with YAML-safe wording.
+
+Interpretation:
+- P7 passes by explicit deferral;
+- P8 is justified as planning-only external integration because local V1
+  evidence is current and optional claims are scoped.
+
+## 2026-05-14 V1 P8 external integration planning
+
+Phase:
+- P8 / R9 external client integration plan.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-p8-external-integration-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-p8-external-integration-result-2026-05-14.md
+```
+
+Decision:
+- MacroFinance linear QR compatibility remains the first external client
+  target;
+- the first bridge should be test-only or optional-live, not a production
+  switch-over;
+- DSGE remains future/test-only, with Rotemberg preferred over SGU if the DSGE
+  lane supplies a causal local filtering law and residual contract;
+- SGU remains blocked as a V1 production filtering target;
+- no MacroFinance, DSGE, shared monograph, structural-lane, or Chapter 18b file
+  was edited.
+
+Integration gates:
+- BayesFilter default CPU and focused V1 suites must pass on a release
+  candidate;
+- optional live MacroFinance compatibility should run on a clean recorded
+  external checkout before any client switch-over branch;
+- client adapters must pin parameter order, dtype, Hessian sign convention,
+  deterministic-completion diagnostics, and regularization metadata;
+- optional external checks remain outside default CI.
+
+Interpretation:
+- P8 passes as a reviewable integration plan;
+- final validation should now run the master-program focused/default gates
+  before final summary and push.
+
+## 2026-05-14 V1 master execution closeout
+
+Final summary artifact:
+
+```text
+docs/plans/bayesfilter-v1-master-program-execution-summary-2026-05-14.md
+```
+
+Final validation:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_v1_public_api.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `2 passed, 2 warnings`.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q \
+  tests/test_structural_svd_sigma_point_tf.py \
+  tests/test_svd_cut_filter_tf.py \
+  tests/test_svd_cut_derivatives_tf.py \
+  tests/test_sigma_points_tf.py \
+  tests/test_cut_rule_tf.py \
+  tests/test_nonlinear_benchmark_models_tf.py \
+  tests/test_nonlinear_reference_oracles.py \
+  tests/test_nonlinear_sigma_point_values_tf.py \
+  tests/test_nonlinear_sigma_point_scores_tf.py \
+  tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py \
+  tests/test_v1_public_api.py \
+  tests/test_compiled_filter_parity_tf.py \
+  tests/test_svd_cut_branch_diagnostics_tf.py \
+  -p no:cacheprovider
+```
+
+Result:
+- `73 passed, 2 skipped, 2 warnings`.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES=-1 pytest -q -p no:cacheprovider
+```
+
+Result:
+- `204 passed, 8 skipped, 2 warnings`.
+
+Interpretation:
+- the BayesFilter V1 master program P1-P8 execution is complete at the scoped
+  evidence level;
+- nonlinear value/score evidence is current;
+- tiny nonlinear HMC, GPU/XLA, Hessian, exact-reference, and external-client
+  claims are all labeled at their true scope;
+- remaining work should proceed through opt-in MacroFinance compatibility,
+  longer nonlinear HMC diagnostics, larger/batched GPU ladders, and
+  consumer-gated Hessian/reference phases.
+
+## 2026-05-15 V1 Model B/C BC0 baseline reconciliation
+
+Phase:
+- BC0 / baseline reconciliation for the Model B/C thorough testing master
+  program.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc0-baseline-reconciliation-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc0-baseline-matrix-result-2026-05-15.md
+```
+
+Execution:
+- read the current nonlinear benchmark, HMC smoke, GPU/XLA diagnostic, and
+  P1-P7 result artifacts;
+- populated the six Model B/C x SVD-filter baseline rows;
+- did not run new numerical experiments.
+
+Gate result:
+- BC0 passed;
+- no Model B/C/filter cell has unknown status;
+- default Model C rows explicitly use the structural fixed-support branch with
+  `allow_fixed_null_support=True`;
+- dense one-step projection remains diagnostic only;
+- tiny HMC smoke and one-shape GPU/XLA rows remain diagnostic only;
+- nonlinear Hessians remain deferred because no consumer is named.
+
+Continuation:
+- BC1 is justified for wider branch-box testing.
+
+## 2026-05-15 V1 Model B/C BC1 branch boxes
+
+Phase:
+- BC1 / wider value-score branch boxes.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc1-wider-branch-boxes-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc1-branch-boxes-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-model-bc-branch-boxes-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-branch-boxes-2026-05-15.md
+docs/benchmarks/benchmark_bayesfilter_v1_model_bc_testing.py
+```
+
+Execution:
+- added a BayesFilter-local Model B/C testing harness for row-level BC1-BC3
+  artifacts;
+- ran the predeclared deterministic and seeded BC1 branch boxes on CPU with
+  `CUDA_VISIBLE_DEVICES=-1`;
+- used seed `20260515` for seeded random rows.
+
+Gate result:
+- BC1 passed;
+- all 60 predeclared rows were stable;
+- Model B stayed on the smooth simple-spectrum score branch;
+- Model C score rows used structural fixed support with
+  `allow_fixed_null_support=True`;
+- no row reported active score floors, weak gaps, nonfinite values/scores, or
+  unlabeled failures.
+
+Continuation:
+- BC2 is justified for all six Model B/C x filter cells.
+
+## 2026-05-15 V1 Model B/C BC2 score stress
+
+Phase:
+- BC2 / score accuracy stress tests.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc2-score-accuracy-stress-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc2-score-stress-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-model-bc-score-stress-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-score-stress-2026-05-15.md
+```
+
+Execution:
+- ran centered finite-difference score checks over the BC1 deterministic and
+  seeded rows;
+- used predeclared tolerance and step ladders from the harness;
+- checked compiled/eager parity for every row.
+
+Gate result:
+- BC2 passed;
+- all 60 rows passed;
+- no finite-difference row crossed a branch change;
+- maximum Model B absolute residual was `1.4409583748431487e-08`;
+- maximum Model C absolute residual was `3.328899023102849e-08`;
+- compiled/eager residuals were at numerical noise scale;
+- Model C used structural fixed support with `allow_fixed_null_support=True`.
+
+Continuation:
+- BC3 is justified for horizon/noise robustness testing.
+
+## 2026-05-15 V1 Model B/C BC3 horizon/noise robustness
+
+Phase:
+- BC3 / horizon and observation-noise robustness.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc3-horizon-noise-robustness-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc3-horizon-noise-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/bayesfilter-v1-model-bc-horizon-noise-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-horizon-noise-2026-05-15.md
+```
+
+Execution:
+- ran horizons `T in {3, 8, 16, 32}`;
+- ran observation-noise scales `{1.0, 0.5, 0.25}`;
+- separated deterministic tiled panels from seeded stochastic panels with seed
+  `20260515`;
+- preserved the exact `blocked_moving_structural_null` label for structural
+  support failures.
+
+Gate result:
+- BC3 passed with an explicit envelope boundary;
+- 141 of 144 rows were stable;
+- five of six model/filter cells passed the full ladder;
+- Model C + SVD-UKF had three score blockers at selected `T=32` rows, all
+  labeled `blocked_moving_structural_null`;
+- Model C rows used structural fixed support with
+  `allow_fixed_null_support=True`.
+
+Continuation:
+- BC4 is justified;
+- BC5 must treat Model C + SVD-UKF at the blocked `T=32` rows as unavailable
+  for HMC target promotion unless a later structural-support decision changes
+  the contract.
+
+## 2026-05-15 V1 Model B/C BC4 reference decision
+
+Phase:
+- BC4 / approximation-quality reference decision.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc4-reference-decision-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc4-reference-decision-result-2026-05-15.md
+```
+
+Decision:
+- no stronger reference artifact is required for current BC1-BC3 claims;
+- dense one-step projection remains diagnostic only;
+- finite differences remain deterministic score diagnostics only;
+- exact full nonlinear likelihood for Models B-C remains deferred;
+- no reference dependency entered production imports.
+
+Gate result:
+- BC4 passed with explicit non-promotional reference status.
+
+Continuation:
+- BC5 is justified for HMC readiness classification on targets whose BC1-BC3
+  gates passed.
+
+## 2026-05-15 V1 Model B/C BC5 HMC readiness ladder
+
+Phase:
+- BC5 / HMC readiness ladder.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc5-hmc-ladder-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc5-hmc-ladder-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_model_bc_hmc_ladder.py
+docs/benchmarks/bayesfilter-v1-model-bc-hmc-ladder-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-hmc-ladder-2026-05-15.md
+```
+
+Execution:
+- tightened the benchmark harness to record compiled/eager value and gradient
+  parity before sampling;
+- ran CPU-only HMC readiness diagnostics with
+  `CUDA_VISIBLE_DEVICES=-1`;
+- ran the existing opt-in Model B HMC readiness smoke.
+
+Gate result:
+- BC5 passed;
+- all six default short Model B/C x filter targets were classified
+  `candidate`;
+- every row had finite samples, finite initial analytic score, and
+  compiled/eager parity;
+- Model C rows used structural fixed support with
+  `allow_fixed_null_support=True`;
+- R-hat values were about 2.0 on tiny draws, so this remains readiness
+  classification only and not convergence.
+
+Continuation:
+- BC6 remains justified as an independent GPU/XLA scaling diagnostic, subject
+  to escalated GPU permissions.
+
+## 2026-05-15 V1 Model B/C BC6 GPU/XLA scaling
+
+Phase:
+- BC6 / GPU-XLA scaling ladder.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-result-2026-05-15.md
+```
+
+Benchmark artifacts:
+
+```text
+docs/benchmarks/benchmark_bayesfilter_v1_model_bc_gpu_xla.py
+docs/benchmarks/bayesfilter-v1-model-bc-gpu-xla-scaling-2026-05-15.json
+docs/benchmarks/bayesfilter-v1-model-bc-gpu-xla-scaling-2026-05-15.md
+```
+
+Execution:
+- added a benchmark-only Model B/C GPU-XLA harness that records value and score
+  branch metadata before timing rows;
+- ran escalated `nvidia-smi`;
+- ran an escalated TensorFlow GPU probe;
+- ran the escalated visible-device ladder over both models, all three filters,
+  `T in {8, 16}`, CPU/GPU, and graph/XLA modes.
+
+Gate result:
+- BC6 passed;
+- TensorFlow saw CPU and GPU devices under escalation;
+- all 48 timing rows had `status = ok`;
+- all rows had score branch metadata `3/3`;
+- Model C rows used structural fixed support;
+- GPU graph was slower than CPU graph on these small scalar shapes;
+- GPU XLA reduced GPU overhead and was competitive with CPU XLA on selected
+  Model C rows, but no broad speedup claim is made.
+
+Continuation:
+- BC7 is justified;
+- BC6 did not name a nonlinear Hessian consumer.
+
+## 2026-05-15 V1 Model B/C BC7 Hessian consumer decision
+
+Phase:
+- BC7 / Hessian consumer decision.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc7-hessian-consumer-decision-plan-2026-05-14.md
+```
+
+Result artifact:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc7-hessian-consumer-result-2026-05-15.md
+```
+
+Execution:
+- reviewed BC1-BC6 for named nonlinear Hessian consumers;
+- checked candidate consumers: Newton/trust-region optimization, Laplace
+  approximation, observed information, Riemannian or curvature-aware HMC, and
+  curvature diagnostics;
+- made no production Hessian edits.
+
+Gate result:
+- BC7 passed;
+- no BC phase named a concrete nonlinear Hessian consumer;
+- all Model B/C x filter Hessian statuses are `deferred_no_consumer`;
+- testing-only or linear QR Hessian evidence was not promoted to nonlinear
+  production readiness.
+
+Continuation:
+- BC8 consolidation is justified.
+
+## 2026-05-15 V1 Model B/C BC8 consolidation and release gate
+
+Phase:
+- BC8 / consolidation and release-candidate gate.
+
+Plan:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-bc8-consolidation-release-gate-plan-2026-05-14.md
+```
+
+Final summary:
+
+```text
+docs/plans/bayesfilter-v1-model-bc-final-testing-summary-2026-05-15.md
+```
+
+Validation:
+- fast public API: `2 passed, 2 warnings`;
+- focused nonlinear B/C: `51 passed, 2 warnings`;
+- full default CPU: `204 passed, 8 skipped, 2 warnings`.
+
+Gate result:
+- BC8 passed;
+- final matrix records value, score, reference, HMC, GPU/XLA, and Hessian
+  status for every Model B/C x filter cell;
+- Model B/C value and analytic-score readiness are supported at the tested
+  boxes and documented robustness envelopes;
+- Model C SVD-UKF has an explicit selected `T=32`
+  `blocked_moving_structural_null` boundary;
+- HMC remains readiness-candidate only, not convergence;
+- GPU/XLA remains shape-specific diagnostic evidence, not broad speedup;
+- nonlinear Hessians remain `deferred_no_consumer`.
+
+Continuation:
+- stop automatic execution under this Model B/C master program;
+- recommended next phases are a predeclared HMC convergence ladder, batched
+  GPU/XLA scaling, optional exact-reference work if a future claim needs it,
+  and a Model C long-horizon structural-support decision.

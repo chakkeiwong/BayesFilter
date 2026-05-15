@@ -116,6 +116,9 @@ class TFSmoothEighFactorFirstDerivatives:
     min_eigen_gap: tf.Tensor
     psd_projection_residual: tf.Tensor
     derivative_reconstruction_residual: tf.Tensor
+    structural_null_count: tf.Tensor
+    structural_null_covariance_residual: tf.Tensor
+    fixed_null_derivative_residual: tf.Tensor
 
 
 def _as_observation_matrix(observations: tf.Tensor) -> tf.Tensor:
@@ -162,6 +165,16 @@ def _min_eigen_gap(eigenvalues: tf.Tensor) -> tf.Tensor:
     )
 
 
+def _min_active_factor_gap(eigenvalues: tf.Tensor, active: tf.Tensor) -> tf.Tensor:
+    dim = _static_dim(eigenvalues, 0, "active eigen dimension")
+    eye = tf.eye(dim, dtype=tf.bool)
+    column_active = active[tf.newaxis, :]
+    pair_mask = tf.logical_and(column_active, tf.logical_not(eye))
+    gaps = tf.abs(eigenvalues[tf.newaxis, :] - eigenvalues[:, tf.newaxis])
+    masked = tf.where(pair_mask, gaps, tf.fill(tf.shape(gaps), tf.constant(float("inf"), dtype=tf.float64)))
+    return tf.reduce_min(masked)
+
+
 def _validate_shape(tensor: tf.Tensor, expected: tuple[int, ...], name: str) -> None:
     actual = tensor.shape.as_list()
     if any(dim is None for dim in actual):
@@ -194,8 +207,11 @@ def _checked_smooth_eigh_factor_first_derivatives(
     d_covariance: tf.Tensor,
     *,
     singular_floor: tf.Tensor,
+    rank_tolerance: tf.Tensor,
     spectral_gap_tolerance: tf.Tensor,
+    fixed_null_tolerance: tf.Tensor,
     label: str,
+    allow_fixed_null_support: bool = False,
 ) -> TFSmoothEighFactorFirstDerivatives:
     covariance = symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
     d_covariance = symmetrize(tf.convert_to_tensor(d_covariance, dtype=tf.float64))
@@ -206,8 +222,35 @@ def _checked_smooth_eigh_factor_first_derivatives(
         implemented_covariance,
         psd_projection_residual,
     ) = psd_eigh(covariance, singular_floor)
-    min_gap = _min_eigen_gap(eigenvalues)
-    active_floors = floor_count(eigenvalues, singular_floor)
+    projected = (
+        tf.linalg.matrix_transpose(eigenvectors)[tf.newaxis, :, :]
+        @ d_covariance
+        @ eigenvectors[tf.newaxis, :, :]
+    )
+    if allow_fixed_null_support:
+        active = eigenvalues > rank_tolerance
+        null = tf.logical_not(active)
+        min_gap = _min_active_factor_gap(eigenvalues, active)
+        active_floors = tf.reduce_sum(
+            tf.cast(eigenvalues < singular_floor, tf.int32)
+        )
+        structural_null_count = tf.reduce_sum(tf.cast(null, tf.int32))
+        null_eigenvalues = tf.where(null, tf.abs(eigenvalues), tf.zeros_like(eigenvalues))
+        structural_null_covariance_residual = tf.reduce_max(null_eigenvalues)
+        null_mask = tf.logical_or(null[:, tf.newaxis], null[tf.newaxis, :])
+        masked_null_derivatives = tf.where(
+            null_mask[tf.newaxis, :, :],
+            projected,
+            tf.zeros_like(projected),
+        )
+        fixed_null_residual = tf.reduce_max(tf.abs(masked_null_derivatives))
+    else:
+        active = eigenvalues > singular_floor
+        min_gap = _min_eigen_gap(eigenvalues)
+        active_floors = floor_count(eigenvalues, singular_floor)
+        structural_null_count = tf.constant(0, dtype=tf.int32)
+        structural_null_covariance_residual = tf.constant(0.0, dtype=tf.float64)
+        fixed_null_residual = tf.constant(0.0, dtype=tf.float64)
     assertions = [
         tf.debugging.assert_equal(
             active_floors,
@@ -223,30 +266,47 @@ def _checked_smooth_eigh_factor_first_derivatives(
             eigenvalues,
             f"blocked_nonfinite_factor: {label} eigenvalues are nonfinite",
         ),
+        tf.debugging.assert_less_equal(
+            structural_null_covariance_residual,
+            fixed_null_tolerance,
+            message=f"blocked_structural_null_covariance: {label} null support has positive variance",
+        ),
+        tf.debugging.assert_less_equal(
+            fixed_null_residual,
+            fixed_null_tolerance,
+            message=f"blocked_moving_structural_null: {label} null support is parameter-dependent",
+        ),
     ]
     with tf.control_dependencies(assertions):
         eigenvalues = tf.identity(eigenvalues)
         floored_eigenvalues = tf.identity(floored_eigenvalues)
         eigenvectors = tf.identity(eigenvectors)
         implemented_covariance = tf.identity(implemented_covariance)
+        active = tf.identity(active)
 
-    sqrt_eigenvalues = tf.sqrt(floored_eigenvalues)
+    active_float = tf.cast(active, tf.float64)
+    sqrt_eigenvalues = tf.sqrt(floored_eigenvalues) * active_float
     factor = eigenvectors @ tf.linalg.diag(sqrt_eigenvalues)
-    projected = (
-        tf.linalg.matrix_transpose(eigenvectors)[tf.newaxis, :, :]
-        @ d_covariance
-        @ eigenvectors[tf.newaxis, :, :]
-    )
     dim = _static_dim(eigenvalues, 0, f"{label} eigen dimension")
     eye = tf.eye(dim, dtype=tf.float64)
     denominator = eigenvalues[tf.newaxis, :] - eigenvalues[:, tf.newaxis]
-    safe_denominator = tf.where(tf.equal(eye, 1.0), tf.ones_like(denominator), denominator)
-    coefficients = projected / safe_denominator[tf.newaxis, :, :] * (
-        1.0 - eye[tf.newaxis, :, :]
+    nonzero_denominator = tf.not_equal(denominator, 0.0)
+    safe_denominator = tf.where(
+        nonzero_denominator,
+        denominator,
+        tf.ones_like(denominator),
+    )
+    active_columns = tf.cast(active, tf.float64)[tf.newaxis, :]
+    coefficient_mask = (1.0 - eye) * active_columns
+    coefficients = (
+        projected / safe_denominator[tf.newaxis, :, :] * coefficient_mask[tf.newaxis, :, :]
     )
     d_eigenvectors = tf.einsum("db,pba->pda", eigenvectors, coefficients)
     d_eigenvalues = tf.linalg.diag_part(projected)
-    d_sqrt_eigenvalues = 0.5 * d_eigenvalues / sqrt_eigenvalues[tf.newaxis, :]
+    safe_sqrt = tf.where(active, sqrt_eigenvalues, tf.ones_like(sqrt_eigenvalues))
+    d_sqrt_eigenvalues = (
+        0.5 * d_eigenvalues / safe_sqrt[tf.newaxis, :] * active_float[tf.newaxis, :]
+    )
     d_factor = (
         d_eigenvectors * sqrt_eigenvalues[tf.newaxis, tf.newaxis, :]
         + eigenvectors[tf.newaxis, :, :] * d_sqrt_eigenvalues[:, tf.newaxis, :]
@@ -256,7 +316,19 @@ def _checked_smooth_eigh_factor_first_derivatives(
         d_factor,
         transpose_b=True,
     )
-    reconstruction_residual = tf.reduce_max(tf.linalg.norm(reconstructed - d_covariance, axis=[-2, -1]))
+    reconstruction_residual = tf.reduce_max(
+        tf.linalg.norm(reconstructed - d_covariance, axis=[-2, -1])
+    )
+    implemented_covariance = (
+        implemented_covariance
+        if not allow_fixed_null_support
+        else symmetrize(factor @ tf.linalg.matrix_transpose(factor))
+    )
+    psd_projection_residual = (
+        psd_projection_residual
+        if not allow_fixed_null_support
+        else tf.linalg.norm(implemented_covariance - covariance)
+    )
     return TFSmoothEighFactorFirstDerivatives(
         eigenvalues=eigenvalues,
         floored_eigenvalues=floored_eigenvalues,
@@ -268,6 +340,9 @@ def _checked_smooth_eigh_factor_first_derivatives(
         min_eigen_gap=min_gap,
         psd_projection_residual=psd_projection_residual,
         derivative_reconstruction_residual=reconstruction_residual,
+        structural_null_count=structural_null_count,
+        structural_null_covariance_residual=structural_null_covariance_residual,
+        fixed_null_derivative_residual=fixed_null_residual,
     )
 
 
@@ -286,7 +361,9 @@ def _smooth_sigma_point_score_with_rule(
     innovation_floor: tf.Tensor | float,
     rank_tolerance: tf.Tensor | float,
     spectral_gap_tolerance: tf.Tensor | float,
+    fixed_null_tolerance: tf.Tensor | float,
     jitter: tf.Tensor | float,
+    allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
     y = _as_observation_matrix(observations)
     n_timesteps = _static_num_timesteps(y)
@@ -313,6 +390,10 @@ def _smooth_sigma_point_score_with_rule(
         spectral_gap_tolerance,
         dtype=tf.float64,
     )
+    fixed_null_tolerance = tf.convert_to_tensor(
+        fixed_null_tolerance,
+        dtype=tf.float64,
+    )
     jitter = tf.convert_to_tensor(jitter, dtype=tf.float64)
 
     obs_identity = tf.eye(observation_dim, dtype=tf.float64)
@@ -326,7 +407,10 @@ def _smooth_sigma_point_score_with_rule(
     max_support_residual = tf.constant(0.0, dtype=tf.float64)
     max_deterministic_residual = tf.constant(0.0, dtype=tf.float64)
     max_factor_derivative_residual = tf.constant(0.0, dtype=tf.float64)
+    max_fixed_null_derivative_residual = tf.constant(0.0, dtype=tf.float64)
+    max_structural_null_covariance_residual = tf.constant(0.0, dtype=tf.float64)
     max_integration_rank = tf.constant(0, dtype=tf.int32)
+    max_structural_null_count = tf.constant(0, dtype=tf.int32)
     min_placement_eigen_gap = tf.constant(float("inf"), dtype=tf.float64)
     min_innovation_eigen_gap = tf.constant(float("inf"), dtype=tf.float64)
     last_implemented_innovation_covariance = tf.zeros(
@@ -378,8 +462,11 @@ def _smooth_sigma_point_score_with_rule(
             aug_covariance,
             d_aug_covariance,
             singular_floor=placement_floor,
+            rank_tolerance=rank_tolerance,
             spectral_gap_tolerance=spectral_gap_tolerance,
+            fixed_null_tolerance=fixed_null_tolerance,
             label="SVD sigma-point placement",
+            allow_fixed_null_support=allow_fixed_null_support,
         )
         point_offsets = sigma_rule.offsets @ tf.transpose(placement.factor)
         aug_points = aug_mean[tf.newaxis, :] + point_offsets
@@ -502,8 +589,11 @@ def _smooth_sigma_point_score_with_rule(
             raw_innovation_covariance,
             d_raw_innovation_covariance,
             singular_floor=innovation_floor,
+            rank_tolerance=rank_tolerance,
             spectral_gap_tolerance=spectral_gap_tolerance,
+            fixed_null_tolerance=fixed_null_tolerance,
             label="SVD sigma-point innovation",
+            allow_fixed_null_support=False,
         )
         cross_covariance = tf.transpose(centered_x) @ (
             centered_y * sigma_rule.covariance_weights[:, tf.newaxis]
@@ -637,7 +727,19 @@ def _smooth_sigma_point_score_with_rule(
                 innovation_factor.derivative_reconstruction_residual,
             ),
         )
+        max_fixed_null_derivative_residual = tf.maximum(
+            max_fixed_null_derivative_residual,
+            placement.fixed_null_derivative_residual,
+        )
+        max_structural_null_covariance_residual = tf.maximum(
+            max_structural_null_covariance_residual,
+            placement.structural_null_covariance_residual,
+        )
         max_integration_rank = tf.maximum(max_integration_rank, rank)
+        max_structural_null_count = tf.maximum(
+            max_structural_null_count,
+            placement.structural_null_count,
+        )
         min_placement_eigen_gap = tf.minimum(
             min_placement_eigen_gap,
             placement.min_eigen_gap,
@@ -666,18 +768,30 @@ def _smooth_sigma_point_score_with_rule(
         "point_count": tf.constant(sigma_rule.point_count, dtype=tf.int32),
         "polynomial_degree": tf.constant(sigma_rule.polynomial_degree, dtype=tf.int32),
         "max_integration_rank": max_integration_rank,
+        "structural_null_count": max_structural_null_count,
         "support_residual": max_support_residual,
         "deterministic_residual": max_deterministic_residual,
         "min_placement_eigen_gap": min_placement_eigen_gap,
         "min_innovation_eigen_gap": min_innovation_eigen_gap,
         "factor_derivative_reconstruction_residual": max_factor_derivative_residual,
+        "fixed_null_derivative_residual": max_fixed_null_derivative_residual,
+        "structural_null_covariance_residual": max_structural_null_covariance_residual,
         "placement_psd_projection_residual": max_placement_residual,
         "innovation_psd_projection_residual": max_innovation_residual,
         "placement_floor_count": max_placement_floor_count,
         "innovation_floor_count": max_innovation_floor_count,
         "factorization": "tf.linalg.eigh",
-        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
-        "derivative_method": "analytic_first_order_smooth_branch",
+        "sigma_point_variable": "pre_transition_structural",
+        "derivative_branch": (
+            "structural_fixed_support_no_active_floor"
+            if allow_fixed_null_support
+            else "smooth_simple_spectrum_no_active_floor"
+        ),
+        "derivative_method": (
+            "analytic_first_order_structural_fixed_support"
+            if allow_fixed_null_support
+            else "analytic_first_order_smooth_branch"
+        ),
         "derivative_provider": derivatives.name,
         "hessian_status": "deferred",
     }
@@ -690,7 +804,11 @@ def _smooth_sigma_point_score_with_rule(
             floor_count=max_innovation_floor_count,
             psd_projection_residual=max_innovation_residual,
             implemented_covariance=last_implemented_innovation_covariance,
-            branch_label="svd_sigma_point_analytic_score_smooth_branch",
+            branch_label=(
+                "svd_sigma_point_analytic_score_structural_fixed_support"
+                if allow_fixed_null_support
+                else "svd_sigma_point_analytic_score_smooth_branch"
+            ),
             derivative_target="implemented_regularized_law",
         ),
         extra=extra,
@@ -702,7 +820,11 @@ def _smooth_sigma_point_score_with_rule(
         metadata=structural_filter_metadata(
             model,
             filter_name=backend_name,
-            differentiability_status="analytic_score_smooth_branch_hessian_deferred",
+            differentiability_status=(
+                "analytic_score_structural_fixed_support_hessian_deferred"
+                if allow_fixed_null_support
+                else "analytic_score_smooth_branch_hessian_deferred"
+            ),
             compiled_status="eager_tf",
         ),
         diagnostics=diagnostics,
@@ -720,7 +842,9 @@ def tf_svd_sigma_point_score_with_rule(
     innovation_floor: tf.Tensor | float = 1e-12,
     rank_tolerance: tf.Tensor | float = 1e-12,
     spectral_gap_tolerance: tf.Tensor | float = 1e-8,
+    fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
+    allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
     """Return an analytic score for a fixed SVD/eigen sigma-point rule."""
 
@@ -734,7 +858,9 @@ def tf_svd_sigma_point_score_with_rule(
         innovation_floor=innovation_floor,
         rank_tolerance=rank_tolerance,
         spectral_gap_tolerance=spectral_gap_tolerance,
+        fixed_null_tolerance=fixed_null_tolerance,
         jitter=jitter,
+        allow_fixed_null_support=allow_fixed_null_support,
     )
 
 
@@ -747,7 +873,9 @@ def tf_svd_cubature_score(
     innovation_floor: tf.Tensor | float = 1e-12,
     rank_tolerance: tf.Tensor | float = 1e-12,
     spectral_gap_tolerance: tf.Tensor | float = 1e-8,
+    fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
+    allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
     """Return the analytic smooth-branch SVD cubature score."""
 
@@ -765,7 +893,9 @@ def tf_svd_cubature_score(
         innovation_floor=innovation_floor,
         rank_tolerance=rank_tolerance,
         spectral_gap_tolerance=spectral_gap_tolerance,
+        fixed_null_tolerance=fixed_null_tolerance,
         jitter=jitter,
+        allow_fixed_null_support=allow_fixed_null_support,
     )
 
 
@@ -781,7 +911,9 @@ def tf_svd_ukf_score(
     innovation_floor: tf.Tensor | float = 1e-12,
     rank_tolerance: tf.Tensor | float = 1e-12,
     spectral_gap_tolerance: tf.Tensor | float = 1e-8,
+    fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
+    allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
     """Return the analytic smooth-branch SVD-UKF score."""
 
@@ -802,7 +934,9 @@ def tf_svd_ukf_score(
         innovation_floor=innovation_floor,
         rank_tolerance=rank_tolerance,
         spectral_gap_tolerance=spectral_gap_tolerance,
+        fixed_null_tolerance=fixed_null_tolerance,
         jitter=jitter,
+        allow_fixed_null_support=allow_fixed_null_support,
     )
 
 
@@ -815,7 +949,9 @@ def tf_svd_cut4_score(
     innovation_floor: tf.Tensor | float = 1e-12,
     rank_tolerance: tf.Tensor | float = 1e-12,
     spectral_gap_tolerance: tf.Tensor | float = 1e-8,
+    fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
+    allow_fixed_null_support: bool = False,
 ) -> TFFilterDerivativeResult:
     """Return the analytic smooth-branch SVD-CUT4-G score."""
 
@@ -832,5 +968,7 @@ def tf_svd_cut4_score(
         innovation_floor=innovation_floor,
         rank_tolerance=rank_tolerance,
         spectral_gap_tolerance=spectral_gap_tolerance,
+        fixed_null_tolerance=fixed_null_tolerance,
         jitter=jitter,
+        allow_fixed_null_support=allow_fixed_null_support,
     )

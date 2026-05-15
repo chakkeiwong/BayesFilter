@@ -1,0 +1,4862 @@
+{
+  "benchmark": "bayesfilter_v1_model_bc_testing",
+  "claim_scope": "row_level_branch_box_diagnostics",
+  "config": {
+    "backends": [
+      "tf_svd_cubature",
+      "tf_svd_ukf",
+      "tf_svd_cut4"
+    ],
+    "deterministic_rows_per_model": 5,
+    "model_b_box": [
+      [
+        0.55,
+        0.85
+      ],
+      [
+        0.15,
+        0.4
+      ],
+      [
+        0.45,
+        1.1
+      ]
+    ],
+    "model_c_box": [
+      [
+        0.6,
+        1.4
+      ],
+      [
+        0.6,
+        1.4
+      ],
+      [
+        0.1,
+        0.5
+      ]
+    ],
+    "model_c_score_allow_fixed_null_support": true,
+    "models": [
+      "model_b_nonlinear_accumulation",
+      "model_c_autonomous_nonlinear_growth"
+    ],
+    "seed": 20260515,
+    "seeded_rows_per_model": 5
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      }
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1"
+  },
+  "phase": "BC1",
+  "rows": [
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.4876589553985283,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.013583112602505776,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -1.2370230511152358,
+          -4.77055280001276,
+          -0.9084969174115035
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.4876589553985283,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.013583112602505776,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.5597972944849308,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.004269591596540022,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -1.135496127724087,
+          -5.31676397190331,
+          -1.1111158284501887
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.5597972944849308,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.004269591596540022,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.4,
+        1.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.757980407237026,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.011671941566556397,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.779914057630249,
+          -4.204787642578449,
+          -1.101475238326382
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.757980407237026,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.011671941566556397,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.4,
+        1.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.5334212724365286,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012594378532845812,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.698861970891841,
+          -4.743517875745184,
+          -1.122280512261525
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.5334212724365286,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012594378532845812,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.15,
+        0.45
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.9123730082726229,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.021755769168125563,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -1.54842861838948,
+          -3.8159682984975394,
+          -1.0335116897716814
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.9123730082726229,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.021755769168125563,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7027849983952755,
+        0.26813452423945394,
+        1.0039640729416228
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8820620664842471,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010103577485310433,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -1.0759389954139422,
+          -5.4740953647890525,
+          -1.0580022382319532
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8820620664842471,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010103577485310433,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.6616421981929393,
+        0.34084589032659024,
+        1.0118563282458748
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.2326640880140802,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010167521267848187,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.8686045307542987,
+          -5.00530976887765,
+          -1.123339816783213
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.2326640880140802,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010167521267848187,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.5632293251915992,
+        0.3625165014182133,
+        0.6747400325628936
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8528010945645923,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.009964083592742985,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.7758960580707814,
+          -4.810658036791559,
+          -1.2801844805254703
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8528010945645923,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.009964083592742985,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8427971372759281,
+        0.24701732939074028,
+        0.46539196221393453
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3235167238751644,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.027060617671910127,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -1.217880294407765,
+          -4.326903992073881,
+          -1.235009934958734
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3235167238751644,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.027060617671910127,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8164398325845215,
+        0.22711210412902585,
+        0.6451214946856423
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.411968600484945,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012832354078399721,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -1.262404994850326,
+          -4.734283567738613,
+          -1.1181556317066028
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.411968600484945,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012832354078399721,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.48765975843793924,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.013583112602505776,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -1.2370300980372875,
+          -4.770565307277355,
+          -0.9084992769503589
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.48765975843793924,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.013583112602505776,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.559808494225846,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.004269591596540022,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -1.1355531146145685,
+          -5.3168526492364165,
+          -1.1111252763895456
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.559808494225846,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.004269591596540022,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.4,
+        1.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.7580404468842996,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.011671941566556397,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.7801581364678527,
+          -4.205034854952879,
+          -1.1014913479760335
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.7580404468842996,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.011671941566556397,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.4,
+        1.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.5334377944990436,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012594378532845812,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.6989394998988498,
+          -4.743597919707919,
+          -1.122285847993767
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.5334377944990436,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012594378532845812,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.15,
+        0.45
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.9123803316510827,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.021753623853286056,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -1.5484741347472948,
+          -3.8160254071467827,
+          -1.0335266722833343
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.9123803316510827,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.021753623853286056,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7027849983952755,
+        0.26813452423945394,
+        1.0039640729416228
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.882076740674909,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010103577485310433,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -1.0760101055740925,
+          -5.4742040718450795,
+          -1.0580079298058092
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.882076740674909,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010103577485310433,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.6616421981929393,
+        0.34084589032659024,
+        1.0118563282458748
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.232683632697717,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010167521267848187,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.8686935066519494,
+          -5.005422093981946,
+          -1.1233476818176948
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.232683632697717,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.010167521267848187,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.5632293251915992,
+        0.3625165014182133,
+        0.6747400325628936
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8528119341908154,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.009964083592742985,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.7759493275643401,
+          -4.810720596487323,
+          -1.2801973195904466
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8528119341908154,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.009964083592742985,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8427971372759281,
+        0.24701732939074028,
+        0.46539196221393453
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3235314738854511,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.027060617671910127,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -1.21795436959711,
+          -4.327000559709134,
+          -1.2350403536348091
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3235314738854511,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.027060617671910127,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8164398325845215,
+        0.22711210412902585,
+        0.6451214946856423
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.4119833645844493,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012832354078399721,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -1.2624807953217383,
+          -4.7343923249563735,
+          -1.1181716791110357
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.4119833645844493,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012832354078399721,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.48076986083416995,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.01405170435138197,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -1.222790424527544,
+          -4.703689259598777,
+          -0.8956395457489034
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.48076986083416995,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.01405170435138197,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.537279264741419,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.004408267865176924,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -1.1188526419893134,
+          -5.239542318258787,
+          -1.0900616076399845
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.537279264741419,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.004408267865176924,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.4,
+        1.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.723324187614768,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.005271199956327764,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.7611609489585484,
+          -4.202955914234767,
+          -1.0971095846243772
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.723324187614768,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.005271199956327764,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.55,
+        0.4,
+        1.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.509930505189221,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.009099193953063807,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.6435769617935537,
+          -4.774241199976896,
+          -1.114775828930809
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.509930505189221,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.009099193953063807,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.85,
+        0.15,
+        0.45
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.9028061416145754,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.021920533052874475,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -1.5447269248487134,
+          -3.724588854230587,
+          -1.0203840783920268
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -0.9028061416145754,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.021920533052874475,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.7027849983952755,
+        0.26813452423945394,
+        1.0039640729416228
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8557278143769684,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.007276879562792139,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -1.0558613754730044,
+          -5.403386345988297,
+          -1.0480110446548307
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8557278143769684,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.007276879562792139,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.6616421981929393,
+        0.34084589032659024,
+        1.0118563282458748
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.204300870185392,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.0065612820559657545,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.8332630687741334,
+          -4.990271775495943,
+          -1.113329138779653
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -2.204300870185392,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.0065612820559657545,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.5632293251915992,
+        0.3625165014182133,
+        0.6747400325628936
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8328773262422966,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012016877286787332,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.731800163948167,
+          -4.813881806427714,
+          -1.2641889677453915
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.8328773262422966,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.012016877286787332,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8427971372759281,
+        0.24701732939074028,
+        0.46539196221393453
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3052931766851188,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.027896143864509136,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -1.2086045202699398,
+          -4.252707870694049,
+          -1.2113564215989503
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3052931766851188,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.027896143864509136,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_b_nonlinear_accumulation",
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "parameters": [
+        0.8164398325845215,
+        0.22711210412902585,
+        0.6451214946856423
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "smooth_simple_spectrum_no_active_floor",
+        "derivative_method": "analytic_first_order_smooth_branch",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3922929414620215,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.014514547904489791,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -1.2541299032017685,
+          -4.639346238977188,
+          -1.103935144453371
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -1.3922929414620215,
+        "max_integration_rank": 3,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.014514547904489791,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        0.6,
+        0.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.1599889460935306e-31,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.441551095562515,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.010113682809350377,
+          -0.1307272476855324,
+          -4.700916782190132
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631324e-32,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.441551095562515,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.8459253727671276e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 8.093157165510015e-32,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.766293540661853,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.2,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          0.0030236501598226648,
+          -0.17956331771283307,
+          -1.3115638944883996
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631323e-32,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.766293540661853,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.2,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        1.4,
+        0.5
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.6797607521013027e-32,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.900014019512822,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          0.005061973530132952,
+          -0.21856272624096884,
+          0.2650217980115995
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631323e-32,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.900014019512822,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        1.4,
+        0.5
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.6411554633364358e-32,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.893742176790841,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.013390933580414823,
+          -0.18446931554336884,
+          0.2787523523950111
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631323e-32,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.893742176790841,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        0.6,
+        0.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 8.552136107347814e-32,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.429819673190435,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          0.050913531567475384,
+          -0.1837044483305463,
+          -4.365121178874308
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.9303806576313227e-32,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.429819673190435,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.2099268593184842,
+        1.3962414110809145,
+        0.19335881064339963
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.102239059845823e-31,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.837993421156002,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.19335881064339963,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.007992717987137672,
+          -0.2189365718049991,
+          -1.3207403433206133
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631323e-32,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.837993421156002,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.19335881064339963,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0194556805483035,
+        0.9570599813663845,
+        0.43901361617463686
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.2078859423868864e-32,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.832435390029616,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.43901361617463686,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.0004950961510871085,
+          -0.15506961720769444,
+          0.20626376583478728
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631323e-32,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.832435390029616,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.43901361617463686,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0480912649469476,
+        0.6987447619580658,
+        0.41496690746351617
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 6.962939748049932e-33,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.802734403647262,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.41496690746351617,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.006681737647680562,
+          -0.10974785156383723,
+          0.1668455282101327
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631323e-32,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.802734403647262,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.41496690746351617,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.137962473367498,
+        0.9470310056281456,
+        0.348928110419897
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 3.443972016010401e-33,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.839529749604459,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.348928110419897,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.0020212312448541145,
+          -0.149137270005131,
+          -0.05336048207802979
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.930380657631324e-32,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.839529749604459,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.348928110419897,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.8459253727671276e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.7041537211370633,
+        1.1326458458679487,
+        0.22555402237044314
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 6.207994520722351e-32,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.818034428360319,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.22555402237044314,
+        "placement_floor_count": 0,
+        "point_count": 6,
+        "score": [
+          -0.006181202579594295,
+          -0.17919167148717294,
+          -0.9403839349653595
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 4.9303806576313227e-32,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.818034428360319,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.22555402237044314,
+        "placement_floor_count": 1,
+        "point_count": 6,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 3.845925372767127e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        0.6,
+        0.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 5.78944864603357e-16,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.628396971074311,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.05034572712935384,
+          -0.07553769714821786,
+          -5.849454449017189
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0761676742121763e-31,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.628396971074311,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.681991748178211e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.2843793175916608e-16,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.017388649292908,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.2,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.07659596820320269,
+          -0.08991050920276189,
+          -1.6423187703002864
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0564043787615906e-31,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.017388649292908,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.2,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.629576481658963e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        1.4,
+        0.5
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 4.127134721791473e-17,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.1623489718464235,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.09951541194221786,
+          -0.10825031804726445,
+          0.33835590014526723
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.053208080411501e-31,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.1623489718464235,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.621053496662794e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        1.4,
+        0.5
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 4.02880501697157e-17,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.106373641166308,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.0412125011855251,
+          -0.11989594056443836,
+          0.3429214152894673
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0701067044225835e-31,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.106373641166308,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.66596868440671e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        0.6,
+        0.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 4.610575488154704e-16,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.697764868857508,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.12475230514815738,
+          -0.06573789737233074,
+          -5.820577950477247
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0535635036755146e-31,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.697764868857508,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.622001877469042e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.2099268593184842,
+        1.3962414110809145,
+        0.19335881064339963
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.708893817997838e-16,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.064931644091079,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.19335881064339963,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.08690317512398882,
+          -0.1187340569987532,
+          -1.7199165693607086
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0640236452388134e-31,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.064931644091079,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.19335881064339963,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.649841533809988e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0194556805483035,
+        0.9570599813663845,
+        0.43901361617463686
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 2.87407725195245e-17,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.104783349200912,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.43901361617463686,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.07676429789043519,
+          -0.08028081900777348,
+          0.2448642046581576
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0499330357866255e-31,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.104783349200912,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.43901361617463686,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.612307107919056e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0480912649469476,
+        0.6987447619580658,
+        0.41496690746351617
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 2.917760352183301e-17,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.094281794097649,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.41496690746351617,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.08159145561439574,
+          -0.05891249912813031,
+          0.18675456065222298
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0440891458079533e-31,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.094281794097649,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.41496690746351617,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.596666362598238e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.137962473367498,
+        0.9470310056281456,
+        0.348928110419897
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 3.127665141043247e-17,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.123602431524113,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.348928110419897,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.08588544820953042,
+          -0.07746426086996455,
+          -0.0619238784186036
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0464989431311872e-31,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.123602431524113,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.348928110419897,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.603121299234527e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.7041537211370633,
+        1.1326458458679487,
+        0.22555402237044314
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 1.0120055116035342e-16,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.0469282964364055,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.22555402237044314,
+        "placement_floor_count": 0,
+        "point_count": 7,
+        "score": [
+          -0.05163436552946757,
+          -0.1015338369176087,
+          -1.176433265545346
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 1.0632953327097751e-31,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -5.0469282964364055,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.22555402237044314,
+        "placement_floor_count": 1,
+        "point_count": 7,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 5.647907575491409e-16
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        0.6,
+        0.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.4410510369235645,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.047691607913528736,
+          -0.1562255599237065,
+          -3.9954424784393514
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.4410510369235645,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.788656811372123,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.2,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.06777472117434227,
+          -0.13723875364718155,
+          -1.622618496487041
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.788656811372123,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.2,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        1.4,
+        0.5
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.983271482440488,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.07863629297940353,
+          -0.14860651603457542,
+          0.19931570005675192
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.983271482440488,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.6,
+        1.4,
+        0.5
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.937924978827047,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.03445676906778693,
+          -0.17057586727640703,
+          0.183178596552165
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.937924978827047,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.5,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.4,
+        0.6,
+        0.1
+      ],
+      "phase": "BC1",
+      "row_family": "deterministic_grid",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.50205055031529,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.10260804333850115,
+          -0.15902793687371916,
+          -3.7539891321501244
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": null,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.50205055031529,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.1,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.2099268593184842,
+        1.3962414110809145,
+        0.19335881064339963
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 0,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.863630589795504,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.19335881064339963,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.07305022866533516,
+          -0.21182818376723428,
+          -1.3963802088994253
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.863630589795504,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.19335881064339963,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0194556805483035,
+        0.9570599813663845,
+        0.43901361617463686
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 1,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.914146657581227,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.43901361617463686,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.07062503257977318,
+          -0.07953902910624497,
+          0.09645213629424726
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.914146657581227,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.43901361617463686,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.0480912649469476,
+        0.6987447619580658,
+        0.41496690746351617
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 2,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.901433351364572,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.41496690746351617,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.07532054084892793,
+          -0.0493461188600459,
+          0.02702129283870378
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.901433351364572,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.41496690746351617,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        1.137962473367498,
+        0.9470310056281456,
+        0.348928110419897
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 3,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.917123829877195,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.348928110419897,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.0784123768480842,
+          -0.07750667539029535,
+          -0.24864595254530603
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.917123829877195,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.348928110419897,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    },
+    {
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "claim_status": "stable",
+      "model": "model_c_autonomous_nonlinear_growth",
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "parameters": [
+        0.7041537211370633,
+        1.1326458458679487,
+        0.22555402237044314
+      ],
+      "phase": "BC1",
+      "row_family": "seeded_random_box",
+      "row_index": 4,
+      "score": {
+        "derivative_branch": "structural_fixed_support_no_active_floor",
+        "derivative_method": "analytic_first_order_structural_fixed_support",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.826879861922454,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.22555402237044314,
+        "placement_floor_count": 0,
+        "point_count": 14,
+        "score": [
+          -0.04665610753341923,
+          -0.1525284805899363,
+          -1.206660026593159
+        ],
+        "sigma_point_variable": "pre_transition_structural",
+        "status": "ok",
+        "structural_null_count": 1,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      },
+      "seed": 20260515,
+      "value": {
+        "derivative_branch": "value_only",
+        "derivative_method": "value_only",
+        "deterministic_residual": 0.0,
+        "error": null,
+        "failure_label": null,
+        "fixed_null_derivative_residual": 0.0,
+        "innovation_floor_count": 0,
+        "log_likelihood": -4.826879861922454,
+        "max_integration_rank": 2,
+        "min_innovation_eigen_gap": null,
+        "min_placement_eigen_gap": 0.22555402237044314,
+        "placement_floor_count": 1,
+        "point_count": 14,
+        "score": null,
+        "sigma_point_variable": "not_declared",
+        "status": "ok",
+        "structural_null_count": 0,
+        "structural_null_covariance_residual": 0.0,
+        "support_residual": 0.0
+      }
+    }
+  ]
+}

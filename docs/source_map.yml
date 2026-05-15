@@ -911,6 +911,66 @@ chapter_mappings:
       import_status: drafted
       reason: Execution-ready v1 closure plan that summarizes phase goals, remaining gaps, falsifiable hypotheses, test gates, continuation criteria, and lane boundaries for QR score-only API decisions, longer QR HMC diagnostics, wider SVD-CUT branch sweeps, optional escalated GPU/XLA derivative evidence, and CI containment.
 
+  bayesfilter_v1_master_program_2026_05_13:
+    - source_file: bayesfilter-v1-master-program-2026-05-13.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter V1 subplans and execution gates
+      import_status: drafted
+      reason: Single coherent master roadmap for BayesFilter V1, consolidating API, linear, structural, nonlinear, Hessian, GPU/XLA, HMC, and external-compatibility directions into one anti-drift control document with explicit remaining gaps and execution order.
+
+  bayesfilter_v1_structural_sigma_point_score_model_c_plan_2026_05_13:
+    - source_file: bayesfilter-v1-structural-sigma-point-score-model-c-plan-2026-05-13.md; bayesfilter-v1-structural-sigma-point-score-model-c-plan-audit-2026-05-13.md; bayesfilter-v1-structural-sigma-point-score-model-c-result-2026-05-13.md
+      destination: docs/plans/bayesfilter-v1-master-program-2026-05-13.md; docs/chapters/ch18b_structural_deterministic_dynamics.tex; docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py; bayesfilter/testing/nonlinear_diagnostics_tf.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py
+      import_status: drafted
+      reason: Focused V1 execution pass for replacing the abandoned fixed-null framing with the Chapter 18b structural sigma-point score derivation, documenting the structural fixed-support score equations in Chapter 18, implementing an opt-in fixed-support SVD score branch for default Model C, auditing code-document consistency, and certifying default Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4.
+
+  bayesfilter_v1_master_derivative_validation_reconciliation_2026_05_14:
+    - source_file: bayesfilter-v1-master-program-2026-05-13.md; bayesfilter-v1-p1-derivative-validation-matrix-plan-2026-05-14.md; bayesfilter-v1-p2-branch-diagnostics-plan-2026-05-14.md; bayesfilter-v1-p3-benchmark-refresh-plan-2026-05-14.md; bayesfilter-v1-p4-nonlinear-hmc-target-plan-2026-05-14.md; bayesfilter-v1-p5-hessian-consumer-assessment-plan-2026-05-14.md; bayesfilter-v1-p6-gpu-xla-scaling-plan-2026-05-14.md; bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md; bayesfilter-v1-p8-external-integration-plan-2026-05-14.md; bayesfilter-v1-master-and-subplans-audit-2026-05-14.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter V1 P1-P8 execution gates
+      import_status: drafted
+      reason: Reconciles the V1 master after the structural Model C score phase by inserting a first-class nonlinear derivative-validation matrix gate over Models A-C and SVD cubature, SVD-UKF, and SVD-CUT4, shifting branch diagnostics, benchmarks, HMC, Hessian, GPU/XLA, exact-reference, and external-integration phases behind explicit gates, and auditing the resulting subplans against the V1 anti-drift methodology.
+
+  bayesfilter_v1_p6_gpu_xla_scaling_result_2026_05_14:
+    - source_file: bayesfilter-v1-p6-gpu-xla-scaling-result-2026-05-14.md; docs/benchmarks/benchmark_bayesfilter_v1_nonlinear_gpu_xla.py; docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.json; docs/benchmarks/bayesfilter-v1-nonlinear-cpu-xla-control-2026-05-14.md; docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.json; docs/benchmarks/bayesfilter-v1-nonlinear-gpu-xla-diagnostic-2026-05-14.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future larger-shape nonlinear GPU/XLA diagnostic pass
+      import_status: drafted
+      reason: Records P6 hardware-scoped diagnostic evidence for Model B SVD-CUT4 under CPU-hidden and escalated GPU-visible TensorFlow/XLA runs, showing GPU/XLA operational status on the tested tiny shape while explicitly withholding a broad speedup claim.
+
+  bayesfilter_v1_p7_exact_reference_strengthening_result_2026_05_14:
+    - source_file: bayesfilter-v1-p7-exact-reference-strengthening-plan-2026-05-14.md; bayesfilter-v1-p7-exact-reference-strengthening-result-2026-05-14.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future exact nonlinear reference or seeded SMC diagnostic pass
+      import_status: drafted
+      reason: P7 records an explicit deferral branch. Exact full nonlinear likelihood evidence for Models B-C remains blocked because no current V1 claim requires it, and dense one-step Gaussian projection diagnostics must not be promoted to exact nonlinear likelihood certification.
+
+  bayesfilter_v1_p8_external_integration_result_2026_05_14:
+    - source_file: bayesfilter-v1-p8-external-integration-plan-2026-05-14.md; bayesfilter-v1-p8-external-integration-result-2026-05-14.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future MacroFinance optional-live compatibility check; future DSGE test-only bridge plan
+      import_status: drafted
+      reason: Records P8's external integration plan without external source edits, selecting MacroFinance linear QR compatibility as the first optional-live target, keeping DSGE test-only, preserving SGU as blocked, and defining rollback and ownership gates before any client switch-over.
+
+  bayesfilter_v1_master_program_execution_summary_2026_05_14:
+    - source_file: bayesfilter-v1-master-program-execution-summary-2026-05-14.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future BayesFilter V1 release-candidate and client-integration phases
+      import_status: drafted
+      reason: Final execution summary for the BayesFilter V1 master program, recording P1-P8 outcomes, final validation results, remaining gaps, falsifiable hypotheses, and recommended next phases after the scoped master-program execution.
+
+  bayesfilter_v1_model_bc_thorough_testing_master_program_2026_05_14:
+    - source_file: bayesfilter-v1-model-bc-thorough-testing-master-program-2026-05-14.md
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future Model B/C value-score-HMC-GPU-reference-Hessian testing phases
+      import_status: drafted
+      reason: Control document for the next BayesFilter-local V1 campaign to test nonlinear Models B and C thoroughly across SVD cubature, SVD-UKF, and SVD-CUT4, with gated phases for wider branch boxes, score stress tests, horizon/noise robustness, optional references, HMC diagnostics, GPU/XLA scaling, Hessian consumer decisions, and final claim consolidation.
+
+  bayesfilter_v1_model_bc_thorough_testing_subplans_2026_05_14:
+    - source_file: bayesfilter-v1-model-bc-bc0-baseline-reconciliation-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc1-wider-branch-boxes-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc2-score-accuracy-stress-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc3-horizon-noise-robustness-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc4-reference-decision-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc5-hmc-ladder-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc7-hessian-consumer-decision-plan-2026-05-14.md; bayesfilter-v1-model-bc-bc8-consolidation-release-gate-plan-2026-05-14.md; bayesfilter-v1-model-bc-subplans-supervisor-audit-2026-05-14.md; bayesfilter-v1-model-bc-supervisor-audit-evaluation-2026-05-15.md; scripts/claude_worker.sh
+      destination: docs/plans/bayesfilter-v1-model-bc-thorough-testing-master-program-2026-05-14.md; docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future Model B/C BC0-BC8 execution artifacts
+      import_status: drafted
+      reason: Execution-ready subplans, supervisor audit, evaluation note, and local Claude review wrapper for the Model B/C thorough-testing master program, tightening BC0-BC8 into separate gated artifacts with evidence contracts, stop rules, tolerance and comparator precommitment, independent HMC/GPU diagnostics, Hessian consumer gating, Claude/Codex review agreement, and final release-candidate consolidation boundaries.
+
+  bayesfilter_v1_model_bc_thorough_testing_execution_2026_05_15:
+    - source_file: bayesfilter-v1-model-bc-bc0-baseline-matrix-result-2026-05-15.md; bayesfilter-v1-model-bc-bc1-branch-boxes-result-2026-05-15.md; bayesfilter-v1-model-bc-bc2-score-stress-result-2026-05-15.md; bayesfilter-v1-model-bc-bc3-horizon-noise-result-2026-05-15.md; bayesfilter-v1-model-bc-bc4-reference-decision-result-2026-05-15.md; bayesfilter-v1-model-bc-bc5-hmc-ladder-result-2026-05-15.md; bayesfilter-v1-model-bc-bc6-gpu-xla-scaling-result-2026-05-15.md; bayesfilter-v1-model-bc-bc7-hessian-consumer-result-2026-05-15.md; bayesfilter-v1-model-bc-final-testing-summary-2026-05-15.md; docs/benchmarks/benchmark_bayesfilter_v1_model_bc_testing.py; docs/benchmarks/benchmark_bayesfilter_v1_model_bc_hmc_ladder.py; docs/benchmarks/benchmark_bayesfilter_v1_model_bc_gpu_xla.py
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future Model B/C HMC convergence, batched GPU/XLA, exact-reference, and structural-support decision phases
+      import_status: drafted
+      reason: Phase-by-phase execution artifacts for the Model B/C thorough-testing master program, certifying tested-box value and analytic-score behavior, documenting Model C structural fixed-support boundaries, classifying CPU HMC targets as readiness candidates only, recording shape-specific escalated GPU/XLA diagnostics, deferring nonlinear Hessians without a named consumer, and consolidating the final BC0-BC8 release-candidate matrix.
+
   bayesfilter_v1_nonlinear_filtering_master_testing_program_2026_05_11:
     - source_file: bayesfilter-v1-nonlinear-filtering-master-testing-program-2026-05-11.md
       destination: docs/chapters/ch18_svd_sigma_point.tex; docs/chapters/ch28_nonlinear_ssm_validation.tex; bayesfilter/nonlinear; bayesfilter/testing; tests/test_structural_svd_sigma_point_tf.py; tests/test_svd_cut_filter_tf.py; tests/test_svd_cut_derivatives_tf.py; future nonlinear benchmark and analytic-score execution pass
@@ -961,9 +1021,9 @@ chapter_mappings:
 
   bayesfilter_v1_nonlinear_derivative_provider_gap_closure_2026_05_13:
     - source_file: bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-plan-audit-2026-05-13.md; bayesfilter-v1-nonlinear-derivative-provider-gap-closure-result-2026-05-13.md; bayesfilter/testing/nonlinear_models_tf.py; bayesfilter/testing/__init__.py; tests/test_nonlinear_sigma_point_scores_tf.py; tests/test_nonlinear_sigma_point_branch_diagnostics_tf.py; docs/chapters/ch28_nonlinear_ssm_validation.tex
-      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future fixed-null SVD derivative, wider nonlinear branch diagnostics, Hessian, GPU/XLA, and nonlinear HMC readiness passes
+      destination: docs/plans/bayesfilter-v1-external-compat-reset-memo-2026-05-10.md; future Chapter 18b structural sigma-point score pass for default Model C, wider nonlinear branch diagnostics, Hessian, GPU/XLA, and nonlinear HMC readiness passes
       import_status: drafted
-      reason: Executes the V1 nonlinear derivative-provider gap closure pass, adding testing-lane first-derivative providers for Models B-C, certifying Model B and smooth-phase Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4, and preserving default Model C zero phase variance as an active-floor blocker until a fixed-null derivative policy is derived.
+      reason: Executes the V1 nonlinear derivative-provider gap closure pass, adding testing-lane first-derivative providers for Models B-C, certifying Model B and smooth-phase Model C analytic scores against finite differences for SVD cubature, SVD-UKF, and SVD-CUT4, and preserving default Model C zero phase variance as an active-floor blocker until the Chapter 18b structural sigma-point score path is derived and implemented.
 
   dsge_sgu_current_control_derivation_gate_result:
     - source_file: /home/chakwong/python/docs/plans/sgu-current-control-derivation-gate-result-2026-05-09.md

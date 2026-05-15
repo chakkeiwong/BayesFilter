@@ -1,0 +1,126 @@
+{
+  "benchmark": "bayesfilter_v1_nonlinear_gpu_xla",
+  "config": {
+    "backends": [
+      "tf_svd_cut4"
+    ],
+    "claim_scope": "Diagnostic timing for one fixed nonlinear Model B shape.  Not a correctness certificate, not a broad speedup claim, and not a production behavior change.",
+    "device_scope": "cpu",
+    "devices": [
+      "cpu"
+    ],
+    "dtype": "float64",
+    "model": "model_b_nonlinear_accumulation",
+    "modes": [
+      "eager",
+      "graph",
+      "xla"
+    ],
+    "repeats": 2,
+    "timesteps": 24,
+    "warmup_calls": 1
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "device_scope": "cpu",
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      }
+    ],
+    "physical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/physical_device:CPU:0"
+      }
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "policy": "Rows are diagnostic timing evidence for one fixed Model B shape. They do not certify broad GPU/XLA speedups or numerical correctness.",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1"
+  },
+  "rows": [
+    {
+      "backend": "tf_svd_cut4",
+      "branch_active_floor_count": 0,
+      "branch_nonfinite_count": 0,
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "branch_weak_spectral_gap_count": 0,
+      "device_name": "/device:CPU:0",
+      "error": null,
+      "first_call_seconds": 0.08763602504041046,
+      "innovation_dim": 1,
+      "max_rss_after_mb": 584.234375,
+      "max_rss_before_mb": 583.984375,
+      "max_rss_delta_mb": 0.25,
+      "mean_steady_seconds": 0.08876809093635529,
+      "mode": "eager",
+      "observation_dim": 1,
+      "point_count": 14,
+      "requested_device": "cpu",
+      "second_call_seconds": 0.08876809093635529,
+      "state_dim": 2,
+      "status": "ok",
+      "timesteps": 24,
+      "value": -9.588528147575866,
+      "warmup_calls": 0,
+      "warmup_seconds": null
+    },
+    {
+      "backend": "tf_svd_cut4",
+      "branch_active_floor_count": 0,
+      "branch_nonfinite_count": 0,
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "branch_weak_spectral_gap_count": 0,
+      "device_name": "/device:CPU:0",
+      "error": null,
+      "first_call_seconds": 0.005564326071180403,
+      "innovation_dim": 1,
+      "max_rss_after_mb": 742.296875,
+      "max_rss_before_mb": 584.234375,
+      "max_rss_delta_mb": 158.0625,
+      "mean_steady_seconds": 0.004820220987312496,
+      "mode": "graph",
+      "observation_dim": 1,
+      "point_count": 14,
+      "requested_device": "cpu",
+      "second_call_seconds": 0.004820220987312496,
+      "state_dim": 2,
+      "status": "ok",
+      "timesteps": 24,
+      "value": -9.588528147575865,
+      "warmup_calls": 1,
+      "warmup_seconds": 2.8522074959473684
+    },
+    {
+      "backend": "tf_svd_cut4",
+      "branch_active_floor_count": 0,
+      "branch_nonfinite_count": 0,
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "branch_weak_spectral_gap_count": 0,
+      "device_name": "/device:CPU:0",
+      "error": null,
+      "first_call_seconds": 0.0007510880241170526,
+      "innovation_dim": 1,
+      "max_rss_after_mb": 1082.20703125,
+      "max_rss_before_mb": 742.296875,
+      "max_rss_delta_mb": 339.91015625,
+      "mean_steady_seconds": 0.00039143196772783995,
+      "mode": "xla",
+      "observation_dim": 1,
+      "point_count": 14,
+      "requested_device": "cpu",
+      "second_call_seconds": 0.00039143196772783995,
+      "state_dim": 2,
+      "status": "ok",
+      "timesteps": 24,
+      "value": -9.588528147575866,
+      "warmup_calls": 1,
+      "warmup_seconds": 3.9304466269677505
+    }
+  ]
+}

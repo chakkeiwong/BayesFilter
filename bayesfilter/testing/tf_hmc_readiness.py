@@ -8,6 +8,15 @@ from typing import Mapping
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import tf_svd_cut4_score
+from bayesfilter.testing.nonlinear_diagnostics_tf import (
+    nonlinear_sigma_point_score_branch_summary,
+)
+from bayesfilter.testing.nonlinear_models_tf import (
+    make_nonlinear_accumulation_first_derivatives_tf,
+    make_nonlinear_accumulation_model_tf,
+    model_b_observations_tf,
+)
 from bayesfilter.linear.kalman_qr_derivatives_tf import (
     tf_qr_linear_gaussian_score_hessian,
 )
@@ -223,6 +232,167 @@ def run_qr_static_lgssm_hmc_smoke(
         "initial_gradient_finite": tf.reduce_all(tf.math.is_finite(gradient)),
         "initial_hessian_symmetry_residual": curvature["hessian_symmetry_residual"],
         "initial_negative_hessian_eigenvalues": curvature["negative_hessian_eigenvalues"],
+        "min_target_log_prob": tf.reduce_min(trace["target_log_prob"]),
+        "max_target_log_prob": tf.reduce_max(trace["target_log_prob"]),
+        "max_abs_log_accept_ratio": tf.reduce_max(tf.abs(trace["log_accept_ratio"])),
+    }
+
+
+@dataclass(frozen=True)
+class ModelBNonlinearSVDTarget:
+    """Smooth Model B target for the first nonlinear V1 HMC smoke."""
+
+    observations: tf.Tensor
+    initial_parameters: tf.Tensor
+    prior_mean: tf.Tensor
+    prior_scale: tf.Tensor
+    backend: str
+
+    @staticmethod
+    def default() -> "ModelBNonlinearSVDTarget":
+        return ModelBNonlinearSVDTarget(
+            observations=model_b_observations_tf(),
+            initial_parameters=tf.constant([0.70, 0.25, 0.80], dtype=tf.float64),
+            prior_mean=tf.constant([0.70, 0.25, 0.80], dtype=tf.float64),
+            prior_scale=tf.constant([0.25, 0.15, 0.25], dtype=tf.float64),
+            backend="tf_svd_cut4",
+        )
+
+    def model_and_derivatives(self, parameters: tf.Tensor):
+        params = tf.convert_to_tensor(parameters, dtype=tf.float64)
+        return (
+            make_nonlinear_accumulation_model_tf(
+                rho=params[0],
+                sigma=params[1],
+                beta=params[2],
+            ),
+            make_nonlinear_accumulation_first_derivatives_tf(
+                rho=params[0],
+                sigma=params[1],
+                beta=params[2],
+            ),
+        )
+
+    def log_likelihood_and_score(self, parameters: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        model, derivatives = self.model_and_derivatives(parameters)
+        result = tf_svd_cut4_score(
+            self.observations,
+            model,
+            derivatives,
+            innovation_floor=tf.constant(1e-12, dtype=tf.float64),
+            spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        )
+        return result.log_likelihood, result.score
+
+    def target_log_prob(self, parameters: tf.Tensor) -> tf.Tensor:
+        value, _score = self.log_likelihood_and_score(parameters)
+        centered = (tf.convert_to_tensor(parameters, dtype=tf.float64) - self.prior_mean)
+        prior_quadratic = tf.reduce_sum(tf.square(centered / self.prior_scale))
+        return value - 0.5 * prior_quadratic
+
+    def target_log_prob_and_grad(self, parameters: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        params = tf.convert_to_tensor(parameters, dtype=tf.float64)
+        value, score = self.log_likelihood_and_score(params)
+        centered = params - self.prior_mean
+        prior_score = -(centered / tf.square(self.prior_scale))
+        prior_quadratic = tf.reduce_sum(tf.square(centered / self.prior_scale))
+        return value - 0.5 * prior_quadratic, score + prior_score
+
+    def branch_summary(self) -> Mapping[str, tf.Tensor | float | int | tuple[str, ...]]:
+        grid = tf.constant(
+            [
+                [0.62, 0.20, 0.70],
+                [0.66, 0.23, 0.75],
+                [0.70, 0.25, 0.80],
+                [0.74, 0.27, 0.85],
+                [0.78, 0.30, 0.90],
+            ],
+            dtype=tf.float64,
+        )
+        summary = nonlinear_sigma_point_score_branch_summary(
+            self.observations,
+            grid,
+            lambda params: make_nonlinear_accumulation_model_tf(
+                rho=params[0],
+                sigma=params[1],
+                beta=params[2],
+            ),
+            lambda params: make_nonlinear_accumulation_first_derivatives_tf(
+                rho=params[0],
+                sigma=params[1],
+                beta=params[2],
+            ),
+            backend=self.backend,
+            spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
+        )
+        return {
+            "ok_count": summary.ok_count,
+            "total_count": summary.total_count,
+            "ok_fraction": summary.ok_fraction,
+            "active_floor_count": summary.active_floor_count,
+            "weak_spectral_gap_count": summary.weak_spectral_gap_count,
+            "nonfinite_count": summary.nonfinite_count,
+            "failure_labels": summary.failure_labels,
+            "max_deterministic_residual": summary.max_deterministic_residual,
+            "max_support_residual": summary.max_support_residual,
+        }
+
+
+def run_model_b_nonlinear_svd_cut4_hmc_smoke(
+    *,
+    num_results: int = 12,
+    num_burnin_steps: int = 6,
+    step_size: float = 0.01,
+    num_leapfrog_steps: int = 2,
+    seed: tuple[int, int] = (20260514, 23),
+) -> Mapping[str, tf.Tensor | tuple[str, ...]]:
+    """Run a tiny CPU-oriented HMC smoke for nonlinear Model B with SVD-CUT4."""
+
+    target = ModelBNonlinearSVDTarget.default()
+    branch = target.branch_summary()
+    if branch["ok_count"] != branch["total_count"]:
+        raise ValueError(f"Model B branch gate failed before HMC smoke: {branch}")
+    kernel = tfm.HamiltonianMonteCarlo(
+        target_log_prob_fn=target.target_log_prob,
+        step_size=tf.constant(step_size, dtype=tf.float64),
+        num_leapfrog_steps=num_leapfrog_steps,
+    )
+    samples, trace = tfm.sample_chain(
+        num_results=num_results,
+        num_burnin_steps=num_burnin_steps,
+        current_state=target.initial_parameters,
+        kernel=kernel,
+        trace_fn=lambda _state, kernel_results: {
+            "is_accepted": kernel_results.is_accepted,
+            "log_accept_ratio": kernel_results.log_accept_ratio,
+            "target_log_prob": kernel_results.accepted_results.target_log_prob,
+        },
+        seed=tf.constant(seed, dtype=tf.int32),
+    )
+    value, gradient = target.target_log_prob_and_grad(target.initial_parameters)
+    return {
+        "samples": samples,
+        "sample_mean": tf.reduce_mean(samples, axis=0),
+        "sample_stddev": tf.math.reduce_std(samples, axis=0),
+        "acceptance_rate": tf.reduce_mean(tf.cast(trace["is_accepted"], tf.float64)),
+        "finite_sample_count": tf.reduce_sum(
+            tf.cast(tf.reduce_all(tf.math.is_finite(samples), axis=-1), tf.int32)
+        ),
+        "nonfinite_sample_count": tf.reduce_sum(
+            tf.cast(tf.logical_not(tf.reduce_all(tf.math.is_finite(samples), axis=-1)), tf.int32)
+        ),
+        "initial_target_log_prob": value,
+        "initial_gradient": gradient,
+        "initial_gradient_finite": tf.reduce_all(tf.math.is_finite(gradient)),
+        "branch_ok_count": tf.constant(branch["ok_count"], dtype=tf.int32),
+        "branch_total_count": tf.constant(branch["total_count"], dtype=tf.int32),
+        "branch_active_floor_count": tf.constant(branch["active_floor_count"], dtype=tf.int32),
+        "branch_weak_spectral_gap_count": tf.constant(
+            branch["weak_spectral_gap_count"],
+            dtype=tf.int32,
+        ),
+        "branch_nonfinite_count": tf.constant(branch["nonfinite_count"], dtype=tf.int32),
+        "branch_failure_labels": branch["failure_labels"],
         "min_target_log_prob": tf.reduce_min(trace["target_log_prob"]),
         "max_target_log_prob": tf.reduce_max(trace["target_log_prob"]),
         "max_abs_log_accept_ratio": tf.reduce_max(tf.abs(trace["log_accept_ratio"])),

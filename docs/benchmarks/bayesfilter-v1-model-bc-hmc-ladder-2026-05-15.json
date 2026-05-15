@@ -1,0 +1,697 @@
+{
+  "benchmark": "bayesfilter_v1_model_bc_hmc_ladder",
+  "claim_scope": "cpu_hmc_readiness_candidate_not_convergence",
+  "config": {
+    "backends": [
+      "tf_svd_cubature",
+      "tf_svd_ukf",
+      "tf_svd_cut4"
+    ],
+    "divergence_count_policy": "not available from this fixed-step HMC diagnostic",
+    "gradient_path": "tf_custom_gradient_wrapping_analytic_sigma_point_score",
+    "models": [
+      "model_b_nonlinear_accumulation",
+      "model_c_autonomous_nonlinear_growth"
+    ],
+    "num_burnin_steps": 8,
+    "num_results": 16,
+    "seeds": [
+      [
+        20260515,
+        11
+      ],
+      [
+        20260515,
+        23
+      ],
+      [
+        20260515,
+        37
+      ]
+    ]
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "logical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/device:CPU:0"
+      }
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "policy": "CPU-only opt-in HMC readiness diagnostic.  Classification is candidate/blocked, not convergence.",
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0"
+  },
+  "rows": [
+    {
+      "acceptance_rate_by_chain": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cubature",
+      "branch_failure_labels": [],
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "burnin_steps": 8,
+      "chains": 3,
+      "claim_scope": "hmc_readiness_candidate_not_convergence",
+      "classification": "candidate",
+      "compiled_eager_gradient_max_abs_residual": 0.0,
+      "compiled_eager_parity_ok": true,
+      "compiled_eager_value_abs_residual": 0.0,
+      "divergence_count": null,
+      "draws_per_chain": 16,
+      "error": null,
+      "finite_sample_count": 48,
+      "initial_gradient": [
+        -1.135496127724087,
+        -5.31676397190331,
+        -1.1111158284501887
+      ],
+      "initial_gradient_finite": true,
+      "initial_parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "initial_target_log_prob": -1.5597972944849308,
+      "max_abs_log_accept_ratio": 4.2005245513454526e-05,
+      "max_acceptance_rate": 1.0,
+      "max_rhat": 1.9951705512567504,
+      "min_acceptance_rate": 1.0,
+      "model": "model_b_nonlinear_accumulation",
+      "naive_mcse_sd_ratio": [
+        0.14433756729740646,
+        0.14433756729740646,
+        0.14433756729740646
+      ],
+      "nonfinite_sample_count": 0,
+      "num_leapfrog_steps": 2,
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "prior_mean": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "prior_scale": [
+        0.25,
+        0.15,
+        0.25
+      ],
+      "rhat": [
+        1.9951705512567504,
+        1.25167480290315,
+        1.638135825221801
+      ],
+      "runtime_seconds": 17.48742417898029,
+      "sample_mean": [
+        0.6654857758368133,
+        0.22896499479102525,
+        0.7671482069487844
+      ],
+      "sample_stddev": [
+        0.025755610013687417,
+        0.015812692851996265,
+        0.020903833132856372
+      ],
+      "seeds": [
+        [
+          20260515,
+          11
+        ],
+        [
+          20260515,
+          23
+        ],
+        [
+          20260515,
+          37
+        ]
+      ],
+      "step_size": 0.005,
+      "target": "model_b_nonlinear_accumulation_tf_svd_cubature"
+    },
+    {
+      "acceptance_rate_by_chain": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_ukf",
+      "branch_failure_labels": [],
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "burnin_steps": 8,
+      "chains": 3,
+      "claim_scope": "hmc_readiness_candidate_not_convergence",
+      "classification": "candidate",
+      "compiled_eager_gradient_max_abs_residual": 0.0,
+      "compiled_eager_parity_ok": true,
+      "compiled_eager_value_abs_residual": 2.220446049250313e-16,
+      "divergence_count": null,
+      "draws_per_chain": 16,
+      "error": null,
+      "finite_sample_count": 48,
+      "initial_gradient": [
+        -1.1355531146145685,
+        -5.3168526492364165,
+        -1.1111252763895456
+      ],
+      "initial_gradient_finite": true,
+      "initial_parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "initial_target_log_prob": -1.559808494225846,
+      "max_abs_log_accept_ratio": 4.200631300999014e-05,
+      "max_acceptance_rate": 1.0,
+      "max_rhat": 1.995169759476671,
+      "min_acceptance_rate": 1.0,
+      "model": "model_b_nonlinear_accumulation",
+      "naive_mcse_sd_ratio": [
+        0.14433756729740646,
+        0.14433756729740646,
+        0.14433756729740646
+      ],
+      "nonfinite_sample_count": 0,
+      "num_leapfrog_steps": 2,
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "prior_mean": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "prior_scale": [
+        0.25,
+        0.15,
+        0.25
+      ],
+      "rhat": [
+        1.995169759476671,
+        1.2516745442956965,
+        1.638135731775549
+      ],
+      "runtime_seconds": 15.240532512078062,
+      "sample_mean": [
+        0.6654857350809967,
+        0.22896493069850288,
+        0.7671482002257649
+      ],
+      "sample_stddev": [
+        0.025755614115021867,
+        0.01581269743069515,
+        0.020903833900409126
+      ],
+      "seeds": [
+        [
+          20260515,
+          11
+        ],
+        [
+          20260515,
+          23
+        ],
+        [
+          20260515,
+          37
+        ]
+      ],
+      "step_size": 0.005,
+      "target": "model_b_nonlinear_accumulation_tf_svd_ukf"
+    },
+    {
+      "acceptance_rate_by_chain": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "allow_fixed_null_support": false,
+      "backend": "tf_svd_cut4",
+      "branch_failure_labels": [],
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "burnin_steps": 8,
+      "chains": 3,
+      "claim_scope": "hmc_readiness_candidate_not_convergence",
+      "classification": "candidate",
+      "compiled_eager_gradient_max_abs_residual": 0.0,
+      "compiled_eager_parity_ok": true,
+      "compiled_eager_value_abs_residual": 2.220446049250313e-16,
+      "divergence_count": null,
+      "draws_per_chain": 16,
+      "error": null,
+      "finite_sample_count": 48,
+      "initial_gradient": [
+        -1.1188526419893134,
+        -5.239542318258787,
+        -1.0900616076399845
+      ],
+      "initial_gradient_finite": true,
+      "initial_parameters": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "initial_target_log_prob": -1.537279264741419,
+      "max_abs_log_accept_ratio": 4.034873859293242e-05,
+      "max_acceptance_rate": 1.0,
+      "max_rhat": 1.9953618613526247,
+      "min_acceptance_rate": 1.0,
+      "model": "model_b_nonlinear_accumulation",
+      "naive_mcse_sd_ratio": [
+        0.14433756729740646,
+        0.14433756729740646,
+        0.14433756729740646
+      ],
+      "nonfinite_sample_count": 0,
+      "num_leapfrog_steps": 2,
+      "parameter_box": [
+        [
+          0.55,
+          0.85
+        ],
+        [
+          0.15,
+          0.4
+        ],
+        [
+          0.45,
+          1.1
+        ]
+      ],
+      "parameter_names": [
+        "rho",
+        "sigma",
+        "beta"
+      ],
+      "prior_mean": [
+        0.7,
+        0.25,
+        0.8
+      ],
+      "prior_scale": [
+        0.25,
+        0.15,
+        0.25
+      ],
+      "rhat": [
+        1.9953618613526247,
+        1.2517570565146858,
+        1.6384185998783627
+      ],
+      "runtime_seconds": 15.317367454990745,
+      "sample_mean": [
+        0.6654995846596402,
+        0.22903130208579178,
+        0.767163938987244
+      ],
+      "sample_stddev": [
+        0.025752216505047297,
+        0.015804108397012885,
+        0.020902221140718814
+      ],
+      "seeds": [
+        [
+          20260515,
+          11
+        ],
+        [
+          20260515,
+          23
+        ],
+        [
+          20260515,
+          37
+        ]
+      ],
+      "step_size": 0.005,
+      "target": "model_b_nonlinear_accumulation_tf_svd_cut4"
+    },
+    {
+      "acceptance_rate_by_chain": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cubature",
+      "branch_failure_labels": [],
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "burnin_steps": 8,
+      "chains": 3,
+      "claim_scope": "hmc_readiness_candidate_not_convergence",
+      "classification": "candidate",
+      "compiled_eager_gradient_max_abs_residual": 4.440892098500626e-16,
+      "compiled_eager_parity_ok": true,
+      "compiled_eager_value_abs_residual": 8.881784197001252e-16,
+      "divergence_count": null,
+      "draws_per_chain": 16,
+      "error": null,
+      "finite_sample_count": 48,
+      "initial_gradient": [
+        0.0030236501598226648,
+        -0.17956331771283307,
+        -1.3115638944883996
+      ],
+      "initial_gradient_finite": true,
+      "initial_parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "initial_target_log_prob": -4.766293540661853,
+      "max_abs_log_accept_ratio": 3.1957014812178386e-10,
+      "max_acceptance_rate": 1.0,
+      "max_rhat": 2.0236667337748213,
+      "min_acceptance_rate": 1.0,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "naive_mcse_sd_ratio": [
+        0.14433756729740646,
+        0.14433756729740646,
+        0.14433756729740646
+      ],
+      "nonfinite_sample_count": 0,
+      "num_leapfrog_steps": 2,
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "prior_mean": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "prior_scale": [
+        0.25,
+        0.25,
+        0.12
+      ],
+      "rhat": [
+        2.0236667337748213,
+        1.2829053119535396,
+        1.6569945450433439
+      ],
+      "runtime_seconds": 11.435164611088112,
+      "sample_mean": [
+        0.9993253249390331,
+        0.9996594926723592,
+        0.19935688186693365
+      ],
+      "sample_stddev": [
+        0.0005176786322658077,
+        0.00031215702429838885,
+        0.00041920861126937514
+      ],
+      "seeds": [
+        [
+          20260515,
+          11
+        ],
+        [
+          20260515,
+          23
+        ],
+        [
+          20260515,
+          37
+        ]
+      ],
+      "step_size": 0.0001,
+      "target": "model_c_autonomous_nonlinear_growth_tf_svd_cubature"
+    },
+    {
+      "acceptance_rate_by_chain": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_ukf",
+      "branch_failure_labels": [],
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "burnin_steps": 8,
+      "chains": 3,
+      "claim_scope": "hmc_readiness_candidate_not_convergence",
+      "classification": "candidate",
+      "compiled_eager_gradient_max_abs_residual": 6.661338147750939e-16,
+      "compiled_eager_parity_ok": true,
+      "compiled_eager_value_abs_residual": 0.0,
+      "divergence_count": null,
+      "draws_per_chain": 16,
+      "error": null,
+      "finite_sample_count": 48,
+      "initial_gradient": [
+        -0.07659596820320269,
+        -0.08991050920276189,
+        -1.6423187703002864
+      ],
+      "initial_gradient_finite": true,
+      "initial_parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "initial_target_log_prob": -5.017388649292908,
+      "max_abs_log_accept_ratio": 5.024149984933501e-10,
+      "max_acceptance_rate": 1.0,
+      "max_rhat": 2.0236358239953027,
+      "min_acceptance_rate": 1.0,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "naive_mcse_sd_ratio": [
+        0.14433756729740646,
+        0.14433756729740646,
+        0.14433756729740646
+      ],
+      "nonfinite_sample_count": 0,
+      "num_leapfrog_steps": 2,
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "prior_mean": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "prior_scale": [
+        0.25,
+        0.25,
+        0.12
+      ],
+      "rhat": [
+        2.0236358239953027,
+        1.282911802974699,
+        1.656905470944971
+      ],
+      "runtime_seconds": 10.718567262985744,
+      "sample_mean": [
+        0.999325298666935,
+        0.9996595222676152,
+        0.1993567722648034
+      ],
+      "sample_stddev": [
+        0.0005176817737550885,
+        0.0003121545607682741,
+        0.00041922408951547505
+      ],
+      "seeds": [
+        [
+          20260515,
+          11
+        ],
+        [
+          20260515,
+          23
+        ],
+        [
+          20260515,
+          37
+        ]
+      ],
+      "step_size": 0.0001,
+      "target": "model_c_autonomous_nonlinear_growth_tf_svd_ukf"
+    },
+    {
+      "acceptance_rate_by_chain": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "allow_fixed_null_support": true,
+      "backend": "tf_svd_cut4",
+      "branch_failure_labels": [],
+      "branch_ok_count": 3,
+      "branch_total_count": 3,
+      "burnin_steps": 8,
+      "chains": 3,
+      "claim_scope": "hmc_readiness_candidate_not_convergence",
+      "classification": "candidate",
+      "compiled_eager_gradient_max_abs_residual": 4.440892098500626e-16,
+      "compiled_eager_parity_ok": true,
+      "compiled_eager_value_abs_residual": 0.0,
+      "divergence_count": null,
+      "draws_per_chain": 16,
+      "error": null,
+      "finite_sample_count": 48,
+      "initial_gradient": [
+        -0.06777472117434227,
+        -0.13723875364718155,
+        -1.622618496487041
+      ],
+      "initial_gradient_finite": true,
+      "initial_parameters": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "initial_target_log_prob": -4.788656811372123,
+      "max_abs_log_accept_ratio": 6.116129824818017e-11,
+      "max_acceptance_rate": 1.0,
+      "max_rhat": 2.023639262564359,
+      "min_acceptance_rate": 1.0,
+      "model": "model_c_autonomous_nonlinear_growth",
+      "naive_mcse_sd_ratio": [
+        0.14433756729740646,
+        0.14433756729740646,
+        0.14433756729740646
+      ],
+      "nonfinite_sample_count": 0,
+      "num_leapfrog_steps": 2,
+      "parameter_box": [
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.6,
+          1.4
+        ],
+        [
+          0.1,
+          0.5
+        ]
+      ],
+      "parameter_names": [
+        "sigma_u",
+        "sigma_y",
+        "P0x"
+      ],
+      "prior_mean": [
+        1.0,
+        1.0,
+        0.2
+      ],
+      "prior_scale": [
+        0.25,
+        0.25,
+        0.12
+      ],
+      "rhat": [
+        2.023639262564359,
+        1.2829084755962725,
+        1.656910171562032
+      ],
+      "runtime_seconds": 10.912236885982566,
+      "sample_mean": [
+        0.9993253015807929,
+        0.9996595065937761,
+        0.1993567793570009
+      ],
+      "sample_stddev": [
+        0.000517681426215307,
+        0.00031215589465610836,
+        0.0004192226401985667
+      ],
+      "seeds": [
+        [
+          20260515,
+          11
+        ],
+        [
+          20260515,
+          23
+        ],
+        [
+          20260515,
+          37
+        ]
+      ],
+      "step_size": 0.0001,
+      "target": "model_c_autonomous_nonlinear_growth_tf_svd_cut4"
+    }
+  ]
+}
