@@ -1,0 +1,2056 @@
+{
+  "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+  "date": "2026-05-15",
+  "environment": {
+    "numpy": "2.1.3",
+    "platform": "Linux-6.8.0-111-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tensorflow_devices": [
+      {
+        "name": "/physical_device:CPU:0",
+        "type": "CPU"
+      }
+    ],
+    "tensorflow_probability": "0.25.0"
+  },
+  "planned_probes": [
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "differentiable_resampling",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "not_neural",
+      "planned_probe": "advanced tf_utils.soft_resampler.soft_resample",
+      "probe_id": "advanced_soft_resampler",
+      "requires_artifact": false,
+      "requires_contract": false,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "differentiable_resampling",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "not_neural",
+      "planned_probe": "advanced tf_utils.sinkhorn.sinkhorn_resample",
+      "probe_id": "advanced_sinkhorn_resampler",
+      "requires_artifact": false,
+      "requires_contract": false,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "differentiable_resampling",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "not_neural",
+      "planned_probe": "MLCOE SoftResampler",
+      "probe_id": "mlcoe_soft_resampler",
+      "requires_artifact": false,
+      "requires_contract": false,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "differentiable_resampling",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "not_neural",
+      "planned_probe": "MLCOE SinkhornResampler",
+      "probe_id": "mlcoe_sinkhorn_resampler",
+      "requires_artifact": false,
+      "requires_contract": false,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    },
+    {
+      "artifact_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/dpf_pretrained/mgn_ot_operator/checkpoints_option_b",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "neural_ot",
+      "gate_name": "neural_ot_and_neural_resampling",
+      "gate_phase": "FW3",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "checkpoint_dependent",
+      "planned_probe": "advanced AmortizedOTResampler with bundled checkpoint",
+      "probe_id": "advanced_amortized_ot_resampler",
+      "requires_artifact": true,
+      "requires_contract": false,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "neural_resampling",
+      "gate_name": "neural_ot_and_neural_resampling",
+      "gate_phase": "FW3",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "untrained_api_only",
+      "planned_probe": "MLCOE TransformerResampler untrained API smoke",
+      "probe_id": "mlcoe_transformer_resampler",
+      "requires_artifact": false,
+      "requires_contract": false,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "stochastic_flow",
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "not_neural",
+      "planned_probe": "advanced StochasticPFFlow reduced fixture",
+      "probe_id": "advanced_stochastic_pff_flow",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "stochastic_flow",
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "not_neural",
+      "planned_probe": "advanced StochasticPFParticleFilter reduced fixture",
+      "probe_id": "advanced_stochastic_pfpf",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "stochastic_flow",
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "not_neural",
+      "planned_probe": "MLCOE stochastic-flow surfaces",
+      "probe_id": "mlcoe_stochastic_flow",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "dpf",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "not_neural",
+      "planned_probe": "advanced TFDifferentiableParticleFilter soft",
+      "probe_id": "advanced_tf_dpf_soft",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "dpf",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "not_neural",
+      "planned_probe": "advanced TFDifferentiableParticleFilter sinkhorn",
+      "probe_id": "advanced_tf_dpf_sinkhorn",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/dpf_pretrained/mgn_ot_operator/checkpoints_option_b",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "dpf",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "neural_training_status": "checkpoint_dependent",
+      "planned_probe": "advanced TFDifferentiableParticleFilter amortized",
+      "probe_id": "advanced_tf_dpf_amortized",
+      "requires_artifact": true,
+      "requires_contract": true,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "dpf",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "not_neural",
+      "planned_probe": "MLCOE DPF method soft",
+      "probe_id": "mlcoe_dpf_soft",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "dpf",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "not_neural",
+      "planned_probe": "MLCOE DPF method sinkhorn",
+      "probe_id": "mlcoe_dpf_sinkhorn",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    },
+    {
+      "artifact_path": null,
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "family": "dpfpf",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "neural_training_status": "not_neural",
+      "planned_probe": "MLCOE DifferentiablePFPF",
+      "probe_id": "mlcoe_dpfpf",
+      "requires_artifact": false,
+      "requires_contract": true,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d"
+    }
+  ],
+  "records": [
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "differentiable_resampling",
+      "fixture_or_input": null,
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwds)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(particles: tensorflow.python.framework.tensor.Tensor, log_w_norm: tensorflow.python.framework.tensor.Tensor, alpha: tensorflow.python.framework.tensor.Tensor, rng: tensorflow.python.ops.stateful_random_ops.Generator) -> Tuple[tensorflow.python.framework.tensor.Tensor, tensorflow.python.framework.tensor.Tensor]",
+        "requires_artifact": false,
+        "requires_contract": false
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced tf_utils.soft_resampler.soft_resample",
+      "probe_id": "advanced_soft_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "differentiable_resampling",
+      "fixture_or_input": null,
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(particles: tensorflow.python.framework.tensor.Tensor, log_w: tensorflow.python.framework.tensor.Tensor, epsilon: tensorflow.python.framework.tensor.Tensor, num_iters: int)",
+        "requires_artifact": false,
+        "requires_contract": false
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced tf_utils.sinkhorn.sinkhorn_resample",
+      "probe_id": "advanced_sinkhorn_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "differentiable_resampling",
+      "fixture_or_input": null,
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(self, p, h, w, alpha=None)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(num_particles, alpha=0.5)",
+        "requires_artifact": false,
+        "requires_contract": false
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "MLCOE SoftResampler",
+      "probe_id": "mlcoe_soft_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "differentiable_resampling",
+      "fixture_or_input": null,
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(epsilon=0.05, n_iter=10, thresh=0.001)",
+        "requires_artifact": false,
+        "requires_contract": false,
+        "resample_signature": "(self, x, lw, h=None)"
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "MLCOE SinkhornResampler",
+      "probe_id": "mlcoe_sinkhorn_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "present",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "neural_ot",
+      "fixture_or_input": null,
+      "gate_name": "neural_ot_and_neural_resampling",
+      "gate_phase": "FW3",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/dpf_pretrained/mgn_ot_operator/checkpoints_option_b",
+        "call_signature": "(self, particles: tensorflow.python.framework.tensor.Tensor, log_w: tensorflow.python.framework.tensor.Tensor)",
+        "neural_training_status": "checkpoint_dependent",
+        "object_signature": "(ckpt_dir: Optional[str] = None, d: int = 2, N: int = 1000, eps: float = 0.5, dtype: tensorflow.python.framework.dtypes.DType = tf.float64, model_cfg: Optional[dict] = None)",
+        "requires_artifact": true,
+        "requires_contract": false
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced AmortizedOTResampler with bundled checkpoint",
+      "probe_id": "advanced_amortized_ot_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "neural_resampling",
+      "fixture_or_input": null,
+      "gate_name": "neural_ot_and_neural_resampling",
+      "gate_phase": "FW3",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(self, *args, **kwargs)",
+        "neural_training_status": "untrained_api_only",
+        "object_signature": "(num_particles, latent_dim=128, num_heads=4)",
+        "requires_artifact": false,
+        "requires_contract": false
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "MLCOE TransformerResampler untrained API smoke",
+      "probe_id": "mlcoe_transformer_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "stochastic_flow",
+      "fixture_or_input": null,
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "filter_signature": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult",
+        "neural_training_status": "not_neural",
+        "object_signature": "(n_particles: int = 100, n_flow_steps: int = 29, step_schedule: Literal['fine', 'exp'] = 'fine', flow_step_ratio: Optional[float] = None, Q_flow_mode: Literal['fixed', 'adaptive'] = 'adaptive', Q_flow_fixed: Optional[numpy.ndarray] = None, beta_schedule: Literal['linear', 'optimal'] = 'optimal', mu: float = 1e-07, bvp_method: str = 'Radau', bvp_max_step: float = 0.01, bvp_clip_ddot: float = 100000000.0, deterministic_dynamics: bool = False, integration_method: Literal['euler', 'semi_implicit', 'heun', 'expm'] = 'expm', seed: Optional[int] = None)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced StochasticPFFlow reduced fixture",
+      "probe_id": "advanced_stochastic_pff_flow",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "stochastic_flow",
+      "fixture_or_input": null,
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "filter_signature": "(self, model: advanced_particle_filter.models.base.StateSpaceModel, observations: numpy.ndarray, return_particles: bool = False, return_diagnostics: bool = False, rng: Optional[numpy.random._generator.Generator] = None) -> advanced_particle_filter.filters.base.FilterResult",
+        "neural_training_status": "not_neural",
+        "object_signature": "(n_particles: int = 100, n_flow_steps: int = 29, flow_step_ratio: float = 1.2, Q_flow_mode: Literal['fixed', 'adaptive'] = 'adaptive', Q_flow_fixed: Optional[numpy.ndarray] = None, beta_schedule: Literal['linear', 'optimal'] = 'optimal', mu: float = 1e-07, bvp_method: str = 'Radau', bvp_max_step: float = 0.01, bvp_clip_ddot: float = 100000000.0, deterministic_dynamics: bool = False, integration_method: Literal['euler', 'semi_implicit', 'heun', 'expm'] = 'expm', resample_method: Literal['systematic', 'stratified', 'multinomial', 'residual'] = 'systematic', resample_criterion: Literal['always', 'ess', 'never'] = 'ess', ess_threshold: float = 0.5, seed: Optional[int] = None)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced StochasticPFParticleFilter reduced fixture",
+      "probe_id": "advanced_stochastic_pfpf",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": "blocked_missing_assumption",
+      "blocker_message": "complete model object with exact flow/dPF field semantics; validated covariance and observation contract",
+      "classification": "blocked_missing_assumption",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "no",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "stochastic_flow",
+      "fixture_or_input": null,
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(model, N=100, n_steps=200)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "missing_adapter_contract",
+      "next_decision": "blocked_without_execution",
+      "phase": "FW1",
+      "planned_probe": "MLCOE stochastic-flow surfaces",
+      "probe_id": "mlcoe_stochastic_flow",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "blocked",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "filter_signature": "(self, params: advanced_particle_filter.tf_models.svssm.SVSSMParams, observations: tensorflow.python.framework.tensor.Tensor, rng: tensorflow.python.ops.stateful_random_ops.Generator) -> advanced_particle_filter.tf_filters.differentiable_particle.DPFResult",
+        "neural_training_status": "not_neural",
+        "object_signature": "(n_particles: int = 100, resampler: str = 'soft', alpha: float = 0.5, epsilon: float = 0.1, sinkhorn_iters: int = 50, amortized_ckpt_dir: str = None, amortized_eps: float = 0.5, amortized_d: int = None, obs_log_prob_fn=None, dtype: tensorflow.python.framework.dtypes.DType = tf.float64)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced TFDifferentiableParticleFilter soft",
+      "probe_id": "advanced_tf_dpf_soft",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "filter_signature": "(self, params: advanced_particle_filter.tf_models.svssm.SVSSMParams, observations: tensorflow.python.framework.tensor.Tensor, rng: tensorflow.python.ops.stateful_random_ops.Generator) -> advanced_particle_filter.tf_filters.differentiable_particle.DPFResult",
+        "neural_training_status": "not_neural",
+        "object_signature": "(n_particles: int = 100, resampler: str = 'soft', alpha: float = 0.5, epsilon: float = 0.1, sinkhorn_iters: int = 50, amortized_ckpt_dir: str = None, amortized_eps: float = 0.5, amortized_d: int = None, obs_log_prob_fn=None, dtype: tensorflow.python.framework.dtypes.DType = tf.float64)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced TFDifferentiableParticleFilter sinkhorn",
+      "probe_id": "advanced_tf_dpf_sinkhorn",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "present",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "artifact_path": "/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/dpf_pretrained/mgn_ot_operator/checkpoints_option_b",
+        "call_signature": "(self, particles: tensorflow.python.framework.tensor.Tensor, log_w: tensorflow.python.framework.tensor.Tensor)",
+        "neural_training_status": "checkpoint_dependent",
+        "object_signature": "(ckpt_dir: Optional[str] = None, d: int = 2, N: int = 1000, eps: float = 0.5, dtype: tensorflow.python.framework.dtypes.DType = tf.float64, model_cfg: Optional[dict] = None)",
+        "requires_artifact": true,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "advanced TFDifferentiableParticleFilter amortized",
+      "probe_id": "advanced_tf_dpf_amortized",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "filter_step_signature": "(self, x_p, h_p, lw_p, y, method='transformer', **kwargs)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(transition_fn, observation_fn, num_particles)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "MLCOE DPF method soft",
+      "probe_id": "mlcoe_dpf_soft",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "api_smoke_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "filter_step_signature": "(self, x_p, h_p, lw_p, y, method='transformer', **kwargs)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(transition_fn, observation_fn, num_particles)",
+        "requires_artifact": false,
+        "requires_contract": true
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "execution_probe_allowed",
+      "phase": "FW1",
+      "planned_probe": "MLCOE DPF method sinkhorn",
+      "probe_id": "mlcoe_dpf_sinkhorn",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "contract audit only; no filter or resampler execution",
+        "student source remains comparison-only"
+      ],
+      "blocker_class": "blocked_missing_assumption",
+      "blocker_message": "complete model object with exact flow/dPF field semantics; validated covariance and observation contract",
+      "classification": "blocked_missing_assumption",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "no",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpfpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "artifact_path": null,
+        "call_signature": "(*args, **kwargs)",
+        "neural_training_status": "not_neural",
+        "object_signature": "(model, solver=None, resampler=None, N=30, n_steps=20)",
+        "requires_artifact": false,
+        "requires_contract": true,
+        "step_signature": "(self, z, X_prev, W_prev, P_prev)"
+      },
+      "model_contract_status": "missing_adapter_contract",
+      "next_decision": "blocked_without_execution",
+      "phase": "FW1",
+      "planned_probe": "MLCOE DifferentiablePFPF",
+      "probe_id": "mlcoe_dpfpf",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "blocked",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "bounded smoke only",
+        "comparison-only evidence"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_component_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "differentiable_resampling",
+      "fixture_or_input": "tiny_weighted_cloud_B1_N8_D2",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "finite_log_weights": true,
+        "finite_outputs": true,
+        "gradient_finite": true,
+        "log_weight_shape": [
+          1,
+          8
+        ],
+        "output_mean": [
+          0.71875,
+          0.475
+        ],
+        "output_shape": [
+          1,
+          8,
+          2
+        ],
+        "weight_sum": 0.9999999999999996
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "component_spec_next",
+      "phase": "FW2",
+      "planned_probe": "advanced tf_utils.soft_resampler.soft_resample",
+      "probe_id": "advanced_soft_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.36428271800104994,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "bounded smoke only",
+        "comparison-only evidence"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_component_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "differentiable_resampling",
+      "fixture_or_input": "tiny_weighted_cloud_B1_N8_D2",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "finite_log_weights": true,
+        "finite_outputs": true,
+        "gradient_finite": true,
+        "log_weight_shape": [
+          1,
+          8
+        ],
+        "output_mean": [
+          0.3329816033415212,
+          0.1286093358265466
+        ],
+        "output_shape": [
+          1,
+          8,
+          2
+        ],
+        "weight_sum": 1.0000000000000002
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "component_spec_next",
+      "phase": "FW2",
+      "planned_probe": "advanced tf_utils.sinkhorn.sinkhorn_resample",
+      "probe_id": "advanced_sinkhorn_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.7439841149898712,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "bounded smoke only",
+        "comparison-only evidence"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_component_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "differentiable_resampling",
+      "fixture_or_input": "tiny_weighted_cloud_B1_N8_D2",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "finite_log_weights": true,
+        "finite_outputs": true,
+        "gradient_finite": true,
+        "log_weight_shape": [
+          8
+        ],
+        "output_mean": [
+          0.445875,
+          0.09012500000000001
+        ],
+        "output_shape": [
+          8,
+          2
+        ],
+        "weight_sum": 0.9999999942860371
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "component_spec_next",
+      "phase": "FW2",
+      "planned_probe": "MLCOE SoftResampler",
+      "probe_id": "mlcoe_soft_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.01824225099699106,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "bounded smoke only",
+        "comparison-only evidence"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_component_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "differentiable_resampling",
+      "fixture_or_input": "tiny_weighted_cloud_B1_N8_D2",
+      "gate_name": "non_neural_differentiable_resampling",
+      "gate_phase": "FW2",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "finite_outputs": true,
+        "gradient_finite": true,
+        "output_mean": [
+          0.3980000000000002,
+          0.17400000000000002
+        ],
+        "output_shape": [
+          8,
+          2
+        ]
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "component_spec_next",
+      "phase": "FW2",
+      "planned_probe": "MLCOE SinkhornResampler",
+      "probe_id": "mlcoe_sinkhorn_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.037138140003662556,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "present",
+      "assumptions": [
+        "bounded smoke only",
+        "comparison-only evidence"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_component_only",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "neural_ot",
+      "fixture_or_input": "tiny_weighted_cloud_B1_N8_D2",
+      "gate_name": "neural_ot_and_neural_resampling",
+      "gate_phase": "FW3",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "finite_log_weights": true,
+        "finite_outputs": true,
+        "gradient_finite": true,
+        "log_weight_shape": [
+          1,
+          8
+        ],
+        "output_mean": [
+          0.4722859524190426,
+          0.005051804706454277
+        ],
+        "output_shape": [
+          1,
+          8,
+          2
+        ],
+        "weight_sum": 1.0000000000000002
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "component_spec_next",
+      "phase": "FW3",
+      "planned_probe": "advanced AmortizedOTResampler with bundled checkpoint",
+      "probe_id": "advanced_amortized_ot_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 1.4708138440037146,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "exception converted to structured blocker"
+      ],
+      "blocker_class": "blocked_environment_drift",
+      "blocker_message": "InvalidArgumentError: Exception encountered when calling WeightedMultiHeadAttention.call().\n\n\u001b[1m{{function_node __wrapped__Mul_device_/job:localhost/replica:0/task:0/device:CPU:0}} Incompatible shapes: [1,2,16,16] vs. [1,1,1,8] [Op:Mul] name: \u001b[0m\n\nArguments received by WeightedMultiHeadAttention.call():\n  \u2022 q=tf.Tensor(shape=(1, 8, 2, 16), dtype=float32)\n  \u2022 k=tf.Tensor(shape=(1, 8, 2, 16), dtype=float32)\n  \u2022 v=tf.Tensor(shape=(1, 8, 2, 16), dtype=float32)\n  \u2022 w=tf.Tensor(shape=(1, 8), dtype=float32)",
+      "classification": "blocked_environment_drift",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "neural_resampling",
+      "fixture_or_input": null,
+      "gate_name": "neural_ot_and_neural_resampling",
+      "gate_phase": "FW3",
+      "implementation_name": "2026MLCOE",
+      "metrics": {},
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "debug_gate_next",
+      "phase": "FW3",
+      "planned_probe": "MLCOE TransformerResampler untrained API smoke",
+      "probe_id": "mlcoe_transformer_resampler",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.10915959600242786,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "blocked",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "linear beta schedule",
+        "fixed tiny diffusion",
+        "horizon 4"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_for_clean_room_spec",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "stochastic_flow",
+      "fixture_or_input": "range_bearing_gaussian_moderate_future_work_h4",
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "average_ess": 16.0,
+        "final_position_error": 0.3081104058892854,
+        "finite_covariances": true,
+        "finite_means": true,
+        "observation_proxy_rmse": 0.19625052142358768,
+        "position_rmse": 0.179144983004814,
+        "state_rmse": 0.15145323459341956
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "clean_room_spec_next",
+      "phase": "FW4",
+      "planned_probe": "advanced StochasticPFFlow reduced fixture",
+      "probe_id": "advanced_stochastic_pff_flow",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.014956788989366032,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "linear beta schedule",
+        "fixed tiny diffusion",
+        "horizon 4"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_for_clean_room_spec",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "stochastic_flow",
+      "fixture_or_input": "range_bearing_gaussian_moderate_future_work_h4",
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "average_ess": 3.295598762042732,
+        "final_position_error": 0.056604446557943715,
+        "finite_covariances": true,
+        "finite_means": true,
+        "min_ess": 2.2135196818090788,
+        "observation_proxy_rmse": 0.11262764859488851,
+        "position_rmse": 0.09541148313559997,
+        "resampling_count": 4,
+        "state_rmse": 0.09685859662593689
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "clean_room_spec_next",
+      "phase": "FW4",
+      "planned_probe": "advanced StochasticPFParticleFilter reduced fixture",
+      "probe_id": "advanced_stochastic_pfpf",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.015020149992778897,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "execution forbidden by FW1 contract audit"
+      ],
+      "blocker_class": "blocked_missing_assumption",
+      "blocker_message": "complete model object with exact flow/dPF field semantics; validated covariance and observation contract",
+      "classification": "blocked_missing_assumption",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "no",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "stochastic_flow",
+      "fixture_or_input": null,
+      "gate_name": "stochastic_flow_reduced",
+      "gate_phase": "FW4",
+      "implementation_name": "2026MLCOE",
+      "metrics": {},
+      "model_contract_status": "missing_adapter_contract",
+      "next_decision": "defer_until_artifacts_or_assumptions",
+      "phase": "FW4",
+      "planned_probe": "MLCOE stochastic-flow surfaces",
+      "probe_id": "mlcoe_stochastic_flow",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "blocked",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "exception converted to structured blocker"
+      ],
+      "blocker_class": "blocked_environment_drift",
+      "blocker_message": "ValueError: in user code:\n\n    File \"/home/ubuntu/python/BayesFilter/experiments/student_dpf_baselines/vendor/advanced_particle_filter/tf_filters/differentiable_particle.py\", line 353, in _filter_impl_soft  *\n        _, final_particles, final_log_w, total_log_ev = tf.while_loop(\n\n    ValueError: Input tensor `Fill:0` enters the loop with shape (1, 8), but has shape (None, 8) after one iteration. To allow the shape to vary across iterations, use the `shape_invariants` argument of tf.while_loop to specify a less-specific shape.\n",
+      "classification": "blocked_environment_drift",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "dpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {},
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "debug_gate_next",
+      "phase": "FW5",
+      "planned_probe": "advanced TFDifferentiableParticleFilter soft",
+      "probe_id": "advanced_tf_dpf_soft",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.36860285700822715,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "blocked",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "tiny SVSSM smoke only",
+        "no HMC"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_for_clean_room_spec",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "dpf",
+      "fixture_or_input": "tiny_svssm_T2_B1_N8",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "finite_log_evidence": true,
+        "finite_log_weights": true,
+        "finite_particles": true,
+        "gradient_finite": true,
+        "log_evidence": [
+          -3.6037533328990854
+        ],
+        "resampler": "sinkhorn"
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "clean_room_spec_next",
+      "phase": "FW5",
+      "planned_probe": "advanced TFDifferentiableParticleFilter sinkhorn",
+      "probe_id": "advanced_tf_dpf_sinkhorn",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 1.5727175470092334,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "present",
+      "assumptions": [
+        "tiny SVSSM smoke only",
+        "no HMC"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_for_clean_room_spec",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "dpf",
+      "fixture_or_input": "tiny_svssm_T2_B1_N8",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "advanced_particle_filter",
+      "metrics": {
+        "finite_log_evidence": true,
+        "finite_log_weights": true,
+        "finite_particles": true,
+        "gradient_finite": true,
+        "log_evidence": [
+          -3.6303616090669903
+        ],
+        "resampler": "amortized"
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "clean_room_spec_next",
+      "phase": "FW5",
+      "planned_probe": "advanced TFDifferentiableParticleFilter amortized",
+      "probe_id": "advanced_tf_dpf_amortized",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 4.294893580998178,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "d2a797c330e11befacbb736b5c86b8d03eb4a389",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "single filter_step smoke",
+        "no training",
+        "no HMC"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_for_clean_room_spec",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "dpf",
+      "fixture_or_input": "tiny_synthetic_single_step_N8_D2",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "finite_log_weights": true,
+        "finite_particles": true,
+        "gradient_finite": true,
+        "hidden_shapes": [
+          [
+            8,
+            1
+          ]
+        ],
+        "method": "soft",
+        "output_shape": [
+          8,
+          2
+        ]
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "clean_room_spec_next",
+      "phase": "FW5",
+      "planned_probe": "MLCOE DPF method soft",
+      "probe_id": "mlcoe_dpf_soft",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.03732258999662008,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "single filter_step smoke",
+        "no training",
+        "no HMC"
+      ],
+      "blocker_class": null,
+      "blocker_message": null,
+      "classification": "usable_for_clean_room_spec",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "yes",
+      "date": "2026-05-15",
+      "execution_attempted": true,
+      "family": "dpf",
+      "fixture_or_input": "tiny_synthetic_single_step_N8_D2",
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "metrics": {
+        "finite_log_weights": true,
+        "finite_particles": true,
+        "gradient_finite": true,
+        "hidden_shapes": [
+          [
+            8,
+            1
+          ]
+        ],
+        "method": "sinkhorn",
+        "output_shape": [
+          8,
+          2
+        ]
+      },
+      "model_contract_status": "satisfiable_without_vendor_edits",
+      "next_decision": "clean_room_spec_next",
+      "phase": "FW5",
+      "planned_probe": "MLCOE DPF method sinkhorn",
+      "probe_id": "mlcoe_dpf_sinkhorn",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": 0.0739161109959241,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "ok",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    },
+    {
+      "artifact_dependency_status": "not_required",
+      "assumptions": [
+        "execution forbidden by FW1 contract audit"
+      ],
+      "blocker_class": "blocked_missing_assumption",
+      "blocker_message": "complete model object with exact flow/dPF field semantics; validated covariance and observation contract",
+      "classification": "blocked_missing_assumption",
+      "command": "python -m experiments.student_dpf_baselines.runners.run_future_work_usability_gates",
+      "contract_satisfiable_without_vendor_edits": "no",
+      "date": "2026-05-15",
+      "execution_attempted": false,
+      "family": "dpfpf",
+      "fixture_or_input": null,
+      "gate_name": "dpf_dpfpf_contract_conditional",
+      "gate_phase": "FW5",
+      "implementation_name": "2026MLCOE",
+      "metrics": {},
+      "model_contract_status": "missing_adapter_contract",
+      "next_decision": "defer_until_artifacts_or_assumptions",
+      "phase": "FW5",
+      "planned_probe": "MLCOE DifferentiablePFPF",
+      "probe_id": "mlcoe_dpfpf",
+      "prohibited_actions_avoided": [
+        "vendored_edits",
+        "production_edits",
+        "monograph_edits",
+        "network",
+        "gpu_required",
+        "training",
+        "hmc",
+        "notebook_conversion"
+      ],
+      "provenance": {
+        "comparison_only": true,
+        "date": "2026-05-15",
+        "lane": "student_dpf_experimental_baseline"
+      },
+      "runtime_seconds": null,
+      "schema_version": "student_dpf_future_work_usability_gates.v1",
+      "seed": 20260515,
+      "source_commit": "020cfd7f2f848afa68432e95e6c6e747d3d2402d",
+      "status": "blocked",
+      "working_directory": "/home/ubuntu/python/BayesFilter"
+    }
+  ],
+  "schema_version": "student_dpf_future_work_usability_gates.v1",
+  "summary": {
+    "artifact_size_bytes": 89721,
+    "artifact_size_cap_bytes": 1000000,
+    "classification_counts": {
+      "api_smoke_only": 13,
+      "blocked_environment_drift": 2,
+      "blocked_missing_assumption": 4,
+      "usable_component_only": 5,
+      "usable_for_clean_room_spec": 6
+    },
+    "execution_records_observed": 15,
+    "family_decisions": {
+      "differentiable_resampling": "component_spec_next",
+      "dpf": "clean_room_spec_next",
+      "dpfpf": "debug_gate_next",
+      "neural_ot": "component_spec_next",
+      "neural_resampling": "debug_gate_next",
+      "stochastic_flow": "clean_room_spec_next"
+    },
+    "final_label": "future_work_usability_gates_complete",
+    "missing_planned_probes": [],
+    "observed_record_inventory": {
+      "advanced_amortized_ot_resampler": {
+        "family": "neural_ot",
+        "gate_phase": "FW3",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_sinkhorn_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_soft_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_stochastic_pff_flow": {
+        "family": "stochastic_flow",
+        "gate_phase": "FW4",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_stochastic_pfpf": {
+        "family": "stochastic_flow",
+        "gate_phase": "FW4",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_tf_dpf_amortized": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_tf_dpf_sinkhorn": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_tf_dpf_soft": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "mlcoe_dpf_sinkhorn": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_dpf_soft": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_dpfpf": {
+        "family": "dpfpf",
+        "gate_phase": "FW5",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_sinkhorn_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_soft_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_stochastic_flow": {
+        "family": "stochastic_flow",
+        "gate_phase": "FW4",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_transformer_resampler": {
+        "family": "neural_resampling",
+        "gate_phase": "FW3",
+        "implementation_name": "2026MLCOE"
+      }
+    },
+    "planned_probe_inventory": {
+      "advanced_amortized_ot_resampler": {
+        "family": "neural_ot",
+        "gate_phase": "FW3",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_sinkhorn_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_soft_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_stochastic_pff_flow": {
+        "family": "stochastic_flow",
+        "gate_phase": "FW4",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_stochastic_pfpf": {
+        "family": "stochastic_flow",
+        "gate_phase": "FW4",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_tf_dpf_amortized": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_tf_dpf_sinkhorn": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "advanced_tf_dpf_soft": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "advanced_particle_filter"
+      },
+      "mlcoe_dpf_sinkhorn": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_dpf_soft": {
+        "family": "dpf",
+        "gate_phase": "FW5",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_dpfpf": {
+        "family": "dpfpf",
+        "gate_phase": "FW5",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_sinkhorn_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_soft_resampler": {
+        "family": "differentiable_resampling",
+        "gate_phase": "FW2",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_stochastic_flow": {
+        "family": "stochastic_flow",
+        "gate_phase": "FW4",
+        "implementation_name": "2026MLCOE"
+      },
+      "mlcoe_transformer_resampler": {
+        "family": "neural_resampling",
+        "gate_phase": "FW3",
+        "implementation_name": "2026MLCOE"
+      }
+    },
+    "records_expected": 15,
+    "status_counts": {
+      "blocked": 6,
+      "ok": 24
+    },
+    "total_records_observed": 30,
+    "veto_diagnostic_fired": false
+  },
+  "working_directory": "/home/ubuntu/python/BayesFilter"
+}
