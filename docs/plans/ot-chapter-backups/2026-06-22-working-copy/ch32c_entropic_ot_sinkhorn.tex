@@ -98,37 +98,6 @@ unregularized deterministic OT coupling to the entropically smoothed OT coupling
 Nothing numerical has happened yet.  The next step explains how this exact
 regularized object is computed in practice.
 
-\subsection{Exact teacher versus exact engineering route}
-\label{sec:bf-eot-teacher-versus-engineering}
-
-The scalable-OT survey suggests a useful extra distinction before moving on to
-finite Sinkhorn iterations.  There are two different senses in which a route may
-still be called ``exact'' for the entropic OT object.
-
-First, there is the mathematical teacher object
-\(\Pi_\varepsilon^\star\) from \eqref{eq:bf-eot-primal}.  That is the exact
-minimizer of the entropically regularized problem.  Second, there is an
-engineering route that preserves that same entropic object while changing how the
-matrix-scaling updates are executed in memory or on hardware.  Exact online,
-streaming, and GPU Sinkhorn methods belong to this second category: they do not
-change the entropic teacher problem, but they avoid materializing the full cost,
-kernel, or coupling whenever possible.
-
-This distinction matters for the BayesFilter transport lane.  A method that
-recomputes the same entropic scaling updates through blocked reductions or
-streamed kernel application is still on the semantics-preserving reference lane.
-By contrast, a method that replaces the kernel, truncates the coupling family, or
-changes the transport objective has moved to a different approximation class even
-if it is motivated by scalability.  The reader should therefore keep separate:
-\begin{enumerate}[label=(\roman*)]
-  \item the exact entropic teacher object,
-  \item the finite numerical object produced by a declared Sinkhorn execution
-    path,
-  \item the engineering strategy used to realize that numerical path.
-\end{enumerate}
-The next sections fix the second object explicitly and later staged chapters will
-discuss scalability routes that either preserve or alter it.
-
 \section{Why the optimizer factorizes}
 \label{sec:bf-eot-factorization}
 
@@ -173,33 +142,6 @@ That reduction is why Sinkhorn iteration is so useful.
 \State Return the coupling, equal-weight cloud, residuals, \(\varepsilon\), \(K\), initialization policy, and stabilization metadata
 \end{algorithmic}
 \end{algorithm}
-
-\subsection{Exact online and streaming Sinkhorn as the reference lane}
-\label{sec:bf-eot-reference-lane}
-
-The scalable-OT survey also clarifies how BayesFilter should talk about scaling
-without silently changing the transport object.  A finite Sinkhorn route can be
-made substantially more practical by changing the execution strategy rather than
-the underlying entropic teacher problem.  Streaming, online, or GPU-specialized
-implementations still belong to the reference lane when they preserve the same
-entropic scaling equations and the same barycentric output rule while avoiding
-full materialization of the cost or kernel matrix.
-
-In that reference-lane setting, the implementation may compute the needed
-row-wise or column-wise reductions in blocks, keep only partial transport state
-in memory, or fuse barycentric application with solver passes.  What must remain
-fixed is the declared numerical object: the finite coupling
-\(\Pi_{\varepsilon,K}\), its residual checks, and the barycentric output derived
-from that same finite coupling.  Thus a streamed or GPU-tiled Sinkhorn routine is
-not automatically a new approximation class.  It becomes a new approximation
-class only when the scaling equations, kernel, feasible family, or output object
-itself are changed.
-
-This chapter therefore treats exact-online and streaming implementations as
-engineering variants of the same entropic reference lane.  Later staged chapters
-on retained-teacher approximations will take up the different case where the
-transport object itself is compressed, factorized, or otherwise altered for
-scalability.
 
 This is the chapter’s main callable procedure.  A reader who implements only one
 OT route from the monograph should be able to implement this one.

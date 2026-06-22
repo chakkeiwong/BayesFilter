@@ -151,38 +151,6 @@ These show that neural transport ideas extend beyond the current finite-cloud
 Euclidean BayesFilter setting.  They do not, by themselves, answer the present
 implementation question.
 
-\subsection{Sliced, subspace, and localization families as target-changing lanes}
-\label{sec:bf-neural-ot-dynamic-sliced-localized}
-
-The scalable-OT survey gives this chapter a more precise boundary around several
-important high-dimensional families.  Sliced and subspace OT methods attack high
-dimension by projecting the measures onto one-dimensional directions or selected
-subspaces before solving lower-dimensional transport problems.  Localization and
-block-structured OT instead exploit state-space structure by transporting local
-blocks or using localized costs rather than one global cloud-wide coupling.
-
-These methods are mathematically important, but in the BayesFilter monograph they
-should not be described as mere compressed versions of the dense entropic teacher.
-A projected one-dimensional or subspace transport, or a block-localized transport,
-is generally a different transport object from the full-state dense coupling used
-in the previous chapters.  That means the main burden here is target
-interpretation rather than just solver engineering.
-
-In that sense, sliced/subspace and localization families fit the present chapter
-better than the retained-teacher chapter.  Their primary promise is not simply to
-reach the same teacher object faster.  Their promise is to define a more tractable
-transport rule in high dimension.  The price is that the resulting output cloud
-must usually be read as a new resampling approximation unless a separate argument
-shows how the projected or localized transport reconstructs the intended
-full-state object.
-
-This chapter therefore treats these families as target-changing or
-structure-changing candidates by default.  They may still be useful and even
-necessary in high dimension, but their first audit question is no longer only
-teacher-preservation residual.  It is: what transport object is now being applied
-to the filtering ensemble, and what scalar target would a later optimizer or HMC
-routine actually differentiate if this object were embedded downstream?
-
 \section{Same-scalar rule revisited}
 \label{sec:bf-neural-ot-dynamic-same-scalar}
 

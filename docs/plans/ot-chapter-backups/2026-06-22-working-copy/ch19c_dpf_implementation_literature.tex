@@ -342,44 +342,6 @@ the Algorithm~1 lifecycle.  Likewise, introducing differentiable or optimal
 transport resampling may be a BayesFilter extension, but it must be labelled as
 an extension and audited separately from the Li--Coates source algorithm.
 
-\subsection{What the later OT chapters inherit from PF-PF}
-\label{sec:bf-pfpf-ot-handoff}
-
-The OT survey companion note sharpens the next boundary in a useful way.  After
-PF-PF correction, the BayesFilter object handed to a later resampling layer is
-not a vague ``particle cloud.''  It is a weighted empirical ensemble together
-with any carried auxiliary state.  In the Algorithm~1 reading fixed above, the
-state handed forward is precisely the weighted triple
-\eqref{eq:bf-pfpf-alg1-resampling-triple}.  Thus a later optimal-transport
-layer does not merely need an OT scalar or distance certificate.  It needs a
-usable transport object that can act on the weighted ensemble:
-\begin{equation}
-\label{eq:bf-pfpf-transport-object-inventory}
-  \text{coupling matrix, barycentric transform, factorized transport operator,}
-  \text{ or directly transported equal-weight cloud.}
-\end{equation}
-A fast value of \(\operatorname{OT}(\mu,\nu)\) alone is not enough to continue the filtering
-recursion, because the filter must actually produce the next equal-weighted
-particle representation.
-
-Write the PF-PF output cloud schematically as
-\begin{equation}
-\label{eq:bf-pfpf-weighted-output-cloud}
-  \mu_t^N
-  =
-  \sum_{i=1}^{N_p} w_k^i\,\delta_{x_k^i},
-\end{equation}
-with carried covariance or particle-local state attached to each support point.
-A deterministic OT equal-weighting layer or entropic OT/Sinkhorn layer, in the
-spirit of ensemble-transform and differentiable OT resampling
-\citep{reich2013nonparametric,corenflos2021differentiable}, then asks for a
-map from the weighted object \(\mu_t^N\) to an equal-weight object.  The next
-chapters will spell out that map through couplings, barycentric projections, and
-teacher-versus-numerical transport objects.  The present chapter's narrower role
-is only to make the handoff precise: PF-PF supplies the weighted source object,
-and any later OT resampling route must declare how that weighted object is
-actually transported rather than merely reporting a scalar transport score.
-
 These details give a sharper audit checklist than the generic PF-PF equations:
 \begin{enumerate}[label=(\roman*)]
   \item each particle has its own $P_{k-1}^i$, predicted $P^i$, and updated

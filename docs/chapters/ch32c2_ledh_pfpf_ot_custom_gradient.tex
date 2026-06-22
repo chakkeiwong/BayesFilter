@@ -1,0 +1,623 @@
+\chapter{Custom Gradients for LEDH-PFPF-OT}
+\label{ch:bf-ledh-pfpf-ot-custom-gradient}
+
+The preceding chapters introduced three ingredients separately: local exact
+Daum--Huang particle flow, proposal-corrected PF-PF weighting, and
+entropy-regularized OT resampling.  This chapter explains how those pieces can
+be differentiated without asking an automatic-differentiation system to retain
+the entire filtering graph in memory.  The key object is a custom
+vector-Jacobian product, or VJP, for the executed LEDH-PFPF-OT scalar.
+
+The chapter is intentionally narrow.  It does not claim that the relaxed
+OT-resampled particle filter is the same object as categorical resampling.  It
+does not claim that finite Sinkhorn iteration is the exact unregularized OT
+optimizer.  It does not claim HMC correctness for a nonlinear model.  Its claim
+is more basic and more useful: if the value path is a declared finite
+LEDH-PFPF-OT computation, then the gradient path must be the derivative of that
+same computation, and the expensive OT block has a structured adjoint.
+
+\section{The scalar whose derivative is wanted}
+\label{sec:bf-ledh-ot-scalar}
+
+Let $\theta$ denote the model parameter and let all random numbers used by the
+diagnostic or sampler target be fixed as part of the deterministic value path.
+For one filtering pass, write the executed scalar as
+\begin{equation}
+\label{eq:bf-ledh-ot-executed-scalar}
+  \mathcal L_K(\theta)
+  =
+  \operatorname{Reduce}
+  \left(
+    \operatorname{LEDH\mbox{-}PFPF\mbox{-}OT}_K
+    (\theta; y_{1:T}, \xi)
+  \right),
+\end{equation}
+where $\xi$ denotes the fixed particle and process-noise streams, $K$ denotes
+the finite Sinkhorn or annealed-transport iteration budget, and
+\(\operatorname{Reduce}\) is the declared scalar reduction, such as a mean over
+fixed seeds.  The derivative needed by HMC or optimization is
+\[
+  \nabla_\theta \mathcal L_K(\theta),
+\]
+not the derivative of a different resampling rule, a different Sinkhorn stopping
+policy, or a different random seed construction.
+
+\begin{definition}[Same-scalar custom-gradient contract]
+\label{def:bf-ledh-ot-same-scalar}
+A custom-gradient implementation for LEDH-PFPF-OT is same-scalar if its primal
+return is exactly \(\mathcal L_K(\theta)\) and its VJP returns
+\[
+  v^\top D_\theta \mathcal L_K(\theta)
+\]
+for every upstream scalar multiplier \(v\).  For a scalar log target the usual
+case is \(v=1\).
+\end{definition}
+
+This contract is the same HMC principle as Chapter~\ref{ch:bf-custom-gradient-wrappers},
+but the present chapter specializes it to the LEDH-PFPF-OT computation.  The
+particle-flow part follows the Li--Coates invertible-particle-flow proposal
+logic \citep{li2017particle}; the OT relaxation follows the entropy-regularized
+resampling route of \citet{corenflos2021differentiable}, with the Sinkhorn
+background of \citet{cuturi2013sinkhorn} and
+\citet{peyre2019computational}.
+The derivative identities below are project derivations for the declared
+BayesFilter finite program; the citations explain the particle-flow,
+entropy-regularized OT, and Sinkhorn objects being differentiated.
+
+\section{Forward decomposition}
+\label{sec:bf-ledh-ot-forward-decomposition}
+
+At one observation time, the value path can be written as a composition
+\begin{equation}
+\label{eq:bf-ledh-ot-forward-composition}
+  \theta
+  \longmapsto
+  (X^-, \log w^-, A_{\mathrm{flow}})
+  \longmapsto
+  (X, \log w)
+  \longmapsto
+  \widetilde X
+  \longmapsto
+  \ell_t .
+\end{equation}
+Here \(X^-\in\mathbb R^{N\times d}\) is the pre-observation proposal cloud,
+\(\log w^-\) are proposal-correction log weights, and
+\(A_{\mathrm{flow}}\) denotes the LEDH auxiliary quantities needed for the
+proposal density and log-determinant correction.  The local LEDH construction
+uses particle-local linearizations and particle-local covariance state as in
+Li--Coates PF-PF.  The OT block then maps the weighted cloud to an equal-weight
+cloud
+\[
+  (X,\log w) \longmapsto \widetilde X.
+\]
+
+This chapter focuses on the last map because it is the part that can dominate
+memory.  Naive reverse-mode autodiff through all pairwise costs, Sinkhorn
+updates, and barycentric products may retain objects of size \(O(KN^2)\).  A
+custom VJP instead treats the OT block as a finite differentiable program and
+applies its adjoint by recomputation, streaming reductions, or checkpointing.
+
+\section{Transport orientation}
+\label{sec:bf-ledh-ot-orientation}
+
+The OT chapters used a coupling \(\Pi\) with source index first and output slot
+second.  The TensorFlow LEDH-PFPF-OT route is more naturally described by the
+row-stochastic transport matrix
+\begin{equation}
+\label{eq:bf-ledh-ot-row-transport}
+  T = N\Pi^\top,
+  \qquad
+  T\mathbf 1=\mathbf 1,
+  \qquad
+  T^\top\mathbf 1=Nw,
+\end{equation}
+where \(w=\operatorname{softmax}(\log w)\).  The transported equal-weight cloud
+is
+\begin{equation}
+\label{eq:bf-ledh-ot-barycentric-output}
+  \widetilde X = T X,
+  \qquad
+  \widetilde x_j=\sum_{i=1}^N T_{ji}x_i .
+\end{equation}
+Thus row \(j\) of \(T\) tells how output slot \(j\) averages the source
+particles.  The row sums make each output particle a barycenter.  The column
+sums say that source particle \(i\) contributes total mass proportional to its
+weight.
+
+\begin{remark}[Why orientation matters]
+\label{rem:bf-ledh-ot-orientation}
+If a derivation uses \(\Pi\) but the code applies \(T X\), transpose errors are
+easy to introduce.  The VJP formulas below use \(T\), not \(\Pi\).  A reader who
+wants the coupling form can substitute \(T=N\Pi^\top\).
+\end{remark}
+
+\section{VJP of the barycentric product}
+\label{sec:bf-ledh-ot-barycentric-vjp}
+
+The simplest and most important adjoint identity is the VJP of the barycentric
+matrix product.
+
+\begin{proposition}[Barycentric VJP]
+\label{prop:bf-ledh-ot-barycentric-vjp}
+Let \(\widetilde X=T X\), with \(T\in\mathbb R^{N\times N}\) and
+\(X\in\mathbb R^{N\times d}\).  Use the Frobenius inner product for matrix
+adjoints, and let \(G_{\widetilde X}\in\mathbb R^{N\times d}\) be the upstream
+adjoint for \(\widetilde X\).  Then the direct adjoints are
+\begin{equation}
+\label{eq:bf-ledh-ot-vjp-barycentric}
+  G_X^{\mathrm{direct}} = T^\top G_{\widetilde X},
+  \qquad
+  G_T = G_{\widetilde X}X^\top .
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Taking a differential gives
+\[
+  d\widetilde X = dT\,X + T\,dX .
+\]
+Pairing with \(G_{\widetilde X}\) under the Frobenius inner product,
+\begin{align*}
+  \langle G_{\widetilde X},d\widetilde X\rangle
+  &=
+  \langle G_{\widetilde X},dT\,X\rangle
+  +
+  \langle G_{\widetilde X},T\,dX\rangle  \\
+  &=
+  \langle G_{\widetilde X}X^\top,dT\rangle
+  +
+  \langle T^\top G_{\widetilde X},dX\rangle .
+\end{align*}
+The coefficients of \(dT\) and \(dX\) are exactly
+\eqref{eq:bf-ledh-ot-vjp-barycentric}.
+\end{proof}
+
+Equation~\eqref{eq:bf-ledh-ot-vjp-barycentric} is only the direct part of the
+particle adjoint.  Because \(T\) itself depends on \(X\) and \(\log w\), the
+complete VJP also pulls \(G_T\) backward through the Sinkhorn or
+annealed-transport construction.
+
+\section{A normalized transport matrix}
+\label{sec:bf-ledh-ot-normalized-transport}
+
+For fixed final potentials \(f,g\in\mathbb R^N\), fixed normalized log weights
+\(\log w_i\), and cost \(C_{ji}=c(z_j,z_i)\), the executed row-stochastic
+transport can be written in column-normalized form
+\begin{equation}
+\label{eq:bf-ledh-ot-transport-form}
+  T_{ji}
+  =
+  N w_i
+  \frac{
+    \exp\{(f_j+g_i-C_{ji})/\varepsilon\}
+  }{
+    \sum_{r=1}^N
+    \exp\{(f_r+g_i-C_{ri})/\varepsilon\}
+  } .
+\end{equation}
+This expression enforces \(T^\top\mathbf 1=Nw\) exactly for the displayed
+normalization.  The row condition \(T\mathbf 1\approx\mathbf 1\) is enforced by
+the potentials produced by finite Sinkhorn or annealed Sinkhorn iteration.
+In the TensorFlow implementation this is the convention used by the final
+transport application: \(f\) indexes output rows, \(g\) indexes source columns,
+the normalization is a column log-sum-exp over output rows, and the transported
+particles are obtained by the matrix product \(T X\).
+
+Define
+\begin{equation}
+\label{eq:bf-ledh-ot-column-prob}
+  p_{ji}
+  =
+  \frac{T_{ji}}{Nw_i},
+  \qquad
+  \sum_{j=1}^N p_{ji}=1.
+\end{equation}
+The vector \(p_{\cdot i}\) is the normalized column distribution associated with
+source particle \(i\).
+
+\begin{proposition}[VJP of the normalized transport output]
+\label{prop:bf-ledh-ot-normalized-transport-vjp}
+At fixed finite values of \(f,g\in\mathbb R^N\),
+\(C\in\mathbb R^{N\times N}\), \(\varepsilon>0\), and normalized weights
+\(w_i>0\), \(\sum_i w_i=1\), let \(T\) be defined by
+\eqref{eq:bf-ledh-ot-transport-form}.  Let
+\(G_T\in\mathbb R^{N\times N}\) be the upstream adjoint for \(T\).  For each
+source column \(i\), set
+\begin{equation}
+\label{eq:bf-ledh-ot-column-mean-adjoint}
+  \bar G_i=\sum_{r=1}^N p_{ri}(G_T)_{ri},
+  \qquad
+  S_{ji}=T_{ji}\bigl((G_T)_{ji}-\bar G_i\bigr).
+\end{equation}
+Then the VJP of \eqref{eq:bf-ledh-ot-transport-form} satisfies
+\begin{align}
+\label{eq:bf-ledh-ot-vjp-logw}
+  (G_{\log w})_i
+  &\mathrel{+}=
+  \sum_{j=1}^N (G_T)_{ji}T_{ji},\\
+\label{eq:bf-ledh-ot-vjp-f}
+  (G_f)_j
+  &\mathrel{+}=
+  \frac{1}{\varepsilon}\sum_{i=1}^N S_{ji},\\
+\label{eq:bf-ledh-ot-vjp-g}
+  (G_g)_i
+  &\mathrel{+}=
+  \frac{1}{\varepsilon}\sum_{j=1}^N S_{ji},\\
+\label{eq:bf-ledh-ot-vjp-cost}
+  (G_C)_{ji}
+  &\mathrel{+}=
+  -\frac{1}{\varepsilon}S_{ji}.
+\end{align}
+If \(\log w\) is itself produced by a \(\operatorname{logsoftmax}\), then
+\eqref{eq:bf-ledh-ot-vjp-logw} must be composed with the
+\(\operatorname{logsoftmax}\) VJP.
+\end{proposition}
+
+\begin{proof}
+Let
+\[
+  a_{ji}=\frac{f_j+g_i-C_{ji}}{\varepsilon},
+  \qquad
+  p_{ji}=\frac{\exp(a_{ji})}{\sum_r\exp(a_{ri})},
+  \qquad
+  T_{ji}=Nw_i p_{ji}.
+\]
+For a perturbation of one column \(i\),
+\[
+  dT_{ji}
+  =
+  T_{ji}
+  \left[
+    d\log w_i
+    + da_{ji}
+    - \sum_{r=1}^N p_{ri}da_{ri}
+  \right].
+\]
+Pairing this expression with \((G_T)_{ji}\) and collecting the coefficient of
+\(da_{ji}\) gives \(S_{ji}=T_{ji}((G_T)_{ji}-\bar G_i)\).  Since
+\[
+  da_{ji}
+  =
+  \frac{1}{\varepsilon}
+  (df_j+dg_i-dC_{ji}),
+\]
+the adjoints for \(f\), \(g\), and \(C\) are
+\eqref{eq:bf-ledh-ot-vjp-f}--\eqref{eq:bf-ledh-ot-vjp-cost}.  The coefficient
+of \(d\log w_i\) is \(\sum_j (G_T)_{ji}T_{ji}\), giving
+\eqref{eq:bf-ledh-ot-vjp-logw}.
+\end{proof}
+
+This proposition is the core OT VJP product.  It says that the upstream matrix
+\(G_T\) should first be column-centered under the transport-induced probability
+\(p_{\cdot i}\).  Only after that centering should the adjoint be pushed into
+the potentials and costs.  In the displayed column-normalized map,
+\(\sum_j S_{ji}=0\), so the final-potential adjoint \(G_g\) is identically zero
+at this last normalization stage.  This is not a bug: adding the same \(g_i\)
+to every logit in one normalized column does not change that column's
+probabilities.  Earlier Sinkhorn-loop adjoints may still involve the variables
+that produced \(g\).
+
+\section{VJP of the quadratic cost}
+\label{sec:bf-ledh-ot-cost-vjp}
+
+For the common squared-distance cost
+\[
+  C_{ji}=\frac{1}{2}\|z_j-z_i\|^2,
+\]
+where the same scaled particle cloud \(Z\) supplies the row and column points,
+the cost adjoint has another simple form.
+
+\begin{proposition}[Quadratic-cost VJP]
+\label{prop:bf-ledh-ot-cost-vjp}
+Let \(G_C\) be the upstream adjoint for
+\(C_{ji}=\frac12\|z_j-z_i\|^2\), where
+\(Z=(z_1,\ldots,z_N)^\top\in\mathbb R^{N\times d}\).  The contribution to the
+adjoint of \(z_k\in\mathbb R^d\) is
+\begin{equation}
+\label{eq:bf-ledh-ot-vjp-cost-points}
+  (G_Z)_k
+  \mathrel{+}=
+  \sum_{i=1}^N (G_C)_{ki}(z_k-z_i)
+  -
+  \sum_{j=1}^N (G_C)_{jk}(z_j-z_k).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The differential of one cost entry is
+\[
+  dC_{ji}=(z_j-z_i)^\top(dz_j-dz_i).
+\]
+Multiplying by \((G_C)_{ji}\), summing over \(j,i\), and collecting the
+coefficient of \(dz_k\) gives the two sums in
+\eqref{eq:bf-ledh-ot-vjp-cost-points}: the first from terms where \(k\) is the
+row index, and the second from terms where \(k\) is the column index.
+\end{proof}
+
+If centering, scaling, or key construction is stopped by design, the VJP stops
+there too.  If the selected mode differentiates through centering or scaling,
+then \eqref{eq:bf-ledh-ot-vjp-cost-points} must be further composed with the
+VJP of those preprocessing maps.
+
+\section{Softmin and Sinkhorn adjoints}
+\label{sec:bf-ledh-ot-softmin-vjp}
+
+The finite Sinkhorn or annealed-transport step is a loop of softmin operations.
+The exact schedule can differ between a fixed-target Sinkhorn route and the
+FilterFlow-style annealed route, but the local adjoint primitive is the same.
+
+\begin{definition}[Softmin block]
+\label{def:bf-ledh-ot-softmin}
+For a query index \(j\), costs \(C_{jr}\), values \(v_r\), and temperature
+\(\varepsilon>0\), define
+\begin{equation}
+\label{eq:bf-ledh-ot-softmin}
+  m_j
+  =
+  -\varepsilon
+  \log
+  \sum_{r=1}^N
+  \exp\{(v_r-C_{jr})/\varepsilon\}.
+\end{equation}
+\end{definition}
+
+\begin{proposition}[Softmin VJP for fixed temperature]
+\label{prop:bf-ledh-ot-softmin-vjp}
+Assume \(\varepsilon>0\) is held fixed and all displayed exponentials are
+finite.  Let \(G_m\in\mathbb R^N\) be the upstream adjoint for \(m\), and define
+\[
+  q_{jr}
+  =
+  \frac{\exp\{(v_r-C_{jr})/\varepsilon\}}
+       {\sum_s \exp\{(v_s-C_{js})/\varepsilon\}}.
+\]
+For fixed \(\varepsilon\),
+\begin{align}
+\label{eq:bf-ledh-ot-softmin-vjp-values}
+  (G_v)_r
+  &\mathrel{+}=
+  -\sum_{j=1}^N (G_m)_j q_{jr},\\
+\label{eq:bf-ledh-ot-softmin-vjp-costs}
+  (G_C)_{jr}
+  &\mathrel{+}=
+  (G_m)_j q_{jr}.
+\end{align}
+\end{proposition}
+
+\begin{proof}
+Differentiating \eqref{eq:bf-ledh-ot-softmin} gives
+\[
+  dm_j
+  =
+  -\sum_r q_{jr}(dv_r-dC_{jr})
+  =
+  \sum_r q_{jr}dC_{jr}-\sum_r q_{jr}dv_r.
+\]
+Pairing with \(G_m\) and collecting coefficients yields
+\eqref{eq:bf-ledh-ot-softmin-vjp-values} and
+\eqref{eq:bf-ledh-ot-softmin-vjp-costs}.
+\end{proof}
+
+The sign and scale in Proposition~\ref{prop:bf-ledh-ot-softmin-vjp} are for a
+potential-scale value \(v\).  Some implementations, including the TensorFlow
+helper used in the current BayesFilter route, call the same operation with a
+log-scale input \(h_r\):
+\[
+  m_j=-\varepsilon\log\sum_r
+  \exp\{h_r-C_{jr}/\varepsilon\}.
+\]
+This is the same formula with \(v_r=\varepsilon h_r\).  Therefore the local VJP
+with respect to \(h_r\) is \((G_h)_r\mathrel{+}=
+-\varepsilon\sum_j(G_m)_j q_{jr}\), while the VJP with respect to a
+potential-scale component \(v_r\) remains
+\eqref{eq:bf-ledh-ot-softmin-vjp-values}.  If \(h_r=\log\alpha_r+b_r/\varepsilon\),
+then the adjoint to \(b_r\) again has the potential-scale coefficient
+\(-\sum_j(G_m)_j q_{jr}\).
+
+For an annealed schedule, the loop state contains several potentials, for
+example \((a_y,b_x,a_x,b_y)\).  Abstractly write the finite loop as
+\begin{equation}
+\label{eq:bf-ledh-ot-loop-state}
+  s_{k+1}=F_k(s_k;Z,\log w,\varepsilon_k),
+  \qquad k=0,\ldots,K-1.
+\end{equation}
+The reverse loop is then
+\begin{equation}
+\label{eq:bf-ledh-ot-reverse-loop}
+  (G_{s_k},G_Z,G_{\log w})
+  \mathrel{+}=
+  D F_k(s_k;Z,\log w,\varepsilon_k)^\top G_{s_{k+1}},
+  \qquad k=K-1,\ldots,0.
+\end{equation}
+Each multiplication by \(D F_k^\top\) is implemented by applying the softmin
+VJP above, the averaging VJP for damped updates, and the cost VJP for the
+pairwise squared distances.  This is ordinary reverse-mode differentiation of a
+finite program, but expressed as an explicit adjoint scan rather than as a raw
+tape over the whole program.
+
+\begin{proposition}[Finite-Sinkhorn VJP by reverse scan]
+\label{prop:bf-ledh-ot-finite-sinkhorn-vjp}
+Assume the finite transport block is the deterministic program
+\[
+  (T,s_K)=\mathcal S_K(Z,\log w)
+\]
+obtained by a fixed number of differentiable softmin, averaging, cost, and
+normalization operations with fixed branch decisions.  Then a custom VJP for
+\(\mathcal S_K\) is obtained by:
+\begin{enumerate}[label=(\roman*)]
+  \item applying Proposition~\ref{prop:bf-ledh-ot-normalized-transport-vjp} to
+  move \(G_T\) into final potentials, costs, and log weights;
+  \item applying Proposition~\ref{prop:bf-ledh-ot-cost-vjp} to move final-cost
+  adjoints into \(Z\);
+  \item scanning \eqref{eq:bf-ledh-ot-reverse-loop} backward through the finite
+  potential updates;
+  \item composing any resulting \(G_Z\) with the chosen centering, scaling, and
+  stop-gradient policy.
+\end{enumerate}
+The result equals the VJP of the executed finite program.
+\end{proposition}
+
+\begin{proof}
+The finite transport block is a composition of differentiable maps under the
+fixed branch and fixed iteration assumptions.  Propositions
+\ref{prop:bf-ledh-ot-normalized-transport-vjp},
+\ref{prop:bf-ledh-ot-cost-vjp}, and
+\ref{prop:bf-ledh-ot-softmin-vjp} give the VJP for the nontrivial primitive
+maps.  The VJP of a composition is obtained by applying the transposed local
+Jacobians in reverse order.  That reverse composition is exactly the scan
+described above.
+\end{proof}
+
+\section{Why a custom VJP is memory efficient}
+\label{sec:bf-ledh-ot-memory}
+
+The naive reverse graph for the OT block stores pairwise costs, logits,
+normalizers, potentials, and intermediate loop states for every time step.  With
+\(N\) particles and \(K\) Sinkhorn updates, this can scale like \(O(KN^2)\) in
+stored tensors before the rest of the filtering graph is considered.
+
+The custom VJP changes the storage problem.  The primal path must retain or
+reconstruct only enough information to replay the finite program:
+\begin{itemize}
+  \item the input particles and log weights entering the OT block;
+  \item the branch choices, masks, iteration count, temperature schedule, and
+  stabilization policy;
+  \item final potentials, and optionally sparse checkpoints of intermediate
+  potentials;
+  \item any stopped quantities needed to reproduce the executed scalar.
+\end{itemize}
+During the backward pass, pairwise blocks can be recomputed and reduced
+immediately.  This trades additional arithmetic for lower peak memory.  The
+trade is natural in HMC, because one scalar log target needs one reverse VJP to
+obtain all parameter-score components, while a forward-mode JVP would need one
+pass per requested direction.
+
+\section{Embedding the OT VJP in the filtering loop}
+\label{sec:bf-ledh-ot-filter-loop}
+
+The full LEDH-PFPF-OT gradient is a reverse scan through time.  At time \(t\),
+the adjoint entering the OT block contains two sources: downstream dependence
+of future particles, and direct dependence of the current scalar contribution.
+The OT VJP returns adjoints for the pre-transport particles and log weights:
+\[
+  (G_{X_t},G_{\log w_t})
+  =
+  \operatorname{VJP}_{\mathrm{OT},t}
+  (G_{\widetilde X_t}).
+\]
+The log-weight adjoint then flows through the PF-PF proposal-correction terms:
+transition density, observation density, proposal density, and flow
+log-determinant.  The particle adjoint flows through the LEDH migration and the
+model transition and observation callbacks.  Repeating this from \(t=T\) down
+to \(t=1\) yields the parameter score.
+
+\begin{proposition}[Filtering-loop custom VJP]
+\label{prop:bf-ledh-ot-filtering-loop-vjp}
+Suppose each time-step map in the executed LEDH-PFPF-OT value path is
+differentiable under fixed branch decisions, fixed random streams, fixed masks,
+and fixed iteration budgets.  If each time-step custom VJP is the VJP of that
+same executed time-step map, then the reverse time scan returns the derivative
+of the executed scalar \(\mathcal L_K(\theta)\).
+\end{proposition}
+
+\begin{proof}
+The full filter value is a finite composition of the time-step maps and the
+final scalar reduction.  By the chain rule, the VJP of the full composition is
+the product of the time-step transposed Jacobians in reverse time order.  The
+assumption says that each custom time-step VJP equals the corresponding
+transposed Jacobian multiplication for the executed map.  Therefore their
+reverse-time composition equals the VJP of the executed scalar.
+\end{proof}
+
+\section{Implementation contract}
+\label{sec:bf-ledh-ot-implementation-contract}
+
+A robust implementation should expose two separable functions:
+\[
+  \operatorname{ot\_forward}(X,\log w;\rho)
+  =
+  (\widetilde X,\mathrm{aux}),
+  \qquad
+  \operatorname{ot\_vjp}(\mathrm{aux},G_{\widetilde X})
+  =
+  (G_X,G_{\log w}),
+\]
+where \(\rho\) contains the declared OT settings: cost convention, epsilon,
+annealing schedule, iteration budget, row and column chunk sizes, stabilization,
+and stop-gradient policy.  The auxiliary record should contain only mathematical
+or numerical data needed to reproduce the same finite map.  It should not
+silently change the scalar by switching from streaming to dense semantics, from
+finite Sinkhorn to another optimizer, or from one random stream to another.
+
+The current TensorFlow implementation follows this contract through an
+opt-in mode named \texttt{same\_scalar\_custom\_vjp}.  In dense mode, the
+custom-gradient primal calls the same finite FilterFlow-style annealed
+transport routine as the raw TensorFlow path, with the selected
+\texttt{transport\_ad\_mode} and any declared warm-start state.  Its backward
+rule then recomputes that same transport matrix under a local
+\texttt{GradientTape} and applies the unclipped upstream transport adjoint.  In
+streaming mode, the primal returns the transported particles without returning
+a dense transport matrix; the backward rule recomputes the same streaming
+transport under a local \texttt{GradientTape}.  This is a same-scalar
+checkpointed or recomputed VJP route.  It is not yet a fully hand-coded
+reverse scan of every softmin and normalization primitive in
+Proposition~\ref{prop:bf-ledh-ot-finite-sinkhorn-vjp}.  The hand-derived
+reverse scan remains the mathematical destination for a future lower-level
+adjoint implementation.
+
+The following checks belong with any implementation:
+\begin{enumerate}[label=(\arabic*)]
+  \item row and column residuals for the finite transport object;
+  \item equality of dense and streaming VJP on small problems where both are
+  feasible;
+  \item finite-difference or raw-autodiff agreement on small fixed-seed cases;
+  \item explicit tests for stopped versus differentiated scale, keys, and
+  potentials;
+  \item static-shape behavior under the intended compiled path;
+  \item finite value and finite score on the target model class before any HMC
+  use.
+\end{enumerate}
+
+These checks certify local derivative accounting for the declared finite
+computation.  They do not certify the statistical accuracy of the relaxed
+filter, posterior convergence, or default production readiness.
+
+\section{Relation to forward-mode JVP}
+\label{sec:bf-ledh-ot-jvp}
+
+Forward-mode JVP is also mathematically legitimate.  For a perturbation
+\(\dot\theta\), it propagates tangents through the same filtering loop and
+returns
+\[
+  D_\theta\mathcal L_K(\theta)\,\dot\theta .
+\]
+This can be memory efficient, and it is useful for diagnostics along a small
+number of directions.  For HMC, however, the sampler usually needs the whole
+score vector.  If the parameter dimension is \(d_\theta\), forward mode needs
+roughly \(d_\theta\) directional passes unless it is batched over tangent
+directions.  A VJP gives the full scalar-target score in one reverse pass.  That
+is why the custom-gradient design in this chapter emphasizes the OT VJP.
+
+\section{What this chapter does and does not claim}
+\label{sec:bf-ledh-ot-boundary}
+
+This chapter gives a mathematical route for a custom gradient of the executed
+finite LEDH-PFPF-OT scalar.  It claims:
+\begin{itemize}
+  \item the barycentric OT product has the VJP in
+  \eqref{eq:bf-ledh-ot-vjp-barycentric};
+  \item the normalized finite-transport matrix has the VJP in
+  \eqref{eq:bf-ledh-ot-vjp-logw}--\eqref{eq:bf-ledh-ot-vjp-cost};
+  \item finite Sinkhorn or annealed Sinkhorn can be differentiated by a reverse
+  scan through the executed softmin program;
+  \item composing those local VJPs through the filtering loop gives the
+  derivative of the same executed scalar under fixed branch and randomness
+  assumptions.
+\end{itemize}
+
+It does \emph{not} claim that the relaxed OT filter equals a categorical
+particle filter, that finite Sinkhorn equals unregularized OT, that a custom VJP
+improves Monte Carlo accuracy, or that the resulting score is automatically
+HMC-ready for a structural model.  Those are separate validation questions.
+
+\FloatBarrier

@@ -34,35 +34,6 @@ solver-relevant latent quantity such as dual variables or scaling vectors.  Writ
 where \(h_\psi\) is later translated into the initialization of the retained
 corrective Sinkhorn solver.
 
-\subsection{Retained-teacher approximation family, not one architecture}
-\label{sec:bf-learned-ot-retained-family}
-
-The scalable-OT survey suggests broadening the reader's orientation here before
-committing to one neural warm-start architecture.  The retained-teacher lane is
-best understood as a family of approximations that all try to preserve a declared
-entropic teacher object while reducing the cost of reaching or applying it.
-Warm-start predictors are the narrowest member of that family, but they are not
-the only one.
-
-Representative retained-teacher approximation routes include:
-\begin{enumerate}[label=(\roman*)]
-  \item learned warm starts for dual or scaling variables,
-  \item Nystrom kernel factorizations that approximate the Gibbs kernel while
-    keeping a teacher-style scaling structure,
-  \item positive-feature Sinkhorn variants that replace the dense kernel by a
-    positive low-rank feature factorization,
-  \item direct low-rank transport factorizations when the resulting transported
-    object is still audited against the teacher output,
-  \item stochastic or minibatch routes used only as teacher-side approximations
-    rather than silently promoted to full replacement resampling rules.
-\end{enumerate}
-The common doctrine is that these routes should still be judged first by how well
-they preserve the declared teacher coupling or teacher barycentric output.  They
-are not automatically semantics-preserving merely because they are faster than a
-dense Sinkhorn pass.  Their status depends on whether the approximation changes
-only the execution path, the kernel/coupling family, or the final transported
-object itself.
-
 \section{What the teacher computes}
 \label{sec:bf-learned-ot-hierarchy}
 
@@ -155,32 +126,6 @@ The first deployment residual is the teacher-student discrepancy after correctio
 \end{equation}
 This residual does not by itself control filtering or HMC target error.  It only
 measures how well the corrected student reproduces the chosen teacher.
-
-\subsection{How the broader retained-teacher approximations fit here}
-\label{sec:bf-learned-ot-broader-retained}
-
-The same residual logic gives the chapter a place to classify the broader
-scalable-OT approximations from the survey.  If a Nystrom factorization, a
-positive-feature kernel, or a low-rank coupling factorization is proposed as a
-retained-teacher acceleration, then the first audit question is still teacher
-preservation: how close is the transported cloud or coupling application to the
-declared teacher route from Chapter~\ref{ch:bf-dpf-entropic-ot-sinkhorn}?
-
-For example, a kernel-factor route may replace the dense Gibbs kernel by a
-factorized approximation while still producing a coupling application of the same
-schematic form.  A low-rank coupling route may store and apply transport through
-structured factors rather than a dense matrix.  A stochastic or minibatch route
-may reduce computation by solving smaller transport subproblems.  In all such
-cases, this chapter's doctrine is the same: they are still retained-teacher
-candidates only if the approximation error is measured against the teacher object
-rather than hidden behind speedups alone.
-
-That is why the residual hierarchy should be read broadly.  The diagnostic is not
-restricted to one neural warm-start map.  It is the first reusable test for any
-approximation family that claims to accelerate the teacher without changing the
-meaning of the transported output.  Once the approximation stops being naturally
-judged by teacher-preservation residuals, it belongs in the later target-changing
-chapters instead of this retained-teacher one.
 
 \section{Filtering-loop insertion point}
 \label{sec:bf-learned-ot-loop}

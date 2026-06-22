@@ -174,44 +174,6 @@ At this stage the coupling \(\Pi\) is only a bookkeeping object.  It is not yet 
 random ancestor rule and not yet the final equal-weight cloud.  The next step is
 to choose which feasible coupling is preferred.
 
-\subsection{Why the filter needs a transport object, not just a scalar}
-\label{sec:bf-ot-baseline-transport-object}
-
-The scalable-OT survey sharpens the main practical boundary here.  For the
-BayesFilter filtering recursion, a fast scalar optimal-transport value is not by
-itself a usable resampling output.  The filter needs an object that actually acts
-on the weighted particle cloud.  In the deterministic equal-weighting baseline,
-that usable object is the coupling \(\Pi\) together with its barycentric action.
-Schematically, the required outputs are of the form
-\begin{equation}
-\label{eq:bf-ot-baseline-usable-object}
-  \text{coupling matrix, barycentric projection, factorized transport operator,}
-  \text{ or directly transported equal-weight cloud.}
-\end{equation}
-A reported scalar transport cost or value certificate may help compare candidate
-transports, but it does not yet produce the next particle representation used by
-the filter.
-
-This is why the present chapter slows down on couplings and barycentric maps.
-Given the weighted source measure
-\begin{equation}
-\label{eq:bf-ot-baseline-source-measure-repeat}
-  \hat\pi^N(dx)
-  =
-  \sum_{i=1}^N w_i\,\delta_{x_i}(dx)
-\end{equation}
-and equal-weight target marginal \(u\), the mathematical output needed by later
-code is not merely the scalar
-\begin{equation}
-\label{eq:bf-ot-baseline-scalar-only}
-  \min_{\Pi\in\mathcal U(w,u)} \langle C,\Pi\rangle,
-\end{equation}
-but the minimizing coupling itself together with the map that turns that coupling
-into an equal-weight cloud.  The later entropic and Sinkhorn chapter will replace
-this exact linear-program teacher by an entropically regularized teacher, but it
-inherits the same computational doctrine: a usable transport object must be
-produced, not only a scalar score.
-
 \section{The unregularized deterministic OT baseline}
 \label{sec:bf-ot-baseline-unregularized}
 
