@@ -1,0 +1,303 @@
+\chapter{Deterministic OT Equal-Weighting Baseline}
+\label{ch:bf-dpf-ot-baseline}
+
+The previous chapter introduced the resampling bottleneck and explained why one
+might replace discrete ancestor selection by a transport object.  The present
+chapter slows that idea down.  Its purpose is to teach the deterministic optimal-
+transport equal-weighting baseline itself before entropy, Sinkhorn iteration, or
+learned acceleration are added.
+
+The key conceptual move is simple.  A weighted particle cloud and an equal-weight
+particle cloud are not the same object.  Deterministic OT equal-weighting asks for
+a mass-redistribution rule that sends the weighted source cloud to an equal-weight
+target cloud as cheaply as possible under a declared cost.  This already changes
+the resampling object relative to categorical ancestor sampling, but it does so in
+a clean, finite-dimensional, deterministic way.
+
+\section{What problem this chapter solves}
+\label{sec:bf-ot-baseline-problem}
+
+Suppose a particle filter has produced support points
+\(x_1,\ldots,x_N\in\mathbb R^{d_x}\) with normalized weights
+\(w_1,\ldots,w_N\).  A later stage of the filter may want an equally weighted
+cloud so that no single particle dominates future propagation or summary
+statistics.  Classical resampling achieves this by random duplication and
+elimination.  The deterministic OT baseline instead asks:
+
+\begin{quote}
+How should mass be reassigned from the weighted cloud to an equal-weight output
+cloud if we want to move it as little as possible under a declared transport
+cost?
+\end{quote}
+
+This chapter answers that question in three layers:
+\begin{enumerate}[label=(\roman*)]
+  \item define the weighted and equal-weight empirical objects;
+  \item define the coupling matrix that records how source mass is reassigned;
+  \item convert that coupling into the equal-weight output cloud by barycentric
+  projection.
+\end{enumerate}
+
+\section{Running three-particle cell: deterministic OT version}
+\label{sec:bf-ot-baseline-cell}
+
+Reuse the running one-dimensional cell from the previous chapter:
+\[
+  x_1=-2,
+  \qquad x_2=0,
+  \qquad x_3=3,
+  \qquad
+  w=
+  \left(
+    \frac{1}{2},
+    \frac{1}{3},
+    \frac{1}{6}
+  \right),
+  \qquad
+  u=
+  \left(
+    \frac{1}{3},
+    \frac{1}{3},
+    \frac{1}{3}
+  \right).
+\]
+Using the source support itself as a simple square target support, the quadratic
+cost matrix is
+\begin{equation}
+\label{eq:bf-ot-baseline-cost}
+  C
+  =
+  \begin{pmatrix}
+    0 & 4 & 25 \\
+    4 & 0 & 9 \\
+    25 & 9 & 0
+  \end{pmatrix}.
+\end{equation}
+A feasible coupling for this problem is
+\begin{equation}
+\label{eq:bf-ot-baseline-feasible-coupling}
+  \Pi^{\mathrm{cell}}
+  =
+  \begin{pmatrix}
+    \frac{1}{3} & \frac{1}{6} & 0 \\
+    0 & \frac{1}{6} & \frac{1}{6} \\
+    0 & 0 & \frac{1}{6}
+  \end{pmatrix}.
+\end{equation}
+The row sums are
+\((1/2,1/3,1/6)\), matching the source weights, and the column sums are
+\((1/3,1/3,1/3)\), matching the equal target marginal.  The barycentric output
+cloud is therefore
+\begin{align}
+\label{eq:bf-ot-baseline-cell-barycentric}
+  \tilde x^{(1)} &= 3\left(\frac{1}{3}(-2)\right) = -2, \\
+  \tilde x^{(2)} &= 3\left(\frac{1}{6}(-2)+\frac{1}{6}(0)\right) = -1, \\
+  \tilde x^{(3)} &= 3\left(\frac{1}{6}(0)+\frac{1}{6}(3)\right) = 1.5.
+\end{align}
+So one deterministic equal-weight cloud associated with this feasible transport is
+\[
+  \{-2,-1,1.5\}
+  \quad\text{with equal weights }\frac{1}{3}.
+\]
+This single worked cell is enough to make three key points visible:
+\begin{enumerate}[label=(\roman*)]
+  \item the coupling is a mass-routing matrix, not yet the output cloud;
+  \item the output particles need not be duplicates of the source support;
+  \item deterministic equal-weighting already differs from categorical resampling
+  even before entropy or differentiability are mentioned.
+\end{enumerate}
+
+\section{Objects and notation}
+\label{sec:bf-ot-baseline-objects}
+
+The chapter uses the following core objects.
+
+\begin{center}
+\small
+\begin{tabular}{p{0.23\textwidth} p{0.64\textwidth}}
+\toprule
+Object & Meaning in this chapter \\
+\midrule
+$\hat\pi^N$ & weighted empirical source measure \\
+$\hat\pi^N_{\mathrm{eq}}$ & equal-weight empirical output measure \\
+$w$ & source weight vector \\
+$u$ & target equal-weight vector, usually $(1/N,\ldots,1/N)$ \\
+$C$ & declared transport cost matrix \\
+$\Pi$ & coupling matrix sending source mass to target mass \\
+$\mathcal U(w,u)$ & feasible coupling set with row sums $w$ and column sums $u$ \\
+$\Pi_0^\star$ & optimal coupling for the declared unregularized OT problem \\
+$B(\Pi)$ & barycentric equal-weight cloud induced by coupling $\Pi$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Weighted cloud, equal-weight cloud, and the coupling set}
+\label{sec:bf-ot-baseline-coupling}
+
+The weighted source cloud is
+\begin{equation}
+\label{eq:bf-ot-baseline-weighted-measure}
+  \hat\pi^N(dx)
+  =
+  \sum_{i=1}^N w_i\,\delta_{x_i}(dx),
+  \qquad
+  w_i\ge0,
+  \quad
+  \sum_{i=1}^N w_i=1.
+\end{equation}
+The equal-weight target cloud is
+\begin{equation}
+\label{eq:bf-ot-baseline-equal-measure}
+  \hat\pi^N_{\mathrm{eq}}(dx)
+  =
+  \frac{1}{N}
+  \sum_{j=1}^N \delta_{\tilde x^{(j)}}(dx).
+\end{equation}
+A coupling is a nonnegative matrix telling us how much mass from source particle
+\(i\) contributes to output slot \(j\).  The feasible set is
+\begin{equation}
+\label{eq:bf-ot-baseline-feasible-set}
+  \mathcal U(w,u)
+  =
+  \left\{
+    \Pi\in\mathbb R_+^{N\times N}:
+    \Pi\mathbf 1=w,
+    \ \Pi'\mathbf 1=u
+  \right\}.
+\end{equation}
+The row constraints say each source particle gives away exactly its original
+weight.  The column constraints say each output slot receives exactly one equal
+share of total mass.
+
+\paragraph{Reader checkpoint.}
+At this stage the coupling \(\Pi\) is only a bookkeeping object.  It is not yet a
+random ancestor rule and not yet the final equal-weight cloud.  The next step is
+to choose which feasible coupling is preferred.
+
+\section{The unregularized deterministic OT baseline}
+\label{sec:bf-ot-baseline-unregularized}
+
+Given a declared cost matrix \(C\), the deterministic transport baseline chooses a
+feasible coupling with minimal cost:
+\begin{equation}
+\label{eq:bf-ot-baseline-lp}
+  \Pi_0^\star
+  \in
+  \arg\min_{\Pi\in\mathcal U(w,u)}
+  \langle C,\Pi\rangle.
+\end{equation}
+This is a linear program.  It is exact for the chosen deterministic OT object,
+not for classical categorical resampling.  The distinction matters.  A reader who
+keeps only one sentence in mind should keep this one:
+
+\begin{quote}
+The deterministic OT baseline solves a transport projection problem exactly for
+that declared transport problem, but that problem is already different from
+random ancestor sampling.
+\end{quote}
+
+\section{Barycentric projection: from coupling to equal-weight cloud}
+\label{sec:bf-ot-baseline-barycentric}
+
+Once a coupling has been chosen, the final equal-weight output cloud is obtained
+by barycentric projection.  For each output slot \(j\), define
+\begin{equation}
+\label{eq:bf-ot-baseline-barycentric}
+  B(\Pi)_j
+  =
+  \frac{1}{u_j}
+  \sum_{i=1}^N \Pi_{ij}x_i.
+\end{equation}
+In the equal-weight case \(u_j=1/N\), this becomes
+\begin{equation}
+\label{eq:bf-ot-baseline-barycentric-equal}
+  B(\Pi)_j
+  =
+  N\sum_{i=1}^N \Pi_{ij}x_i.
+\end{equation}
+Operationally, each column of the coupling is turned into an output particle by
+forming the weighted average of the source particles that contribute mass to that
+column.
+
+This is the key step that makes the OT baseline implementation-facing.  The
+coupling is a matrix of mass transfers; the barycentric map is the actual equal-
+weight cloud later code would use.
+
+\section{Algorithm: deterministic OT equal-weighting}
+\label{sec:bf-ot-baseline-algorithm}
+
+\begin{algorithm}[ht]
+\caption{\texttt{deterministic\_ot\_equalweight\_step}}
+\begin{algorithmic}[1]
+\Require weighted particle cloud \(\{x_i,w_i\}_{i=1}^N\), equal target marginal \(u\), declared target support rule \(z_j\), and cost matrix \(C_{ij}=c(x_i,z_j)\)
+\Ensure optimal coupling \(\Pi_0^\star\), barycentric equal-weight cloud \(\widetilde X\), and declared transport metadata
+\State Form the feasible coupling set \(\mathcal U(w,u)\)
+\State Solve the linear program \(\Pi_0^\star\in\arg\min_{\Pi\in\mathcal U(w,u)} \langle C,\Pi\rangle\)
+\For{each output slot \(j=1,\ldots,N\)}
+  \State Compute the barycentric output particle
+  \[
+    \tilde x^{(j)} = \frac{1}{u_j}\sum_{i=1}^N \Pi_{ij}^\star x_i
+  \]
+\EndFor
+\State Return the equal-weight cloud \(\widetilde X=(\tilde x^{(1)},\ldots,\tilde x^{(N)})\), the coupling \(\Pi_0^\star\), the declared target support rule, and any transport diagnostics
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Approximation enters here.}
+This algorithm is exact for the unregularized deterministic OT object in
+\eqref{eq:bf-ot-baseline-lp}.  It is not exact for categorical resampling, and it
+is not yet the entropically smoothed object used later for differentiable
+computation.
+
+\section{Filtering-loop insertion point}
+\label{sec:bf-ot-baseline-loop}
+
+Inside a filtering loop, this deterministic OT step sits after the weighted cloud
+has been constructed and before the equal-weight cloud is passed to the next
+propagation or summary stage.  In symbols:
+\begin{equation}
+\label{eq:bf-ot-baseline-loop}
+  \{x_i,w_i\}_{i=1}^N
+  \xrightarrow{\mathrm{deterministic\ OT\ equal\text{-}weighting}}
+  \{\tilde x^{(j)},1/N\}_{j=1}^N.
+\end{equation}
+If auxiliary particle-local state is carried elsewhere in the filter, this chapter
+does not yet decide how that state is transported.  That is a separate
+implementation contract.  The present chapter fixes only the equal-weighting rule
+for the particle locations and masses themselves.
+
+\section{Verification and failure interpretation}
+\label{sec:bf-ot-baseline-verification}
+
+A minimal verification contract should check:
+\begin{enumerate}[label=(\arabic*)]
+  \item row sums equal the source weights exactly,
+  \item column sums equal the equal target marginal exactly,
+  \item the barycentric output has the declared shape \(N\times d_x\),
+  \item the target support rule is recorded explicitly,
+  \item any claim about downstream filtering is kept separate from this local OT
+  equality check.
+\end{enumerate}
+
+A failed marginal check is evidence that the coupling solver or bookkeeping is
+wrong.  It is not evidence that OT is conceptually invalid.  A good marginal check
+is evidence only that the deterministic OT object has been implemented correctly,
+not that the output cloud preserves the same law as categorical resampling.
+
+\section{What this chapter does and does not claim}
+\label{sec:bf-ot-baseline-boundary}
+
+This chapter teaches the clean deterministic transport baseline for equal-
+weighting.  It does \emph{not} claim:
+\begin{itemize}
+  \item that deterministic OT equal-weighting is the same object as classical
+    categorical resampling,
+  \item that it is automatically differentiable in the sense required later,
+  \item that barycentric projection preserves the original particle-filter target,
+  \item that the output cloud is already the final HMC or training target.
+\end{itemize}
+Its role is narrower: it fixes the exact deterministic OT baseline so that the
+next chapter can explain what changes when entropy, Sinkhorn iteration, and
+solver differentiation are added.
+
+\FloatBarrier

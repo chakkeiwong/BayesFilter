@@ -1,0 +1,271 @@
+\chapter{Entropic OT, Sinkhorn, and Barycentric Projection}
+\label{ch:bf-dpf-entropic-ot-sinkhorn}
+
+The previous chapter fixed the deterministic OT equal-weighting baseline.  This
+chapter explains the main differentiable computational route used in the OT lane:
+entropic regularization, finite Sinkhorn iteration, barycentric projection, and
+the distinction between the mathematical teacher object and the numerical object
+actually differentiated in code.
+
+This chapter has one dominant goal: a reader should be able to understand what
+object finite Sinkhorn computes, how barycentric output is produced from it, where
+approximation enters, and what diagnostics must be checked before the result is
+used in a downstream filtering scalar.
+
+\section{What changes when entropy is added}
+\label{sec:bf-eot-what-changes}
+
+The deterministic OT baseline chooses a coupling that minimizes transport cost
+exactly for the declared linear program.  Entropic OT changes that object by
+adding a smoothing term to the optimization problem.  In plain language, the
+transport plan is now rewarded for being more diffuse instead of concentrating all
+mass as sharply as possible.
+
+The gain is numerical smoothness and a tractable matrix-scaling solver.  The cost
+is that the transport object is no longer the unregularized deterministic OT
+solution.  This is the first approximation layer of the chapter.
+
+\section{Running three-particle cell with entropic smoothing}
+\label{sec:bf-eot-running-cell}
+
+Keep the same running cell as before:
+\[
+  x_1=-2,
+  \qquad x_2=0,
+  \qquad x_3=3,
+  \qquad
+  w=
+  \left(
+    \frac{1}{2},
+    \frac{1}{3},
+    \frac{1}{6}
+  \right),
+  \qquad
+  u=
+  \left(
+    \frac{1}{3},
+    \frac{1}{3},
+    \frac{1}{3}
+  \right),
+\]
+with quadratic cost matrix
+\begin{equation}
+\label{eq:bf-eot-running-cost}
+  C
+  =
+  \begin{pmatrix}
+    0 & 4 & 25 \\
+    4 & 0 & 9 \\
+    25 & 9 & 0
+  \end{pmatrix}.
+\end{equation}
+For \(\varepsilon=1\), the Gibbs kernel is
+\begin{equation}
+\label{eq:bf-eot-running-kernel}
+  K_1=
+  \begin{pmatrix}
+    1 & e^{-4} & e^{-25} \\
+    e^{-4} & 1 & e^{-9} \\
+    e^{-25} & e^{-9} & 1
+  \end{pmatrix}.
+\end{equation}
+The entries are heavily concentrated near the diagonal, but not exactly zero away
+from it.  That is a simple visual sign of what entropy has changed: the plan is no
+longer forced into the sharpest possible assignment.
+
+\section{Entropic OT teacher object}
+\label{sec:bf-eot-teacher-object}
+
+Let \(\mathcal U(w,u)\) be the feasible coupling set from the previous chapter.
+The entropically regularized OT problem is
+\begin{equation}
+\label{eq:bf-eot-primal}
+  \Pi_\varepsilon^\star
+  =
+  \arg\min_{\Pi\in\mathcal U(w,u)}
+  \left\{
+    \langle \Pi,C\rangle
+    + \varepsilon\sum_{i,j}\Pi_{ij}(\log\Pi_{ij}-1)
+  \right\}.
+\end{equation}
+This chapter uses the same entropy convention as the earlier OT material, so the
+minimizer is the exact teacher for the chosen regularized object, not for the
+unregularized linear program and not for categorical resampling.
+
+\paragraph{Reader checkpoint.}
+At this stage, the chapter has changed the mathematical object once: from the
+unregularized deterministic OT coupling to the entropically smoothed OT coupling.
+Nothing numerical has happened yet.  The next step explains how this exact
+regularized object is computed in practice.
+
+\section{Why the optimizer factorizes}
+\label{sec:bf-eot-factorization}
+
+The first-order optimality conditions imply that the regularized coupling has the
+form
+\begin{equation}
+\label{eq:bf-eot-factorization}
+  \Pi_\varepsilon^\star
+  =
+  \diag(a)K_\varepsilon\diag(b),
+  \qquad
+  (K_\varepsilon)_{ij}=\exp(-C_{ij}/\varepsilon),
+\end{equation}
+with positive scaling vectors \(a,b\) chosen so that the coupling has the correct
+row and column sums.  Operationally, this means the hard OT problem has been
+reduced to the problem of finding two scaling vectors that balance a known kernel.
+That reduction is why Sinkhorn iteration is so useful.
+
+\section{Algorithm: finite Sinkhorn equal-weighting}
+\label{sec:bf-eot-algorithm}
+
+\begin{algorithm}[ht]
+\caption{\texttt{sinkhorn\_equalweight\_step}}
+\begin{algorithmic}[1]
+\Require weighted particle cloud \(\{x_i,w_i\}_{i=1}^N\), equal target marginal \(u\), cost matrix \(C\), regularization \(\varepsilon>0\), initialization \((a^{(0)},b^{(0)})\), iteration budget \(K\), and stabilization policy
+\Ensure finite coupling \(\Pi_{\varepsilon,K}\), barycentric equal-weight cloud \(\widetilde X\), row/column residuals, and declared numerical metadata
+\State Form the Gibbs kernel \((K_\varepsilon)_{ij}=\exp(-C_{ij}/\varepsilon)\)
+\For{\(k=0,\ldots,K-1\)}
+  \State Update \(a^{(k+1)} = w \oslash (K_\varepsilon b^{(k)})\)
+  \State Update \(b^{(k+1)} = u \oslash (K_\varepsilon' a^{(k+1)})\)
+\EndFor
+\State Form the finite coupling \(\Pi_{\varepsilon,K}=\diag(a^{(K)})K_\varepsilon\diag(b^{(K)})\)
+\State Compute residuals
+\[
+  r_{\mathrm{row}}=\|\Pi_{\varepsilon,K}\mathbf 1-w\|_1,
+  \qquad
+  r_{\mathrm{col}}=\|\Pi_{\varepsilon,K}'\mathbf 1-u\|_1
+\]
+\For{each output slot \(j=1,\ldots,N\)}
+  \State Compute \(\tilde x^{(j)} = \frac{1}{u_j}\sum_{i=1}^N \Pi_{ij}x_i\)
+\EndFor
+\State Return the coupling, equal-weight cloud, residuals, \(\varepsilon\), \(K\), initialization policy, and stabilization metadata
+\end{algorithmic}
+\end{algorithm}
+
+This is the chapter’s main callable procedure.  A reader who implements only one
+OT route from the monograph should be able to implement this one.
+
+\section{Worked balancing pass on the running cell}
+\label{sec:bf-eot-worked-balance}
+
+Take the simplest initialization \(b^{(0)}=(1,1,1)'\).  Then the first
+row-balancing step computes
+\begin{equation}
+\label{eq:bf-eot-first-row-balance}
+  a^{(1)} = w \oslash (K_1 b^{(0)}).
+\end{equation}
+For the running cell,
+\[
+  K_1 b^{(0)}
+  \approx
+  (1.0183,\,1.0184,\,1.0001),
+\]
+so
+\[
+  a^{(1)}
+  \approx
+  (0.491,\,0.327,\,0.167).
+\]
+The next column-balancing step then uses these row-repaired values to push the
+column sums toward \((1/3,1/3,1/3)\).  The exact arithmetic is less important
+than the interpretation: finite Sinkhorn repeatedly repairs whichever marginal is
+currently wrong.
+
+\paragraph{Plain-language takeaway.}
+Sinkhorn is not a mysterious OT oracle.  It is an alternating balancing procedure
+for a smoothed transport matrix.  That is why later learned warm-start methods try
+to predict better initial balancing coordinates rather than replacing the solver
+outright.
+
+\section{Barycentric projection as the output map}
+\label{sec:bf-eot-barycentric}
+
+The solver output is still only a coupling matrix.  The equal-weight particle cloud
+that later code consumes is obtained by barycentric projection:
+\begin{equation}
+\label{eq:bf-eot-barycentric}
+  \tilde x^{(j)}
+  =
+  \frac{1}{u_j}\sum_{i=1}^N \Pi_{ij}x_i.
+\end{equation}
+In the equal-weight case, this is
+\begin{equation}
+\label{eq:bf-eot-barycentric-equal}
+  \tilde x^{(j)}=N\sum_{i=1}^N \Pi_{ij}x_i.
+\end{equation}
+This step is where the numerical coupling becomes the actual equal-weight output
+cloud.  It is therefore the place where an implementation must be especially clear
+about shapes, normalization, and any auxiliary state that is or is not carried
+alongside the particle locations.
+
+\section{Differentiation contracts}
+\label{sec:bf-eot-differentiation}
+
+The final major distinction of the chapter is between three different derivative
+objects:
+\begin{enumerate}[label=(\roman*)]
+  \item derivative of the exact regularized OT optimizer,
+  \item derivative of the finite unrolled Sinkhorn computation,
+  \item derivative of some scalar built from that finite computation.
+\end{enumerate}
+In code, the second and third are the most common.  A gradient is only the
+correct gradient of the exact executed scalar if the computational graph used in
+autodiff matches the scalar value actually reported by the code.
+
+\section{Filtering-loop insertion point}
+\label{sec:bf-eot-loop}
+
+Inside a filter, the finite EOT/Sinkhorn equal-weighting step sits after the
+weighted particle cloud has been formed and before an equally weighted cloud is
+passed onward:
+\begin{equation}
+\label{eq:bf-eot-loop}
+  \{x_i,w_i\}_{i=1}^N
+  \xrightarrow{\mathrm{EOT/Sinkhorn}}
+  \{\tilde x^{(j)},1/N\}_{j=1}^N.
+\end{equation}
+If the broader filtering algorithm carries auxiliary particle-local state, this
+chapter does not yet assert how that state is transported.  Its contract is
+narrower: it specifies the equal-weighting rule for the particle locations and the
+mass-routing matrix from which that equal-weight cloud is derived.
+
+\section{Verification contract}
+\label{sec:bf-eot-verification}
+
+A reader implementing this route should verify at least:
+\begin{enumerate}[label=(\arabic*)]
+  \item row and column residuals are reported and decrease with additional
+  iterations or stronger stabilization,
+  \item the initialization, \(\varepsilon\), iteration budget, and stabilization
+  policy are recorded,
+  \item the barycentric cloud has the declared shape and normalization,
+  \item any reported gradient is tied to the exact computational graph that was
+  actually executed,
+  \item any stronger filtering or HMC claim is kept separate from these local
+  numerical checks.
+\end{enumerate}
+
+A failed residual check is evidence about the finite solver or stabilization path,
+not about the abstract EOT object.  A successful residual check is evidence that
+the numerical route is behaving as declared, not that it preserves the original
+categorical target.
+
+\section{What this chapter does and does not claim}
+\label{sec:bf-eot-boundary}
+
+This chapter teaches the main differentiable OT computational route in a near-
+implementation style.  It does \emph{not} claim:
+\begin{itemize}
+  \item that entropic OT is the same object as unregularized OT,
+  \item that finite Sinkhorn is the exact regularized optimizer,
+  \item that a barycentric equal-weight cloud is the same object as categorical
+  ancestor sampling,
+  \item that autodiff through the executed graph is automatically the gradient of
+  the original filtering likelihood.
+\end{itemize}
+Its role is to fix the entropic teacher object, the finite numerical route, the
+output cloud construction, and the differentiation contract that the next chapter
+will accelerate with a learned warm start.
+
+\FloatBarrier
