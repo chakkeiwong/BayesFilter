@@ -1,0 +1,466 @@
+\chapter[Neural State-Space Model Applications]
+{Neural Networks and State-Space Model Applications}
+\label{ch:bf-neural-network-ssm-applications}
+
+Neural state-space models combine a learned nonlinear transition with an
+explicit probabilistic state and observation model.  This combination is
+useful when the transition must retain memory that is richer than a low-order
+linear recursion, but the application still requires filtering, forecasting,
+likelihood-based parameter inference, and uncertainty propagation.  It also
+creates a validation problem.  A neural transition can be strongly
+overparameterized, so two posterior approximations may differ in parameter
+space while inducing nearly the same forecast distribution.  Conversely, two
+samplers can agree on a few parameter summaries and still disagree on the
+predictive quantities for which the model is used.
+
+This chapter develops a running BayesFilter application based on a stochastic
+state-space LSTM (SSL-LSTM).  It then defines a posterior-predictive
+equivalence criterion for comparing ordinary HMC with exact-corrected
+neural-transport HMC.  The model description follows the current BayesFilter
+TensorFlow implementation.  The predictive-equivalence criterion is a
+BayesFilter \code{extension\_or\_invention}; it is not a Zhao--Cui
+source-faithfulness claim.
+
+\section{A Stochastic State-Space LSTM}
+\label{sec:bf-ssl-lstm-model}
+
+Let $z_t\in\R^k$ denote the stochastic latent state, $a_t\in\R^h$ the LSTM
+hidden state, and $c_t\in\R^h$ the LSTM cell state.  The augmented filtering
+state is
+\begin{equation}
+  x_t = (z_t^\top,a_t^\top,c_t^\top)^\top
+  \in \R^{k+2h}.
+  \label{eq:bf-ssl-lstm-state}
+\end{equation}
+Only $z_t$ receives a new structural innovation.  Conditional on the previous
+state, $a_t$ and $c_t$ are deterministic completions.  This partition is
+important for sigma-point filtering because it avoids pretending that the
+memory coordinates contain independent process noise.
+
+For gate $g\in\{i,f,o,r\}$, define
+\begin{align}
+  \eta_{g,t}
+    &= W_g z_{t-1}+U_g a_{t-1}+b_g,                                      \\
+  i_t &= \operatorname{sigmoid}(\eta_{i,t}),                              \\
+  f_t &= \operatorname{sigmoid}(\eta_{f,t}),                              \\
+  o_t &= \operatorname{sigmoid}(\eta_{o,t}),                              \\
+  r_t &= \tanh(\eta_{r,t}).
+  \label{eq:bf-ssl-lstm-gates}
+\end{align}
+Here
+\[
+  W_g\in\R^{h\times k},\qquad
+  U_g\in\R^{h\times h},\qquad
+  b_g\in\R^h,
+\]
+so every gate vector lies in $\R^h$.  The latent and observation maps satisfy
+$A\in\R^{k\times h}$, $d\in\R^k$, $C\in\R^{d_y\times k}$, and
+$e\in\R^{d_y}$.
+The candidate gate is denoted by $r$ to avoid confusing it with the cell state.
+The memory recursion is
+\begin{align}
+  c_t &= f_t\odot c_{t-1}+i_t\odot r_t,                                    \\
+  a_t &= o_t\odot\tanh(c_t).
+  \label{eq:bf-ssl-lstm-memory}
+\end{align}
+The stochastic latent transition and observation law are
+\begin{align}
+  z_t &= A a_t+d+\Sigma_z^{1/2}\epsilon_t,
+  &\epsilon_t&\sim\calN(0,I_k),                                           \\
+  y_t &= C z_t+e+\Sigma_y^{1/2}\nu_t,
+  &\nu_t&\sim\calN(0,I_{d_y}),
+  \label{eq:bf-ssl-lstm-state-observation}
+\end{align}
+with independent innovations across time and between the two equations.  The
+current implementation uses diagonal $\Sigma_z$ and $\Sigma_y$.  Initial
+states follow
+\begin{equation}
+  x_0\sim\calN(m_0,\diag(s_0^2)).
+  \label{eq:bf-ssl-lstm-initial-law}
+\end{equation}
+Positive standard deviations are constructed from unconstrained coordinates
+by a softplus transform plus a small positive floor.
+
+Equations~\eqref{eq:bf-ssl-lstm-gates}--\eqref{eq:bf-ssl-lstm-state-observation}
+have the usual LSTM memory mechanism \citep{hochreiter1997lstm}, but they are
+embedded in a generative state-space model rather than used only as a
+deterministic predictor.  The transition produces a probability law, the
+filter integrates over latent uncertainty, and Bayesian inference propagates
+parameter uncertainty into future observations.
+
+\subsection{Parameter chart}
+\label{subsec:bf-ssl-lstm-parameter-chart}
+
+The unconstrained BayesFilter parameter vector contains
+\begin{equation}
+  \theta =
+  \left(
+    \{W_g,U_g,b_g\}_{g\in\{i,f,o,r\}},
+    A,d,C,e,m_0,\widetilde s_0,
+    \widetilde\sigma_z,\widetilde\sigma_y
+  \right).
+  \label{eq:bf-ssl-lstm-parameter-chart}
+\end{equation}
+For dimensions $(k,h,d_y)$, the implementation stores the four input-gate
+matrices, four recurrent matrices, four biases, the latent and observation
+maps, the initial mean and standard deviations, and the process and
+observation standard deviations in one fixed order.  Static dimensions and a
+fixed chart are part of the compiled filtering and HMC target contract.
+
+\subsection{Structural SVD-UKF likelihood}
+\label{subsec:bf-ssl-lstm-svd-ukf-likelihood}
+
+The running application evaluates the likelihood with BayesFilter's structural
+SVD sigma-point filter.  Sigma-point integration is performed in the
+$k$-dimensional innovation space.  Each innovation point is lifted through
+Equations~\eqref{eq:bf-ssl-lstm-gates}--\eqref{eq:bf-ssl-lstm-state-observation},
+and the LSTM hidden and cell states are completed deterministically.  This
+preserves the state partition in Equation~\eqref{eq:bf-ssl-lstm-state}.
+
+Let $\ell_{\mathrm{SVD\text{-}UKF}}(\theta;y_{1:T})$ denote the resulting
+filtering log likelihood.  The posterior target is
+\begin{equation}
+  \pi(\theta\mid y_{1:T})
+  \propto
+  \exp\!\left\{\ell_{\mathrm{SVD\text{-}UKF}}
+    (\theta;y_{1:T})\right\}p(\theta).
+  \label{eq:bf-ssl-lstm-filtering-posterior}
+\end{equation}
+This is an exact scalar target relative to the fixed SVD-UKF recursion, but the
+SVD-UKF likelihood is an approximation to the nonlinear model likelihood.
+Sampler validation must not erase that distinction.
+
+\section{The Scalar Four-Parameter Application}
+\label{sec:bf-scalar-ssl-lstm-application}
+
+The scalar validation problem sets
+\begin{equation}
+  k=h=d_y=1,
+  \qquad \dim(x_t)=3,
+  \qquad T=30.
+  \label{eq:bf-scalar-ssl-lstm-dimensions}
+\end{equation}
+The full scalar chart has 24 entries.  The current validation target holds 20
+entries fixed at the inherited fixture values and estimates
+\begin{equation}
+  \psi=(A,d,C,e)^\top\in\R^4.
+  \label{eq:bf-scalar-ssl-lstm-free-parameters}
+\end{equation}
+In repository names these are
+\begin{itemize}
+  \item \code{latent\_mean\_weight.0.0};
+  \item \code{latent\_mean\_bias.0};
+  \item \code{observation\_weight.0.0};
+  \item \code{observation\_bias.0}.
+\end{itemize}
+The prior used by the scalar filtering target is
+\begin{equation}
+  \psi\sim\calN(\psi_0,4^2 I_4),
+  \label{eq:bf-scalar-ssl-lstm-prior}
+\end{equation}
+where $\psi_0$ is the fixed simulation center.  The observation path is
+generated with a fixed stateless seed and is shared by every sampler arm.
+
+This restriction creates a deliberately small but non-Gaussian filtering
+target.  It is useful for testing geometry, transport, HMC, and predictive
+validation without first solving full 24-parameter identification.  It does
+not establish that the four-parameter restriction is scientifically adequate,
+that the remaining neural-network parameters are known, or that the fixture is
+source-faithful to an external SSL-LSTM implementation.
+
+\section{Why Parameter Agreement Is Not the Only Estimand}
+\label{sec:bf-predictive-vs-parameter-agreement}
+
+Traditional sampler checks often compare posterior parameter means,
+variances, quantiles, or an independently computed parameter posterior.  Those
+checks remain useful when the parameter posterior itself is the scientific
+object.  They can be unnecessarily strong for prediction when multiple
+parameter configurations induce nearly the same transition and observation
+law.  Neural networks make this issue especially visible because symmetries,
+weak identification, and compensating weights can create broad or curved
+parameter sets with similar functional behavior.
+
+The converse warning is equally important.  Predictive agreement is weaker
+than equality of parameter posteriors.  If $F$ maps a parameter and filtered
+state distribution into a forecast law, then
+\begin{equation}
+  F_\#\pi_A = F_\#\pi_B
+  \quad\not\Longrightarrow\quad
+  \pi_A=\pi_B.
+  \label{eq:bf-predictive-not-parameter-identification}
+\end{equation}
+The pushforward can discard directions that matter for structural
+interpretation even when they do not matter for the selected forecast.  The
+appropriate claim is therefore \emph{predictive-functional equivalence}, not
+full posterior correctness or parameter identification.
+
+\section{Posterior-Predictive Law}
+\label{sec:bf-ssl-lstm-posterior-predictive-law}
+
+Fix the observed history $y_{1:T}$ and a maximum forecast horizon $H$.  For
+sampler arm $s$, let $\pi_s(d\psi,dx_T\mid y_{1:T})$ be the joint parameter and
+terminal-state approximation induced by the fixed filtering target and that
+arm's posterior draws.  Its joint predictive path law is
+\begin{equation}
+  P_s^H(d\widetilde y)
+  = \int
+      p_\psi(d\widetilde y_{T+1:T+H}\mid x_T)
+      \pi_s(d\psi,dx_T\mid y_{1:T}).
+  \label{eq:bf-ssl-lstm-joint-predictive-law}
+\end{equation}
+Every sampler comparison must use the same data, parameter chart, terminal
+filter convention, forecast equations, horizon, and innovation law.  A frozen
+stateless innovation bank may be shared between arms to reduce conditional
+simulation noise, but uncertainty calculations must retain the chain and
+forecast-cluster dependence that this design creates.  Because this coupling
+is not part of either marginal predictive law, the omnibus distributional gate
+should use independently generated arm-specific innovation banks; the shared
+bank is a paired precision and robustness diagnostic.
+
+\subsection{Horizon-specific moments}
+\label{subsec:bf-ssl-lstm-predictive-moments}
+
+For $h=1,\ldots,H$, define
+\begin{align}
+  \mu_{s,h}
+    &= \E_s[Y_{T+h}\mid y_{1:T}],                                         \\
+  v_{s,h}
+    &= \Var_s(Y_{T+h}\mid y_{1:T}),                                      \\
+  \gamma_{s,h}^{(r)}
+    &= \E_s[(Y_{T+h}-\mu_{s,h})^r\mid y_{1:T}],\qquad r\geq 3,            \\
+  \Gamma_{s,hk}
+    &= \Cov_s(Y_{T+h},Y_{T+k}\mid y_{1:T}).
+  \label{eq:bf-ssl-lstm-predictive-moments}
+\end{align}
+The first central moment is identically zero, so the first comparison is the
+raw predictive mean.  Variance is the second central moment.  Third and fourth
+central moments can reveal skewness and tail-shape differences, but their Monte
+Carlo uncertainty is substantially larger.  Cross-horizon covariance matters
+because equality of all marginal forecast laws does not imply equality of the
+joint path law.
+
+When the filter can propagate conditional means and covariances
+deterministically for each posterior draw, the law of total expectation and
+variance gives a lower-noise estimator:
+\begin{align}
+  \mu_{s,h}
+    &= \E_{\pi_s}[m_h(\psi,x_T)],                                         \\
+  v_{s,h}
+    &= \E_{\pi_s}\!\left[V_h(\psi,x_T)+m_h(\psi,x_T)^2\right]
+       -\mu_{s,h}^2.
+  \label{eq:bf-ssl-lstm-rao-blackwell-moments}
+\end{align}
+BayesFilter should prefer these Rao--Blackwellized moments when the forecast
+recursion and state approximation make them available.  Simulated forecast
+paths are still required for general path-distribution comparisons.
+
+\section[MGFs and Stable Distribution Features]
+{From Moment Generating Functions to Stable Distribution Features}
+\label{sec:bf-ssl-lstm-mgf-cf}
+
+Whenever the MGF is finite on an open neighborhood of zero and termwise
+differentiation is justified, its Taylor expansion is
+\begin{equation}
+  M_s(t)=\E_s[\exp(tY)]
+  =\sum_{r=0}^{\infty}\frac{t^r}{r!}\E_s[Y^r]
+  \label{eq:bf-ssl-lstm-mgf}
+\end{equation}
+This expansion provides an attractive formal connection between a weighted
+collection of moments and the full predictive distribution.  It is not,
+however, a robust default empirical weight.  The MGF need not be finite away
+from zero, and a small number of tail draws can dominate $\exp(tY)$.
+
+The characteristic function is safer:
+\begin{equation}
+  \varphi_s(\omega)
+  =\E_s[\exp(i\omega^\top\widetilde Y)]
+  =\E_s[\cos(\omega^\top\widetilde Y)]
+   +i\E_s[\sin(\omega^\top\widetilde Y)].
+  \label{eq:bf-ssl-lstm-characteristic-function}
+\end{equation}
+It always exists, its empirical features are bounded, and the joint
+characteristic function identifies the joint predictive law.  A weighted
+distance is
+\begin{equation}
+  D_w(P_A^H,P_B^H)
+  =\int
+    \left|\varphi_A(\omega)-\varphi_B(\omega)\right|^2
+    w(d\omega).
+  \label{eq:bf-ssl-lstm-weighted-cf-distance}
+\end{equation}
+For suitable spectral weights, this is the same population discrepancy as a
+kernel maximum mean discrepancy (MMD) \citep{gretton2012kernel,
+sriperumbudur2010hilbert}.  A Gaussian spectral weight corresponds to a
+Gaussian radial-basis kernel.  A fixed mixture of bandwidths is preferable to
+choosing a bandwidth after inspecting which choice makes two samplers agree.
+
+\section{What the Weights Mean}
+\label{sec:bf-ssl-lstm-predictive-weights}
+
+Three different weights enter a predictive comparison and should not be
+collapsed into one tuning parameter.
+
+\paragraph{Scientific horizon weights.}
+Weights $\lambda_h\geq0$ with $\sum_h\lambda_h=1$ state whether near-term and
+long-term forecasts have equal scientific value.  Equal horizon weights are
+the neutral default.  Discounted weights are legitimate only when the
+application declares that shorter horizons matter more; they must not be
+estimated to hide a long-horizon discrepancy.
+
+\paragraph{Feature scaling.}
+Means, variances, fourth moments, and cross-products have different units.
+They must be standardized by a frozen external scale or by a baseline-only
+pilot whose draws are excluded from confirmation.  Scaling is a numerical and
+interpretive operation, not evidence that a discrepancy is small.
+
+\paragraph{Statistical precision weights.}
+Let $\widehat\Delta$ collect real and imaginary empirical characteristic
+features, or a fixed vector of standardized moment differences.  If
+$\widehat\Delta\in\R^q$, $\widehat S\in\R^{q\times q}$ is a symmetric
+positive-semidefinite estimate of its long-run covariance, and $\lambda>0$,
+then $\widehat S+\lambda I_q$ is positive definite.  The regularized quadratic
+form
+\begin{equation}
+  Q_\lambda
+  =\widehat\Delta^\top
+    (\widehat S+\lambda I_q)^{-1}\widehat\Delta
+  \label{eq:bf-ssl-lstm-gmm-weight}
+\end{equation}
+uses the efficient GMM weighting principle for a fixed feature vector
+\citep{hansen1982gmm}.  Here $\widehat S$ must account for MCMC
+autocorrelation, separate chains, repeated forecast innovations, and any
+common-random-number coupling.  The ridge $\lambda$ and feature grid must be
+chosen in calibration and frozen before the confirmatory arm comparison.
+
+Inverse-covariance weighting does not replace scientific equivalence margins.
+A very precisely estimated but scientifically negligible feature should not
+dominate the decision merely because its Monte Carlo variance is small.
+
+\section{An Equivalence Gate, Not a Failure-to-Reject Gate}
+\label{sec:bf-ssl-lstm-predictive-equivalence-gate}
+
+Let $\delta_{\mu,h}$ be a predictive-scale-standardized mean difference and
+let $\delta_{\log v,h}$ be the difference in log predictive variance.  The
+log scale makes the variance comparison dimensionless and treats reciprocal
+variance ratios symmetrically.  Let $\mathcal I_{\mu,h}$ and
+$\mathcal I_{\log v,h}$ denote their simultaneous confidence intervals.  The
+primary interpretable gate requires
+\begin{align}
+  \mathcal I_{\mu,h}
+    &\subset (-\varepsilon_{\mu,h},\varepsilon_{\mu,h}),                  \\
+  \mathcal I_{\log v,h}
+    &\subset (-\varepsilon_{\log v,h},\varepsilon_{\log v,h}),
+  \qquad h=1,\ldots,H.
+  \label{eq:bf-ssl-lstm-component-equivalence}
+\end{align}
+The omnibus gate additionally requires an uncertainty upper bound for
+$D_w$ or MMD to lie below a predeclared practical tolerance.  Merely failing to
+reject equality is insufficient: short chains and noisy high-order moments can
+make a materially different pair of predictive laws look statistically
+indistinguishable.
+
+Mean and log variance are the initial co-primary interpretable features.
+Third and fourth central moments, quantiles, and cross-horizon covariance begin
+as explanatory diagnostics.  They can become promotion criteria only after a
+reviewed calibration shows adequate finite-sample power and stable uncertainty
+estimation.
+
+\section{Ordinary HMC and Exact-Corrected NeuTra-HMC}
+\label{sec:bf-ssl-lstm-neutra-comparison}
+
+Let $u$ denote the MAP-local coordinates of the four-parameter filtering
+target, and let $T_\phi:\R^4\rightarrow\R^4$ be an invertible learned
+transport.  NeuTra trains $T_\phi$ so that a standard Gaussian base is pushed
+toward the target geometry \citep{hoffman2019neutra}.  After training, the
+transport is frozen and HMC targets
+\begin{equation}
+  \log\pi_z(z)
+  =\log\pi_u(T_\phi(z))
+   +\log\left|\det J_{T_\phi}(z)\right|.
+  \label{eq:bf-ssl-lstm-exact-neutra-target}
+\end{equation}
+The Jacobian correction and Metropolis correction preserve the intended
+filtering target even when the learned flow is imperfect, subject to the usual
+numerical and implementation checks.  Training loss, validation loss, or raw
+flow samples are not posterior-correctness evidence.
+
+The functional comparison is therefore
+\begin{equation}
+  \text{ordinary MAP-local HMC}
+  \quad\text{versus}\quad
+  \text{frozen-transport exact-corrected NeuTra-HMC},
+  \label{eq:bf-ssl-lstm-sampler-comparison}
+\end{equation}
+with both arms passed through the same forecast operator in
+Equation~\eqref{eq:bf-ssl-lstm-joint-predictive-law}.  Each arm must be tuned
+in its own geometry.  Reusing the ordinary-HMC step size or trajectory length
+for NeuTra-HMC is not a fair comparison.
+
+\section{Three Evidence Ledgers}
+\label{sec:bf-ssl-lstm-three-ledgers}
+
+\begin{center}
+\begin{tabular}{p{0.23\textwidth}p{0.31\textwidth}p{0.34\textwidth}}
+\toprule
+Ledger & Question & Required evidence \\
+\midrule
+Engineering correctness & Does the implementation evaluate the intended
+model and forecast? & Equation-to-code checks, deterministic recursions,
+linear-Gaussian forecast oracles, scalar/batch parity, transform round trips,
+finite values, and XLA parity. \\
+Sampler validity & Does each chain explore its declared target? & Native
+divergence telemetry, finite log probabilities and gradients, acceptance,
+movement, chain-aware R-hat/ESS/MCSE, independent seeds, and frozen artifacts.
+\\
+Predictive-functional equivalence & Do the two valid samplers induce the same
+practically relevant forecast law? & Simultaneous mean/log-variance
+equivalence, joint-path characteristic-function or MMD equivalence, and
+independent confirmation with frozen weights and tolerances. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A failure in the first or second ledger invalidates interpretation of the
+third.  A pass in the third ledger does not retroactively prove the first two.
+Two samplers can agree because they share a target bug or a forecast bug.
+Independent forecast-oracle tests and, where feasible, repeated synthetic-data
+calibration remain necessary.
+
+\section{Model Adequacy Is a Separate Question}
+\label{sec:bf-ssl-lstm-model-adequacy}
+
+Predictive equivalence asks whether two posterior computations give the same
+forecast law.  Predictive accuracy asks whether that law describes future
+observations.  Held-out log predictive density, CRPS, coverage, and calibration
+are proper model-evaluation tools \citep{gneiting2007proper}, but they do not
+replace the sampler-equivalence gate.  The two questions should use separate
+artifacts:
+\begin{enumerate}
+  \item same-data, same-model predictive equivalence for computation;
+  \item held-out or rolling-origin proper scores for model adequacy;
+  \item parameter or structural checks when scientific interpretation depends
+    on identification rather than prediction alone.
+\end{enumerate}
+
+\section{Claim Boundary}
+\label{sec:bf-ssl-lstm-predictive-claim-boundary}
+
+A successful predictive-equivalence result may support the statement that two
+validated sampler arms induce practically equivalent $H$-step predictive laws
+for the fixed scalar SSL-LSTM filtering target, data set, forecast operator,
+and declared feature/tolerance design.  It does not by itself establish:
+\begin{itemize}
+  \item equality or correctness of the parameter posterior;
+  \item global parameter identification;
+  \item exactness of the SVD-UKF approximation to the nonlinear likelihood;
+  \item empirical adequacy on unseen data;
+  \item broad HMC, NeuTra, GPU, or default-method readiness;
+  \item sampler superiority or a statistically supported ranking;
+  \item Zhao--Cui source faithfulness.
+\end{itemize}
+
+The implementation and confirmatory test program for this chapter is specified
+in the predictive-equivalence master plan under \code{docs/plans}.  Until its
+forecast, sampler, calibration, and independent-confirmation gates pass, this
+chapter defines a research design rather than reporting a completed empirical
+result.
