@@ -42,6 +42,30 @@ def test_total_streaming_transport_custom_gradient_has_no_local_tape() -> None:
     assert "_filterflow_streaming_finite_sinkhorn_potentials_vjp_total" in pullback_source
 
 
+def test_total_transport_vjp_hot_helpers_avoid_scatter_update_path() -> None:
+    helper_sources = {
+        name: inspect.getsource(getattr(annealed_transport_tf, name))
+        for name in (
+            "_filterflow_streaming_softmin_vjp",
+            "_filterflow_streaming_transport_from_potentials_vjp",
+        )
+    }
+
+    for source in helper_sources.values():
+        assert "GradientTape" not in source
+        assert "ForwardAccumulator" not in source
+        assert ".gradient(" not in source
+        assert "_scatter_axis1_add_2d" not in source
+        assert "_scatter_axis1_add_3d" not in source
+        assert "tf.tensor_scatter_nd_add" not in source
+
+    transport_source = helper_sources["_filterflow_streaming_transport_from_potentials_vjp"]
+    assert "s_blocks = tf.TensorArray" in transport_source
+    assert "particle_blocks = tf.TensorArray" in transport_source
+    assert "query_blocks = tf.TensorArray" in transport_source
+    assert "key_blocks = tf.TensorArray" in transport_source
+
+
 def test_total_sinkhorn_potential_vjp_has_explicit_epsilon0_cotangent_path() -> None:
     source = inspect.getsource(
         annealed_transport_tf._filterflow_streaming_finite_sinkhorn_potentials_vjp_total  # noqa: SLF001
@@ -50,7 +74,8 @@ def test_total_sinkhorn_potential_vjp_has_explicit_epsilon0_cotangent_path() -> 
     assert "return_epsilon=True" in source
     assert "d_epsilon0" in source
     assert "_match_epsilon_cotangent_shape" in source
-    assert "stop_keys=False" in source
+    assert "_filterflow_streaming_same_points_softmin_vjp" in source
+    assert "_filterflow_streaming_softmin_vjp(" not in source
     assert "GradientTape" not in source
     assert "ForwardAccumulator" not in source
     assert ".gradient(" not in source

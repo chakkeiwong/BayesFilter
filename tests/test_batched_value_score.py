@@ -118,6 +118,33 @@ class AffineFixedTransport:
         _sign, log_abs_det = tf.linalg.slogdet(self.factor)
         return tf.fill(tf.shape(values)[:1], log_abs_det)
 
+    def pullback_score(self, z: tf.Tensor, theta_score: tf.Tensor) -> tf.Tensor:
+        del z
+        return tf.linalg.matvec(
+            self.factor,
+            tf.convert_to_tensor(theta_score, dtype=tf.float64),
+            transpose_a=True,
+        )
+
+    def pullback_score_batch(
+        self,
+        z_batch: tf.Tensor,
+        theta_score_batch: tf.Tensor,
+    ) -> tf.Tensor:
+        del z_batch
+        return tf.linalg.matmul(
+            tf.convert_to_tensor(theta_score_batch, dtype=tf.float64),
+            self.factor,
+        )
+
+    def log_abs_det_jacobian_score(self, z: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return tf.zeros_like(values)
+
+    def log_abs_det_jacobian_score_batch(self, z_batch: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        return tf.zeros_like(values)
+
 
 class NoManifestTransport(AffineFixedTransport):
     manifest_payload = None
@@ -360,6 +387,12 @@ def test_fixed_transport_value_score_adapter_batch_chain_rule_and_signature() ->
     assert len(adapter.adapter_signature()) == 64
 
 
+def test_fixed_transport_value_score_adapter_uses_no_gradient_tape() -> None:
+    source = inspect.getsource(FixedTransportValueScoreAdapter.log_prob_and_grad)
+    assert "GradientTape" not in source
+    assert "tape." not in source
+
+
 def test_fixed_transport_value_score_adapter_scalar_chain_rule() -> None:
     base = CountingBatchedQuadraticAdapter()
     transport = AffineFixedTransport()
@@ -483,6 +516,29 @@ def test_fixed_transport_adapter_fails_closed_for_missing_logdet_methods() -> No
     value, score = adapter.log_prob_and_grad(tf.zeros((3,), dtype=tf.float64))
     assert value.shape == ()
     assert score.shape == (3,)
+
+
+def test_fixed_transport_adapter_fails_closed_for_missing_pullback_methods() -> None:
+    class NoPullbackTransport(AffineFixedTransport):
+        pullback_score = None
+
+    class NoBatchPullbackTransport(AffineFixedTransport):
+        pullback_score_batch = None
+
+    with pytest.raises(TypeError, match="pullback_score"):
+        FixedTransportValueScoreAdapter(
+            base_adapter=BatchedQuadraticAdapter(),
+            transport=NoPullbackTransport(),
+            target_scope="fixed_transport_fixture",
+        )
+
+    with pytest.raises(TypeError, match="pullback_score_batch"):
+        FixedTransportValueScoreAdapter(
+            base_adapter=BatchedQuadraticAdapter(),
+            transport=NoBatchPullbackTransport(),
+            target_scope="fixed_transport_fixture",
+            batch_native=True,
+        )
 
 
 def test_latent_affine_wrapper_preserves_graph_native_base_authority() -> None:

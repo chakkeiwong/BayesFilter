@@ -997,6 +997,7 @@ class SequentialRHatHMCVerificationConfig:
     step_size: float
     num_leapfrog_steps: int
     seed: tuple[int, int]
+    min_retained_results_for_pass: int | None = None
     chain_count: int = 4
     rhat_threshold: float = 1.01
     acceptance_policy: HMCAcceptancePolicy = field(
@@ -1019,6 +1020,22 @@ class SequentialRHatHMCVerificationConfig:
         if max_results < check_interval:
             raise ValueError("max_results must be at least check_interval")
         object.__setattr__(self, "max_results", max_results)
+        min_retained = (
+            check_interval
+            if self.min_retained_results_for_pass is None
+            else int(self.min_retained_results_for_pass)
+        )
+        if min_retained <= 0:
+            raise ValueError("min_retained_results_for_pass must be positive")
+        if min_retained > max_results:
+            raise ValueError(
+                "min_retained_results_for_pass must not exceed max_results"
+            )
+        object.__setattr__(
+            self,
+            "min_retained_results_for_pass",
+            min_retained,
+        )
         burnin = int(self.num_burnin_steps)
         if burnin < 0:
             raise ValueError("num_burnin_steps must be nonnegative")
@@ -1062,6 +1079,7 @@ class SequentialRHatHMCVerificationConfig:
         return {
             "check_interval": self.check_interval,
             "max_results": self.max_results,
+            "min_retained_results_for_pass": self.min_retained_results_for_pass,
             "num_burnin_steps": self.num_burnin_steps,
             "step_size": self.step_size,
             "num_leapfrog_steps": self.num_leapfrog_steps,
@@ -4971,10 +4989,17 @@ class SequentialRHatHMCVerifier:
                 checkpoint_references.append(checkpoint_reference)
                 if checkpoint_reference_callback is not None:
                     checkpoint_reference_callback(checkpoint_reference)
-            if (
+            decision_reached = (
                 acceptance_evidence.evidence_validity != "valid"
                 or acceptance_evidence.acceptance_decision
                 != "inconclusive_evidence"
+            )
+            minimum_retained_satisfied = retained_count >= int(
+                config.min_retained_results_for_pass
+            )
+            if decision_reached and (
+                not acceptance_evidence.promotion_eligible
+                or minimum_retained_satisfied
             ):
                 passed = acceptance_evidence.promotion_eligible
                 break
@@ -4996,6 +5021,9 @@ class SequentialRHatHMCVerifier:
             "retained_sample_count": int(retained_count),
             "check_interval": int(config.check_interval),
             "max_results": int(config.max_results),
+            "min_retained_results_for_pass": int(
+                config.min_retained_results_for_pass
+            ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
             "rhat_role": "historical_explanatory_only_not_stopping_or_admission",
@@ -5003,6 +5031,9 @@ class SequentialRHatHMCVerifier:
             "finite_rhat_count": int(final_rhat["finite_rhat_count"]),
             "nonfinite_rhat_count": int(final_rhat["nonfinite_rhat_count"]),
             "all_finite_rhat_at_or_below_threshold": bool(final_rhat["passed"]),
+            "minimum_retained_pass_gate_satisfied": bool(
+                retained_count >= int(config.min_retained_results_for_pass)
+            ),
             "samples_all_finite": not any(
                 "nonfinite_retained_samples" in item.get("hard_vetoes", ())
                 for item in chunk_summaries
@@ -5118,6 +5149,9 @@ class SequentialRHatHMCVerifier:
             "chain_execution_mode": config.chain_execution_mode,
             "check_interval": int(config.check_interval),
             "max_results": int(config.max_results),
+            "min_retained_results_for_pass": int(
+                config.min_retained_results_for_pass
+            ),
             "initial_burnin_steps": int(config.num_burnin_steps),
             "continuation_burnin_steps": 0,
             "retained_sample_count": int(retained_count),
@@ -6193,7 +6227,15 @@ def _standard_trace_fn(_state: Any, kernel_results: Any) -> Mapping[str, Any]:
         "is_accepted": kernel_results.is_accepted,
         "log_accept_ratio": kernel_results.log_accept_ratio,
         "target_log_prob": kernel_results.accepted_results.target_log_prob,
+        "proposed_target_log_prob": kernel_results.proposed_results.target_log_prob,
     }
+    proposed_correction = getattr(
+        kernel_results.proposed_results,
+        "log_acceptance_correction",
+        None,
+    )
+    if proposed_correction is not None:
+        trace["log_acceptance_correction"] = proposed_correction
     trace.update(_native_divergence_trace(kernel_results))
     return trace
 
@@ -6366,6 +6408,39 @@ def _hmc_health_diagnostics(trace: Mapping[str, Any]) -> Mapping[str, Any]:
         }
     else:
         health["target_log_prob"] = {"available": False}
+    if "proposed_target_log_prob" in trace:
+        proposed_target_log_prob = tf.convert_to_tensor(
+            trace["proposed_target_log_prob"],
+            dtype=tf.float64,
+        )
+        health["proposed_target_log_prob"] = {
+            "available": True,
+            "finite": tf.reduce_all(tf.math.is_finite(proposed_target_log_prob)),
+            "min": tf.reduce_min(proposed_target_log_prob),
+            "max": tf.reduce_max(proposed_target_log_prob),
+        }
+    else:
+        health["proposed_target_log_prob"] = {"available": False}
+    if "log_acceptance_correction" in trace:
+        correction = tf.convert_to_tensor(
+            trace["log_acceptance_correction"],
+            dtype=tf.float64,
+        )
+        finite = tf.math.is_finite(correction)
+        finite_values = tf.boolean_mask(correction, finite)
+        health["log_acceptance_correction"] = {
+            "available": True,
+            "finite": tf.reduce_all(finite),
+            "finite_count": tf.reduce_sum(tf.cast(finite, tf.int32)),
+            "nonfinite_count": tf.reduce_sum(tf.cast(tf.logical_not(finite), tf.int32)),
+            "max_abs_finite": tf.cond(
+                tf.size(finite_values) > 0,
+                lambda: tf.reduce_max(tf.abs(finite_values)),
+                lambda: tf.constant(float("nan"), dtype=tf.float64),
+            ),
+        }
+    else:
+        health["log_acceptance_correction"] = {"available": False}
     return health
 
 

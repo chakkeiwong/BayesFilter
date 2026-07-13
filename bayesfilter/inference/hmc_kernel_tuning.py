@@ -23,7 +23,7 @@ import json
 import os
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -2174,6 +2174,7 @@ class HMCFixedMassStepStageConfig:
     step_repair_min_directional_factor: float = 1.25
     step_repair_high_acceptance_directional_factor: float | None = None
     step_repair_high_acceptance_ladder_max_factor: float | None = None
+    repair_nonfinite_proposal_screen: bool = False
     trajectory_window_lower_multiplier: float = 0.3
     trajectory_window_upper_multiplier: float = 3.0
     handoff_screen_policy: str = _HANDOFF_SCREEN_POLICY_PHASE22_HEURISTIC_GATE
@@ -2254,6 +2255,11 @@ class HMCFixedMassStepStageConfig:
             self,
             "step_repair_high_acceptance_ladder_max_factor",
             high_ladder_max,
+        )
+        object.__setattr__(
+            self,
+            "repair_nonfinite_proposal_screen",
+            bool(self.repair_nonfinite_proposal_screen),
         )
         lower, upper = _validate_trajectory_window_multipliers(
             self.trajectory_window_lower_multiplier,
@@ -2359,6 +2365,7 @@ class HMCFixedMassStepStageConfig:
             "step_repair_high_acceptance_ladder_max_factor": (
                 self.step_repair_high_acceptance_ladder_max_factor
             ),
+            "repair_nonfinite_proposal_screen": self.repair_nonfinite_proposal_screen,
             "trajectory_window_lower_multiplier": (
                 self.trajectory_window_lower_multiplier
             ),
@@ -3564,6 +3571,11 @@ class HMCFixedMassStepStageResult:
     _operational_selection_loop: BoundedFixedTrajectorySelectionResult | None = (
         dataclasses.field(default=None, repr=False, compare=False)
     )
+    private_runner_cache_handoff: Mapping[str, Any] = field(
+        default_factory=dict,
+        repr=False,
+        compare=False,
+    )
 
     def __post_init__(self) -> None:
         for name in (
@@ -3622,6 +3634,11 @@ class HMCFixedMassStepStageResult:
         object.__setattr__(self, "frozen_mass_invariant", dict(self.frozen_mass_invariant))
         object.__setattr__(self, "seed_report", dict(self.seed_report))
         object.__setattr__(self, "diagnostic_roles", dict(self.diagnostic_roles))
+        object.__setattr__(
+            self,
+            "private_runner_cache_handoff",
+            dict(self.private_runner_cache_handoff),
+        )
         nonclaims = tuple(str(item) for item in self.nonclaims)
         if not nonclaims:
             raise ValueError("nonclaims must be non-empty")
@@ -4640,6 +4657,7 @@ class HMCTuneVerifyRepairLoopConfig:
     step_repair_min_directional_factor: float = 1.25
     step_repair_high_acceptance_directional_factor: float | None = None
     step_repair_high_acceptance_ladder_max_factor: float | None = None
+    repair_nonfinite_proposal_screen: bool = False
     trajectory_window_lower_multiplier: float = 0.3
     trajectory_window_upper_multiplier: float = 3.0
     handoff_screen_policy: str = _HANDOFF_SCREEN_POLICY_PHASE22_HEURISTIC_GATE
@@ -4652,6 +4670,8 @@ class HMCTuneVerifyRepairLoopConfig:
     target_status_trace_policy: str = "none"
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
+    verification_chunk_max_results: int | None = None
+    verification_min_retained_results_for_pass: int | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
     staged_timeout_global_started_perf_counter_s: float | None = None
     staged_timeout_stage_started_perf_counter_s: float | None = None
@@ -4729,6 +4749,11 @@ class HMCTuneVerifyRepairLoopConfig:
             "step_repair_high_acceptance_ladder_max_factor",
             high_ladder_max,
         )
+        object.__setattr__(
+            self,
+            "repair_nonfinite_proposal_screen",
+            bool(self.repair_nonfinite_proposal_screen),
+        )
         object.__setattr__(self, "trajectory_window_lower_multiplier", lower)
         object.__setattr__(self, "trajectory_window_upper_multiplier", upper)
         object.__setattr__(
@@ -4799,6 +4824,22 @@ class HMCTuneVerifyRepairLoopConfig:
         )
         object.__setattr__(
             self,
+            "verification_chunk_max_results",
+            _validate_positive_int_or_none(
+                self.verification_chunk_max_results,
+                name="verification_chunk_max_results",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "verification_min_retained_results_for_pass",
+            _validate_positive_int_or_none(
+                self.verification_min_retained_results_for_pass,
+                name="verification_min_retained_results_for_pass",
+            ),
+        )
+        object.__setattr__(
+            self,
             "staged_timeout_policy",
             _validate_staged_timeout_policy_or_none(self.staged_timeout_policy),
         )
@@ -4846,6 +4887,7 @@ class HMCTuneVerifyRepairLoopConfig:
             "step_repair_high_acceptance_ladder_max_factor": (
                 self.step_repair_high_acceptance_ladder_max_factor
             ),
+            "repair_nonfinite_proposal_screen": self.repair_nonfinite_proposal_screen,
             "trajectory_window_lower_multiplier": self.trajectory_window_lower_multiplier,
             "trajectory_window_upper_multiplier": self.trajectory_window_upper_multiplier,
             "handoff_screen_policy": self.handoff_screen_policy,
@@ -4860,6 +4902,10 @@ class HMCTuneVerifyRepairLoopConfig:
             "target_status_trace_policy": self.target_status_trace_policy,
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": self.public_timeout_started_perf_counter_s,
+            "verification_chunk_max_results": self.verification_chunk_max_results,
+            "verification_min_retained_results_for_pass": (
+                self.verification_min_retained_results_for_pass
+            ),
             "staged_timeout_policy": None
             if self.staged_timeout_policy is None
             else self.staged_timeout_policy.payload(),
@@ -5103,6 +5149,7 @@ class HMCKernelTuningConfig:
     step_repair_min_directional_factor: float = 1.25
     step_repair_high_acceptance_directional_factor: float | None = None
     step_repair_high_acceptance_ladder_max_factor: float | None = None
+    repair_nonfinite_proposal_screen: bool = False
     trajectory_window_lower_multiplier: float = 0.3
     trajectory_window_upper_multiplier: float = 3.0
     handoff_screen_policy: str = _HANDOFF_SCREEN_POLICY_PHASE22_HEURISTIC_GATE
@@ -5125,6 +5172,8 @@ class HMCKernelTuningConfig:
     public_timeout_budget_s: float | None = None
     bootstrap_diagnostic_screen_num_results: int | None = None
     bootstrap_diagnostic_screen_num_burnin_steps: int | None = None
+    verification_chunk_max_results: int | None = None
+    verification_min_retained_results_for_pass: int | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
     staged_timeout_global_started_perf_counter_s: float | None = None
     staged_timeout_stage_started_perf_counter_s: float | None = None
@@ -5208,6 +5257,11 @@ class HMCKernelTuningConfig:
             self,
             "step_repair_high_acceptance_ladder_max_factor",
             high_ladder_max,
+        )
+        object.__setattr__(
+            self,
+            "repair_nonfinite_proposal_screen",
+            bool(self.repair_nonfinite_proposal_screen),
         )
         object.__setattr__(self, "trajectory_window_lower_multiplier", lower)
         object.__setattr__(self, "trajectory_window_upper_multiplier", upper)
@@ -5322,6 +5376,22 @@ class HMCKernelTuningConfig:
         )
         object.__setattr__(
             self,
+            "verification_chunk_max_results",
+            _validate_positive_int_or_none(
+                self.verification_chunk_max_results,
+                name="verification_chunk_max_results",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "verification_min_retained_results_for_pass",
+            _validate_positive_int_or_none(
+                self.verification_min_retained_results_for_pass,
+                name="verification_min_retained_results_for_pass",
+            ),
+        )
+        object.__setattr__(
+            self,
             "staged_timeout_policy",
             _validate_staged_timeout_policy_or_none(self.staged_timeout_policy),
         )
@@ -5399,6 +5469,7 @@ class HMCKernelTuningConfig:
         payload: dict[str, Any] = {
             "preset": "serious",
             "max_attempts": 5,
+            "repair_nonfinite_proposal_screen": True,
             "source": "bayesfilter.inference.tune_hmc_kernel.serious",
         }
         payload.update(overrides)
@@ -5430,6 +5501,7 @@ class HMCKernelTuningConfig:
             "step_repair_high_acceptance_ladder_max_factor": (
                 self.step_repair_high_acceptance_ladder_max_factor
             ),
+            "repair_nonfinite_proposal_screen": self.repair_nonfinite_proposal_screen,
             "trajectory_window_lower_multiplier": self.trajectory_window_lower_multiplier,
             "trajectory_window_upper_multiplier": self.trajectory_window_upper_multiplier,
             "handoff_screen_policy": self.handoff_screen_policy,
@@ -5460,6 +5532,13 @@ class HMCKernelTuningConfig:
             ),
             "bootstrap_diagnostic_sizing_claim": (
                 "public observability diagnostic only; not sampler promotion"
+            ),
+            "verification_chunk_max_results": self.verification_chunk_max_results,
+            "verification_min_retained_results_for_pass": (
+                self.verification_min_retained_results_for_pass
+            ),
+            "verification_compile_sizing_claim": (
+                "XLA compile-shape policy only; not a reduced verification evidence gate"
             ),
             "geometry_scaled_budget_timing_policy": (
                 _geometry_scaled_budget_timing_policy().payload()
@@ -7394,6 +7473,8 @@ def run_hmc_fixed_mass_step_stage(
     public_timeout_closeout: Mapping[str, Any] | None = None
     previous_edge_direction: str | None = None
     previous_selected_l: int | None = None
+    joint_runner_cache: dict[str, Any] = {}
+    joint_runner_contract_payloads: dict[str, Mapping[str, Any]] = {}
     for edge_round in range(_JOINT_L_EPSILON_MAX_EDGE_REPAIR_ROUNDS + 1):
         grid_values = _joint_l_epsilon_grid_values(
             anchor_l=current_anchor_l,
@@ -7422,6 +7503,8 @@ def run_hmc_fixed_mass_step_stage(
             progress_callback=_progress_callback,
             progress_attempt_index=progress_attempt,
             private_diagnostic_callback=_private_diagnostic_callback,
+            shared_runner_cache=joint_runner_cache,
+            shared_runner_contract_payloads=joint_runner_contract_payloads,
         )
         joint_rounds.append(round_payload)
         joint_candidates.extend(tuple(round_payload["candidates"]))
@@ -7487,6 +7570,8 @@ def run_hmc_fixed_mass_step_stage(
             progress_callback=_progress_callback,
             progress_attempt_index=progress_attempt,
             private_diagnostic_callback=_private_diagnostic_callback,
+            shared_runner_cache=joint_runner_cache,
+            shared_runner_contract_payloads=joint_runner_contract_payloads,
         )
         joint_rounds.append(final_round)
         joint_candidates.extend(tuple(final_round["candidates"]))
@@ -7752,6 +7837,16 @@ def run_hmc_fixed_mass_step_stage(
             "callback_continuation_veto": "continuation_veto",
             "callback_promotion_veto": "repair_trigger",
             "runtime": "explanatory_or_hard_veto_when_missing",
+        },
+        private_runner_cache_handoff={
+            "source": "fixed_mass_step_private_runner_cache_handoff",
+            "runner_cache": joint_runner_cache,
+            "runner_contract_payloads": joint_runner_contract_payloads,
+            "dynamic_num_leapfrog_steps": True,
+            "handoff_role": "trajectory_compile_reuse_only",
+            "public_payload_excludes_live_runner_objects": True,
+            "reports_posterior_convergence": False,
+            "reports_sampler_superiority": False,
         },
     )
     selected_source_key = (
@@ -8045,6 +8140,7 @@ def run_hmc_frozen_step_trajectory_stage(
     _progress_callback: LoopProgressCallback | None = None,
     _attempt_index: int | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    _runner_cache_handoff: Mapping[str, Any] | None = None,
 ) -> HMCFrozenStepTrajectoryStageResult:
     """Run Phase 6 frozen-step trajectory tuning from a passed Phase 5 handoff.
 
@@ -8125,8 +8221,19 @@ def run_hmc_frozen_step_trajectory_stage(
         run_full_chain is run_full_chain_tfp_hmc
         and cfg.chain_execution_mode == "tf_function"
     )
-    runner_cache: dict[str, Any] = {}
-    runner_contract_payloads: dict[str, Mapping[str, Any]] = {}
+    handoff = {} if _runner_cache_handoff is None else dict(_runner_cache_handoff)
+    runner_cache = _coerce_private_runner_cache_handoff_mapping(
+        handoff.get("runner_cache")
+    )
+    runner_contract_payloads = _coerce_private_runner_contract_handoff_mapping(
+        handoff.get("runner_contract_payloads")
+    )
+    initial_handoff_contract_count = len(runner_contract_payloads)
+    runner_handoff_source = (
+        "none"
+        if initial_handoff_contract_count == 0 and not runner_cache
+        else str(handoff.get("source", "fixed_mass_step_private_runner_cache_handoff"))
+    )
     runner_route_events: list[Mapping[str, Any]] = []
     candidate_elapsed_s: list[float] = []
     stage_start = time.perf_counter()
@@ -8227,6 +8334,10 @@ def run_hmc_frozen_step_trajectory_stage(
                     "candidate_index": candidate_index,
                     "num_leapfrog_steps": int(leapfrog_count),
                     "step_size": frozen_step,
+                    "runner_cache_handoff_source": runner_handoff_source,
+                    "runner_cache_handoff_initial_contract_count": int(
+                        initial_handoff_contract_count
+                    ),
                 },
                 dynamic_num_leapfrog_steps=True,
             )
@@ -8599,9 +8710,11 @@ def run_hmc_frozen_step_trajectory_stage(
                 contract_payloads=runner_contract_payloads,
                 semantic_source="run_hmc_frozen_step_trajectory_stage",
                 reuse_nonclaim=(
-                    "candidate L values often differ, so this stage may gain "
-                    "uniform route telemetry more than warm-call reuse"
+                    "candidate L values often differ, but compatible selected-pair "
+                    "handoff screens may reuse a fixed-mass screen runner"
                 ),
+                handoff_source=runner_handoff_source,
+                initial_handoff_contract_count=initial_handoff_contract_count,
             ),
             soft_deadline_closeout=soft_deadline_closeout,
             expected_candidate_count=len(candidates),
@@ -8635,12 +8748,43 @@ def run_hmc_frozen_step_trajectory_stage(
     )
 
 
+def _coerce_private_runner_cache_handoff_mapping(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("private runner cache handoff must be a mapping")
+    return dict(value)
+
+
+def _coerce_private_runner_contract_handoff_mapping(
+    value: Any,
+) -> dict[str, Mapping[str, Any]]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("private runner contract handoff must be a mapping")
+    return {str(key): dict(payload) for key, payload in value.items()}
+
+
 def _callable_accepts_private_diagnostic_callback(callback: Callable[..., Any]) -> bool:
     try:
         parameters = inspect.signature(callback).parameters
     except (TypeError, ValueError):
         return callback is run_hmc_frozen_step_trajectory_stage
     if "_private_diagnostic_callback" in parameters:
+        return True
+    return any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    )
+
+
+def _callable_accepts_runner_cache_handoff(callback: Callable[..., Any]) -> bool:
+    try:
+        parameters = inspect.signature(callback).parameters
+    except (TypeError, ValueError):
+        return callback is run_hmc_frozen_step_trajectory_stage
+    if "_runner_cache_handoff" in parameters:
         return True
     return any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
@@ -9499,6 +9643,12 @@ def run_hmc_tune_verify_repair_loop(
                         ):
                             trajectory_kwargs["_private_diagnostic_callback"] = (
                                 _private_diagnostic_callback
+                            )
+                        if _callable_accepts_runner_cache_handoff(
+                            _frozen_step_trajectory_stage_runner
+                        ):
+                            trajectory_kwargs["_runner_cache_handoff"] = (
+                                fixed_stage.private_runner_cache_handoff
                             )
                         trajectory_stage = _frozen_step_trajectory_stage_runner(
                             **trajectory_kwargs
@@ -11462,6 +11612,7 @@ def _public_loop_config(
         step_repair_high_acceptance_ladder_max_factor=(
             config.step_repair_high_acceptance_ladder_max_factor
         ),
+        repair_nonfinite_proposal_screen=config.repair_nonfinite_proposal_screen,
         trajectory_window_lower_multiplier=config.trajectory_window_lower_multiplier,
         trajectory_window_upper_multiplier=config.trajectory_window_upper_multiplier,
         handoff_screen_policy=config.handoff_screen_policy,
@@ -11476,6 +11627,10 @@ def _public_loop_config(
         target_status_trace_policy=config.target_status_trace_policy,
         public_timeout_budget_s=config.public_timeout_budget_s,
         public_timeout_started_perf_counter_s=public_timeout_started_perf_counter_s,
+        verification_chunk_max_results=config.verification_chunk_max_results,
+        verification_min_retained_results_for_pass=(
+            config.verification_min_retained_results_for_pass
+        ),
         staged_timeout_policy=config.staged_timeout_policy,
         staged_timeout_global_started_perf_counter_s=(
             config.staged_timeout_global_started_perf_counter_s
@@ -15561,6 +15716,7 @@ def _phase7_fixed_step_stage_config(
         step_repair_high_acceptance_ladder_max_factor=(
             config.step_repair_high_acceptance_ladder_max_factor
         ),
+        repair_nonfinite_proposal_screen=config.repair_nonfinite_proposal_screen,
         trajectory_window_lower_multiplier=config.trajectory_window_lower_multiplier,
         trajectory_window_upper_multiplier=config.trajectory_window_upper_multiplier,
         handoff_screen_policy=config.handoff_screen_policy,
@@ -15777,6 +15933,7 @@ def _fixed_mass_step_stage_ladder_config(
         step_repair_high_acceptance_ladder_max_factor=(
             config.step_repair_high_acceptance_ladder_max_factor
         ),
+        repair_nonfinite_proposal_screen=config.repair_nonfinite_proposal_screen,
         step_repair_max_step_size=None
         if attempt_state is None
         else attempt_state.verification_repair_max_step_size,
@@ -16058,6 +16215,85 @@ def _joint_l_epsilon_ladder_candidate_payload(
     }
 
 
+def _joint_l_epsilon_ladder_private_diagnostic_summary(
+    ladder: FixedMassHMCTuningBudgetLadderResult,
+) -> Mapping[str, Any]:
+    """Summarize the last fixed-mass ladder round for private diagnostics only."""
+
+    if not ladder.rounds:
+        return {
+            "available": False,
+            "reason": "ladder_has_no_rounds",
+            "private_hmc_mechanics": True,
+            "reports_posterior_convergence": False,
+        }
+    last_round = ladder.rounds[-1]
+    tune = dict(last_round.tune_diagnostics)
+    screen = dict(last_round.screen_diagnostics)
+    return {
+        "available": True,
+        "round_index": int(last_round.round_index),
+        "classification": last_round.classification,
+        "diagnostic_role": last_round.diagnostic_role,
+        "hard_vetoes": last_round.hard_vetoes,
+        "repair_triggers": last_round.repair_triggers,
+        "tune": _private_log_accept_diagnostic_summary(tune),
+        "screen": _private_log_accept_diagnostic_summary(screen),
+        "private_hmc_mechanics": True,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "nonclaims": FIXED_MASS_STEP_STAGE_NONCLAIMS,
+    }
+
+
+def _private_log_accept_diagnostic_summary(
+    diagnostics: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    trace_summary = diagnostics.get("trace_summary")
+    trace_keys = ()
+    trace_unavailability = None
+    if isinstance(trace_summary, Mapping):
+        trace_keys = tuple(str(item) for item in trace_summary.get("trace_keys", ()))
+        trace_unavailability = trace_summary.get("trace_unavailability")
+    return {
+        "acceptance_rate": _scalar_or_none(diagnostics.get("acceptance_rate")),
+        "log_accept_ratio_finite": diagnostics.get("log_accept_ratio_finite"),
+        "log_accept_ratio_diagnostic_source": diagnostics.get(
+            "log_accept_ratio_diagnostic_source"
+        ),
+        "log_accept_ratio_summary": diagnostics.get("log_accept_ratio_summary"),
+        "max_abs_log_accept_ratio": _scalar_or_none(
+            diagnostics.get("max_abs_log_accept_ratio")
+        ),
+        "target_log_prob_finite": diagnostics.get("target_log_prob_finite"),
+        "target_log_prob_diagnostic_source": diagnostics.get(
+            "target_log_prob_diagnostic_source"
+        ),
+        "target_log_prob_summary": diagnostics.get("target_log_prob_summary"),
+        "proposed_target_log_prob_finite": diagnostics.get(
+            "proposed_target_log_prob_finite"
+        ),
+        "proposed_target_log_prob_diagnostic_source": diagnostics.get(
+            "proposed_target_log_prob_diagnostic_source"
+        ),
+        "proposed_target_log_prob_summary": diagnostics.get(
+            "proposed_target_log_prob_summary"
+        ),
+        "log_acceptance_correction_finite": diagnostics.get(
+            "log_acceptance_correction_finite"
+        ),
+        "log_acceptance_correction_diagnostic_source": diagnostics.get(
+            "log_acceptance_correction_diagnostic_source"
+        ),
+        "log_acceptance_correction_summary": diagnostics.get(
+            "log_acceptance_correction_summary"
+        ),
+        "samples_all_finite": diagnostics.get("samples_all_finite"),
+        "trace_keys": trace_keys,
+        "trace_unavailability": trace_unavailability,
+    }
+
+
 def _joint_l_epsilon_ladder_error_candidate_payload(
     *,
     round_index: int,
@@ -16294,12 +16530,20 @@ def _run_joint_l_epsilon_grid_round(
     progress_callback: LoopProgressCallback | None,
     progress_attempt_index: int,
     private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    shared_runner_cache: dict[str, Any] | None = None,
+    shared_runner_contract_payloads: dict[str, Mapping[str, Any]] | None = None,
 ) -> Mapping[str, Any]:
     candidates: list[Mapping[str, Any]] = []
     ladders_by_candidate_index: dict[int, FixedMassHMCTuningBudgetLadderResult] = {}
     run_errors: list[Mapping[str, Any]] = []
     grid = tuple(int(item) for item in grid_values)
     public_timeout_closeout: Mapping[str, Any] | None = None
+    runner_cache = {} if shared_runner_cache is None else shared_runner_cache
+    runner_contract_payloads = (
+        {}
+        if shared_runner_contract_payloads is None
+        else shared_runner_contract_payloads
+    )
     for candidate_index, leapfrog_count in enumerate(grid):
         soft_deadline_veto = _fixed_mass_step_next_candidate_soft_deadline_veto(
             config,
@@ -16386,8 +16630,14 @@ def _run_joint_l_epsilon_grid_round(
                 screen_callback=screen_callback,
                 progress_callback=forward_ladder_progress,
                 run_full_chain=run_full_chain,
+                _runner_cache=runner_cache,
+                _runner_contract_payloads=runner_contract_payloads,
+                _dynamic_num_leapfrog_steps=True,
             )
             ladders_by_candidate_index[int(candidate_index)] = ladder
+            ladder_private_summary = _joint_l_epsilon_ladder_private_diagnostic_summary(
+                ladder
+            )
             candidates.append(
                 _joint_l_epsilon_ladder_candidate_payload(
                     round_index=round_index,
@@ -16457,6 +16707,9 @@ def _run_joint_l_epsilon_grid_round(
                         ),
                         "repair_triggers": candidate_payload.get(
                             "repair_triggers", ()
+                        ),
+                        "last_ladder_round_private_diagnostics": (
+                            ladder_private_summary
                         ),
                         "ladder_artifact_hash": candidate_payload.get(
                             "ladder_artifact_hash"
@@ -17088,6 +17341,7 @@ def _run_kernel_stage_with_optional_reusable_route(
             "call_config_hash": stable_config_hash(config.signature_payload()),
             "runner_reused": False,
             "used_single_use_runner": run_full_chain is run_full_chain_tfp_hmc,
+            "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
         }
         route_events.append(route_event)
         return run_full_chain(adapter, initial_state, config)
@@ -17128,6 +17382,7 @@ def _run_kernel_stage_with_optional_reusable_route(
         "call_config_hash": stable_config_hash(config.signature_payload()),
         "runner_reused": runner_reused,
         "used_single_use_runner": False,
+        "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
     }
     route_events.append(route_event)
     metadata = {
@@ -17204,10 +17459,16 @@ def _kernel_stage_runner_route_summary(
     contract_payloads: Mapping[str, Mapping[str, Any]],
     semantic_source: str,
     reuse_nonclaim: str,
+    handoff_source: str | None = None,
+    initial_handoff_contract_count: int = 0,
 ) -> Mapping[str, Any]:
     return {
         "active_route": str(active_route),
         "semantic_source": str(semantic_source),
+        "runner_cache_handoff_source": (
+            None if handoff_source is None else str(handoff_source)
+        ),
+        "initial_handoff_contract_count": int(initial_handoff_contract_count),
         "reusable_runner_build_count": len(contract_payloads),
         "distinct_static_runner_contract_count": len(contract_payloads),
         "single_use_build_count": sum(
@@ -19223,7 +19484,16 @@ def _run_phase7_sequential_rhat_final_verification(
         else verification_input.target_scope
     )
     max_results = int(budget_policy.verification_num_results)
-    check_interval = min(64, max_results)
+    configured_chunk = config.verification_chunk_max_results
+    check_interval = min(
+        64 if configured_chunk is None else int(configured_chunk),
+        max_results,
+    )
+    min_retained_for_pass = (
+        check_interval
+        if config.verification_min_retained_results_for_pass is None
+        else min(int(config.verification_min_retained_results_for_pass), max_results)
+    )
     acceptance_policy = HMCAcceptancePolicy(
         target=config.target_accept_prob,
         practical_region=config.acceptance_band,
@@ -19236,6 +19506,7 @@ def _run_phase7_sequential_rhat_final_verification(
         step_size=step,
         num_leapfrog_steps=int(leapfrog),
         seed=verification_seed,
+        min_retained_results_for_pass=min_retained_for_pass,
         chain_count=4,
         rhat_threshold=1.01,
         acceptance_policy=acceptance_policy,
@@ -19378,6 +19649,27 @@ def _run_phase7_sequential_rhat_final_verification(
         diagnostics["rhat_threshold"] = 1.01
         diagnostics["check_interval"] = check_interval
         diagnostics["max_results"] = max_results
+        diagnostics["verification_min_retained_results_for_pass"] = (
+            min_retained_for_pass
+        )
+    retained_count = _scalar_or_none(diagnostics.get("retained_sample_count"))
+    retained_count_int = 0 if retained_count is None else int(retained_count)
+    rhat_passed_before_minimum = (
+        diagnostics.get("all_finite_rhat_at_or_below_threshold") is True
+        and retained_count_int < int(min_retained_for_pass)
+    )
+    if rhat_passed_before_minimum:
+        diagnostics["all_finite_rhat_at_or_below_threshold"] = False
+        diagnostics["rhat_passed_before_minimum_retained_count"] = True
+    else:
+        diagnostics["rhat_passed_before_minimum_retained_count"] = False
+    diagnostics["verification_min_retained_results_for_pass"] = int(
+        min_retained_for_pass
+    )
+    diagnostics["verification_retained_sample_count"] = int(retained_count_int)
+    diagnostics["verification_min_retained_pass_gate_satisfied"] = bool(
+        retained_count_int >= int(min_retained_for_pass)
+    )
     diagnostics["diagnostic_context"] = "phase7_sequential_rhat_fixed_kernel_verification"
     diagnostics["nonclaims"] = TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS
     diagnostics["verification_budget"] = budget_policy.payload()
@@ -19389,6 +19681,12 @@ def _run_phase7_sequential_rhat_final_verification(
         "check_interval": check_interval,
         "rhat_threshold": 1.01,
         "max_results": max_results,
+        "verification_chunk_max_results": configured_chunk,
+        "minimum_retained_results_for_pass": int(min_retained_for_pass),
+        "retained_sample_count": int(retained_count_int),
+        "minimum_retained_pass_gate_satisfied": bool(
+            retained_count_int >= int(min_retained_for_pass)
+        ),
         "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
         "handoff_gate": "dependence_aware_acceptance_evidence_and_hard_health",
         "stopping_rule": "stop_at_first_fixed_checkpoint_with_typed_acceptance_decision",
@@ -19397,6 +19695,9 @@ def _run_phase7_sequential_rhat_final_verification(
         "target_status_trace_policy": config.target_status_trace_policy,
         "retained_target_health_policy": (
             "finite_value_and_score_per_retained_chain_batch"
+        ),
+        "early_rhat_pass_before_minimum_retained_count": (
+            "continue_until_minimum_retained_count; rhat_remains_explanatory"
         ),
         "mechanics_publicized": False,
     }
@@ -19414,6 +19715,7 @@ def _run_phase7_sequential_rhat_final_verification(
         "verification_policy": "sequential_rhat",
         "check_interval": check_interval,
         "max_results": max_results,
+        "minimum_retained_results_for_pass": int(min_retained_for_pass),
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
@@ -19790,6 +20092,16 @@ def _classify_phase7_acceptance_evidence_verification(
             "candidate_local_hard_veto",
             tuple(dict.fromkeys(callback_result.hard_vetoes)),
             (),
+        )
+    if (
+        evidence.promotion_eligible
+        and diagnostics.get("verification_min_retained_pass_gate_satisfied") is not True
+    ):
+        return (
+            "repair_or_retry",
+            "verification_minimum_retained_repair_trigger",
+            (),
+            ("verification_minimum_retained_results_not_reached",),
         )
 
     callback_repairs = tuple(dict.fromkeys(callback_result.repair_triggers))

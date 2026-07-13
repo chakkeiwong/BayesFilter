@@ -128,6 +128,29 @@ class FrozenAffineDiagonalTransport:
             self.raw_scale
         )
 
+    def pullback_score(self, z: Any, theta_score: Any) -> tf.Tensor:
+        score = tf.convert_to_tensor(theta_score, dtype=tf.float64)
+        return score * tf.cast(self.scale, score.dtype)
+
+    def pullback_score_batch(self, z_batch: Any, theta_score_batch: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("frozen transport batch input must have rank 2")
+        score = tf.convert_to_tensor(theta_score_batch, dtype=values.dtype)
+        if score.shape.rank != 2:
+            raise ValueError("frozen transport batch score must have rank 2")
+        return score * tf.cast(self.scale, score.dtype)
+
+    def log_abs_det_jacobian_score(self, z: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z, dtype=tf.float64)
+        return tf.zeros_like(values)
+
+    def log_abs_det_jacobian_score_batch(self, z_batch: Any) -> tf.Tensor:
+        values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
+        if values.shape.rank != 2:
+            raise ValueError("frozen transport batch input must have rank 2")
+        return tf.zeros_like(values)
+
 
 class FrozenDenseIAFTransport:
     """Frozen composed dense-IAF transport loaded from a reviewed manifest."""

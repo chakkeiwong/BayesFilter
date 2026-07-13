@@ -139,7 +139,7 @@ def test_same_target_lgssm_runner_preserves_leaderboard_identity_without_cpu_hid
     assert "runtime_rankable_with_frozen_non_ledh" in source
 
 
-def test_ledh_inclusive_results_merge_admits_phase5_value_score_rows() -> None:
+def test_ledh_inclusive_results_merge_blocks_legacy_score_memory_candidates() -> None:
     module = _load_results_module()
     payload = module.build_artifact()
 
@@ -152,32 +152,41 @@ def test_ledh_inclusive_results_merge_admits_phase5_value_score_rows() -> None:
     sir = by_key[("zhao_cui_spatial_sir_austria_j9_T20", "ledh_pfpf_ot")]
 
     assert payload["metadata_date"] == "2026-07-06"
-    assert lgssm["comparison_status"] == "executed_value_score"
-    assert lgssm["target_match_status"] == "same_target_value_score"
-    assert isinstance(lgssm["score"], list)
-    assert len(lgssm["score"]) == 5
-    assert lgssm["score_l2_norm"] is not None
-    assert lgssm["score_status"] == "admitted_same_target_no_tape_score_n10000"
-    assert lgssm["score_derivative_provenance"] == (
+    assert payload["manifest"]["score_admission_policy"] == (
+        "phase1_validated_compact_score_artifact_required_for_admission"
+    )
+
+    assert lgssm["comparison_status"] == "executed_value_only_score_blocked"
+    assert lgssm["target_match_status"] == "same_target_value_only"
+    assert lgssm["score"] is None
+    assert lgssm["score_l2_norm"] is None
+    assert lgssm["score_status"] == "blocked_score_until_same_target_no_tape_gate"
+    assert lgssm["score_derivative_provenance"] is None
+    assert lgssm["score_candidate_derivative_provenance"] == (
         "compact_forward_sensitivity_no_autodiff_same_scalar_lgssm_ledh_pfpf_ot"
     )
-    assert lgssm["score_evidence_artifact"].endswith(
+    assert lgssm["score_candidate_admission_status"] == "legacy_raw_score_memory_not_admitted"
+    assert lgssm["score_candidate_artifact"].endswith(
         "ledh-phase5-lgssm-score-memory-n10000-2026-07-06.json"
     )
+    assert "lacks the Phase 1 score artifact schema" in lgssm["score_status_reason"]
     assert lgssm["runtime_rankable"] is False
     assert abs(lgssm["average_log_likelihood"] + 2.719201477050781) < 1e-12
 
-    assert sir["comparison_status"] == "executed_value_score"
-    assert isinstance(sir["score"], list)
-    assert len(sir["score"]) == 3
-    assert sir["score_l2_norm"] is not None
-    assert sir["score_status"] == "admitted_same_target_no_tape_score_n10000"
-    assert sir["score_derivative_provenance"] == (
+    assert sir["comparison_status"] == "executed_value_only_score_blocked"
+    assert sir["score"] is None
+    assert sir["score_l2_norm"] is None
+    assert sir["score_status"] == "blocked_score_until_same_target_no_tape_gate"
+    assert sir["score_derivative_provenance"] is None
+    assert sir["score_candidate_derivative_provenance"] == (
         "manual_total_vjp_no_autodiff_same_scalar_fixed_sir_logscale_ledh_pfpf_ot"
     )
-    assert sir["score_evidence_artifact"].endswith(
+    assert sir["score_candidate_admission_status"] == "historical_diagnostic_not_admitted"
+    assert sir["score_candidate_artifact"].endswith(
         "ledh-phase5-fixed-sir-score-memory-n10000-2026-07-06.json"
     )
+    assert sir["score_evidence_artifact"] is None
+    assert sir["score_status_reason"].startswith("historical manual_total_vjp")
     assert sir["target_match_status"] == "sir_log_scale_theta_observed_data_value_score"
     assert sir["runtime_rankable"] is False
     assert sir["mc_standard_error"] is not None
@@ -203,7 +212,7 @@ def test_ledh_inclusive_results_preserve_blocked_and_scoped_ledh_rows() -> None:
         if row["algorithm_id"] == "ledh_pfpf_ot"
     }
 
-    admitted = {
+    value_only_blocked_score = {
         "benchmark_lgssm_exact_oracle_m3_T50",
         "zhao_cui_spatial_sir_austria_j9_T20",
     }
@@ -214,9 +223,11 @@ def test_ledh_inclusive_results_preserve_blocked_and_scoped_ledh_rows() -> None:
         "zhao_cui_generalized_sv_synthetic_from_estimated_values",
     }
 
-    for row_id in admitted:
-        assert ledh_by_row[row_id]["comparison_status"] == "executed_value_score"
-        assert ledh_by_row[row_id]["score_status"] == "admitted_same_target_no_tape_score_n10000"
+    for row_id in value_only_blocked_score:
+        assert ledh_by_row[row_id]["comparison_status"] == "executed_value_only_score_blocked"
+        assert ledh_by_row[row_id]["score_status"] == "blocked_score_until_same_target_no_tape_gate"
+        assert ledh_by_row[row_id]["score"] is None
+        assert ledh_by_row[row_id]["score_derivative_provenance"] is None
 
     for row_id in blocked:
         assert ledh_by_row[row_id]["comparison_status"] == "blocked"

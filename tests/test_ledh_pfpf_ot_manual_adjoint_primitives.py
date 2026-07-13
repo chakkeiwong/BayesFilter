@@ -1237,6 +1237,86 @@ def _streaming_softmin_vjp_diagnostics(
     }
 
 
+def _streaming_same_points_softmin_vjp_diagnostics(
+    *,
+    batch_size: int,
+    num_particles: int,
+    state_dim: int,
+    row_chunk_size: int,
+    col_chunk_size: int,
+) -> dict[str, float]:
+    epsilon, query, _key, _fixture_values, _fixture_upstream = _softmin_vjp_fixture(
+        batch_size,
+        num_particles,
+        num_particles,
+        state_dim,
+    )
+    points = query
+    values = tf.reshape(
+        tf.linspace(
+            tf.constant(-0.17, DTYPE),
+            tf.constant(0.23, DTYPE),
+            batch_size * num_particles,
+        ),
+        [batch_size, num_particles],
+    )
+    upstream = _cotangent((batch_size, num_particles), scale=0.035)
+    generic = annealed_transport_tf._filterflow_streaming_softmin_vjp(  # noqa: SLF001
+        epsilon,
+        points,
+        points,
+        values,
+        upstream,
+        row_chunk_size=row_chunk_size,
+        col_chunk_size=col_chunk_size,
+        stop_keys=False,
+        return_epsilon=True,
+    )
+    same_points = annealed_transport_tf._filterflow_streaming_same_points_softmin_vjp(  # noqa: SLF001
+        epsilon,
+        points,
+        values,
+        upstream,
+        row_chunk_size=row_chunk_size,
+        col_chunk_size=col_chunk_size,
+        return_epsilon=True,
+    )
+    generic_d_points = generic[0] + generic[1]
+    dense = _dense_softmin_query_key_value_vjp(
+        epsilon,
+        points,
+        points,
+        values,
+        upstream,
+        stop_keys=False,
+    )
+    dense_d_points = dense[0] + dense[1]
+    generic_error = max(
+        _assert_near(same_points[0], generic_d_points, VJP_ATOL),
+        _assert_near(same_points[1], generic[2], VJP_ATOL),
+        _assert_near(same_points[2], generic[3], VJP_ATOL),
+    )
+    dense_error = max(
+        _assert_near(same_points[0], dense_d_points, VJP_ATOL),
+        _assert_near(same_points[1], dense[2], VJP_ATOL),
+    )
+    finite = float(
+        tf.reduce_all(
+            tf.stack(
+                [
+                    tf.reduce_all(tf.math.is_finite(part))
+                    for part in same_points
+                ]
+            )
+        ).numpy()
+    )
+    return {
+        "streaming_same_points_softmin_vjp_generic_max_abs_error": generic_error,
+        "streaming_same_points_softmin_vjp_dense_max_abs_error": dense_error,
+        "streaming_same_points_softmin_vjp_finite": finite,
+    }
+
+
 def _streaming_transport_from_potentials_vjp_diagnostics(
     *,
     batch_size: int,
@@ -1573,6 +1653,33 @@ def test_streaming_softmin_vjp_matches_dense_and_tiny_autodiff(case: dict[str, A
     assert diagnostics["streaming_softmin_vjp_autodiff_max_abs_error"] <= VJP_ATOL
     assert diagnostics["streaming_softmin_vjp_stopped_key_leakage"] <= VJP_ATOL
     assert diagnostics["streaming_softmin_vjp_finite"] == 1.0
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        {
+            "batch_size": 1,
+            "num_particles": 4,
+            "state_dim": 2,
+            "row_chunk_size": 2,
+            "col_chunk_size": 2,
+        },
+        {
+            "batch_size": 2,
+            "num_particles": 5,
+            "state_dim": 2,
+            "row_chunk_size": 2,
+            "col_chunk_size": 3,
+        },
+    ],
+)
+def test_streaming_same_points_softmin_vjp_matches_generic_route(case: dict[str, Any]) -> None:
+    diagnostics = _streaming_same_points_softmin_vjp_diagnostics(**case)
+
+    assert diagnostics["streaming_same_points_softmin_vjp_generic_max_abs_error"] <= VJP_ATOL
+    assert diagnostics["streaming_same_points_softmin_vjp_dense_max_abs_error"] <= VJP_ATOL
+    assert diagnostics["streaming_same_points_softmin_vjp_finite"] == 1.0
 
 
 @pytest.mark.parametrize(

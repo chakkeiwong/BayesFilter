@@ -116,6 +116,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
     step_repair_high_acceptance_directional_factor: float | None = None
     step_repair_high_acceptance_ladder_max_factor: float | None = None
     step_repair_max_step_size: float | None = None
+    repair_nonfinite_proposal_screen: bool = False
     tune_num_results: int = 16
     screen_num_results: int = 32
     screen_num_burnin_steps: int = 8
@@ -218,6 +219,11 @@ class FixedMassHMCTuningBudgetLadderConfig:
         if max_step is not None and (not np.isfinite(max_step) or max_step <= 0.0):
             raise ValueError("step_repair_max_step_size must be positive and finite")
         object.__setattr__(self, "step_repair_max_step_size", max_step)
+        object.__setattr__(
+            self,
+            "repair_nonfinite_proposal_screen",
+            bool(self.repair_nonfinite_proposal_screen),
+        )
         for name in ("tune_num_results", "screen_num_results", "screen_num_burnin_steps"):
             value = int(getattr(self, name))
             if value <= 0:
@@ -337,6 +343,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
                 self.step_repair_high_acceptance_ladder_max_factor
             ),
             "step_repair_max_step_size": self.step_repair_max_step_size,
+            "repair_nonfinite_proposal_screen": self.repair_nonfinite_proposal_screen,
             "tune_num_results": self.tune_num_results,
             "screen_num_results": self.screen_num_results,
             "screen_num_burnin_steps": self.screen_num_burnin_steps,
@@ -690,6 +697,9 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
     screen_callback: ScreenCallback | None = None,
     progress_callback: ProgressCallback | None = None,
     run_full_chain: RunFullChainFn = run_full_chain_tfp_hmc,
+    _runner_cache: dict[str, Any] | None = None,
+    _runner_contract_payloads: dict[str, Mapping[str, Any]] | None = None,
+    _dynamic_num_leapfrog_steps: bool = False,
 ) -> FixedMassHMCTuningBudgetLadderResult:
     """Run a finite fixed-mass HMC tuning-budget ladder.
 
@@ -725,8 +735,10 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
         run_full_chain is run_full_chain_tfp_hmc
         and config.chain_execution_mode == "tf_function"
     )
-    runner_cache: dict[str, Any] = {}
-    runner_contract_payloads: dict[str, Mapping[str, Any]] = {}
+    runner_cache = {} if _runner_cache is None else _runner_cache
+    runner_contract_payloads = (
+        {} if _runner_contract_payloads is None else _runner_contract_payloads
+    )
     runner_route_events: list[Mapping[str, Any]] = []
     initial_bracket_state = config.initial_fixed_mass_bracket_state
     pending_repair_screen_step: float | None = (
@@ -858,6 +870,7 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                     role="repair_screen",
                     round_index=round_index,
                     budget=budget,
+                    dynamic_num_leapfrog_steps=_dynamic_num_leapfrog_steps,
                 )
                 _emit_budget_ladder_boundary_progress(
                     progress_callback,
@@ -1075,6 +1088,7 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 role="tune",
                 round_index=round_index,
                 budget=budget,
+                dynamic_num_leapfrog_steps=_dynamic_num_leapfrog_steps,
             )
             _emit_budget_ladder_boundary_progress(
                 progress_callback,
@@ -1217,6 +1231,7 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 role="screen",
                 round_index=round_index,
                 budget=budget,
+                dynamic_num_leapfrog_steps=_dynamic_num_leapfrog_steps,
             )
             _emit_budget_ladder_boundary_progress(
                 progress_callback,
@@ -1559,7 +1574,17 @@ def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]
         ),
         "log_accept_ratio_finite": None,
         "max_abs_log_accept_ratio": None,
+        "log_accept_ratio_diagnostic_source": "missing",
+        "log_accept_ratio_summary": None,
         "target_log_prob_finite": None,
+        "target_log_prob_diagnostic_source": "missing",
+        "target_log_prob_summary": None,
+        "proposed_target_log_prob_finite": None,
+        "proposed_target_log_prob_diagnostic_source": "missing",
+        "proposed_target_log_prob_summary": None,
+        "log_acceptance_correction_finite": None,
+        "log_acceptance_correction_diagnostic_source": "missing",
+        "log_acceptance_correction_summary": None,
         "samples_all_finite": None,
         "raw_diagnostics": _json_ready(diagnostics),
         "runtime_metadata": _json_ready(run_result.metadata),
@@ -1575,15 +1600,144 @@ def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]
         payload["max_abs_log_accept_ratio"] = (
             None if not np.any(finite) else float(np.max(np.abs(log_accept[finite])))
         )
+        payload["log_accept_ratio_diagnostic_source"] = "trace"
+        payload["log_accept_ratio_summary"] = {
+            "source": "trace",
+            "available": True,
+            "finite_count": int(np.sum(finite)),
+            "nonfinite_count": int(np.sum(~finite)),
+            "total_count": int(log_accept.size),
+            "max_abs_finite": payload["max_abs_log_accept_ratio"],
+        }
+    else:
+        summary = _finite_count_summary_payload(
+            diagnostics,
+            finite_key="log_accept_ratio_finite_count",
+            nonfinite_key="log_accept_ratio_nonfinite_count",
+            max_abs_key="log_accept_ratio_max_abs_finite",
+        )
+        if summary is not None:
+            payload["log_accept_ratio_diagnostic_source"] = "diagnostic_summary"
+            payload["log_accept_ratio_summary"] = summary
+            payload["log_accept_ratio_finite"] = bool(
+                summary["finite_count"] > 0 and summary["nonfinite_count"] == 0
+            )
+            payload["max_abs_log_accept_ratio"] = summary["max_abs_finite"]
     if "target_log_prob" in trace:
         target_log_prob = np.asarray(
             _tensor_to_numpy(trace["target_log_prob"]),
             dtype=float,
         )
         payload["target_log_prob_finite"] = bool(np.all(np.isfinite(target_log_prob)))
+        payload["target_log_prob_diagnostic_source"] = "trace"
+        finite_target = np.isfinite(target_log_prob)
+        payload["target_log_prob_summary"] = {
+            "source": "trace",
+            "available": True,
+            "finite_count": int(np.sum(finite_target)),
+            "nonfinite_count": int(np.sum(~finite_target)),
+            "total_count": int(target_log_prob.size),
+        }
+    else:
+        target_summary = _finite_count_summary_payload(
+            diagnostics,
+            finite_key="target_log_prob_finite_count",
+            nonfinite_key="target_log_prob_nonfinite_count",
+            min_key="target_log_prob_min_finite",
+            max_key="target_log_prob_max_finite",
+        )
+        if target_summary is not None:
+            payload["target_log_prob_diagnostic_source"] = "diagnostic_summary"
+            payload["target_log_prob_summary"] = target_summary
+            payload["target_log_prob_finite"] = bool(
+                target_summary["finite_count"] > 0
+                and target_summary["nonfinite_count"] == 0
+            )
+    if "proposed_target_log_prob" in trace:
+        proposed_target_log_prob = np.asarray(
+            _tensor_to_numpy(trace["proposed_target_log_prob"]),
+            dtype=float,
+        )
+        finite_proposed = np.isfinite(proposed_target_log_prob)
+        payload["proposed_target_log_prob_finite"] = bool(np.all(finite_proposed))
+        payload["proposed_target_log_prob_diagnostic_source"] = "trace"
+        payload["proposed_target_log_prob_summary"] = {
+            "source": "trace",
+            "available": True,
+            "finite_count": int(np.sum(finite_proposed)),
+            "nonfinite_count": int(np.sum(~finite_proposed)),
+            "total_count": int(proposed_target_log_prob.size),
+            "min_finite": None
+            if not np.any(finite_proposed)
+            else float(np.min(proposed_target_log_prob[finite_proposed])),
+            "max_finite": None
+            if not np.any(finite_proposed)
+            else float(np.max(proposed_target_log_prob[finite_proposed])),
+        }
+    if "log_acceptance_correction" in trace:
+        correction = np.asarray(
+            _tensor_to_numpy(trace["log_acceptance_correction"]),
+            dtype=float,
+        )
+        finite_correction = np.isfinite(correction)
+        payload["log_acceptance_correction_finite"] = bool(np.all(finite_correction))
+        payload["log_acceptance_correction_diagnostic_source"] = "trace"
+        payload["log_acceptance_correction_summary"] = {
+            "source": "trace",
+            "available": True,
+            "finite_count": int(np.sum(finite_correction)),
+            "nonfinite_count": int(np.sum(~finite_correction)),
+            "total_count": int(correction.size),
+            "max_abs_finite": None
+            if not np.any(finite_correction)
+            else float(np.max(np.abs(correction[finite_correction]))),
+        }
     samples = np.asarray(_tensor_to_numpy(run_result.samples), dtype=float)
     finite_by_sample = np.all(np.isfinite(samples), axis=-1)
     payload["samples_all_finite"] = bool(np.all(finite_by_sample))
+    return payload
+
+
+def _finite_count_summary_payload(
+    diagnostics: Mapping[str, Any],
+    *,
+    finite_key: str,
+    nonfinite_key: str,
+    max_abs_key: str | None = None,
+    min_key: str | None = None,
+    max_key: str | None = None,
+) -> Mapping[str, Any] | None:
+    finite_count = _int_or_none(diagnostics.get(finite_key))
+    nonfinite_count = _int_or_none(diagnostics.get(nonfinite_key))
+    if finite_count is None or nonfinite_count is None:
+        return None
+    if finite_count < 0 or nonfinite_count < 0:
+        return None
+    total_count = int(finite_count) + int(nonfinite_count)
+    if total_count <= 0:
+        return None
+    payload: dict[str, Any] = {
+        "source": "diagnostic_summary",
+        "available": True,
+        "finite_count": int(finite_count),
+        "nonfinite_count": int(nonfinite_count),
+        "total_count": total_count,
+    }
+    if max_abs_key is not None:
+        max_abs = _scalar_or_none(diagnostics.get(max_abs_key))
+        if max_abs is None or not np.isfinite(max_abs):
+            return None
+        payload["max_abs_finite"] = float(max_abs)
+    if min_key is not None:
+        min_value = _scalar_or_none(diagnostics.get(min_key))
+        payload["min_finite"] = (
+            None if min_value is None or not np.isfinite(min_value) else float(min_value)
+        )
+    if max_key is not None:
+        max_value = _scalar_or_none(diagnostics.get(max_key))
+        payload["max_finite"] = (
+            None if max_value is None or not np.isfinite(max_value) else float(max_value)
+        )
     return payload
 
 
@@ -1601,6 +1755,7 @@ def _run_full_chain_with_optional_reusable_route(
     role: str,
     round_index: int,
     budget: int,
+    dynamic_num_leapfrog_steps: bool = False,
 ) -> FullChainHMCRunResult:
     """Run HMC through a scoped reusable runner when the static contract matches.
 
@@ -1631,22 +1786,36 @@ def _run_full_chain_with_optional_reusable_route(
         target_dimension=target_dimension,
         mass_signature=mass_signature,
         initial_state=initial_state,
+        dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps,
     )
     contract_hash = stable_config_hash(contract_payload)
     runner = runner_cache.get(contract_hash)
     runner_reused = runner is not None
     if runner is None:
-        runner = build_reusable_full_chain_tfp_hmc_runner(
-            adapter,
-            initial_state,
-            config,
-        )
+        if dynamic_num_leapfrog_steps:
+            runner = build_reusable_full_chain_tfp_hmc_runner(
+                adapter,
+                initial_state,
+                config,
+                dynamic_num_leapfrog_steps=True,
+            )
+        else:
+            runner = build_reusable_full_chain_tfp_hmc_runner(
+                adapter,
+                initial_state,
+                config,
+            )
         runner_cache[contract_hash] = runner
         runner_contract_payloads[contract_hash] = contract_payload
+    runner_kwargs = {
+        "current_state": initial_state,
+        "seed": config.seed,
+        "step_size": config.step_size,
+    }
+    if dynamic_num_leapfrog_steps:
+        runner_kwargs["num_leapfrog_steps"] = config.num_leapfrog_steps
     result = runner.run(
-        current_state=initial_state,
-        seed=config.seed,
-        step_size=config.step_size,
+        **runner_kwargs,
     )
     route_event = {
         "round_index": int(round_index),
@@ -1657,6 +1826,7 @@ def _run_full_chain_with_optional_reusable_route(
         "call_config_hash": stable_config_hash(config.signature_payload()),
         "runner_reused": runner_reused,
         "used_single_use_runner": False,
+        "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
     }
     route_events.append(route_event)
     return FullChainHMCRunResult(
@@ -1673,6 +1843,9 @@ def _run_full_chain_with_optional_reusable_route(
             ],
             "fixed_mass_budget_ladder_runner_reused": runner_reused,
             "fixed_mass_budget_ladder_static_contract_payload": contract_payload,
+            "fixed_mass_budget_ladder_dynamic_num_leapfrog_steps": bool(
+                dynamic_num_leapfrog_steps
+            ),
         },
     )
 
@@ -1684,10 +1857,13 @@ def _reusable_static_contract_payload(
     target_dimension: int,
     mass_signature: str,
     initial_state: Any,
+    dynamic_num_leapfrog_steps: bool = False,
 ) -> Mapping[str, Any]:
     payload = dict(config.signature_payload())
     payload.pop("seed", None)
     payload.pop("step_size", None)
+    if dynamic_num_leapfrog_steps:
+        payload.pop("num_leapfrog_steps", None)
     state_contract = _reusable_state_template_contract(initial_state)
     return {
         "runner": "build_reusable_full_chain_tfp_hmc_runner",
@@ -1698,7 +1874,12 @@ def _reusable_static_contract_payload(
         "initial_state_dtype": state_contract["initial_state_dtype"],
         "initial_state_dtype_source": state_contract["initial_state_dtype_source"],
         "static_config": payload,
-        "dynamic_inputs": ("current_state", "seed", "step_size"),
+        "dynamic_inputs": (
+            ("current_state", "seed", "step_size", "num_leapfrog_steps")
+            if dynamic_num_leapfrog_steps
+            else ("current_state", "seed", "step_size")
+        ),
+        "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
     }
 
 
@@ -2052,6 +2233,49 @@ def _classify_screen_round(
     if isinstance(telemetry, Mapping) and telemetry.get("telemetry_failure_veto_bool"):
         hard_vetoes.append("screen_target_status_telemetry_failure")
     hard_vetoes.extend(callback_result.hard_vetoes)
+    nonfinite_proposal_repair = (
+        bool(config.repair_nonfinite_proposal_screen)
+        and screen_error is None
+        and _finite_number(acceptance)
+        and screen_diagnostics.get("samples_all_finite") is True
+        and screen_diagnostics.get("target_log_prob_finite") is True
+        and screen_diagnostics.get("log_accept_ratio_finite") is not True
+        and (
+            screen_diagnostics.get("proposed_target_log_prob_finite") is False
+            or screen_diagnostics.get("log_acceptance_correction_finite") is False
+        )
+        and not callback_result.hard_vetoes
+        and tuple(hard_vetoes) == ("screen_log_accept_nonfinite_or_missing",)
+    )
+    if nonfinite_proposal_repair:
+        hard_vetoes = [
+            item
+            for item in hard_vetoes
+            if item != "screen_log_accept_nonfinite_or_missing"
+        ]
+        repair_triggers = tuple(
+            dict.fromkeys(
+                [
+                    *callback_result.repair_triggers,
+                    "screen_nonfinite_proposal_mechanics_step_repair",
+                ]
+            )
+        )
+        return (
+            "promotion_veto_repair",
+            "nonfinite_proposal_mechanics_repair_trigger",
+            tuple(hard_vetoes),
+            callback_result.continuation_vetoes,
+            tuple(
+                dict.fromkeys(
+                    [
+                        *callback_result.promotion_vetoes,
+                        "screen_log_accept_nonfinite_or_missing",
+                    ]
+                )
+            ),
+            repair_triggers,
+        )
     if hard_vetoes:
         return (
             "hard_veto",

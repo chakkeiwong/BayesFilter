@@ -711,6 +711,8 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
         trajectory_window_upper_multiplier=1.5,
         handoff_screen_policy="phase23_nomination_only",
         terminal_phase6_repair_extra_attempts=1,
+        verification_chunk_max_results=250,
+        verification_min_retained_results_for_pass=1000,
     )
     geometry = hmc_kernel_tuning_module._public_geometry_config(config)
     bootstrap = hmc_kernel_tuning_module._public_bootstrap_config(config)
@@ -733,10 +735,16 @@ def test_public_xla_runtime_parameter_propagates_to_internal_stage_configs() -> 
     assert loop.payload()["use_xla"] is True
     assert config.payload()["terminal_phase6_repair_extra_attempts"] == 1
     assert config.payload()["handoff_screen_policy"] == "phase23_nomination_only"
+    assert config.payload()["verification_chunk_max_results"] == 250
+    assert config.payload()["verification_min_retained_results_for_pass"] == 1000
     assert loop.terminal_phase6_repair_extra_attempts == 1
     assert loop.payload()["terminal_phase6_repair_extra_attempts"] == 1
     assert loop.handoff_screen_policy == "phase23_nomination_only"
     assert loop.payload()["handoff_screen_policy"] == "phase23_nomination_only"
+    assert loop.verification_chunk_max_results == 250
+    assert loop.verification_min_retained_results_for_pass == 1000
+    assert loop.payload()["verification_chunk_max_results"] == 250
+    assert loop.payload()["verification_min_retained_results_for_pass"] == 1000
     assert loop.max_leapfrog_steps == 40
     assert loop.step_repair_factor == pytest.approx(2.5)
     assert loop.step_repair_high_acceptance_directional_factor == pytest.approx(3.0)

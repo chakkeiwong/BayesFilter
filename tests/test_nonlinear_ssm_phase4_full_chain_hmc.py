@@ -208,7 +208,25 @@ def test_phase4_tiny_full_chain_hmc_jit_returns_finite_samples_and_metadata() ->
     )
     assert result.diagnostics["hmc_health_diagnostics"]["log_accept_ratio"]["available"] is True
     assert result.diagnostics["hmc_health_diagnostics"]["target_log_prob"]["available"] is True
-    assert set(result.trace) == {"is_accepted", "log_accept_ratio", "target_log_prob"}
+    assert (
+        result.diagnostics["hmc_health_diagnostics"]["proposed_target_log_prob"][
+            "available"
+        ]
+        is True
+    )
+    assert (
+        result.diagnostics["hmc_health_diagnostics"]["log_acceptance_correction"][
+            "available"
+        ]
+        is True
+    )
+    assert set(result.trace) == {
+        "is_accepted",
+        "log_acceptance_correction",
+        "log_accept_ratio",
+        "proposed_target_log_prob",
+        "target_log_prob",
+    }
     assert result.metadata["runtime"] == "tfp.mcmc.sample_chain"
     assert result.metadata["jit_compile"] is True
     assert result.metadata["chain_execution_mode"] == "tf_function"

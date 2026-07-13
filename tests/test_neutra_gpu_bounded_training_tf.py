@@ -31,22 +31,24 @@ def test_phase10_config_records_gpu_training_policy(tmp_path) -> None:
     config = NeuTraGPUBoundedTrainingConfig(artifact_dir=tmp_path)
     payload = config.normalized()
 
+    assert payload["schema"] == "bayesfilter.neutra.gpu_xla_bounded_training_config.v1"
+    assert payload["phase"] == "phase16_bounded_gpu_xla_neutra_training"
     assert payload["route_id"] == LGSSM_QR_ROUTE_ID
     assert payload["training_execution_target"] == "gpu_required"
     assert payload["cpu_training_fallback_policy"] == "forbidden"
     assert payload["external_sample_generation_policy"] == (
         "multicore_cpu_separate_phase_not_run_here"
     )
-    assert payload["hmc_policy"] == "not_run_not_authorized_for_phase10"
-    assert payload["jit_compile"] is False
-    assert payload["xla_readiness_policy"] == (
-        "phase9_xla_blocker_inherited_jit_compile_false_required"
-    )
+    assert payload["hmc_policy"] == "not_run_not_authorized_for_phase16"
+    assert payload["jit_compile"] is True
+    assert payload["xla_readiness_policy"] == "jit_compile_true_required_no_fallback"
+    assert payload["gradient_policy"] == "manual_score_no_gradienttape"
     assert payload["full_neutra_training_executed"] is False
     assert payload["bounded_optimizer_training_executed"] is True
     assert payload["hmc_executed"] is False
     assert payload["external_sample_generation_executed"] is False
     assert payload["nonclaims"] == NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS
+    assert "gpu_xla_training_state" in payload["training_state_path"]
 
 
 def test_phase10_rejects_cpu_hidden_training(tmp_path) -> None:
@@ -58,13 +60,13 @@ def test_phase10_rejects_cpu_hidden_training(tmp_path) -> None:
         )
 
 
-def test_phase10_rejects_unreviewed_xla(tmp_path, monkeypatch) -> None:
+def test_phase10_rejects_non_xla_runtime(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
 
-    with pytest.raises(NeuTraGPUBoundedTrainingError, match="jit_compile=false"):
+    with pytest.raises(NeuTraGPUBoundedTrainingError, match="jit_compile=true"):
         run_neutra_gpu_bounded_training(
             NeuTraGPUBoundedTrainingConfig(
-                jit_compile=True,
+                jit_compile=False,
                 artifact_dir=tmp_path,
             )
         )
@@ -99,16 +101,19 @@ def test_phase10_error_payload_preserves_nonclaims(tmp_path) -> None:
     payload = phase10_error_payload(RuntimeError("example"), config=config)
 
     assert payload["passed"] is False
-    assert payload["decision"] == "BLOCK_PHASE10_BOUNDED_GPU_NEUTRA_TRAINING"
+    assert payload["decision"] == "BLOCK_PHASE16_BOUNDED_GPU_XLA_NEUTRA_TRAINING"
     assert payload["optimizer_steps_executed"] == 0
     assert payload["full_neutra_training_executed"] is False
     assert payload["hmc_executed"] is False
     assert payload["external_sample_generation_executed"] is False
-    assert payload["jit_compile"] is False
+    assert payload["jit_compile"] is True
+    assert payload["jit_compile_false_runtime_executed"] is False
+    assert payload["runtime_autodiff_executed"] is False
+    assert payload["keras_optimizer_gradient_route_executed"] is False
     assert payload["nonclaims"] == NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS
 
 
-def test_phase10_gpu_training_artifact_records_boundary_if_present() -> None:
+def test_phase10_old_non_xla_training_artifact_is_stale_if_present() -> None:
     if not PHASE10_TRAINING_STATE.exists():
         pytest.skip("Phase 10 trusted GPU artifact has not been generated yet")
     payload = json.loads(PHASE10_TRAINING_STATE.read_text(encoding="utf-8"))
@@ -121,34 +126,15 @@ def test_phase10_gpu_training_artifact_records_boundary_if_present() -> None:
         json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
 
-    assert payload["passed"] is True
-    assert payload["decision"] == "PASS_PHASE10_BOUNDED_GPU_NEUTRA_TRAINING"
     assert payload["route"]["route_id"] == LGSSM_QR_ROUTE_ID
     assert payload["config"]["training_execution_target"] == "gpu_required"
     assert payload["config"]["cpu_training_fallback_policy"] == "forbidden"
     assert payload["config"]["jit_compile"] is False
-    assert payload["optimizer_steps_executed"] == payload["config"]["steps"]
-    assert payload["bounded_optimizer_training_executed"] is True
-    assert payload["full_neutra_training_executed"] is False
-    assert payload["hmc_executed"] is False
-    assert payload["external_sample_generation_executed"] is False
-    assert payload["frozen_transport_payload_written"] is False
-    assert payload["finite_checks"] == {
-        "loss_history_finite": True,
-        "final_shift_finite": True,
-        "final_raw_scale_finite": True,
-    }
-    assert payload["device_checks"]["all_objective_outputs_on_gpu"] is True
-    assert all(
-        "GPU" in device.upper()
-        for device in payload["device_checks"]["objective_output_devices"]
+    assert payload["target_signature"] == (
+        "290a91d2a8f90d5b29243965b258b1ec6fd965aa46ffca69dcb78f7fa1ecabcb"
     )
-    assert payload["gpu_manifest"]["trusted_gpu_context_required"] is True
-    assert payload["gpu_manifest"]["training_execution_target"] == "gpu_required"
-    assert payload["xla_blocker_status"]["phase9_xla_blocker_inherited"] is True
-    assert payload["xla_blocker_status"]["xla_readiness_claimed"] is False
     assert payload["artifact_hash"] == f"sha256:{stable_hash}"
     assert payload["artifact_hash_semantics"] == (
         "stable_json_sha256_excluding_artifact_hash_fields"
     )
-    assert payload["nonclaims"] == list(NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS)
+    assert payload["decision"] == "PASS_PHASE10_BOUNDED_GPU_NEUTRA_TRAINING"

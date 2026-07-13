@@ -34,6 +34,7 @@ _TARGET_BUILDER_EXPORTS = {
     "InvalidSSMTargetBuilderContract",
     "SSMTargetBuilderMetadata",
     "TARGET_BUILDER_NONCLAIMS",
+    "XLA_TARGET_BUILDER_NONCLAIMS",
     "build_ssm_posterior_adapter",
     "stable_ssm_posterior_adapter_signature",
 }
@@ -71,6 +72,7 @@ __all__ = [
     "SSMTargetContract",
     "SSMTargetBuilderMetadata",
     "TARGET_BUILDER_NONCLAIMS",
+    "XLA_TARGET_BUILDER_NONCLAIMS",
     "TargetCoordinateConvention",
     "build_filter_program_registry",
     "build_ssm_posterior_adapter",

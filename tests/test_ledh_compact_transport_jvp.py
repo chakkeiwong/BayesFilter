@@ -131,6 +131,30 @@ def test_compact_softmin_jvp_matches_tape_directional_oracle() -> None:
     tf.debugging.assert_near(manual_directional, tape_directional, atol=ATOL)
 
 
+def test_half_pairwise_squared_cross_jvp_matches_broadcast_reference() -> None:
+    old_dtype = annealed_transport_tf.DTYPE
+    annealed_transport_tf.DTYPE = DTYPE
+    try:
+        scaled_x, _particles, _logw, _epsilon, _epsilon0, _scaling = _fixture()
+        query = scaled_x[:, :2, :]
+        key = scaled_x[:, 1:, :]
+        d_query = _particle_tangent(query, scale=0.011, param_dim=3)
+        d_key = _particle_tangent(key, scale=0.007, param_dim=3)
+        actual = annealed_transport_tf._half_pairwise_squared_cross_jvp(  # noqa: SLF001
+            query,
+            key,
+            d_query,
+            d_key,
+        )
+        diff = query[:, :, None, :] - key[:, None, :, :]
+        d_diff = d_query[:, :, None, :, :] - d_key[:, None, :, :, :]
+        expected = tf.reduce_sum(diff[:, :, :, :, None] * d_diff, axis=3)
+    finally:
+        annealed_transport_tf.DTYPE = old_dtype
+
+    tf.debugging.assert_near(actual, expected, atol=ATOL)
+
+
 def test_compact_total_transport_jvp_matches_tape_directional_oracle() -> None:
     old_dtype = annealed_transport_tf.DTYPE
     annealed_transport_tf.DTYPE = DTYPE
@@ -229,3 +253,22 @@ def test_compact_transport_jvp_production_helpers_have_no_tape() -> None:
         assert "GradientTape" not in source
         assert "ForwardAccumulator" not in source
         assert ".gradient(" not in source
+
+
+def test_compact_transport_jvp_avoids_known_large_broadcast_temporaries() -> None:
+    source = inspect.getsource(
+        annealed_transport_tf._filterflow_streaming_transport_from_potentials_jvp  # noqa: SLF001
+    )
+    assert "d_weighted" not in source
+    assert "transport_block[:, :, :, None, None]" not in source
+    assert "d_particle_block[:, None, :, :, :]" not in source
+
+    helper_sources = "\n".join(
+        inspect.getsource(getattr(annealed_transport_tf, name))
+        for name in (
+            "_filterflow_streaming_softmin_jvp",
+            "_filterflow_streaming_column_log_normalizer_jvp",
+            "_filterflow_streaming_transport_from_potentials_jvp",
+        )
+    )
+    assert "d_diff = d_query_block[:, :, None, :, :] - d_key_block[:, None, :, :, :]" not in helper_sources

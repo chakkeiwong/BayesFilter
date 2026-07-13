@@ -1,0 +1,196 @@
+{
+  "schema": "bayesfilter.deterministic_lgssm_hmc_tuning_config.v1",
+  "config_id": "multidim_lgssm_serious_hmc_tuning_2026_07_09",
+  "created_date": "2026-07-09",
+  "objective": "deterministic serious HMC recovery test for identifiable multidimensional lower-triangular LGSSM",
+  "source_contract": {
+    "path": "docs/plans/artifacts/multidim-triangular-lgssm-neutra-hmc-2026-07-08/lower_triangular_lgssm_contract_v1.json",
+    "schema": "bayesfilter.multidim_triangular_lgssm.contract.v1",
+    "contract_id": "lower_triangular_lgssm_v1",
+    "target_id": "bayesfilter_multidim_lower_triangular_lgssm_neutra_hmc_v1"
+  },
+  "model": {
+    "state_dim": 4,
+    "observation_dim": 4,
+    "parameter_dim": 18,
+    "transition_pattern": "lower_triangular",
+    "observation_matrix": "identity",
+    "process_covariance": "diagonal_positive",
+    "observation_covariance": "diagonal_positive",
+    "initial_law": {
+      "mean": "zero",
+      "covariance": "stationary_solution_P_inf_equals_A_P_inf_A_transpose_plus_Q"
+    },
+    "coordinate_convention": "unconstrained_raw_parameter_vector",
+    "parameter_names": [
+      "a11_raw",
+      "a22_raw",
+      "a33_raw",
+      "a44_raw",
+      "a21_raw",
+      "a31_raw",
+      "a32_raw",
+      "a41_raw",
+      "a42_raw",
+      "a43_raw",
+      "log_q1",
+      "log_q2",
+      "log_q3",
+      "log_q4",
+      "log_r1",
+      "log_r2",
+      "log_r3",
+      "log_r4"
+    ]
+  },
+  "truth_and_data": {
+    "truth_policy": "prior_mean_raw_coordinates_from_source_contract",
+    "horizon": 120,
+    "simulation_seed": [
+      20260709,
+      301
+    ],
+    "fixture_hash_repetition_count": 2,
+    "artifact_path": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/fixture_T120_seed20260709_301.json"
+  },
+  "prior": {
+    "family": "independent_gaussian_on_raw_coordinates",
+    "center_policy": "raw_truth_template_from_source_contract",
+    "scale_by_block": {
+      "diagonal_raw": 0.5,
+      "lower_raw": 0.6,
+      "log_process_std": 0.35,
+      "log_observation_std": 0.35
+    },
+    "log_jacobian_convention": "included_in_prior"
+  },
+  "execution_policy": {
+    "target_backend": "tensorflow_tfp",
+    "sample_generation_target": "cpu_hidden_multicore",
+    "required_environment": {
+      "CUDA_VISIBLE_DEVICES": "-1"
+    },
+    "gpu_sample_generation_allowed": false,
+    "neutra_training_target": "gpu_only_if_later_phase_approved",
+    "jit_compile": true,
+    "use_xla": true,
+    "jit_compile_false_runtime_allowed": false,
+    "chain_execution_mode": "tf_function",
+    "runtime_gradient_tape_allowed": false,
+    "diagnostic_gradient_tape_allowed": true
+  },
+  "tool_bindings": {
+    "quadratic_geometry": "bayesfilter.inference.fit_low_rank_spd_quadratic_geometry",
+    "mass_from_precision": "bayesfilter.inference.mass_matrix.covariance_from_precision",
+    "kernel_tuning_config": "bayesfilter.inference.HMCKernelTuningConfig.serious",
+    "kernel_tuning_runner": "bayesfilter.inference.tune_hmc_kernel",
+    "diagnostics": "bayesfilter.inference.hmc_diagnostics"
+  },
+  "geometry_initializer": {
+    "rank": 8,
+    "sample_count": 520,
+    "min_samples_per_parameter": 8,
+    "trust_radius": 0.35,
+    "pilot_radius": 0.08,
+    "pilot_direction_count": 256,
+    "holdout_fraction": 0.25,
+    "eigenvalue_floor": 1e-4,
+    "max_condition_number": 100000.0,
+    "fit_max_iterations": 600,
+    "fit_tolerance": 1e-8,
+    "holdout_rmse_abs_tolerance": 0.05,
+    "holdout_rmse_rel_tolerance": 0.05,
+    "seed": [
+      20260709,
+      401
+    ]
+  },
+  "mass_conversion": {
+    "source": "phase5_low_rank_quadratic_precision",
+    "jitter": 1e-9,
+    "eigenvalue_floor": 1e-6,
+    "max_condition_number": 100000.0,
+    "dense": true,
+    "reconstruction_max_abs_error_tolerance": 1e-8
+  },
+    "kernel_tuning": {
+        "preset": "serious",
+        "target_accept_prob": 0.7,
+    "acceptance_band": [
+      0.65,
+      0.75
+    ],
+    "repair_band": [
+      0.55,
+      0.85
+    ],
+    "max_leapfrog_steps": 64,
+    "bootstrap_max_repairs": 5,
+    "max_attempts": 5,
+    "seed": [
+      20260709,
+      501
+    ],
+        "chain_execution_mode": "tf_function",
+        "use_xla": true,
+        "target_status_trace_policy": "per_chain_step",
+        "verification_chunk_max_results": 250,
+        "verification_min_retained_results_for_pass": 1000,
+        "allow_geometry_fallback": false
+    },
+  "burnin_controller": {
+    "chain_count": 4,
+    "initial_burnin_results_per_chain": 2000,
+    "burnin_extension_results_per_chain": 1000,
+    "max_burnin_results_per_chain": 16000,
+    "check_interval_results_per_chain": 1000,
+    "r_hat_threshold": 1.01,
+    "bulk_ess_min_per_parameter": 1000,
+    "tail_ess_min_per_parameter": 400,
+    "manual_chain_exclusion_allowed": false,
+    "stop_rule": "extend_until_all_rhat_and_ess_pass_or_cap_hit"
+  },
+  "sampling_controller": {
+    "initial_retained_results_per_chain": 4000,
+    "retained_extension_results_per_chain": 2000,
+    "max_retained_results_per_chain": 40000,
+    "check_interval_results_per_chain": 2000,
+    "r_hat_threshold": 1.01,
+    "bulk_ess_min_per_parameter": 1000,
+    "tail_ess_min_per_parameter": 400,
+    "manual_sample_thinning_allowed": false,
+    "manual_chain_exclusion_allowed": false,
+    "stop_rule": "extend_until_all_rhat_and_ess_pass_or_cap_hit"
+  },
+  "final_recovery_gate": {
+    "r_hat_threshold": 1.01,
+    "bulk_ess_min_per_parameter": 1000,
+    "tail_ess_min_per_parameter": 400,
+    "truth_distance_units": "posterior_standard_deviation",
+    "truth_distance_max_abs_z": 3.0,
+    "all_parameters_required": true,
+    "nonfinite_veto": true,
+    "xla_metadata_required": true
+  },
+  "artifact_paths": {
+    "root": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09",
+    "fixture": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/fixture_T120_seed20260709_301.json",
+    "xla_compile": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/xla_compile_gate.json",
+    "geometry": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/geometry.json",
+    "mass": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/mass.json",
+    "kernel_tuning": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/kernel_tuning.json",
+    "burnin_sampling": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/burnin_sampling.json",
+    "final_result": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/final_recovery_result.json",
+    "log": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/run.log"
+  },
+  "nonclaims": [
+    "configuration only",
+    "not an HMC run",
+    "not HMC convergence evidence",
+    "not posterior recovery evidence",
+    "not sampler superiority evidence",
+    "not production readiness",
+    "not default readiness",
+    "not a DSGE claim"
+  ]
+}

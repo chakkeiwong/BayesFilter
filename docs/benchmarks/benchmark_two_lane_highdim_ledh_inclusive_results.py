@@ -19,6 +19,10 @@ from bayesfilter.highdim.ledh_forward_contract import (
     make_fixed_sir_logscale_forward_contract,
     make_lgssm_m3_t50_forward_contract,
 )
+from bayesfilter.highdim.ledh_score_contract import (
+    LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
+    validate_ledh_score_artifact,
+)
 
 DATE = "2026-07-06"
 BASELINE_PATH = ROOT / "docs/plans/bayesfilter-two-lane-highdim-leaderboard-results-2026-07-03.json"
@@ -163,21 +167,85 @@ def _blocked_phase7_status(row_scope: str, reason: str) -> dict[str, Any]:
     }
 
 
+def _score_artifact_candidate(raw_artifact: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(raw_artifact.get("score_artifact"), dict):
+        return dict(raw_artifact["score_artifact"])
+    return dict(raw_artifact)
+
+
+def _score_candidate_summary(candidate: dict[str, Any] | None) -> dict[str, Any]:
+    if candidate is None:
+        return {
+            "score_candidate_derivative_provenance": None,
+            "score_candidate_admission_status": None,
+        }
+    provenance = candidate.get("score_derivative_provenance", candidate.get("score_route"))
+    return {
+        "score_candidate_derivative_provenance": provenance,
+        "score_candidate_admission_status": candidate.get("score_admission_status"),
+    }
+
+
 def _score_payload(
     score_artifact: dict[str, Any] | None,
     *,
     expected_row_id: str,
-) -> dict[str, Any] | None:
+    source_value_artifact: dict[str, Any],
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, str | None]:
     if score_artifact is None:
-        return None
-    if score_artifact.get("row_id") != expected_row_id:
+        return None, None, "score artifact not provided"
+    candidate = _score_artifact_candidate(score_artifact)
+    if candidate.get("row_id") != expected_row_id:
         raise ValueError(f"score artifact row mismatch for {expected_row_id}")
-    if score_artifact.get("primary_pass") is not True:
-        raise ValueError(f"score artifact did not pass for {expected_row_id}")
-    score_route = score_artifact.get("score_route")
-    if not score_route:
-        raise ValueError(f"score artifact missing score_route for {expected_row_id}")
-    return score_artifact
+
+    legacy_route = candidate.get("score_route")
+    if legacy_route is not None and "manual_total_vjp" in str(legacy_route):
+        return (
+            None,
+            {
+                "score_derivative_provenance": str(legacy_route),
+                "score_admission_status": "historical_diagnostic_not_admitted",
+            },
+            (
+                "historical manual_total_vjp raw score-memory artifact is "
+                "diagnostic-only and blocked from leaderboard score admission"
+            ),
+        )
+
+    if candidate.get("schema_version") != LEDH_SCORE_ARTIFACT_SCHEMA_VERSION:
+        route = candidate.get("score_route")
+        summary = {
+            "score_derivative_provenance": route,
+            "score_admission_status": "legacy_raw_score_memory_not_admitted",
+        }
+        return (
+            None,
+            summary,
+            (
+                "legacy score-memory artifact lacks the Phase 1 score artifact "
+                "schema and is not admitted"
+            ),
+        )
+
+    try:
+        admitted = validate_ledh_score_artifact(
+            candidate,
+            source_value_artifact=source_value_artifact,
+            expected_row_id=expected_row_id,
+            require_admitted=True,
+        )
+    except ValueError as admitted_error:
+        try:
+            normalized = validate_ledh_score_artifact(
+                candidate,
+                source_value_artifact=source_value_artifact,
+                expected_row_id=expected_row_id,
+                require_admitted=False,
+            )
+        except ValueError as validation_error:
+            return None, candidate, f"score artifact rejected by Phase 1 contract: {validation_error}"
+        return None, normalized, f"score artifact is not full admission: {admitted_error}"
+    return admitted, admitted, None
 
 
 def _score_row_fields(
@@ -186,6 +254,7 @@ def _score_row_fields(
     coordinate_system: str,
     blocked_reason: str,
     score_path: Path | None,
+    score_candidate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if score_artifact is None:
         return {
@@ -201,26 +270,36 @@ def _score_row_fields(
             "score_memory_peak_mib": None,
             "score_fd_abs_error": None,
             "score_fd_rel_error": None,
+            "score_candidate_artifact": _rel(score_path) if score_path is not None else None,
+            **_score_candidate_summary(score_candidate),
         }
     score_value = score_artifact.get("score")
     score_l2 = None
     if score_value is not None:
         score_l2 = math.sqrt(sum(float(value) * float(value) for value in score_value))
+    correctness = score_artifact.get("score_correctness", {})
+    memory = score_artifact.get("memory_diagnostics", {})
     return {
         "comparison_status": "executed_value_score",
-        "row_admission_status": "executed_same_target_value_score_phase5_pass",
+        "row_admission_status": "executed_same_target_value_score_compact_contract_pass",
         "score": score_value,
         "score_l2_norm": score_l2,
-        "score_status": "admitted_same_target_no_tape_score_n10000",
+        "score_status": "admitted_same_target_compact_score_n10000",
         "score_status_reason": (
-            "Phase 5 trusted GPU N=10000 same-scalar no-tape score-memory gate passed"
+            "Phase 1 shared score artifact contract admitted compact N=10000 score"
         ),
-        "score_derivative_provenance": score_artifact["score_route"],
+        "score_derivative_provenance": score_artifact["score_derivative_provenance"],
         "score_coordinate_system": coordinate_system,
         "score_evidence_artifact": _rel(score_path) if score_path is not None else None,
-        "score_memory_peak_mib": score_artifact.get("gpu_memory_peak_mib"),
-        "score_fd_abs_error": score_artifact.get("abs_error"),
-        "score_fd_rel_error": score_artifact.get("rel_error"),
+        "score_memory_peak_mib": memory.get("peak_mib"),
+        "score_fd_abs_error": correctness.get("max_abs_error", correctness.get("abs_error")),
+        "score_fd_rel_error": correctness.get(
+            "max_relative_error",
+            correctness.get("max_rel_error", correctness.get("rel_error")),
+        ),
+        "score_candidate_artifact": _rel(score_path) if score_path is not None else None,
+        "score_candidate_derivative_provenance": score_artifact["score_derivative_provenance"],
+        "score_candidate_admission_status": score_artifact["score_admission_status"],
     }
 
 
@@ -235,12 +314,18 @@ def _lgssm_ledh_row(
     total = artifact["total_log_likelihood_estimate"]
     evidence = [_rel(artifact_path)]
     forward_contract = _lgssm_forward_contract_from_artifact(artifact)
-    score_artifact = _score_payload(score_artifact, expected_row_id=LGSSM_M3_T50_ROW_ID)
+    score_artifact, score_candidate, score_blocker = _score_payload(
+        score_artifact,
+        expected_row_id=LGSSM_M3_T50_ROW_ID,
+        source_value_artifact=artifact,
+    )
     score_fields = _score_row_fields(
         score_artifact,
         coordinate_system="theta=(phi1,phi2,phi3,q_scale,r_scale)",
-        blocked_reason="same-target total derivative not implemented in Phase 4 value runner",
+        blocked_reason=score_blocker
+        or "same-target total derivative not implemented in Phase 4 value runner",
         score_path=score_path,
+        score_candidate=score_candidate,
     )
     return {
         "algorithm_id": LEDH_ALGORITHM_ID,
@@ -278,6 +363,11 @@ def _lgssm_ledh_row(
         "score_memory_peak_mib": score_fields["score_memory_peak_mib"],
         "score_fd_abs_error": score_fields["score_fd_abs_error"],
         "score_fd_rel_error": score_fields["score_fd_rel_error"],
+        "score_candidate_artifact": score_fields["score_candidate_artifact"],
+        "score_candidate_derivative_provenance": score_fields[
+            "score_candidate_derivative_provenance"
+        ],
+        "score_candidate_admission_status": score_fields["score_candidate_admission_status"],
         "value_status": artifact["value_status"],
         "particle_count": artifact["shape"]["num_particles"],
         "seeds": artifact["batch_seeds"],
@@ -323,15 +413,21 @@ def _sir_ledh_row(
     average_summary = _sample_summary(average_values)
     evidence = [_rel(artifact_path)]
     forward_contract = _fixed_sir_forward_contract_from_artifact(artifact)
-    score_artifact = _score_payload(score_artifact, expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID)
+    score_artifact, score_candidate, score_blocker = _score_payload(
+        score_artifact,
+        expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID,
+        source_value_artifact=artifact,
+    )
     score_fields = _score_row_fields(
         score_artifact,
         coordinate_system="theta=(log_kappa_scale,log_nu_scale,log_obs_noise_scale)",
-        blocked_reason=(
+        blocked_reason=score_blocker
+        or (
             "fixed SIR now has sir_log_scale_theta, but the full-row "
             "same-target total-derivative score is not implemented or checked"
         ),
         score_path=score_path,
+        score_candidate=score_candidate,
     )
     return {
         "algorithm_id": LEDH_ALGORITHM_ID,
@@ -365,6 +461,11 @@ def _sir_ledh_row(
         "score_memory_peak_mib": score_fields["score_memory_peak_mib"],
         "score_fd_abs_error": score_fields["score_fd_abs_error"],
         "score_fd_rel_error": score_fields["score_fd_rel_error"],
+        "score_candidate_artifact": score_fields["score_candidate_artifact"],
+        "score_candidate_derivative_provenance": score_fields[
+            "score_candidate_derivative_provenance"
+        ],
+        "score_candidate_admission_status": score_fields["score_candidate_admission_status"],
         "value_status": "executed_fixed_sir_value_only",
         "particle_count": artifact["shape"]["num_particles"],
         "seeds": artifact["batch_seeds"],
@@ -553,26 +654,24 @@ def _validate_payload(payload: dict[str, Any]) -> None:
             raise ValueError(f"{row_id} LEDH row must not be runtime rankable")
         if not ledh_row.get("score_status"):
             raise ValueError(f"{row_id} LEDH score status must be explicit")
-    lg = next(
-        row
-        for row in rows
-        if row["row_id"] == "benchmark_lgssm_exact_oracle_m3_T50"
-        and row["algorithm_id"] == LEDH_ALGORITHM_ID
-    )
-    if lg["score_status"] != "admitted_same_target_no_tape_score_n10000":
-        raise ValueError("LGSSM LEDH score must be Phase 5 admitted")
-    if lg["target_match_status"] != "same_target_value_score":
-        raise ValueError("LGSSM LEDH row must preserve same-target value/score identity")
-    sir = next(
-        row
-        for row in rows
-        if row["row_id"] == "zhao_cui_spatial_sir_austria_j9_T20"
-        and row["algorithm_id"] == LEDH_ALGORITHM_ID
-    )
-    if sir["score_status"] != "admitted_same_target_no_tape_score_n10000":
-        raise ValueError("SIR LEDH score must be Phase 5 admitted")
-    if sir["target_match_status"] != "sir_log_scale_theta_observed_data_value_score":
-        raise ValueError("SIR LEDH row must preserve sir_log_scale_theta value/score identity")
+        if ledh_row.get("score_status") == "admitted_same_target_compact_score_n10000":
+            if ledh_row.get("score_derivative_provenance") is None:
+                raise ValueError(f"{row_id} admitted score must name provenance")
+            provenance = str(ledh_row["score_derivative_provenance"])
+            if not provenance.startswith("compact_forward_sensitivity_no_autodiff_same_scalar_"):
+                raise ValueError(f"{row_id} admitted score must use compact provenance")
+            if "manual_total_vjp" in provenance:
+                raise ValueError(f"{row_id} historical route cannot be admitted")
+        else:
+            if ledh_row.get("score_derivative_provenance") is not None:
+                raise ValueError(f"{row_id} blocked score must not expose admitted provenance")
+            candidate_provenance = str(
+                ledh_row.get("score_candidate_derivative_provenance") or ""
+            )
+            if "manual_total_vjp" in candidate_provenance and not str(
+                ledh_row.get("score_status_reason") or ""
+            ).startswith("historical manual_total_vjp"):
+                raise ValueError(f"{row_id} historical candidate must be blocked explicitly")
 
 
 def build_artifact(
@@ -635,21 +734,32 @@ def build_artifact(
             "sir_ledh_value_artifact": _rel(sir_path),
             "lgssm_ledh_score_artifact": _rel(lgssm_score_path),
             "sir_ledh_score_artifact": _rel(sir_score_path),
-            "execution_mode": "frozen_non_ledh_baseline_plus_fresh_ledh_phase6_value_score",
+            "execution_mode": (
+                "frozen_non_ledh_baseline_plus_fresh_ledh_value_with_phase8_score_contract_gate"
+            ),
             "frozen_non_ledh_rows": True,
             "fresh_ledh_execution": True,
-            "phase5_score_memory_rows": [
+            "score_memory_candidate_rows": [
                 LGSSM_M3_T50_ROW_ID,
                 FIXED_SIR_AUSTRIA_ROW_ID,
             ],
+            "score_admission_policy": (
+                "phase1_validated_compact_score_artifact_required_for_admission"
+            ),
         },
         "rows": rows,
         "row_summary": _row_summary(rows),
         "nonclaims": [
             "Frozen non-LEDH rows are copied from the July 3 baseline and were not rerun.",
             "Runtime cross-ranking between frozen non-LEDH rows and fresh LEDH rows is forbidden.",
-            "LEDH LGSSM and fixed spatial SIR have Phase 5 same-target no-tape score-memory evidence.",
-            "LEDH fixed spatial SIR score does not establish exact nonlinear likelihood correctness.",
+            (
+                "Raw score-memory artifacts are not admitted unless they pass "
+                "the Phase 1 shared compact score artifact contract."
+            ),
+            (
+                "Historical manual_total_vjp score-memory artifacts are diagnostic-only "
+                "and blocked from leaderboard score admission."
+            ),
             "HMC readiness, posterior correctness, and scientific superiority are not claimed.",
         ],
     }

@@ -2,7 +2,52 @@
 
 Date: 2026-07-11
 
-Program status: `PHASE_A3_HARNESS_REVIEW_AGREED_FOCUSED_TESTS_NEXT`
+Program status: `PHASE_A3_TRACE_REPAIR_REVIEW_AGREED_SIGNED_CHAIN_REFRESH_ACTIVE`
+
+## 2026-07-13 - Phase A3 - PASSING TRACE PARSER REPAIR REVIEWED
+
+Observed failure and classification:
+
+- The exact CPU-hidden focused suite passed `65/65` in 29.25 seconds, and its
+  canonical trace SHA-256 is
+  `457371d51b145ad805815afcde5b5f6722fa2acc896145143f80da00a2d4a79b`.
+- Auditing that trace exposed three harness false positives: private writable
+  mappings, the exact `/dev/null<char 1:3>` device annotation, and TensorFlow's
+  write-open plus descriptor write to a thread-name `comm` file.
+- This was a trace-parser classification defect after a passing focused run.
+  It did not invalidate the 65 test outcomes, oracle/statistics implementation,
+  target, data, model mathematics, or research direction. It did make the old
+  harness review anchor and boundary/fixture backlinks stale, so no subsequent
+  evidence command was authorized.
+
+Visible repair and focused checks:
+
+- Both parsers now classify an `mmap` as writable only when `PROT_WRITE` and
+  `MAP_SHARED` are both present and admit exact `/dev/null<char 1:3>` results.
+- The only special `/proc` admission is
+  `/proc/<authenticated-root-pid>/task/<numeric-tid>/comm`, checked in both the
+  write-open and descriptor-write branches. Other `/proc` writes remain
+  rejected.
+- Both parsers compile in memory. Synthetic accept/reject cases passed, the
+  preserved trace fails when the narrow admission is disabled, and the repaired
+  verifier accepts the preserved trace with its unchanged SHA-256.
+- Fresh hash-specific bounded Codex substitute review returned
+  `VERDICT: AGREE` for generator SHA-256
+  `8a2fb0e4765e6c294c01197b7c0b5537f18b6af6e03de5f6e355da9f83bf3a55`
+  and verifier SHA-256
+  `6a06aaca730ed6d33fe7d3de550e05d149b0f3930246bc1eca04dc49945c4f05`.
+  It is explicitly weaker than Claude and inferred no runtime success.
+
+Skeptical audit remains `PASS`: the analytic scalar LGSSM plus direct equation
+simulation remains the baseline, the focused trace directly answers the write
+boundary question, no proxy is promoted, low power remains a repair trigger,
+and no HMC/NeuTra or concurrent-lane action is admitted.
+
+Gate status: `A3_SIGNED_HARNESS_CHAIN_REFRESH_REQUIRED`.
+
+Next action: regenerate the acyclic review anchor -> boundary backlink ->
+fixture backlink chain, require both contract loaders to accept it, and then
+resume the reviewed CPU-hidden oracle artifact command.
 
 ## 2026-07-13 - Phase A3 - HARNESS REVIEW CONVERGED
 

@@ -36,6 +36,16 @@ LGSSM_GENERIC_TARGET_NONCLAIMS = (
     "no scientific validity claim",
 )
 
+LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS = (
+    "LGSSM generic target adapter XLA-HMC value/score opt-in only",
+    "Phase 15 trusted GPU/XLA objective compile gate is the evidence anchor",
+    "no fixed-transport HMC chain execution claim",
+    "no HMC tuning or sampling claim",
+    "no posterior convergence claim",
+    "no production readiness claim",
+    "no scientific validity claim",
+)
+
 
 @dataclass(frozen=True)
 class LGSSMGenericTargetFixture:
@@ -69,8 +79,14 @@ def make_lgssm_generic_target_fixture() -> LGSSMGenericTargetFixture:
         ),
         dtype=tf.float64,
         target_scope="lgssm-static-qr-generic-target-fixture",
-        evidence_path="bayesfilter/testing/lgssm_generic_target_adapter_tf.py",
-        nonclaims=LGSSM_GENERIC_TARGET_NONCLAIMS,
+        evidence_path=(
+            "docs/plans/"
+            "bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-"
+            "compile-gate-result-2026-07-08.md"
+        ),
+        xla_hmc_ready=True,
+        full_chain_xla_diagnostic_ready=False,
+        nonclaims=LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS,
     )
     return LGSSMGenericTargetFixture(
         source_target=source_target,
@@ -165,7 +181,10 @@ def make_lgssm_generic_target_contract(
             "filter_hash": filter_hash,
             "backend": "tensorflow",
             "value_source": "bayesfilter.linear.kalman_qr_tf",
-            "score_source": "TensorFlow GradientTape over QR likelihood",
+            "score_source": (
+                "bayesfilter.linear.kalman_qr_derivatives_tf "
+                "analytical QR Kalman score"
+            ),
         },
     )
     return SSMTargetContract(
@@ -197,19 +216,16 @@ def lgssm_qr_log_likelihood_and_grad(
     *,
     source_target: QRStaticLGSSMTarget | None = None,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    """Return rank-2 exact QR LGSSM likelihood value and autodiff score."""
+    """Return rank-2 exact QR LGSSM likelihood value and analytical score."""
 
     theta_tensor = _rank2_theta(theta)
     target = QRStaticLGSSMTarget.default() if source_target is None else source_target
     values = []
     scores = []
     for row in tf.unstack(theta_tensor, axis=0):
-        with tf.GradientTape() as tape:
-            tape.watch(row)
-            value = target.log_likelihood(row)
-        score = tape.gradient(value, row)
-        if score is None:
-            raise ValueError("LGSSM likelihood score was not differentiable")
+        result = target.analytic_score_hessian(row)
+        value = result.log_likelihood
+        score = result.score
         values.append(value)
         scores.append(score)
     return tf.stack(values, axis=0), tf.stack(scores, axis=0)

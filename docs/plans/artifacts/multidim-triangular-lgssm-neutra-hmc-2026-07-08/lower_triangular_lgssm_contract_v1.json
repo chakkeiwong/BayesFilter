@@ -1,0 +1,104 @@
+{
+  "contract_id": "lower_triangular_lgssm_v1",
+  "contract_payload_hash": "sha256:1f7253432b6311bb4dfc4e74e402a992ade826763fb5933aee3ca812626d0a20",
+  "filter_manifest": {
+    "implementation_backend": "tensorflow_tensorflow_probability",
+    "likelihood": "exact_linear_gaussian_kalman"
+  },
+  "model_manifest": {
+    "initial_covariance": "stationary_initial_covariance",
+    "observation_covariance": "diagonal_R",
+    "observation_matrix": "H_identity",
+    "process_covariance": "diagonal_Q",
+    "stationary_equation": "P_inf_equals_A_P_inf_A_transpose_plus_Q",
+    "stationary_mean": "fixed_zero",
+    "transition_matrix": "lower_triangular_A"
+  },
+  "nonclaims": [
+    "not global identifiability evidence",
+    "not posterior correctness evidence",
+    "not HMC or NeuTra readiness evidence",
+    "not product or default readiness"
+  ],
+  "parameter_names": [
+    "a11_raw",
+    "a22_raw",
+    "a33_raw",
+    "a44_raw",
+    "a21_raw",
+    "a31_raw",
+    "a32_raw",
+    "a41_raw",
+    "a42_raw",
+    "a43_raw",
+    "log_q1",
+    "log_q2",
+    "log_q3",
+    "log_q4",
+    "log_r1",
+    "log_r2",
+    "log_r3",
+    "log_r4"
+  ],
+  "prior": {
+    "center": "raw_truth_template",
+    "family": "independent_gaussian_on_raw_coordinates",
+    "log_jacobian_convention": "included_in_prior",
+    "scale_by_block": {
+      "diagonal_raw": 0.5,
+      "log_observation_std": 0.35,
+      "log_process_std": 0.35,
+      "lower_raw": 0.6
+    }
+  },
+  "reconstruction_provenance": {
+    "date": "2026-07-13",
+    "reason": "referenced_machine_readable_contract_absent_from_both_merge_parents",
+    "source_authority": "docs/plans/bayesfilter-multidim-triangular-lgssm-neutra-hmc-phase1-model-contract-result-2026-07-08.md"
+  },
+  "schema": "bayesfilter.multidim_triangular_lgssm.contract.v1",
+  "schema_version": 1,
+  "static_shape": {
+    "first_fixture_horizon": 256,
+    "innovation_dim": 4,
+    "observation_dim": 4,
+    "parameter_dim": 18,
+    "state_dim": 4
+  },
+  "target_id": "bayesfilter_multidim_lower_triangular_lgssm_neutra_hmc_v1",
+  "transform": {
+    "diagonal_id": "rho_max_times_tanh",
+    "lower_id": "lower_scale_times_tanh",
+    "lower_scale": 0.35,
+    "positive_std_id": "exp",
+    "rho_max": 0.85
+  },
+  "truth_template": {
+    "diag_A": [
+      0.62,
+      0.48,
+      0.3,
+      0.16
+    ],
+    "lower_A": {
+      "a21": 0.18,
+      "a31": -0.1,
+      "a32": 0.14,
+      "a41": 0.06,
+      "a42": -0.08,
+      "a43": 0.11
+    },
+    "observation_std": [
+      0.12,
+      0.11,
+      0.1,
+      0.09
+    ],
+    "process_std": [
+      0.3,
+      0.26,
+      0.22,
+      0.18
+    ]
+  }
+}

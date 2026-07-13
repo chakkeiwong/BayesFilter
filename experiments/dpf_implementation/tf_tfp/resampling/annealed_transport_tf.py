@@ -567,6 +567,26 @@ def _pairwise_squared_cross(query: tf.Tensor, key: tf.Tensor) -> tf.Tensor:
     return tf.clip_by_value(xx - 2.0 * xy + yy, 0.0, float("inf"))
 
 
+def _half_pairwise_squared_cross_jvp(
+    query: tf.Tensor,
+    key: tf.Tensor,
+    d_query: tf.Tensor,
+    d_key: tf.Tensor,
+) -> tf.Tensor:
+    """JVP of `0.5 * _pairwise_squared_cross` without a `[B,R,C,D,P]` product."""
+
+    query_dot_d_query = tf.einsum("brd,brdp->brp", query, d_query)
+    key_dot_d_key = tf.einsum("bcd,bcdp->bcp", key, d_key)
+    key_dot_d_query = tf.einsum("bcd,brdp->brcp", key, d_query)
+    query_dot_d_key = tf.einsum("brd,bcdp->brcp", query, d_key)
+    return (
+        query_dot_d_query[:, :, None, :]
+        - key_dot_d_query
+        - query_dot_d_key
+        + key_dot_d_key[:, None, :, :]
+    )
+
+
 def _filterflow_streaming_softmin(
     epsilon: tf.Tensor,
     query: tf.Tensor,
@@ -735,9 +755,12 @@ def _filterflow_streaming_softmin_jvp(
             )
             cost = 0.5 * _pairwise_squared_cross(query_block, key_block)
             logits = values_block[:, None, :] - cost / epsilon[:, None, None]
-            diff = query_block[:, :, None, :] - key_block[:, None, :, :]
-            d_diff = d_query_block[:, :, None, :, :] - d_key_block[:, None, :, :, :]
-            d_cost = tf.reduce_sum(diff[:, :, :, :, None] * d_diff, axis=3)
+            d_cost = _half_pairwise_squared_cross_jvp(
+                query_block,
+                key_block,
+                d_query_block,
+                d_key_block,
+            )
             d_logits = (
                 d_values_block[:, None, :, :]
                 - d_cost / epsilon[:, None, None, None]
@@ -821,29 +844,41 @@ def _filterflow_streaming_softmin_vjp(
     col_chunk_tensor = tf.cast(col_chunk_size, tf.int32)
     num_row_blocks = (num_rows + row_chunk_tensor - 1) // row_chunk_tensor
     num_col_blocks = (num_cols + col_chunk_tensor - 1) // col_chunk_tensor
+    row_logsum_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_row_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size]),
+        clear_after_read=False,
+    )
     query_blocks = tf.TensorArray(
         dtype=DTYPE,
         size=num_row_blocks,
         element_shape=tf.TensorShape([None, row_chunk_size, None]),
     )
-    initial_d_key = tf.zeros_like(key)
-    initial_d_values = tf.zeros_like(values)
+    key_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_col_blocks,
+        element_shape=tf.TensorShape([None, col_chunk_size, None]),
+    )
+    value_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_col_blocks,
+        element_shape=tf.TensorShape([None, col_chunk_size]),
+    )
     initial_d_epsilon = tf.zeros([batch_size], dtype=DTYPE)
 
     def row_cond(
         row_start: tf.Tensor,
+        _row_logsum_blocks: tf.TensorArray,
         _query_blocks: tf.TensorArray,
-        _d_key: tf.Tensor,
-        _d_values: tf.Tensor,
         _d_epsilon: tf.Tensor,
     ) -> tf.Tensor:
         return row_start < num_rows
 
     def row_body(
         row_start: tf.Tensor,
+        row_logsum_ta: tf.TensorArray,
         query_ta: tf.TensorArray,
-        d_key_accum: tf.Tensor,
-        d_values_accum: tf.Tensor,
         d_epsilon_accum: tf.Tensor,
     ):
         query_block = _slice_axis1_padded_3d(query, row_start, row_chunk_size)
@@ -883,8 +918,6 @@ def _filterflow_streaming_softmin_vjp(
         def col_cond(
             col_start: tf.Tensor,
             _d_query_block: tf.Tensor,
-            _d_key_accum: tf.Tensor,
-            _d_values_accum: tf.Tensor,
             _row_d_epsilon: tf.Tensor,
         ) -> tf.Tensor:
             return col_start < num_cols
@@ -892,8 +925,6 @@ def _filterflow_streaming_softmin_vjp(
         def col_body(
             col_start: tf.Tensor,
             d_query_block_accum: tf.Tensor,
-            inner_d_key_accum: tf.Tensor,
-            inner_d_values_accum: tf.Tensor,
             inner_row_d_epsilon: tf.Tensor,
         ):
             key_block = _slice_axis1_padded_3d(key, col_start, col_chunk_size)
@@ -912,27 +943,6 @@ def _filterflow_streaming_softmin_vjp(
                 d_cost[:, :, :, None] * diff,
                 axis=2,
             )
-            if stop_keys:
-                d_key_next = inner_d_key_accum
-            else:
-                d_key_block = tf.reduce_sum(
-                    d_cost[:, :, :, None] * (-diff),
-                    axis=1,
-                )
-                d_key_next = _scatter_axis1_add_3d(
-                    inner_d_key_accum,
-                    col_start,
-                    d_key_block,
-                )
-            d_values_block = -epsilon[:, None] * tf.reduce_sum(
-                upstream_block[:, :, None] * probs,
-                axis=1,
-            )
-            d_values_next = _scatter_axis1_add_2d(
-                inner_d_values_accum,
-                col_start,
-                d_values_block,
-            )
             expected_cost_block = tf.reduce_sum(probs * cost, axis=2)
             d_epsilon_from_cost = tf.reduce_sum(
                 upstream_block * (-expected_cost_block / epsilon[:, None]),
@@ -941,62 +951,440 @@ def _filterflow_streaming_softmin_vjp(
             return (
                 col_start + col_chunk_tensor,
                 d_query_next,
-                d_key_next,
-                d_values_next,
                 inner_row_d_epsilon + d_epsilon_from_cost,
             )
 
-        _, d_query_block, d_key_accum, d_values_accum, row_d_epsilon = tf.while_loop(
+        _, d_query_block, row_d_epsilon = tf.while_loop(
             col_cond,
             col_body,
             loop_vars=(
                 tf.constant(0, tf.int32),
                 d_query_block,
-                d_key_accum,
-                d_values_accum,
                 row_d_epsilon,
             ),
             maximum_iterations=num_col_blocks,
         )
         block_index = row_start // row_chunk_tensor
+        row_logsum_ta = row_logsum_ta.write(block_index, row_logsum)
         query_ta = query_ta.write(block_index, d_query_block)
         return (
             row_start + row_chunk_tensor,
+            row_logsum_ta,
             query_ta,
-            d_key_accum,
-            d_values_accum,
             d_epsilon_accum + row_d_epsilon,
         )
 
-    _, query_blocks, d_key, d_values, d_epsilon = tf.while_loop(
+    _, row_logsum_blocks, query_blocks, d_epsilon = tf.while_loop(
         row_cond,
         row_body,
         loop_vars=(
             tf.constant(0, tf.int32),
+            row_logsum_blocks,
             query_blocks,
-            initial_d_key,
-            initial_d_values,
             initial_d_epsilon,
         ),
         shape_invariants=(
             tf.TensorShape([]),
             tf.TensorShape(None),
-            key.shape,
-            values.shape,
+            tf.TensorShape(None),
             tf.TensorShape([None]),
         ),
         maximum_iterations=num_row_blocks,
     )
+
+    def key_cond(
+        col_start: tf.Tensor,
+        _key_blocks: tf.TensorArray,
+        _value_blocks: tf.TensorArray,
+    ) -> tf.Tensor:
+        return col_start < num_cols
+
+    def key_body(
+        col_start: tf.Tensor,
+        key_ta: tf.TensorArray,
+        value_ta: tf.TensorArray,
+    ):
+        key_block = _slice_axis1_padded_3d(key, col_start, col_chunk_size)
+        values_block = _slice_axis1_padded_2d(
+            values,
+            col_start,
+            col_chunk_size,
+            pad_value=float(_STREAMING_LOG_ZERO),
+        )
+        d_key_block = tf.zeros([batch_size, col_chunk_size, state_dim], dtype=DTYPE)
+        d_values_block = tf.zeros([batch_size, col_chunk_size], dtype=DTYPE)
+
+        def row_accum_cond(
+            row_start: tf.Tensor,
+            _d_key_block: tf.Tensor,
+            _d_values_block: tf.Tensor,
+        ) -> tf.Tensor:
+            return row_start < num_rows
+
+        def row_accum_body(
+            row_start: tf.Tensor,
+            d_key_block_accum: tf.Tensor,
+            d_values_block_accum: tf.Tensor,
+        ):
+            block_index = row_start // row_chunk_tensor
+            query_block = _slice_axis1_padded_3d(query, row_start, row_chunk_size)
+            upstream_block = _slice_axis1_padded_2d(
+                upstream,
+                row_start,
+                row_chunk_size,
+                pad_value=0.0,
+            )
+            row_logsum = row_logsum_blocks.read(block_index)
+            cost = 0.5 * _pairwise_squared_cross(query_block, key_block)
+            logits = values_block[:, None, :] - cost / epsilon[:, None, None]
+            probs = tf.exp(logits - row_logsum[:, :, None])
+            d_values_next = d_values_block_accum - epsilon[:, None] * tf.reduce_sum(
+                upstream_block[:, :, None] * probs,
+                axis=1,
+            )
+            if stop_keys:
+                d_key_next = d_key_block_accum
+            else:
+                d_cost = upstream_block[:, :, None] * probs
+                diff = query_block[:, :, None, :] - key_block[:, None, :, :]
+                d_key_next = d_key_block_accum + tf.reduce_sum(
+                    d_cost[:, :, :, None] * (-diff),
+                    axis=1,
+                )
+            return row_start + row_chunk_tensor, d_key_next, d_values_next
+
+        _, d_key_block, d_values_block = tf.while_loop(
+            row_accum_cond,
+            row_accum_body,
+            loop_vars=(tf.constant(0, tf.int32), d_key_block, d_values_block),
+            maximum_iterations=num_row_blocks,
+        )
+        block_index = col_start // col_chunk_tensor
+        key_ta = key_ta.write(block_index, d_key_block)
+        value_ta = value_ta.write(block_index, d_values_block)
+        return col_start + col_chunk_tensor, key_ta, value_ta
+
+    _, key_blocks, value_blocks = tf.while_loop(
+        key_cond,
+        key_body,
+        loop_vars=(tf.constant(0, tf.int32), key_blocks, value_blocks),
+        maximum_iterations=num_col_blocks,
+    )
+
     stacked = query_blocks.stack()
     transposed = tf.transpose(stacked, [1, 0, 2, 3])
     d_query = tf.reshape(
         transposed,
         [batch_size, num_row_blocks * row_chunk_tensor, state_dim],
     )[:, :num_rows, :]
+    stacked_key = key_blocks.stack()
+    transposed_key = tf.transpose(stacked_key, [1, 0, 2, 3])
+    d_key = tf.reshape(
+        transposed_key,
+        [batch_size, num_col_blocks * col_chunk_tensor, state_dim],
+    )[:, :num_cols, :]
+    stacked_values = value_blocks.stack()
+    transposed_values = tf.transpose(stacked_values, [1, 0, 2])
+    d_values = tf.reshape(
+        transposed_values,
+        [batch_size, num_col_blocks * col_chunk_tensor],
+    )[:, :num_cols]
     if return_epsilon:
         d_epsilon = _match_epsilon_cotangent_shape(raw_epsilon, d_epsilon)
         return d_query, d_key, d_values, d_epsilon
     return d_query, d_key, d_values
+
+
+def _filterflow_streaming_same_points_softmin_vjp(
+    epsilon: tf.Tensor,
+    points: tf.Tensor,
+    values: tf.Tensor,
+    upstream: tf.Tensor,
+    *,
+    row_chunk_size: int,
+    col_chunk_size: int,
+    return_epsilon: bool = False,
+) -> tuple[tf.Tensor, tf.Tensor] | tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Blockwise VJP for softmin when query/key are the same particle tensor.
+
+    This is algebraically the same as calling `_filterflow_streaming_softmin_vjp`
+    with `query=key=points` and summing the query/key cotangents, but it avoids
+    stacking both full cotangent outputs on the equal-chunk path used by the
+    memory-style total Sinkhorn reverse route.
+    """
+
+    row_chunk_size = _validate_chunk_size(row_chunk_size, "row_chunk_size")
+    col_chunk_size = _validate_chunk_size(col_chunk_size, "col_chunk_size")
+    if row_chunk_size != col_chunk_size:
+        if return_epsilon:
+            d_query, d_key, d_values, d_epsilon = _filterflow_streaming_softmin_vjp(
+                epsilon,
+                points,
+                points,
+                values,
+                upstream,
+                row_chunk_size=row_chunk_size,
+                col_chunk_size=col_chunk_size,
+                stop_keys=False,
+                return_epsilon=True,
+            )
+            return d_query + d_key, d_values, d_epsilon
+        d_query, d_key, d_values = _filterflow_streaming_softmin_vjp(
+            epsilon,
+            points,
+            points,
+            values,
+            upstream,
+            row_chunk_size=row_chunk_size,
+            col_chunk_size=col_chunk_size,
+            stop_keys=False,
+        )
+        return d_query + d_key, d_values
+
+    raw_epsilon = tf.cast(epsilon, DTYPE)
+    points = tf.cast(points, DTYPE)
+    values = tf.cast(values, DTYPE)
+    upstream = tf.cast(upstream, DTYPE)
+    batch_size = tf.shape(points)[0]
+    epsilon = _epsilon_per_batch(raw_epsilon, batch_size)
+    num_points = tf.shape(points)[1]
+    state_dim = tf.shape(points)[2]
+    chunk_tensor = tf.cast(row_chunk_size, tf.int32)
+    num_blocks = (num_points + chunk_tensor - 1) // chunk_tensor
+    row_logsum_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size]),
+        clear_after_read=False,
+    )
+    combined_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size, None]),
+    )
+    value_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size]),
+    )
+    initial_d_epsilon = tf.zeros([batch_size], dtype=DTYPE)
+
+    def logsum_cond(
+        row_start: tf.Tensor,
+        _row_logsum_blocks: tf.TensorArray,
+    ) -> tf.Tensor:
+        return row_start < num_points
+
+    def logsum_body(
+        row_start: tf.Tensor,
+        row_logsum_ta: tf.TensorArray,
+    ):
+        query_block = _slice_axis1_padded_3d(points, row_start, row_chunk_size)
+        running = tf.fill([batch_size, row_chunk_size], tf.constant(-float("inf"), DTYPE))
+
+        def col_cond(col_start: tf.Tensor, _running: tf.Tensor) -> tf.Tensor:
+            return col_start < num_points
+
+        def col_body(col_start: tf.Tensor, running_logsum: tf.Tensor):
+            key_block = _slice_axis1_padded_3d(points, col_start, row_chunk_size)
+            values_block = _slice_axis1_padded_2d(
+                values,
+                col_start,
+                row_chunk_size,
+                pad_value=float(_STREAMING_LOG_ZERO),
+            )
+            cost = 0.5 * _pairwise_squared_cross(query_block, key_block)
+            logits = values_block[:, None, :] - cost / epsilon[:, None, None]
+            block_logsum = tf.reduce_logsumexp(logits, axis=2)
+            return col_start + chunk_tensor, _logaddexp(running_logsum, block_logsum)
+
+        _, row_logsum = tf.while_loop(
+            col_cond,
+            col_body,
+            loop_vars=(tf.constant(0, tf.int32), running),
+            maximum_iterations=num_blocks,
+        )
+        block_index = row_start // chunk_tensor
+        return row_start + chunk_tensor, row_logsum_ta.write(block_index, row_logsum)
+
+    _, row_logsum_blocks = tf.while_loop(
+        logsum_cond,
+        logsum_body,
+        loop_vars=(tf.constant(0, tf.int32), row_logsum_blocks),
+        maximum_iterations=num_blocks,
+    )
+
+    def combined_cond(
+        block_start: tf.Tensor,
+        _combined_blocks: tf.TensorArray,
+        _value_blocks: tf.TensorArray,
+        _d_epsilon: tf.Tensor,
+    ) -> tf.Tensor:
+        return block_start < num_points
+
+    def combined_body(
+        block_start: tf.Tensor,
+        combined_ta: tf.TensorArray,
+        value_ta: tf.TensorArray,
+        d_epsilon_accum: tf.Tensor,
+    ):
+        block_index = block_start // chunk_tensor
+        point_block = _slice_axis1_padded_3d(points, block_start, row_chunk_size)
+        value_block = _slice_axis1_padded_2d(
+            values,
+            block_start,
+            row_chunk_size,
+            pad_value=float(_STREAMING_LOG_ZERO),
+        )
+        upstream_block = _slice_axis1_padded_2d(
+            upstream,
+            block_start,
+            row_chunk_size,
+            pad_value=0.0,
+        )
+        row_logsum = row_logsum_blocks.read(block_index)
+        d_query_block = tf.zeros([batch_size, row_chunk_size, state_dim], dtype=DTYPE)
+        row_d_epsilon = tf.reduce_sum(upstream_block * (-row_logsum), axis=1)
+
+        def query_col_cond(
+            col_start: tf.Tensor,
+            _d_query_block: tf.Tensor,
+            _row_d_epsilon: tf.Tensor,
+        ) -> tf.Tensor:
+            return col_start < num_points
+
+        def query_col_body(
+            col_start: tf.Tensor,
+            d_query_accum: tf.Tensor,
+            inner_row_d_epsilon: tf.Tensor,
+        ):
+            key_block = _slice_axis1_padded_3d(points, col_start, row_chunk_size)
+            values_block = _slice_axis1_padded_2d(
+                values,
+                col_start,
+                row_chunk_size,
+                pad_value=float(_STREAMING_LOG_ZERO),
+            )
+            cost = 0.5 * _pairwise_squared_cross(point_block, key_block)
+            logits = values_block[:, None, :] - cost / epsilon[:, None, None]
+            probs = tf.exp(logits - row_logsum[:, :, None])
+            d_cost = upstream_block[:, :, None] * probs
+            diff = point_block[:, :, None, :] - key_block[:, None, :, :]
+            d_query_next = d_query_accum + tf.reduce_sum(
+                d_cost[:, :, :, None] * diff,
+                axis=2,
+            )
+            expected_cost_block = tf.reduce_sum(probs * cost, axis=2)
+            d_epsilon_from_cost = tf.reduce_sum(
+                upstream_block * (-expected_cost_block / epsilon[:, None]),
+                axis=1,
+            )
+            return (
+                col_start + chunk_tensor,
+                d_query_next,
+                inner_row_d_epsilon + d_epsilon_from_cost,
+            )
+
+        _, d_query_block, row_d_epsilon = tf.while_loop(
+            query_col_cond,
+            query_col_body,
+            loop_vars=(
+                tf.constant(0, tf.int32),
+                d_query_block,
+                row_d_epsilon,
+            ),
+            maximum_iterations=num_blocks,
+        )
+
+        d_key_block = tf.zeros([batch_size, row_chunk_size, state_dim], dtype=DTYPE)
+        d_values_block = tf.zeros([batch_size, row_chunk_size], dtype=DTYPE)
+
+        def key_row_cond(
+            row_start: tf.Tensor,
+            _d_key_block: tf.Tensor,
+            _d_values_block: tf.Tensor,
+        ) -> tf.Tensor:
+            return row_start < num_points
+
+        def key_row_body(
+            row_start: tf.Tensor,
+            d_key_accum: tf.Tensor,
+            d_values_accum: tf.Tensor,
+        ):
+            row_index = row_start // chunk_tensor
+            query_block = _slice_axis1_padded_3d(points, row_start, row_chunk_size)
+            upstream_row = _slice_axis1_padded_2d(
+                upstream,
+                row_start,
+                row_chunk_size,
+                pad_value=0.0,
+            )
+            other_row_logsum = row_logsum_blocks.read(row_index)
+            cost = 0.5 * _pairwise_squared_cross(query_block, point_block)
+            logits = value_block[:, None, :] - cost / epsilon[:, None, None]
+            probs = tf.exp(logits - other_row_logsum[:, :, None])
+            d_values_next = d_values_accum - epsilon[:, None] * tf.reduce_sum(
+                upstream_row[:, :, None] * probs,
+                axis=1,
+            )
+            d_cost = upstream_row[:, :, None] * probs
+            diff = query_block[:, :, None, :] - point_block[:, None, :, :]
+            d_key_next = d_key_accum + tf.reduce_sum(
+                d_cost[:, :, :, None] * (-diff),
+                axis=1,
+            )
+            return row_start + chunk_tensor, d_key_next, d_values_next
+
+        _, d_key_block, d_values_block = tf.while_loop(
+            key_row_cond,
+            key_row_body,
+            loop_vars=(tf.constant(0, tf.int32), d_key_block, d_values_block),
+            maximum_iterations=num_blocks,
+        )
+
+        combined_ta = combined_ta.write(block_index, d_query_block + d_key_block)
+        value_ta = value_ta.write(block_index, d_values_block)
+        return (
+            block_start + chunk_tensor,
+            combined_ta,
+            value_ta,
+            d_epsilon_accum + row_d_epsilon,
+        )
+
+    _, combined_blocks, value_blocks, d_epsilon = tf.while_loop(
+        combined_cond,
+        combined_body,
+        loop_vars=(
+            tf.constant(0, tf.int32),
+            combined_blocks,
+            value_blocks,
+            initial_d_epsilon,
+        ),
+        shape_invariants=(
+            tf.TensorShape([]),
+            tf.TensorShape(None),
+            tf.TensorShape(None),
+            tf.TensorShape([None]),
+        ),
+        maximum_iterations=num_blocks,
+    )
+
+    stacked_combined = combined_blocks.stack()
+    transposed_combined = tf.transpose(stacked_combined, [1, 0, 2, 3])
+    d_points = tf.reshape(
+        transposed_combined,
+        [batch_size, num_blocks * chunk_tensor, state_dim],
+    )[:, :num_points, :]
+    stacked_values = value_blocks.stack()
+    transposed_values = tf.transpose(stacked_values, [1, 0, 2])
+    d_values = tf.reshape(
+        transposed_values,
+        [batch_size, num_blocks * chunk_tensor],
+    )[:, :num_points]
+    if return_epsilon:
+        d_epsilon = _match_epsilon_cotangent_shape(raw_epsilon, d_epsilon)
+        return d_points, d_values, d_epsilon
+    return d_points, d_values
 
 
 def _match_epsilon_cotangent_shape(
@@ -1426,9 +1814,12 @@ def _filterflow_streaming_column_log_normalizer_jvp(
                 + g_block[:, None, :]
                 - cost
             ) / eps[:, None, None]
-            diff = query_block[:, :, None, :] - key_block[:, None, :, :]
-            d_diff = d_query_block[:, :, None, :, :] - d_key_block[:, None, :, :, :]
-            d_cost = tf.reduce_sum(diff[:, :, :, :, None] * d_diff, axis=3)
+            d_cost = _half_pairwise_squared_cross_jvp(
+                query_block,
+                key_block,
+                d_query_block,
+                d_key_block,
+            )
             d_logits = (
                 d_f_block[:, :, None, :]
                 + d_g_block[:, None, :, :]
@@ -1761,9 +2152,12 @@ def _filterflow_streaming_transport_from_potentials_jvp(
                 + logw_block[:, None, :]
             )
             transport_block = tf.exp(log_transport)
-            diff = query_block[:, :, None, :] - key_block[:, None, :, :]
-            d_diff = d_query_block[:, :, None, :, :] - d_key_block[:, None, :, :, :]
-            d_cost = tf.reduce_sum(diff[:, :, :, :, None] * d_diff, axis=3)
+            d_cost = _half_pairwise_squared_cross_jvp(
+                query_block,
+                key_block,
+                d_query_block,
+                d_key_block,
+            )
             d_logit = (
                 d_f_block[:, :, None, :]
                 + d_g_block[:, None, :, :]
@@ -1775,15 +2169,18 @@ def _filterflow_streaming_transport_from_potentials_jvp(
                 + d_logw_block[:, None, :, :]
             )
             transported_increment = tf.matmul(transport_block, particle_block)
-            d_weighted = (
-                transport_block[:, :, :, None, None]
-                * (
-                    d_particle_block[:, None, :, :, :]
-                    + particle_block[:, None, :, :, None]
-                    * d_log_transport[:, :, :, None, :]
-                )
+            d_particle_increment = tf.einsum(
+                "brc,bcdp->brdp",
+                transport_block,
+                d_particle_block,
             )
-            d_increment = tf.reduce_sum(d_weighted, axis=2)
+            d_transport_increment = tf.einsum(
+                "brc,bcd,brcp->brdp",
+                transport_block,
+                particle_block,
+                d_log_transport,
+            )
+            d_increment = d_particle_increment + d_transport_increment
             carried_next = carried_accum + transported_increment
             d_carried_next = d_carried_accum + d_increment
             mass_next = mass_accum + tf.reduce_sum(transport_block, axis=2)
@@ -1870,27 +2267,31 @@ def _filterflow_streaming_transport_from_potentials_vjp(
     )
     row_chunk_tensor = tf.cast(row_chunk_size, tf.int32)
     col_chunk_tensor = tf.cast(col_chunk_size, tf.int32)
+    num_row_blocks = (num_particles + row_chunk_tensor - 1) // row_chunk_tensor
     num_col_blocks = (num_particles + col_chunk_tensor - 1) // col_chunk_tensor
-    d_scaled_x = tf.zeros_like(scaled_x)
-    d_particles = tf.zeros_like(particles)
-    d_f = tf.zeros_like(f)
-    d_logw = tf.zeros_like(logw)
+    s_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_col_blocks,
+        element_shape=tf.TensorShape([None, col_chunk_size]),
+        clear_after_read=False,
+    )
+    particle_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_col_blocks,
+        element_shape=tf.TensorShape([None, col_chunk_size, None]),
+    )
 
     def col_cond(
         col_start: tf.Tensor,
-        _d_scaled_x: tf.Tensor,
-        _d_particles: tf.Tensor,
-        _d_f: tf.Tensor,
-        _d_logw: tf.Tensor,
+        _s_blocks: tf.TensorArray,
+        _particle_blocks: tf.TensorArray,
     ) -> tf.Tensor:
         return col_start < num_particles
 
     def col_body(
         col_start: tf.Tensor,
-        d_scaled_x_accum: tf.Tensor,
-        d_particles_accum: tf.Tensor,
-        d_f_accum: tf.Tensor,
-        d_logw_accum: tf.Tensor,
+        s_ta: tf.TensorArray,
+        particle_ta: tf.TensorArray,
     ):
         key_block = _slice_axis1_padded_3d(scaled_x, col_start, col_chunk_size)
         particle_block = _slice_axis1_padded_3d(
@@ -1973,30 +2374,199 @@ def _filterflow_streaming_transport_from_potentials_vjp(
             first_row_cond,
             first_row_body,
             loop_vars=(tf.constant(0, tf.int32), s_block, d_particle_block),
-            maximum_iterations=(num_particles + row_chunk_tensor - 1) // row_chunk_tensor,
+            maximum_iterations=num_row_blocks,
         )
-        d_particles_next = _scatter_axis1_add_3d(
-            d_particles_accum,
-            col_start,
-            d_particle_block,
-        )
-        d_logw_next = _scatter_axis1_add_2d(
-            d_logw_accum,
-            col_start,
-            s_block,
-        )
+        block_index = col_start // col_chunk_tensor
+        s_ta = s_ta.write(block_index, s_block)
+        particle_ta = particle_ta.write(block_index, d_particle_block)
+        return col_start + col_chunk_tensor, s_ta, particle_ta
 
-        def second_row_cond(
+    _, s_blocks, particle_blocks = tf.while_loop(
+        col_cond,
+        col_body,
+        loop_vars=(tf.constant(0, tf.int32), s_blocks, particle_blocks),
+        maximum_iterations=num_col_blocks,
+    )
+
+    query_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_row_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size, None]),
+    )
+    f_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_row_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size]),
+    )
+
+    def query_cond(
+        row_start: tf.Tensor,
+        _query_blocks: tf.TensorArray,
+        _f_blocks: tf.TensorArray,
+    ) -> tf.Tensor:
+        return row_start < num_particles
+
+    def query_body(
+        row_start: tf.Tensor,
+        query_ta: tf.TensorArray,
+        f_ta: tf.TensorArray,
+    ):
+        query_block = _slice_axis1_padded_3d(scaled_x, row_start, row_chunk_size)
+        f_block = _slice_axis1_padded_2d(
+            f,
+            row_start,
+            row_chunk_size,
+            pad_value=float(_STREAMING_LOG_ZERO),
+        )
+        upstream_block = _slice_axis1_padded_3d(
+            upstream,
+            row_start,
+            row_chunk_size,
+        )
+        d_query_block = tf.zeros([batch_size, row_chunk_size, state_dim], dtype=DTYPE)
+        d_f_block = tf.zeros([batch_size, row_chunk_size], dtype=DTYPE)
+
+        def col_accum_cond(
+            col_start: tf.Tensor,
+            _d_query_block: tf.Tensor,
+            _d_f_block: tf.Tensor,
+        ) -> tf.Tensor:
+            return col_start < num_particles
+
+        def col_accum_body(
+            col_start: tf.Tensor,
+            d_query_accum: tf.Tensor,
+            d_f_accum: tf.Tensor,
+        ):
+            col_index = col_start // col_chunk_tensor
+            s_block = s_blocks.read(col_index)
+            key_block = _slice_axis1_padded_3d(scaled_x, col_start, col_chunk_size)
+            particle_block = _slice_axis1_padded_3d(
+                particles,
+                col_start,
+                col_chunk_size,
+            )
+            g_block = _slice_axis1_padded_2d(
+                g,
+                col_start,
+                col_chunk_size,
+                pad_value=float(_STREAMING_LOG_ZERO),
+            )
+            logw_block = _slice_axis1_padded_2d(
+                logw,
+                col_start,
+                col_chunk_size,
+                pad_value=float(_STREAMING_LOG_ZERO),
+            )
+            norm_block = _slice_axis1_padded_2d(
+                column_log_norm,
+                col_start,
+                col_chunk_size,
+                pad_value=0.0,
+            )
+            cost = 0.5 * _pairwise_squared_cross(query_block, key_block)
+            logit = (
+                f_block[:, :, None]
+                + g_block[:, None, :]
+                - cost
+            ) / eps[:, None, None]
+            log_transport = (
+                logit
+                - norm_block[:, None, :]
+                + log_n
+                + logw_block[:, None, :]
+            )
+            transport_block = tf.exp(log_transport)
+            probs = tf.exp(logit - norm_block[:, None, :])
+            d_transport = tf.reduce_sum(
+                upstream_block[:, :, None, :] * particle_block[:, None, :, :],
+                axis=3,
+            )
+            weighted = d_transport * transport_block
+            d_logit = weighted - probs * s_block[:, None, :]
+            d_cost = -d_logit / eps[:, None, None]
+            diff = query_block[:, :, None, :] - key_block[:, None, :, :]
+            d_query_next = d_query_accum + tf.reduce_sum(
+                d_cost[:, :, :, None] * diff,
+                axis=2,
+            )
+            d_f_next = d_f_accum + tf.reduce_sum(
+                d_logit / eps[:, None, None],
+                axis=2,
+            )
+            return col_start + col_chunk_tensor, d_query_next, d_f_next
+
+        _, d_query_block, d_f_block = tf.while_loop(
+            col_accum_cond,
+            col_accum_body,
+            loop_vars=(tf.constant(0, tf.int32), d_query_block, d_f_block),
+            maximum_iterations=num_col_blocks,
+        )
+        block_index = row_start // row_chunk_tensor
+        query_ta = query_ta.write(block_index, d_query_block)
+        f_ta = f_ta.write(block_index, d_f_block)
+        return row_start + row_chunk_tensor, query_ta, f_ta
+
+    _, query_blocks, f_blocks = tf.while_loop(
+        query_cond,
+        query_body,
+        loop_vars=(tf.constant(0, tf.int32), query_blocks, f_blocks),
+        maximum_iterations=num_row_blocks,
+    )
+
+    key_blocks = tf.TensorArray(
+        dtype=DTYPE,
+        size=num_col_blocks,
+        element_shape=tf.TensorShape([None, col_chunk_size, None]),
+    )
+
+    def key_cond(
+        col_start: tf.Tensor,
+        _key_blocks: tf.TensorArray,
+    ) -> tf.Tensor:
+        return col_start < num_particles
+
+    def key_body(
+        col_start: tf.Tensor,
+        key_ta: tf.TensorArray,
+    ):
+        col_index = col_start // col_chunk_tensor
+        s_block = s_blocks.read(col_index)
+        key_block = _slice_axis1_padded_3d(scaled_x, col_start, col_chunk_size)
+        particle_block = _slice_axis1_padded_3d(
+            particles,
+            col_start,
+            col_chunk_size,
+        )
+        g_block = _slice_axis1_padded_2d(
+            g,
+            col_start,
+            col_chunk_size,
+            pad_value=float(_STREAMING_LOG_ZERO),
+        )
+        logw_block = _slice_axis1_padded_2d(
+            logw,
+            col_start,
+            col_chunk_size,
+            pad_value=float(_STREAMING_LOG_ZERO),
+        )
+        norm_block = _slice_axis1_padded_2d(
+            column_log_norm,
+            col_start,
+            col_chunk_size,
+            pad_value=0.0,
+        )
+        d_key_block = tf.zeros([batch_size, col_chunk_size, state_dim], dtype=DTYPE)
+
+        def row_accum_cond(
             row_start: tf.Tensor,
-            _d_scaled_x: tf.Tensor,
-            _d_f: tf.Tensor,
+            _d_key_block: tf.Tensor,
         ) -> tf.Tensor:
             return row_start < num_particles
 
-        def second_row_body(
+        def row_accum_body(
             row_start: tf.Tensor,
-            inner_d_scaled_x: tf.Tensor,
-            inner_d_f: tf.Tensor,
+            d_key_accum: tf.Tensor,
         ):
             query_block = _slice_axis1_padded_3d(scaled_x, row_start, row_chunk_size)
             f_block = _slice_axis1_padded_2d(
@@ -2030,50 +2600,61 @@ def _filterflow_streaming_transport_from_potentials_vjp(
             )
             weighted = d_transport * transport_block
             d_logit = weighted - probs * s_block[:, None, :]
-            d_f_block = tf.reduce_sum(d_logit / eps[:, None, None], axis=2)
             d_cost = -d_logit / eps[:, None, None]
             diff = query_block[:, :, None, :] - key_block[:, None, :, :]
-            d_query_block = tf.reduce_sum(d_cost[:, :, :, None] * diff, axis=2)
-            d_key_block = tf.reduce_sum(d_cost[:, :, :, None] * (-diff), axis=1)
-            d_scaled_with_query = _scatter_axis1_add_3d(
-                inner_d_scaled_x,
-                row_start,
-                d_query_block,
+            d_key_next = d_key_accum + tf.reduce_sum(
+                d_cost[:, :, :, None] * (-diff),
+                axis=1,
             )
-            d_scaled_next = _scatter_axis1_add_3d(
-                d_scaled_with_query,
-                col_start,
-                d_key_block,
-            )
-            d_f_next = _scatter_axis1_add_2d(inner_d_f, row_start, d_f_block)
-            return row_start + row_chunk_tensor, d_scaled_next, d_f_next
+            return row_start + row_chunk_tensor, d_key_next
 
-        _, d_scaled_x_next, d_f_next = tf.while_loop(
-            second_row_cond,
-            second_row_body,
-            loop_vars=(tf.constant(0, tf.int32), d_scaled_x_accum, d_f_accum),
-            maximum_iterations=(num_particles + row_chunk_tensor - 1) // row_chunk_tensor,
+        _, d_key_block = tf.while_loop(
+            row_accum_cond,
+            row_accum_body,
+            loop_vars=(tf.constant(0, tf.int32), d_key_block),
+            maximum_iterations=num_row_blocks,
         )
-        return (
-            col_start + col_chunk_tensor,
-            d_scaled_x_next,
-            d_particles_next,
-            d_f_next,
-            d_logw_next,
-        )
+        key_ta = key_ta.write(col_index, d_key_block)
+        return col_start + col_chunk_tensor, key_ta
 
-    _, d_scaled_x, d_particles, d_f, d_logw = tf.while_loop(
-        col_cond,
-        col_body,
-        loop_vars=(
-            tf.constant(0, tf.int32),
-            d_scaled_x,
-            d_particles,
-            d_f,
-            d_logw,
-        ),
+    _, key_blocks = tf.while_loop(
+        key_cond,
+        key_body,
+        loop_vars=(tf.constant(0, tf.int32), key_blocks),
         maximum_iterations=num_col_blocks,
     )
+
+    stacked_query = query_blocks.stack()
+    transposed_query = tf.transpose(stacked_query, [1, 0, 2, 3])
+    d_query = tf.reshape(
+        transposed_query,
+        [batch_size, num_row_blocks * row_chunk_tensor, state_dim],
+    )[:, :num_particles, :]
+    stacked_key = key_blocks.stack()
+    transposed_key = tf.transpose(stacked_key, [1, 0, 2, 3])
+    d_key = tf.reshape(
+        transposed_key,
+        [batch_size, num_col_blocks * col_chunk_tensor, state_dim],
+    )[:, :num_particles, :]
+    stacked_particles = particle_blocks.stack()
+    transposed_particles = tf.transpose(stacked_particles, [1, 0, 2, 3])
+    d_particles = tf.reshape(
+        transposed_particles,
+        [batch_size, num_col_blocks * col_chunk_tensor, state_dim],
+    )[:, :num_particles, :]
+    stacked_f = f_blocks.stack()
+    transposed_f = tf.transpose(stacked_f, [1, 0, 2])
+    d_f = tf.reshape(
+        transposed_f,
+        [batch_size, num_row_blocks * row_chunk_tensor],
+    )[:, :num_particles]
+    stacked_s = s_blocks.stack()
+    transposed_s = tf.transpose(stacked_s, [1, 0, 2])
+    d_logw = tf.reshape(
+        transposed_s,
+        [batch_size, num_col_blocks * col_chunk_tensor],
+    )[:, :num_particles]
+    d_scaled_x = d_query + d_key
     d_g = tf.zeros_like(g)
     return d_scaled_x, d_particles, d_f, d_g, d_logw
 
@@ -3078,32 +3659,28 @@ def _filterflow_streaming_finite_sinkhorn_potentials_vjp_total(
     d_b_y = tf.zeros_like(log_beta)
     eps_ = tf.reshape(eps, [-1, 1])
 
-    dc, dk, dv, d_soft_eps = _filterflow_streaming_softmin_vjp(
+    dx_part, dv, d_soft_eps = _filterflow_streaming_same_points_softmin_vjp(
         eps,
         x,
-        key_x,
         log_alpha + b_x / eps_,
         upstream_alpha,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
-        stop_keys=False,
         return_epsilon=True,
     )
-    d_x += dc + dk
+    d_x += dx_part
     d_log_alpha += dv
     d_b_x += dv / eps_
-    dc, dk, dv, d_soft_eps_beta = _filterflow_streaming_softmin_vjp(
+    dx_part, dv, d_soft_eps_beta = _filterflow_streaming_same_points_softmin_vjp(
         eps,
         x,
-        key_x,
         log_beta + a_y / eps_,
         upstream_beta,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
-        stop_keys=False,
         return_epsilon=True,
     )
-    d_x += dc + dk
+    d_x += dx_part
     d_log_beta += dv
     d_a_y += dv / eps_
     # `epsilon` is constant in this primitive target; these cotangents are
@@ -3160,69 +3737,61 @@ def _filterflow_streaming_finite_sinkhorn_potentials_vjp_total(
         active_running = tf.cast(old_running * scaling_factor >= eps, DTYPE)
         old_d_running = d_running_value * scaling_factor * active_running
 
-        dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+        dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
             old_running,
             x,
-            key_x,
             log_alpha + old_b_x / running_,
             0.5 * d_a_y_value,
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
-            stop_keys=False,
             return_epsilon=True,
         )
-        d_x_value += dc + dk
+        d_x_value += dx_part
         d_log_alpha_value += dv
         old_d_b_x += dv / running_
         old_d_running += d_soft_running
         old_d_running += -tf.reduce_sum(dv * old_b_x / (running_ * running_), axis=1)
 
-        dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+        dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
             old_running,
             x,
-            key_x,
             log_beta + old_a_y / running_,
             0.5 * d_b_x_value,
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
-            stop_keys=False,
             return_epsilon=True,
         )
-        d_x_value += dc + dk
+        d_x_value += dx_part
         d_log_beta_value += dv
         old_d_a_y += dv / running_
         old_d_running += d_soft_running
         old_d_running += -tf.reduce_sum(dv * old_a_y / (running_ * running_), axis=1)
 
-        dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+        dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
             old_running,
             x,
-            key_x,
             log_alpha + old_a_x / running_,
             0.5 * d_a_x_value,
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
-            stop_keys=False,
             return_epsilon=True,
         )
-        d_x_value += dc + dk
+        d_x_value += dx_part
         d_log_alpha_value += dv
         old_d_a_x += dv / running_
         old_d_running += d_soft_running
         old_d_running += -tf.reduce_sum(dv * old_a_x / (running_ * running_), axis=1)
 
-        dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+        dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
             old_running,
             x,
-            key_x,
             log_beta + old_b_y / running_,
             0.5 * d_b_y_value,
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
-            stop_keys=False,
             return_epsilon=True,
         )
-        d_x_value += dc + dk
+        d_x_value += dx_part
         d_log_beta_value += dv
         old_d_b_y += dv / running_
         old_d_running += d_soft_running
@@ -3267,60 +3836,52 @@ def _filterflow_streaming_finite_sinkhorn_potentials_vjp_total(
         maximum_iterations=steps,
     )
 
-    dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+    dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
         initial_running,
         x,
-        key_x,
         log_beta,
         d_b_y,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
-        stop_keys=False,
         return_epsilon=True,
     )
-    d_x += dc + dk
+    d_x += dx_part
     d_log_beta += dv
     d_running += d_soft_running
-    dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+    dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
         initial_running,
         x,
-        key_x,
         log_alpha,
         d_a_x,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
-        stop_keys=False,
         return_epsilon=True,
     )
-    d_x += dc + dk
+    d_x += dx_part
     d_log_alpha += dv
     d_running += d_soft_running
-    dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+    dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
         initial_running,
         x,
-        key_x,
         log_beta,
         d_b_x,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
-        stop_keys=False,
         return_epsilon=True,
     )
-    d_x += dc + dk
+    d_x += dx_part
     d_log_beta += dv
     d_running += d_soft_running
-    dc, dk, dv, d_soft_running = _filterflow_streaming_softmin_vjp(
+    dx_part, dv, d_soft_running = _filterflow_streaming_same_points_softmin_vjp(
         initial_running,
         x,
-        key_x,
         log_alpha,
         d_a_y,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
-        stop_keys=False,
         return_epsilon=True,
     )
-    d_x += dc + dk
+    d_x += dx_part
     d_log_alpha += dv
     d_running += d_soft_running
     d_epsilon0 = _match_epsilon_cotangent_shape(raw_epsilon0, d_running)

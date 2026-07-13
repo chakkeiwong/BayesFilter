@@ -153,6 +153,8 @@ def _sequential_verification_diagnostics(
         "check_interval": int(draw_count),
         "max_results": int(draw_count),
         "retained_sample_count": int(draw_count),
+        "verification_min_retained_results_for_pass": int(draw_count),
+        "verification_min_retained_pass_gate_satisfied": True,
         "runtime_finite": True,
         "samples_all_finite": True,
         "target_value_health_passed": True,
@@ -185,6 +187,51 @@ def _operational_exact_l_retune_result(
         },
         diagnostics={"final_step_size": float(step_size)},
     )
+
+
+def _passed_phase7_stage_fixtures():
+    windowed = _windowed_stage()
+    fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=windowed,
+        config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260621, 50),
+            chain_execution_mode="eager",
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        ),
+        run_full_chain=_scripted_full_chain_runner(verification_acceptances=[0.70])[0],
+    )
+
+    def trajectory_run(_adapter: Any, _initial_state: Any, config: Any):
+        return _fake_result(
+            num_results=int(config.num_results),
+            acceptance=0.70,
+            samples=np.zeros((int(config.num_results), 2)),
+        )
+
+    trajectory = hmc_kernel_tuning.run_hmc_frozen_step_trajectory_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=windowed,
+        fixed_mass_step_stage=fixed,
+        config=hmc_kernel_tuning.HMCFrozenStepTrajectoryStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260621, 60),
+            chain_execution_mode="eager",
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+            trajectory_window_lower_multiplier=0.01,
+            trajectory_window_upper_multiplier=100.0,
+        ),
+        run_full_chain=trajectory_run,
+    )
+    assert windowed.passed is True
+    assert fixed.passed is True
+    assert trajectory.passed is True
+    return windowed, fixed, trajectory
 
 
 def _scripted_full_chain_runner(
@@ -416,14 +463,22 @@ def test_tune_verify_repair_config_does_not_expose_hmc_mechanics_or_budgets() ->
     payload = HMCTuneVerifyRepairLoopConfig(
         step_repair_factor=2.5,
         step_repair_high_acceptance_directional_factor=3.0,
+        verification_chunk_max_results=250,
+        verification_min_retained_results_for_pass=1000,
     ).payload()
     assert payload["step_repair_factor"] == pytest.approx(2.5)
     assert payload["step_repair_high_acceptance_directional_factor"] == pytest.approx(3.0)
     assert payload["trajectory_window_lower_multiplier"] == pytest.approx(0.3)
     assert payload["trajectory_window_upper_multiplier"] == pytest.approx(3.0)
+    assert payload["verification_chunk_max_results"] == 250
+    assert payload["verification_min_retained_results_for_pass"] == 1000
     assert HMCTuneVerifyRepairLoopConfig(max_attempts=10).max_attempts == 10
     with pytest.raises(ValueError, match="hard-capped"):
         HMCTuneVerifyRepairLoopConfig(max_attempts=11)
+    with pytest.raises(ValueError, match="verification_chunk_max_results"):
+        HMCTuneVerifyRepairLoopConfig(verification_chunk_max_results=0)
+    with pytest.raises(ValueError, match="verification_min_retained_results_for_pass"):
+        HMCTuneVerifyRepairLoopConfig(verification_min_retained_results_for_pass=0)
 
 
 def test_default_budget_policy_matches_reviewed_phase7_mapping() -> None:
@@ -1650,6 +1705,221 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
         call["role"] == "build"
         and call["uses_dual_averaging"] is False
         for call in calls
+    )
+
+
+def test_sequential_verification_uses_configured_compile_chunk_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    windowed, fixed, trajectory = _passed_phase7_stage_fixtures()
+    sequential_configs: list[Mapping[str, Any]] = []
+
+    class _FakeSequentialVerifier:
+        def __init__(self, config: Any) -> None:
+            self.config = config
+
+        def _configure_retained_target_health_policy(self, policy: str) -> None:
+            assert policy == "none"
+
+        def run(self, **_kwargs: Any):
+            return type(
+                "_SequentialResult",
+                (),
+                    {
+                        "diagnostics": {
+                            **_sequential_verification_diagnostics(
+                                0.70,
+                                draw_count=int(self.config.max_results),
+                                rhat_passed=True,
+                            ),
+                            "sequential_rhat_verification": True,
+                        "passed": True,
+                        "cap_hit": False,
+                        "retained_sample_count": int(self.config.max_results),
+                        "check_interval": int(self.config.check_interval),
+                        "max_results": int(self.config.max_results),
+                        "chunk_count": 4,
+                        "rhat_threshold": float(self.config.rhat_threshold),
+                        "max_finite_rhat": 1.0,
+                        "finite_rhat_count": 2,
+                        "nonfinite_rhat_count": 0,
+                        "all_finite_rhat_at_or_below_threshold": True,
+                        "samples_all_finite": True,
+                        "target_log_prob_finite": True,
+                        "log_accept_ratio_finite": True,
+                        "runtime_s": 0.01,
+                        "runtime_finite": True,
+                        "acceptance_rate": 0.70,
+                        "divergence_status": "not_exposed_by_kernel",
+                        "divergence_count": None,
+                        "hard_vetoes": (),
+                    },
+                },
+            )()
+
+    def fake_sequential_builder(
+        _adapter: Any,
+        _initial_state_template: Any,
+        config: Any,
+    ) -> _FakeSequentialVerifier:
+        sequential_configs.append(
+            {
+                "check_interval": int(config.check_interval),
+                "max_results": int(config.max_results),
+                "min_retained_results_for_pass": int(
+                    config.min_retained_results_for_pass
+                ),
+            }
+        )
+        return _FakeSequentialVerifier(config)
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "build_sequential_rhat_hmc_verifier",
+        fake_sequential_builder,
+    )
+
+    def budget_factory(_dimension: int, attempt_index: int) -> _HMCAttemptBudgetPolicy:
+        base = _tiny_budget_factory(_dimension, attempt_index)
+        return replace(
+            base,
+            verification_num_results=1000,
+            verification_num_burnin_steps=250,
+        )
+
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_loop_config(
+            max_attempts=1,
+            chain_execution_mode="tf_function",
+            verification_chunk_max_results=250,
+            verification_min_retained_results_for_pass=1000,
+        ),
+        _budget_policy_factory=budget_factory,
+        _windowed_stage_runner=lambda **_kwargs: windowed,
+        _fixed_mass_step_stage_runner=lambda **_kwargs: fixed,
+        _frozen_step_trajectory_stage_runner=lambda **_kwargs: trajectory,
+    )
+
+    assert result.passed is True
+    verification = result.attempts[0].verification_diagnostics
+    assert verification["sequential_rhat_policy"]["check_interval"] == 250
+    assert verification["sequential_rhat_policy"]["max_results"] == 1000
+    assert (
+        verification["sequential_rhat_policy"]["minimum_retained_results_for_pass"]
+        == 1000
+    )
+    assert verification["verification_min_retained_pass_gate_satisfied"] is True
+    assert sequential_configs == [
+        {
+            "check_interval": 250,
+            "max_results": 1000,
+            "min_retained_results_for_pass": 1000,
+        }
+    ]
+
+
+def test_sequential_verification_blocks_pass_before_minimum_retained_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    windowed, fixed, trajectory = _passed_phase7_stage_fixtures()
+
+    class _EarlyPassSequentialVerifier:
+        def __init__(self, config: Any) -> None:
+            self.config = config
+
+        def _configure_retained_target_health_policy(self, policy: str) -> None:
+            assert policy == "none"
+
+        def run(self, **_kwargs: Any):
+            return type(
+                "_SequentialResult",
+                (),
+                    {
+                        "diagnostics": {
+                            **_sequential_verification_diagnostics(
+                                0.70,
+                                draw_count=250,
+                                rhat_passed=True,
+                            ),
+                            "sequential_rhat_verification": True,
+                        "passed": True,
+                        "cap_hit": False,
+                        "retained_sample_count": 250,
+                        "check_interval": int(self.config.check_interval),
+                        "max_results": int(self.config.max_results),
+                        "chunk_count": 1,
+                        "rhat_threshold": float(self.config.rhat_threshold),
+                        "max_finite_rhat": 1.0,
+                        "finite_rhat_count": 2,
+                        "nonfinite_rhat_count": 0,
+                        "all_finite_rhat_at_or_below_threshold": True,
+                        "samples_all_finite": True,
+                        "target_log_prob_finite": True,
+                        "log_accept_ratio_finite": True,
+                        "runtime_s": 0.01,
+                        "runtime_finite": True,
+                        "acceptance_rate": 0.70,
+                        "divergence_status": "not_exposed_by_kernel",
+                        "divergence_count": None,
+                        "hard_vetoes": (),
+                    },
+                },
+            )()
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "build_sequential_rhat_hmc_verifier",
+        lambda _adapter, _initial_state_template, config: _EarlyPassSequentialVerifier(
+            config
+        ),
+    )
+
+    def budget_factory(_dimension: int, attempt_index: int) -> _HMCAttemptBudgetPolicy:
+        base = _tiny_budget_factory(_dimension, attempt_index)
+        return replace(
+            base,
+            verification_num_results=1000,
+            verification_num_burnin_steps=250,
+        )
+
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_loop_config(
+            max_attempts=1,
+            chain_execution_mode="tf_function",
+            verification_chunk_max_results=250,
+            verification_min_retained_results_for_pass=1000,
+        ),
+        _budget_policy_factory=budget_factory,
+        _windowed_stage_runner=lambda **_kwargs: windowed,
+        _fixed_mass_step_stage_runner=lambda **_kwargs: fixed,
+        _frozen_step_trajectory_stage_runner=lambda **_kwargs: trajectory,
+    )
+
+    assert result.passed is False
+    attempt = result.attempts[0]
+    assert attempt.final_status == "repair_or_retry"
+    assert attempt.diagnostic_role == "verification_minimum_retained_repair_trigger"
+    assert (
+        "verification_minimum_retained_results_not_reached"
+        in attempt.repair_triggers
+    )
+    assert (
+        attempt.verification_diagnostics[
+            "rhat_passed_before_minimum_retained_count"
+        ]
+        is True
+    )
+    assert (
+        attempt.verification_diagnostics[
+            "verification_min_retained_pass_gate_satisfied"
+        ]
+        is False
     )
 
 

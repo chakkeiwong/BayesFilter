@@ -204,6 +204,45 @@ def test_target_builder_emits_batch_native_values_scores_and_metadata() -> None:
     assert adapter.value_score_capability().xla_hmc_ready is False
 
 
+def test_target_builder_xla_hmc_ready_is_explicit_evidence_backed_opt_in() -> None:
+    with pytest.raises(InvalidSSMTargetBuilderContract, match="evidence_path"):
+        build_ssm_posterior_adapter(
+            contract=_contract(),
+            prior_log_prob_and_grad=_prior_log_prob_and_grad,
+            filter_log_likelihood_and_grad=_toy_filter_log_likelihood_and_grad,
+            dtype=tf.float64,
+            xla_hmc_ready=True,
+        )
+
+    adapter = build_ssm_posterior_adapter(
+        contract=_contract(),
+        prior_log_prob_and_grad=_prior_log_prob_and_grad,
+        filter_log_likelihood_and_grad=_toy_filter_log_likelihood_and_grad,
+        dtype=tf.float64,
+        evidence_path="tests/test_general_ssm_target_builder.py",
+        xla_hmc_ready=True,
+    )
+    capability = adapter.value_score_capability()
+
+    assert capability.value_score_authority == "graph_native"
+    assert capability.xla_hmc_ready is True
+    assert capability.is_accepted_xla_hmc_authority is True
+    assert capability.full_chain_xla_diagnostic_ready is False
+    assert adapter.manifest_payload()["xla_hmc_ready"] is True
+
+
+def test_target_builder_full_chain_xla_requires_target_xla_authority() -> None:
+    with pytest.raises(InvalidSSMTargetBuilderContract, match="requires xla_hmc_ready"):
+        build_ssm_posterior_adapter(
+            contract=_contract(),
+            prior_log_prob_and_grad=_prior_log_prob_and_grad,
+            filter_log_likelihood_and_grad=_toy_filter_log_likelihood_and_grad,
+            dtype=tf.float64,
+            evidence_path="tests/test_general_ssm_target_builder.py",
+            full_chain_xla_diagnostic_ready=True,
+        )
+
+
 def test_target_builder_matches_direct_prior_plus_filter_likelihood() -> None:
     adapter = _adapter()
     theta = tf.constant(

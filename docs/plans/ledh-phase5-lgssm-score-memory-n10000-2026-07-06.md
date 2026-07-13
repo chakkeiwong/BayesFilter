@@ -1,5 +1,11 @@
 # ledh-phase5-lgssm-score-memory-n10000-2026-07-06
 
+Historical note: this artifact used `dtype=float64`. Under the active LEDH
+execution directive in
+`docs/plans/bayesfilter-ledh-tf32-only-execution-policy-reset-2026-07-10.md`,
+it is historical/reference evidence only and must not be cited as current TF32
+LEDH production, admission, or leaderboard evidence.
+
 - Row: `benchmark_lgssm_exact_oracle_m3_T50`
 - Score route: `compact_forward_sensitivity_no_autodiff_same_scalar_lgssm_ledh_pfpf_ot`
 - Particles: `10000`

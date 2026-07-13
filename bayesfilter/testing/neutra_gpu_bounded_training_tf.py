@@ -1,9 +1,13 @@
-"""Bounded GPU-only NeuTra optimizer-training gate for LGSSM targets.
+"""Bounded GPU/XLA-only NeuTra optimizer-training gate for LGSSM targets.
 
-This Phase 10 fixture runs a small affine-diagonal NeuTra-style optimizer
+This Phase 16 fixture runs a small affine-diagonal NeuTra-style optimizer
 training loop for one admitted non-DSGE route.  It is deliberately narrower
 than a full transport-training or HMC-validation workflow: no HMC, no external
-sample generation, no XLA/JIT claim, and no posterior correctness claim.
+sample generation, no broad XLA/JIT claim, and no posterior correctness claim.
+
+The live route is manual-score only and requires ``jit_compile=True``.  The old
+Phase 10 non-XLA training artifact remains historical context only and must not
+be used as a promotion or packaging source after the Phase 14A/15 policy repair.
 """
 
 from __future__ import annotations
@@ -37,14 +41,14 @@ from bayesfilter.testing.neutra_gpu_training_preflight_tf import (
 
 
 NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS = (
-    "Phase 10 bounded GPU affine NeuTra optimizer-training gate only",
+    "Phase 16 bounded GPU/XLA affine NeuTra optimizer-training gate only",
     "no full NeuTra training claim",
     "no dense IAF training claim",
     "no frozen transport payload promotion",
     "no external sample generation claim",
     "no HMC tuning or sampling claim",
     "no posterior convergence claim",
-    "no XLA readiness claim",
+    "no broad XLA readiness claim",
     "no route ranking claim",
     "no production readiness claim",
     "no default execution readiness claim",
@@ -54,6 +58,7 @@ NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS = (
 DEFAULT_PHASE10_ARTIFACT_DIR = Path(
     "docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07"
 )
+DEFAULT_PHASE16_ARTIFACT_DIR = DEFAULT_PHASE10_ARTIFACT_DIR
 DEFAULT_SEED = 20260707
 DEFAULT_STEPS = 12
 DEFAULT_BATCH_SIZE = 16
@@ -62,12 +67,12 @@ DEFAULT_INITIAL_RAW_SCALE = -1.3862943611198906
 
 
 class NeuTraGPUBoundedTrainingError(RuntimeError):
-    """Raised when the Phase 10 bounded GPU training contract is violated."""
+    """Raised when the Phase 16 bounded GPU/XLA training contract is violated."""
 
 
 @dataclass(frozen=True)
 class NeuTraGPUBoundedTrainingConfig:
-    """Configuration for Phase 10 bounded GPU-only optimizer training."""
+    """Configuration for Phase 16 bounded GPU/XLA optimizer training."""
 
     route_id: str = LGSSM_QR_ROUTE_ID
     seed: int = DEFAULT_SEED
@@ -76,33 +81,33 @@ class NeuTraGPUBoundedTrainingConfig:
     learning_rate: float = DEFAULT_LEARNING_RATE
     initial_raw_scale: float = DEFAULT_INITIAL_RAW_SCALE
     device: str = "/GPU:0"
-    jit_compile: bool = False
+    jit_compile: bool = True
     require_gpu: bool = True
     disallow_soft_placement: bool = True
-    artifact_dir: Path = DEFAULT_PHASE10_ARTIFACT_DIR
+    artifact_dir: Path = DEFAULT_PHASE16_ARTIFACT_DIR
 
     @property
     def training_state_path(self) -> Path:
         route_slug = str(self.route_id).replace("/", "_").replace("-", "_")
         return self.artifact_dir / (
-            f"{route_slug}_affine_neutra_gpu_training_state_seed{int(self.seed)}.json"
+            f"{route_slug}_affine_neutra_gpu_xla_training_state_seed{int(self.seed)}.json"
         )
 
     def normalized(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.neutra.gpu_bounded_training_config.v1",
+            "schema": "bayesfilter.neutra.gpu_xla_bounded_training_config.v1",
+            "phase": "phase16_bounded_gpu_xla_neutra_training",
             "route_id": str(self.route_id),
             "seed": int(self.seed),
             "steps": int(self.steps),
             "batch_size": int(self.batch_size),
             "learning_rate": float(self.learning_rate),
-            "optimizer": "tf.keras.optimizers.Adam",
+            "optimizer": "manual_score_gradient_descent",
             "initial_raw_scale": float(self.initial_raw_scale),
             "device": str(self.device),
             "jit_compile": bool(self.jit_compile),
-            "xla_readiness_policy": (
-                "phase9_xla_blocker_inherited_jit_compile_false_required"
-            ),
+            "xla_readiness_policy": "jit_compile_true_required_no_fallback",
+            "gradient_policy": "manual_score_no_gradienttape",
             "require_gpu": bool(self.require_gpu),
             "disallow_soft_placement": bool(self.disallow_soft_placement),
             "artifact_dir": str(self.artifact_dir),
@@ -112,7 +117,7 @@ class NeuTraGPUBoundedTrainingConfig:
             "external_sample_generation_policy": (
                 "multicore_cpu_separate_phase_not_run_here"
             ),
-            "hmc_policy": "not_run_not_authorized_for_phase10",
+            "hmc_policy": "not_run_not_authorized_for_phase16",
             "full_neutra_training_executed": False,
             "bounded_optimizer_training_executed": True,
             "hmc_executed": False,
@@ -124,7 +129,7 @@ class NeuTraGPUBoundedTrainingConfig:
 def run_neutra_gpu_bounded_training(
     config: NeuTraGPUBoundedTrainingConfig | None = None,
 ) -> Mapping[str, Any]:
-    """Run Phase 10 bounded optimizer training and write the state artifact."""
+    """Run Phase 16 bounded optimizer training and write the state artifact."""
 
     cfg = NeuTraGPUBoundedTrainingConfig() if config is None else config
     start = time.monotonic()
@@ -161,13 +166,13 @@ def phase10_error_payload(
     *,
     config: NeuTraGPUBoundedTrainingConfig,
 ) -> Mapping[str, Any]:
-    """Build a Phase 10 blocker payload without converting failure into evidence."""
+    """Build a Phase 16 blocker payload without converting failure into evidence."""
 
     return {
-        "schema": "bayesfilter.neutra.gpu_bounded_training_state.v1",
-        "phase": "phase10_bounded_gpu_neutra_training",
+        "schema": "bayesfilter.neutra.gpu_xla_bounded_training_state.v1",
+        "phase": "phase16_bounded_gpu_xla_neutra_training",
         "passed": False,
-        "decision": "BLOCK_PHASE10_BOUNDED_GPU_NEUTRA_TRAINING",
+        "decision": "BLOCK_PHASE16_BOUNDED_GPU_XLA_NEUTRA_TRAINING",
         "config": config.normalized(),
         "error_type": type(error).__name__,
         "error_message": str(error),
@@ -176,6 +181,9 @@ def phase10_error_payload(
         "hmc_executed": False,
         "external_sample_generation_executed": False,
         "jit_compile": bool(config.jit_compile),
+        "jit_compile_false_runtime_executed": False,
+        "runtime_autodiff_executed": False,
+        "keras_optimizer_gradient_route_executed": False,
         "nonclaims": NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS,
     }
 
@@ -200,18 +208,18 @@ def _train_lgssm_route(
 
     with tf.device(config.device):
         tf.random.set_seed(int(config.seed))
-        shift = tf.Variable(initial_shift, name="phase10_lgssm_shift")
+        shift = tf.Variable(initial_shift, name="phase16_lgssm_shift")
         raw_scale = tf.Variable(
             tf.fill(tf.shape(initial_shift), tf.cast(config.initial_raw_scale, tf.float64)),
-            name="phase10_lgssm_raw_scale",
+            name="phase16_lgssm_raw_scale",
         )
-        optimizer = tf.keras.optimizers.Adam(learning_rate=float(config.learning_rate))
-        objective = tf.function(
-            lambda shift_arg, raw_scale_arg, z_arg: _reverse_kl_style_loss(
+        train_step = tf.function(
+            lambda z_arg: _manual_affine_neutra_train_step(
                 adapter,
                 z_arg,
-                shift=shift_arg,
-                raw_scale=raw_scale_arg,
+                shift=shift,
+                raw_scale=raw_scale,
+                learning_rate=tf.cast(config.learning_rate, tf.float64),
             ),
             jit_compile=bool(config.jit_compile),
         )
@@ -222,17 +230,15 @@ def _train_lgssm_route(
                 seed=tf.constant([int(config.seed), int(step)], dtype=tf.int32),
                 dtype=tf.float64,
             )
-            with tf.GradientTape() as tape:
-                loss = objective(shift, raw_scale, z)
-            gradients = tape.gradient(loss, [shift, raw_scale])
-            if any(gradient is None for gradient in gradients):
-                raise NeuTraGPUBoundedTrainingError("training gradient must be available")
+            loss, shift_gradient, raw_scale_gradient, shift_after, raw_scale_after = (
+                train_step(z)
+            )
+            gradients = [shift_gradient, raw_scale_gradient]
             _require_finite_tensor(loss, "training loss")
             for name, gradient in zip(("shift", "raw_scale"), gradients):
                 _require_finite_tensor(gradient, f"{name} gradient")
-            optimizer.apply_gradients(zip(gradients, [shift, raw_scale]))
-            _require_finite_tensor(shift, "learned shift")
-            _require_finite_tensor(raw_scale, "learned raw_scale")
+            _require_finite_tensor(shift_after, "learned shift")
+            _require_finite_tensor(raw_scale_after, "learned raw_scale")
 
             loss_value = float(loss.numpy())
             losses.append(loss_value)
@@ -249,8 +255,8 @@ def _train_lgssm_route(
                     "step": int(step),
                     "loss": _placement(loss),
                     "z": _placement(z),
-                    "shift": _placement(shift),
-                    "raw_scale": _placement(raw_scale),
+                    "shift": _placement(shift_after),
+                    "raw_scale": _placement(raw_scale_after),
                     "shift_gradient": _placement(gradients[0]),
                     "raw_scale_gradient": _placement(gradients[1]),
                 }
@@ -264,23 +270,23 @@ def _train_lgssm_route(
     )
     objective_outputs_on_gpu = all("GPU" in device.upper() for device in output_devices)
     if not objective_outputs_on_gpu:
-        raise NeuTraGPUBoundedTrainingError("Phase 10 objective tensors must stay on GPU")
+        raise NeuTraGPUBoundedTrainingError("Phase 16 objective tensors must stay on GPU")
 
-    optimizer_variable_devices = tuple(
-        _placement(variable) for variable in getattr(optimizer, "variables", ())
+    trainable_variable_devices = tuple(
+        _placement(variable) for variable in (shift, raw_scale)
     )
-    if not optimizer_variable_devices:
-        raise NeuTraGPUBoundedTrainingError("optimizer state must be materialized")
+    if not trainable_variable_devices:
+        raise NeuTraGPUBoundedTrainingError("training variables must be materialized")
     finite_losses = all(_is_finite_number(item) for item in losses)
     if not finite_losses:
         raise NeuTraGPUBoundedTrainingError("loss history must be finite")
     learned_shift = tuple(float(item) for item in shift.numpy().tolist())
     learned_raw_scale = tuple(float(item) for item in raw_scale.numpy().tolist())
     payload = {
-        "schema": "bayesfilter.neutra.gpu_bounded_training_state.v1",
-        "phase": "phase10_bounded_gpu_neutra_training",
+        "schema": "bayesfilter.neutra.gpu_xla_bounded_training_state.v1",
+        "phase": "phase16_bounded_gpu_xla_neutra_training",
         "passed": True,
-        "decision": "PASS_PHASE10_BOUNDED_GPU_NEUTRA_TRAINING",
+        "decision": "PASS_PHASE16_BOUNDED_GPU_XLA_NEUTRA_TRAINING",
         "route": {
             "route_id": LGSSM_QR_ROUTE_ID,
             "target_family": "lgssm_static_qr",
@@ -312,13 +318,14 @@ def _train_lgssm_route(
             "per_step_devices": per_step_devices,
             "objective_output_devices": list(output_devices),
             "all_objective_outputs_on_gpu": bool(objective_outputs_on_gpu),
-            "optimizer_variable_devices": list(optimizer_variable_devices),
+            "trainable_variable_devices": list(trainable_variable_devices),
             "soft_device_placement": bool(tf.config.get_soft_device_placement()),
         },
         "optimizer": {
-            "name": "tf.keras.optimizers.Adam",
+            "name": "manual_score_gradient_descent",
             "learning_rate": float(config.learning_rate),
-            "variable_count": len(optimizer_variable_devices),
+            "variable_count": len(trainable_variable_devices),
+            "update_function_jit_compile": bool(config.jit_compile),
         },
         "optimizer_steps_executed": int(config.steps),
         "full_neutra_training_executed": False,
@@ -327,37 +334,45 @@ def _train_lgssm_route(
         "external_sample_generation_executed": False,
         "frozen_transport_payload_written": False,
         "training_objective": (
-            "reverse_kl_style_mean_negative_log_p_forward_transport_plus_logdet"
+            "manual_score_reverse_kl_style_mean_negative_log_p_forward_transport_plus_logdet"
         ),
         "loss_interpretation": "explanatory_training_diagnostic_only",
         "jit_compile": bool(config.jit_compile),
+        "jit_compile_false_runtime_executed": False,
+        "runtime_autodiff_executed": False,
+        "keras_optimizer_gradient_route_executed": False,
+        "sample_generation_executed": False,
         "xla_blocker_status": {
-            "phase9_xla_blocker_inherited": True,
-            "phase10_jit_compile": bool(config.jit_compile),
+            "phase9_xla_blocker_inherited": False,
+            "phase16_jit_compile": bool(config.jit_compile),
+            "jit_compile_true_required": True,
+            "jit_compile_false_runtime_executed": False,
+            "manual_score_no_gradienttape": True,
             "xla_readiness_claimed": False,
-            "blocker_artifact": (
+            "compile_gate_artifact": (
                 "docs/plans/"
-                "bayesfilter-lgssm-first-neutra-hmc-phase9-gpu-neutra-training-"
-                "preflight-xla-blocker-2026-07-07.json"
+                "bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-"
+                "compile-diagnostic-2026-07-08.json"
             ),
         },
         "evidence_contract": {
             "question": (
                 "Can BayesFilter run bounded GPU NeuTra optimizer training for "
-                "one admitted non-DSGE route without CPU fallback, HMC, or "
-                "sample generation?"
+                "one admitted non-DSGE route with jit_compile=True and without "
+                "CPU fallback, HMC, or sample generation?"
             ),
             "primary_criterion": (
-                "predeclared bounded optimizer steps complete on GPU with "
-                "finite loss and gradient diagnostics and a written training "
-                "state artifact"
+                "predeclared bounded optimizer steps complete on trusted GPU "
+                "with jit_compile=True, finite manual-score loss/gradient "
+                "diagnostics, and a written training-state artifact"
             ),
             "vetoes": (
                 "missing trusted TensorFlow GPU",
+                "jit_compile=false runtime run",
                 "CPU training fallback",
                 "nonfinite loss or gradient",
                 "non-GPU objective tensor",
-                "unreviewed XLA/JIT requirement",
+                "runtime autodiff in admitted training route",
                 "hidden HMC",
                 "hidden external sample generation",
             ),
@@ -378,14 +393,52 @@ def _reverse_kl_style_loss(
     *,
     shift: tf.Tensor,
     raw_scale: tf.Tensor,
-) -> tf.Tensor:
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     scale = tf.exp(raw_scale)
     theta = shift[tf.newaxis, :] + scale[tf.newaxis, :] * z
-    value, _score = adapter.log_prob_and_grad(theta)
+    value, theta_score = adapter.log_prob_and_grad(theta)
     logdet = tf.reduce_sum(raw_scale)
     loss = -tf.reduce_mean(value + logdet)
-    tf.debugging.assert_all_finite(loss, "Phase 10 NeuTra training loss must be finite")
-    return loss
+    batch_size = tf.cast(tf.shape(z)[0], theta_score.dtype)
+    shift_gradient = -tf.reduce_mean(theta_score, axis=0)
+    raw_scale_gradient = -tf.reduce_sum(theta_score * scale[tf.newaxis, :] * z, axis=0)
+    raw_scale_gradient = raw_scale_gradient / batch_size
+    raw_scale_gradient = raw_scale_gradient - tf.ones_like(raw_scale)
+    tf.debugging.assert_all_finite(loss, "Phase 16 NeuTra training loss must be finite")
+    tf.debugging.assert_all_finite(
+        shift_gradient,
+        "Phase 16 NeuTra training shift gradient must be finite",
+    )
+    tf.debugging.assert_all_finite(
+        raw_scale_gradient,
+        "Phase 16 NeuTra training raw-scale gradient must be finite",
+    )
+    return loss, shift_gradient, raw_scale_gradient
+
+
+def _manual_affine_neutra_train_step(
+    adapter: Any,
+    z: tf.Tensor,
+    *,
+    shift: tf.Variable,
+    raw_scale: tf.Variable,
+    learning_rate: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    loss, shift_gradient, raw_scale_gradient = _reverse_kl_style_loss(
+        adapter,
+        z,
+        shift=shift,
+        raw_scale=raw_scale,
+    )
+    shift.assign_sub(learning_rate * shift_gradient)
+    raw_scale.assign_sub(learning_rate * raw_scale_gradient)
+    return (
+        loss,
+        shift_gradient,
+        raw_scale_gradient,
+        tf.identity(shift),
+        tf.identity(raw_scale),
+    )
 
 
 def _gpu_manifest(
@@ -429,12 +482,12 @@ def _validate_config(config: NeuTraGPUBoundedTrainingConfig) -> None:
     if route_id != LGSSM_QR_ROUTE_ID:
         if route_id in {MODEL_B_SVD_UKF_ROUTE_ID, MODEL_B_SVD_CUBATURE_ROUTE_ID}:
             raise NeuTraGPUBoundedTrainingError(
-                "Phase 10 selects only the LGSSM QR route; simple nonlinear "
+                "Phase 16 selects only the LGSSM QR route; simple nonlinear "
                 "routes remain admitted for preflight but not this bounded run"
             )
         if route_id in set(DEFERRED_NEUTRA_GPU_PREFLIGHT_ROUTE_IDS):
-            raise NeuTraGPUBoundedTrainingError(f"Phase 10 route is deferred: {route_id}")
-        raise NeuTraGPUBoundedTrainingError(f"unknown Phase 10 route id: {route_id}")
+            raise NeuTraGPUBoundedTrainingError(f"Phase 16 route is deferred: {route_id}")
+        raise NeuTraGPUBoundedTrainingError(f"unknown Phase 16 route id: {route_id}")
     if int(config.seed) < 0:
         raise NeuTraGPUBoundedTrainingError("seed must be nonnegative")
     if int(config.steps) <= 0 or int(config.steps) > 200:
@@ -444,12 +497,13 @@ def _validate_config(config: NeuTraGPUBoundedTrainingConfig) -> None:
     if float(config.learning_rate) <= 0.0:
         raise NeuTraGPUBoundedTrainingError("learning_rate must be positive")
     if str(config.device).upper().find("GPU") < 0:
-        raise NeuTraGPUBoundedTrainingError("Phase 10 bounded training requires a GPU device")
+        raise NeuTraGPUBoundedTrainingError("Phase 16 bounded training requires a GPU device")
     if bool(config.require_gpu) is not True:
-        raise NeuTraGPUBoundedTrainingError("Phase 10 forbids CPU training fallback")
-    if bool(config.jit_compile):
+        raise NeuTraGPUBoundedTrainingError("Phase 16 forbids CPU training fallback")
+    if bool(config.jit_compile) is not True:
         raise NeuTraGPUBoundedTrainingError(
-            "Phase 10 inherits the Phase 9 XLA blocker and requires jit_compile=false"
+            "Phase 16 bounded GPU/XLA NeuTra training requires jit_compile=true; "
+            "jit_compile=false runtime runs are forbidden"
         )
     if os.environ.get("CUDA_VISIBLE_DEVICES") == "-1":
         raise NeuTraGPUBoundedTrainingError(
@@ -539,10 +593,10 @@ def _stable_payload_sha256(payload: Mapping[str, Any]) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI entrypoint for trusted Phase 10 GPU bounded training."""
+    """CLI entrypoint for trusted Phase 16 GPU/XLA bounded training."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--artifact-dir", type=Path, default=DEFAULT_PHASE10_ARTIFACT_DIR)
+    parser.add_argument("--artifact-dir", type=Path, default=DEFAULT_PHASE16_ARTIFACT_DIR)
     parser.add_argument("--route", default=LGSSM_QR_ROUTE_ID)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS)
@@ -552,8 +606,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--device", default="/GPU:0")
     parser.add_argument(
         "--jit-compile",
+        dest="jit_compile",
         action="store_true",
-        help="Rejected until the inherited Phase 9 XLA blocker is repaired.",
+        default=True,
+        help="Required; retained for explicit manifests.",
+    )
+    parser.add_argument(
+        "--no-jit-compile",
+        dest="jit_compile",
+        action="store_false",
+        help="Rejected: non-XLA NeuTra training runs are forbidden.",
     )
     args = parser.parse_args(argv)
     config = NeuTraGPUBoundedTrainingConfig(

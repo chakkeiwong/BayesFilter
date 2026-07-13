@@ -2,9 +2,11 @@
 
 This runner targets the existing leaderboard row
 ``benchmark_lgssm_exact_oracle_m3_T50`` with ``D=3``, ``T=50``, dataset seed
-``81100``, and theta ``[0.72, 0.55, 0.35, 0.35, 0.45]``.  The admitted score
+``81100``, and theta ``[0.72, 0.55, 0.35, 0.35, 0.45]``.  The default score
 route is the compact no-autodiff forward-sensitivity derivative of the same
-LEDH-PFPF-OT scalar computed by the value path.
+LEDH-PFPF-OT scalar computed by the value path.  The full-history reverse/VJP
+path is historical/diagnostic only because it stores time-indexed filtering
+auxiliaries and is not the N=10000 score route.
 
 It must not import ``benchmark_two_lane_highdim_leaderboard.py`` because that
 module hides CUDA devices at import time.
@@ -22,8 +24,9 @@ import statistics
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 
 _PRE_PARSER = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
@@ -44,8 +47,22 @@ import tensorflow as tf
 
 from bayesfilter.linear.kalman_tf import tf_kalman_log_likelihood
 from bayesfilter.highdim.ledh_forward_contract import (
+    LEDH_OUTPUT_TENSOR_FIELD_LOG_LIKELIHOOD,
+    LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD,
     make_lgssm_m3_t50_forward_contract,
+    validate_ledh_forward_scalar_artifact,
 )
+from bayesfilter.highdim.ledh_score_contract import (
+    LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_TINY,
+    LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
+    LEDH_SCORE_COMPACT_LGSSM_PROVENANCE,
+    LEDH_SCORE_MEMORY_STYLE_LGSSM_PROVENANCE,
+    LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
+    LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
+    validate_ledh_score_artifact,
+)
+from bayesfilter.highdim.ledh_score_artifact import build_ledh_score_artifact
 from experiments.dpf_implementation.tf_tfp.filters import (
     experimental_batched_ledh_pfpf_ot_streaming_tf as streaming_tf,
 )
@@ -64,22 +81,32 @@ DATASET_SEED = 81100
 TRUTH_THETA = [0.72, 0.55, 0.35, 0.35, 0.45]
 PARAMETER_NAMES = ("phi1", "phi2", "phi3", "q_scale", "r_scale")
 FULL_ROW_BATCH_SEEDS = (81120, 81121, 81122, 81123, 81124)
-FULL_ROW_NUM_PARTICLES = 1000
+FULL_ROW_NUM_PARTICLES = 10000
 FULL_ROW_TIME_STEPS = 50
 FULL_ROW_TRANSPORT_POLICY = "active-all"
 FULL_ROW_SINKHORN_ITERATIONS = 10
 FULL_ROW_SINKHORN_EPSILON = 0.5
+FULL_ROW_SCORE_MEMORY_BUDGET_MIB = 14000.0
+SOURCE_VALUE_ARTIFACT_PATH = (
+    "docs/plans/ledh-phase2-lgssm-forward-scalar-artifact-2026-07-07.json"
+)
 STATE_DIM = 3
 OBS_DIM = 3
 DTYPE = tf.float32
-HISTORICAL_MANUAL_SCORE_ROUTE_ID = (
-    "historical_diagnostic_manual_reverse_scan_no_autodiff_same_scalar_lgssm_ledh_pfpf_ot"
-)
+HISTORICAL_MANUAL_SCORE_ROUTE_ID = LEDH_SCORE_MEMORY_STYLE_LGSSM_PROVENANCE
+HISTORICAL_REVERSE_SCORE_ROUTE_ID = HISTORICAL_MANUAL_SCORE_ROUTE_ID
+COMPACT_SCORE_ROUTE_ID = LEDH_SCORE_COMPACT_LGSSM_PROVENANCE
+MEMORY_STYLE_SCORE_ROUTE_ID = HISTORICAL_MANUAL_SCORE_ROUTE_ID
 MANUAL_SCORE_ROUTE_ID = HISTORICAL_MANUAL_SCORE_ROUTE_ID
-COMPACT_SCORE_ROUTE_ID = (
-    "compact_forward_sensitivity_no_autodiff_same_scalar_lgssm_ledh_pfpf_ot"
-)
+# Compatibility alias for older result fields that named the compact route
+# "historical".  The compact forward-sensitivity route is now the default
+# memory-efficient score route; the full-history reverse path above is the
+# historical diagnostic.
+HISTORICAL_COMPACT_SCORE_ROUTE_ID = COMPACT_SCORE_ROUTE_ID
 SAME_SCALAR_ROUTE_ID = "same_target_lgssm_m3_t50_ledh_pfpf_ot_streaming_manual_total"
+RAW_COMPACT_ADMITTED_STATUS = "admitted_same_target_compact_score"
+RAW_MEMORY_STYLE_ADMITTED_STATUS = "admitted_same_target_memory_style_score"
+RAW_HISTORICAL_COMPACT_ADMITTED_STATUS = "legacy_historical_admitted_same_target_compact_score"
 NONCLAIMS = (
     "not exact Kalman score evidence",
     "not HMC/NUTS readiness evidence",
@@ -136,6 +163,21 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--score-fd-atol", type=float, default=5.0e-3)
     parser.add_argument("--score-fd-rtol", type=float, default=5.0e-3)
     parser.add_argument(
+        "--score-diagnostic-stage",
+        choices=("score-and-fd", "score-only", "fd-only"),
+        default="score-and-fd",
+        help=(
+            "Split LGSSM score diagnostics. score-only emits compact "
+            "forward-sensitivity score without FD; fd-only emits same-scalar FD values "
+            "without score."
+        ),
+    )
+    parser.add_argument(
+        "--score-reference-json",
+        default=None,
+        help="Score-only raw shard JSON used by --score-diagnostic-stage=fd-only.",
+    )
+    parser.add_argument(
         "--history-mode",
         choices=("full", "value-only"),
         default="full",
@@ -148,14 +190,39 @@ def _parse_args() -> argparse.Namespace:
         choices=("default", "enabled", "disabled"),
         default="enabled",
     )
+    parser.add_argument(
+        "--score-fd-tf32-mode",
+        choices=("match", "default", "enabled", "disabled"),
+        default="match",
+        help=(
+            "TF32 mode used only for same-scalar finite-difference correctness; "
+            "'match' uses --tf32-mode."
+        ),
+    )
     parser.add_argument("--device", default="/GPU:0")
     parser.add_argument("--device-scope", choices=("cpu", "visible"), default=_PRE_ARGS.device_scope)
     parser.add_argument("--cuda-visible-devices", default=_PRE_ARGS.cuda_visible_devices)
     parser.add_argument("--expect-device-kind", choices=("any", "cpu", "gpu"), default="gpu")
     parser.add_argument("--output", required=True)
     parser.add_argument("--markdown-output", default=None)
+    parser.add_argument(
+        "--aggregate-score-shards",
+        default=None,
+        help=(
+            "Comma-separated raw per-seed LGSSM score shard JSONs to aggregate "
+            "into a full fixed-seed score artifact without running TensorFlow."
+        ),
+    )
     args = parser.parse_args()
     args.batch_seeds = _parse_int_csv(args.batch_seeds)
+    if args.aggregate_score_shards is not None:
+        args.aggregate_score_shards = [
+            item.strip()
+            for item in str(args.aggregate_score_shards).split(",")
+            if item.strip()
+        ]
+        if not args.aggregate_score_shards:
+            raise ValueError("aggregate-score-shards must contain at least one path")
     if args.time_steps <= 0 or args.time_steps > FULL_ROW_TIME_STEPS:
         raise ValueError("time_steps must be in 1..50")
     if args.num_particles <= 1:
@@ -178,8 +245,12 @@ def _parse_args() -> argparse.Namespace:
             raise ValueError(f"{args.score_mode} score requires transport-ad-mode=full")
         if args.score_fd_step <= 0.0:
             raise ValueError("score-fd-step must be positive")
+        if args.score_diagnostic_stage == "fd-only" and not args.score_reference_json:
+            raise ValueError("fd-only score diagnostics require --score-reference-json")
     elif args.score_fd_step is None:
         args.score_fd_step = 1.0e-5 if args.dtype == "float64" else 1.0e-3
+    if args.score_diagnostic_stage != "score-and-fd" and args.score_mode == "none":
+        raise ValueError("score-diagnostic-stage requires a score mode")
     return args
 
 
@@ -205,6 +276,16 @@ def _configure_precision(args: argparse.Namespace) -> dict[str, Any]:
     return metadata
 
 
+def _score_precision_metadata(precision: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "dtype": str(precision.get("dtype")),
+        "active_dtype": str(precision.get("active_dtype")),
+        "tf_dtype": str(precision.get("tf_dtype")),
+        "tf32_mode": str(precision.get("tf32_mode")),
+        "tf32_execution_enabled": bool(precision.get("tf32_execution_enabled")),
+    }
+
+
 def _configure_gpus() -> tuple[list[str], list[str]]:
     physical_gpus = tf.config.list_physical_devices("GPU")
     for gpu in physical_gpus:
@@ -221,6 +302,14 @@ def _gpu_memory_info() -> dict[str, Any]:
         return dict(tf.config.experimental.get_memory_info("GPU:0"))
     except (ValueError, RuntimeError):
         return {"status": "unavailable"}
+
+
+def _reset_gpu_memory_stats() -> bool:
+    try:
+        tf.config.experimental.reset_memory_stats("GPU:0")
+    except (ValueError, RuntimeError):
+        return False
+    return True
 
 
 def _git_commit() -> str:
@@ -277,6 +366,169 @@ def _validate_device(outputs: tuple[tf.Tensor, ...], expect_device_kind: str) ->
 def _materialize(*tensors: tf.Tensor) -> None:
     for tensor in tensors:
         tensor.numpy()
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    return value
+
+
+def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f"{path.name}.tmp.{os.getpid()}")
+    tmp_path.write_text(
+        json.dumps(_json_safe(dict(payload)), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    tmp_path.replace(path)
+
+
+def _progress_shape(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "batch_size": len(args.batch_seeds),
+        "batch_seed_count": len(args.batch_seeds),
+        "time_steps": args.time_steps,
+        "num_particles": args.num_particles,
+        "state_dim": STATE_DIM,
+        "obs_dim": OBS_DIM,
+    }
+
+
+def _progress_transport(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "plan_mode": "streaming",
+        "gradient_mode": args.transport_gradient_mode,
+        "ad_mode": args.transport_ad_mode,
+        "row_chunk_size": args.row_chunk_size,
+        "col_chunk_size": args.col_chunk_size,
+        "particle_chunk_size": args.particle_chunk_size,
+        "sinkhorn_iterations": args.sinkhorn_iterations,
+        "sinkhorn_epsilon": args.sinkhorn_epsilon,
+        "annealed_scaling": args.annealed_scaling,
+        "annealed_convergence_threshold": args.annealed_convergence_threshold,
+        "dense_transport_matrix_materialized": False,
+    }
+
+
+def _progress_record(
+    args: argparse.Namespace,
+    *,
+    artifact_status: str,
+    terminal_artifact: bool,
+    runner_started_monotonic: float,
+    runner_started_utc: str,
+    last_completed_stage: str | None,
+    target_identity: Mapping[str, Any] | None = None,
+    precision: Mapping[str, Any] | None = None,
+    physical_gpus: Sequence[str] | None = None,
+    logical_gpus: Sequence[str] | None = None,
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    now = _dt.datetime.now(tz=_dt.timezone.utc).isoformat()
+    value_stage_markers = [
+        "value_call_started",
+        "value_call_returned",
+        "value_materialize_started",
+        "value_materialize_completed",
+    ]
+    value_stage_markers_emitted: list[str] = []
+    if artifact_status in value_stage_markers:
+        value_stage_markers_emitted = value_stage_markers[
+            : value_stage_markers.index(artifact_status) + 1
+        ]
+    record: dict[str, Any] = {
+        "schema_version": "filter_bench.ledh_same_target_lgssm_m3_t50_value.progress.v1",
+        "artifact_status": artifact_status,
+        "terminal_artifact": bool(terminal_artifact),
+        "timestamp_utc": now,
+        "runner_started_utc": runner_started_utc,
+        "stage_timestamp_utc": now,
+        "elapsed_seconds": time.perf_counter() - runner_started_monotonic,
+        "pid": os.getpid(),
+        "host": platform.node(),
+        "python_version": platform.python_version(),
+        "tensorflow_version": tf.__version__,
+        "git_commit": _git_commit(),
+        "row_id": ROW_ID,
+        "algorithm_id": "ledh_pfpf_ot",
+        "last_completed_stage": last_completed_stage,
+        "value_stage_markers": value_stage_markers,
+        "value_stage_markers_emitted": value_stage_markers_emitted,
+        "score_mode": args.score_mode,
+        "score_diagnostic_stage": args.score_diagnostic_stage,
+        "score_started": bool(
+            last_completed_stage in {"score_started", "score_completed", "completed"}
+            or artifact_status.startswith("score_")
+        ),
+        "score_completed": bool(
+            last_completed_stage in {"score_completed", "completed"}
+            or artifact_status in {"score_completed", "completed"}
+        ),
+        "score_admission_status": "blocked_score_diagnostic_stage_not_admitted"
+        if args.score_mode != "none"
+        else "blocked_score_not_run",
+        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        "device": args.device,
+        "device_scope": args.device_scope,
+        "expect_device_kind": args.expect_device_kind,
+        "shape": _progress_shape(args),
+        "batch_seeds": [int(seed) for seed in args.batch_seeds],
+        "history_mode": args.history_mode,
+        "transport_policy": args.transport_policy,
+        "transport": _progress_transport(args),
+        "target_identity": dict(target_identity or {}),
+        "precision": dict(precision or {}),
+        "physical_gpus": list(physical_gpus or []),
+        "logical_gpus": list(logical_gpus or []),
+        "gpu_memory_info_current": _gpu_memory_info(),
+        "nonclaims": [
+            *NONCLAIMS,
+            "progress or failure artifacts are not score admission evidence",
+        ],
+    }
+    if extra:
+        record.update(dict(extra))
+    return record
+
+
+def _emit_progress(
+    output: Path,
+    args: argparse.Namespace,
+    *,
+    artifact_status: str,
+    terminal_artifact: bool,
+    runner_started_monotonic: float,
+    runner_started_utc: str,
+    last_completed_stage: str | None,
+    target_identity: Mapping[str, Any] | None = None,
+    precision: Mapping[str, Any] | None = None,
+    physical_gpus: Sequence[str] | None = None,
+    logical_gpus: Sequence[str] | None = None,
+    extra: Mapping[str, Any] | None = None,
+) -> None:
+    _write_json_atomic(
+        output,
+        _progress_record(
+            args,
+            artifact_status=artifact_status,
+            terminal_artifact=terminal_artifact,
+            runner_started_monotonic=runner_started_monotonic,
+            runner_started_utc=runner_started_utc,
+            last_completed_stage=last_completed_stage,
+            target_identity=target_identity,
+            precision=precision,
+            physical_gpus=physical_gpus,
+            logical_gpus=logical_gpus,
+            extra=extra,
+        ),
+    )
 
 
 def _batched_gaussian_logpdf(residuals: tf.Tensor, covariance: tf.Tensor) -> tf.Tensor:
@@ -1373,7 +1625,114 @@ def _manual_value_and_score_from_components(
         "log_likelihood": log_likelihood,
         "gradient_tensor": tf.reduce_mean(per_seed_score, axis=0),
         "per_seed_gradient": per_seed_score,
-        "score_route": tf.constant(MANUAL_SCORE_ROUTE_ID),
+        "score_route": tf.constant(HISTORICAL_MANUAL_SCORE_ROUTE_ID),
+    }
+
+
+def _same_target_value_from_components(
+    tensors: dict[str, tf.Tensor],
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+) -> dict[str, tf.Tensor]:
+    if args.transport_gradient_mode != core_tf.MANUAL_STREAMING_FINITE_TRANSPORT_GRADIENT_MODE:
+        raise ValueError("LGSSM value FD requires manual streaming finite transport")
+    if args.transport_ad_mode != "full":
+        raise ValueError("LGSSM value FD requires transport_ad_mode='full'")
+    theta = tf.reshape(tf.convert_to_tensor(theta, dtype=DTYPE), [len(PARAMETER_NAMES)])
+    observations = tf.convert_to_tensor(tensors["observations"], dtype=DTYPE)
+    fixed_resampling_mask = tf.convert_to_tensor(tensors["fixed_resampling_mask"], dtype=tf.bool)
+    initial_particles = tf.convert_to_tensor(tensors["initial_particles"], dtype=DTYPE)
+    transition_noise = tf.convert_to_tensor(tensors["transition_noise"], dtype=DTYPE)
+    batch_size, num_particles, _state_dim = core_tf._static_shape(  # noqa: SLF001
+        initial_particles,
+        "initial_particles",
+    )
+    time_steps_tensor = tf.shape(observations)[0]
+    components = _lgssm_components(theta, batch_size)
+    transition_matrix = components["transition_matrix"]
+    transition_covariance = components["transition_covariance"]
+    observation_covariance = components["observation_covariance"]
+    observation_matrix = components["observation_matrix"]
+    transition_scale = components["q_scale"]
+    h_jac_full = tf.tile(
+        observation_matrix[tf.newaxis, tf.newaxis, :, :],
+        [batch_size, num_particles, 1, 1],
+    )
+
+    def forward_body(
+        time_index: tf.Tensor,
+        running_particles: tf.Tensor,
+        running_log_weights: tf.Tensor,
+        running_log_likelihood: tf.Tensor,
+    ):
+        observation = observations[time_index]
+        ancestors = running_particles
+        prior_means = tf.einsum("bnj,bdj->bnd", ancestors, transition_matrix)
+        noise = transition_noise[:, time_index, :, :]
+        pre_flow = prior_means + noise * transition_scale
+        predicted_pre_flow = tf.einsum("md,bnd->bnm", observation_matrix, pre_flow)
+        residual = observation[tf.newaxis, tf.newaxis, :] - predicted_pre_flow
+        flow, _flow_aux = core_tf._batched_ledh_linearized_flow_with_aux_tf(  # noqa: SLF001
+            pre_flow_particles=pre_flow,
+            prior_means=prior_means,
+            observation_jacobian=h_jac_full,
+            observation_residual=residual,
+            transition_covariance=transition_covariance,
+            observation_covariance=observation_covariance,
+        )
+        post_flow = flow.post_flow_particles
+        transition_log_density = core_tf._batched_gaussian_logpdf(  # noqa: SLF001
+            post_flow - prior_means,
+            transition_covariance,
+        )
+        predicted_observation = tf.einsum("md,bnd->bnm", observation_matrix, post_flow)
+        observation_log_density = core_tf._batched_gaussian_logpdf(  # noqa: SLF001
+            predicted_observation - observation[tf.newaxis, tf.newaxis, :],
+            observation_covariance,
+        )
+        corrected_log_weights = (
+            running_log_weights
+            + transition_log_density
+            + observation_log_density
+            - flow.pre_flow_log_density
+            + flow.forward_log_det
+        )
+        weights, incremental = core_tf._normalize_log_weights(corrected_log_weights)  # noqa: SLF001
+        normalized_log_weights = tf.math.log(
+            tf.maximum(weights, core_tf._log_weight_floor())  # noqa: SLF001
+        )
+        mask = fixed_resampling_mask[:, time_index]
+        next_particles, next_log_weights = _manual_forward_transport_tf(
+            post_flow=post_flow,
+            normalized_log_weights=normalized_log_weights,
+            mask=mask,
+            args=args,
+        )
+        return (
+            time_index + 1,
+            next_particles,
+            next_log_weights,
+            running_log_likelihood + incremental,
+        )
+
+    (
+        _,
+        _particles,
+        _log_weights,
+        log_likelihood,
+    ) = tf.while_loop(
+        lambda time_index, *_: time_index < time_steps_tensor,
+        forward_body,
+        (
+            tf.constant(0, dtype=tf.int32),
+            initial_particles,
+            core_tf.uniform_log_weights(batch_size, num_particles),
+            tf.zeros([batch_size], dtype=DTYPE),
+        ),
+    )
+    return {
+        "objective": tf.reduce_mean(log_likelihood),
+        "log_likelihood": log_likelihood,
     }
 
 
@@ -1647,77 +2006,31 @@ def _compact_value_and_score_from_components(
         "log_likelihood": log_likelihood,
         "gradient_tensor": tf.reduce_mean(per_seed_score, axis=0),
         "per_seed_gradient": per_seed_score,
-        "score_route": tf.constant(COMPACT_SCORE_ROUTE_ID),
+        "score_route": tf.constant(HISTORICAL_COMPACT_SCORE_ROUTE_ID),
     }
 
 
-def _manual_score_diagnostic(
+def _score_only_diagnostic_from_tensors(
+    tensors: dict[str, tf.Tensor],
     args: argparse.Namespace,
     theta: tf.Tensor,
 ) -> dict[str, Any]:
-    tensors = _build_lgssm_manual_tensors(args, theta)
     if args.score_mode == "manual-reverse":
         manual = _manual_value_and_score_from_components(tensors, args, theta)
         score_mode = "manual-reverse"
-        score_route = MANUAL_SCORE_ROUTE_ID
-        derivative_provenance = "historical_diagnostic_manual_total_reverse_scan_no_tape_same_scalar_fd_checked"
+        score_route = HISTORICAL_MANUAL_SCORE_ROUTE_ID
+        derivative_provenance = HISTORICAL_MANUAL_SCORE_ROUTE_ID
+        route_status = "historical_full_history_reverse_route_used"
+        execution_style = "historical_full_history_reverse_vjp_stores_time_history"
+        historical_route = HISTORICAL_MANUAL_SCORE_ROUTE_ID
     else:
         manual = _compact_value_and_score_from_components(tensors, args, theta)
         score_mode = "compact-sensitivity"
         score_route = COMPACT_SCORE_ROUTE_ID
-        derivative_provenance = "compact_forward_sensitivity_no_tape_same_scalar_fd_checked"
-    step = tf.convert_to_tensor(args.score_fd_step, dtype=DTYPE)
-    theta = tf.reshape(tf.convert_to_tensor(theta, dtype=DTYPE), [len(PARAMETER_NAMES)])
-
-    def value_at(candidate: tf.Tensor) -> tf.Tensor:
-        candidate_tensors = _build_lgssm_manual_tensors(args, candidate)
-        if args.score_mode == "manual-reverse":
-            return _manual_value_and_score_from_components(
-                candidate_tensors,
-                args,
-                candidate,
-            )["objective"]
-        return _compact_value_and_score_from_components(
-            candidate_tensors,
-            args,
-            candidate,
-        )["objective"]
-
-    fd_entries = []
-    fd_values = []
-    for index, name in enumerate(PARAMETER_NAMES):
-        direction = tf.one_hot(index, len(PARAMETER_NAMES), dtype=DTYPE)
-        plus = value_at(theta + step * direction)
-        minus = value_at(theta - step * direction)
-        fd = (plus - minus) / (2.0 * step)
-        analytic = manual["gradient_tensor"][index]
-        abs_error = tf.abs(analytic - fd)
-        rel_error = abs_error / tf.maximum(
-            tf.maximum(tf.abs(analytic), tf.abs(fd)),
-            tf.constant(1.0e-12, dtype=DTYPE),
-        )
-        fd_values.append(fd)
-        fd_entries.append(
-            {
-                "parameter": name,
-                "manual_score": float(analytic.numpy()),
-                "finite_difference": float(fd.numpy()),
-                "abs_error": float(abs_error.numpy()),
-                "relative_error": float(rel_error.numpy()),
-            }
-        )
-    fd_tensor = tf.stack(fd_values)
-    abs_residual = tf.abs(manual["gradient_tensor"] - fd_tensor)
-    rel_residual = abs_residual / tf.maximum(
-        tf.maximum(tf.abs(manual["gradient_tensor"]), tf.abs(fd_tensor)),
-        tf.constant(1.0e-12, dtype=DTYPE),
-    )
-    max_abs_error = float(tf.reduce_max(abs_residual).numpy())
-    max_relative_error = float(tf.reduce_max(rel_residual).numpy())
-    fd_pass = bool(
-        max_abs_error <= float(args.score_fd_atol)
-        or max_relative_error <= float(args.score_fd_rtol)
-    )
+        derivative_provenance = COMPACT_SCORE_ROUTE_ID
+        route_status = "historical_full_history_reverse_route_not_used"
+        execution_style = "compact_forward_sensitivity_no_time_history"
+        historical_route = HISTORICAL_MANUAL_SCORE_ROUTE_ID
     score_output_devices = sorted(
         {
             manual["objective"].device,
@@ -1734,9 +2047,10 @@ def _manual_score_diagnostic(
         "value_score_route_status": "same_route_value_score",
         "value_score_same_transport_algorithm": True,
         "score_derivative_provenance": derivative_provenance,
-        "old_full_history_route_status": (
-            "historical_diagnostic_only" if args.score_mode != "manual-reverse" else "executed_historical_diagnostic"
-        ),
+        "old_full_history_route_status": route_status,
+        "score_execution_style": execution_style,
+        "historical_full_history_route": historical_route,
+        "historical_forward_sensitivity_route": COMPACT_SCORE_ROUTE_ID,
         "parameter_names": list(PARAMETER_NAMES),
         "objective": float(manual["objective"].numpy()),
         "log_likelihood_by_seed": [
@@ -1746,15 +2060,13 @@ def _manual_score_diagnostic(
         "per_seed_score": manual["per_seed_gradient"].numpy().tolist(),
         "score_output_devices": score_output_devices,
         "same_scalar_fd": {
-            "status": "pass" if fd_pass else "fail",
-            "step": float(args.score_fd_step),
-            "atol": float(args.score_fd_atol),
-            "rtol": float(args.score_fd_rtol),
-            "max_abs_error": max_abs_error,
-            "max_relative_error": max_relative_error,
-            "parameters": fd_entries,
+            "status": "not_run_score_only",
+            "reason": "score_only_stage_deferred_fd_correctness",
         },
         "no_autodiff_score_route": True,
+        "uses_full_history_reverse_route": score_mode == "manual-reverse",
+        "diagnostic_stage": "score-only",
+        "admission_blocker": "score_only_missing_same_scalar_fd_correctness",
         "transport": {
             "plan_mode": "streaming",
             "gradient_mode": args.transport_gradient_mode,
@@ -1766,18 +2078,200 @@ def _manual_score_diagnostic(
     }
 
 
+def _fd_only_diagnostic_from_tensors(
+    tensors: dict[str, tf.Tensor],
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    reference_score: Sequence[float],
+) -> dict[str, Any]:
+    step = tf.convert_to_tensor(args.score_fd_step, dtype=DTYPE)
+    theta = tf.reshape(tf.convert_to_tensor(theta, dtype=DTYPE), [len(PARAMETER_NAMES)])
+    score_tensor = tf.convert_to_tensor(
+        _finite_sequence(
+            "reference_score",
+            reference_score,
+            length=len(PARAMETER_NAMES),
+        ),
+        dtype=DTYPE,
+    )
+    production_tf32_enabled = bool(
+        tf.config.experimental.tensor_float_32_execution_enabled()
+    )
+    requested_fd_tf32_mode = getattr(args, "score_fd_tf32_mode", "match")
+    fd_tf32_mode = args.tf32_mode if requested_fd_tf32_mode == "match" else requested_fd_tf32_mode
+    fd_tf32_overridden = bool(fd_tf32_mode != "default" and fd_tf32_mode != args.tf32_mode)
+    fd_previous_tf32_enabled = bool(
+        tf.config.experimental.tensor_float_32_execution_enabled()
+    )
+
+    def value_at(candidate: tf.Tensor) -> tf.Tensor:
+        candidate_tensors = _build_lgssm_manual_tensors(args, candidate)
+        return _same_target_value_from_components(
+            candidate_tensors,
+            args,
+            candidate,
+        )["objective"]
+
+    fd_entries = []
+    fd_values = []
+    try:
+        if fd_tf32_mode != "default":
+            tf.config.experimental.enable_tensor_float_32_execution(fd_tf32_mode == "enabled")
+        fd_tf32_enabled = bool(tf.config.experimental.tensor_float_32_execution_enabled())
+        for index, name in enumerate(PARAMETER_NAMES):
+            direction = tf.one_hot(index, len(PARAMETER_NAMES), dtype=DTYPE)
+            plus = value_at(theta + step * direction)
+            minus = value_at(theta - step * direction)
+            fd = (plus - minus) / (2.0 * step)
+            analytic = score_tensor[index]
+            abs_error = tf.abs(analytic - fd)
+            rel_error = abs_error / tf.maximum(
+                tf.maximum(tf.abs(analytic), tf.abs(fd)),
+                tf.constant(1.0e-12, dtype=DTYPE),
+            )
+            fd_values.append(fd)
+            fd_entries.append(
+                {
+                    "parameter": name,
+                    "manual_score": float(analytic.numpy()),
+                    "finite_difference": float(fd.numpy()),
+                    "abs_error": float(abs_error.numpy()),
+                    "relative_error": float(rel_error.numpy()),
+                }
+            )
+    finally:
+        if fd_tf32_mode != "default":
+            tf.config.experimental.enable_tensor_float_32_execution(fd_previous_tf32_enabled)
+    fd_tensor = tf.stack(fd_values)
+    abs_residual = tf.abs(score_tensor - fd_tensor)
+    rel_residual = abs_residual / tf.maximum(
+        tf.maximum(tf.abs(score_tensor), tf.abs(fd_tensor)),
+        tf.constant(1.0e-12, dtype=DTYPE),
+    )
+    max_abs_error = float(tf.reduce_max(abs_residual).numpy())
+    max_relative_error = float(tf.reduce_max(rel_residual).numpy())
+    fd_pass = bool(
+        max_abs_error <= float(args.score_fd_atol)
+        or max_relative_error <= float(args.score_fd_rtol)
+    )
+    return {
+        "status": "pass" if fd_pass else "fail",
+        "step": float(args.score_fd_step),
+        "atol": float(args.score_fd_atol),
+        "rtol": float(args.score_fd_rtol),
+        "max_abs_error": max_abs_error,
+        "max_relative_error": max_relative_error,
+        "parameters": fd_entries,
+        "tf32_mode": fd_tf32_mode,
+        "tf32_execution_enabled": fd_tf32_enabled,
+        "production_tf32_execution_enabled": production_tf32_enabled,
+        "uses_disclosed_separate_precision_arm": fd_tf32_overridden,
+        "previous_tf32_execution_enabled": fd_previous_tf32_enabled,
+        "diagnostic_stage": "fd-only",
+        "value_route_id": SAME_SCALAR_ROUTE_ID,
+        "uses_value_only_scalar_route": True,
+    }
+
+
+def _score_reference_from_json(path: str) -> dict[str, Any]:
+    reference = json.loads(Path(path).read_text(encoding="utf-8"))
+    if reference.get("row_id") != ROW_ID:
+        raise ValueError("score reference row_id mismatch")
+    if reference.get("score_route") != COMPACT_SCORE_ROUTE_ID:
+        raise ValueError("score reference must use compact score route")
+    if tuple(reference.get("score_parameter_names") or ()) != PARAMETER_NAMES:
+        raise ValueError("score reference parameter order mismatch")
+    if reference.get("score_admission_status") in {
+        RAW_MEMORY_STYLE_ADMITTED_STATUS,
+        RAW_HISTORICAL_COMPACT_ADMITTED_STATUS,
+    }:
+        raise ValueError("score reference must be a diagnostic shard, not an admitted shard")
+    return reference
+
+
+def _manual_score_diagnostic(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+) -> dict[str, Any]:
+    tensors = _build_lgssm_manual_tensors(args, theta)
+    stage = getattr(args, "score_diagnostic_stage", "score-and-fd")
+    if stage == "fd-only":
+        reference = _score_reference_from_json(args.score_reference_json)
+        fd = _fd_only_diagnostic_from_tensors(
+            tensors,
+            args,
+            theta,
+            reference["score"],
+        )
+        return {
+            "score_mode": args.score_mode,
+            "score_route": COMPACT_SCORE_ROUTE_ID,
+            "value_route_id": SAME_SCALAR_ROUTE_ID,
+            "score_route_id": SAME_SCALAR_ROUTE_ID,
+            "value_score_route_status": "same_route_value_score",
+            "value_score_same_transport_algorithm": True,
+            "score_derivative_provenance": COMPACT_SCORE_ROUTE_ID,
+            "old_full_history_route_status": "historical_full_history_reverse_route_not_used",
+            "score_execution_style": "compact_forward_sensitivity_no_time_history",
+            "historical_full_history_route": HISTORICAL_MANUAL_SCORE_ROUTE_ID,
+            "historical_forward_sensitivity_route": COMPACT_SCORE_ROUTE_ID,
+            "parameter_names": list(PARAMETER_NAMES),
+            "objective": None,
+            "log_likelihood_by_seed": None,
+            "score": [float(value) for value in reference["score"]],
+            "per_seed_score": reference.get("manual_score_diagnostic", {}).get("per_seed_score"),
+            "score_output_devices": list(reference.get("score_output_devices") or []),
+            "same_scalar_fd": fd,
+            "no_autodiff_score_route": True,
+            "uses_full_history_reverse_route": False,
+            "diagnostic_stage": "fd-only",
+            "admission_blocker": "fd_only_requires_matching_score_stage_before_admission",
+            "transport": {
+                "plan_mode": "streaming",
+                "gradient_mode": args.transport_gradient_mode,
+                "ad_mode": args.transport_ad_mode,
+                "sinkhorn_iterations": args.sinkhorn_iterations,
+                "sinkhorn_epsilon": args.sinkhorn_epsilon,
+                "annealed_scaling": args.annealed_scaling,
+            },
+        }
+    score_only = _score_only_diagnostic_from_tensors(tensors, args, theta)
+    if stage == "score-only":
+        return score_only
+    if stage != "score-and-fd":
+        raise ValueError(f"unsupported score diagnostic stage: {stage}")
+    fd = _fd_only_diagnostic_from_tensors(
+        tensors,
+        args,
+        theta,
+        score_only["score"],
+    )
+    return {
+        **score_only,
+        "same_scalar_fd": fd,
+        "diagnostic_stage": "score-and-fd",
+        "admission_blocker": None,
+    }
+
+
 def _score_admission_decision(
     *,
     score_mode: str,
     fd_status: str,
     same_target_full_row: bool,
     runtime_gate_applicable: bool,
+    score_memory_gate_applicable: bool = True,
 ) -> dict[str, str]:
     if score_mode == "compact-sensitivity":
-        if fd_status == "pass" and same_target_full_row and runtime_gate_applicable:
+        if (
+            fd_status == "pass"
+            and same_target_full_row
+            and runtime_gate_applicable
+            and score_memory_gate_applicable
+        ):
             return {
                 "score_status": "executed_same_target_compact_score_fd_pass_gpu_material",
-                "score_admission_status": "admitted_same_target_compact_score",
+                "score_admission_status": RAW_COMPACT_ADMITTED_STATUS,
                 "nonclaim": (
                     "score evidence is for the LEDH-PFPF-OT scalar, not the exact Kalman likelihood"
                 ),
@@ -1799,22 +2293,570 @@ def _score_admission_decision(
             ),
         }
     if score_mode == "manual-reverse":
-        if fd_status == "pass":
-            return {
-                "score_status": "executed_historical_manual_reverse_score_fd_pass_not_admitted",
-                "score_admission_status": "blocked_historical_manual_reverse_not_default",
-                "nonclaim": (
-                    "historical manual-reverse score passed same-scalar FD but is diagnostic only"
-                ),
-            }
         return {
-            "score_status": "blocked_historical_manual_reverse_score_same_scalar_fd_failed",
-            "score_admission_status": "blocked_same_scalar_fd_failed",
+            "score_status": "blocked_historical_manual_reverse_score_route",
+            "score_admission_status": "blocked_historical_full_history_route",
             "nonclaim": (
-                "historical manual-reverse score ran but is blocked because the same-scalar FD check failed"
+                "historical full-history manual-reverse score route is diagnostic only"
             ),
         }
     raise ValueError(f"unsupported score mode for admission decision: {score_mode}")
+
+
+def _memory_peak_mib_from_result(result: Mapping[str, Any]) -> tuple[float | None, str | None]:
+    memory_after = result.get("score_gpu_memory_info_after")
+    return _memory_peak_mib_from_info(memory_after, source_name="score_gpu_memory_info_after")
+
+
+def _memory_peak_mib_from_info(
+    memory_after: object,
+    *,
+    source_name: str,
+) -> tuple[float | None, str | None]:
+    if not isinstance(memory_after, Mapping):
+        return None, None
+    peak_bytes = memory_after.get("peak")
+    if peak_bytes is None:
+        return None, source_name
+    peak_mib = float(peak_bytes) / float(1024 * 1024)
+    if not math.isfinite(peak_mib):
+        raise ValueError(f"{source_name}.peak must be finite")
+    return peak_mib, source_name
+
+
+def _lgssm_score_artifact_from_result(
+    result: Mapping[str, Any],
+    *,
+    source_value_artifact: Mapping[str, Any],
+    source_value_artifact_path: str,
+    memory_budget_mib: float = FULL_ROW_SCORE_MEMORY_BUDGET_MIB,
+) -> dict[str, Any]:
+    """Normalize an LGSSM raw runner result into the Phase 1 score schema."""
+
+    value_core = validate_ledh_forward_scalar_artifact(
+        source_value_artifact,
+        expected_row_id=ROW_ID,
+        require_admitted=True,
+    )
+    row_id = str(result.get("row_id"))
+    if row_id != ROW_ID or row_id != value_core["row_id"]:
+        raise ValueError("LGSSM score result row_id must match admitted value artifact")
+
+    shape = result.get("shape")
+    if not isinstance(shape, Mapping):
+        raise ValueError("LGSSM score result shape must be a mapping")
+    num_particles = int(shape.get("num_particles"))
+    if num_particles != int(value_core["num_particles"]):
+        raise ValueError("LGSSM score result num_particles must match admitted value artifact")
+    time_steps = int(shape.get("time_steps"))
+    if time_steps != int(value_core["time_steps"]):
+        raise ValueError("LGSSM score result time_steps must match admitted value artifact")
+    batch_seeds = tuple(int(seed) for seed in result.get("batch_seeds", ()))
+    if batch_seeds != tuple(int(seed) for seed in value_core["batch_seeds"]):
+        raise ValueError("LGSSM score result batch_seeds must match admitted value artifact")
+
+    target_identity = result.get("target_identity", {})
+    if not isinstance(target_identity, Mapping):
+        raise ValueError("LGSSM score target_identity must be a mapping")
+    if target_identity.get("target_scalar") != LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD:
+        raise ValueError("LGSSM score result target_scalar must be the observed-data log likelihood")
+    if target_identity.get("target_output_tensor_field") != LEDH_OUTPUT_TENSOR_FIELD_LOG_LIKELIHOOD:
+        raise ValueError("LGSSM score result output tensor field must be log_likelihood")
+
+    manual = result.get("manual_score_diagnostic")
+    if not isinstance(manual, Mapping):
+        raise ValueError("LGSSM score result must include manual_score_diagnostic")
+    fd = manual.get("same_scalar_fd")
+    if not isinstance(fd, Mapping):
+        raise ValueError("LGSSM score diagnostic must include same_scalar_fd")
+    if fd.get("status") != "pass":
+        raise ValueError("LGSSM score same-scalar finite-difference diagnostic must pass")
+    if result.get("score_route") != COMPACT_SCORE_ROUTE_ID:
+        raise ValueError("LGSSM score result must use the compact score route")
+    if result.get("value_score_route_status") != LEDH_SCORE_VALUE_ROUTE_STATUS_SAME:
+        raise ValueError("LGSSM score result must be same_route_value_score")
+    if manual.get("no_autodiff_score_route") is not True:
+        raise ValueError("LGSSM score result must declare no_autodiff_score_route")
+    if manual.get("score_derivative_provenance") != COMPACT_SCORE_ROUTE_ID:
+        raise ValueError("LGSSM nested score diagnostic must use compact derivative provenance")
+    if manual.get("score_route") != COMPACT_SCORE_ROUTE_ID:
+        raise ValueError("LGSSM nested score diagnostic must use compact score route")
+    if manual.get("uses_full_history_reverse_route") is not False:
+        raise ValueError("LGSSM nested score diagnostic must not use full-history reverse route")
+    if (
+        manual.get("old_full_history_route_status")
+        != "historical_full_history_reverse_route_not_used"
+    ):
+        raise ValueError("LGSSM nested score diagnostic must demote historical reverse route")
+    if manual.get("score_execution_style") != "compact_forward_sensitivity_no_time_history":
+        raise ValueError("LGSSM nested score diagnostic must use compact execution style")
+
+    score = result.get("score")
+    if not isinstance(score, list) or len(score) != len(PARAMETER_NAMES):
+        raise ValueError("LGSSM score result score length must match parameter names")
+    nested_score = manual.get("score")
+    if not isinstance(nested_score, list) or len(nested_score) != len(PARAMETER_NAMES):
+        raise ValueError("LGSSM nested score diagnostic score length must match parameter names")
+    for index, (outer_value, nested_value) in enumerate(zip(score, nested_score, strict=True)):
+        if float(outer_value) != float(nested_value):
+            raise ValueError(f"LGSSM score result and nested diagnostic differ at index {index}")
+    parameter_names = result.get("score_parameter_names")
+    if tuple(parameter_names or ()) != PARAMETER_NAMES:
+        raise ValueError("LGSSM score result parameter order must match LGSSM parameter names")
+
+    peak_mib, memory_source = _memory_peak_mib_from_result(result)
+    memory_pass = peak_mib is not None and peak_mib <= float(memory_budget_mib)
+    full_admitted = bool(
+        result.get("score_admission_status") == RAW_COMPACT_ADMITTED_STATUS
+        and result.get("runtime_gate_applicable") is True
+        and result.get("score_runtime_gate_applicable") is True
+        and num_particles >= 10000
+        and memory_pass
+    )
+    score_precision = _score_precision_metadata(
+        _require_lgssm_mapping("LGSSM score result precision", result.get("precision"))
+    )
+    artifact = {
+        "schema_version": LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
+        "row_id": ROW_ID,
+        "source_value_artifact": source_value_artifact_path,
+        "score_target_kind": LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
+        "target_scalar": value_core["target_scalar"],
+        "target_output_tensor_field": value_core["target_output_tensor_field"],
+        "target_observation_policy": value_core["target_observation_policy"],
+        "theta_coordinate_system": value_core["theta_coordinate_system"],
+        "score_parameter_names": list(PARAMETER_NAMES),
+        "score": [float(value) for value in score],
+        "score_derivative_provenance": COMPACT_SCORE_ROUTE_ID,
+        "value_score_route_status": LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
+        "value_score_same_transport_algorithm": True,
+        "no_autodiff_score_route": True,
+        "uses_gradient_tape": False,
+        "uses_forward_accumulator": False,
+        "uses_stopped_partial_derivative": False,
+        "score_execution_style": "compact_forward_sensitivity_no_time_history",
+        "historical_full_history_route": HISTORICAL_MANUAL_SCORE_ROUTE_ID,
+        "historical_forward_sensitivity_route": COMPACT_SCORE_ROUTE_ID,
+        "score_correctness": {
+            "kind": "same_scalar_finite_difference",
+            "status": "pass",
+            "step": float(fd.get("step")),
+            "atol": float(fd.get("atol")),
+            "rtol": float(fd.get("rtol")),
+            "max_abs_error": float(fd.get("max_abs_error")),
+            "max_relative_error": float(fd.get("max_relative_error")),
+            "tf32_mode": fd.get("tf32_mode"),
+            "tf32_execution_enabled": fd.get("tf32_execution_enabled"),
+            "production_tf32_execution_enabled": fd.get("production_tf32_execution_enabled"),
+            "uses_disclosed_separate_precision_arm": fd.get(
+                "uses_disclosed_separate_precision_arm"
+            ),
+        },
+        "score_admission_status": (
+            LEDH_SCORE_ADMISSION_STATUS_FULL
+            if full_admitted
+            else LEDH_SCORE_ADMISSION_STATUS_TINY
+        ),
+        "score_precision": score_precision,
+        "memory_diagnostics": {
+            "n10000_memory_pass": bool(memory_pass),
+            "peak_mib": peak_mib,
+            "budget_mib": float(memory_budget_mib),
+            "source": memory_source,
+        },
+    }
+    validate_ledh_score_artifact(
+        artifact,
+        source_value_artifact=source_value_artifact,
+        expected_row_id=ROW_ID,
+        require_admitted=full_admitted,
+    )
+    return artifact
+
+
+def _require_lgssm_mapping(name: str, value: object) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    return value
+
+
+def _finite_sequence(name: str, value: object, *, length: int | None = None) -> list[float]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise ValueError(f"{name} must be a numeric sequence")
+    output = [float(item) for item in value]
+    if length is not None and len(output) != length:
+        raise ValueError(f"{name} length must be {length}")
+    if not output:
+        raise ValueError(f"{name} must be nonempty")
+    if any(not math.isfinite(item) for item in output):
+        raise ValueError(f"{name} must contain only finite values")
+    return output
+
+
+def _finite_scalar(name: str, value: object) -> float:
+    output = float(value)
+    if not math.isfinite(output):
+        raise ValueError(f"{name} must be finite")
+    return output
+
+
+def _single_shard_seed(shard: Mapping[str, Any]) -> int:
+    seeds = shard.get("batch_seeds")
+    if not isinstance(seeds, Sequence) or isinstance(seeds, (str, bytes)):
+        raise ValueError("score shard batch_seeds must be a sequence")
+    if len(seeds) != 1:
+        raise ValueError("score shards must contain exactly one seed")
+    return int(seeds[0])
+
+
+def _score_memory_peak_mib_from_shard(shard: Mapping[str, Any]) -> float:
+    peak_mib, source = _memory_peak_mib_from_result(shard)
+    if peak_mib is None or source is None:
+        raise ValueError("score shard must include score_gpu_memory_info_after.peak")
+    return peak_mib
+
+
+def _aggregate_lgssm_score_shard_payload(
+    shards: Sequence[Mapping[str, Any]],
+    *,
+    expected_batch_seeds: Sequence[int],
+    expected_num_particles: int,
+    expected_time_steps: int,
+    require_gpu_runtime: bool,
+    memory_budget_mib: float = FULL_ROW_SCORE_MEMORY_BUDGET_MIB,
+) -> dict[str, Any]:
+    """Aggregate raw one-seed LGSSM score shards by the batch-mean contract."""
+
+    expected_seeds = tuple(int(seed) for seed in expected_batch_seeds)
+    if not expected_seeds:
+        raise ValueError("expected_batch_seeds must be nonempty")
+    shard_by_seed: dict[int, Mapping[str, Any]] = {}
+    for index, shard in enumerate(shards):
+        payload = _require_lgssm_mapping(f"shards[{index}]", shard)
+        seed = _single_shard_seed(payload)
+        if seed not in expected_seeds:
+            raise ValueError(f"unexpected LGSSM score shard seed: {seed}")
+        if seed in shard_by_seed:
+            raise ValueError(f"duplicate LGSSM score shard seed: {seed}")
+        shard_by_seed[seed] = payload
+    missing = [seed for seed in expected_seeds if seed not in shard_by_seed]
+    if missing:
+        raise ValueError(f"missing LGSSM score shard seeds: {missing}")
+
+    common_fd_metadata: dict[str, Any] | None = None
+    per_seed_scores: dict[int, list[float]] = {}
+    per_seed_fds: dict[int, list[float]] = {}
+    per_seed_log_likelihood: dict[int, float] = {}
+    per_seed_peak_mib: dict[int, float] = {}
+    score_output_devices: dict[int, list[str]] = {}
+
+    for seed in expected_seeds:
+        shard = shard_by_seed[seed]
+        if shard.get("row_id") != ROW_ID:
+            raise ValueError("LGSSM score shard row_id mismatch")
+        if shard.get("score_route") != COMPACT_SCORE_ROUTE_ID:
+            raise ValueError("LGSSM score shard must use compact score route")
+        if shard.get("score_admission_status") in {
+            RAW_COMPACT_ADMITTED_STATUS,
+            RAW_MEMORY_STYLE_ADMITTED_STATUS,
+            RAW_HISTORICAL_COMPACT_ADMITTED_STATUS,
+        }:
+            raise ValueError("per-seed score shard must not be marked as admitted")
+        score_precision = _score_precision_metadata(
+            _require_lgssm_mapping(
+                "LGSSM score shard precision",
+                shard.get("precision"),
+            )
+        )
+        if score_precision != {
+            "dtype": "float32",
+            "active_dtype": "float32",
+            "tf_dtype": "float32",
+            "tf32_mode": "enabled",
+            "tf32_execution_enabled": True,
+        }:
+            raise ValueError("LGSSM score shard must use production float32 TF32 precision")
+        if shard.get("value_score_route_status") != LEDH_SCORE_VALUE_ROUTE_STATUS_SAME:
+            raise ValueError("LGSSM score shard must be same_route_value_score")
+        if shard.get("runtime_gate_applicable") is not True:
+            raise ValueError("LGSSM score shard must pass value runtime gate")
+        if shard.get("score_runtime_gate_applicable") is not True:
+            raise ValueError("LGSSM score shard must pass score runtime gate")
+        if shard.get("finite_output") is not True:
+            raise ValueError("LGSSM score shard finite_output must be true")
+        shape = _require_lgssm_mapping("LGSSM score shard shape", shard.get("shape"))
+        if int(shape.get("batch_size", shape.get("batch_seed_count", 0))) != 1:
+            raise ValueError("LGSSM score shard shape must have batch_size=1")
+        if int(shape.get("num_particles")) != int(expected_num_particles):
+            raise ValueError("LGSSM score shard num_particles mismatch")
+        if int(shape.get("time_steps")) != int(expected_time_steps):
+            raise ValueError("LGSSM score shard time_steps mismatch")
+        target_identity = _require_lgssm_mapping(
+            "LGSSM score shard target_identity",
+            shard.get("target_identity"),
+        )
+        if target_identity.get("target_scalar") != LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD:
+            raise ValueError("LGSSM score shard target_scalar mismatch")
+        if target_identity.get("target_output_tensor_field") != LEDH_OUTPUT_TENSOR_FIELD_LOG_LIKELIHOOD:
+            raise ValueError("LGSSM score shard output tensor field mismatch")
+        parameter_names = tuple(shard.get("score_parameter_names") or ())
+        if parameter_names != PARAMETER_NAMES:
+            raise ValueError("LGSSM score shard parameter order mismatch")
+
+        manual = _require_lgssm_mapping(
+            "LGSSM score shard manual_score_diagnostic",
+            shard.get("manual_score_diagnostic"),
+        )
+        if manual.get("no_autodiff_score_route") is not True:
+            raise ValueError("LGSSM score shard must declare no_autodiff_score_route")
+        if manual.get("score_derivative_provenance") != COMPACT_SCORE_ROUTE_ID:
+            raise ValueError("LGSSM score shard derivative provenance mismatch")
+        fd = _require_lgssm_mapping("LGSSM score shard same_scalar_fd", manual.get("same_scalar_fd"))
+        if fd.get("status") != "pass":
+            raise ValueError("LGSSM score shard FD correctness must pass")
+        fd_parameters = fd.get("parameters")
+        if not isinstance(fd_parameters, Sequence) or isinstance(fd_parameters, (str, bytes)):
+            raise ValueError("LGSSM score shard FD parameters must be a sequence")
+        if len(fd_parameters) != len(PARAMETER_NAMES):
+            raise ValueError("LGSSM score shard FD parameter count mismatch")
+        fd_by_name = {
+            str(_require_lgssm_mapping("LGSSM score shard FD entry", entry).get("parameter")):
+            _require_lgssm_mapping("LGSSM score shard FD entry", entry)
+            for entry in fd_parameters
+        }
+        if tuple(fd_by_name) != PARAMETER_NAMES:
+            raise ValueError("LGSSM score shard FD parameter order mismatch")
+
+        fd_metadata = {
+            "step": _finite_scalar("same_scalar_fd.step", fd.get("step")),
+            "atol": _finite_scalar("same_scalar_fd.atol", fd.get("atol")),
+            "rtol": _finite_scalar("same_scalar_fd.rtol", fd.get("rtol")),
+            "tf32_mode": fd.get("tf32_mode"),
+            "tf32_execution_enabled": fd.get("tf32_execution_enabled"),
+            "production_tf32_execution_enabled": fd.get("production_tf32_execution_enabled"),
+            "uses_disclosed_separate_precision_arm": fd.get(
+                "uses_disclosed_separate_precision_arm"
+            ),
+        }
+        if common_fd_metadata is None:
+            common_fd_metadata = fd_metadata
+        elif fd_metadata != common_fd_metadata:
+            raise ValueError("LGSSM score shard FD metadata mismatch")
+
+        scores = _finite_sequence(
+            "LGSSM score shard score",
+            shard.get("score"),
+            length=len(PARAMETER_NAMES),
+        )
+        per_seed_scores[seed] = scores
+        per_seed_fds[seed] = [
+            _finite_scalar(
+                f"LGSSM score shard FD finite_difference[{name}]",
+                fd_by_name[name].get("finite_difference"),
+            )
+            for name in PARAMETER_NAMES
+        ]
+        log_likelihood_values = manual.get("log_likelihood_by_seed")
+        log_likelihood_by_seed = _finite_sequence(
+            "LGSSM score shard log_likelihood_by_seed",
+            log_likelihood_values,
+            length=1,
+        )
+        per_seed_log_likelihood[seed] = log_likelihood_by_seed[0]
+        peak_mib = _score_memory_peak_mib_from_shard(shard)
+        per_seed_peak_mib[seed] = peak_mib
+        devices = list(shard.get("score_output_devices") or manual.get("score_output_devices") or ())
+        if require_gpu_runtime and not devices:
+            raise ValueError("LGSSM score shard must report score output devices")
+        if require_gpu_runtime and not all("GPU" in str(device).upper() for device in devices):
+            raise ValueError("LGSSM score shard must report GPU score output devices")
+        score_output_devices[seed] = [str(device) for device in devices]
+
+    if common_fd_metadata is None:
+        raise ValueError("LGSSM score shards did not provide FD metadata")
+
+    aggregate_score = [
+        statistics.fmean(per_seed_scores[seed][param_index] for seed in expected_seeds)
+        for param_index in range(len(PARAMETER_NAMES))
+    ]
+    aggregate_fd = [
+        statistics.fmean(per_seed_fds[seed][param_index] for seed in expected_seeds)
+        for param_index in range(len(PARAMETER_NAMES))
+    ]
+    fd_entries = []
+    abs_errors = []
+    rel_errors = []
+    for index, name in enumerate(PARAMETER_NAMES):
+        abs_error = abs(aggregate_score[index] - aggregate_fd[index])
+        rel_error = abs_error / max(abs(aggregate_score[index]), abs(aggregate_fd[index]), 1.0e-12)
+        abs_errors.append(abs_error)
+        rel_errors.append(rel_error)
+        fd_entries.append(
+            {
+                "parameter": name,
+                "manual_score": aggregate_score[index],
+                "finite_difference": aggregate_fd[index],
+                "abs_error": abs_error,
+                "relative_error": rel_error,
+            }
+        )
+    max_abs_error = max(abs_errors)
+    max_relative_error = max(rel_errors)
+    fd_pass = bool(
+        max_abs_error <= common_fd_metadata["atol"]
+        or max_relative_error <= common_fd_metadata["rtol"]
+    )
+    if not fd_pass:
+        raise ValueError("LGSSM aggregate same-scalar FD check failed")
+
+    max_peak_mib = max(per_seed_peak_mib.values())
+    memory_pass = bool(max_peak_mib <= float(memory_budget_mib))
+    return {
+        "score": aggregate_score,
+        "score_parameter_names": list(PARAMETER_NAMES),
+        "score_correctness": {
+            "kind": "same_scalar_finite_difference",
+            "status": "pass",
+            "step": common_fd_metadata["step"],
+            "atol": common_fd_metadata["atol"],
+            "rtol": common_fd_metadata["rtol"],
+            "max_abs_error": max_abs_error,
+            "max_relative_error": max_relative_error,
+            "parameters": fd_entries,
+            "tf32_mode": common_fd_metadata["tf32_mode"],
+            "tf32_execution_enabled": common_fd_metadata["tf32_execution_enabled"],
+            "production_tf32_execution_enabled": common_fd_metadata[
+                "production_tf32_execution_enabled"
+            ],
+            "uses_disclosed_separate_precision_arm": common_fd_metadata[
+                "uses_disclosed_separate_precision_arm"
+            ],
+        },
+        "memory_diagnostics": {
+            "n10000_memory_pass": memory_pass,
+            "peak_mib": max_peak_mib,
+            "budget_mib": float(memory_budget_mib),
+            "source": "max_per_seed_score_gpu_memory_info_after",
+        },
+        "aggregation": {
+            "kind": "arithmetic_mean_over_fixed_batch_seeds",
+            "batch_seeds": list(expected_seeds),
+            "per_seed_scores": {
+                str(seed): per_seed_scores[seed] for seed in expected_seeds
+            },
+            "per_seed_finite_differences": {
+                str(seed): per_seed_fds[seed] for seed in expected_seeds
+            },
+            "per_seed_log_likelihood": {
+                str(seed): per_seed_log_likelihood[seed] for seed in expected_seeds
+            },
+            "per_seed_score_peak_mib": {
+                str(seed): per_seed_peak_mib[seed] for seed in expected_seeds
+            },
+            "score_output_devices": {
+                str(seed): score_output_devices[seed] for seed in expected_seeds
+            },
+        },
+    }
+
+
+def _aggregate_lgssm_score_shards(
+    shards: Sequence[Mapping[str, Any]],
+    *,
+    source_value_artifact: Mapping[str, Any],
+    source_value_artifact_path: str,
+    memory_budget_mib: float = FULL_ROW_SCORE_MEMORY_BUDGET_MIB,
+) -> dict[str, Any]:
+    value_core = validate_ledh_forward_scalar_artifact(
+        source_value_artifact,
+        expected_row_id=ROW_ID,
+        require_admitted=True,
+    )
+    expected_batch_seeds = tuple(int(seed) for seed in value_core["batch_seeds"])
+    if expected_batch_seeds != FULL_ROW_BATCH_SEEDS:
+        raise ValueError("LGSSM source value artifact must use the full fixed seed set")
+    if int(value_core["num_particles"]) != FULL_ROW_NUM_PARTICLES:
+        raise ValueError("LGSSM source value artifact must use N=10000")
+    if int(value_core["time_steps"]) != FULL_ROW_TIME_STEPS:
+        raise ValueError("LGSSM source value artifact must use T=50")
+    payload = _aggregate_lgssm_score_shard_payload(
+        shards,
+        expected_batch_seeds=expected_batch_seeds,
+        expected_num_particles=int(value_core["num_particles"]),
+        expected_time_steps=int(value_core["time_steps"]),
+        require_gpu_runtime=True,
+        memory_budget_mib=memory_budget_mib,
+    )
+    admitted = bool(payload["memory_diagnostics"]["n10000_memory_pass"])
+    artifact = build_ledh_score_artifact(
+        source_value_artifact=source_value_artifact,
+        source_value_artifact_path=source_value_artifact_path,
+        expected_row_id=ROW_ID,
+        score_parameter_names=PARAMETER_NAMES,
+        score=payload["score"],
+        score_derivative_provenance=COMPACT_SCORE_ROUTE_ID,
+        score_correctness=payload["score_correctness"],
+        score_admission_status=(
+            LEDH_SCORE_ADMISSION_STATUS_FULL if admitted else LEDH_SCORE_ADMISSION_STATUS_TINY
+        ),
+        memory_diagnostics=payload["memory_diagnostics"],
+        score_precision={
+            "dtype": "float32",
+            "active_dtype": "float32",
+            "tf_dtype": "float32",
+            "tf32_mode": "enabled",
+            "tf32_execution_enabled": True,
+        },
+        extra_fields={
+            "execution_strategy": {
+                "kind": "seed_sharded_trusted_gpu_processes",
+                "segmented_execution_disclosed": True,
+                "monolithic_batch_memory_claim": False,
+                "monolithic_batch_runtime_claim": False,
+                "shard_count": len(shards),
+            },
+            "aggregation": payload["aggregation"],
+        },
+        require_admitted=admitted,
+    )
+    return {
+        "schema_version": "filter_bench.ledh_same_target_lgssm_m3_t50_score_sharded.v1",
+        "timestamp_utc": _dt.datetime.now(tz=_dt.timezone.utc).isoformat(),
+        "host": platform.node(),
+        "python_version": platform.python_version(),
+        "tensorflow_version": tf.__version__,
+        "git_commit": _git_commit(),
+        "row_id": ROW_ID,
+        "score_status": (
+            "executed_same_target_compact_score_fd_pass_gpu_material_seed_sharded"
+            if admitted
+            else "blocked_seed_sharded_score_memory_gate"
+        ),
+        "score_admission_status": artifact["score_admission_status"],
+        "score_route": COMPACT_SCORE_ROUTE_ID,
+        "value_score_route_status": LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
+        "score": payload["score"],
+        "score_parameter_names": list(PARAMETER_NAMES),
+        "shape": {
+            "batch_size": len(expected_batch_seeds),
+            "batch_seed_count": len(expected_batch_seeds),
+            "time_steps": int(value_core["time_steps"]),
+            "num_particles": int(value_core["num_particles"]),
+            "state_dim": STATE_DIM,
+            "obs_dim": OBS_DIM,
+        },
+        "batch_seeds": list(expected_batch_seeds),
+        "score_correctness": payload["score_correctness"],
+        "memory_diagnostics": payload["memory_diagnostics"],
+        "execution_strategy": artifact["execution_strategy"],
+        "aggregation": payload["aggregation"],
+        "score_artifact": artifact,
+        "nonclaims": list(NONCLAIMS)
+        + [
+            "segmented seed-sharded score execution, not monolithic batch memory evidence",
+            "per-seed raw shards are diagnostic and are not individually score-admitted",
+        ],
+    }
 
 
 def _make_lgssm_callbacks(
@@ -1925,283 +2967,618 @@ def _write_markdown(path: Path, result: dict[str, Any], json_path: Path) -> None
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _write_score_aggregate_markdown(path: Path, result: dict[str, Any], json_path: Path) -> None:
+    correctness = result["score_correctness"]
+    memory = result["memory_diagnostics"]
+    lines = [
+        "# Same-Target LEDH LGSSM m3 T50 Sharded Score Artifact",
+        "",
+        f"- JSON artifact: `{json_path}`",
+        f"- Row: `{result['row_id']}`",
+        f"- Score status: `{result['score_status']}`",
+        f"- Score admission status: `{result['score_admission_status']}`",
+        f"- Shape: `{result['shape']}`",
+        f"- Batch seeds: `{result['batch_seeds']}`",
+        f"- Score route: `{result['score_route']}`",
+        f"- Execution strategy: `{result['execution_strategy']}`",
+        f"- Score: `{result['score']}`",
+        f"- FD max abs error: `{correctness['max_abs_error']}`",
+        f"- FD max relative error: `{correctness['max_relative_error']}`",
+        f"- FD TF32 mode: `{correctness.get('tf32_mode')}`",
+        f"- Max per-seed score peak MiB: `{memory.get('peak_mib')}`",
+        f"- Memory pass: `{memory.get('n10000_memory_pass')}`",
+        "",
+        "## Nonclaims",
+        "",
+    ]
+    lines.extend(f"- {claim}" for claim in result["nonclaims"])
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     args = _parse_args()
-    precision = _configure_precision(args)
-    physical_gpus, logical_gpus = _configure_gpus()
-    tensors, target_identity = _build_lgssm_tensors(args)
-    callbacks = _make_lgssm_callbacks(tensors, args.batch_seeds, args.num_particles)
-    return_history = args.history_mode == "full"
-
-    @tf.function(jit_compile=True, reduce_retracing=True)
-    def compiled_outputs() -> tuple[tf.Tensor, ...]:
-        value = streaming_tf.streaming_batched_ledh_pfpf_ot_value_core_tf(
-            observations=tensors["observations"],
-            initial_particles=tensors["initial_particles"],
-            fixed_resampling_mask=tensors["fixed_resampling_mask"],
-            transition_matrix=tensors["transition_matrix"],
-            transition_covariance=tensors["transition_covariance"],
-            observation_covariance=tensors["observation_covariance"],
-            observation_fn=callbacks["observation_fn"],
-            observation_jacobian_fn=callbacks["observation_jacobian_fn"],
-            observation_residual_fn=callbacks["observation_residual_fn"],
-            transition_log_density_fn=callbacks["transition_log_density_fn"],
-            observation_log_density_fn=callbacks["observation_log_density_fn"],
-            pre_flow_step_fn=callbacks["pre_flow_step_fn"],
-            sinkhorn_epsilon=args.sinkhorn_epsilon,
-            annealed_scaling=args.annealed_scaling,
-            annealed_convergence_threshold=args.annealed_convergence_threshold,
-            sinkhorn_iterations=args.sinkhorn_iterations,
-            transport_gradient_mode=args.transport_gradient_mode,
-            transport_plan_mode="streaming",
-            transport_ad_mode=args.transport_ad_mode,
-            row_chunk_size=args.row_chunk_size,
-            col_chunk_size=args.col_chunk_size,
-            particle_chunk_size=args.particle_chunk_size,
-            return_history=return_history,
+    output = Path(args.output)
+    runner_started_monotonic = time.perf_counter()
+    runner_started_utc = _dt.datetime.now(tz=_dt.timezone.utc).isoformat()
+    last_completed_stage: str | None = None
+    precision: dict[str, Any] = {}
+    physical_gpus: list[str] = []
+    logical_gpus: list[str] = []
+    target_identity: Mapping[str, Any] | None = None
+    if args.aggregate_score_shards is not None:
+        source_path = ROOT / SOURCE_VALUE_ARTIFACT_PATH
+        source_value_artifact = json.loads(source_path.read_text(encoding="utf-8"))
+        shards = [
+            json.loads(Path(path).read_text(encoding="utf-8"))
+            for path in args.aggregate_score_shards
+        ]
+        result = _aggregate_lgssm_score_shards(
+            shards,
+            source_value_artifact=source_value_artifact,
+            source_value_artifact_path=SOURCE_VALUE_ARTIFACT_PATH,
         )
-        return (
-            value.log_likelihood,
-            value.filtered_means,
-            value.filtered_variances,
-            value.ess_by_time,
-            value.final_particles,
-            value.max_row_residual,
-            value.max_column_residual,
+        result = {
+            **result,
+            "artifact_status": "completed",
+            "terminal_artifact": True,
+            "pid": os.getpid(),
+            "runner_started_utc": runner_started_utc,
+            "stage_timestamp_utc": _dt.datetime.now(tz=_dt.timezone.utc).isoformat(),
+            "elapsed_seconds": time.perf_counter() - runner_started_monotonic,
+            "last_completed_stage": "completed",
+        }
+        _write_json_atomic(output, result)
+        if args.markdown_output is not None:
+            _write_score_aggregate_markdown(Path(args.markdown_output), result, output)
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return
+    try:
+        _emit_progress(
+            output,
+            args,
+            artifact_status="started",
+            terminal_artifact=False,
+            runner_started_monotonic=runner_started_monotonic,
+            runner_started_utc=runner_started_utc,
+            last_completed_stage=last_completed_stage,
+        )
+        precision = _configure_precision(args)
+        physical_gpus, logical_gpus = _configure_gpus()
+        tensors, target_identity = _build_lgssm_tensors(args)
+        callbacks = _make_lgssm_callbacks(tensors, args.batch_seeds, args.num_particles)
+        return_history = args.history_mode == "full"
+        _emit_progress(
+            output,
+            args,
+            artifact_status="initialized",
+            terminal_artifact=False,
+            runner_started_monotonic=runner_started_monotonic,
+            runner_started_utc=runner_started_utc,
+            last_completed_stage=last_completed_stage,
+            target_identity=target_identity,
+            precision=precision,
+            physical_gpus=physical_gpus,
+            logical_gpus=logical_gpus,
         )
 
-    with tf.device(args.device):
-        memory_before = _gpu_memory_info()
-        start = time.perf_counter()
-        outputs = compiled_outputs()
-        _materialize(*outputs)
-        compile_and_first = time.perf_counter() - start
-        for _ in range(args.warmups):
-            _materialize(*compiled_outputs())
-        timings: list[float] = []
-        for _ in range(args.repeats):
-            start = time.perf_counter()
-            outputs = compiled_outputs()
-            _materialize(*outputs)
-            timings.append(time.perf_counter() - start)
-        memory_after = _gpu_memory_info()
+        @tf.function(jit_compile=True, reduce_retracing=True)
+        def compiled_outputs() -> tuple[tf.Tensor, ...]:
+            value = streaming_tf.streaming_batched_ledh_pfpf_ot_value_core_tf(
+                observations=tensors["observations"],
+                initial_particles=tensors["initial_particles"],
+                fixed_resampling_mask=tensors["fixed_resampling_mask"],
+                transition_matrix=tensors["transition_matrix"],
+                transition_covariance=tensors["transition_covariance"],
+                observation_covariance=tensors["observation_covariance"],
+                observation_fn=callbacks["observation_fn"],
+                observation_jacobian_fn=callbacks["observation_jacobian_fn"],
+                observation_residual_fn=callbacks["observation_residual_fn"],
+                transition_log_density_fn=callbacks["transition_log_density_fn"],
+                observation_log_density_fn=callbacks["observation_log_density_fn"],
+                pre_flow_step_fn=callbacks["pre_flow_step_fn"],
+                sinkhorn_epsilon=args.sinkhorn_epsilon,
+                annealed_scaling=args.annealed_scaling,
+                annealed_convergence_threshold=args.annealed_convergence_threshold,
+                sinkhorn_iterations=args.sinkhorn_iterations,
+                transport_gradient_mode=args.transport_gradient_mode,
+                transport_plan_mode="streaming",
+                transport_ad_mode=args.transport_ad_mode,
+                row_chunk_size=args.row_chunk_size,
+                col_chunk_size=args.col_chunk_size,
+                particle_chunk_size=args.particle_chunk_size,
+                return_history=return_history,
+            )
+            return (
+                value.log_likelihood,
+                value.filtered_means,
+                value.filtered_variances,
+                value.ess_by_time,
+                value.final_particles,
+                value.max_row_residual,
+                value.max_column_residual,
+            )
 
-    (
-        log_likelihood,
-        filtered_means,
-        filtered_variances,
-        ess_by_time,
-        final_particles,
-        max_row_residual,
-        max_column_residual,
-    ) = outputs
-    output_devices = _validate_device((log_likelihood,), args.expect_device_kind)
-    total_values = [float(value) for value in log_likelihood.numpy().reshape(-1)]
-    average_values = [value / float(args.time_steps) for value in total_values]
-    total_mean = statistics.fmean(total_values)
-    total_sd = _sample_sd(total_values)
-    total_mcse = total_sd / math.sqrt(len(total_values)) if total_sd is not None else None
-    average_mean = statistics.fmean(average_values)
-    average_sd = _sample_sd(average_values)
-    average_mcse = (
-        average_sd / math.sqrt(len(average_values)) if average_sd is not None else None
-    )
-    exact_total_value = float(target_identity["exact_total_log_likelihood"])
-    exact_average_value = float(target_identity["exact_average_log_likelihood"])
-    total_delta = total_mean - exact_total_value
-    average_delta = average_mean - exact_average_value
-    total_rel_error = abs(total_delta) / max(abs(exact_total_value), 1.0e-12)
-    average_rel_error = abs(average_delta) / max(abs(exact_average_value), 1.0e-12)
-    finite_output = bool(
-        tf.reduce_all(tf.math.is_finite(log_likelihood)).numpy()
-        and tf.reduce_all(tf.math.is_finite(final_particles)).numpy()
-    )
-    if return_history:
-        finite_output = bool(
-            finite_output
-            and tf.reduce_all(tf.math.is_finite(filtered_means)).numpy()
-            and tf.reduce_all(tf.math.is_finite(filtered_variances)).numpy()
-            and tf.reduce_all(tf.math.is_finite(ess_by_time)).numpy()
-        )
-    runtime_gate_applicable = bool(
-        args.expect_device_kind == "gpu"
-        and all("GPU" in device.upper() for device in output_devices)
-    )
-    same_target_full_row = bool(target_identity["full_leaderboard_row"])
-    score_diagnostic = None
-    score_status = target_identity["score_status"]
-    score_derivative_provenance = None
-    value_score_route_status = "value_only_score_not_run"
-    score_admission_status = "blocked_score_not_run"
-    score_runtime_gate_applicable = False
-    result_nonclaims = list(NONCLAIMS)
-    if args.score_mode in {"compact-sensitivity", "manual-reverse"}:
         with tf.device(args.device):
-            score_diagnostic = _manual_score_diagnostic(
+            memory_before = _gpu_memory_info()
+            start = time.perf_counter()
+            value_call_started_at = time.perf_counter()
+            _emit_progress(
+                output,
                 args,
-                tf.constant(TRUTH_THETA, dtype=DTYPE),
+                artifact_status="value_call_started",
+                terminal_artifact=False,
+                runner_started_monotonic=runner_started_monotonic,
+                runner_started_utc=runner_started_utc,
+                last_completed_stage=last_completed_stage,
+                target_identity=target_identity,
+                precision=precision,
+                physical_gpus=physical_gpus,
+                logical_gpus=logical_gpus,
+            extra={
+                "gpu_memory_info_before": memory_before,
+                "value_call_attempt": "compile_and_first",
+                "value_stage_markers_emitted": ["value_call_started"],
+                "value_call_marker_contract": (
+                    "progress-only marker; not value, score, or leaderboard evidence"
+                ),
+                },
             )
-        fd_status = score_diagnostic["same_scalar_fd"]["status"]
-        value_score_route_status = score_diagnostic["value_score_route_status"]
-        score_derivative_provenance = score_diagnostic["score_derivative_provenance"]
-        score_runtime_gate_applicable = bool(
+            outputs = compiled_outputs()
+            value_call_seconds = time.perf_counter() - value_call_started_at
+            last_completed_stage = "value_call_returned"
+            _emit_progress(
+                output,
+                args,
+                artifact_status="value_call_returned",
+                terminal_artifact=False,
+                runner_started_monotonic=runner_started_monotonic,
+                runner_started_utc=runner_started_utc,
+                last_completed_stage=last_completed_stage,
+                target_identity=target_identity,
+                precision=precision,
+                physical_gpus=physical_gpus,
+                logical_gpus=logical_gpus,
+                extra={
+                    "gpu_memory_info_before": memory_before,
+                    "value_call_seconds": value_call_seconds,
+                    "value_call_attempt": "compile_and_first",
+                    "value_stage_markers_emitted": [
+                        "value_call_started",
+                        "value_call_returned",
+                    ],
+                    "value_call_marker_contract": (
+                        "progress-only marker; not value, score, or leaderboard evidence"
+                    ),
+                },
+            )
+            value_materialize_started_at = time.perf_counter()
+            _emit_progress(
+                output,
+                args,
+                artifact_status="value_materialize_started",
+                terminal_artifact=False,
+                runner_started_monotonic=runner_started_monotonic,
+                runner_started_utc=runner_started_utc,
+                last_completed_stage=last_completed_stage,
+                target_identity=target_identity,
+                precision=precision,
+                physical_gpus=physical_gpus,
+                logical_gpus=logical_gpus,
+                extra={
+                    "gpu_memory_info_before": memory_before,
+                    "value_call_seconds": value_call_seconds,
+                    "value_call_attempt": "compile_and_first",
+                    "value_stage_markers_emitted": [
+                        "value_call_started",
+                        "value_call_returned",
+                        "value_materialize_started",
+                    ],
+                    "value_call_marker_contract": (
+                        "progress-only marker; not value, score, or leaderboard evidence"
+                    ),
+                },
+            )
+            _materialize(*outputs)
+            value_materialize_seconds = (
+                time.perf_counter() - value_materialize_started_at
+            )
+            last_completed_stage = "value_materialize_completed"
+            _emit_progress(
+                output,
+                args,
+                artifact_status="value_materialize_completed",
+                terminal_artifact=False,
+                runner_started_monotonic=runner_started_monotonic,
+                runner_started_utc=runner_started_utc,
+                last_completed_stage=last_completed_stage,
+                target_identity=target_identity,
+                precision=precision,
+                physical_gpus=physical_gpus,
+                logical_gpus=logical_gpus,
+                extra={
+                    "gpu_memory_info_before": memory_before,
+                    "value_call_seconds": value_call_seconds,
+                    "value_materialize_seconds": value_materialize_seconds,
+                    "value_call_attempt": "compile_and_first",
+                    "value_stage_markers_emitted": [
+                        "value_call_started",
+                        "value_call_returned",
+                        "value_materialize_started",
+                        "value_materialize_completed",
+                    ],
+                    "value_call_marker_contract": (
+                        "progress-only marker; not value, score, or leaderboard evidence"
+                    ),
+                },
+            )
+            compile_and_first = time.perf_counter() - start
+            for _ in range(args.warmups):
+                _materialize(*compiled_outputs())
+            timings: list[float] = []
+            for _ in range(args.repeats):
+                start = time.perf_counter()
+                outputs = compiled_outputs()
+                _materialize(*outputs)
+                timings.append(time.perf_counter() - start)
+            memory_after = _gpu_memory_info()
+        last_completed_stage = "value_completed"
+        _emit_progress(
+            output,
+            args,
+            artifact_status="value_completed",
+            terminal_artifact=False,
+            runner_started_monotonic=runner_started_monotonic,
+            runner_started_utc=runner_started_utc,
+            last_completed_stage=last_completed_stage,
+            target_identity=target_identity,
+            precision=precision,
+            physical_gpus=physical_gpus,
+            logical_gpus=logical_gpus,
+            extra={
+                "gpu_memory_info_before": memory_before,
+                "gpu_memory_info_after": memory_after,
+                "compile_and_first_call_seconds": compile_and_first,
+                "value_call_seconds": value_call_seconds,
+                "value_materialize_seconds": value_materialize_seconds,
+                "value_stage_markers_emitted": [
+                    "value_call_started",
+                    "value_call_returned",
+                    "value_materialize_started",
+                    "value_materialize_completed",
+                ],
+                "warm_call_timings_seconds": timings,
+            },
+        )
+
+        (
+            log_likelihood,
+            filtered_means,
+            filtered_variances,
+            ess_by_time,
+            final_particles,
+            max_row_residual,
+            max_column_residual,
+        ) = outputs
+        output_devices = _validate_device((log_likelihood,), args.expect_device_kind)
+        total_values = [float(value) for value in log_likelihood.numpy().reshape(-1)]
+        average_values = [value / float(args.time_steps) for value in total_values]
+        total_mean = statistics.fmean(total_values)
+        total_sd = _sample_sd(total_values)
+        total_mcse = total_sd / math.sqrt(len(total_values)) if total_sd is not None else None
+        average_mean = statistics.fmean(average_values)
+        average_sd = _sample_sd(average_values)
+        average_mcse = (
+            average_sd / math.sqrt(len(average_values)) if average_sd is not None else None
+        )
+        exact_total_value = float(target_identity["exact_total_log_likelihood"])
+        exact_average_value = float(target_identity["exact_average_log_likelihood"])
+        total_delta = total_mean - exact_total_value
+        average_delta = average_mean - exact_average_value
+        total_rel_error = abs(total_delta) / max(abs(exact_total_value), 1.0e-12)
+        average_rel_error = abs(average_delta) / max(abs(exact_average_value), 1.0e-12)
+        finite_output = bool(
+            tf.reduce_all(tf.math.is_finite(log_likelihood)).numpy()
+            and tf.reduce_all(tf.math.is_finite(final_particles)).numpy()
+        )
+        if return_history:
+            finite_output = bool(
+                finite_output
+                and tf.reduce_all(tf.math.is_finite(filtered_means)).numpy()
+                and tf.reduce_all(tf.math.is_finite(filtered_variances)).numpy()
+                and tf.reduce_all(tf.math.is_finite(ess_by_time)).numpy()
+            )
+        runtime_gate_applicable = bool(
             args.expect_device_kind == "gpu"
-            and all(
-                "GPU" in device.upper()
-                for device in score_diagnostic["score_output_devices"]
+            and all("GPU" in device.upper() for device in output_devices)
+        )
+        same_target_full_row = bool(target_identity["full_leaderboard_row"])
+        score_diagnostic = None
+        score_status = target_identity["score_status"]
+        score_derivative_provenance = None
+        value_score_route_status = "value_only_score_not_run"
+        score_admission_status = "blocked_score_not_run"
+        score_runtime_gate_applicable = False
+        score_memory_reset = None
+        score_memory_before = None
+        score_memory_after = None
+        score_finite: bool | None = None
+        score_call_seconds: float | None = None
+        score_materialize_seconds: float | None = None
+        result_nonclaims = list(NONCLAIMS)
+        if args.score_mode in {"compact-sensitivity", "manual-reverse"}:
+            last_completed_stage = "score_started"
+            _emit_progress(
+                output,
+                args,
+                artifact_status="score_started",
+                terminal_artifact=False,
+                runner_started_monotonic=runner_started_monotonic,
+                runner_started_utc=runner_started_utc,
+                last_completed_stage=last_completed_stage,
+                target_identity=target_identity,
+                precision=precision,
+                physical_gpus=physical_gpus,
+                logical_gpus=logical_gpus,
+                extra={
+                    "gpu_memory_info_before": memory_before,
+                    "gpu_memory_info_after": memory_after,
+                    "output_devices": output_devices,
+                    "finite_output": finite_output,
+                },
             )
-        )
-        decision = _score_admission_decision(
-            score_mode=args.score_mode,
-            fd_status=fd_status,
-            same_target_full_row=same_target_full_row,
-            runtime_gate_applicable=runtime_gate_applicable and score_runtime_gate_applicable,
-        )
-        score_status = decision["score_status"]
-        score_admission_status = decision["score_admission_status"]
-        result_nonclaims.append(decision["nonclaim"])
-        target_identity = {
-            **target_identity,
+            score_memory_reset = _reset_gpu_memory_stats()
+            with tf.device(args.device):
+                score_memory_before = _gpu_memory_info()
+                score_call_started = time.perf_counter()
+                score_diagnostic = _manual_score_diagnostic(
+                    args,
+                    tf.constant(TRUTH_THETA, dtype=DTYPE),
+                )
+                score_call_seconds = time.perf_counter() - score_call_started
+                score_materialize_started = time.perf_counter()
+                score_materialize_seconds = time.perf_counter() - score_materialize_started
+                score_memory_after = _gpu_memory_info()
+            last_completed_stage = "score_completed"
+            score_finite = bool(
+                all(math.isfinite(float(value)) for value in score_diagnostic["score"])
+            )
+            _emit_progress(
+                output,
+                args,
+                artifact_status="score_completed",
+                terminal_artifact=False,
+                runner_started_monotonic=runner_started_monotonic,
+                runner_started_utc=runner_started_utc,
+                last_completed_stage=last_completed_stage,
+                target_identity=target_identity,
+                precision=precision,
+                physical_gpus=physical_gpus,
+                logical_gpus=logical_gpus,
+                extra={
+                    "score_gpu_memory_stats_reset": score_memory_reset,
+                    "score_gpu_memory_info_before": score_memory_before,
+                    "score_gpu_memory_info_after": score_memory_after,
+                    "score_call_seconds": score_call_seconds,
+                    "score_materialize_seconds": score_materialize_seconds,
+                    "score_output_devices": score_diagnostic["score_output_devices"],
+                    "score_finite": score_finite,
+                },
+            )
+            fd_status = score_diagnostic["same_scalar_fd"]["status"]
+            value_score_route_status = score_diagnostic["value_score_route_status"]
+            score_derivative_provenance = score_diagnostic["score_derivative_provenance"]
+            score_peak_mib, _score_memory_source = _memory_peak_mib_from_info(
+                score_memory_after,
+                source_name="score_gpu_memory_info_after",
+            )
+            score_memory_gate_applicable = (
+                score_peak_mib is not None
+                and score_peak_mib <= FULL_ROW_SCORE_MEMORY_BUDGET_MIB
+            )
+            score_runtime_gate_applicable = bool(
+                args.expect_device_kind == "gpu"
+                and all(
+                    "GPU" in device.upper()
+                    for device in score_diagnostic["score_output_devices"]
+                )
+            )
+            if args.score_diagnostic_stage == "score-and-fd":
+                decision = _score_admission_decision(
+                    score_mode=args.score_mode,
+                    fd_status=fd_status,
+                    same_target_full_row=same_target_full_row,
+                    runtime_gate_applicable=runtime_gate_applicable and score_runtime_gate_applicable,
+                    score_memory_gate_applicable=score_memory_gate_applicable,
+                )
+            else:
+                decision = {
+                    "score_status": f"blocked_{args.score_diagnostic_stage.replace('-', '_')}_diagnostic_not_admitted",
+                    "score_admission_status": "blocked_score_diagnostic_stage_not_admitted",
+                    "nonclaim": (
+                        f"{args.score_diagnostic_stage} diagnostic stage is not score admission; "
+                        "score and same-scalar FD must be combined before validation"
+                    ),
+                }
+            score_status = decision["score_status"]
+            score_admission_status = decision["score_admission_status"]
+            result_nonclaims.append(decision["nonclaim"])
+            target_identity = {
+                **target_identity,
+                "score_status": score_status,
+                "score_admission_status": score_admission_status,
+            }
+        result: dict[str, Any] = {
+            "schema_version": "filter_bench.ledh_same_target_lgssm_m3_t50_value.v2",
+            "artifact_status": "completed",
+            "terminal_artifact": True,
+            "timestamp_utc": _dt.datetime.now(tz=_dt.timezone.utc).isoformat(),
+            "runner_started_utc": runner_started_utc,
+            "stage_timestamp_utc": _dt.datetime.now(tz=_dt.timezone.utc).isoformat(),
+            "elapsed_seconds": time.perf_counter() - runner_started_monotonic,
+            "pid": os.getpid(),
+            "last_completed_stage": "completed",
+            "host": platform.node(),
+            "python_version": platform.python_version(),
+            "tensorflow_version": tf.__version__,
+            "git_commit": _git_commit(),
+            "row_id": ROW_ID,
+            "algorithm_id": "ledh_pfpf_ot",
+            "comparison_status": (
+                "executed_value_score"
+                if score_admission_status == RAW_COMPACT_ADMITTED_STATUS
+                else "executed_value_only_score_blocked"
+                if same_target_full_row
+                else "executed_prefix_value_diagnostic_score_blocked"
+            ),
+            "value_status": (
+                "executed_same_target_value"
+                if same_target_full_row
+                else "executed_prefix_value_not_full_row"
+            ),
             "score_status": score_status,
             "score_admission_status": score_admission_status,
+            "score_derivative_provenance": score_derivative_provenance,
+            "score_route": (
+                score_diagnostic["score_route"] if score_diagnostic is not None else None
+            ),
+            "value_route_id": (
+                SAME_SCALAR_ROUTE_ID if score_diagnostic is not None else None
+            ),
+            "score_route_id": (
+                SAME_SCALAR_ROUTE_ID if score_diagnostic is not None else None
+            ),
+            "score_diagnostic_stage": args.score_diagnostic_stage,
+            "score_reference_json": args.score_reference_json,
+            "value_score_route_status": value_score_route_status,
+            "score": score_diagnostic["score"] if score_diagnostic is not None else None,
+            "score_parameter_names": list(PARAMETER_NAMES) if score_diagnostic is not None else None,
+            "manual_score_diagnostic": score_diagnostic,
+            "score_gpu_memory_stats_reset": score_memory_reset,
+            "score_gpu_memory_info_before": score_memory_before,
+            "score_gpu_memory_info_after": score_memory_after,
+            "score_call_seconds": score_call_seconds,
+            "score_materialize_seconds": score_materialize_seconds,
+            "score_memory_budget_mib": FULL_ROW_SCORE_MEMORY_BUDGET_MIB,
+            "score_runtime_gate_applicable": score_runtime_gate_applicable,
+            "score_output_devices": (
+                score_diagnostic["score_output_devices"] if score_diagnostic is not None else None
+            ),
+            "runtime_rankable_with_frozen_non_ledh": False,
+            "target_identity": target_identity,
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+            "physical_gpus": physical_gpus,
+            "logical_gpus": logical_gpus,
+            "device": args.device,
+            "device_scope": args.device_scope,
+            "expect_device_kind": args.expect_device_kind,
+            "precision": precision,
+            "shape": _progress_shape(args),
+            "batch_seeds": [int(seed) for seed in args.batch_seeds],
+            "history_mode": args.history_mode,
+            "return_history": return_history,
+            "transport_policy": args.transport_policy,
+            "transport": _progress_transport(args),
+            "jit_compile": True,
+            "compiled_unit": "streaming_batched_ledh_pfpf_ot_value_core_tf",
+            "compile_and_first_call_seconds": compile_and_first,
+            "value_call_seconds": value_call_seconds,
+            "value_materialize_seconds": value_materialize_seconds,
+            "value_stage_markers_emitted": [
+                "value_call_started",
+                "value_call_returned",
+                "value_materialize_started",
+                "value_materialize_completed",
+            ],
+            "warmups": args.warmups,
+            "repeats": args.repeats,
+            "warm_call_timings_seconds": timings,
+            "warm_call_timing_summary_seconds": _summary(timings),
+            "gpu_memory_info_before": memory_before,
+            "gpu_memory_info_after": memory_after,
+            "output_devices": output_devices,
+            "output_shape": list(log_likelihood.numpy().shape),
+            "history_shapes": {
+                "filtered_means": list(filtered_means.numpy().shape),
+                "filtered_variances": list(filtered_variances.numpy().shape),
+                "ess_by_time": list(ess_by_time.numpy().shape),
+                "final_particles": list(final_particles.numpy().shape),
+            },
+            "total_log_likelihood_by_seed": total_values,
+            "average_log_likelihood_by_seed": average_values,
+            "total_log_likelihood_estimate": {
+                "mean": total_mean,
+                "sample_sd": total_sd,
+                "mcse": total_mcse,
+                "seed_count": len(total_values),
+            },
+            "average_log_likelihood_estimate": {
+                "mean": average_mean,
+                "sample_sd": average_sd,
+                "mcse": average_mcse,
+                "seed_count": len(average_values),
+            },
+            "exact_value_comparison": {
+                "exact_total_log_likelihood": exact_total_value,
+                "exact_average_log_likelihood": exact_average_value,
+                "total_delta_mean_minus_exact": total_delta,
+                "total_absolute_delta": abs(total_delta),
+                "total_relative_error_abs": total_rel_error,
+                "average_delta_mean_minus_exact": average_delta,
+                "average_absolute_delta": abs(average_delta),
+                "average_relative_error_abs": average_rel_error,
+            },
+            "ess_min_by_seed": (
+                [float(value) for value in tf.reduce_min(ess_by_time, axis=0).numpy().reshape(-1)]
+                if return_history
+                else None
+            ),
+            "ess_summary_available": return_history,
+            "max_row_residual": float(max_row_residual.numpy()),
+            "max_column_residual": float(max_column_residual.numpy()),
+            "finite_output": finite_output,
+            "runtime_gate_applicable": runtime_gate_applicable,
+            "primary_pass_same_target_value_execution": bool(
+                finite_output and same_target_full_row and runtime_gate_applicable
+            ),
+            "nonclaims": result_nonclaims,
         }
-    result: dict[str, Any] = {
-        "schema_version": "filter_bench.ledh_same_target_lgssm_m3_t50_value.v2",
-        "timestamp_utc": _dt.datetime.now(tz=_dt.timezone.utc).isoformat(),
-        "host": platform.node(),
-        "python_version": platform.python_version(),
-        "tensorflow_version": tf.__version__,
-        "git_commit": _git_commit(),
-        "row_id": ROW_ID,
-        "algorithm_id": "ledh_pfpf_ot",
-        "comparison_status": (
-            "executed_value_score"
-            if score_admission_status == "admitted_same_target_compact_score"
-            else "executed_value_only_score_blocked"
-            if same_target_full_row
-            else "executed_prefix_value_diagnostic_score_blocked"
-        ),
-        "value_status": (
-            "executed_same_target_value"
-            if same_target_full_row
-            else "executed_prefix_value_not_full_row"
-        ),
-        "score_status": score_status,
-        "score_admission_status": score_admission_status,
-        "score_derivative_provenance": score_derivative_provenance,
-        "score_route": (
-            score_diagnostic["score_route"] if score_diagnostic is not None else None
-        ),
-        "value_route_id": (
-            SAME_SCALAR_ROUTE_ID if score_diagnostic is not None else None
-        ),
-        "score_route_id": (
-            SAME_SCALAR_ROUTE_ID if score_diagnostic is not None else None
-        ),
-        "value_score_route_status": value_score_route_status,
-        "score": score_diagnostic["score"] if score_diagnostic is not None else None,
-        "score_parameter_names": list(PARAMETER_NAMES) if score_diagnostic is not None else None,
-        "manual_score_diagnostic": score_diagnostic,
-        "score_runtime_gate_applicable": score_runtime_gate_applicable,
-        "score_output_devices": (
-            score_diagnostic["score_output_devices"] if score_diagnostic is not None else None
-        ),
-        "runtime_rankable_with_frozen_non_ledh": False,
-        "target_identity": target_identity,
-        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
-        "physical_gpus": physical_gpus,
-        "logical_gpus": logical_gpus,
-        "device": args.device,
-        "device_scope": args.device_scope,
-        "expect_device_kind": args.expect_device_kind,
-        "precision": precision,
-        "shape": {
-            "batch_size": len(args.batch_seeds),
-            "batch_seed_count": len(args.batch_seeds),
-            "time_steps": args.time_steps,
-            "num_particles": args.num_particles,
-            "state_dim": STATE_DIM,
-            "obs_dim": OBS_DIM,
-        },
-        "batch_seeds": [int(seed) for seed in args.batch_seeds],
-        "history_mode": args.history_mode,
-        "return_history": return_history,
-        "transport_policy": args.transport_policy,
-        "transport": {
-            "plan_mode": "streaming",
-            "gradient_mode": args.transport_gradient_mode,
-            "ad_mode": args.transport_ad_mode,
-            "row_chunk_size": args.row_chunk_size,
-            "col_chunk_size": args.col_chunk_size,
-            "particle_chunk_size": args.particle_chunk_size,
-            "sinkhorn_iterations": args.sinkhorn_iterations,
-            "sinkhorn_epsilon": args.sinkhorn_epsilon,
-            "annealed_scaling": args.annealed_scaling,
-            "annealed_convergence_threshold": args.annealed_convergence_threshold,
-            "dense_transport_matrix_materialized": False,
-        },
-        "jit_compile": True,
-        "compiled_unit": "streaming_batched_ledh_pfpf_ot_value_core_tf",
-        "compile_and_first_call_seconds": compile_and_first,
-        "warmups": args.warmups,
-        "repeats": args.repeats,
-        "warm_call_timings_seconds": timings,
-        "warm_call_timing_summary_seconds": _summary(timings),
-        "gpu_memory_info_before": memory_before,
-        "gpu_memory_info_after": memory_after,
-        "output_devices": output_devices,
-        "output_shape": list(log_likelihood.numpy().shape),
-        "history_shapes": {
-            "filtered_means": list(filtered_means.numpy().shape),
-            "filtered_variances": list(filtered_variances.numpy().shape),
-            "ess_by_time": list(ess_by_time.numpy().shape),
-            "final_particles": list(final_particles.numpy().shape),
-        },
-        "total_log_likelihood_by_seed": total_values,
-        "average_log_likelihood_by_seed": average_values,
-        "total_log_likelihood_estimate": {
-            "mean": total_mean,
-            "sample_sd": total_sd,
-            "mcse": total_mcse,
-            "seed_count": len(total_values),
-        },
-        "average_log_likelihood_estimate": {
-            "mean": average_mean,
-            "sample_sd": average_sd,
-            "mcse": average_mcse,
-            "seed_count": len(average_values),
-        },
-        "exact_value_comparison": {
-            "exact_total_log_likelihood": exact_total_value,
-            "exact_average_log_likelihood": exact_average_value,
-            "total_delta_mean_minus_exact": total_delta,
-            "total_absolute_delta": abs(total_delta),
-            "total_relative_error_abs": total_rel_error,
-            "average_delta_mean_minus_exact": average_delta,
-            "average_absolute_delta": abs(average_delta),
-            "average_relative_error_abs": average_rel_error,
-        },
-        "ess_min_by_seed": (
-            [float(value) for value in tf.reduce_min(ess_by_time, axis=0).numpy().reshape(-1)]
-            if return_history
-            else None
-        ),
-        "ess_summary_available": return_history,
-        "max_row_residual": float(max_row_residual.numpy()),
-        "max_column_residual": float(max_column_residual.numpy()),
-        "finite_output": finite_output,
-        "runtime_gate_applicable": runtime_gate_applicable,
-        "primary_pass_same_target_value_execution": bool(
-            finite_output and same_target_full_row and runtime_gate_applicable
-        ),
-        "nonclaims": result_nonclaims,
-    }
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    if args.markdown_output is not None:
-        _write_markdown(Path(args.markdown_output), result, output)
-    print(json.dumps(result, indent=2, sort_keys=True))
+        if (
+            score_diagnostic is not None
+            and same_target_full_row
+            and args.score_diagnostic_stage == "score-and-fd"
+        ):
+            source_path = ROOT / SOURCE_VALUE_ARTIFACT_PATH
+            source_value_artifact = json.loads(source_path.read_text(encoding="utf-8"))
+            result["score_artifact"] = _lgssm_score_artifact_from_result(
+                result,
+                source_value_artifact=source_value_artifact,
+                source_value_artifact_path=SOURCE_VALUE_ARTIFACT_PATH,
+            )
+        _write_json_atomic(output, result)
+        if args.markdown_output is not None:
+            _write_markdown(Path(args.markdown_output), result, output)
+        print(json.dumps(result, indent=2, sort_keys=True))
+    except BaseException as exc:
+        _emit_progress(
+            output,
+            args,
+            artifact_status="failed_exception",
+            terminal_artifact=True,
+            runner_started_monotonic=runner_started_monotonic,
+            runner_started_utc=runner_started_utc,
+            last_completed_stage=last_completed_stage,
+            target_identity=target_identity,
+            precision=precision,
+            physical_gpus=physical_gpus,
+            logical_gpus=logical_gpus,
+            extra={
+                "exception_type": type(exc).__name__,
+                "exception_message": str(exc),
+                "traceback": traceback.format_exc(),
+                "score_finite": locals().get("score_finite"),
+            },
+        )
+        raise
 
 
 if __name__ == "__main__":

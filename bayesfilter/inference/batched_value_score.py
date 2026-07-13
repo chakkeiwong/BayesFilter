@@ -444,9 +444,9 @@ class FixedTransportValueScoreAdapter:
     ``log pi_z(z) = log pi_u(T(z)) + log|det dT/dz|``.
 
     The base adapter supplies reviewed values and scores in ``u``.  This wrapper
-    differentiates only through the frozen transport and log-Jacobian term, so
-    it can apply the chain rule without opening a GradientTape through the base
-    filtering likelihood.
+    applies the chain rule through explicit frozen-transport score pullbacks.
+    It does not open TensorFlow's tape-based autodiff API; transports that
+    cannot provide explicit pullbacks fail closed at construction.
     """
 
     def __init__(
@@ -484,9 +484,13 @@ class FixedTransportValueScoreAdapter:
         self._transport_manifest_hash = _stable_json_hash(self._transport_manifest)
         _require_transport_method(transport, "forward")
         _require_transport_method(transport, "log_abs_det_jacobian")
+        _require_transport_method(transport, "pullback_score")
+        _require_transport_method(transport, "log_abs_det_jacobian_score")
         if self.require_batch_native:
             _require_transport_method(transport, "forward_batch")
             _require_transport_method(transport, "log_abs_det_jacobian_batch")
+            _require_transport_method(transport, "pullback_score_batch")
+            _require_transport_method(transport, "log_abs_det_jacobian_score_batch")
 
     @property
     def transport_manifest_hash(self) -> str:
@@ -610,30 +614,17 @@ class FixedTransportValueScoreAdapter:
         z_tensor = self._validate_z_tensor(z)
         if z_tensor.shape.rank == 2 and not self.require_batch_native:
             raise ValueError("batch-native transport is required for rank 2 z")
-        with tf.GradientTape(persistent=True) as tape:
-            tape.watch(z_tensor)
-            u_tensor = self.latent_to_position(z_tensor)
-            logdet_tensor = self.log_abs_det_jacobian(z_tensor)
-        if z_tensor.shape.rank == 2:
-            jacobian = tape.batch_jacobian(u_tensor, z_tensor)
-            logdet_score = tape.batch_jacobian(logdet_tensor[:, tf.newaxis], z_tensor)[:, 0, :]
-        else:
-            jacobian = tape.jacobian(u_tensor, z_tensor)
-            logdet_score = tape.gradient(logdet_tensor, z_tensor)
-        del tape
-        if logdet_score is None:
-            logdet_score = tf.zeros_like(z_tensor)
-
+        u_tensor = self.latent_to_position(z_tensor)
+        logdet_tensor = self.log_abs_det_jacobian(z_tensor)
         value_u, score_u = self.base_adapter.log_prob_and_grad(u_tensor)
         value_u_tensor = tf.convert_to_tensor(value_u, dtype=z_tensor.dtype)
         score_u_tensor = tf.convert_to_tensor(score_u, dtype=z_tensor.dtype)
         _validate_value_score_shapes(theta=u_tensor, value=value_u_tensor, score=score_u_tensor)
         score_u_tensor = tf.stop_gradient(score_u_tensor)
         value_u_tensor = tf.stop_gradient(value_u_tensor)
-        if z_tensor.shape.rank == 1:
-            transport_score = tf.linalg.matvec(jacobian, score_u_tensor, transpose_a=True)
-        else:
-            transport_score = tf.einsum("bui,bu->bi", jacobian, score_u_tensor)
+        transport_score = self.theta_score_to_latent_score(z_tensor, score_u_tensor)
+        logdet_score = self.log_abs_det_jacobian_score(z_tensor)
+        logdet_score = tf.convert_to_tensor(logdet_score, dtype=z_tensor.dtype)
         value_z = value_u_tensor + logdet_tensor
         score_z = transport_score + logdet_score
         _validate_value_score_shapes(theta=z_tensor, value=value_z, score=score_z)
@@ -646,6 +637,44 @@ class FixedTransportValueScoreAdapter:
         if z_tensor.shape.rank != 2:
             raise ValueError("fixed transport batch target requires rank 2 z")
         return self.log_prob_and_grad(z_tensor)
+
+    def theta_score_to_latent_score(
+        self,
+        z: Any,
+        theta_score: Any,
+    ) -> tf.Tensor:
+        z_tensor = self._validate_z_tensor(z, allow_sample_axes=True)
+        if z_tensor.shape.rank == 1:
+            pullback = _require_transport_method(self.transport, "pullback_score")
+            return tf.convert_to_tensor(
+                pullback(z_tensor, theta_score),
+                dtype=z_tensor.dtype,
+            )
+        pullback_batch = _require_transport_method(
+            self.transport,
+            "pullback_score_batch",
+        )
+        return tf.convert_to_tensor(
+            pullback_batch(z_tensor, theta_score),
+            dtype=z_tensor.dtype,
+        )
+
+    def log_abs_det_jacobian_score(self, z: Any) -> tf.Tensor:
+        z_tensor = self._validate_z_tensor(z, allow_sample_axes=False)
+        if z_tensor.shape.rank == 1:
+            logdet_score = _require_transport_method(
+                self.transport,
+                "log_abs_det_jacobian_score",
+            )
+            return tf.convert_to_tensor(logdet_score(z_tensor), dtype=z_tensor.dtype)
+        logdet_score_batch = _require_transport_method(
+            self.transport,
+            "log_abs_det_jacobian_score_batch",
+        )
+        return tf.convert_to_tensor(
+            logdet_score_batch(z_tensor),
+            dtype=z_tensor.dtype,
+        )
 
     def target_status_telemetry(self, z: Any) -> Mapping[str, Any]:
         telemetry = getattr(self.base_adapter, "target_status_telemetry", None)

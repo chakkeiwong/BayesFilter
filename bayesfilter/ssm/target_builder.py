@@ -31,6 +31,14 @@ TARGET_BUILDER_NONCLAIMS = (
     "no scientific validity claim",
 )
 
+XLA_TARGET_BUILDER_NONCLAIMS = (
+    "generic SSM posterior target builder XLA-HMC value/score opt-in only",
+    "no HMC tuning or sampling claim",
+    "no full-chain XLA diagnostic claim",
+    "no posterior convergence claim",
+    "no scientific validity claim",
+)
+
 _KNOWN_BATCH_RANK_POLICIES = {"rank2_required"}
 _PROCESS_LOCAL_SIGNATURE_PATTERNS = (
     re.compile(r"\b0x[0-9a-fA-F]+\b"),
@@ -91,6 +99,8 @@ class GenericSSMPosteriorAdapter:
         target_scope: str | None = None,
         evidence_path: str | None = None,
         runtime_backend: str = "tensorflow",
+        xla_hmc_ready: bool = False,
+        full_chain_xla_diagnostic_ready: bool = False,
         nonclaims: tuple[str, ...] = TARGET_BUILDER_NONCLAIMS,
     ) -> None:
         validated = validate_ssm_target_contract(
@@ -128,6 +138,16 @@ class GenericSSMPosteriorAdapter:
         self.target_scope = target
         self.evidence_path = evidence_path
         self.runtime_backend = runtime
+        self.xla_hmc_ready = bool(xla_hmc_ready)
+        self.full_chain_xla_diagnostic_ready = bool(full_chain_xla_diagnostic_ready)
+        if self.full_chain_xla_diagnostic_ready and not self.xla_hmc_ready:
+            raise InvalidSSMTargetBuilderContract(
+                "full_chain_xla_diagnostic_ready requires xla_hmc_ready"
+            )
+        if self.xla_hmc_ready and not evidence_path:
+            raise InvalidSSMTargetBuilderContract(
+                "xla_hmc_ready requires a reviewed evidence_path"
+            )
         self.nonclaims = tuple(str(item) for item in nonclaims) or TARGET_BUILDER_NONCLAIMS
         self.target_signature = stable_ssm_target_signature(validated)
         self.non_batch_static_shape = dict(
@@ -170,8 +190,8 @@ class GenericSSMPosteriorAdapter:
     def value_score_capability(self) -> ValueScoreCapability:
         return ValueScoreCapability(
             value_score_authority="graph_native",
-            xla_hmc_ready=False,
-            full_chain_xla_diagnostic_ready=False,
+            xla_hmc_ready=self.xla_hmc_ready,
+            full_chain_xla_diagnostic_ready=self.full_chain_xla_diagnostic_ready,
             runtime_backend=self.runtime_backend,
             evidence_path=self.evidence_path,
             target_scope=self.target_scope,
@@ -293,9 +313,11 @@ def build_ssm_posterior_adapter(
     dtype: Any = tf.float64,
     batch_rank_policy: BatchRankPolicy = "rank2_required",
     target_scope: str | None = None,
-    evidence_path: str | None = None,
-    runtime_backend: str = "tensorflow",
-    nonclaims: tuple[str, ...] = TARGET_BUILDER_NONCLAIMS,
+        evidence_path: str | None = None,
+        runtime_backend: str = "tensorflow",
+        xla_hmc_ready: bool = False,
+        full_chain_xla_diagnostic_ready: bool = False,
+        nonclaims: tuple[str, ...] = TARGET_BUILDER_NONCLAIMS,
 ) -> GenericSSMPosteriorAdapter:
     """Build a batch-native posterior adapter from a generic SSM contract."""
 
@@ -308,6 +330,8 @@ def build_ssm_posterior_adapter(
         target_scope=target_scope,
         evidence_path=evidence_path,
         runtime_backend=runtime_backend,
+        xla_hmc_ready=xla_hmc_ready,
+        full_chain_xla_diagnostic_ready=full_chain_xla_diagnostic_ready,
         nonclaims=nonclaims,
     )
 

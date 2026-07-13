@@ -4,6 +4,81 @@ Date: 2026-07-06
 
 ## Ledger
 
+### 2026-07-08 - Phase 14A - NO-GRADIENTTAPE POLICY REPAIR
+
+Evidence contract:
+
+- Question: Can the admitted LGSSM target and fixed affine transport mechanics
+  stop using `GradientTape` while preserving finite value/score behavior and
+  analytical parity?
+- Baseline/comparator: existing analytical QR score route, finite-difference
+  tests, fixed affine transport chain rule tests, and old Phase 10/11 artifacts
+  as stale historical diagnostics only.
+- Primary criterion: focused tests pass and source guards show no tape markers
+  in admitted LGSSM target helper or fixed-transport runtime wrapper.
+- Veto diagnostics: nonfinite values/scores, analytical mismatch, hidden tape
+  use in admitted route, silent promotion of stale artifacts, HMC/training/sample
+  execution.
+- Nonclaims: no HMC convergence, posterior correctness, transport quality, XLA
+  readiness, production readiness, sampler quality, or scientific validity.
+
+Skeptical audit:
+
+- Wrong baseline blocked: the manual-score LGSSM target signatures are now the
+  baseline; old taped-signature artifacts are not promotion evidence.
+- Proxy promotion blocked: finite value/score and source guards do not imply HMC
+  or XLA readiness.
+- Stop conditions applied: no training, HMC sampling/tuning, sample generation,
+  or GPU/XLA diagnostics ran in Phase 14A.
+- Environment boundary: CPU-hidden checks were support checks only.
+- Artifact match: result note records new signatures and stale old-artifact
+  boundary.
+
+Actions:
+
+- Replaced admitted LGSSM score helper with analytical QR Kalman score.
+- Added explicit affine transport score pullbacks and zero logdet-score methods.
+- Removed tape-based transport differentiation from
+  `FixedTransportValueScoreAdapter`; fixed transports now require explicit
+  pullbacks.
+- Added source guard and fail-closed tests.
+- Marked Phase 14 TensorList repair as superseded by the no-tape policy repair.
+- Drafted Phase 15 manual-score XLA compile-gate subplan after user clarified
+  that all runtime checks must use `jit_compile=True`.
+
+Signatures:
+
+- Current target signature:
+  `275bdd37a82d8c09d2c1b1935b6481f18224644ac659830a921c7958b6ed9038`.
+- Current adapter signature:
+  `d89bdedcf759566f490ce5222ef753cc8c0c8ea39805d68c064c12d2bec07900`.
+- Old taped target signature:
+  `290a91d2a8f90d5b29243965b258b1ec6fd965aa46ffca69dcb78f7fa1ecabcb`.
+- Old taped adapter signature:
+  `0a48b43d2750cad5b452708f7619a1119a259231d8955769809460f256575a97`.
+
+Local checks:
+
+- `python -m py_compile bayesfilter/inference/batched_value_score.py bayesfilter/inference/neutra_artifacts.py bayesfilter/testing/lgssm_generic_target_adapter_tf.py tests/test_batched_value_score.py tests/test_lgssm_generic_target_adapter_tf.py tests/test_neutra_gpu_affine_payload_tf.py`: passed.
+- `CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python -m pytest tests/test_batched_value_score.py tests/test_neutra_artifact_loader.py tests/test_lgssm_fixed_transport_mechanics_tf.py tests/test_lgssm_generic_target_adapter_tf.py tests/test_neutra_gpu_affine_payload_tf.py tests/test_neutra_cpu_sample_boundary.py tests/test_neutra_xla_repair_tf.py -q`: passed, `59 passed, 2 warnings`.
+- `rg -n "GradientTape|batch_jacobian|tape\\." bayesfilter/inference/batched_value_score.py bayesfilter/testing/lgssm_generic_target_adapter_tf.py`: no matches.
+- `git diff --check` for changed Phase 14A files: passed.
+
+Artifacts:
+
+- `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14a-no-gradienttape-policy-subplan-2026-07-08.md`
+- `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14a-no-gradienttape-policy-result-2026-07-08.md`
+- `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-compile-gate-subplan-2026-07-08.md`
+
+Gate status:
+
+- `PASSED_PHASE14A`
+
+Next action:
+
+- Review Phase 15 subplan, then run only the trusted GPU `jit_compile=True`
+  compile diagnostic if approved by the active reviewed gate.
+
 ### 2026-07-06 - Phase 0 - PRECHECK
 
 Evidence contract:
@@ -882,3 +957,512 @@ Next action:
 
 - Enter Phase 11 frozen GPU-trained affine payload packaging under
   `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase11-frozen-gpu-affine-payload-subplan-2026-07-07.md`.
+
+### 2026-07-07 - Phase 11 - EXECUTE_AND_LOCAL_CHECKS
+
+Evidence contract:
+
+- Question: Can the Phase 10 GPU-trained affine parameters be packaged into
+  BayesFilter's frozen affine transport schema and loaded/mechanics-checked
+  without new training, HMC, or sample generation?
+- Baseline/comparator: Phase 5 fixed transport mechanics and Phase 6 CPU
+  affine payload schema as historical loader/mechanics references, with Phase
+  10 GPU training state as the learned-parameter source.
+- Primary criterion: frozen affine payload loads with the Phase 10 target
+  signature, preserves finite forward/logdet behavior, and passes finite
+  mechanics/reference checks against the LGSSM generic adapter.
+- Veto diagnostics: missing Phase 10 state, malformed schema, target or adapter
+  signature mismatch, nonfinite payload tensors, loader failure,
+  mechanics/reference failure, hidden training, hidden HMC sampling/tuning,
+  hidden sample generation, XLA/JIT requirement, or unsupported readiness or
+  scientific claim.
+- Non-claims: no transport quality, HMC readiness, posterior correctness, XLA
+  readiness, route superiority, production readiness, default-readiness, or
+  scientific validity.
+
+Skeptical audit:
+
+- Wrong baseline blocked: Phase 11 used only the Phase 10 LGSSM QR GPU
+  training state plus existing frozen affine loader/mechanics surfaces; DSGE
+  and LEDH evidence were not used.
+- Proxy promotion blocked: finite loader/mechanics diagnostics are usability
+  evidence only.
+- Stop conditions were present in the Phase 11 subplan and enforced through
+  target/adapter signature checks, no-training/no-HMC/no-sample flags, and
+  finite tensor checks.
+- Hidden assumption named: the Phase 10 artifact is the only learned-parameter
+  source for the frozen payload.
+- Environment boundary preserved: Phase 11 ran as CPU-hidden packaging and
+  mechanics checks; no GPU training or XLA path ran.
+- Artifact match: result, payload, validation, and Phase 12/13 subplans were
+  created or refreshed.
+
+Actions:
+
+- Added `bayesfilter/testing/neutra_gpu_affine_payload_tf.py`.
+- Added `tests/test_neutra_gpu_affine_payload_tf.py`.
+- Updated the runbook and master program with Phases 11, 12, and 13.
+- Added Phase 12 CPU multicore external sample boundary subplan.
+- Added Phase 13 XLA/JIT repair gate subplan.
+- Packaged the Phase 10 GPU-trained affine parameters into a frozen affine
+  payload and wrote validation JSON.
+
+Local checks:
+
+- `python -m py_compile bayesfilter/testing/neutra_gpu_affine_payload_tf.py tests/test_neutra_gpu_affine_payload_tf.py`:
+  passed.
+- `CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python -m pytest tests/test_neutra_gpu_affine_payload_tf.py -q`:
+  passed, `3 passed, 2 warnings`.
+- `CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python -m bayesfilter.testing.neutra_gpu_affine_payload_tf`:
+  passed and emitted `passed: true`.
+- `python -m json.tool` on Phase 10 training-state JSON, Phase 11 frozen
+  payload JSON, and Phase 11 validation JSON: passed.
+
+Phase 11 artifact summary:
+
+- Frozen payload:
+  `docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_gpu_frozen_payload_seed20260707.json`
+- Validation:
+  `docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_gpu_payload_validation_seed20260707.json`
+- Artifact signature:
+  `1cccddb4ae606ca084a3d08f7fbdd3c959dafb73b77ad152df6380051c599340`
+- Transport hash:
+  `cdd67ece589a3cb4c474dcd0702686d7d47d1bc406347a3312df38285e75da25`
+- Payload stable hash:
+  `sha256:77cecbfa879e5249d18de580480c14dba79936cd3242c48ca8812ab0366494e8`
+- Validation stable hash:
+  `sha256:fbcc30474cecace4ecbd6994a907bfc3e2851b774814538daf494d8ebe8769e3`
+
+Gate status:
+
+- `LOCAL_CHECKS_PASSED_PHASE11_RESULT_REVIEW_PENDING`
+
+Next action:
+
+- Run bounded read-only review of the Phase 11 result and next-phase boundary
+  before advancing to Phase 12.
+
+### 2026-07-07 - Phase 11 - PASS_REVIEW
+
+Review:
+
+- Claude health probe returned `CLAUDE_PROBE_OK`.
+- Claude one-path read-only review of
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase11-frozen-gpu-affine-payload-result-2026-07-07.md`
+  returned `VERDICT: AGREE`.
+- Claude one-path read-only review of
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase12-cpu-multicore-sample-generation-subplan-2026-07-07.md`
+  returned `VERDICT: AGREE`.
+- Phase 12 review included a non-blocking clarity suggestion. The subplan was
+  patched to state that, if no new helper is added, tests must bind to an
+  existing boundary surface and identify it in the Phase 12 result.
+- The first Phase 13 review prompt stalled. Since Claude was responsive on
+  probe and prior one-path reviews, this was treated as prompt surface area.
+  A narrower one-path material-blocker prompt against
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-subplan-2026-07-07.md`
+  returned `VERDICT: AGREE`.
+
+Phase 11 result:
+
+- `PASS_PHASE11_FROZEN_GPU_AFFINE_PAYLOAD`
+
+Gate status:
+
+- `PASSED`
+
+Next action:
+
+- Enter Phase 12 CPU multicore external sample boundary under
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase12-cpu-multicore-sample-generation-subplan-2026-07-07.md`.
+
+### 2026-07-07 - Phase 12 - EXECUTE_AND_LOCAL_CHECKS
+
+Evidence contract:
+
+- Question: Can BayesFilter express post-training external sample generation
+  as a CPU multicore boundary that is separate from GPU NeuTra training and
+  from HMC sampling/tuning?
+- Baseline/comparator: Phase 10 GPU-only training policy, Phase 11 frozen
+  payload boundary, and existing fixed-transport mechanics nonclaims.
+- Primary criterion: a helper/design and focused tests record CPU-only
+  multicore provenance and forbid GPU training, CPU NeuTra training, HMC
+  sampling/tuning, and XLA dependence.
+- Veto diagnostics: hidden NeuTra training, CPU training fallback, hidden GPU
+  sample generation, hidden HMC sampling/tuning, unrecorded worker/seed
+  provenance, nonfinite diagnostic outputs, XLA/JIT requirement, or unsupported
+  readiness or scientific claim.
+- Non-claims: no posterior correctness, HMC convergence, sampler quality,
+  transport quality, route superiority, production readiness, default-policy
+  change, XLA readiness, or scientific validity.
+
+Skeptical audit:
+
+- Wrong baseline blocked: Phase 12 used the Phase 11 frozen affine payload and
+  did not use DSGE/c603, LEDH, or HMC outputs.
+- Proxy promotion blocked: generated samples are diagnostic base/transport
+  samples only, not posterior or HMC samples.
+- Stop conditions were enforced through CPU-hidden checks, forbidden capability
+  flags, worker/seed provenance, and finite-output checks.
+- Hidden assumption named: sample generation is a separate post-training CPU
+  boundary, not training or HMC.
+- Environment boundary preserved: the helper and tests ran under
+  `CUDA_VISIBLE_DEVICES=-1`; no GPU sample generation ran.
+- Artifact match: result, helper, tests, and diagnostic JSON were created.
+
+Actions:
+
+- Added `bayesfilter/testing/neutra_cpu_sample_boundary.py`.
+- Added `tests/test_neutra_cpu_sample_boundary.py`.
+- Ran a CPU-hidden diagnostic sample-boundary smoke against the Phase 11
+  frozen affine payload.
+- Wrote the Phase 12 result.
+
+Local checks:
+
+- `python -m py_compile bayesfilter/testing/neutra_cpu_sample_boundary.py tests/test_neutra_cpu_sample_boundary.py`:
+  passed.
+- `CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python -m pytest tests/test_neutra_cpu_sample_boundary.py -q`:
+  passed, `9 passed, 2 warnings`.
+- `CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python -m bayesfilter.testing.neutra_cpu_sample_boundary`:
+  passed and emitted `passed: true`.
+- `python -m json.tool docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_cpu_multicore_sample_boundary_seed20260707.json`:
+  passed.
+
+Phase 12 artifact summary:
+
+- Diagnostic sample-boundary artifact:
+  `docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_cpu_multicore_sample_boundary_seed20260707.json`
+- Artifact SHA-256:
+  `3a7a8b87a4b9a9b48eb94d9ab1e28248bb5bf9c6fe0ca521cbc8479687942b57`
+- Artifact stable hash:
+  `sha256:6eef6bd3a4d3aef4125fac5a60d97565f13dadb440fc2c452f2f46d01130ee11`
+- Sample count: `12`.
+- Worker count: `2`.
+- Distinct worker processes recorded: `2`.
+
+Gate status:
+
+- `LOCAL_CHECKS_PASSED_PHASE12_RESULT_REVIEW_REPAIR_PENDING`
+
+Next action:
+
+- Rerun bounded read-only review after patching the Phase 12 run-manifest
+  documentation blocker.
+
+### 2026-07-07 - Phase 12 - REVIEW_REPAIR
+
+Review:
+
+- The first Claude one-path review prompt for the Phase 12 result stalled.
+  A narrower one-path material-blocker prompt returned `VERDICT: REVISE`.
+- The reviewer accepted the substantive CPU multicore boundary but identified a
+  documentation blocker: the run manifest did not explicitly record git commit,
+  environment, seed, wall time, and output artifact path.
+
+Repair:
+
+- Patched the Phase 12 result run manifest to include:
+  - git commit `e09046088be79f4100a77583063889a37be1de04`;
+  - Python `/home/chakwong/anaconda3/envs/tf-gpu/bin/python`, Python `3.11.14`;
+  - conda env `tf-gpu`;
+  - CPU/GPU status;
+  - seed `20260707`;
+  - sample count `12`;
+  - worker count `2`;
+  - wall time `0.031364030903205276` seconds;
+  - output artifact path.
+
+Gate status:
+
+- `PHASE12_RESULT_REVIEW_REPAIR_PATCHED_RERUN_REVIEW_PENDING`
+
+Next action:
+
+- Rerun bounded read-only review of the patched Phase 12 result before entering
+  Phase 13.
+
+### 2026-07-07 - Phase 12 - PASS_REVIEW
+
+Review:
+
+- Focused rerun review of the patched Phase 12 result returned
+  `VERDICT: AGREE`.
+- Reviewer confirmed the prior run-manifest blocker was closed and the
+  no-training, no-HMC, no-GPU-sample, no-XLA, and no-posterior-claim boundaries
+  remained intact.
+- Phase 13 subplan already received Claude `VERDICT: AGREE` during the Phase
+  11 next-subplan review, after narrowing an over-broad prompt.
+
+Phase 12 result:
+
+- `PASS_PHASE12_CPU_MULTICORE_SAMPLE_BOUNDARY`
+
+Gate status:
+
+- `PASSED`
+
+Next action:
+
+- Enter Phase 13 XLA/JIT repair gate under
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-subplan-2026-07-07.md`.
+
+### 2026-07-08 - Phase 13 - EXECUTE_AND_LOCAL_CHECKS
+
+Evidence contract:
+
+- Question: Can the inherited TensorFlow fixed tensor-list-size XLA/JIT blocker
+  be repaired for the admitted LGSSM NeuTra route without changing the target
+  or overclaiming readiness?
+- Baseline/comparator: Phase 9 XLA blocker artifact, Phase 10 successful
+  non-XLA GPU training, Phase 11 non-XLA frozen-payload mechanics, and Phase 12
+  CPU sample-generation boundary.
+- Primary criterion: either a trusted GPU/XLA diagnostic compiles and records
+  finite value/gradient checks for the same target boundary, or the blocker is
+  preserved with exact error/provenance and no readiness claim.
+- Veto diagnostics: target/signature change, hidden training, hidden HMC
+  sampling/tuning, hidden sample generation, CPU-only result treated as GPU/XLA
+  evidence, nonfinite diagnostics, unbounded runtime, or unsupported readiness
+  or scientific claim.
+- Non-claims: no HMC convergence, posterior correctness, sampler quality,
+  transport quality, route superiority, production readiness, default-policy
+  change, or broad XLA readiness.
+
+Skeptical audit:
+
+- Wrong baseline blocked: Phase 13 used the LGSSM QR route and inherited Phase
+  9 XLA blocker, not DSGE/c603 or LEDH evidence.
+- Proxy promotion blocked: partial XLA compile evidence is not readiness.
+- Stop conditions fired on the remaining TensorList crossing-boundary blocker.
+- Hidden assumption named: `maximum_iterations` repairs only the fixed
+  tensor-list-size complaint, not all TensorList/XLA boundary issues.
+- Environment boundary preserved: GPU/XLA commands ran trusted; CPU-hidden
+  checks are support only.
+- Artifact match: a parseable blocker JSON and Phase 13 result were written;
+  Phase 14 subplan was drafted.
+
+Actions:
+
+- Added `bayesfilter/testing/neutra_xla_repair_tf.py`.
+- Added `tests/test_neutra_xla_repair_tf.py`.
+- Patched QR while-loop likelihood kernels with
+  `maximum_iterations=n_timesteps`.
+- Patched the Phase 13 diagnostic to inline the QR while-loop implementation
+  into the outer XLA trace through `python_function`.
+- Ran trusted GPU/XLA diagnostics.
+- Wrote the Phase 13 blocker result and Phase 14 repair subplan.
+
+Local checks:
+
+- `python -m py_compile bayesfilter/linear/kalman_qr_tf.py bayesfilter/testing/neutra_xla_repair_tf.py tests/test_neutra_xla_repair_tf.py`:
+  passed.
+- `CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python -m pytest tests/test_neutra_xla_repair_tf.py tests/test_linear_qr_compact_loglik_tf.py -q`:
+  passed, `20 passed, 2 warnings`.
+- `python -m json.tool docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-diagnostic-2026-07-07.json`:
+  passed.
+- Trusted `nvidia-smi`: passed.
+- Trusted Phase 13 GPU/XLA diagnostic command: blocked and exited `134` after
+  writing parseable blocker JSON.
+
+Phase 13 artifact summary:
+
+- Diagnostic artifact:
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-diagnostic-2026-07-07.json`
+- Artifact SHA-256:
+  `9ef84f1dba32880215ef276b5c333afab8e050d505d5d27a6dab90971287c173`
+- Final decision:
+  `BLOCK_PHASE13_XLA_JIT_REPAIR_GATE`
+- Final blocker:
+  `Support for TensorList crossing the XLA/TF boundary is not implemented`
+
+Gate status:
+
+- `BLOCKED_PHASE13_RESULT_REVIEW_PENDING`
+
+Next action:
+
+- Run bounded read-only review of the Phase 13 blocker result and Phase 14
+  subplan before any further XLA work.
+
+### 2026-07-08 - Phase 13 - PASS_REVIEW
+
+Review:
+
+- Claude one-path read-only review of the Phase 13 blocker result returned
+  `VERDICT: AGREE`.
+- Claude one-path read-only review of the Phase 14 subplan returned
+  `VERDICT: AGREE`.
+- Phase 14 review included non-blocking safeguards. The subplan was patched to
+  explicitly forbid optimizer updates, parameter updates, and HMC leapfrog
+  steps inside the value/gradient diagnostic, and to require a full run
+  manifest.
+
+Phase 13 result:
+
+- `BLOCK_PHASE13_XLA_JIT_REPAIR_GATE`
+
+Gate status:
+
+- `BLOCKED_WITH_REVIEWED_PHASE14_READY`
+
+Next action:
+
+- Phase 14 XLA TensorList-boundary repair may begin under
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14-xla-tensorlist-boundary-repair-subplan-2026-07-08.md`.
+
+### 2026-07-08 - Phase 15 - MANUAL-SCORE XLA COMPILE GATE AND POLICY HARDENING
+
+Evidence contract:
+
+- Question: Can the no-tape LGSSM affine NeuTra objective compile and execute
+  under trusted GPU XLA with `jit_compile=True`, and what are the compile-time
+  and compilation-size diagnostics?
+- Baseline/comparator: Phase 14A manual-score target signatures; old Phase 10
+  non-XLA/taped-signature artifacts are stale diagnostic history only.
+- Primary criterion: trusted GPU diagnostic compiles with `jit_compile=True`,
+  executes two calls with finite value/gradient diagnostics, and records
+  compile-time and size proxies.
+- Veto diagnostics: any `jit_compile=false` runtime run, CPU runtime evidence,
+  hidden optimizer update/training, hidden HMC sampling/tuning, hidden external
+  sample generation, stale signature reuse, nonfinite diagnostics, or
+  unsupported readiness/scientific/product claim.
+- Nonclaims: no HMC convergence, posterior correctness, sampler quality,
+  transport superiority, production readiness, default readiness, broad XLA
+  readiness beyond this exact compile gate, or scientific validity.
+
+Skeptical audit:
+
+- Wrong baseline blocked: Phase 15 used the current manual-score target and
+  adapter signatures, not the old Phase 10 artifact.
+- Proxy promotion blocked: compile success, finite gradients, and timing/size
+  diagnostics do not imply training quality or HMC readiness.
+- Stop conditions applied: no `jit_compile=false` runtime was run; no training,
+  optimizer update, HMC, or sample generation ran in Phase 15.
+- Environment boundary preserved: runtime evidence used trusted GPU execution.
+- Artifact match: diagnostic JSON recorded target/adapter signatures, first and
+  second call wall times, compile-time proxy, concrete graph size, HLO text
+  size, finite checks, and device checks.
+
+Phase 15 result:
+
+- `PASS_PHASE15_MANUAL_SCORE_XLA_COMPILE_GATE`
+- Diagnostic artifact:
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-compile-diagnostic-2026-07-08.json`.
+- Diagnostic JSON SHA-256:
+  `3b3df0592e47f5503e931e66f70f8dd6648839b3d99e7428ee5f03a62016231a`.
+- Target signature:
+  `275bdd37a82d8c09d2c1b1935b6481f18224644ac659830a921c7958b6ed9038`.
+- Adapter signature:
+  `d89bdedcf759566f490ce5222ef753cc8c0c8ea39805d68c064c12d2bec07900`.
+- First call wall time: `52.11530358507298` seconds.
+- Second call wall time: `0.07660454418510199` seconds.
+- Compile-time proxy: `52.03869904088788` seconds.
+- Concrete graph serialized size: `3164271` bytes.
+- Compiler IR HLO text size: `20368338` bytes.
+- TensorFlow logged `Compiled cluster using XLA!`.
+
+Policy hardening after user clarification:
+
+- Live bounded NeuTra training helper now defaults to `jit_compile=True`.
+- Live bounded NeuTra training helper rejects `jit_compile=False`.
+- Live bounded NeuTra training helper uses manual target scores and a manual
+  compiled parameter update instead of runtime autodiff/Keras gradients.
+- Frozen affine payload packaging now requires a `jit_compile=True`
+  manual-score source state and uses XLA-enabled mechanics checks.
+- Phase 16 subplan was drafted as the next reviewed gate:
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase16-bounded-gpu-xla-training-subplan-2026-07-08.md`.
+
+Local checks after policy hardening:
+
+- `python -m py_compile bayesfilter/testing/neutra_gpu_bounded_training_tf.py bayesfilter/testing/neutra_gpu_affine_payload_tf.py bayesfilter/testing/neutra_xla_repair_tf.py tests/test_neutra_gpu_bounded_training_tf.py tests/test_neutra_gpu_affine_payload_tf.py tests/test_neutra_xla_repair_tf.py`:
+  passed.
+- Source scan of the active NeuTra training helper found no runtime-autodiff or
+  Keras optimizer route. Remaining `jit_compile=false` text in the active
+  helper is veto/error-string language only.
+
+Gate status:
+
+- `PHASE15_PASSED_PHASE16_REVIEW_READY`
+
+Next action:
+
+- Review Phase 16 before any bounded GPU/XLA training execution. Do not run
+  training until that review gate is complete.
+
+### 2026-07-08 - Phase 16 - BOUNDED GPU/XLA TRAINING
+
+Evidence contract:
+
+- Question: Can BayesFilter run a bounded LGSSM affine NeuTra training gate on
+  trusted GPU with `jit_compile=True`, manual scores, and no CPU fallback?
+- Baseline/comparator: Phase 15 compile-gate pass, current manual-score
+  target/adapter signatures, and old Phase 10 non-XLA training as stale history
+  only.
+- Primary criterion: 12 predeclared training steps complete under trusted GPU
+  `jit_compile=True`, write a parseable training-state artifact, preserve
+  current signatures, and record finite loss/gradient/update diagnostics.
+- Veto diagnostics: any `jit_compile=false` runtime run, CPU runtime evidence,
+  hidden runtime autodiff route, hidden HMC sampling/tuning, hidden external
+  sample generation, target/adapter signature mismatch, nonfinite diagnostics,
+  malformed artifact, or unsupported readiness/scientific/product claim.
+- Nonclaims: no full NeuTra quality, posterior correctness, HMC convergence,
+  sampler quality, transport superiority, production readiness, default
+  readiness, broad nonlinear SSM validity, or scientific validity.
+
+Skeptical audit and review:
+
+- Initial Phase 16 subplan review returned `VERDICT: REVISE`: bounded execution
+  details, mandatory JSON fields, and boundary-proof fields were too loose.
+- Patched the subplan with exact command, timeout, output filename, mandatory
+  JSON fields, and explicit no-HMC/no-sample/no-autodiff checks.
+- Narrowed rerun review returned `VERDICT: AGREE`.
+- Pre-run local checks passed: `py_compile`, CPU-hidden focused pytest
+  (`15 passed, 2 warnings`), source scan for runtime autodiff/Keras optimizer
+  APIs, and `git diff --check`.
+
+Runtime:
+
+- Trusted `nvidia-smi` passed on NVIDIA GeForce RTX 4080 SUPER.
+- Exact reviewed command:
+  `timeout 240 env TF_FORCE_GPU_ALLOW_GROWTH=true MPLCONFIGDIR=/tmp python -m bayesfilter.testing.neutra_gpu_bounded_training_tf --steps 12 --batch-size 16 --seed 20260707 --learning-rate 0.03 --initial-raw-scale -1.3862943611198906 --device /GPU:0`.
+- TensorFlow logged `Compiled cluster using XLA!`.
+- Command exited `0` and printed
+  `PASS_PHASE16_BOUNDED_GPU_XLA_NEUTRA_TRAINING`.
+
+Phase 16 artifact summary:
+
+- Training-state artifact:
+  `docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_gpu_xla_training_state_seed20260707.json`.
+- File SHA-256:
+  `727fea040502e4fcb1af2203b9a490d03ab00dca63fd756f501a5bc3c936af7b`.
+- Stable artifact hash:
+  `sha256:27f2c4364db13d1be14d7ad48b3257bd3f8418c091ad4d075db8504917bdb1c3`.
+- File size: `19206` bytes.
+- Target signature:
+  `275bdd37a82d8c09d2c1b1935b6481f18224644ac659830a921c7958b6ed9038`.
+- Adapter signature:
+  `d89bdedcf759566f490ce5222ef753cc8c0c8ea39805d68c064c12d2bec07900`.
+- Elapsed seconds in artifact: `69.49786909413524`.
+- Initial loss: `4.270573668036143`.
+- Final loss: `3.7532094500806354`.
+- All finite checks true.
+- All objective outputs on GPU.
+- `jit_compile=true`, `jit_compile_false_runtime_executed=false`,
+  `runtime_autodiff_executed=false`,
+  `keras_optimizer_gradient_route_executed=false`, `hmc_executed=false`,
+  `sample_generation_executed=false`,
+  `external_sample_generation_executed=false`.
+
+Phase 16 result:
+
+- `PASS_PHASE16_BOUNDED_GPU_XLA_NEUTRA_TRAINING`.
+- Result artifact:
+  `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase16-bounded-gpu-xla-training-result-2026-07-08.md`.
+
+Gate status:
+
+- `PASSED_PHASE17_READY`
+
+Next action:
+
+- Review Phase 17 frozen payload packaging subplan before packaging. Do not use
+  stale Phase 10/11 non-XLA artifacts.

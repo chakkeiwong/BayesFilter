@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 ## Status
 
-`PHASE10_COMPLETED_PHASE11_READY`
+`PHASE16_BOUNDED_GPU_XLA_TRAINING_PASSED_PHASE17_READY`
 
 ## Objective
 
@@ -73,8 +73,15 @@ These are starting surfaces, not automatic claims of full HMC/NeuTra readiness.
 | 7 | First Simple Nonlinear SSM | Move to a BayesFilter-owned non-DSGE nonlinear SSM target. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase7-simple-nonlinear-ssm-subplan-2026-07-06.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase7-simple-nonlinear-ssm-result-2026-07-06.md` |
 | 8 | Same Target Multiple Filters | Show the same target interface can use different filters without changing HMC/transport plumbing. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase8-multifilter-subplan-2026-07-06.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase8-multifilter-result-2026-07-06.md` |
 | 9 | GPU NeuTra Training Preflight | Check admitted non-DSGE routes can bind a GPU NeuTra-style objective and emit finite initial value/gradient diagnostics without training or HMC. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase9-gpu-neutra-training-preflight-subplan-2026-07-07.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase9-gpu-neutra-training-preflight-result-2026-07-07.md` |
-| 10 | Bounded GPU NeuTra Training | Run the first bounded GPU optimizer-training gate for one admitted LGSSM route, with `jit_compile=false` while the XLA blocker remains open. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase10-bounded-gpu-training-subplan-2026-07-07.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase10-bounded-gpu-training-result-2026-07-07.md` |
-| 11 | Frozen GPU-Trained Affine Payload | Package the Phase 10 GPU-trained affine parameters into the frozen affine payload schema and run loader/mechanics checks. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase11-frozen-gpu-affine-payload-subplan-2026-07-07.md` | `pending` |
+| 10 | Historical Bounded GPU NeuTra Training | Historical non-XLA bounded GPU run. After the Phase 14A/15 policy repair, this artifact is stale diagnostic history only and must not support promotion or packaging. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase10-bounded-gpu-training-subplan-2026-07-07.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase10-bounded-gpu-training-result-2026-07-07.md` |
+| 11 | Historical Frozen GPU-Trained Affine Payload | Historical payload packaging for the old non-XLA/taped-signature state. Superseded for promotion by the manual-score `jit_compile=True` policy. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase11-frozen-gpu-affine-payload-subplan-2026-07-07.md` | stale/history only |
+| 12 | CPU Multicore External Sample Boundary | Separate external sample generation from GPU NeuTra training by defining and smoke-checking a CPU multicore sample-generation boundary without HMC sampling/tuning. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase12-cpu-multicore-sample-generation-subplan-2026-07-07.md` | `pending` |
+| 13 | XLA/JIT Repair Gate | Repair or preserve the Phase 9 TensorFlow XLA/JIT blocker with a dedicated bounded gate before any XLA-dependent HMC or training claim. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-subplan-2026-07-07.md` | `pending` |
+| 14 | XLA TensorList Boundary Repair | Superseded by the no-`GradientTape` target-policy repair after user clarification. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14-xla-tensorlist-boundary-repair-subplan-2026-07-08.md` | superseded |
+| 14A | LGSSM No-GradientTape Target Policy | Replace admitted LGSSM target and fixed affine transport score paths with analytical/manual score pullbacks, demoting taped routes to diagnostics. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14a-no-gradienttape-policy-subplan-2026-07-08.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14a-no-gradienttape-policy-result-2026-07-08.md` |
+| 15 | Manual-Score LGSSM XLA Compile Gate | Test the current manual-score LGSSM affine NeuTra objective with `jit_compile=True` only, recording compile time and size proxies before any training rerun. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-compile-gate-subplan-2026-07-08.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-compile-gate-result-2026-07-08.md` |
+| 16 | Bounded GPU/XLA NeuTra Training | Run the first bounded manual-score NeuTra training gate after Phase 15. Execution must be trusted GPU only, `jit_compile=True` only, no runtime autodiff, no HMC, and no external sample generation. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase16-bounded-gpu-xla-training-subplan-2026-07-08.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase16-bounded-gpu-xla-training-result-2026-07-08.md` |
+| 17 | Frozen GPU/XLA-Trained Affine Payload | Package the Phase 16 GPU/XLA-trained affine state into the frozen payload schema and validate loader/mechanics boundaries. | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase17-frozen-gpu-xla-affine-payload-subplan-2026-07-08.md` | pending |
 
 ## Human Approval Boundaries
 

@@ -14,12 +14,14 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter
+import bayesfilter.inference.hmc_budget_ladder as hmc_budget_ladder
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
 from bayesfilter.inference import (
     FixedMassHMCTuningBudgetCallbackResult,
     HMCBootstrapScreenResult,
     HMCFixedMassStepStageConfig,
     HMCFixedMassStepStageResult,
+    HMCFrozenStepTrajectoryStageConfig,
     HMCGeometryInitializationConfig,
     HMCWindowedMassStageConfig,
     HMCWindowedMassStageResult,
@@ -127,6 +129,8 @@ def _fake_result(
     finite_log_accept: bool = True,
     finite_samples: bool = True,
     finite_target_log_prob: bool = True,
+    finite_proposed_target_log_prob: bool = True,
+    finite_log_acceptance_correction: bool = True,
     metadata_overrides: Mapping[str, Any] | None = None,
 ) -> _FakeRunResult:
     if samples is None:
@@ -145,10 +149,24 @@ def _fake_result(
     target_log_prob = -0.5 * np.sum(np.square(sample_array), axis=-1)
     if not finite_target_log_prob:
         target_log_prob[-1] = np.nan
+    proposed_target_log_prob = target_log_prob - 0.1
+    if not finite_proposed_target_log_prob:
+        proposed_target_log_prob[-1] = np.nan
+    log_acceptance_correction = np.zeros(int(num_results), dtype=float)
+    if not finite_log_acceptance_correction:
+        log_acceptance_correction[-1] = np.nan
     trace: dict[str, Any] = {
         "is_accepted": tf.constant(acceptance_trace, dtype=tf.bool),
         "log_accept_ratio": tf.constant(log_accept, dtype=tf.float64),
         "target_log_prob": tf.constant(target_log_prob, dtype=tf.float64),
+        "proposed_target_log_prob": tf.constant(
+            proposed_target_log_prob,
+            dtype=tf.float64,
+        ),
+        "log_acceptance_correction": tf.constant(
+            log_acceptance_correction,
+            dtype=tf.float64,
+        ),
     }
     diagnostics: dict[str, Any] = {
         "acceptance_rate": tf.constant(float(acceptance), dtype=tf.float64),
@@ -294,6 +312,28 @@ def _scripted_step_runner(screen_acceptances: list[float] | Mapping[int, float])
         )
 
     return run, calls
+
+
+def _attempt_budget_policy(
+    *,
+    phase5_screen_num_results: int = 32,
+    phase5_screen_burnin_steps: int = 8,
+    phase6_screen_num_results: int = 32,
+    phase6_screen_burnin_steps: int = 8,
+) -> Any:
+    return hmc_kernel_tuning._HMCAttemptBudgetPolicy(
+        target_dimension=2,
+        attempt_index=0,
+        budget=16,
+        phase4_warmup_steps=16,
+        phase5_tune_budgets=(4, 8, 16),
+        phase5_screen_num_results=phase5_screen_num_results,
+        phase5_screen_burnin_steps=phase5_screen_burnin_steps,
+        phase6_screen_num_results=phase6_screen_num_results,
+        phase6_screen_burnin_steps=phase6_screen_burnin_steps,
+        verification_num_results=64,
+        verification_num_burnin_steps=16,
+    )
 
 
 def test_fixed_mass_step_config_does_not_expose_hmc_mechanics() -> None:
@@ -570,6 +610,25 @@ def test_fixed_mass_step_private_callback_records_candidates_and_selected_pair()
     assert any(payload["step_size"] is not None for payload in candidate_events)
     assert all(payload["num_leapfrog_steps"] > 0 for payload in candidate_events)
     assert all(payload["private_hmc_mechanics"] is True for payload in candidate_events)
+    private_summary = candidate_events[-1]["last_ladder_round_private_diagnostics"]
+    assert private_summary["available"] is True
+    assert private_summary["private_hmc_mechanics"] is True
+    assert private_summary["reports_posterior_convergence"] is False
+    assert private_summary["screen"]["log_accept_ratio_diagnostic_source"] == "trace"
+    assert private_summary["screen"]["log_accept_ratio_finite"] is True
+    assert private_summary["screen"]["log_accept_ratio_summary"]["nonfinite_count"] == 0
+    assert private_summary["tune"]["log_accept_ratio_diagnostic_source"] == "trace"
+    assert private_summary["tune"]["target_log_prob_diagnostic_source"] == "trace"
+    assert (
+        private_summary["screen"]["proposed_target_log_prob_diagnostic_source"]
+        == "trace"
+    )
+    assert private_summary["screen"]["proposed_target_log_prob_finite"] is True
+    assert (
+        private_summary["screen"]["log_acceptance_correction_diagnostic_source"]
+        == "trace"
+    )
+    assert private_summary["screen"]["log_acceptance_correction_finite"] is True
     final_selection = selected_events[-1]
     assert final_selection["selected_pair_exists"] is True
     assert final_selection["num_leapfrog_steps"] == result.fixed_num_leapfrog_steps
@@ -652,6 +711,64 @@ def test_fixed_mass_step_stage_repairs_without_selected_step_when_budget_exhaust
             fixed_mass_step_stage=result,
             run_full_chain=_scripted_step_runner([0.70])[0],
         )
+
+
+def test_fixed_mass_step_stage_repairs_isolated_nonfinite_proposal_screens() -> None:
+    calls: list[Mapping[str, Any]] = []
+
+    def run(adapter: Any, initial_state: Any, config: Any) -> _FakeRunResult:
+        del adapter
+        uses_tuning = bool(config.tuning_policy.uses_dual_averaging)
+        calls.append(
+            {
+                "role": "tune" if uses_tuning else "screen",
+                "step_size": float(config.step_size),
+                "num_leapfrog_steps": int(config.num_leapfrog_steps),
+                "initial_state": np.asarray(initial_state, dtype=float),
+            }
+        )
+        np.testing.assert_allclose(np.asarray(initial_state, dtype=float), np.zeros(2))
+        if uses_tuning:
+            return _fake_result(
+                num_results=int(config.num_results),
+                acceptance=0.70,
+                step_size=0.25,
+                num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+                samples=np.zeros((int(config.num_results), 2)),
+            )
+        return _fake_result(
+            num_results=int(config.num_results),
+            acceptance=0.0,
+            finite_log_accept=False,
+            finite_proposed_target_log_prob=False,
+            finite_log_acceptance_correction=False,
+            samples=np.zeros((int(config.num_results), 2)),
+        )
+
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(repair_nonfinite_proposal_screen=True),
+        run_full_chain=run,
+    )
+
+    assert result.passed is False
+    assert result.final_status == "repair_or_retry"
+    assert result.hard_vetoes == ()
+    assert "joint_l_epsilon_no_viable_pair" in result.repair_triggers
+    assert "screen_nonfinite_proposal_mechanics_step_repair" in result.repair_triggers
+    assert result.repair_step_payload is not None
+    assert result.repair_step_size is not None
+    assert result.repair_step_size < 0.25
+    assert result.budget_ladder_result is not None
+    assert result.budget_ladder_result.repair_config_payload is not None
+    assert (
+        result.budget_ladder_config_payload["repair_nonfinite_proposal_screen"]
+        is True
+    )
+    assert any(call["role"] == "screen" for call in calls)
 
 
 def test_fixed_mass_step_public_timeout_preflight_skips_ladder_without_mechanics() -> None:
@@ -886,6 +1003,422 @@ def test_fixed_mass_step_stage_edge_selected_l_repairs_grid_and_final_local_retu
     tune_l = [call["num_leapfrog_steps"] for call in calls if call["role"] == "tune"]
     assert 12 in tune_l
     assert tune_l.count(10) >= 2
+
+
+def test_fixed_mass_step_stage_reuses_dynamic_runner_cache_across_joint_grid_rounds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Mapping[str, Any]] = []
+    target_tau = np.pi / 2.0
+
+    class _FakeReusableRunner:
+        def __init__(self, config: Any, *, dynamic_num_leapfrog_steps: bool) -> None:
+            self.config = config
+            self.dynamic_num_leapfrog_steps = bool(dynamic_num_leapfrog_steps)
+
+        def run(
+            self,
+            *,
+            current_state: Any,
+            seed: Any,
+            step_size: Any,
+            num_leapfrog_steps: Any | None = None,
+        ) -> _FakeRunResult:
+            del current_state, seed, step_size
+            leapfrogs = (
+                int(self.config.num_leapfrog_steps)
+                if num_leapfrog_steps is None
+                else int(num_leapfrog_steps)
+            )
+            uses_tuning = bool(self.config.tuning_policy.uses_dual_averaging)
+            calls.append(
+                {
+                    "role": "tune" if uses_tuning else "screen",
+                    "num_leapfrog_steps": leapfrogs,
+                    "dynamic_num_leapfrog_steps": self.dynamic_num_leapfrog_steps,
+                }
+            )
+            if uses_tuning:
+                return _fake_result(
+                    num_results=int(self.config.num_results),
+                    acceptance=0.70,
+                    step_size=target_tau / float(leapfrogs),
+                    num_adaptation_steps=self.config.tuning_policy.num_adaptation_steps,
+                    samples=np.zeros((int(self.config.num_results), 2)),
+                )
+            acceptance_by_l = {
+                3: 0.82,
+                4: 0.82,
+                5: 0.82,
+                6: 0.82,
+                8: 0.65,
+                9: 0.70,
+                10: 0.70,
+                11: 0.82,
+                12: 0.82,
+            }
+            return _fake_result(
+                num_results=int(self.config.num_results),
+                acceptance=acceptance_by_l.get(leapfrogs, 0.82),
+                samples=np.zeros((int(self.config.num_results), 2)),
+            )
+
+    def fake_builder(
+        _adapter: Any,
+        _initial_state_template: Any,
+        config: Any,
+        *,
+        dynamic_num_leapfrog_steps: bool = False,
+    ) -> _FakeReusableRunner:
+        calls.append(
+            {
+                "role": "build",
+                "uses_dual_averaging": bool(config.tuning_policy.uses_dual_averaging),
+                "num_leapfrog_steps": int(config.num_leapfrog_steps),
+                "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
+            }
+        )
+        return _FakeReusableRunner(
+            config,
+            dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps,
+        )
+
+    monkeypatch.setattr(
+        hmc_budget_ladder,
+        "build_reusable_full_chain_tfp_hmc_runner",
+        fake_builder,
+    )
+
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(chain_execution_mode="tf_function", use_xla=True),
+        _max_leapfrog_steps=12,
+    )
+
+    assert result.passed is True
+    build_calls = [call for call in calls if call["role"] == "build"]
+    assert len(build_calls) == 2
+    assert [call["uses_dual_averaging"] for call in build_calls] == [True, False]
+    assert all(call["dynamic_num_leapfrog_steps"] is True for call in build_calls)
+
+    final_local_candidates = [
+        candidate
+        for candidate in result.diagnostics["candidates"]
+        if candidate["grid_stage"] == "final_local"
+    ]
+    assert final_local_candidates
+    for candidate in final_local_candidates:
+        route_events = candidate["ladder_payload"]["runner_route_summary"][
+            "round_route_events"
+        ]
+        assert route_events
+        assert all(event["runner_reused"] is True for event in route_events)
+        assert all(
+            event["dynamic_num_leapfrog_steps"] is True for event in route_events
+        )
+
+
+def test_trajectory_stage_reuses_fixed_mass_screen_runner_cache_handoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Mapping[str, Any]] = []
+    target_tau = np.pi / 2.0
+
+    class _FakeReusableRunner:
+        def __init__(self, config: Any, *, dynamic_num_leapfrog_steps: bool) -> None:
+            self.config = config
+            self.dynamic_num_leapfrog_steps = bool(dynamic_num_leapfrog_steps)
+
+        def run(
+            self,
+            *,
+            current_state: Any,
+            seed: Any,
+            step_size: Any,
+            num_leapfrog_steps: Any | None = None,
+        ) -> _FakeRunResult:
+            del current_state, seed, step_size
+            leapfrogs = (
+                int(self.config.num_leapfrog_steps)
+                if num_leapfrog_steps is None
+                else int(num_leapfrog_steps)
+            )
+            uses_tuning = bool(self.config.tuning_policy.uses_dual_averaging)
+            calls.append(
+                {
+                    "role": "tune" if uses_tuning else "screen",
+                    "num_leapfrog_steps": leapfrogs,
+                    "dynamic_num_leapfrog_steps": self.dynamic_num_leapfrog_steps,
+                    "num_results": int(self.config.num_results),
+                    "num_burnin_steps": int(self.config.num_burnin_steps),
+                }
+            )
+            if uses_tuning:
+                return _fake_result(
+                    num_results=int(self.config.num_results),
+                    acceptance=0.70,
+                    step_size=target_tau / float(leapfrogs),
+                    num_adaptation_steps=self.config.tuning_policy.num_adaptation_steps,
+                    samples=np.zeros((int(self.config.num_results), 2)),
+                )
+            acceptance_by_l = {
+                3: 0.82,
+                4: 0.82,
+                5: 0.82,
+                6: 0.82,
+                8: 0.65,
+                9: 0.70,
+                10: 0.70,
+                11: 0.82,
+                12: 0.82,
+            }
+            return _fake_result(
+                num_results=int(self.config.num_results),
+                acceptance=acceptance_by_l.get(leapfrogs, 0.70),
+                samples=np.zeros((int(self.config.num_results), 2)),
+            )
+
+    def fixed_mass_builder(
+        _adapter: Any,
+        _initial_state_template: Any,
+        config: Any,
+        *,
+        dynamic_num_leapfrog_steps: bool = False,
+    ) -> _FakeReusableRunner:
+        calls.append(
+            {
+                "role": "build",
+                "uses_dual_averaging": bool(config.tuning_policy.uses_dual_averaging),
+                "num_results": int(config.num_results),
+                "num_burnin_steps": int(config.num_burnin_steps),
+                "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
+            }
+        )
+        return _FakeReusableRunner(
+            config,
+            dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps,
+        )
+
+    def forbidden_trajectory_builder(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("trajectory should reuse fixed-mass screen runner")
+
+    monkeypatch.setattr(
+        hmc_budget_ladder,
+        "build_reusable_full_chain_tfp_hmc_runner",
+        fixed_mass_builder,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "build_reusable_full_chain_tfp_hmc_runner",
+        forbidden_trajectory_builder,
+    )
+
+    budget_policy = _attempt_budget_policy()
+    geometry = _geometry()
+    bootstrap = _bootstrap()
+    windowed = _windowed_stage()
+    fixed = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        config=_stage_config(chain_execution_mode="tf_function", use_xla=True),
+        _attempt_budget_policy=budget_policy,
+        _max_leapfrog_steps=12,
+    )
+
+    assert fixed.passed is True
+    assert fixed.private_runner_cache_handoff
+    fixed_payload_text = json.dumps(fixed.payload(), sort_keys=True)
+    assert "private_runner_cache_handoff" not in fixed_payload_text
+    assert "runner_cache" not in fixed_payload_text
+
+    trajectory = run_hmc_frozen_step_trajectory_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        fixed_mass_step_stage=fixed,
+        config=HMCFrozenStepTrajectoryStageConfig(
+            chain_execution_mode="tf_function",
+            use_xla=True,
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        ),
+        _attempt_budget_policy=budget_policy,
+        _runner_cache_handoff=fixed.private_runner_cache_handoff,
+    )
+
+    assert trajectory.passed is True
+    candidate = trajectory.candidate_results[0]
+    event = candidate["runner_route_event"]
+    assert event["runner_reused"] is True
+    assert event["dynamic_num_leapfrog_steps"] is True
+    assert (
+        event["runner_cache_handoff_source"]
+        == "fixed_mass_step_private_runner_cache_handoff"
+    )
+    summary = trajectory.diagnostics["runner_route_summary"]
+    assert summary["initial_handoff_contract_count"] == 2
+    assert summary["runner_cache_handoff_source"] == (
+        "fixed_mass_step_private_runner_cache_handoff"
+    )
+
+
+def test_trajectory_stage_builds_new_runner_when_handoff_static_contract_differs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Mapping[str, Any]] = []
+    target_tau = np.pi / 2.0
+
+    class _FakeReusableRunner:
+        def __init__(self, config: Any, *, dynamic_num_leapfrog_steps: bool) -> None:
+            self.config = config
+            self.dynamic_num_leapfrog_steps = bool(dynamic_num_leapfrog_steps)
+
+        def run(
+            self,
+            *,
+            current_state: Any,
+            seed: Any,
+            step_size: Any,
+            num_leapfrog_steps: Any | None = None,
+        ) -> _FakeRunResult:
+            del current_state, seed, step_size
+            leapfrogs = (
+                int(self.config.num_leapfrog_steps)
+                if num_leapfrog_steps is None
+                else int(num_leapfrog_steps)
+            )
+            uses_tuning = bool(self.config.tuning_policy.uses_dual_averaging)
+            calls.append(
+                {
+                    "role": "tune" if uses_tuning else "screen",
+                    "num_leapfrog_steps": leapfrogs,
+                    "dynamic_num_leapfrog_steps": self.dynamic_num_leapfrog_steps,
+                    "num_results": int(self.config.num_results),
+                    "num_burnin_steps": int(self.config.num_burnin_steps),
+                }
+            )
+            if uses_tuning:
+                return _fake_result(
+                    num_results=int(self.config.num_results),
+                    acceptance=0.70,
+                    step_size=target_tau / float(leapfrogs),
+                    num_adaptation_steps=self.config.tuning_policy.num_adaptation_steps,
+                    samples=np.zeros((int(self.config.num_results), 2)),
+                )
+            acceptance_by_l = {
+                3: 0.82,
+                4: 0.82,
+                5: 0.82,
+                6: 0.82,
+                8: 0.65,
+                9: 0.70,
+                10: 0.70,
+                11: 0.82,
+                12: 0.82,
+            }
+            return _fake_result(
+                num_results=int(self.config.num_results),
+                acceptance=acceptance_by_l.get(leapfrogs, 0.70),
+                samples=np.zeros((int(self.config.num_results), 2)),
+            )
+
+    def fixed_mass_builder(
+        _adapter: Any,
+        _initial_state_template: Any,
+        config: Any,
+        *,
+        dynamic_num_leapfrog_steps: bool = False,
+    ) -> _FakeReusableRunner:
+        calls.append(
+            {
+                "role": "build_fixed",
+                "uses_dual_averaging": bool(config.tuning_policy.uses_dual_averaging),
+                "num_results": int(config.num_results),
+                "num_burnin_steps": int(config.num_burnin_steps),
+                "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
+            }
+        )
+        return _FakeReusableRunner(
+            config,
+            dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps,
+        )
+
+    def trajectory_builder(
+        _adapter: Any,
+        _initial_state_template: Any,
+        config: Any,
+        *,
+        dynamic_num_leapfrog_steps: bool = False,
+    ) -> _FakeReusableRunner:
+        calls.append(
+            {
+                "role": "build_trajectory",
+                "uses_dual_averaging": bool(config.tuning_policy.uses_dual_averaging),
+                "num_results": int(config.num_results),
+                "num_burnin_steps": int(config.num_burnin_steps),
+                "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
+            }
+        )
+        return _FakeReusableRunner(
+            config,
+            dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps,
+        )
+
+    monkeypatch.setattr(
+        hmc_budget_ladder,
+        "build_reusable_full_chain_tfp_hmc_runner",
+        fixed_mass_builder,
+    )
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "build_reusable_full_chain_tfp_hmc_runner",
+        trajectory_builder,
+    )
+
+    fixed_policy = _attempt_budget_policy()
+    geometry = _geometry()
+    bootstrap = _bootstrap()
+    windowed = _windowed_stage()
+    fixed = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        config=_stage_config(chain_execution_mode="tf_function", use_xla=True),
+        _attempt_budget_policy=fixed_policy,
+        _max_leapfrog_steps=12,
+    )
+    mismatch_policy = _attempt_budget_policy(phase6_screen_num_results=64)
+    trajectory = run_hmc_frozen_step_trajectory_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        fixed_mass_step_stage=fixed,
+        config=HMCFrozenStepTrajectoryStageConfig(
+            chain_execution_mode="tf_function",
+            use_xla=True,
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        ),
+        _attempt_budget_policy=mismatch_policy,
+        _runner_cache_handoff=fixed.private_runner_cache_handoff,
+    )
+
+    assert trajectory.passed is True
+    assert any(call["role"] == "build_trajectory" for call in calls)
+    candidate = trajectory.candidate_results[0]
+    event = candidate["runner_route_event"]
+    assert event["runner_reused"] is False
+    assert event["dynamic_num_leapfrog_steps"] is True
+    assert event["runner_cache_handoff_initial_contract_count"] == 2
+    summary = trajectory.diagnostics["runner_route_summary"]
+    assert summary["initial_handoff_contract_count"] == 2
+    assert summary["distinct_static_runner_contract_count"] == 3
 
 
 def test_fixed_mass_step_stage_private_repair_handoff_preserves_bracket_state_without_public_leak() -> None:

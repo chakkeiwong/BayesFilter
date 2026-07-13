@@ -123,7 +123,11 @@ def _fake_result(
     finite_log_accept: bool = True,
     finite_samples: bool = True,
     target_log_prob_finite: bool = True,
+    proposed_target_log_prob_finite: bool = True,
+    log_acceptance_correction_finite: bool = True,
     num_adaptation_steps: int | None = None,
+    include_log_accept_trace: bool = True,
+    log_accept_summary: tuple[int, int, float] | None = None,
 ) -> _FakeRunResult:
     sample_value = 0.0 if finite_samples else np.nan
     samples = (
@@ -133,15 +137,24 @@ def _fake_result(
     )
     trace: dict[str, Any] = {
         "is_accepted": tf.constant([acceptance >= 0.5, acceptance >= 0.25]),
-        "log_accept_ratio": tf.constant(
-            [0.0, 0.1 if finite_log_accept else np.nan],
-            dtype=tf.float64,
-        ),
         "target_log_prob": tf.constant(
             [0.0, -0.5 if target_log_prob_finite else np.nan],
             dtype=tf.float64,
         ),
+        "proposed_target_log_prob": tf.constant(
+            [-0.1, -0.4 if proposed_target_log_prob_finite else np.nan],
+            dtype=tf.float64,
+        ),
+        "log_acceptance_correction": tf.constant(
+            [0.0, -0.05 if log_acceptance_correction_finite else np.nan],
+            dtype=tf.float64,
+        ),
     }
+    if include_log_accept_trace:
+        trace["log_accept_ratio"] = tf.constant(
+            [0.0, 0.1 if finite_log_accept else np.nan],
+            dtype=tf.float64,
+        )
     if step_size is not None:
         trace["step_size"] = tf.constant([step_size], dtype=tf.float64)
     diagnostics: dict[str, Any] = {
@@ -156,6 +169,20 @@ def _fake_result(
     if num_adaptation_steps is not None:
         diagnostics["num_adaptation_steps"] = tf.constant(num_adaptation_steps, dtype=tf.int32)
         trace["num_adaptation_steps"] = tf.constant([num_adaptation_steps], dtype=tf.int32)
+    if log_accept_summary is not None:
+        finite_count, nonfinite_count, max_abs = log_accept_summary
+        diagnostics["log_accept_ratio_finite_count"] = tf.constant(
+            finite_count,
+            dtype=tf.int32,
+        )
+        diagnostics["log_accept_ratio_nonfinite_count"] = tf.constant(
+            nonfinite_count,
+            dtype=tf.int32,
+        )
+        diagnostics["log_accept_ratio_max_abs_finite"] = tf.constant(
+            max_abs,
+            dtype=tf.float64,
+        )
     return _FakeRunResult(
         samples=samples,
         trace=trace,
@@ -433,6 +460,173 @@ def test_budget_ladder_fixed_mass_wrapper_preserves_full_chain_xla_authority() -
             "preserves XLA authority only from accepted base authority" in claim
             for claim in capability.nonclaims
         )
+
+
+def test_budget_ladder_log_accept_summary_can_support_missing_trace() -> None:
+    def run(adapter: Any, _initial_state: Any, config: Any) -> _FakeRunResult:
+        del adapter
+        if config.tuning_policy.uses_dual_averaging:
+            return _fake_result(
+                acceptance=0.70,
+                step_size=0.2,
+                num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+                include_log_accept_trace=False,
+                log_accept_summary=(4, 0, 0.1),
+            )
+        return _fake_result(
+            acceptance=0.70,
+            step_size=None,
+            include_log_accept_trace=False,
+            log_accept_summary=(4, 0, 0.1),
+        )
+
+    result = run_fixed_mass_hmc_tuning_budget_ladder(
+        adapter=_ToyGaussianAdapter(),
+        mass_artifact=_mass_artifact(),
+        initial_state_factory=_initial_state_factory,
+        config=_config(budget_schedule=(4,)),
+        run_full_chain=run,
+    )
+
+    assert result.passed is True
+    tune_diagnostics = result.rounds[0].tune_diagnostics
+    screen_diagnostics = result.rounds[0].screen_diagnostics
+    assert tune_diagnostics["log_accept_ratio_finite"] is True
+    assert screen_diagnostics["log_accept_ratio_finite"] is True
+    assert tune_diagnostics["log_accept_ratio_diagnostic_source"] == "diagnostic_summary"
+    assert screen_diagnostics["log_accept_ratio_diagnostic_source"] == "diagnostic_summary"
+    assert screen_diagnostics["log_accept_ratio_summary"]["nonfinite_count"] == 0
+    assert (
+        screen_diagnostics["proposed_target_log_prob_diagnostic_source"] == "trace"
+    )
+    assert screen_diagnostics["proposed_target_log_prob_finite"] is True
+    assert (
+        screen_diagnostics["log_acceptance_correction_diagnostic_source"] == "trace"
+    )
+    assert screen_diagnostics["log_acceptance_correction_finite"] is True
+
+
+def test_budget_ladder_log_accept_trace_overrides_finite_summary() -> None:
+    def run(adapter: Any, _initial_state: Any, config: Any) -> _FakeRunResult:
+        del adapter
+        if config.tuning_policy.uses_dual_averaging:
+            return _fake_result(
+                acceptance=0.70,
+                step_size=0.2,
+                finite_log_accept=False,
+                num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+                log_accept_summary=(4, 0, 0.1),
+            )
+        return _fake_result(
+            acceptance=0.70,
+            step_size=None,
+            finite_log_accept=False,
+            log_accept_summary=(4, 0, 0.1),
+        )
+
+    result = run_fixed_mass_hmc_tuning_budget_ladder(
+        adapter=_ToyGaussianAdapter(),
+        mass_artifact=_mass_artifact(),
+        initial_state_factory=_initial_state_factory,
+        config=_config(budget_schedule=(4,)),
+        run_full_chain=run,
+    )
+
+    assert result.passed is False
+    assert result.final_status == "hard_veto"
+    assert "tune_log_accept_nonfinite_or_missing" in result.rounds[0].hard_vetoes
+    tune_diagnostics = result.rounds[0].tune_diagnostics
+    assert tune_diagnostics["log_accept_ratio_finite"] is False
+    assert tune_diagnostics["log_accept_ratio_diagnostic_source"] == "trace"
+    assert tune_diagnostics["log_accept_ratio_summary"]["nonfinite_count"] == 1
+    assert tune_diagnostics["proposed_target_log_prob_finite"] is True
+    assert tune_diagnostics["log_acceptance_correction_finite"] is True
+
+
+def test_budget_ladder_records_private_mechanics_summaries_when_log_accept_nonfinite() -> None:
+    def run(adapter: Any, _initial_state: Any, config: Any) -> _FakeRunResult:
+        del adapter
+        if config.tuning_policy.uses_dual_averaging:
+            return _fake_result(
+                acceptance=0.70,
+                step_size=0.2,
+                num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+            )
+        return _fake_result(
+            acceptance=0.0,
+            step_size=None,
+            finite_log_accept=False,
+            proposed_target_log_prob_finite=False,
+            log_acceptance_correction_finite=True,
+        )
+
+    result = run_fixed_mass_hmc_tuning_budget_ladder(
+        adapter=_ToyGaussianAdapter(),
+        mass_artifact=_mass_artifact(),
+        initial_state_factory=_initial_state_factory,
+        config=_config(budget_schedule=(4,)),
+        run_full_chain=run,
+    )
+
+    assert result.passed is False
+    assert result.final_status == "hard_veto"
+    diagnostics = result.rounds[0].screen_diagnostics
+    assert diagnostics["log_accept_ratio_finite"] is False
+    assert diagnostics["log_accept_ratio_summary"]["nonfinite_count"] == 1
+    assert diagnostics["target_log_prob_finite"] is True
+    assert diagnostics["proposed_target_log_prob_finite"] is False
+    assert diagnostics["proposed_target_log_prob_summary"]["nonfinite_count"] == 1
+    assert diagnostics["log_acceptance_correction_finite"] is True
+    assert diagnostics["log_acceptance_correction_summary"]["nonfinite_count"] == 0
+
+
+def test_budget_ladder_can_privately_repair_isolated_nonfinite_proposal_screen() -> None:
+    screen_calls = 0
+
+    def run(adapter: Any, _initial_state: Any, config: Any) -> _FakeRunResult:
+        nonlocal screen_calls
+        del adapter
+        if config.tuning_policy.uses_dual_averaging:
+            return _fake_result(
+                acceptance=0.70,
+                step_size=0.2,
+                num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+            )
+        screen_calls += 1
+        if screen_calls == 1:
+            return _fake_result(
+                acceptance=0.0,
+                step_size=None,
+                finite_log_accept=False,
+                proposed_target_log_prob_finite=False,
+                log_acceptance_correction_finite=False,
+            )
+        return _fake_result(acceptance=0.70, step_size=None)
+
+    result = run_fixed_mass_hmc_tuning_budget_ladder(
+        adapter=_ToyGaussianAdapter(),
+        mass_artifact=_mass_artifact(),
+        initial_state_factory=_initial_state_factory,
+        config=_config(
+            budget_schedule=(4, 8),
+            repair_nonfinite_proposal_screen=True,
+        ),
+        run_full_chain=run,
+    )
+
+    assert result.passed is True
+    first = result.rounds[0]
+    assert first.classification == "promotion_veto_repair"
+    assert first.hard_vetoes == ()
+    assert first.promotion_vetoes == ("screen_log_accept_nonfinite_or_missing",)
+    assert first.repair_triggers == (
+        "screen_nonfinite_proposal_mechanics_step_repair",
+    )
+    assert first.screen_diagnostics["directional_step_repair"]["repair_action"] == (
+        "decrease_step_fixed_screen"
+    )
+    assert first.screen_diagnostics["directional_step_repair"]["next_step_size"] < 0.2
+    assert result.rounds[1].passed is True
 
 
 def test_budget_ladder_finite_acceptance_outside_repair_band_repairs() -> None:
@@ -1028,6 +1222,121 @@ def test_budget_ladder_default_tf_function_route_uses_reusable_runner(
     assert result.rounds[0].screen_diagnostics["runtime_metadata"][
         "fixed_mass_budget_ladder_static_contract_hash"
     ] == route["round_route_events"][1]["static_contract_hash"]
+
+
+def test_budget_ladder_dynamic_leapfrog_shared_cache_reuses_contracts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[Mapping[str, Any]] = []
+
+    class _FakeReusableRunner:
+        def __init__(self, config: Any, *, dynamic_num_leapfrog_steps: bool) -> None:
+            self.config = config
+            self.dynamic_num_leapfrog_steps = bool(dynamic_num_leapfrog_steps)
+
+        def run(
+            self,
+            *,
+            current_state: Any,
+            seed: Any,
+            step_size: Any,
+            num_leapfrog_steps: Any | None = None,
+        ) -> _FakeRunResult:
+            del current_state, seed, step_size
+            leapfrogs = (
+                int(self.config.num_leapfrog_steps)
+                if num_leapfrog_steps is None
+                else int(num_leapfrog_steps)
+            )
+            calls.append(
+                {
+                    "role": (
+                        "tune"
+                        if self.config.tuning_policy.uses_dual_averaging
+                        else "screen"
+                    ),
+                    "dynamic_num_leapfrog_steps": self.dynamic_num_leapfrog_steps,
+                    "num_leapfrog_steps": leapfrogs,
+                }
+            )
+            if self.config.tuning_policy.uses_dual_averaging:
+                return _fake_result(
+                    acceptance=0.70,
+                    step_size=0.2,
+                    num_adaptation_steps=self.config.tuning_policy.num_adaptation_steps,
+                )
+            return _fake_result(acceptance=0.70, step_size=None)
+
+    def fake_builder(
+        _adapter: Any,
+        _initial_state_template: Any,
+        config: Any,
+        *,
+        dynamic_num_leapfrog_steps: bool = False,
+    ) -> _FakeReusableRunner:
+        calls.append(
+            {
+                "role": "build",
+                "uses_dual_averaging": bool(config.tuning_policy.uses_dual_averaging),
+                "num_leapfrog_steps": int(config.num_leapfrog_steps),
+                "dynamic_num_leapfrog_steps": bool(dynamic_num_leapfrog_steps),
+            }
+        )
+        return _FakeReusableRunner(
+            config,
+            dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps,
+        )
+
+    monkeypatch.setattr(
+        hmc_budget_ladder,
+        "build_reusable_full_chain_tfp_hmc_runner",
+        fake_builder,
+    )
+    shared_runner_cache: dict[str, Any] = {}
+    shared_contracts: dict[str, Mapping[str, Any]] = {}
+    first = run_fixed_mass_hmc_tuning_budget_ladder(
+        adapter=_ToyGaussianAdapter(),
+        mass_artifact=_mass_artifact(),
+        initial_state_factory=_initial_state_factory,
+        config=_config(
+            budget_schedule=(4,),
+            chain_execution_mode="tf_function",
+            num_leapfrog_steps=3,
+        ),
+        _runner_cache=shared_runner_cache,
+        _runner_contract_payloads=shared_contracts,
+        _dynamic_num_leapfrog_steps=True,
+    )
+    second = run_fixed_mass_hmc_tuning_budget_ladder(
+        adapter=_ToyGaussianAdapter(),
+        mass_artifact=_mass_artifact(),
+        initial_state_factory=_initial_state_factory,
+        config=_config(
+            budget_schedule=(4,),
+            chain_execution_mode="tf_function",
+            num_leapfrog_steps=7,
+        ),
+        _runner_cache=shared_runner_cache,
+        _runner_contract_payloads=shared_contracts,
+        _dynamic_num_leapfrog_steps=True,
+    )
+
+    assert first.passed is True
+    assert second.passed is True
+    build_calls = [call for call in calls if call["role"] == "build"]
+    run_calls = [call for call in calls if call["role"] in {"tune", "screen"}]
+    assert len(build_calls) == 2
+    assert [call["uses_dual_averaging"] for call in build_calls] == [True, False]
+    assert all(call["dynamic_num_leapfrog_steps"] is True for call in build_calls)
+    assert [call["num_leapfrog_steps"] for call in run_calls] == [3, 3, 7, 7]
+    assert len(shared_contracts) == 2
+    assert all(
+        "num_leapfrog_steps" not in contract["static_config"]
+        for contract in shared_contracts.values()
+    )
+    second_events = second.runner_route_summary["round_route_events"]
+    assert [event["runner_reused"] for event in second_events] == [True, True]
+    assert all(event["dynamic_num_leapfrog_steps"] is True for event in second_events)
 
 
 def test_budget_ladder_default_reusable_route_reuses_repeated_screen_contract(

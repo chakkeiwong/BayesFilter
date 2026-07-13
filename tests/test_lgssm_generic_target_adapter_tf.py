@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
@@ -15,11 +16,18 @@ from bayesfilter.ssm import (
 )
 from bayesfilter.testing.lgssm_generic_target_adapter_tf import (
     LGSSM_GENERIC_TARGET_NONCLAIMS,
+    LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS,
     lgssm_gaussian_prior_log_prob_and_grad,
     lgssm_qr_log_likelihood_and_grad,
     make_lgssm_generic_target_contract,
     make_lgssm_generic_target_fixture,
 )
+
+
+def test_lgssm_generic_target_admitted_score_route_uses_no_gradient_tape() -> None:
+    source = inspect.getsource(lgssm_qr_log_likelihood_and_grad)
+    assert "GradientTape" not in source
+    assert "tape.gradient" not in source
 
 
 def test_lgssm_generic_target_contract_is_exact_stable_and_untransported() -> None:
@@ -36,6 +44,8 @@ def test_lgssm_generic_target_contract_is_exact_stable_and_untransported() -> No
     }
     assert left.filter_program.approximation_semantics == "exact"
     assert left.filter_program.deterministic_target_policy == "deterministic"
+    assert "GradientTape" not in left.filter_program.filter_manifest["score_source"]
+    assert "analytical QR Kalman score" in left.filter_program.filter_manifest["score_source"]
     assert left.frozen_transport is None
     assert stable_ssm_target_signature(left) == stable_ssm_target_signature(right)
     assert stable_ssm_target_signature(left) != stable_ssm_target_signature(changed)
@@ -55,8 +65,13 @@ def test_lgssm_generic_target_adapter_emits_finite_batch_values_scores() -> None
     assert tf.reduce_all(tf.math.is_finite(value))
     assert tf.reduce_all(tf.math.is_finite(score))
     assert fixture.adapter.metadata().batch_rank_policy == "rank2_required"
-    assert fixture.adapter.metadata().nonclaims == LGSSM_GENERIC_TARGET_NONCLAIMS
-    assert fixture.adapter.value_score_capability().xla_hmc_ready is False
+    assert fixture.adapter.metadata().nonclaims == LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS
+    capability = fixture.adapter.value_score_capability()
+    assert capability.value_score_authority == "graph_native"
+    assert capability.xla_hmc_ready is True
+    assert capability.is_accepted_xla_hmc_authority is True
+    assert capability.full_chain_xla_diagnostic_ready is False
+    assert capability.nonclaims == LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS
 
 
 def test_lgssm_generic_target_matches_prior_plus_qr_likelihood() -> None:

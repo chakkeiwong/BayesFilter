@@ -715,6 +715,98 @@ def test_sequential_verifier_private_retained_health_is_phase7_opt_in(
         assert expected_reason in diagnostics["engineering_invalidity_reasons"]
 
 
+def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import bayesfilter.inference.hmc as hmc_module
+
+    calls: list[int] = []
+
+    class _ScriptedChunkRunner:
+        def __init__(self, _adapter: Any, initial_state: Any, _config: Any) -> None:
+            self.initial_state = initial_state
+            self.call_count = 0
+
+        def run(self, *, active_results, current_state=None, seed=None, step_size=None):
+            del seed, step_size
+            self.call_count += 1
+            draws = int(active_results)
+            calls.append(draws)
+            base = (
+                tf.convert_to_tensor(current_state, dtype=tf.float64)
+                if current_state is not None
+                else tf.convert_to_tensor(self.initial_state, dtype=tf.float64)
+            )
+            draw = tf.cast(
+                tf.range(draws) + draws * (self.call_count - 1),
+                tf.float64,
+            )[:, tf.newaxis, tf.newaxis]
+            chain = tf.cast(tf.range(4), tf.float64)[tf.newaxis, :, tf.newaxis]
+            direction = tf.constant(
+                [1.0, -0.5], dtype=tf.float64
+            )[tf.newaxis, tf.newaxis, :]
+            samples = draw * direction + chain
+            valid = tf.ones((draws,), dtype=tf.bool)
+            diagnostics = {
+                "valid_sample_count": tf.constant(draws, dtype=tf.int32),
+                "nonfinite_valid_sample_count": tf.constant(0, dtype=tf.int32),
+                "acceptance_rate": tf.constant(0.70, dtype=tf.float64),
+                "acceptance_decision_count": tf.constant(4 * draws, dtype=tf.int32),
+                "log_accept_ratio_finite_count": tf.constant(4 * draws, dtype=tf.int32),
+                "log_accept_ratio_nonfinite_count": tf.constant(0, dtype=tf.int32),
+                "log_accept_ratio_max_abs_finite": tf.constant(0.2, dtype=tf.float64),
+                "target_log_prob_finite_count": tf.constant(4 * draws, dtype=tf.int32),
+                "target_log_prob_nonfinite_count": tf.constant(0, dtype=tf.int32),
+                "target_log_prob_min_finite": tf.constant(-1.0, dtype=tf.float64),
+                "target_log_prob_max_finite": tf.constant(-0.1, dtype=tf.float64),
+                "divergence_status": "not_exposed_by_kernel",
+                "divergence_count": None,
+            }
+            metadata = {
+                "compile_trace_count": 1,
+                "first_call_s": 0.01,
+                "warm_call_s": None if self.call_count == 1 else 0.001,
+                "chunk_call_s": 0.001,
+            }
+            return hmc_module.FixedSizeHMCChunkRunResult(
+                samples=samples,
+                valid_mask=valid,
+                final_state=samples[-1] if draws else base,
+                trace=_standard_verification_trace(draws, chain_count=4),
+                diagnostics=diagnostics,
+                metadata=metadata,
+            )
+
+    monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _ScriptedChunkRunner)
+    verifier = build_sequential_rhat_hmc_verifier(
+        ReviewedBatchedGaussianAdapter(),
+        tf.zeros((4, 2), dtype=tf.float64),
+        SequentialRHatHMCVerificationConfig(
+            check_interval=64,
+            max_results=192,
+            min_retained_results_for_pass=192,
+            num_burnin_steps=0,
+            step_size=0.05,
+            num_leapfrog_steps=1,
+            seed=(20260628, 1),
+            chain_count=4,
+            rhat_threshold=1.01,
+            target_scope="fixed_size_hmc_chunk_gaussian",
+            chain_execution_mode="tf_function",
+        ),
+    )
+
+    result = verifier.run()
+
+    assert result.passed is True
+    assert result.retained_sample_count == 192
+    assert result.chunk_count == 3
+    assert calls == [64, 64, 64]
+    assert result.diagnostics["min_retained_results_for_pass"] == 192
+    assert result.diagnostics["minimum_retained_pass_gate_satisfied"] is True
+    assert result.metadata["min_retained_results_for_pass"] == 192
+
+
 def test_sequential_rhat_verifier_stops_at_cap_when_rhat_fails(monkeypatch) -> None:
     import bayesfilter.inference.hmc as hmc_module
 

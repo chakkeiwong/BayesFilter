@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 ## Status
 
-`DRAFT_VISIBLE_EXECUTION_RUNBOOK`
+`PHASE16_BOUNDED_GPU_XLA_TRAINING_PASSED_PHASE17_READY`
 
 ## Role Contract
 
@@ -48,7 +48,16 @@ Stop handoff:
 | 6 | LGSSM NeuTra Training And Freeze | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase6-lgssm-neutra-training-subplan-2026-07-06.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase6-lgssm-neutra-training-result-2026-07-06.md` |
 | 7 | First Simple Nonlinear SSM | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase7-simple-nonlinear-ssm-subplan-2026-07-06.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase7-simple-nonlinear-ssm-result-2026-07-06.md` |
 | 8 | Same Target Multiple Filters | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase8-multifilter-subplan-2026-07-06.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase8-multifilter-result-2026-07-06.md` |
-| 9 | DSGE/c603 Stress Target | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase9-dsge-stress-subplan-2026-07-06.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase9-dsge-stress-result-2026-07-06.md` |
+| 9 | GPU NeuTra Training Preflight | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase9-gpu-neutra-training-preflight-subplan-2026-07-07.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase9-gpu-neutra-training-preflight-result-2026-07-07.md` |
+| 10 | Historical Bounded GPU NeuTra Training | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase10-bounded-gpu-training-subplan-2026-07-07.md` | stale/history only: `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase10-bounded-gpu-training-result-2026-07-07.md` |
+| 11 | Historical Frozen GPU-Trained Affine Payload | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase11-frozen-gpu-affine-payload-subplan-2026-07-07.md` | stale/history only |
+| 12 | CPU Multicore External Sample Boundary | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase12-cpu-multicore-sample-generation-subplan-2026-07-07.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase12-cpu-multicore-sample-generation-result-2026-07-07.md` |
+| 13 | XLA/JIT Repair Gate | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-subplan-2026-07-07.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase13-xla-jit-repair-result-2026-07-07.md` |
+| 14 | XLA TensorList Boundary Repair | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14-xla-tensorlist-boundary-repair-subplan-2026-07-08.md` | superseded |
+| 14A | LGSSM No-GradientTape Target Policy | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14a-no-gradienttape-policy-subplan-2026-07-08.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase14a-no-gradienttape-policy-result-2026-07-08.md` |
+| 15 | Manual-Score LGSSM XLA Compile Gate | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-compile-gate-subplan-2026-07-08.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase15-manual-score-xla-compile-gate-result-2026-07-08.md` |
+| 16 | Bounded GPU/XLA NeuTra Training | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase16-bounded-gpu-xla-training-subplan-2026-07-08.md` | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase16-bounded-gpu-xla-training-result-2026-07-08.md` |
+| 17 | Frozen GPU/XLA-Trained Affine Payload | `docs/plans/bayesfilter-lgssm-first-neutra-hmc-phase17-frozen-gpu-xla-affine-payload-subplan-2026-07-08.md` | pending |
 
 ## Evidence Contract
 
@@ -83,10 +92,24 @@ For each phase:
 ## Human-Required Stop Conditions
 
 Stop before package installation, network fetch not already authorized,
-credentials, environment setup, destructive git/filesystem actions, GPU/CUDA
-jobs, NeuTra training, long HMC, detached execution, default-policy changes,
-modifying unrelated dirty work, live DSGE/c603 runtime work, or unsupported
-scientific/product claims.
+credentials, environment setup, destructive git/filesystem actions, new
+GPU/CUDA jobs not named by the active subplan, new NeuTra training, HMC
+sampling/tuning, detached execution, default-policy changes, modifying unrelated
+dirty work, live DSGE/c603 runtime work, or unsupported scientific/product
+claims.
+
+The historical Phase 10/11 non-XLA artifacts are stale diagnostic history after
+the Phase 14A no-`GradientTape` repair and the Phase 15 XLA compile pass. They
+must not support promotion, packaging, or readiness. Phase 12 is a CPU
+multicore boundary-design and smoke phase for external sample generation only;
+it must not train NeuTra or run HMC. Phase 13 is superseded blocker history.
+Phase 14 was superseded by Phase 14A after the no-`GradientTape` policy
+clarification. Phase 15 may run only trusted GPU `jit_compile=True` compile
+diagnostics under the current manual-score LGSSM target signatures;
+`jit_compile=false` runtime runs are forbidden. Phase 16 passed bounded
+trusted-GPU `jit_compile=True` training with no runtime autodiff, no HMC, and no
+external sample generation. Phase 17 may package only the Phase 16 XLA-trained
+artifact and must not use stale Phase 10/11 non-XLA artifacts.
 
 ## Claude Review Protocol
 
