@@ -25,6 +25,10 @@ from bayesfilter.inference import (
     run_hmc_bootstrap_screen,
     run_hmc_windowed_mass_stage,
 )
+from bayesfilter.inference.hmc_coordinates import transform_from_precomputed_mass_artifact
+from bayesfilter.inference.hmc_warmup import (
+    compose_base_transform_with_nested_artifact,
+)
 
 
 class _ToyGaussianAdapter:
@@ -51,6 +55,22 @@ class _ToyGaussianAdapter:
 class _MismatchedAdapter(_ToyGaussianAdapter):
     def adapter_signature(self) -> str:
         return "kernel-windowed-mass-mismatched-v1"
+
+
+class _RotatedGaussianAdapter(_ToyGaussianAdapter):
+    def __init__(self) -> None:
+        angle = np.pi / 5.0
+        rotation = np.array(
+            [[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]
+        )
+        self.covariance = rotation @ np.diag([1.0, 0.1]) @ rotation.T
+        self.precision = np.linalg.inv(self.covariance)
+
+    def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        precision = tf.convert_to_tensor(self.precision, dtype=value.dtype)
+        score = -tf.linalg.matvec(precision, value)
+        return -0.5 * tf.reduce_sum(value * -score, axis=-1), score
 
 
 @dataclass(frozen=True)
@@ -215,6 +235,41 @@ def _runtime_shaped_result(
         },
         **kwargs,
     )
+
+
+def _operational_budget(attempt_index: int = 0):
+    return hmc_kernel_tuning._HMCAttemptBudgetPolicy(
+        target_dimension=2,
+        attempt_index=attempt_index,
+        budget=256,
+        phase4_warmup_steps=256,
+        phase5_tune_budgets=(64, 128, 256),
+        phase5_screen_num_results=64,
+        phase5_screen_burnin_steps=16,
+        phase6_screen_num_results=64,
+        phase6_screen_burnin_steps=16,
+        verification_num_results=128,
+        verification_num_burnin_steps=32,
+        serious_policy=False,
+    )
+
+
+def _operational_inputs():
+    adapter = _RotatedGaussianAdapter()
+    geometry = initialize_hmc_kernel_geometry(
+        adapter=adapter,
+        initial_position=np.array([0.4, -0.3]),
+        config=HMCGeometryInitializationConfig(covariance_jitter=0.0),
+    )
+    bootstrap = run_hmc_bootstrap_screen(
+        adapter=adapter,
+        geometry=geometry,
+        run_full_chain=lambda _adapter, _state, config: _runtime_shaped_result(
+            warmup_steps=int(config.num_results),
+            acceptance_trace=[True, True, False, True] * 4,
+        ),
+    )
+    return adapter, geometry, bootstrap
 
 
 def test_windowed_mass_config_does_not_expose_hmc_mechanics() -> None:
@@ -1346,3 +1401,145 @@ def test_real_tiny_gaussian_windowed_mass_stage_returns_structured_result() -> N
     assert result.draw_capture_policy["num_results"] == 12
     assert result.payload()["reports_fixed_mass_step_tuning"] is False
     assert result.payload()["reports_trajectory_tuning"] is False
+
+
+def test_real_default_route_emits_operational_v2_and_exact_compatibility() -> None:
+    adapter, geometry, bootstrap = _operational_inputs()
+
+    result = run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_stage_config(chain_execution_mode="tf_function"),
+        _attempt_budget_policy=_operational_budget(),
+    )
+
+    assert result.passed is True
+    assert result.operational_warmup_result is not None
+    operational = result.operational_warmup_result
+    assert operational.operational_metric_update_count >= 1
+    assert operational.every_update_used_by_later_transition is True
+    assert operational.public_payload()["schema"] == (
+        "bayesfilter.hmc_operational_windowed_warmup.v2"
+    )
+    assert result.acceptance_telemetry_provenance["runtime_decision_count_supported"] is True
+    assert result.acceptance_telemetry_provenance["source"].endswith("is_accepted")
+    assert result.windowed_mass_result is not None
+    assert all(
+        update.reset_event["diagnostic_role"]
+        == "legacy_v1_nonoperational_projection"
+        for update in result.windowed_mass_result.mass_updates
+    )
+    _estimate, base_transform = transform_from_precomputed_mass_artifact(
+        geometry.mass_artifact,
+        source_coordinate_signature=geometry.mass_artifact_signature,
+        estimator_family="geometry_position_covariance",
+    )
+    nested = result.windowed_mass_result.final_mass_artifact
+    recomposed = compose_base_transform_with_nested_artifact(
+        base_transform=base_transform,
+        nested_artifact=nested,
+        source_coordinate_signature=result.adapted_mass_artifact_signature,
+    )
+    probes = np.array([[0.0, 0.0], [0.2, -0.4]])
+    np.testing.assert_allclose(
+        recomposed.latent_to_theta(probes),
+        operational.final_kernel_state.transform.latent_to_theta(probes),
+        atol=1.0e-10,
+    )
+    public_text = json.dumps(operational.public_payload(), sort_keys=True)
+    assert "private_start_bank_theta" not in public_text
+
+
+def test_operational_retry_consumes_carried_transform_endpoint_step_and_l(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, geometry, bootstrap = _operational_inputs()
+    first = run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_stage_config(chain_execution_mode="tf_function"),
+        _attempt_budget_policy=_operational_budget(),
+    )
+    assert first.passed and first.operational_warmup_result is not None
+    first_operational = first.operational_warmup_result
+    carried_mass = first.windowed_mass_result.final_mass_artifact
+    retry_state = hmc_kernel_tuning._HMCPhaseAttemptState(
+        mass_artifact_payload=carried_mass.to_payload(include_arrays=True),
+        mass_artifact_signature=hmc_kernel_tuning._mass_artifact_signature(carried_mass),
+        canonical_theta_state=first_operational.final_kernel_state.canonical_theta,
+        private_start_bank_theta=first_operational.private_start_bank_theta,
+        private_start_bank_signature=first_operational.private_start_bank_signature,
+        selected_step_size=0.19,
+        selected_step_hash="carried-selected-step",
+        selected_num_leapfrog_steps=7,
+        handoff_stage="phase5_selected",
+    )
+    observed: dict[str, Any] = {}
+    real_runner = hmc_kernel_tuning.run_operational_windowed_warmup
+
+    def capture_inputs(**kwargs: Any):
+        observed.update(kwargs)
+        return real_runner(**kwargs)
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_operational_windowed_warmup",
+        capture_inputs,
+    )
+    second = run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_stage_config(chain_execution_mode="tf_function"),
+        _attempt_budget_policy=_operational_budget(attempt_index=1),
+        _attempt_state=retry_state,
+    )
+
+    assert second.passed is True
+    np.testing.assert_allclose(
+        observed["initial_canonical_theta"],
+        retry_state.canonical_theta_state,
+    )
+    assert observed["initial_step_size"] == pytest.approx(0.19)
+    assert observed["trajectory_policy"].num_leapfrog_steps == 7
+    _estimate, base_transform = transform_from_precomputed_mass_artifact(
+        geometry.mass_artifact,
+        source_coordinate_signature=geometry.mass_artifact_signature,
+        estimator_family="geometry_position_covariance",
+    )
+    expected_transform = compose_base_transform_with_nested_artifact(
+        base_transform=base_transform,
+        nested_artifact=carried_mass,
+        source_coordinate_signature=retry_state.mass_artifact_signature,
+    )
+    assert observed["initial_transform"].signature == expected_transform.signature
+    assert second.diagnostics["mass_window_seed_kernel"]["uses_private_retry_pair"] is True
+    retry_payload = retry_state.payload()
+    assert retry_payload["private_start_bank_signature"] == (
+        first_operational.private_start_bank_signature
+    )
+    assert "private_start_bank_theta" not in retry_payload
+
+
+def test_operational_route_runtime_error_is_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(**_kwargs: Any) -> Any:
+        raise RuntimeError("operational failure sentinel collision")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
+
+    result = run_hmc_windowed_mass_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_stage_config(chain_execution_mode="tf_function"),
+    )
+
+    assert result.passed is False
+    assert "windowed_stage_hmc_error" in result.hard_vetoes
+    assert result.diagnostics["hmc_error_type"] == "RuntimeError"
+    assert "sentinel collision" in result.diagnostics["hmc_error_message"]
+    assert result.diagnostics["runtime_metadata"] == {}

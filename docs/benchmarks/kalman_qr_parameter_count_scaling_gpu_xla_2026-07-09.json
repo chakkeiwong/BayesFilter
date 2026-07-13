@@ -1,0 +1,2230 @@
+{
+  "manifest": {
+    "autodiff_execution": "compiled_full",
+    "autodiff_value_backend": "while_loop",
+    "command": "scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 20 30 --parameter-counts 50 100 150 200 300 400 --timesteps 120 --repeats 1 --jit-compile --device gpu --isolate-each-row --row-subprocess-timeout-seconds 1800 --flush-after-row --output-json docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.json --output-md docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.md",
+    "cuda_visible_devices": "UNSET",
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "device_manifest": {
+      "cpu_only_exception": false,
+      "logical_gpus": [
+        "/device:GPU:0",
+        "/device:GPU:1"
+      ],
+      "physical_gpus": [
+        "/physical_device:GPU:0",
+        "/physical_device:GPU:1"
+      ],
+      "requested_device": "gpu",
+      "selected_device": "/GPU:0",
+      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+    },
+    "dimensions": [
+      10,
+      20,
+      30
+    ],
+    "git_commit": "52ee244498988e046a6356f926003b581103083b",
+    "git_status_short": "M bayesfilter/inference/hmc_diagnostics.py\n M bayesfilter/inference/hmc_kernel_tuning.py\n M tests/test_common_inference_runtime_contracts.py\n M tests/test_hmc_kernel_tuning_outer_loop.py\n M tests/test_hmc_kernel_tuning_public_api.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-parameter-count-scaling-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase3-gpu-xla-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase4-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase5-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-stop-handoff-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase0-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2aa-claude-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ae-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-hypothesis-plan-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2z-subplan-codex-substitute-review-2026-07-09.md\n?? scripts/benchmark_kalman_qr_parameter_count_scaling.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1r.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot.py",
+    "isolate_each_row": true,
+    "jit_compile": true,
+    "json_path": "docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.json",
+    "markdown_path": "docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.md",
+    "parameter_counts": [
+      50,
+      100,
+      150,
+      200,
+      300,
+      400
+    ],
+    "plan_path": "docs/plans/bayesfilter-kalman-qr-parameter-count-scaling-subplan-2026-07-09.md",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "repeats": 1,
+    "row_subprocess_timeout_seconds": 1800.0,
+    "selected_device_for_parent": "/GPU:0",
+    "tensorflow_version": "2.20.0",
+    "tf32_execution_enabled": true,
+    "timestamp_utc": "2026-07-09T08:47:55.802538+00:00",
+    "timesteps": 120
+  },
+  "rows": [
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.3877787807814457e-16,
+        "score_relative_residual": 1.3877787807814457e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 28.013406562036835,
+        "autodiff_qr_score": 3.282665423990693
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.36039922121823537,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 27.533106515009422,
+        "autodiff_qr_score": 3.1052957430365495
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019104035360877226,
+          -0.037395243622321515,
+          -0.1178158364752262,
+          -0.14071843314426558,
+          -0.0005728300881555066
+        ],
+        "analytical_score_tail": [
+          -0.018213675453103376,
+          -0.03826027527686827,
+          -0.10782424381305022,
+          -0.12859723559236805,
+          -0.0004974141508251613
+        ],
+        "analytical_value": -382.2372941203796,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019104035360877236,
+          -0.0373952436223215,
+          -0.11781583647522634,
+          -0.14071843314426558,
+          -0.0005728300881555067
+        ],
+        "autodiff_score_tail": [
+          -0.01821367545310338,
+          -0.03826027527686828,
+          -0.10782424381305024,
+          -0.12859723559236808,
+          -0.0004974141508251612
+        ],
+        "autodiff_value": -382.2372941203796
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          0.49305189796723425
+        ],
+        "autodiff_qr_score": [
+          0.17769552004756406
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 50 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p50.md --jit-compile",
+        "elapsed_seconds": 38.76124703499954,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:47:56.200083: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783586878.242508 1449091 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29065 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783586878.244417 1449091 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:48:07.577497: I external/local_xla/xla/service/service.cc:163] XLA service 0x61134a4e92b0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:48:07.577550: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:48:07.577554: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:48:08.125747: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:48:13.223875: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\n2026-07-09 16:48:28.120458: I external/local_xla/xla/stream_executor/cuda/subprocess_compilation.cc:346] ptxas warning : Registers are spilled to local memory in function 'loop_multiply_fusion_3', 4 bytes spill stores, 4 bytes spill loads\n\nI0000 00:00:1783586908.261270 1449091 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p50.md\",\n  \"wall_time_seconds\": 35.0871558469953\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 0.49305189796723425,
+          "mean_seconds": 0.49305189796723425,
+          "median_seconds": 0.49305189796723425,
+          "min_seconds": 0.49305189796723425
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.17769552004756406,
+          "mean_seconds": 0.17769552004756406,
+          "median_seconds": 0.17769552004756406,
+          "min_seconds": 0.17769552004756406
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 0.4803000470274128,
+        "autodiff_qr_score": 0.1773696809541434
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.3877787807814457e-16,
+        "score_relative_residual": 1.3877787807814457e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 53.7835197050008,
+        "autodiff_qr_score": 3.3196876400033943
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.19926370663807255,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 52.78349036799045,
+        "autodiff_qr_score": 3.1102721680072136
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          100
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.01910405404039766,
+          -0.03739548382617016,
+          -0.11781840776291606,
+          -0.14072152171326058,
+          -0.0005728422348195076
+        ],
+        "analytical_score_tail": [
+          -0.0003592705421766514,
+          0.00015810152625592638,
+          0.00040583595464932374,
+          -0.0003242373444184616,
+          -3.6498889021079393e-06
+        ],
+        "analytical_value": -382.1542704629801,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01910405404039764,
+          -0.03739548382617018,
+          -0.11781840776291597,
+          -0.14072152171326063,
+          -0.0005728422348195076
+        ],
+        "autodiff_score_tail": [
+          -0.0003592705421766514,
+          0.0001581015262559263,
+          0.00040583595464932347,
+          -0.0003242373444184622,
+          -3.649888902107939e-06
+        ],
+        "autodiff_value": -382.1542704629801
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 100,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          1.0511712770094164
+        ],
+        "autodiff_qr_score": [
+          0.20946028496837243
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 100 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p100.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p100.md --jit-compile",
+        "elapsed_seconds": 66.34585222200258,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:48:34.948943: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783586916.965380 1450387 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29062 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783586916.967228 1450387 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:48:53.193489: I external/local_xla/xla/service/service.cc:163] XLA service 0x5bc411e1c770 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:48:53.193571: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:48:53.193577: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:48:54.649259: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:49:06.094940: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783586972.313277 1450387 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p100.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p100.md\",\n  \"wall_time_seconds\": 62.18410650297301\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 20,
+        "initial_mean": 0,
+        "observation_covariance_factor": 20,
+        "observation_matrix": 20,
+        "observation_offset": 0,
+        "transition_covariance_factor": 20,
+        "transition_matrix": 20,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.0511712770094164,
+          "mean_seconds": 1.0511712770094164,
+          "median_seconds": 1.0511712770094164,
+          "min_seconds": 1.0511712770094164
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.20946028496837243,
+          "mean_seconds": 0.20946028496837243,
+          "median_seconds": 0.20946028496837243,
+          "min_seconds": 0.20946028496837243
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 1.0000293370103464,
+        "autodiff_qr_score": 0.2094154719961807
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.8041124150158794e-16,
+        "score_relative_residual": 1.8041124150158794e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 79.91761361499084,
+        "autodiff_qr_score": 3.698560554999858
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.13695037108994,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 78.43219049001345,
+        "autodiff_qr_score": 3.496043818013277
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          150
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019104047128837544,
+          -0.037395532419734034,
+          -0.11781922047635579,
+          -0.14072260728658564,
+          -0.0005728461974747909
+        ],
+        "analytical_score_tail": [
+          6.19098619398858e-06,
+          -0.00010296296940800036,
+          -0.00031378042690079444,
+          0.0002537416648067539,
+          -1.861520610896107e-07
+        ],
+        "analytical_value": -382.157064059323,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019104047128837547,
+          -0.03739553241973402,
+          -0.11781922047635592,
+          -0.14072260728658562,
+          -0.00057284619747479
+        ],
+        "autodiff_score_tail": [
+          6.19098619398852e-06,
+          -0.00010296296940800014,
+          -0.00031378042690079417,
+          0.00025374166480675374,
+          -1.8615206108961158e-07
+        ],
+        "autodiff_value": -382.157064059323
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 150,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          1.4510488320374861
+        ],
+        "autodiff_qr_score": [
+          0.19872167601715773
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 150 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p150.md --jit-compile",
+        "elapsed_seconds": 93.97772128903307,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:49:41.306444: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783586983.304357 1451857 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29064 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783586983.306360 1451857 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:50:04.477595: I external/local_xla/xla/service/service.cc:163] XLA service 0x5a9adab3e090 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:50:04.477640: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:50:04.477645: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:50:06.569536: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:50:22.180166: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587064.139464 1451857 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p150.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p150.md\",\n  \"wall_time_seconds\": 89.40153342700796\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 30,
+        "initial_mean": 0,
+        "observation_covariance_factor": 30,
+        "observation_matrix": 30,
+        "observation_offset": 0,
+        "transition_covariance_factor": 30,
+        "transition_matrix": 30,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.4510488320374861,
+          "mean_seconds": 1.4510488320374861,
+          "median_seconds": 1.4510488320374861,
+          "min_seconds": 1.4510488320374861
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.19872167601715773,
+          "mean_seconds": 0.19872167601715773,
+          "median_seconds": 0.19872167601715773,
+          "min_seconds": 0.19872167601715773
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 1.4854231249773875,
+        "autodiff_qr_score": 0.20251673698658124
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.5265566588595902e-16,
+        "score_relative_residual": 1.5265566588595902e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 118.52472775004571,
+        "autodiff_qr_score": 3.47261262597749
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.10826955586499992,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 116.90980766806751,
+        "autodiff_qr_score": 3.2997667259769514
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          200
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019104058727188133,
+          -0.03739566250397419,
+          -0.11781977139475766,
+          -0.14072289264234833,
+          -0.0005728483809892459
+        ],
+        "analytical_score_tail": [
+          1.1046502474166005e-06,
+          0.00019599913620161333,
+          0.0005661745586274558,
+          -0.0004343091673012314,
+          1.8878506630890552e-06
+        ],
+        "analytical_value": -382.1221624245552,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01910405872718814,
+          -0.0373956625039742,
+          -0.11781977139475759,
+          -0.1407228926423483,
+          -0.0005728483809892457
+        ],
+        "autodiff_score_tail": [
+          1.1046502474166183e-06,
+          0.0001959991362016132,
+          0.0005661745586274551,
+          -0.00043430916730123164,
+          1.8878506630890564e-06
+        ],
+        "autodiff_value": -382.1221624245552
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 200,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          1.6623456199886277
+        ],
+        "autodiff_qr_score": [
+          0.17998142197029665
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 200 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p200.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p200.md --jit-compile",
+        "elapsed_seconds": 132.84699305996764,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:51:15.281475: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587077.323427 1454711 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29017 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587077.325440 1454711 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:51:44.668793: I external/local_xla/xla/service/service.cc:163] XLA service 0x5af71dc7e820 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:51:44.668832: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:51:44.668836: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:51:47.782623: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:52:08.783962: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587196.234908 1454711 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p200.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p200.md\",\n  \"wall_time_seconds\": 128.1283799340017\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 40,
+        "initial_mean": 0,
+        "observation_covariance_factor": 40,
+        "observation_matrix": 40,
+        "observation_offset": 0,
+        "transition_covariance_factor": 40,
+        "transition_matrix": 40,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.6623456199886277,
+          "mean_seconds": 1.6623456199886277,
+          "median_seconds": 1.6623456199886277,
+          "min_seconds": 1.6623456199886277
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.17998142197029665,
+          "mean_seconds": 0.17998142197029665,
+          "median_seconds": 0.17998142197029665,
+          "min_seconds": 0.17998142197029665
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 1.6149200819781981,
+        "autodiff_qr_score": 0.17284590000053868
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.3877787807814457e-16,
+        "score_relative_residual": 1.3877787807814457e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 178.77781886601588,
+        "autodiff_qr_score": 3.8330023630405776
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.06657637939680228,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 172.53797107201535,
+        "autodiff_qr_score": 3.4649185570306145
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          300
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019103260242070774,
+          -0.037395646996233524,
+          -0.11782050850691927,
+          -0.14072289345159655,
+          -0.0005728508015456146
+        ],
+        "analytical_score_tail": [
+          6.290479095975087e-06,
+          1.129455698528833e-05,
+          1.581771673564384e-05,
+          2.0030422560075224e-05,
+          2.4006134377013792e-05
+        ],
+        "analytical_value": -382.0819450541837,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01910326024207076,
+          -0.037395646996233524,
+          -0.11782050850691925,
+          -0.14072289345159644,
+          -0.0005728508015456144
+        ],
+        "autodiff_score_tail": [
+          6.290479095975084e-06,
+          1.1294556985288331e-05,
+          1.5817716735643845e-05,
+          2.0030422560075214e-05,
+          2.4006134377013786e-05
+        ],
+        "autodiff_value": -382.0819450541837
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 300,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          5.766227007959969
+        ],
+        "autodiff_qr_score": [
+          0.38389451697003096
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 300 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p300.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p300.md --jit-compile",
+        "elapsed_seconds": 203.12143549701432,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:53:28.077871: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587210.055783 1457528 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29021 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587210.057771 1457528 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:54:09.020087: I external/local_xla/xla/service/service.cc:163] XLA service 0x5832965b56a0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:54:09.020133: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:54:09.020137: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:54:13.287756: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:54:44.048529: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587384.461957 1457528 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p300.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p300.md\",\n  \"wall_time_seconds\": 197.79436416900717\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 55,
+        "initial_mean": 5,
+        "observation_covariance_factor": 55,
+        "observation_matrix": 55,
+        "observation_offset": 10,
+        "transition_covariance_factor": 55,
+        "transition_matrix": 55,
+        "transition_offset": 10
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 5.766227007959969,
+          "mean_seconds": 5.766227007959969,
+          "median_seconds": 5.766227007959969,
+          "min_seconds": 5.766227007959969
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.38389451697003096,
+          "mean_seconds": 0.38389451697003096,
+          "median_seconds": 0.38389451697003096,
+          "min_seconds": 0.38389451697003096
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 6.239847794000525,
+        "autodiff_qr_score": 0.36808380600996315
+      }
+    },
+    {
+      "applicability_reason": "requested parameter count exceeds independent lower-triangular slot capacity",
+      "applicable": false,
+      "device_name": "/GPU:0",
+      "jit_compile": true,
+      "observation_dim": 10,
+      "parameter_capacity": 305,
+      "parameter_count": 400,
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 400 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p400.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p400.md --jit-compile",
+        "elapsed_seconds": 3.3022537599899806,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:56:51.195884: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587413.227703 1459855 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29038 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587413.229679 1459855 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": false,\n  \"applicable_row_count\": 0,\n  \"inapplicable_row_count\": 1,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p400.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n10_p400.md\",\n  \"wall_time_seconds\": 1.5778990928083658e-05\n}\n"
+      },
+      "state_dim": 10,
+      "timesteps": 120
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.3877787807814457e-16,
+        "score_relative_residual": 1.3877787807814457e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 36.7752243700088,
+        "autodiff_qr_score": 4.037174902041443
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.20132323807431057,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 34.60762225103099,
+        "autodiff_qr_score": 3.360027212067507
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019100638075784715,
+          -0.03737489931754165,
+          -0.1178213762900589,
+          -0.1407661640039807,
+          -0.0005728112878269197
+        ],
+        "analytical_score_tail": [
+          -0.01869024910679366,
+          -0.03820895739227275,
+          -0.10830547748880977,
+          -0.12822347287019206,
+          -0.0005112268603850748
+        ],
+        "analytical_value": -1051.1244115852326,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01910063807578472,
+          -0.037374899317541656,
+          -0.11782137629005877,
+          -0.14076616400398065,
+          -0.0005728112878269201
+        ],
+        "autodiff_score_tail": [
+          -0.018690249106793653,
+          -0.03820895739227272,
+          -0.1083054774888098,
+          -0.128223472870192,
+          -0.0005112268603850745
+        ],
+        "autodiff_value": -1051.1244115852326
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          1.838305783981923
+        ],
+        "autodiff_qr_score": [
+          0.3700936730019748
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 50 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p50.md --jit-compile",
+        "elapsed_seconds": 51.74410230200738,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:56:54.501328: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587416.486036 1460549 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29024 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587416.487965 1460549 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:57:05.590763: I external/local_xla/xla/service/service.cc:163] XLA service 0x5a7267adea60 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:57:05.590809: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:57:05.590813: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:57:06.142933: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:57:11.251152: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587453.359801 1460549 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p50.md\",\n  \"wall_time_seconds\": 48.24676864698995\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.838305783981923,
+          "mean_seconds": 1.838305783981923,
+          "median_seconds": 1.838305783981923,
+          "min_seconds": 1.838305783981923
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.3700936730019748,
+          "mean_seconds": 0.3700936730019748,
+          "median_seconds": 0.3700936730019748,
+          "min_seconds": 0.3700936730019748
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 2.167602118977811,
+        "autodiff_qr_score": 0.6771476899739355
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.3877787807814457e-16,
+        "score_relative_residual": 1.3877787807814457e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 67.36561339598848,
+        "autodiff_qr_score": 3.7354610780021176
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.18655576268659263,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 65.50337098597083,
+        "autodiff_qr_score": 3.385390823998023
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          100
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019100657585821898,
+          -0.03737514367352827,
+          -0.11782394535884474,
+          -0.14076924300976162,
+          -0.000572823428341066
+        ],
+        "analytical_score_tail": [
+          -0.00035704033876207144,
+          -8.615287016548139e-05,
+          -0.00026670265532713604,
+          0.00021390776333528075,
+          -5.266300893783513e-06
+        ],
+        "analytical_value": -1051.0414415830523,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019100657585821926,
+          -0.03737514367352829,
+          -0.11782394535884463,
+          -0.14076924300976165,
+          -0.0005728234283410663
+        ],
+        "autodiff_score_tail": [
+          -0.00035704033876207155,
+          -8.615287016548135e-05,
+          -0.00026670265532713615,
+          0.00021390776333528048,
+          -5.26630089378352e-06
+        ],
+        "autodiff_value": -1051.0414415830523
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 100,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          1.88935815700097
+        ],
+        "autodiff_qr_score": [
+          0.352470651967451
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 100 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p100.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p100.md --jit-compile",
+        "elapsed_seconds": 81.91139448800823,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:57:46.260445: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587468.299848 1462102 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29046 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587468.301726 1462102 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:58:03.338275: I external/local_xla/xla/service/service.cc:163] XLA service 0x5dc9f0f05a70 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:58:03.338327: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:58:03.338331: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:58:04.625347: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:58:14.826302: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587536.043142 1462102 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p100.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p100.md\",\n  \"wall_time_seconds\": 77.93789095501415\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 20,
+        "initial_mean": 0,
+        "observation_covariance_factor": 20,
+        "observation_matrix": 20,
+        "observation_offset": 0,
+        "transition_covariance_factor": 20,
+        "transition_matrix": 20,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.88935815700097,
+          "mean_seconds": 1.88935815700097,
+          "median_seconds": 1.88935815700097,
+          "min_seconds": 1.88935815700097
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.352470651967451,
+          "mean_seconds": 0.352470651967451,
+          "median_seconds": 0.352470651967451,
+          "min_seconds": 0.352470651967451
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 1.8622424100176431,
+        "autodiff_qr_score": 0.35007025400409475
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.249000902703301e-16,
+        "score_relative_residual": 1.249000902703301e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 107.51278786198236,
+        "autodiff_qr_score": 4.242137941997498
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.1307209263671661,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 104.92489604197908,
+        "autodiff_qr_score": 3.9015037689823657
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          150
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019100651723677437,
+          -0.037375191416595115,
+          -0.11782474713465467,
+          -0.14077033143302584,
+          -0.0005728273595376265
+        ],
+        "analytical_score_tail": [
+          4.037924409253297e-06,
+          -0.00017986093376366118,
+          -0.0005104214457914177,
+          0.0004389016092882516,
+          -7.792277093099735e-07
+        ],
+        "analytical_value": -1051.0444196270769,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019100651723677427,
+          -0.037375191416595115,
+          -0.11782474713465471,
+          -0.1407703314330259,
+          -0.0005728273595376256
+        ],
+        "autodiff_score_tail": [
+          4.037924409253259e-06,
+          -0.00017986093376366118,
+          -0.0005104214457914171,
+          0.00043890160928825207,
+          -7.792277093099753e-07
+        ],
+        "autodiff_value": -1051.0444196270769
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 150,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          2.657567633956205
+        ],
+        "autodiff_qr_score": [
+          0.3473997029941529
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 150 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p150.md --jit-compile",
+        "elapsed_seconds": 124.50909046101151,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 16:59:08.175427: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587550.163664 1464382 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29037 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587550.165556 1464382 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 16:59:30.888098: I external/local_xla/xla/service/service.cc:163] XLA service 0x5aaeb9d0cc40 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 16:59:30.888143: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:59:30.888147: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 16:59:32.998908: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 16:59:48.371272: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587657.000453 1464382 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p150.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p150.md\",\n  \"wall_time_seconds\": 120.07232653995743\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 30,
+        "initial_mean": 0,
+        "observation_covariance_factor": 30,
+        "observation_matrix": 30,
+        "observation_offset": 0,
+        "transition_covariance_factor": 30,
+        "transition_matrix": 30,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 2.657567633956205,
+          "mean_seconds": 2.657567633956205,
+          "median_seconds": 2.657567633956205,
+          "min_seconds": 2.657567633956205
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.3473997029941529,
+          "mean_seconds": 0.3473997029941529,
+          "median_seconds": 0.3473997029941529,
+          "min_seconds": 0.3473997029941529
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 2.5878918200032786,
+        "autodiff_qr_score": 0.34063417301513255
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.942890293094024e-16,
+        "score_relative_residual": 1.942890293094024e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 153.119716420013,
+        "autodiff_qr_score": 4.184579806984402
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.09994117076501205,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 149.55326903401874,
+        "autodiff_qr_score": 3.8302323750103824
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          200
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019100660966695684,
+          -0.03737531712351687,
+          -0.11782529509028881,
+          -0.14077062749704472,
+          -0.0005728295250627345
+        ],
+        "analytical_score_tail": [
+          -5.632995961859398e-06,
+          -2.9410637784298615e-05,
+          -4.067201740013879e-05,
+          7.968307452553562e-05,
+          3.158315383463052e-07
+        ],
+        "analytical_value": -1051.0095491002367,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019100660966695684,
+          -0.03737531712351677,
+          -0.11782529509028888,
+          -0.14077062749704466,
+          -0.000572829525062734
+        ],
+        "autodiff_score_tail": [
+          -5.6329959618593956e-06,
+          -2.9410637784298706e-05,
+          -4.067201740013811e-05,
+          7.968307452553515e-05,
+          3.1583153834630525e-07
+        ],
+        "autodiff_value": -1051.0095491002367
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 200,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          3.608682759979274
+        ],
+        "autodiff_qr_score": [
+          0.3606559799518436
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 200 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p200.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p200.md --jit-compile",
+        "elapsed_seconds": 172.08922374097165,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:01:12.698083: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587674.651613 1466720 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29043 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587674.653551 1466720 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:01:41.002653: I external/local_xla/xla/service/service.cc:163] XLA service 0x601946412650 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:01:41.002699: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:01:41.002703: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:01:43.671133: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:02:03.966014: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783587826.038603 1466720 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p200.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p200.md\",\n  \"wall_time_seconds\": 167.5752041650121\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 40,
+        "initial_mean": 0,
+        "observation_covariance_factor": 40,
+        "observation_matrix": 40,
+        "observation_offset": 0,
+        "transition_covariance_factor": 40,
+        "transition_matrix": 40,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 3.608682759979274,
+          "mean_seconds": 3.608682759979274,
+          "median_seconds": 3.608682759979274,
+          "min_seconds": 3.608682759979274
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.3606559799518436,
+          "mean_seconds": 0.3606559799518436,
+          "median_seconds": 0.3606559799518436,
+          "min_seconds": 0.3606559799518436
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 3.566447385994252,
+        "autodiff_qr_score": 0.35434743197401986
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.1102230246251565e-16,
+        "score_relative_residual": 1.1102230246251565e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 247.00192671798868,
+        "autodiff_qr_score": 4.172865810978692
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.06698041245530424,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 241.69911184499506,
+        "autodiff_qr_score": 3.8198901129653677
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          300
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.01910066436480875,
+          -0.03737545763269106,
+          -0.11782587709293592,
+          -0.1407708755689521,
+          -0.0005728317387110818
+        ],
+        "analytical_score_tail": [
+          -1.7877000505022136e-05,
+          0.00012943439461411007,
+          0.00039285295265489856,
+          -0.0002822204636103757,
+          1.190069463261835e-06
+        ],
+        "analytical_value": -1050.9686190607438,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019100664364808752,
+          -0.03737545763269106,
+          -0.11782587709293584,
+          -0.14077087556895201,
+          -0.0005728317387110824
+        ],
+        "autodiff_score_tail": [
+          -1.7877000505022136e-05,
+          0.00012943439461410983,
+          0.0003928529526548986,
+          -0.00028222046361037613,
+          1.1900694632618358e-06
+        ],
+        "autodiff_value": -1050.9686190607438
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 300,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          5.489900128974114
+        ],
+        "autodiff_qr_score": [
+          0.36771577497711405
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 300 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p300.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p300.md --jit-compile",
+        "elapsed_seconds": 270.2216716540279,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:04:04.766754: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783587846.772230 1468095 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29061 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783587846.774347 1468095 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:04:45.236144: I external/local_xla/xla/service/service.cc:163] XLA service 0x574d3721aaf0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:04:45.236197: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:04:45.236202: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:04:49.528482: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:05:19.964481: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783588089.805434 1468095 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p300.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p300.md\",\n  \"wall_time_seconds\": 265.08148518699454\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 60,
+        "initial_mean": 0,
+        "observation_covariance_factor": 60,
+        "observation_matrix": 60,
+        "observation_offset": 0,
+        "transition_covariance_factor": 60,
+        "transition_matrix": 60,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 5.489900128974114,
+          "mean_seconds": 5.489900128974114,
+          "median_seconds": 5.489900128974114,
+          "min_seconds": 5.489900128974114
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.36771577497711405,
+          "mean_seconds": 0.36771577497711405,
+          "median_seconds": 0.36771577497711405,
+          "min_seconds": 0.36771577497711405
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 5.302814872993622,
+        "autodiff_qr_score": 0.3529756980133243
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 2.0816681711721685e-16,
+        "score_relative_residual": 2.0816681711721685e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 344.23280557000544,
+        "autodiff_qr_score": 4.449485526012722
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.04899117811274616,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 336.78102202602895,
+        "autodiff_qr_score": 4.07923098601168
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          400
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.01910066687955197,
+          -0.03737554052057382,
+          -0.11782618258119901,
+          -0.140770974179735,
+          -0.0005728328807167518
+        ],
+        "analytical_score_tail": [
+          3.7209255502630943e-06,
+          -9.120667658175485e-05,
+          -0.0002787682338012209,
+          0.00022427852875200419,
+          -2.3239872025805778e-07
+        ],
+        "analytical_value": -1050.9505572939918,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01910066687955195,
+          -0.037375540520573784,
+          -0.117826182581199,
+          -0.14077097417973486,
+          -0.0005728328807167517
+        ],
+        "autodiff_score_tail": [
+          3.720925550263056e-06,
+          -9.120667658175484e-05,
+          -0.00027876823380122077,
+          0.00022427852875200324,
+          -2.3239872025805823e-07
+        ],
+        "autodiff_value": -1050.9505572939918
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 400,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          7.485617249971256
+        ],
+        "autodiff_qr_score": [
+          0.3667292079771869
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 400 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p400.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p400.md --jit-compile",
+        "elapsed_seconds": 372.6823553859722,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:08:34.994955: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783588117.030253 1469528 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29066 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783588117.032212 1469528 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:09:26.830338: I external/local_xla/xla/service/service.cc:163] XLA service 0x628869c77a00 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:09:26.830386: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:09:26.830390: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:09:32.812970: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:10:13.739717: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\n2026-07-09 17:13:48.216025: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_analytical_score_150027__XlaMustCompile_true_config_proto_7932885297272261767_executor_type_11160318154034397263_.282089] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-09 17:14:15.120881: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m26.905026665s\n\n********************************\n[Compiling module a_inference_analytical_score_150027__XlaMustCompile_true_config_proto_7932885297272261767_executor_type_11160318154034397263_.282089] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nI0000 00:00:1783588455.123093 1469528 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p400.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n20_p400.md\",\n  \"wall_time_seconds\": 366.7518860120326\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 80,
+        "initial_mean": 0,
+        "observation_covariance_factor": 80,
+        "observation_matrix": 80,
+        "observation_offset": 0,
+        "transition_covariance_factor": 80,
+        "transition_matrix": 80,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 7.485617249971256,
+          "mean_seconds": 7.485617249971256,
+          "median_seconds": 7.485617249971256,
+          "min_seconds": 7.485617249971256
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.3667292079771869,
+          "mean_seconds": 0.3667292079771869,
+          "median_seconds": 0.3667292079771869,
+          "min_seconds": 0.3667292079771869
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 7.4517835439764895,
+        "autodiff_qr_score": 0.3702545400010422
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.1102230246251565e-16,
+        "score_relative_residual": 1.1102230246251565e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 37.641899594978895,
+        "autodiff_qr_score": 4.145970318000764
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.32291948806072174,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 36.183125861978624,
+        "autodiff_qr_score": 3.6544398139812984
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019098249652487017,
+          -0.03735948856762575,
+          -0.11782098871030607,
+          -0.1408033973349836,
+          -0.0005727846207195536
+        ],
+        "analytical_score_tail": [
+          -0.01883670873227037,
+          -0.03820201493137304,
+          -0.10849779481416974,
+          -0.12809307953906846,
+          -0.0005156031471002568
+        ],
+        "analytical_value": -1955.1754998900456,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019098249652486993,
+          -0.03735948856762574,
+          -0.117820988710306,
+          -0.14080339733498348,
+          -0.0005727846207195541
+        ],
+        "autodiff_score_tail": [
+          -0.01883670873227036,
+          -0.03820201493137305,
+          -0.10849779481416968,
+          -0.12809307953906846,
+          -0.000515603147100257
+        ],
+        "autodiff_value": -1955.1754998900456
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          1.5392589310067706
+        ],
+        "autodiff_qr_score": [
+          0.4970567059936002
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 50 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p50.md --jit-compile",
+        "elapsed_seconds": 51.64600149798207,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:14:47.683155: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783588489.644574 1470997 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29042 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783588489.646488 1470997 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:14:58.851574: I external/local_xla/xla/service/service.cc:163] XLA service 0x58eaba6c7160 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:14:58.851624: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:14:58.851628: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:14:59.411166: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:15:04.555348: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783588528.248691 1470997 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p50.md\",\n  \"wall_time_seconds\": 48.175453634001315\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.5392589310067706,
+          "mean_seconds": 1.5392589310067706,
+          "median_seconds": 1.5392589310067706,
+          "min_seconds": 1.5392589310067706
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.4970567059936002,
+          "mean_seconds": 0.4970567059936002,
+          "median_seconds": 0.4970567059936002,
+          "min_seconds": 0.4970567059936002
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 1.458773733000271,
+        "autodiff_qr_score": 0.4915305040194653
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 8.326672684688674e-17,
+        "score_relative_residual": 8.326672684688674e-17,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 77.53090869402513,
+        "autodiff_qr_score": 4.165485875040758
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.17955616358659002,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 74.773174925067,
+        "autodiff_qr_score": 3.6682689860463142
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          100
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.01909826935147297,
+          -0.037359734761538144,
+          -0.11782355570972795,
+          -0.1408064724423334,
+          -0.0005727967611369698
+        ],
+        "analytical_score_tail": [
+          -0.0003523348405436798,
+          -0.00017384464911137317,
+          -0.0005196147260531707,
+          0.00041143941480183593,
+          -5.860438316926274e-06
+        ],
+        "analytical_value": -1955.0925342822625,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01909826935147297,
+          -0.03735973476153814,
+          -0.11782355570972801,
+          -0.14080647244233346,
+          -0.0005727967611369696
+        ],
+        "autodiff_score_tail": [
+          -0.00035233484054367984,
+          -0.00017384464911137317,
+          -0.0005196147260531708,
+          0.0004114394148018353,
+          -5.860438316926277e-06
+        ],
+        "autodiff_value": -1955.0925342822625
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 100,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          2.7645821960177273
+        ],
+        "autodiff_qr_score": [
+          0.49639777303673327
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 100 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p100.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p100.md --jit-compile",
+        "elapsed_seconds": 94.38033236301271,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:15:39.319162: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783588541.344237 1472305 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29041 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783588541.346187 1472305 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:15:56.382358: I external/local_xla/xla/service/service.cc:163] XLA service 0x58c8244a6190 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:15:56.382403: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:15:56.382407: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:15:57.919773: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:16:08.482660: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783588618.321453 1472305 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p100.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p100.md\",\n  \"wall_time_seconds\": 90.59784425399266\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 20,
+        "initial_mean": 0,
+        "observation_covariance_factor": 20,
+        "observation_matrix": 20,
+        "observation_offset": 0,
+        "transition_covariance_factor": 20,
+        "transition_matrix": 20,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 2.7645821960177273,
+          "mean_seconds": 2.7645821960177273,
+          "median_seconds": 2.7645821960177273,
+          "min_seconds": 2.7645821960177273
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.49639777303673327,
+          "mean_seconds": 0.49639777303673327,
+          "median_seconds": 0.49639777303673327,
+          "min_seconds": 0.49639777303673327
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 2.7577337689581327,
+        "autodiff_qr_score": 0.49721688899444416
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.3877787807814457e-16,
+        "score_relative_residual": 1.3877787807814457e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 122.32481241505593,
+        "autodiff_qr_score": 4.675214732997119
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.1255763560283547,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 118.37118716805708,
+        "autodiff_qr_score": 4.178786938020494
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          150
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019098264587274,
+          -0.03735978535659623,
+          -0.1178243542362719,
+          -0.1408075542849159,
+          -0.0005728006894948288
+        ],
+        "analytical_score_tail": [
+          5.0942018831338105e-06,
+          -0.00020482105404070306,
+          -0.0005657695981480678,
+          0.0004989558760679991,
+          -9.425846034264718e-07
+        ],
+        "analytical_value": -1955.0955767018154,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01909826458727398,
+          -0.03735978535659627,
+          -0.11782435423627194,
+          -0.14080755428491604,
+          -0.0005728006894948282
+        ],
+        "autodiff_score_tail": [
+          5.094201883133827e-06,
+          -0.00020482105404070322,
+          -0.0005657695981480678,
+          0.0004989558760679988,
+          -9.425846034264758e-07
+        ],
+        "autodiff_value": -1955.0955767018154
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 150,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          3.8850540060084313
+        ],
+        "autodiff_qr_score": [
+          0.4878709250479005
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 150 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p150.md --jit-compile",
+        "elapsed_seconds": 142.4612342090113,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:17:13.718924: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783588635.693323 1473640 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29041 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783588635.695337 1473640 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:17:36.469812: I external/local_xla/xla/service/service.cc:163] XLA service 0x607f35ce9d50 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:17:36.469857: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:17:36.469861: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:17:38.571192: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:17:53.974217: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783588756.143567 1473640 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p150.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p150.md\",\n  \"wall_time_seconds\": 138.1805608799914\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 30,
+        "initial_mean": 0,
+        "observation_covariance_factor": 30,
+        "observation_matrix": 30,
+        "observation_offset": 0,
+        "transition_covariance_factor": 30,
+        "transition_matrix": 30,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 3.8850540060084313,
+          "mean_seconds": 3.8850540060084313,
+          "median_seconds": 3.8850540060084313,
+          "min_seconds": 3.8850540060084313
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.4878709250479005,
+          "mean_seconds": 0.4878709250479005,
+          "median_seconds": 0.4878709250479005,
+          "min_seconds": 0.4878709250479005
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 3.953625246998854,
+        "autodiff_qr_score": 0.4964277949766256
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.1102230246251565e-16,
+        "score_relative_residual": 1.1102230246251565e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 161.46770832000766,
+        "autodiff_qr_score": 4.460700709023513
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.09569851295056364,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 156.331601287995,
+        "autodiff_qr_score": 3.964483014016878
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          200
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019098273958903327,
+          -0.03735991245823236,
+          -0.11782489987249035,
+          -0.14080784694006168,
+          -0.000572802850544395
+        ],
+        "analytical_score_tail": [
+          -2.6337111802091877e-06,
+          -0.0001330873335065181,
+          -0.0003092194285648473,
+          0.00031818276541354545,
+          -3.807306952219481e-07
+        ],
+        "analytical_value": -1955.0607692893734,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019098273958903317,
+          -0.03735991245823233,
+          -0.11782489987249031,
+          -0.14080784694006165,
+          -0.0005728028505443945
+        ],
+        "autodiff_score_tail": [
+          -2.6337111802092343e-06,
+          -0.00013308733350651794,
+          -0.00030921942856484746,
+          0.00031818276541354474,
+          -3.8073069522194855e-07
+        ],
+        "autodiff_value": -1955.0607692893734
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 200,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          5.1525141799938865
+        ],
+        "autodiff_qr_score": [
+          0.49308794498210773
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 200 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p200.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p200.md --jit-compile",
+        "elapsed_seconds": 183.86636170296697,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:19:36.169436: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783588778.128029 1475017 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29032 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783588778.129963 1475017 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:20:04.412036: I external/local_xla/xla/service/service.cc:163] XLA service 0x5b5ef54c5b30 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:20:04.412088: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:20:04.412092: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:20:07.146212: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:20:27.435770: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783588936.403806 1475017 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p200.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p200.md\",\n  \"wall_time_seconds\": 179.58954768703552\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 40,
+        "initial_mean": 0,
+        "observation_covariance_factor": 40,
+        "observation_matrix": 40,
+        "observation_offset": 0,
+        "transition_covariance_factor": 40,
+        "transition_matrix": 40,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 5.1525141799938865,
+          "mean_seconds": 5.1525141799938865,
+          "median_seconds": 5.1525141799938865,
+          "min_seconds": 5.1525141799938865
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.49308794498210773,
+          "mean_seconds": 0.49308794498210773,
+          "median_seconds": 0.49308794498210773,
+          "min_seconds": 0.49308794498210773
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 5.13610703201266,
+        "autodiff_qr_score": 0.49621769500663504
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.6653345369377348e-16,
+        "score_relative_residual": 1.6653345369377348e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 276.1828311859863,
+        "autodiff_qr_score": 4.669348880008329
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.06558089550814666,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 267.48927594395354,
+        "autodiff_qr_score": 4.1085049390094355
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          300
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.0190982767264934,
+          -0.03736005099944066,
+          -0.11782547621316183,
+          -0.14080809986187268,
+          -0.0005728050483893312
+        ],
+        "analytical_score_tail": [
+          -1.2849214375548014e-05,
+          -2.0193422036999625e-05,
+          -1.0026886874576882e-05,
+          5.102738843708724e-05,
+          1.896305499390636e-07
+        ],
+        "analytical_value": -1955.019951339083,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.01909827672649338,
+          -0.03736005099944067,
+          -0.11782547621316189,
+          -0.14080809986187257,
+          -0.0005728050483893318
+        ],
+        "autodiff_score_tail": [
+          -1.284921437554803e-05,
+          -2.0193422036999553e-05,
+          -1.002688687457643e-05,
+          5.10273884370872e-05,
+          1.896305499390624e-07
+        ],
+        "autodiff_value": -1955.019951339083
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 300,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          8.462078348966315
+        ],
+        "autodiff_qr_score": [
+          0.5549506759853102
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 300 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p300.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p300.md --jit-compile",
+        "elapsed_seconds": 306.36015678499825,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:22:40.038361: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783588961.982047 1476401 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29032 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783588961.984065 1476401 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:23:20.239003: I external/local_xla/xla/service/service.cc:163] XLA service 0x605b64a09e20 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:23:20.239048: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:23:20.239053: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:23:24.563284: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:23:55.398352: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\n2026-07-09 17:27:00.434292: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_analytical_score_113327__XlaMustCompile_true_config_proto_7932885297272261767_executor_type_11160318154034397263_.211789] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-09 17:27:12.215077: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m11.781019334s\n\n********************************\n[Compiling module a_inference_analytical_score_113327__XlaMustCompile_true_config_proto_7932885297272261767_executor_type_11160318154034397263_.211789] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nI0000 00:00:1783589232.217467 1476401 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p300.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p300.md\",\n  \"wall_time_seconds\": 301.51645416999236\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 60,
+        "initial_mean": 0,
+        "observation_covariance_factor": 60,
+        "observation_matrix": 60,
+        "observation_offset": 0,
+        "transition_covariance_factor": 60,
+        "transition_matrix": 60,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 8.462078348966315,
+          "mean_seconds": 8.462078348966315,
+          "median_seconds": 8.462078348966315,
+          "min_seconds": 8.462078348966315
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.5549506759853102,
+          "mean_seconds": 0.5549506759853102,
+          "median_seconds": 0.5549506759853102,
+          "min_seconds": 0.5549506759853102
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 8.693555242032744,
+        "autodiff_qr_score": 0.5608439409988932
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.942890293094024e-16,
+        "score_relative_residual": 1.942890293094024e-16,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 400.4045484379749,
+        "autodiff_qr_score": 4.875002282031346
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.04874125716137293,
+      "device_name": "/GPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 388.2794509889791,
+        "autodiff_qr_score": 4.3208341980353
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          400
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "analytical_score_head": [
+          -0.019098276390760994,
+          -0.03736012291226554,
+          -0.11782577852341003,
+          -0.1408082252688987,
+          -0.0005728061599334907
+        ],
+        "analytical_score_tail": [
+          2.6675226352476813e-06,
+          -0.0001241948059552526,
+          -0.0003944266833179521,
+          0.0003035850876295472,
+          -5.595752247592847e-07
+        ],
+        "analytical_value": -1955.0014024613579,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.019098276390760987,
+          -0.03736012291226556,
+          -0.11782577852341015,
+          -0.14080822526889875,
+          -0.0005728061599334901
+        ],
+        "autodiff_score_tail": [
+          2.667522635247723e-06,
+          -0.00012419480595525221,
+          -0.00039442668331795226,
+          0.0003035850876295475,
+          -5.59575224759287e-07
+        ],
+        "autodiff_value": -1955.0014024613579
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 400,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          12.052175450022332
+        ],
+        "autodiff_qr_score": [
+          0.587438182963524
+        ]
+      },
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 400 --timesteps 120 --repeats 1 --device gpu --output-json /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p400.json --output-md /tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p400.md --jit-compile",
+        "elapsed_seconds": 438.6739764100057,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "2026-07-09 17:27:46.397382: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783589268.334403 1478651 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 29061 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:41:00.0, compute capability: 8.9\nI0000 00:00:1783589268.336348 1478651 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 748 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-09 17:28:38.329970: I external/local_xla/xla/service/service.cc:163] XLA service 0x598d4f15ae40 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-09 17:28:38.330015: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:28:38.330019: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (1): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-09 17:28:44.329219: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-09 17:29:26.183544: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\n2026-07-09 17:33:05.864305: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_analytical_score_150027__XlaMustCompile_true_config_proto_7932885297272261767_executor_type_11160318154034397263_.282089] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-09 17:34:17.819866: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 3m11.955758174s\n\n********************************\n[Compiling module a_inference_analytical_score_150027__XlaMustCompile_true_config_proto_7932885297272261767_executor_type_11160318154034397263_.282089] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nI0000 00:00:1783589657.822227 1478651 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p400.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1448419/row_n30_p400.md\",\n  \"wall_time_seconds\": 432.98094840499107\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 80,
+        "initial_mean": 0,
+        "observation_covariance_factor": 80,
+        "observation_matrix": 80,
+        "observation_offset": 0,
+        "transition_covariance_factor": 80,
+        "transition_matrix": 80,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 12.052175450022332,
+          "mean_seconds": 12.052175450022332,
+          "median_seconds": 12.052175450022332,
+          "min_seconds": 12.052175450022332
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.587438182963524,
+          "mean_seconds": 0.587438182963524,
+          "median_seconds": 0.587438182963524,
+          "min_seconds": 0.587438182963524
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 12.125097448995803,
+        "autodiff_qr_score": 0.5541680839960463
+      }
+    }
+  ],
+  "schema": "kalman_qr_parameter_count_scaling_v1",
+  "summary": {
+    "all_applicable_rows_parity_passed": true,
+    "applicable_row_count": 17,
+    "inapplicable_row_count": 1,
+    "nonclaims": [
+      "descriptive timing only",
+      "no HMC readiness claim",
+      "no posterior correctness claim",
+      "no production default change",
+      "no statistically supported ranking"
+    ],
+    "run_status": "complete",
+    "wall_time_seconds": 2828.953659554012
+  }
+}

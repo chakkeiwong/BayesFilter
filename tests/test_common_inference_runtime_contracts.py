@@ -829,12 +829,29 @@ def test_hmc_screen_keeps_unavailable_diagnostics_from_passing_as_zero():
     assert screen.diagnostic_roles["zero_divergences"] == "hard_veto"
 
 
+def test_hmc_screen_does_not_use_log_accept_threshold_as_native_divergence():
+    screen = screen_hmc_diagnostics(
+        sample_chain_returned=True,
+        hmc_error_absent=True,
+        required_arrays_finite=True,
+        log_accept_ratio=[0.0, 1200.0, -1500.0],
+        divergences=None,
+        acceptance_rate_by_chain=[0.5, 0.75],
+    )
+
+    assert "zero_divergences" in screen.unavailable_diagnostics
+    assert screen.checks["zero_divergences"] is False
+    assert screen.checks["log_accept_nonfinite_count_zero"] is True
+    assert screen.diagnostic_roles["zero_divergences"] == "hard_veto"
+
+
 def test_hmc_screen_classifies_fixed_kernel_acceptance_one_as_promotion_veto():
     screen = screen_hmc_diagnostics(
         sample_chain_returned=True,
         hmc_error_absent=True,
         required_arrays_finite=True,
         log_accept_ratio=[0.0, 1.0e-8, -1.0e-8],
+        divergences=[False, False, False],
         acceptance_rate_by_chain=[1.0, 1.0, 1.0, 1.0],
         fixed_kernel_used=True,
         num_adaptation_steps_zero=True,
@@ -928,6 +945,7 @@ def test_hmc_tuning_policy_classifies_fixed_screen_like_existing_hmc_screen():
         hmc_error_absent=True,
         required_arrays_finite=True,
         log_accept_ratio=[0.0, 1.0e-8, -1.0e-8],
+        divergences=[False, False, False],
         acceptance_rate_by_chain=[1.0, 1.0, 1.0, 1.0],
         fixed_kernel_used=True,
         num_adaptation_steps_zero=True,
@@ -988,6 +1006,7 @@ def test_hmc_screen_classifies_divergence_and_nonfinite_log_accept_as_hard_veto(
         hmc_error_absent=True,
         required_arrays_finite=True,
         log_accept_ratio=[0.0, 1200.0, np.nan],
+        divergences=[False, True, False],
         acceptance_rate_by_chain=[0.75, 0.625, 1.0, 1.0],
         fixed_kernel_used=True,
         num_adaptation_steps_zero=True,

@@ -1,0 +1,2517 @@
+{
+  "adapter_audit": {
+    "adapter_signature": "cf79ab984f8c8f48a6b790078dff62dc7eac0e6a9085b3d883b43fb5cafa3b39",
+    "base_adapter_signature": "ae11b184bc93a26476117c94bb2b975dd8d4a9b29d78e4333cc08e09b8d89988",
+    "built": true,
+    "coordinate_contract": {
+      "adapter_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+      "base_adapter_coordinate": "free parameter values",
+      "factor_orientation": "row_right_transpose",
+      "free_parameter_names": [
+        "latent_mean_weight.0.0",
+        "latent_mean_bias.0",
+        "observation_weight.0.0",
+        "observation_bias.0"
+      ],
+      "hmc_coordinate": "u_new"
+    },
+    "matrix_checks": {
+      "diagnostics": {
+        "adapter_coordinate_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+        "adapter_factor": [
+          [
+            0.8211068362911105,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.011748290014029134,
+            0.6987234057857247,
+            0.0,
+            0.0
+          ],
+          [
+            0.18574175684469238,
+            -0.02735084868822145,
+            0.18570833280186028,
+            0.0
+          ],
+          [
+            -0.12660465789775052,
+            -0.4775794385869455,
+            -0.014118761606091164,
+            0.16338964416513962
+          ]
+        ],
+        "adapter_factor_orientation": "row_right_transpose",
+        "center_free_parameter_values": [
+          0.5704394246369003,
+          -0.1242247342531544,
+          0.6609123192759063,
+          0.1354211218811133
+        ],
+        "covariance_theta_eigen_summary": {
+          "condition_number": 45.007315283204306,
+          "eigenvalues": [
+            0.017594888784467865,
+            0.03290977436601861,
+            0.6609075144476984,
+            0.7918987068954606
+          ],
+          "finite": true,
+          "max": 0.7918987068954606,
+          "min": 0.017594888784467865,
+          "positive": true
+        },
+        "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+        "covariance_z_eigen_summary": {
+          "condition_number": 45.00731531805385,
+          "eigenvalues": [
+            0.1436317451818566,
+            0.2686512193232786,
+            5.395163386812251,
+            6.464479245082181
+          ],
+          "finite": true,
+          "max": 6.464479245082181,
+          "min": 0.1436317451818566,
+          "positive": true
+        },
+        "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+        "precision_theta_eigen_summary": {
+          "condition_number": 45.0073152832043,
+          "eigenvalues": [
+            1.2627877672895487,
+            1.5130710093917887,
+            30.38610927191768,
+            56.83468717817434
+          ],
+          "finite": true,
+          "max": 56.83468717817434,
+          "min": 1.2627877672895487,
+          "positive": true
+        },
+        "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+        "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+        "precision_z_eigen_summary": {
+          "condition_number": 45.00731531805376,
+          "eigenvalues": [
+            0.15469150137046908,
+            0.1853511985279935,
+            3.722298385687413,
+            6.962249179203848
+          ],
+          "finite": true,
+          "max": 6.962249179203848,
+          "min": 0.15469150137046908,
+          "positive": true
+        },
+        "scale": [
+          0.35,
+          0.35,
+          0.35,
+          0.35
+        ]
+      },
+      "passed": true,
+      "vetoes": []
+    },
+    "target_replay": {
+      "map_local_center_score_norm": 1.017238315038726e-10,
+      "map_local_center_value": -37.77528495512359
+    },
+    "vetoes": []
+  },
+  "artifact_role": "cpu_hidden_scalar_filtering_hmc_phase2ad_diversity_preserving_sequential_repair",
+  "classification": "extension_or_invention",
+  "created_at_utc": "2026-07-09T08:22:37.762770+00:00",
+  "decision": {
+    "aggregate_rejuvenation_acceptance": 0.6458333333333334,
+    "candidate_nominated_for_phase2ae_replication": false,
+    "next_justified_action": "write Phase 2AD result and draft a reference-method blocker or expansion decision",
+    "phase2ad_diversity_preserving_sequential_repair_passed": false,
+    "runs_hmc": false,
+    "stage_count": 6,
+    "terminal_beta": 0.9712250668187553,
+    "terminal_pre_final_resampling_ess_ratio": 0.5000016429467714,
+    "terminal_pre_final_resampling_max_weight": 0.03922774202134582,
+    "unique_ancestor_fraction": 0.4140625,
+    "vetoes": [
+      "temperature_increment_stalled",
+      "temperature_schedule_did_not_reach_beta_one",
+      "terminal_beta_not_one"
+    ],
+    "viable_for_phase3_gpu_xla_subplan": false,
+    "zero_divergence_claim_made": false
+  },
+  "decision_table": {
+    "decision": "Phase 2AD sequential tempering reference viability pilot",
+    "main_uncertainty": "A one-seed CPU-hidden sequential pilot can nominate a reference route for replication only; it cannot establish posterior correctness or HMC readiness.",
+    "next_justified_action": "draft a blocker or expansion decision",
+    "primary_criterion_status": "failed",
+    "veto_diagnostic_status": "vetoes: ('temperature_increment_stalled', 'temperature_schedule_did_not_reach_beta_one', 'terminal_beta_not_one')",
+    "what_is_not_being_concluded": "No valid replicated reference, HMC-vs-reference agreement, posterior correctness, HMC readiness, convergence, zero-divergence claim, sampler superiority, statistical ranking, GPU/XLA readiness, default readiness, or Zhao-Cui source faithfulness."
+  },
+  "environment": {
+    "cpu_hidden": true,
+    "cuda_visible_devices": "-1",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf_logical_gpus": [],
+    "tf_physical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/physical_device:CPU:0"
+      }
+    ]
+  },
+  "git": {
+    "commit": "52ee244498988e046a6356f926003b581103083b",
+    "dirty": true,
+    "dirty_line_count": 117,
+    "dirty_preview": [
+      " M bayesfilter/inference/hmc_diagnostics.py",
+      " M tests/test_common_inference_runtime_contracts.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+      "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json"
+    ]
+  },
+  "inference_status": {
+    "default_readiness": "not assessed",
+    "descriptive_only_differences": "temperature schedule, ESS trajectory, ancestor diversity, rejuvenation acceptance, terminal moments, and runtime",
+    "gpu_xla_readiness": "blocked",
+    "hard_veto_screen": "failed",
+    "hmc_readiness": "not assessed",
+    "hmc_reference_agreement": "not assessed",
+    "next_evidence_needed": "reference-method blocker or expansion decision",
+    "posterior_correctness": "not assessed",
+    "reference_validity": "not established; Phase 2AD can only nominate Phase 2AE replication",
+    "statistically_supported_ranking": "none",
+    "zero_divergence_claim": "not made"
+  },
+  "metric_roles": {
+    "particle_moments": "explanatory_only",
+    "phase2ad_diversity_preserving_sequential_repair_passed": "primary_phase2ad_nomination_gate",
+    "phase2v_hmc_moment_comparison": "not_evaluated_in_phase2ad",
+    "rejuvenation_acceptance": "promotion_veto",
+    "runtime": "explanatory_only",
+    "target_log_prob_finiteness": "hard_veto_evidence",
+    "temperature_reaches_one": "promotion_veto",
+    "terminal_pre_final_resampling_ess_ratio": "promotion_veto",
+    "terminal_pre_final_resampling_max_weight": "promotion_veto",
+    "unique_ancestor_fraction": "promotion_veto"
+  },
+  "nonclaims": [
+    "Phase 2AD diversity-preserving sequential repair pilot only",
+    "not a valid replicated reference by itself",
+    "not HMC-vs-reference agreement evidence",
+    "not an HMC run",
+    "not HMC readiness evidence",
+    "not HMC convergence evidence",
+    "not posterior correctness evidence",
+    "not a zero-divergence claim when native divergence is unavailable",
+    "not sampler superiority evidence",
+    "not statistically supported ranking evidence",
+    "not GPU/XLA production-readiness evidence",
+    "not default-readiness evidence",
+    "not Zhao-Cui source-faithfulness evidence"
+  ],
+  "phase2ad_gate": {
+    "aggregate_rejuvenation_acceptance": 0.6458333333333334,
+    "interpretation": "no valid diversity-preserving sequential-reference nomination",
+    "minimum_adaptive_post_temperature_ess_ratio": 0.5000010206048837,
+    "phase2ad_candidate_nominated": false,
+    "terminal_pre_final_resampling_ess_ratio": 0.5000016429467714,
+    "terminal_pre_final_resampling_max_weight": 0.03922774202134582,
+    "unique_ancestor_fraction": 0.4140625,
+    "vetoes": [
+      "temperature_increment_stalled",
+      "temperature_schedule_did_not_reach_beta_one",
+      "terminal_beta_not_one"
+    ]
+  },
+  "plan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+  "post_run_red_team": {
+    "strongest_alternative_explanation": "A passing pilot may reflect a lucky one-seed sequential path or loose diversity gates; independent replication is required before any agreement interpretation.",
+    "weakest_evidence": "One CPU-hidden pilot with 128 particles and no uncertainty analysis.",
+    "what_would_overturn": "Failure to replicate with fresh seeds, nonfinite target evaluations, severe ancestor collapse, or disagreement under a later valid reference-agreement phase."
+  },
+  "precondition": {
+    "passed": true,
+    "phase2u_decision": {
+      "candidate_count": 4,
+      "next_justified_action": "write Phase 2U result and draft/review longer selected-kernel MAP-local screen subplan",
+      "passed_candidate_count": 4,
+      "phase2u_retuned_map_local_hmc_screen_passed": true,
+      "selected_candidate": {
+        "acceptance_rate": 0.34375,
+        "candidate_index": 0,
+        "num_leapfrog_steps": 2,
+        "selection_policy": "first_passing_candidate_in_predeclared_order",
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      "vetoes": [],
+      "viable_for_longer_map_local_selected_kernel_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2u_precondition": {
+      "matrix_checks": {
+        "diagnostics": {
+          "adapter_coordinate_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+          "adapter_factor": [
+            [
+              0.8211068362911105,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.011748290014029134,
+              0.6987234057857247,
+              0.0,
+              0.0
+            ],
+            [
+              0.18574175684469238,
+              -0.02735084868822145,
+              0.18570833280186028,
+              0.0
+            ],
+            [
+              -0.12660465789775052,
+              -0.4775794385869455,
+              -0.014118761606091164,
+              0.16338964416513962
+            ]
+          ],
+          "adapter_factor_orientation": "row_right_transpose",
+          "center_free_parameter_values": [
+            0.5704394246369003,
+            -0.1242247342531544,
+            0.6609123192759063,
+            0.1354211218811133
+          ],
+          "covariance_theta_eigen_summary": {
+            "condition_number": 45.007315283204306,
+            "eigenvalues": [
+              0.017594888784467865,
+              0.03290977436601861,
+              0.6609075144476984,
+              0.7918987068954606
+            ],
+            "finite": true,
+            "max": 0.7918987068954606,
+            "min": 0.017594888784467865,
+            "positive": true
+          },
+          "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+          "covariance_z_eigen_summary": {
+            "condition_number": 45.00731531805385,
+            "eigenvalues": [
+              0.1436317451818566,
+              0.2686512193232786,
+              5.395163386812251,
+              6.464479245082181
+            ],
+            "finite": true,
+            "max": 6.464479245082181,
+            "min": 0.1436317451818566,
+            "positive": true
+          },
+          "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+          "precision_theta_eigen_summary": {
+            "condition_number": 45.0073152832043,
+            "eigenvalues": [
+              1.2627877672895487,
+              1.5130710093917887,
+              30.38610927191768,
+              56.83468717817434
+            ],
+            "finite": true,
+            "max": 56.83468717817434,
+            "min": 1.2627877672895487,
+            "positive": true
+          },
+          "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+          "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+          "precision_z_eigen_summary": {
+            "condition_number": 45.00731531805376,
+            "eigenvalues": [
+              0.15469150137046908,
+              0.1853511985279935,
+              3.722298385687413,
+              6.962249179203848
+            ],
+            "finite": true,
+            "max": 6.962249179203848,
+            "min": 0.15469150137046908,
+            "positive": true
+          },
+          "scale": [
+            0.35,
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "passed": true,
+        "vetoes": []
+      },
+      "passed": true,
+      "phase2s_decision": {
+        "next_justified_action": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+        "phase2s_geometry_centering_repair_passed": true,
+        "vetoes": [],
+        "viable_for_map_local_reference_subplan": true,
+        "zero_divergence_claim_made": false
+      },
+      "phase2t_decision": {
+        "next_justified_action": "draft and review Phase 2U retuned MAP-local fixed-kernel HMC screen subplan",
+        "phase2t_map_local_reference_handoff_passed": true,
+        "vetoes": [],
+        "viable_for_phase2u_retuned_map_local_hmc_screen_subplan": true,
+        "zero_divergence_claim_made": false
+      },
+      "phase2t_next_contract": {
+        "acceptance_envelope": {
+          "lower_exclusive": 0.05,
+          "upper_exclusive": 0.99
+        },
+        "all_trajectory_lengths_equal_1p57": true,
+        "candidate_grid": [
+          {
+            "num_leapfrog_steps": 2,
+            "step_size": 0.785,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 4,
+            "step_size": 0.3925,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 8,
+            "step_size": 0.19625,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 16,
+            "step_size": 0.098125,
+            "trajectory_length_L_times_epsilon": 1.57
+          }
+        ],
+        "candidate_grid_predeclared": true,
+        "hard_vetoes": [
+          "runtime_error",
+          "nonfinite_samples",
+          "nonfinite_target_log_prob",
+          "nonfinite_log_accept_ratio",
+          "positive_native_divergence_when_available",
+          "artifact_invalid"
+        ],
+        "if_no_candidate_passes": "write blocker/repair result; do not proceed to GPU/XLA",
+        "native_divergence_policy": "positive native divergence is a hard veto when available; unavailable native divergence is recorded as unavailable and is not zero-divergence evidence",
+        "next_subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md",
+        "nonclaims": [
+          "Phase 2U finite/acceptance retuning screen only",
+          "not posterior correctness evidence",
+          "not HMC readiness evidence"
+        ],
+        "selection_policy": "first candidate in listed order that passes hard vetoes and acceptance envelope",
+        "selection_policy_predeclared": true
+      },
+      "vetoes": []
+    },
+    "phase2v_decision": {
+      "acceptance_rate": 0.40625,
+      "next_justified_action": "write Phase 2V result and draft/review scalar reference/posterior-agreement subplan",
+      "phase2v_longer_selected_map_local_screen_passed": true,
+      "selected_kernel": {
+        "num_leapfrog_steps": 2,
+        "phase2u_selected_candidate_index": 0,
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "viable_for_scalar_reference_posterior_agreement_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2w_decision": {
+      "agreement_passed": false,
+      "next_justified_action": "write Phase 2W blocker or narrower reference/tuning/localization repair result",
+      "phase2w_importance_reference_agreement_passed": false,
+      "reference_ess": 22.894679726459746,
+      "reference_ess_ratio": 0.022358085670370845,
+      "reference_valid": false,
+      "vetoes": [
+        "reference_ess_below_threshold",
+        "reference_ess_ratio_below_threshold"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2x_decision": {
+      "agreement_passed": false,
+      "next_justified_action": "write Phase 2X blocker or narrower reference/tuning/localization repair result",
+      "phase2x_shifted_mixture_reference_repair_passed": false,
+      "reference_ess": 33.4215730897076,
+      "reference_ess_ratio": 0.01631912748520879,
+      "reference_valid": false,
+      "vetoes": [
+        "reference_ess_below_threshold",
+        "reference_ess_ratio_below_threshold"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "viable_for_reference_replication_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2y_decision": {
+      "artifact_bug_indicated": false,
+      "next_justified_action": "write Phase 2Y result and draft/review proposal redesign or local-reference-abandonment subplan",
+      "phase2y_target_geometry_localization_passed": true,
+      "proposal_family_mismatch_indicated": true,
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2z_decision": {
+      "candidate_nominated": false,
+      "next_justified_action": "write Phase 2Z result and draft/review SNIS-abandonment or transport/sequential-reference decision subplan",
+      "nominated_candidate_count": 0,
+      "nominated_candidates": [],
+      "phase2z_proposal_strategy_pilot_passed": true,
+      "pilot_artifact_valid": true,
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "vetoes": []
+  },
+  "result_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md",
+  "review_record": {
+    "claude_round_1": "VERDICT_REVISE",
+    "claude_round_1_process_note": "worker issued read/status commands despite read-only/no-command prompt; no edits were made",
+    "focused_local_review": "VERDICT_AGREE_FOR_IMPLEMENTATION_AND_CPU_HIDDEN_PILOT",
+    "review_strength": "Claude compact review plus local focused repair review"
+  },
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 timeout 600 python docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py --json-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json --markdown-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md",
+    "conda_env": "tfgpu",
+    "cpu_gpu_status": "CPU-hidden debug/reference exception",
+    "data_version": "stateless_simulated_scalar_ssl_lstm_filtering_path_v1",
+    "environment": {
+      "cpu_hidden": true,
+      "cuda_visible_devices": "-1",
+      "python": "3.13.13",
+      "tensorflow": "2.20.0",
+      "tf_logical_gpus": [],
+      "tf_physical_devices": [
+        {
+          "device_type": "CPU",
+          "name": "/physical_device:CPU:0"
+        }
+      ]
+    },
+    "git": {
+      "commit": "52ee244498988e046a6356f926003b581103083b",
+      "dirty": true,
+      "dirty_line_count": 117,
+      "dirty_preview": [
+        " M bayesfilter/inference/hmc_diagnostics.py",
+        " M tests/test_common_inference_runtime_contracts.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+        "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json"
+      ]
+    },
+    "jit_compile": false,
+    "output_artifacts": [
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json",
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md"
+    ],
+    "plan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+    "random_seeds": [
+      [
+        20260709,
+        6801
+      ]
+    ],
+    "result_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md",
+    "subplan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md",
+    "tf32_mode": "disabled_by_cpu_hidden_debug_contract",
+    "wall_time_seconds": 75.56550153600983
+  },
+  "schema_version": "scalar_ssl_lstm.filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair.v1",
+  "script": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py",
+  "sequential_reference": {
+    "aggregate_rejuvenation_acceptance": 0.6458333333333334,
+    "aggregate_rejuvenation_accepted_count": 496,
+    "aggregate_rejuvenation_proposal_count": 768,
+    "computed": true,
+    "final_log_weights": [
+      -9.882564809380437,
+      -9.403277365014821,
+      -9.614365239260838,
+      -9.340901418333958,
+      -9.238559187576545,
+      -9.325541693952466,
+      -9.505372587278023,
+      -9.647641370443337,
+      -8.108104063462969,
+      -7.805611501632658,
+      -7.214295162011545,
+      -8.07500908163297,
+      -8.467471374759604,
+      -7.8418683985424025,
+      -7.895682690039513,
+      -7.495262683191934,
+      -7.750731468204224,
+      -8.440387241566189,
+      -8.14715144671302,
+      -9.039254099063994,
+      -8.988151902847552,
+      -8.415038180816099,
+      -7.987238176219128,
+      -7.0244079360954546,
+      -7.080474241247687,
+      -8.427814189470128,
+      -7.243971558197515,
+      -7.098399109074195,
+      -8.627483568299816,
+      -8.946613288561235,
+      -8.495253287812776,
+      -7.868964027213729,
+      -8.195797406492849,
+      -7.347817903712885,
+      -7.760022588224522,
+      -7.760022588224522,
+      -8.107434222394756,
+      -8.454597090195673,
+      -8.096308104320162,
+      -7.628327923901958,
+      -8.534704472966489,
+      -7.929249259563679,
+      -8.22068498761501,
+      -7.917413126455626,
+      -9.466959082153267,
+      -9.389807489137159,
+      -9.85298602554043,
+      -10.155510803807896,
+      -9.944867312167977,
+      -9.42310975597989,
+      -9.85314825300649,
+      -9.892326340607006,
+      -9.866082418639166,
+      -9.807009290119241,
+      -9.411956926200709,
+      -9.662085384882777,
+      -9.029620759871637,
+      -10.173505075545629,
+      -9.47188457419792,
+      -10.430715869387758,
+      -9.710118258782238,
+      -9.787327288779286,
+      -9.99553475261795,
+      -8.96310411114588,
+      -9.143248942895434,
+      -9.143591094780104,
+      -9.271005540333968,
+      -10.236921474761381,
+      -10.006510746292086,
+      -9.704783127646843,
+      -8.946669703886407,
+      -10.061120072151319,
+      -9.150570212762313,
+      -9.801681757371215,
+      -9.634502112251639,
+      -10.341050029524606,
+      -8.971196032417883,
+      -9.909829120582351,
+      -9.22545780140727,
+      -9.913778575428966,
+      -9.87934153537411,
+      -10.089173893736808,
+      -9.81631470661403,
+      -8.967033105216814,
+      -9.288784853467963,
+      -10.45028072438879,
+      -9.982171136475253,
+      -10.536655239905071,
+      -9.749205824204527,
+      -9.368359637289908,
+      -9.19289384872496,
+      -9.19685854597321,
+      -9.103658229483894,
+      -8.689441730519132,
+      -9.01094027591524,
+      -9.179557426319832,
+      -8.962718709689497,
+      -8.845616486065143,
+      -8.724915777357815,
+      -8.80810908737297,
+      -8.877117566486511,
+      -8.757049714249826,
+      -8.527075942150963,
+      -7.704853603990125,
+      -7.941995032016754,
+      -9.014648749643063,
+      -9.081735903944871,
+      -8.9808023468184,
+      -10.266466675843391,
+      -8.194593235604838,
+      -9.742020655566211,
+      -8.356785475920995,
+      -8.683224366761824,
+      -8.707305315416324,
+      -8.7981165598378,
+      -9.666952218999025,
+      -10.220466220292401,
+      -9.206964068972706,
+      -8.714103129693665,
+      -8.942667649218096,
+      -8.22639632090532,
+      -8.927135596054672,
+      -8.927135596054672,
+      -9.903296302028672,
+      -10.393686824193603,
+      -10.249518857922663,
+      -9.848825225156896,
+      -10.210021170267595
+    ],
+    "final_normalized_weights": [
+      0.0022506686004565603,
+      0.0036346570946838,
+      0.002942992432676875,
+      0.003868592395861743,
+      0.004285481650727638,
+      0.003928471595582369,
+      0.003281890242786536,
+      0.0028466724956140613,
+      0.013272418351475109,
+      0.017960602975930405,
+      0.03244339813672983,
+      0.013719018139770568,
+      0.009265712531063782,
+      0.01732107102460583,
+      0.016413586667301108,
+      0.024496480496347763,
+      0.018973830146238966,
+      0.009520095646432936,
+      0.012764152940238901,
+      0.005230662997198464,
+      0.005504908971124153,
+      0.009764505826053252,
+      0.014977573180515444,
+      0.03922774202134582,
+      0.037088906026704324,
+      0.009640547944695039,
+      0.03149474098435212,
+      0.036430015195631646,
+      0.007895623107507568,
+      0.0057383909495282515,
+      0.009011836224884039,
+      0.016858047007320524,
+      0.01215808925699381,
+      0.028388218952877804,
+      0.01879835843974459,
+      0.01879835843974459,
+      0.013281311740607536,
+      0.009385773139792537,
+      0.013429906290593542,
+      0.021444414459611944,
+      0.00866323027719783,
+      0.015871782985326117,
+      0.011859238090973714,
+      0.016060759691925233,
+      0.0034104118293035307,
+      0.00368394669173783,
+      0.002318234980047979,
+      0.0017130601514465584,
+      0.002114725094404411,
+      0.003563283250552371,
+      0.0023178589291651505,
+      0.002228805510854778,
+      0.002288072405034876,
+      0.00242730805523707,
+      0.0036032463788488013,
+      0.002805850642419494,
+      0.005281295235252475,
+      0.001682510564670797,
+      0.0033936551742319437,
+      0.0013009259339602762,
+      0.0026742631338807026,
+      0.002475555582071377,
+      0.0020102465667957365,
+      0.0056445361607463515,
+      0.004714030121631514,
+      0.004712417483240371,
+      0.004148665004712477,
+      0.001579124630932891,
+      0.0019883027610332863,
+      0.0026885688057756885,
+      0.005738067225468453,
+      0.0018826343858729534,
+      0.004679643465541421,
+      0.0024402741263074555,
+      0.002884322465200456,
+      0.0014229641246028399,
+      0.005599045320888987,
+      0.0021901346295753474,
+      0.004341996805808175,
+      0.0021815018503550097,
+      0.0022579348262806464,
+      0.0018305532498332539,
+      0.0024048257088504724,
+      0.005622402321971583,
+      0.004075556426474163,
+      0.0012757208773359618,
+      0.0020372910337243776,
+      0.0011701557941148591,
+      0.002571749259283848,
+      0.0037638128517981434,
+      0.004485716728766626,
+      0.004467967428546364,
+      0.004904405622177954,
+      0.0074212715223339835,
+      0.005380879632630947,
+      0.004545940836299909,
+      0.0056467119924607295,
+      0.006348227570254815,
+      0.007162623753415707,
+      0.006590854787169495,
+      0.006151368459013699,
+      0.0069361191856769575,
+      0.008729570714644808,
+      0.01986458569901665,
+      0.015670768613992647,
+      0.005360961737203903,
+      0.005013108758149437,
+      0.005545516649457927,
+      0.0015331515621407608,
+      0.012172738492452205,
+      0.002590294256087381,
+      0.010350208467461071,
+      0.007467556001555762,
+      0.007289878081428858,
+      0.006657044234293265,
+      0.00279222820873885,
+      0.001605324500143244,
+      0.0044230436523695375,
+      0.007240490896764178,
+      0.005761077297266233,
+      0.011791699082151432,
+      0.005851257182568219,
+      0.005851257182568219,
+      0.0022044892186296235,
+      0.001350000972768862,
+      0.0015593565672560282,
+      0.002327900787845738,
+      0.001622180070246108
+    ],
+    "final_particles": [
+      [
+        0.10213018659613182,
+        1.9223974587742874,
+        -0.25947034070888086,
+        0.9786003510812411
+      ],
+      [
+        0.953955188849632,
+        2.3621842275392977,
+        0.8446112099561534,
+        -0.0966325886489057
+      ],
+      [
+        1.3013883164846538,
+        1.6174564917857257,
+        1.0846314453453356,
+        -0.9274838663003313
+      ],
+      [
+        -1.5908115336099373,
+        0.2244264213332907,
+        2.204498322308269,
+        -0.22541265846464076
+      ],
+      [
+        -1.5666064217965139,
+        1.662420685112087,
+        1.766569091694635,
+        -1.2776298769378074
+      ],
+      [
+        -2.0207494161522246,
+        0.7570519848479023,
+        0.9415651560984655,
+        -2.0907941919863204
+      ],
+      [
+        -0.24191897323257694,
+        0.9012240494229402,
+        -0.9732487593545751,
+        1.6958751681008717
+      ],
+      [
+        -0.4453070182362451,
+        -1.3475031384549456,
+        -0.8534183077264521,
+        -0.9196301914485542
+      ],
+      [
+        2.2577058464722057,
+        -0.8915770981969349,
+        -1.2492614628991934,
+        2.382516150048425
+      ],
+      [
+        2.9545419703835503,
+        -1.351645395388899,
+        -1.7861092345388498,
+        2.731651342954617
+      ],
+      [
+        2.442938300072404,
+        -0.6749576166883213,
+        -0.7449144496978382,
+        2.5978725969707233
+      ],
+      [
+        2.5641485820705303,
+        -0.6752632838326105,
+        -1.5177331536799727,
+        3.498002299549361
+      ],
+      [
+        2.4527414187809558,
+        0.11521126388464764,
+        -1.3626092726451455,
+        2.4726751123301627
+      ],
+      [
+        3.425564403940095,
+        0.20282844600445088,
+        -1.8924101627998755,
+        2.980060656777842
+      ],
+      [
+        2.613963013029688,
+        -0.8716613788074854,
+        -1.5290639255179754,
+        2.865417263925796
+      ],
+      [
+        3.023976897771708,
+        0.10691514671382829,
+        -3.001854959810552,
+        2.101829525109665
+      ],
+      [
+        2.7876655975353337,
+        -0.28304486838859466,
+        -1.1238010821300155,
+        2.9896233956888896
+      ],
+      [
+        1.4657398910020314,
+        -1.7451749872092779,
+        -1.0463983104971737,
+        2.4937503933615894
+      ],
+      [
+        1.9982649874354688,
+        -1.070102774741539,
+        -1.6069975871968152,
+        2.68686135067687
+      ],
+      [
+        1.6361413978572188,
+        0.16211941715774864,
+        -0.1788128056540521,
+        2.2635395400658846
+      ],
+      [
+        2.001102953604261,
+        -0.1843967552434524,
+        -0.22925646316733198,
+        1.286570507675811
+      ],
+      [
+        2.2939485090994247,
+        -0.8576003903621936,
+        -0.5228667983285438,
+        2.4484648452323965
+      ],
+      [
+        2.5071867454783017,
+        0.4951745929077307,
+        -1.8611913981020967,
+        2.4740523385477764
+      ],
+      [
+        2.9268187181715235,
+        -0.9446290129719452,
+        -1.9301824397824556,
+        3.6051742270371445
+      ],
+      [
+        2.3270239343983574,
+        -0.9235157497198423,
+        -0.8881740041044801,
+        3.63478428007865
+      ],
+      [
+        1.863019655171567,
+        0.382862403093089,
+        -0.42574147365830933,
+        3.471023745087837
+      ],
+      [
+        2.70631873067301,
+        -0.07921252624616304,
+        -1.1211693233524964,
+        2.955692683903992
+      ],
+      [
+        2.6360527836276932,
+        -0.7616698545176035,
+        -1.9510648350973563,
+        3.5529710631923535
+      ],
+      [
+        2.8338025750200804,
+        -1.1557645345171175,
+        -0.9310075843384589,
+        2.4019546605143973
+      ],
+      [
+        1.9207078930818566,
+        0.22143817281529277,
+        -0.5274134471224341,
+        1.4324702947883778
+      ],
+      [
+        2.173818404263667,
+        -2.2149103348153067,
+        -1.7553087384941042,
+        1.7792762541431513
+      ],
+      [
+        2.0931324404798524,
+        -0.6862821097223265,
+        -0.8014287027901076,
+        3.360128479105234
+      ],
+      [
+        1.43869266702186,
+        -1.991134749898325,
+        -1.5192751829015048,
+        3.274574903198057
+      ],
+      [
+        2.3262163339979702,
+        -1.2996412712037624,
+        -1.2935054679087548,
+        3.487733170614015
+      ],
+      [
+        2.4557860375234775,
+        -0.8726480485025444,
+        -1.0748468587693205,
+        3.2568437899837717
+      ],
+      [
+        2.0833403201896847,
+        -0.8503292517947343,
+        -1.7622302879529912,
+        3.1749402006157705
+      ],
+      [
+        1.984159020783832,
+        -1.0373697223080096,
+        -1.1542170625949821,
+        3.1282587364794945
+      ],
+      [
+        2.08377386556056,
+        -0.24954148015031113,
+        -1.060112173253352,
+        2.5028031005979936
+      ],
+      [
+        1.5634727326048916,
+        0.5692527968513532,
+        -2.27403102298872,
+        2.117863073754983
+      ],
+      [
+        2.3631014489203603,
+        0.13135326451521623,
+        -1.5433285865439323,
+        2.5705123213688195
+      ],
+      [
+        1.575114711190869,
+        -1.462928941106668,
+        -2.0902653414615715,
+        1.8829591751885844
+      ],
+      [
+        2.1377112912857537,
+        -1.7129661265221428,
+        -2.1775561676851667,
+        2.1977529374421416
+      ],
+      [
+        2.129883016473965,
+        -0.19306522275234655,
+        -1.1634339063230341,
+        2.687199287107179
+      ],
+      [
+        1.894917206104392,
+        -1.8531103544138285,
+        -1.683468236417257,
+        3.2921906372935297
+      ],
+      [
+        1.406216541167355,
+        1.0415687205907032,
+        0.3349577660774131,
+        0.625129782816252
+      ],
+      [
+        0.5477588050645512,
+        2.300493519077212,
+        -0.10971445668638502,
+        0.7535121070299893
+      ],
+      [
+        0.9898438736277655,
+        0.42886381078293007,
+        -1.5840320319975298,
+        0.11306063536338802
+      ],
+      [
+        0.14156188519796808,
+        -0.43092034185836586,
+        -1.143969132370421,
+        0.19943371133771184
+      ],
+      [
+        0.8271928630501255,
+        -1.3592225987460949,
+        0.582906028018974,
+        2.1313816982767233
+      ],
+      [
+        -0.41060995179388243,
+        -2.7580672829958734,
+        -0.2638703732845717,
+        0.003785183982538909
+      ],
+      [
+        0.8441169044380994,
+        -0.5220401564826757,
+        -1.3398793976065961,
+        0.1458681723454218
+      ],
+      [
+        0.2639838569125941,
+        0.08170494483449242,
+        -2.159785987686795,
+        -0.2325729943166151
+      ],
+      [
+        0.7698684434605451,
+        -0.21674276566360795,
+        -0.9447553410141849,
+        -1.0108883396183943
+      ],
+      [
+        0.9957279840642562,
+        1.4673505368640924,
+        0.3825277098191901,
+        -1.4564251535478447
+      ],
+      [
+        1.7281217432249774,
+        1.8280100887585504,
+        0.5681037198685028,
+        -1.191806899371735
+      ],
+      [
+        0.2956036037410533,
+        1.9038630889877894,
+        1.794065463403772,
+        -1.3461130963458467
+      ],
+      [
+        0.9025986637937667,
+        -2.7814079248324948,
+        -0.28706034766071453,
+        1.6733934114388584
+      ],
+      [
+        0.2538260408210852,
+        -1.532226575836238,
+        1.936390380173444,
+        1.2509090368813633
+      ],
+      [
+        -0.19529394482495055,
+        -1.2717190823747082,
+        1.2135562334195633,
+        1.703105911581449
+      ],
+      [
+        1.1730701529602916,
+        0.9607449265575922,
+        -0.6285367700663893,
+        -1.7758972755049562
+      ],
+      [
+        1.59317935813575,
+        1.5531686437324037,
+        -0.18465549632570297,
+        1.249543167833615
+      ],
+      [
+        2.3333495175641334,
+        1.1386840052631975,
+        0.09425770767896488,
+        -0.4684250712407494
+      ],
+      [
+        0.9211075541913756,
+        -0.09811282289532941,
+        0.35637261320363034,
+        0.5519032991207666
+      ],
+      [
+        1.0158814413515866,
+        0.8197610303118887,
+        -0.1530717835322536,
+        2.3904174286568125
+      ],
+      [
+        1.376723360362358,
+        0.2958020908849874,
+        -0.2780224488947176,
+        2.899120260535177
+      ],
+      [
+        0.5774239115722969,
+        -0.7677181446910559,
+        0.03953774794808945,
+        3.4197671479622493
+      ],
+      [
+        2.5531829273331783,
+        0.09380756679201457,
+        0.03445183009677971,
+        2.3958111401791786
+      ],
+      [
+        -0.5256203501340805,
+        1.3998920923328808,
+        -0.05927247649109976,
+        -0.7258646029587794
+      ],
+      [
+        0.1908549776396435,
+        -0.7713231360941778,
+        -0.1947840596893666,
+        -1.5662085551519618
+      ],
+      [
+        -0.5373857710618325,
+        1.3871639617869533,
+        -0.01846096508326389,
+        0.15531190521032612
+      ],
+      [
+        -0.457895994776249,
+        2.828938892913391,
+        1.0601414609316624,
+        -0.43533108172841845
+      ],
+      [
+        -0.892499684666763,
+        0.8900645694376446,
+        0.7666410293389404,
+        0.4015567661745075
+      ],
+      [
+        0.626297734503775,
+        1.3993326672693516,
+        1.3302949358219798,
+        -2.614911525543876
+      ],
+      [
+        0.8646840936833478,
+        1.1668954801610223,
+        -0.5263369566634725,
+        0.7365015255922629
+      ],
+      [
+        2.4027478818134886,
+        2.154842536784236,
+        -0.6547277735929117,
+        1.4848879078337742
+      ],
+      [
+        0.2699769230126301,
+        -0.09694418345967515,
+        0.7090749608474659,
+        -2.4409968098772032
+      ],
+      [
+        0.6529258787736918,
+        -1.3524158667049146,
+        0.04922173682919595,
+        2.5756872306768623
+      ],
+      [
+        1.616734559689204,
+        0.09479334562169395,
+        -1.0082446896487118,
+        -1.5131459292881386
+      ],
+      [
+        -0.7849996665806628,
+        1.2095812362950087,
+        2.0427740707190862,
+        -0.9117083659975052
+      ],
+      [
+        -0.1667552522889123,
+        0.23778231329870708,
+        1.3842593032432944,
+        -0.5339765055434075
+      ],
+      [
+        0.6409650398199276,
+        0.406741252378115,
+        -0.77096140457172,
+        -0.18610401026037904
+      ],
+      [
+        -1.5927990355434185,
+        1.219952715283491,
+        -0.051041485765771666,
+        0.2584144712685921
+      ],
+      [
+        -0.8319819177347103,
+        1.3113071713308313,
+        1.7104499616436377,
+        -0.23316817940394374
+      ],
+      [
+        0.39621918640886084,
+        3.2276430767584063,
+        -0.2843436783729577,
+        0.3658704444437493
+      ],
+      [
+        2.9722005552326562,
+        0.7087314710733486,
+        -1.2909834238479356,
+        0.6242831322725186
+      ],
+      [
+        0.9607247612281268,
+        1.3959760761127713,
+        -1.9040290023065924,
+        -0.5449996282383641
+      ],
+      [
+        0.731698365228507,
+        1.2988365269267337,
+        -0.37692508389207074,
+        -1.128708492513931
+      ],
+      [
+        -0.8590680734505661,
+        0.282117888450796,
+        0.019965388968902237,
+        0.35321929767779275
+      ],
+      [
+        0.4251567606956491,
+        -0.5919801699114916,
+        -0.7299081332668715,
+        0.7162127250588706
+      ],
+      [
+        -1.0468173236275264,
+        -1.9598697774226848,
+        1.808465834353334,
+        1.9694246289022153
+      ],
+      [
+        -0.8858978262093722,
+        -1.8375440136279484,
+        1.5086395916485598,
+        1.6948742865895357
+      ],
+      [
+        -0.17593223329897972,
+        -1.7984654089056369,
+        1.2251814472941362,
+        1.8325873267547221
+      ],
+      [
+        2.194422744465587,
+        -0.9502475999054215,
+        -0.312119234461955,
+        2.353661660855616
+      ],
+      [
+        1.7848471300449822,
+        -1.3270787479082866,
+        -0.8269697241486126,
+        2.8369928042481263
+      ],
+      [
+        1.8999623426001957,
+        -1.1636059193967359,
+        -0.0714714614034348,
+        3.2547789770728777
+      ],
+      [
+        1.3343994938060715,
+        -0.611554584357741,
+        -0.21642292373280458,
+        1.857187504568289
+      ],
+      [
+        1.9182511470115151,
+        -0.18188222645562424,
+        0.3609371814046587,
+        2.6297084932765653
+      ],
+      [
+        2.17213977043574,
+        -0.15817477359229826,
+        -0.3462402921447756,
+        3.3827697421805034
+      ],
+      [
+        1.9674581083668778,
+        -1.1342615875559687,
+        -0.8738223675511505,
+        2.654546836472181
+      ],
+      [
+        2.139134150270051,
+        -0.5893262025924981,
+        -0.9739264970564894,
+        2.0862887726065136
+      ],
+      [
+        1.3105463112474556,
+        -1.7265118150997993,
+        -0.9948766719016149,
+        1.8500649932847542
+      ],
+      [
+        1.689775032516301,
+        -0.1535136763794571,
+        -0.7460834911593437,
+        4.12708593449489
+      ],
+      [
+        2.264296272176149,
+        -0.553511078512307,
+        0.02192462277933216,
+        3.172220535697518
+      ],
+      [
+        3.254234378241631,
+        -0.3126593782500984,
+        -2.16814089188994,
+        1.0926272587758965
+      ],
+      [
+        2.0179061368669147,
+        0.8451714556099841,
+        -2.959858654482798,
+        1.9683033075361305
+      ],
+      [
+        1.8541556808553568,
+        -1.207276902643041,
+        -1.1444609231895515,
+        3.1572869700643276
+      ],
+      [
+        1.1218278974579612,
+        -1.067161080090986,
+        -1.322627736507467,
+        2.7925963480664113
+      ],
+      [
+        1.8200996692571987,
+        -1.1680250094605817,
+        -1.150757800791375,
+        2.335421726314318
+      ],
+      [
+        0.37834168383779254,
+        0.018981120043469968,
+        -0.6706310567096746,
+        0.4480171626252945
+      ],
+      [
+        3.442201067128895,
+        0.6999187038479701,
+        -1.7800157020644092,
+        1.110385889785211
+      ],
+      [
+        1.8392699698157433,
+        -0.37026087109421874,
+        -2.0129267846862247,
+        2.369436642020908
+      ],
+      [
+        -3.263560259844461,
+        -0.41331224326966387,
+        2.019286607325184,
+        -2.351370962469052
+      ],
+      [
+        -1.510931336054611,
+        0.04321019347524757,
+        2.0654147706269432,
+        -1.0493128577080173
+      ],
+      [
+        -1.6194605039956511,
+        -0.14768742248451047,
+        3.565523652569544,
+        -1.6741009143331673
+      ],
+      [
+        -1.9066828565118277,
+        -0.9351962322788878,
+        2.524406937687916,
+        -2.1068213721555646
+      ],
+      [
+        -1.907031770163334,
+        0.9533101469051389,
+        0.9076181569580778,
+        1.0631446016926591
+      ],
+      [
+        0.6628898332845959,
+        -0.400319628909423,
+        0.7299001299861848,
+        2.0026386747796976
+      ],
+      [
+        0.5397382660470789,
+        -0.8917205274252934,
+        0.6948249588346328,
+        2.9254805557790093
+      ],
+      [
+        3.0316894106389816,
+        -0.7301791644913713,
+        0.2236372481375487,
+        4.946214940496963
+      ],
+      [
+        1.0142025851502356,
+        0.11618283950145114,
+        0.011574990801852501,
+        3.844654801596935
+      ],
+      [
+        2.226820430917571,
+        0.05503087764330906,
+        -0.15599990264163383,
+        3.9046263115251967
+      ],
+      [
+        1.6544834229663559,
+        -0.5987347721316747,
+        -0.01526876035743352,
+        3.3849379983769823
+      ],
+      [
+        1.6604877367467876,
+        -0.34162697022346583,
+        0.6166927888859024,
+        2.791225621791616
+      ],
+      [
+        1.625214020931824,
+        1.2223496129364921,
+        1.2229632021788266,
+        -1.8064193966612037
+      ],
+      [
+        -0.46583275245742317,
+        0.5569204802389647,
+        -1.072463600522283,
+        -0.36902249058401365
+      ],
+      [
+        0.8445006744269434,
+        0.2163601407382405,
+        0.6958842656757355,
+        0.9699164428316733
+      ],
+      [
+        -0.8685637575910741,
+        -0.4751274950391246,
+        0.39734679487768815,
+        -0.7475138306160731
+      ],
+      [
+        -1.3541285303307355,
+        0.12629457283148884,
+        0.05241289056362999,
+        -1.0499196328219318
+      ]
+    ],
+    "final_weight_summary": {
+      "ess": 64.00021029718674,
+      "ess_ratio": 0.5000016429467714,
+      "finite": true,
+      "max": 0.03922774202134582,
+      "nonzero_count": 128,
+      "sum": 1.0
+    },
+    "initial_target_eval": {
+      "first_error": null,
+      "summary": {
+        "finite_count": 128,
+        "max": -37.815344283720826,
+        "max_abs": 67.97826338709383,
+        "mean": -40.59134766576561,
+        "min": -67.97826338709383,
+        "nonfinite_count": 0,
+        "shape": [
+          128
+        ]
+      },
+      "vetoes": []
+    },
+    "particle_summary": {
+      "max": [
+        3.442201067128895,
+        3.2276430767584063,
+        3.565523652569544,
+        4.946214940496963
+      ],
+      "max_abs": 4.946214940496963,
+      "mean": [
+        1.0945284949556071,
+        -0.09980359317456879,
+        -0.3416029308568209,
+        1.3257214669110942
+      ],
+      "min": [
+        -3.263560259844461,
+        -2.7814079248324948,
+        -3.001854959810552,
+        -2.614911525543876
+      ],
+      "std": [
+        1.3715032337119186,
+        1.1535090315286851,
+        1.2170462330111531,
+        1.7572607841620778
+      ]
+    },
+    "stage_count": 6,
+    "stage_rows": [
+      {
+        "beta": 0.2527170181274414,
+        "delta_beta": 0.2527170181274414,
+        "pre_resample_weight_summary": {
+          "ess": 89.60017360234886,
+          "ess_ratio": 0.7000013562683505,
+          "finite": true,
+          "max": 0.04017182623114065,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.0,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.6328125,
+            "accepted_count": 81,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.794361160572784,
+                "max_abs": 65.0042295025407,
+                "mean": -41.1134543210365,
+                "min": -65.0042295025407,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ad_projected_root_ancestor_diversity_gate",
+        "resample_reason": null,
+        "resampled": false,
+        "resampling_consideration": {
+          "accepted": false,
+          "considered": false,
+          "projected_unique_root_ancestor_fraction": null,
+          "reason": null,
+          "resample_indices": null,
+          "skip_reason": "not_at_resampling_boundary"
+        },
+        "selection": {
+          "delta_beta": 0.2527170181274414,
+          "ess_ratio": 0.7000013562683505,
+          "iterations": 20,
+          "next_beta": 0.2527170181274414,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 0,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 1.0
+      },
+      {
+        "beta": 0.3419540270406287,
+        "delta_beta": 0.08923700891318731,
+        "pre_resample_weight_summary": {
+          "ess": 64.00015918588973,
+          "ess_ratio": 0.5000012436397635,
+          "finite": true,
+          "max": 0.06553946724924992,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.2527170181274414,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.546875,
+            "accepted_count": 70,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.814241277286065,
+                "max_abs": 59.073222992200236,
+                "mean": -40.30331817110087,
+                "min": -59.073222992200236,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": {
+          "max_parent_index": 127,
+          "min_parent_index": 1,
+          "unique_parent_count": 92
+        },
+        "resample_policy": "phase2ad_projected_root_ancestor_diversity_gate",
+        "resample_reason": "minimum_threshold_fallback",
+        "resampled": true,
+        "resampling_consideration": {
+          "accepted": true,
+          "considered": true,
+          "projected_unique_root_ancestor_count": 92,
+          "projected_unique_root_ancestor_fraction": 0.71875,
+          "reason": "minimum_threshold_fallback",
+          "resample_indices": [
+            1,
+            3,
+            4,
+            4,
+            5,
+            5,
+            6,
+            8,
+            9,
+            9,
+            12,
+            13,
+            15,
+            15,
+            15,
+            15,
+            15,
+            15,
+            15,
+            15,
+            15,
+            17,
+            18,
+            18,
+            20,
+            21,
+            23,
+            25,
+            26,
+            28,
+            29,
+            29,
+            30,
+            31,
+            32,
+            33,
+            35,
+            36,
+            38,
+            39,
+            40,
+            42,
+            44,
+            46,
+            47,
+            48,
+            50,
+            50,
+            50,
+            52,
+            54,
+            55,
+            55,
+            56,
+            57,
+            58,
+            58,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            65,
+            67,
+            68,
+            70,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            76,
+            78,
+            79,
+            80,
+            81,
+            83,
+            85,
+            86,
+            87,
+            89,
+            89,
+            91,
+            92,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            102,
+            103,
+            103,
+            103,
+            103,
+            103,
+            103,
+            103,
+            105,
+            106,
+            108,
+            108,
+            109,
+            111,
+            111,
+            113,
+            115,
+            116,
+            116,
+            116,
+            116,
+            117,
+            117,
+            119,
+            121,
+            122,
+            123,
+            125,
+            126,
+            126,
+            127
+          ],
+          "skip_reason": null
+        },
+        "selection": {
+          "delta_beta": 0.08923700891318731,
+          "ess_ratio": 0.5000012436397635,
+          "iterations": 20,
+          "next_beta": 0.3419540270406287,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 1,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.71875
+      },
+      {
+        "beta": 0.5811528746866764,
+        "delta_beta": 0.2391988476460477,
+        "pre_resample_weight_summary": {
+          "ess": 89.60008321738086,
+          "ess_ratio": 0.7000006501357879,
+          "finite": true,
+          "max": 0.023202415520545847,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.3419540270406287,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.65625,
+            "accepted_count": 84,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.79632322571613,
+                "max_abs": 50.41641053139828,
+                "mean": -39.98936556316833,
+                "min": -50.41641053139828,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ad_projected_root_ancestor_diversity_gate",
+        "resample_reason": null,
+        "resampled": false,
+        "resampling_consideration": {
+          "accepted": false,
+          "considered": false,
+          "projected_unique_root_ancestor_fraction": null,
+          "reason": null,
+          "resample_indices": null,
+          "skip_reason": "not_at_resampling_boundary"
+        },
+        "selection": {
+          "delta_beta": 0.2391988476460477,
+          "ess_ratio": 0.7000006501357879,
+          "iterations": 20,
+          "next_beta": 0.5811528746866764,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 2,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.71875
+      },
+      {
+        "beta": 0.6735977385780526,
+        "delta_beta": 0.09244486389137618,
+        "pre_resample_weight_summary": {
+          "ess": 64.00013063742512,
+          "ess_ratio": 0.5000010206048837,
+          "finite": true,
+          "max": 0.041457723731129006,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.5811528746866764,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.671875,
+            "accepted_count": 86,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.8959980328381,
+                "max_abs": 49.40949815380922,
+                "mean": -39.92528098147524,
+                "min": -49.40949815380922,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": {
+          "max_parent_index": 126,
+          "min_parent_index": 1,
+          "unique_parent_count": 85
+        },
+        "resample_policy": "phase2ad_projected_root_ancestor_diversity_gate",
+        "resample_reason": "minimum_threshold_fallback",
+        "resampled": true,
+        "resampling_consideration": {
+          "accepted": true,
+          "considered": true,
+          "projected_unique_root_ancestor_count": 53,
+          "projected_unique_root_ancestor_fraction": 0.4140625,
+          "reason": "minimum_threshold_fallback",
+          "resample_indices": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            9,
+            10,
+            12,
+            12,
+            12,
+            12,
+            12,
+            13,
+            13,
+            13,
+            13,
+            14,
+            14,
+            15,
+            15,
+            15,
+            15,
+            16,
+            16,
+            16,
+            16,
+            16,
+            17,
+            17,
+            17,
+            18,
+            18,
+            18,
+            18,
+            18,
+            19,
+            19,
+            19,
+            19,
+            20,
+            20,
+            20,
+            20,
+            22,
+            23,
+            25,
+            28,
+            30,
+            31,
+            32,
+            34,
+            36,
+            38,
+            40,
+            42,
+            44,
+            46,
+            48,
+            49,
+            51,
+            52,
+            54,
+            55,
+            56,
+            56,
+            57,
+            59,
+            62,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            71,
+            72,
+            73,
+            75,
+            76,
+            77,
+            79,
+            83,
+            85,
+            86,
+            88,
+            90,
+            92,
+            94,
+            96,
+            96,
+            97,
+            98,
+            98,
+            98,
+            99,
+            100,
+            100,
+            100,
+            101,
+            101,
+            102,
+            102,
+            103,
+            103,
+            104,
+            104,
+            104,
+            105,
+            107,
+            108,
+            110,
+            110,
+            111,
+            111,
+            112,
+            114,
+            115,
+            115,
+            116,
+            116,
+            117,
+            117,
+            118,
+            120,
+            123,
+            124,
+            126
+          ],
+          "skip_reason": null
+        },
+        "selection": {
+          "delta_beta": 0.09244486389137618,
+          "ess_ratio": 0.5000010206048837,
+          "iterations": 19,
+          "next_beta": 0.6735977385780526,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 3,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.4140625
+      },
+      {
+        "beta": 0.8828990299946569,
+        "delta_beta": 0.20930129141660425,
+        "pre_resample_weight_summary": {
+          "ess": 89.60003285130522,
+          "ess_ratio": 0.700000256650822,
+          "finite": true,
+          "max": 0.0255543659955664,
+          "nonzero_count": 128,
+          "sum": 1.0000000000000002
+        },
+        "previous_beta": 0.6735977385780526,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.703125,
+            "accepted_count": 90,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.871165794110965,
+                "max_abs": 49.00758385859207,
+                "mean": -39.861364242730396,
+                "min": -49.00758385859207,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ad_projected_root_ancestor_diversity_gate",
+        "resample_reason": null,
+        "resampled": false,
+        "resampling_consideration": {
+          "accepted": false,
+          "considered": false,
+          "projected_unique_root_ancestor_fraction": null,
+          "reason": null,
+          "resample_indices": null,
+          "skip_reason": "not_at_resampling_boundary"
+        },
+        "selection": {
+          "delta_beta": 0.20930129141660425,
+          "ess_ratio": 0.700000256650822,
+          "iterations": 19,
+          "next_beta": 0.8828990299946569,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 4,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.4140625
+      },
+      {
+        "beta": 0.9712250668187553,
+        "delta_beta": 0.08832603682409845,
+        "pre_resample_weight_summary": {
+          "ess": 64.00021029718674,
+          "ess_ratio": 0.5000016429467714,
+          "finite": true,
+          "max": 0.03922774202134582,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.8828990299946569,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.6640625,
+            "accepted_count": 85,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.89474421461488,
+                "max_abs": 47.16131942361518,
+                "mean": -39.88820848202834,
+                "min": -47.16131942361518,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ad_projected_root_ancestor_diversity_gate",
+        "resample_reason": "minimum_threshold_fallback",
+        "resampled": false,
+        "resampling_consideration": {
+          "accepted": false,
+          "considered": true,
+          "projected_unique_root_ancestor_count": 28,
+          "projected_unique_root_ancestor_fraction": 0.21875,
+          "reason": "minimum_threshold_fallback",
+          "resample_indices": [
+            0,
+            2,
+            4,
+            6,
+            8,
+            8,
+            9,
+            9,
+            10,
+            10,
+            10,
+            10,
+            11,
+            11,
+            12,
+            13,
+            13,
+            14,
+            14,
+            15,
+            15,
+            15,
+            16,
+            16,
+            16,
+            17,
+            18,
+            18,
+            20,
+            21,
+            22,
+            22,
+            23,
+            23,
+            23,
+            23,
+            23,
+            24,
+            24,
+            24,
+            24,
+            24,
+            25,
+            26,
+            26,
+            26,
+            26,
+            27,
+            27,
+            27,
+            27,
+            27,
+            28,
+            29,
+            30,
+            31,
+            31,
+            32,
+            32,
+            33,
+            33,
+            33,
+            34,
+            34,
+            34,
+            35,
+            35,
+            36,
+            36,
+            37,
+            38,
+            38,
+            39,
+            39,
+            40,
+            41,
+            41,
+            41,
+            42,
+            43,
+            43,
+            44,
+            47,
+            50,
+            54,
+            56,
+            58,
+            62,
+            64,
+            65,
+            68,
+            70,
+            73,
+            76,
+            78,
+            81,
+            83,
+            86,
+            89,
+            91,
+            93,
+            94,
+            95,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            103,
+            104,
+            104,
+            105,
+            106,
+            109,
+            109,
+            111,
+            111,
+            112,
+            113,
+            115,
+            117,
+            118,
+            120,
+            120,
+            121,
+            123
+          ],
+          "skip_reason": "projected_unique_root_ancestor_fraction_below_threshold"
+        },
+        "selection": {
+          "delta_beta": 0.08832603682409845,
+          "ess_ratio": 0.5000016429467714,
+          "iterations": 17,
+          "next_beta": 0.9712250668187553,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 5,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.4140625
+      }
+    ],
+    "terminal_beta": 0.9712250668187553,
+    "terminal_pre_final_resampling_summary": {
+      "ess": 64.00021029718674,
+      "ess_ratio": 0.5000016429467714,
+      "finite": true,
+      "max": 0.03922774202134582,
+      "nonzero_count": 128,
+      "sum": 1.0
+    },
+    "terminal_weighted_moments": {
+      "computed": true,
+      "mean_u_new": [
+        1.8167175591586942,
+        -0.4233498742882595,
+        -0.9040788365665817,
+        2.235251426163586
+      ],
+      "second_moment_variance_u_new": [
+        1.6068812756457005,
+        0.925095418875913,
+        1.3993551681995822,
+        2.264733594215695
+      ],
+      "std_u_new": [
+        1.2676282087606368,
+        0.9618188077158364,
+        1.1829434340658822,
+        1.5049031843330305
+      ],
+      "vetoes": []
+    },
+    "unique_ancestor_fraction": 0.4140625,
+    "vetoes": [
+      "temperature_increment_stalled",
+      "temperature_schedule_did_not_reach_beta_one"
+    ]
+  },
+  "settings": {
+    "base_density": "standard_normal_N_0_I4",
+    "beta_tolerance": 1e-06,
+    "bisection_iterations": 32,
+    "coordinate": "phase2s_phase2u_map_local_u_new",
+    "cpu_hidden": true,
+    "dimension": 4,
+    "final_ancestor_measurement": "after_last_completed_nonterminal_resampling_and_rejuvenation_with_no_terminal_resampling",
+    "hmc_usage": false,
+    "launch_commit": "52ee244498988e046a6356f926003b581103083b",
+    "max_stages": 48,
+    "minimum_beta_increment": 0.0001,
+    "minimum_ess_ratio": 0.5,
+    "particle_count": 128,
+    "rejuvenation_acceptance_interval": [
+      0.1,
+      0.9
+    ],
+    "rejuvenation_moves_per_stage": 1,
+    "rejuvenation_scale": 0.45,
+    "repair_policy": "accept_nonterminal_systematic_resampling_only_when_realized_projected_root_ancestor_fraction_meets_threshold",
+    "resample_boundary_tolerance": 0.0001,
+    "resample_ess_ratio": 0.5,
+    "seed": [
+      20260709,
+      6801
+    ],
+    "target_ess_ratio": 0.7,
+    "target_route": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py::build_phase2u_adapter",
+    "terminal_max_weight_max": 0.08,
+    "terminal_weight_measurement": "beta_1_pre_final_resampling",
+    "unique_ancestor_fraction_min": 0.25,
+    "use_xla": false
+  },
+  "source_artifacts": {
+    "phase2ab_baseline_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json",
+    "phase2ac_baseline_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json",
+    "phase2s_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json",
+    "phase2t_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json",
+    "phase2u_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json",
+    "phase2v_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json",
+    "phase2w_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json",
+    "phase2x_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json",
+    "phase2y_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json",
+    "phase2z_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json"
+  },
+  "subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md",
+  "target_scope": "scalar_ssl_lstm:svd_ukf_filtering_geometry:phase2u_map_local_u_new"
+}

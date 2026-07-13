@@ -1,0 +1,2128 @@
+{
+  "adapter_audit": {
+    "adapter_signature": "cf79ab984f8c8f48a6b790078dff62dc7eac0e6a9085b3d883b43fb5cafa3b39",
+    "base_adapter_signature": "ae11b184bc93a26476117c94bb2b975dd8d4a9b29d78e4333cc08e09b8d89988",
+    "built": true,
+    "coordinate_contract": {
+      "adapter_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+      "base_adapter_coordinate": "free parameter values",
+      "factor_orientation": "row_right_transpose",
+      "free_parameter_names": [
+        "latent_mean_weight.0.0",
+        "latent_mean_bias.0",
+        "observation_weight.0.0",
+        "observation_bias.0"
+      ],
+      "hmc_coordinate": "u_new"
+    },
+    "matrix_checks": {
+      "diagnostics": {
+        "adapter_coordinate_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+        "adapter_factor": [
+          [
+            0.8211068362911105,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.011748290014029134,
+            0.6987234057857247,
+            0.0,
+            0.0
+          ],
+          [
+            0.18574175684469238,
+            -0.02735084868822145,
+            0.18570833280186028,
+            0.0
+          ],
+          [
+            -0.12660465789775052,
+            -0.4775794385869455,
+            -0.014118761606091164,
+            0.16338964416513962
+          ]
+        ],
+        "adapter_factor_orientation": "row_right_transpose",
+        "center_free_parameter_values": [
+          0.5704394246369003,
+          -0.1242247342531544,
+          0.6609123192759063,
+          0.1354211218811133
+        ],
+        "covariance_theta_eigen_summary": {
+          "condition_number": 45.007315283204306,
+          "eigenvalues": [
+            0.017594888784467865,
+            0.03290977436601861,
+            0.6609075144476984,
+            0.7918987068954606
+          ],
+          "finite": true,
+          "max": 0.7918987068954606,
+          "min": 0.017594888784467865,
+          "positive": true
+        },
+        "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+        "covariance_z_eigen_summary": {
+          "condition_number": 45.00731531805385,
+          "eigenvalues": [
+            0.1436317451818566,
+            0.2686512193232786,
+            5.395163386812251,
+            6.464479245082181
+          ],
+          "finite": true,
+          "max": 6.464479245082181,
+          "min": 0.1436317451818566,
+          "positive": true
+        },
+        "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+        "precision_theta_eigen_summary": {
+          "condition_number": 45.0073152832043,
+          "eigenvalues": [
+            1.2627877672895487,
+            1.5130710093917887,
+            30.38610927191768,
+            56.83468717817434
+          ],
+          "finite": true,
+          "max": 56.83468717817434,
+          "min": 1.2627877672895487,
+          "positive": true
+        },
+        "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+        "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+        "precision_z_eigen_summary": {
+          "condition_number": 45.00731531805376,
+          "eigenvalues": [
+            0.15469150137046908,
+            0.1853511985279935,
+            3.722298385687413,
+            6.962249179203848
+          ],
+          "finite": true,
+          "max": 6.962249179203848,
+          "min": 0.15469150137046908,
+          "positive": true
+        },
+        "scale": [
+          0.35,
+          0.35,
+          0.35,
+          0.35
+        ]
+      },
+      "passed": true,
+      "vetoes": []
+    },
+    "target_replay": {
+      "map_local_center_score_norm": 1.017238315038726e-10,
+      "map_local_center_value": -37.77528495512359
+    },
+    "vetoes": []
+  },
+  "artifact_role": "cpu_hidden_scalar_filtering_hmc_phase2ac_sequential_resampling_repair",
+  "classification": "extension_or_invention",
+  "created_at_utc": "2026-07-09T08:08:28.377492+00:00",
+  "decision": {
+    "aggregate_rejuvenation_acceptance": 0.6529017857142857,
+    "candidate_nominated_for_phase2ad_replication": false,
+    "next_justified_action": "write Phase 2AC result and draft/reference-method blocker or focused repair subplan",
+    "phase2ac_sequential_resampling_repair_passed": false,
+    "runs_hmc": false,
+    "stage_count": 7,
+    "terminal_beta": 1.0,
+    "terminal_pre_final_resampling_ess_ratio": 0.9912539055044092,
+    "terminal_pre_final_resampling_max_weight": 0.010002188339361427,
+    "unique_ancestor_fraction": 0.21875,
+    "vetoes": [
+      "unique_ancestor_fraction_below_threshold"
+    ],
+    "viable_for_phase3_gpu_xla_subplan": false,
+    "zero_divergence_claim_made": false
+  },
+  "decision_table": {
+    "decision": "Phase 2AC sequential tempering reference viability pilot",
+    "main_uncertainty": "A one-seed CPU-hidden sequential pilot can nominate a reference route for replication only; it cannot establish posterior correctness or HMC readiness.",
+    "next_justified_action": "draft focused repair only if the artifact identifies one discriminating repair question",
+    "primary_criterion_status": "failed",
+    "veto_diagnostic_status": "vetoes: ('unique_ancestor_fraction_below_threshold',)",
+    "what_is_not_being_concluded": "No valid replicated reference, HMC-vs-reference agreement, posterior correctness, HMC readiness, convergence, zero-divergence claim, sampler superiority, statistical ranking, GPU/XLA readiness, default readiness, or Zhao-Cui source faithfulness."
+  },
+  "environment": {
+    "cpu_hidden": true,
+    "cuda_visible_devices": "-1",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf_logical_gpus": [],
+    "tf_physical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/physical_device:CPU:0"
+      }
+    ]
+  },
+  "git": {
+    "commit": "52ee244498988e046a6356f926003b581103083b",
+    "dirty": true,
+    "dirty_line_count": 109,
+    "dirty_preview": [
+      " M bayesfilter/inference/hmc_diagnostics.py",
+      " M tests/test_common_inference_runtime_contracts.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+      "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md"
+    ]
+  },
+  "inference_status": {
+    "default_readiness": "not assessed",
+    "descriptive_only_differences": "temperature schedule, ESS trajectory, ancestor diversity, rejuvenation acceptance, terminal moments, and runtime",
+    "gpu_xla_readiness": "blocked",
+    "hard_veto_screen": "passed",
+    "hmc_readiness": "not assessed",
+    "hmc_reference_agreement": "not assessed",
+    "next_evidence_needed": "reviewed focused repair or reference-method blocker",
+    "posterior_correctness": "not assessed",
+    "reference_validity": "not established; Phase 2AC can only nominate Phase 2AD replication",
+    "statistically_supported_ranking": "none",
+    "zero_divergence_claim": "not made"
+  },
+  "metric_roles": {
+    "particle_moments": "explanatory_only",
+    "phase2ac_sequential_resampling_repair_passed": "primary_phase2ac_nomination_gate",
+    "phase2v_hmc_moment_comparison": "not_evaluated_in_phase2ac",
+    "rejuvenation_acceptance": "promotion_veto",
+    "runtime": "explanatory_only",
+    "target_log_prob_finiteness": "hard_veto_evidence",
+    "temperature_reaches_one": "promotion_veto",
+    "terminal_pre_final_resampling_ess_ratio": "promotion_veto",
+    "terminal_pre_final_resampling_max_weight": "promotion_veto",
+    "unique_ancestor_fraction": "promotion_veto"
+  },
+  "nonclaims": [
+    "Phase 2AC sequential-resampling repair pilot only",
+    "not a valid replicated reference by itself",
+    "not HMC-vs-reference agreement evidence",
+    "not an HMC run",
+    "not HMC readiness evidence",
+    "not HMC convergence evidence",
+    "not posterior correctness evidence",
+    "not a zero-divergence claim when native divergence is unavailable",
+    "not sampler superiority evidence",
+    "not statistically supported ranking evidence",
+    "not GPU/XLA production-readiness evidence",
+    "not default-readiness evidence",
+    "not Zhao-Cui source-faithfulness evidence"
+  ],
+  "phase2ac_gate": {
+    "aggregate_rejuvenation_acceptance": 0.6529017857142857,
+    "interpretation": "no valid patched sequential-reference nomination",
+    "minimum_adaptive_post_temperature_ess_ratio": 0.5000010206048837,
+    "phase2ac_candidate_nominated": false,
+    "terminal_pre_final_resampling_ess_ratio": 0.9912539055044092,
+    "terminal_pre_final_resampling_max_weight": 0.010002188339361427,
+    "unique_ancestor_fraction": 0.21875,
+    "vetoes": [
+      "unique_ancestor_fraction_below_threshold"
+    ]
+  },
+  "plan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+  "post_run_red_team": {
+    "strongest_alternative_explanation": "A passing pilot may reflect a lucky one-seed sequential path or loose diversity gates; independent replication is required before any agreement interpretation.",
+    "weakest_evidence": "One CPU-hidden pilot with 128 particles and no uncertainty analysis.",
+    "what_would_overturn": "Failure to replicate with fresh seeds, nonfinite target evaluations, severe ancestor collapse, or disagreement under a later valid reference-agreement phase."
+  },
+  "precondition": {
+    "passed": true,
+    "phase2u_decision": {
+      "candidate_count": 4,
+      "next_justified_action": "write Phase 2U result and draft/review longer selected-kernel MAP-local screen subplan",
+      "passed_candidate_count": 4,
+      "phase2u_retuned_map_local_hmc_screen_passed": true,
+      "selected_candidate": {
+        "acceptance_rate": 0.34375,
+        "candidate_index": 0,
+        "num_leapfrog_steps": 2,
+        "selection_policy": "first_passing_candidate_in_predeclared_order",
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      "vetoes": [],
+      "viable_for_longer_map_local_selected_kernel_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2u_precondition": {
+      "matrix_checks": {
+        "diagnostics": {
+          "adapter_coordinate_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+          "adapter_factor": [
+            [
+              0.8211068362911105,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.011748290014029134,
+              0.6987234057857247,
+              0.0,
+              0.0
+            ],
+            [
+              0.18574175684469238,
+              -0.02735084868822145,
+              0.18570833280186028,
+              0.0
+            ],
+            [
+              -0.12660465789775052,
+              -0.4775794385869455,
+              -0.014118761606091164,
+              0.16338964416513962
+            ]
+          ],
+          "adapter_factor_orientation": "row_right_transpose",
+          "center_free_parameter_values": [
+            0.5704394246369003,
+            -0.1242247342531544,
+            0.6609123192759063,
+            0.1354211218811133
+          ],
+          "covariance_theta_eigen_summary": {
+            "condition_number": 45.007315283204306,
+            "eigenvalues": [
+              0.017594888784467865,
+              0.03290977436601861,
+              0.6609075144476984,
+              0.7918987068954606
+            ],
+            "finite": true,
+            "max": 0.7918987068954606,
+            "min": 0.017594888784467865,
+            "positive": true
+          },
+          "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+          "covariance_z_eigen_summary": {
+            "condition_number": 45.00731531805385,
+            "eigenvalues": [
+              0.1436317451818566,
+              0.2686512193232786,
+              5.395163386812251,
+              6.464479245082181
+            ],
+            "finite": true,
+            "max": 6.464479245082181,
+            "min": 0.1436317451818566,
+            "positive": true
+          },
+          "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+          "precision_theta_eigen_summary": {
+            "condition_number": 45.0073152832043,
+            "eigenvalues": [
+              1.2627877672895487,
+              1.5130710093917887,
+              30.38610927191768,
+              56.83468717817434
+            ],
+            "finite": true,
+            "max": 56.83468717817434,
+            "min": 1.2627877672895487,
+            "positive": true
+          },
+          "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+          "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+          "precision_z_eigen_summary": {
+            "condition_number": 45.00731531805376,
+            "eigenvalues": [
+              0.15469150137046908,
+              0.1853511985279935,
+              3.722298385687413,
+              6.962249179203848
+            ],
+            "finite": true,
+            "max": 6.962249179203848,
+            "min": 0.15469150137046908,
+            "positive": true
+          },
+          "scale": [
+            0.35,
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "passed": true,
+        "vetoes": []
+      },
+      "passed": true,
+      "phase2s_decision": {
+        "next_justified_action": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+        "phase2s_geometry_centering_repair_passed": true,
+        "vetoes": [],
+        "viable_for_map_local_reference_subplan": true,
+        "zero_divergence_claim_made": false
+      },
+      "phase2t_decision": {
+        "next_justified_action": "draft and review Phase 2U retuned MAP-local fixed-kernel HMC screen subplan",
+        "phase2t_map_local_reference_handoff_passed": true,
+        "vetoes": [],
+        "viable_for_phase2u_retuned_map_local_hmc_screen_subplan": true,
+        "zero_divergence_claim_made": false
+      },
+      "phase2t_next_contract": {
+        "acceptance_envelope": {
+          "lower_exclusive": 0.05,
+          "upper_exclusive": 0.99
+        },
+        "all_trajectory_lengths_equal_1p57": true,
+        "candidate_grid": [
+          {
+            "num_leapfrog_steps": 2,
+            "step_size": 0.785,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 4,
+            "step_size": 0.3925,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 8,
+            "step_size": 0.19625,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 16,
+            "step_size": 0.098125,
+            "trajectory_length_L_times_epsilon": 1.57
+          }
+        ],
+        "candidate_grid_predeclared": true,
+        "hard_vetoes": [
+          "runtime_error",
+          "nonfinite_samples",
+          "nonfinite_target_log_prob",
+          "nonfinite_log_accept_ratio",
+          "positive_native_divergence_when_available",
+          "artifact_invalid"
+        ],
+        "if_no_candidate_passes": "write blocker/repair result; do not proceed to GPU/XLA",
+        "native_divergence_policy": "positive native divergence is a hard veto when available; unavailable native divergence is recorded as unavailable and is not zero-divergence evidence",
+        "next_subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md",
+        "nonclaims": [
+          "Phase 2U finite/acceptance retuning screen only",
+          "not posterior correctness evidence",
+          "not HMC readiness evidence"
+        ],
+        "selection_policy": "first candidate in listed order that passes hard vetoes and acceptance envelope",
+        "selection_policy_predeclared": true
+      },
+      "vetoes": []
+    },
+    "phase2v_decision": {
+      "acceptance_rate": 0.40625,
+      "next_justified_action": "write Phase 2V result and draft/review scalar reference/posterior-agreement subplan",
+      "phase2v_longer_selected_map_local_screen_passed": true,
+      "selected_kernel": {
+        "num_leapfrog_steps": 2,
+        "phase2u_selected_candidate_index": 0,
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "viable_for_scalar_reference_posterior_agreement_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2w_decision": {
+      "agreement_passed": false,
+      "next_justified_action": "write Phase 2W blocker or narrower reference/tuning/localization repair result",
+      "phase2w_importance_reference_agreement_passed": false,
+      "reference_ess": 22.894679726459746,
+      "reference_ess_ratio": 0.022358085670370845,
+      "reference_valid": false,
+      "vetoes": [
+        "reference_ess_below_threshold",
+        "reference_ess_ratio_below_threshold"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2x_decision": {
+      "agreement_passed": false,
+      "next_justified_action": "write Phase 2X blocker or narrower reference/tuning/localization repair result",
+      "phase2x_shifted_mixture_reference_repair_passed": false,
+      "reference_ess": 33.4215730897076,
+      "reference_ess_ratio": 0.01631912748520879,
+      "reference_valid": false,
+      "vetoes": [
+        "reference_ess_below_threshold",
+        "reference_ess_ratio_below_threshold"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "viable_for_reference_replication_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2y_decision": {
+      "artifact_bug_indicated": false,
+      "next_justified_action": "write Phase 2Y result and draft/review proposal redesign or local-reference-abandonment subplan",
+      "phase2y_target_geometry_localization_passed": true,
+      "proposal_family_mismatch_indicated": true,
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2z_decision": {
+      "candidate_nominated": false,
+      "next_justified_action": "write Phase 2Z result and draft/review SNIS-abandonment or transport/sequential-reference decision subplan",
+      "nominated_candidate_count": 0,
+      "nominated_candidates": [],
+      "phase2z_proposal_strategy_pilot_passed": true,
+      "pilot_artifact_valid": true,
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "vetoes": []
+  },
+  "result_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md",
+  "review_record": {
+    "claude_round_1": "VERDICT_REVISE",
+    "claude_round_1_process_note": "worker issued read/status commands despite read-only/no-command prompt; no edits were made",
+    "focused_local_review": "VERDICT_AGREE_FOR_IMPLEMENTATION_AND_CPU_HIDDEN_PILOT",
+    "review_strength": "Claude compact review plus local focused repair review"
+  },
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 timeout 600 python docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py --json-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json --markdown-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md",
+    "conda_env": "tfgpu",
+    "cpu_gpu_status": "CPU-hidden debug/reference exception",
+    "data_version": "stateless_simulated_scalar_ssl_lstm_filtering_path_v1",
+    "environment": {
+      "cpu_hidden": true,
+      "cuda_visible_devices": "-1",
+      "python": "3.13.13",
+      "tensorflow": "2.20.0",
+      "tf_logical_gpus": [],
+      "tf_physical_devices": [
+        {
+          "device_type": "CPU",
+          "name": "/physical_device:CPU:0"
+        }
+      ]
+    },
+    "git": {
+      "commit": "52ee244498988e046a6356f926003b581103083b",
+      "dirty": true,
+      "dirty_line_count": 109,
+      "dirty_preview": [
+        " M bayesfilter/inference/hmc_diagnostics.py",
+        " M tests/test_common_inference_runtime_contracts.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+        "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md"
+      ]
+    },
+    "jit_compile": false,
+    "output_artifacts": [
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json",
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md"
+    ],
+    "plan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+    "random_seeds": [
+      [
+        20260709,
+        6801
+      ]
+    ],
+    "result_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md",
+    "subplan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md",
+    "tf32_mode": "disabled_by_cpu_hidden_debug_contract",
+    "wall_time_seconds": 80.28042639500927
+  },
+  "schema_version": "scalar_ssl_lstm.filtering_hmc_validation_phase2ac_sequential_resampling_repair.v1",
+  "script": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py",
+  "sequential_reference": {
+    "aggregate_rejuvenation_acceptance": 0.6529017857142857,
+    "aggregate_rejuvenation_accepted_count": 585,
+    "aggregate_rejuvenation_proposal_count": 896,
+    "computed": true,
+    "final_log_weights": [
+      -0.9189879259817296,
+      -0.935850040124605,
+      -0.8863372138502144,
+      -0.9280929302373043,
+      -0.8295691273279129,
+      -0.8364912490730759,
+      -0.7400753179922854,
+      -0.8018272173545143,
+      -0.7283808172779802,
+      -0.7283808172779802,
+      -0.8311019984087048,
+      -0.6538474818024802,
+      -0.804786196874168,
+      -0.7344950257770126,
+      -0.799718807584342,
+      -0.7177957303460364,
+      -0.7271495663354787,
+      -0.7773113839819196,
+      -0.7633237783859687,
+      -0.680065151614979,
+      -0.7268089407575868,
+      -0.6919927297309777,
+      -0.7857895726750033,
+      -0.7871701222078483,
+      -0.8240516422818817,
+      -0.8160258009085699,
+      -0.8417911859277477,
+      -0.7775534617453641,
+      -0.8819959855104905,
+      -0.8867899734639026,
+      -0.7722148573585215,
+      -0.7838594002241114,
+      -0.615930119194357,
+      -0.615930119194357,
+      -0.6202369574221719,
+      -0.615930119194357,
+      -0.6236570936141544,
+      -0.6844090608169348,
+      -0.7568064706251987,
+      -0.8000972399441977,
+      -0.69337581909729,
+      -0.7350030891972251,
+      -0.8511231466468993,
+      -0.6815239908745173,
+      -0.5443440489733368,
+      -0.6874597471748475,
+      -0.6874597471748475,
+      -0.6400350279508232,
+      -0.6400350279508232,
+      -0.6937809579965165,
+      -0.6400350279508232,
+      -0.659697115762688,
+      -0.8173922012154636,
+      -0.8850903482216976,
+      -0.7896467362078335,
+      -0.7857384445074034,
+      -0.806470310556876,
+      -0.7342954904879654,
+      -0.814795233180069,
+      -0.7200956287003402,
+      -0.7103950112951244,
+      -0.8156775471321348,
+      -0.7825308096646704,
+      -0.7502474076591632,
+      -0.7502474076591632,
+      -0.7502474076591632,
+      -0.7576989549408811,
+      -0.7623771464801252,
+      -0.7636116728348326,
+      -0.7493472088663709,
+      -0.7790514311464201,
+      -0.8111073471910831,
+      -0.6730473974296257,
+      -0.6391664880206221,
+      -0.7909720984649157,
+      -0.7466870126850474,
+      -0.7466870126850474,
+      -0.7466870126850474,
+      -0.811523511934186,
+      -0.7214445756883763,
+      -0.7035138782197967,
+      -0.9513417415569464,
+      -0.932048512756028,
+      -0.9442841355725021,
+      -0.9400315708450951,
+      -0.8715150965144322,
+      -0.9647144596554504,
+      -0.9808919946027153,
+      -0.935756849411792,
+      -0.857415258342669,
+      -0.934784275485392,
+      -0.8873737911335535,
+      -0.938849099622922,
+      -0.8793709215571267,
+      -0.8919272748609879,
+      -0.9833618596951665,
+      -0.8072491188215547,
+      -0.9720484547856149,
+      -0.8952643371276553,
+      -0.8900705790876886,
+      -0.8401046592596221,
+      -0.8276268334691445,
+      -0.9224138641929,
+      -0.8617782891348091,
+      -0.8208185928905197,
+      -0.8599287342070805,
+      -0.8932462480031943,
+      -0.8361444310503504,
+      -0.8282759254856009,
+      -0.8057650935621049,
+      -0.8057650935621049,
+      -0.7528018193427098,
+      -0.7416169903725144,
+      -0.8915662757754524,
+      -0.8689016090141936,
+      -0.6964926324580057,
+      -0.7845344920434961,
+      -0.7662475514859405,
+      -0.8761840862951576,
+      -0.856597380083637,
+      -0.8801971759127302,
+      -0.919141720501802,
+      -0.8999032734106813,
+      -0.7805638181744193,
+      -0.7953369264029677,
+      -0.7953369264029677,
+      -0.8804958821551834,
+      -0.9129717402353377
+    ],
+    "final_normalized_weights": [
+      0.006876845376818266,
+      0.006761859402932179,
+      0.007105085093993898,
+      0.006814515856270561,
+      0.007520095404387724,
+      0.007468220139051194,
+      0.008224130970362824,
+      0.007731637944140908,
+      0.00832087264612746,
+      0.00832087264612746,
+      0.007508576898065572,
+      0.008964752238644737,
+      0.00770879399986008,
+      0.008270152311235209,
+      0.0077479566022856695,
+      0.008409417607751195,
+      0.008331124038138404,
+      0.007923528053837087,
+      0.008035137997387986,
+      0.00873277160810661,
+      0.008333962315445866,
+      0.008629229523284187,
+      0.007856634855150106,
+      0.007845795865173887,
+      0.007561702094921169,
+      0.007622635309524985,
+      0.007428743747494094,
+      0.007921610176034374,
+      0.0071359969399031236,
+      0.007101868926541825,
+      0.00796401360572834,
+      0.007871814159929564,
+      0.009311198660331504,
+      0.009311198660331504,
+      0.009271183066193286,
+      0.009311198660331504,
+      0.009239528519732237,
+      0.008694919513711128,
+      0.008087676483392975,
+      0.007745025079511134,
+      0.00861730277746998,
+      0.008265951616566295,
+      0.007359741466694213,
+      0.00872004118611757,
+      0.010002188339361427,
+      0.008668434460703122,
+      0.008668434460703122,
+      0.009089436581289693,
+      0.009089436581289693,
+      0.008613812280024303,
+      0.009089436581289693,
+      0.008912464799792208,
+      0.007612226850978613,
+      0.007113949705726661,
+      0.007826388898994813,
+      0.007857036560762901,
+      0.007695822440264109,
+      0.00827180266311334,
+      0.007632021252377781,
+      0.008390099025937257,
+      0.008471884208618434,
+      0.007625290383350824,
+      0.007882279528463624,
+      0.008140898414890123,
+      0.008140898414890123,
+      0.008140898414890123,
+      0.00808046157905462,
+      0.008042747916712105,
+      0.008032825058719759,
+      0.008148230141325985,
+      0.00790975272964677,
+      0.007660219240145175,
+      0.008794271596108011,
+      0.009097334549257353,
+      0.007816022969362173,
+      0.008169934888675763,
+      0.008169934888675763,
+      0.008169934888675763,
+      0.00765703199022951,
+      0.00837878885725094,
+      0.008530381403929475,
+      0.006657913920959537,
+      0.00678761371836645,
+      0.006705069059554005,
+      0.006733643514027671,
+      0.007211181845784976,
+      0.006569472186160244,
+      0.006464049360206226,
+      0.006762489574792506,
+      0.007313578534797316,
+      0.006769069795187209,
+      0.007097723940050876,
+      0.006741610563178236,
+      0.007154753996707043,
+      0.007065478040892675,
+      0.006448103730219017,
+      0.00768983120345933,
+      0.006521467955704097,
+      0.007041939397529558,
+      0.0070786086701273175,
+      0.0074412830929329425,
+      0.007534715833497551,
+      0.006853326040370204,
+      0.00728173867609993,
+      0.007586189013656326,
+      0.007295219114313323,
+      0.007056165008289975,
+      0.007470810701594021,
+      0.007529826696525306,
+      0.007701251579173231,
+      0.007701251579173231,
+      0.00812012974602276,
+      0.008211461823140894,
+      0.007068029132447463,
+      0.007230052828197977,
+      0.008590486066091283,
+      0.007866501755968466,
+      0.008011679387594025,
+      0.007177591389210435,
+      0.0073195625984608615,
+      0.007148844791643386,
+      0.006875787837007925,
+      0.0070093479426433705,
+      0.007897799163711262,
+      0.007781981720084344,
+      0.007781981720084344,
+      0.007146709705975378,
+      0.00691834245786444
+    ],
+    "final_particles": [
+      [
+        0.10213018659613182,
+        1.9223974587742874,
+        -0.25947034070888086,
+        0.9786003510812411
+      ],
+      [
+        1.1924184602829975,
+        2.053109623126139,
+        0.3908290212167748,
+        -1.1992014911502977
+      ],
+      [
+        -1.2859626555344845,
+        1.0886486841707006,
+        2.220861699563482,
+        -0.7521070007092203
+      ],
+      [
+        1.071467380708889,
+        1.4239600104808265,
+        -1.8161209002058325,
+        1.3369950232189005
+      ],
+      [
+        2.1676110605631287,
+        -0.7822354470556921,
+        -2.0479810474428306,
+        0.906445547624485
+      ],
+      [
+        2.345784920909852,
+        -0.5376113818766997,
+        -1.2938485431054696,
+        2.0466694879598197
+      ],
+      [
+        2.2479548656733925,
+        -1.836028861480586,
+        -2.1299329839383194,
+        2.434148566832284
+      ],
+      [
+        2.3077722249512203,
+        -0.796399808071182,
+        -1.4373577032449973,
+        2.4093280736497666
+      ],
+      [
+        3.5238289432615404,
+        0.025532310634993727,
+        -1.9615080870605563,
+        2.8661265734036325
+      ],
+      [
+        2.5643426818804658,
+        -1.6449953018314107,
+        -1.9920828153166044,
+        2.8506794704788803
+      ],
+      [
+        2.1494160509205162,
+        -1.4075937969519496,
+        -1.237505532292439,
+        3.0154609055945034
+      ],
+      [
+        3.5002109330500786,
+        0.20726722828824246,
+        -2.218012249979377,
+        3.4258917325743745
+      ],
+      [
+        2.3769938122609626,
+        -0.233709486710307,
+        -2.4720612785067035,
+        2.554882388641083
+      ],
+      [
+        3.5443597274053733,
+        -0.38752678194004314,
+        -2.4596938153893606,
+        2.8778252577716184
+      ],
+      [
+        2.43044744785169,
+        -0.34884692767104264,
+        -1.6108300541619944,
+        2.992986123972361
+      ],
+      [
+        2.1653975536294894,
+        1.0009131310058372,
+        -1.6978624082599427,
+        1.9579269285443999
+      ],
+      [
+        3.0372714639475342,
+        -0.1995508498778636,
+        -1.8337646926023976,
+        2.701500409444113
+      ],
+      [
+        2.5215002254336,
+        0.10791722548968025,
+        -1.4479141176003083,
+        2.8871540915203537
+      ],
+      [
+        2.309537213384387,
+        -0.8810839497799757,
+        -2.141587705157211,
+        2.666189802173964
+      ],
+      [
+        3.5094493094078616,
+        -0.1688642016815427,
+        -2.757334520753912,
+        1.6357559948500504
+      ],
+      [
+        2.7464628055350073,
+        -0.007622009818607743,
+        -3.1858187025295206,
+        0.3855654986194172
+      ],
+      [
+        2.6856294163008942,
+        -1.051937539637081,
+        -3.048897345165994,
+        1.7628503182954451
+      ],
+      [
+        1.6448873512953357,
+        -0.17077300961176353,
+        -1.3391220398001151,
+        3.141639062532382
+      ],
+      [
+        1.611671303687563,
+        -0.2607756035035469,
+        -0.8791385184312763,
+        2.801292922886576
+      ],
+      [
+        2.3781916476439187,
+        -1.1127141377748173,
+        -1.5995653539927317,
+        2.1263390823066515
+      ],
+      [
+        1.4657398910020314,
+        -1.7451749872092779,
+        -1.0463983104971737,
+        2.4937503933615894
+      ],
+      [
+        1.809527981143141,
+        -0.35241260188973556,
+        -1.5191840229046223,
+        2.223302367373223
+      ],
+      [
+        2.123101620542282,
+        -0.42585502887656235,
+        -1.5015467552338184,
+        2.295720691965506
+      ],
+      [
+        1.3353499409239884,
+        -1.6201333611769742,
+        -0.17849454176445476,
+        2.193682781824749
+      ],
+      [
+        3.3538870110879206,
+        0.6808211675008755,
+        -0.6191684901897525,
+        2.367744303621048
+      ],
+      [
+        2.7439082971551074,
+        0.2790323233473204,
+        -1.6698105739879876,
+        2.847548759898832
+      ],
+      [
+        3.409950652156485,
+        -0.1130566638494262,
+        -1.4987233227844015,
+        2.906617203406298
+      ],
+      [
+        3.209910986043351,
+        -1.0254087586522354,
+        -2.059822230584139,
+        3.486209629388789
+      ],
+      [
+        3.209910986043351,
+        -1.0254087586522354,
+        -2.059822230584139,
+        3.486209629388789
+      ],
+      [
+        3.1979705348312915,
+        -0.31890047547757827,
+        -1.618181978219984,
+        3.5444637211964856
+      ],
+      [
+        3.209910986043351,
+        -1.0254087586522354,
+        -2.059822230584139,
+        3.486209629388789
+      ],
+      [
+        2.658725405928568,
+        -2.078461946937935,
+        -2.0129725261697127,
+        3.3090198957237575
+      ],
+      [
+        2.416351739552665,
+        -1.7072765566011858,
+        -0.9074966119881313,
+        4.255570468050093
+      ],
+      [
+        2.1111300669026116,
+        -0.6512569786619604,
+        -1.4693153507466825,
+        3.7373953970789855
+      ],
+      [
+        1.6130943962639748,
+        -0.7579172932167255,
+        0.03921920612549168,
+        3.5843152692292364
+      ],
+      [
+        2.6175237010965766,
+        -1.1097467890687867,
+        -1.2773870700689374,
+        4.136850693147513
+      ],
+      [
+        3.424824233428591,
+        -0.5136537451409553,
+        -0.8237427310044678,
+        3.312882241517478
+      ],
+      [
+        1.9671747796595382,
+        0.5185968108122879,
+        -0.4628542005056952,
+        3.583616117191064
+      ],
+      [
+        2.559060655297542,
+        -0.8475612824171199,
+        -1.5369000559451045,
+        3.75440965369134
+      ],
+      [
+        3.266328779946347,
+        -0.7946856087398582,
+        -1.2573024976929315,
+        4.830198754789265
+      ],
+      [
+        2.202391037525914,
+        -0.5772289307905856,
+        -1.2543828485134398,
+        3.4123083076016743
+      ],
+      [
+        2.458752170150551,
+        -0.8221302946253454,
+        -1.0026327404552098,
+        3.622402618115342
+      ],
+      [
+        3.358539226817161,
+        -0.5896408253175984,
+        -2.1458832805330332,
+        3.9973127841398366
+      ],
+      [
+        2.7064301224782765,
+        -1.0596336918881286,
+        -1.955966653839816,
+        3.722479535229672
+      ],
+      [
+        2.7571303116343127,
+        -1.7730051835000444,
+        -1.2221027794140167,
+        3.6386553266079456
+      ],
+      [
+        2.7064301224782765,
+        -1.0596336918881286,
+        -1.955966653839816,
+        3.722479535229672
+      ],
+      [
+        3.579617983934855,
+        -0.5868682689817283,
+        -3.065898819729676,
+        2.7824292689505317
+      ],
+      [
+        2.5969082070273397,
+        -0.11758726606409764,
+        -0.8679661427190659,
+        3.983331017105601
+      ],
+      [
+        2.2735577616559834,
+        -0.06954146541100925,
+        -1.458932034127764,
+        1.8587863565437368
+      ],
+      [
+        2.61358939260276,
+        -2.064779993059946,
+        -1.4630193095206776,
+        2.3211714785793784
+      ],
+      [
+        1.3460069058154398,
+        -0.6991586587433715,
+        -1.1150177473253555,
+        2.8985049394923297
+      ],
+      [
+        2.478634768302694,
+        -1.0353242539002294,
+        -1.0765001811865988,
+        2.5670928674881295
+      ],
+      [
+        2.9309542867682006,
+        -2.221109367610512,
+        -1.7129678219028626,
+        2.9875125919776777
+      ],
+      [
+        2.0407164086598644,
+        -1.1174715838256528,
+        -1.1995647111164558,
+        2.9318424699635064
+      ],
+      [
+        2.9000631351286987,
+        -0.6203881835141282,
+        -1.4451796258556397,
+        3.1876233207352405
+      ],
+      [
+        1.839468229823765,
+        -1.4964133609934147,
+        -0.923070672421346,
+        3.30195258521158
+      ],
+      [
+        2.3912963033451504,
+        -1.0953265798282925,
+        -1.2213701446802971,
+        2.3186086495878744
+      ],
+      [
+        2.113871889465349,
+        -0.4103042999311721,
+        -1.711840734832471,
+        2.640097936015676
+      ],
+      [
+        2.436830341590828,
+        -1.3293827334283506,
+        -1.1113839434584296,
+        3.122890706260686
+      ],
+      [
+        2.835530623713925,
+        -1.6675322976680034,
+        -1.2742009755269663,
+        3.4552040882274144
+      ],
+      [
+        2.063887496465542,
+        -1.4113003533706456,
+        -0.9439780712361794,
+        3.2057092039765323
+      ],
+      [
+        2.738586254960425,
+        -0.11716093725835308,
+        -1.4704003594543527,
+        2.9460588604554068
+      ],
+      [
+        2.2863807949759267,
+        -0.24007532145359337,
+        -1.2849364512815973,
+        1.9892268229394612
+      ],
+      [
+        2.824479488904904,
+        0.885392113824219,
+        -1.8744941560684465,
+        3.4364223156042586
+      ],
+      [
+        2.2503192179620406,
+        0.761417476395611,
+        -2.0106752832256705,
+        2.3858725026014893
+      ],
+      [
+        1.411503809846243,
+        0.7192106394623435,
+        -1.4477925805649265,
+        2.5518505022503652
+      ],
+      [
+        1.632807592955726,
+        0.05817868001739867,
+        -1.8143005074589165,
+        2.6707498445660574
+      ],
+      [
+        4.757673041540596,
+        -0.3864478049714519,
+        -2.112496846166416,
+        2.5949601876131725
+      ],
+      [
+        3.0271063093807844,
+        -0.12105424086433209,
+        -2.6926014967955543,
+        2.955585260592389
+      ],
+      [
+        1.9682579358634409,
+        -0.612022315691476,
+        -2.4601254269216,
+        2.58320286811283
+      ],
+      [
+        2.2547830348548836,
+        -2.372599582270854,
+        -2.091401913827682,
+        1.893980503738071
+      ],
+      [
+        2.236885954245307,
+        -2.1423726058703103,
+        -2.3294857581165096,
+        1.9807780808403799
+      ],
+      [
+        2.1377112912857537,
+        -1.7129661265221428,
+        -2.1775561676851667,
+        2.1977529374421416
+      ],
+      [
+        1.5807581325344517,
+        -0.5268319003556357,
+        -0.9916080058839993,
+        3.3834040130117033
+      ],
+      [
+        2.052440162284972,
+        -1.3942080821482823,
+        -1.6042038087362778,
+        3.4194811032748538
+      ],
+      [
+        2.148857316052715,
+        -2.577983508717349,
+        -1.6546717838741696,
+        2.7796607974995196
+      ],
+      [
+        0.5989168515841948,
+        1.718192300501776,
+        0.01055508739482014,
+        0.04383376071110903
+      ],
+      [
+        0.8889255981453275,
+        -1.3681106429989414,
+        -1.3690060970833715,
+        -0.6811880132343368
+      ],
+      [
+        0.9070187761917111,
+        -0.9211660817422447,
+        -1.224274625304985,
+        0.9337631439365235
+      ],
+      [
+        2.168855238001716,
+        1.3531825411373521,
+        0.6496480394905793,
+        -1.362016396004812
+      ],
+      [
+        1.6166332019090506,
+        -1.284863900026173,
+        -0.2975663562017204,
+        2.4311884759419478
+      ],
+      [
+        0.3052680581205778,
+        -0.4459860083566173,
+        0.7352519549681683,
+        1.310613287168767
+      ],
+      [
+        0.9972759961295099,
+        0.694803702297699,
+        0.4255278662098897,
+        0.352255105693378
+      ],
+      [
+        0.8466454123888036,
+        0.6659900665054089,
+        -0.34370354612366516,
+        3.060917569980151
+      ],
+      [
+        0.38201902844390045,
+        -1.1439787700007622,
+        0.05616445668904736,
+        4.378811880733198
+      ],
+      [
+        -0.5552746861754345,
+        -0.9550334078226788,
+        0.01059989753854862,
+        -1.9190365781325385
+      ],
+      [
+        -1.0973288630262843,
+        2.286678707789445,
+        1.8998069375241098,
+        -1.0867319719702486
+      ],
+      [
+        1.0243434724541143,
+        1.798416540316492,
+        -0.013028331011313898,
+        0.33116712184551667
+      ],
+      [
+        0.7120277606854496,
+        -2.385705599548635,
+        0.4035651282748731,
+        2.706722728159201
+      ],
+      [
+        -0.49261565862042844,
+        1.6027105864084354,
+        1.8315070387728638,
+        -1.153621438398832
+      ],
+      [
+        -1.1440737230790954,
+        0.4926042316170842,
+        -0.08447328142996341,
+        0.7716584456821338
+      ],
+      [
+        -0.7536272371921846,
+        3.5461604158737012,
+        0.9770927385867331,
+        0.5119216557780896
+      ],
+      [
+        -0.6229047242664792,
+        1.1653319050873787,
+        0.058407552624346826,
+        0.30885664115226913
+      ],
+      [
+        -0.6641486062190592,
+        -1.2775841652813078,
+        1.2855532197912751,
+        1.6180519769363926
+      ],
+      [
+        0.10407584631006817,
+        -1.7948650680137042,
+        1.4606937096865162,
+        1.5762885476736708
+      ],
+      [
+        1.9414890275436902,
+        -1.0443366082422434,
+        -0.5443410362774161,
+        2.6734173138858295
+      ],
+      [
+        1.4590162477269817,
+        -0.24573860970872546,
+        -0.6320425893300762,
+        3.0024717868226847
+      ],
+      [
+        1.5401472555089561,
+        -0.606370839046417,
+        -0.9312786059218011,
+        1.8189021644882197
+      ],
+      [
+        2.3207213280476426,
+        0.20449582692092744,
+        -0.5239004201987187,
+        2.0280645698156086
+      ],
+      [
+        1.1271795094268757,
+        -1.125504673259822,
+        -0.872095542456309,
+        2.346851807753532
+      ],
+      [
+        2.484094086712215,
+        -0.40769340780078045,
+        -1.2527328565375537,
+        2.080055279613465
+      ],
+      [
+        1.2809080309652547,
+        -1.0311337661692852,
+        -1.3200702633210561,
+        1.5071853367793584
+      ],
+      [
+        1.1260585883813994,
+        -0.9518202552403222,
+        -0.6649355530308002,
+        3.659525462737995
+      ],
+      [
+        0.6167454106417933,
+        -0.9306596424068351,
+        -0.22312913871487888,
+        2.211345133116492
+      ],
+      [
+        2.8584093541384497,
+        -0.9112909783030073,
+        -2.426218567523494,
+        0.8422015194999732
+      ],
+      [
+        2.2516981561830223,
+        -1.2583211071900724,
+        -2.057565621232319,
+        1.4459155360730669
+      ],
+      [
+        2.292308815006608,
+        1.7892929890855906,
+        -2.4212985388934665,
+        2.021387667508728
+      ],
+      [
+        3.091811298005819,
+        -0.22219559713473566,
+        -3.117786992649085,
+        2.876517471631338
+      ],
+      [
+        2.6445242013050123,
+        -0.6546849310301993,
+        -1.429933518765534,
+        2.2072480896998905
+      ],
+      [
+        1.2015343122696651,
+        -1.255880745949329,
+        -1.2241249921438142,
+        2.464813365873648
+      ],
+      [
+        3.6458249584963593,
+        0.8510583440516616,
+        -3.001154102692243,
+        2.752363762464226
+      ],
+      [
+        3.509821450429277,
+        0.44581448390485734,
+        -1.8539211650368521,
+        1.640406419656432
+      ],
+      [
+        -2.9273356412498597,
+        -0.2700007397724251,
+        2.094333221607525,
+        -2.1386444405734455
+      ],
+      [
+        -2.3567696938002625,
+        -1.2562704057627796,
+        1.658182514320376,
+        -0.8632752313378713
+      ],
+      [
+        -1.6193794364991823,
+        1.3565506558959002,
+        1.7108093307127115,
+        -1.112048646554783
+      ],
+      [
+        -1.0603406662377197,
+        1.1023651576427924,
+        2.7858385601830546,
+        -1.7600747795117186
+      ],
+      [
+        -2.070692368148932,
+        0.8532906609789952,
+        1.4813218649672195,
+        0.4960158743390013
+      ],
+      [
+        1.1809511078763553,
+        0.236311902423582,
+        1.4254082137060484,
+        2.9122858713237223
+      ],
+      [
+        2.2635977416800017,
+        0.26904083314446386,
+        0.3219117203191036,
+        3.609690407619402
+      ],
+      [
+        2.8883970674961907,
+        -0.3942631600580396,
+        0.010809657851164972,
+        3.811895470381126
+      ],
+      [
+        2.5251985658171225,
+        -0.2242592429372608,
+        -0.5603264455438972,
+        3.96218602094963
+      ],
+      [
+        1.099464188321805,
+        0.46393017719348556,
+        0.09761051934949387,
+        3.1631411838678436
+      ],
+      [
+        1.9952843371545645,
+        1.088889559179533,
+        0.5361548974836611,
+        -2.5255793332967187
+      ]
+    ],
+    "final_weight_summary": {
+      "ess": 126.88049990456437,
+      "ess_ratio": 0.9912539055044092,
+      "finite": true,
+      "max": 0.010002188339361427,
+      "nonzero_count": 128,
+      "sum": 0.9999999999999999
+    },
+    "initial_target_eval": {
+      "first_error": null,
+      "summary": {
+        "finite_count": 128,
+        "max": -37.815344283720826,
+        "max_abs": 67.97826338709383,
+        "mean": -40.59134766576561,
+        "min": -67.97826338709383,
+        "nonfinite_count": 0,
+        "shape": [
+          128
+        ]
+      },
+      "vetoes": []
+    },
+    "particle_summary": {
+      "max": [
+        4.757673041540596,
+        3.5461604158737012,
+        2.7858385601830546,
+        4.830198754789265
+      ],
+      "max_abs": 4.830198754789265,
+      "mean": [
+        1.8517501016727638,
+        -0.39545534596464915,
+        -1.0187670082645777,
+        2.2137637964000767
+      ],
+      "min": [
+        -2.9273356412498597,
+        -2.577983508717349,
+        -3.1858187025295206,
+        -2.5255793332967187
+      ],
+      "std": [
+        1.3513902730249732,
+        1.0843756114592022,
+        1.2298806774364872,
+        1.4928423462217317
+      ]
+    },
+    "stage_count": 7,
+    "stage_rows": [
+      {
+        "beta": 0.2527170181274414,
+        "delta_beta": 0.2527170181274414,
+        "pre_resample_weight_summary": {
+          "ess": 89.60017360234886,
+          "ess_ratio": 0.7000013562683505,
+          "finite": true,
+          "max": 0.04017182623114065,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.0,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.6328125,
+            "accepted_count": 81,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.794361160572784,
+                "max_abs": 65.0042295025407,
+                "mean": -41.1134543210365,
+                "min": -65.0042295025407,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": null,
+        "resampled": false,
+        "selection": {
+          "delta_beta": 0.2527170181274414,
+          "ess_ratio": 0.7000013562683505,
+          "iterations": 20,
+          "next_beta": 0.2527170181274414,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 0,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 1.0
+      },
+      {
+        "beta": 0.3419540270406287,
+        "delta_beta": 0.08923700891318731,
+        "pre_resample_weight_summary": {
+          "ess": 64.00015918588973,
+          "ess_ratio": 0.5000012436397635,
+          "finite": true,
+          "max": 0.06553946724924992,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.2527170181274414,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.546875,
+            "accepted_count": 70,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.814241277286065,
+                "max_abs": 59.073222992200236,
+                "mean": -40.30331817110087,
+                "min": -59.073222992200236,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": {
+          "max_parent_index": 127,
+          "min_parent_index": 1,
+          "unique_parent_count": 92
+        },
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": "minimum_threshold_fallback",
+        "resampled": true,
+        "selection": {
+          "delta_beta": 0.08923700891318731,
+          "ess_ratio": 0.5000012436397635,
+          "iterations": 20,
+          "next_beta": 0.3419540270406287,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 1,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.71875
+      },
+      {
+        "beta": 0.5811528746866764,
+        "delta_beta": 0.2391988476460477,
+        "pre_resample_weight_summary": {
+          "ess": 89.60008321738086,
+          "ess_ratio": 0.7000006501357879,
+          "finite": true,
+          "max": 0.023202415520545847,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.3419540270406287,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.65625,
+            "accepted_count": 84,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.79632322571613,
+                "max_abs": 50.41641053139828,
+                "mean": -39.98936556316833,
+                "min": -50.41641053139828,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": null,
+        "resampled": false,
+        "selection": {
+          "delta_beta": 0.2391988476460477,
+          "ess_ratio": 0.7000006501357879,
+          "iterations": 20,
+          "next_beta": 0.5811528746866764,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 2,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.71875
+      },
+      {
+        "beta": 0.6735977385780526,
+        "delta_beta": 0.09244486389137618,
+        "pre_resample_weight_summary": {
+          "ess": 64.00013063742512,
+          "ess_ratio": 0.5000010206048837,
+          "finite": true,
+          "max": 0.041457723731129006,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.5811528746866764,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.671875,
+            "accepted_count": 86,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.8959980328381,
+                "max_abs": 49.40949815380922,
+                "mean": -39.92528098147524,
+                "min": -49.40949815380922,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": {
+          "max_parent_index": 126,
+          "min_parent_index": 1,
+          "unique_parent_count": 85
+        },
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": "minimum_threshold_fallback",
+        "resampled": true,
+        "selection": {
+          "delta_beta": 0.09244486389137618,
+          "ess_ratio": 0.5000010206048837,
+          "iterations": 19,
+          "next_beta": 0.6735977385780526,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 3,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.4140625
+      },
+      {
+        "beta": 0.8828990299946569,
+        "delta_beta": 0.20930129141660425,
+        "pre_resample_weight_summary": {
+          "ess": 89.60003285130522,
+          "ess_ratio": 0.700000256650822,
+          "finite": true,
+          "max": 0.0255543659955664,
+          "nonzero_count": 128,
+          "sum": 1.0000000000000002
+        },
+        "previous_beta": 0.6735977385780526,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.703125,
+            "accepted_count": 90,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.871165794110965,
+                "max_abs": 49.00758385859207,
+                "mean": -39.861364242730396,
+                "min": -49.00758385859207,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": null,
+        "resampled": false,
+        "selection": {
+          "delta_beta": 0.20930129141660425,
+          "ess_ratio": 0.700000256650822,
+          "iterations": 19,
+          "next_beta": 0.8828990299946569,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 4,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.4140625
+      },
+      {
+        "beta": 0.9712250668187553,
+        "delta_beta": 0.08832603682409845,
+        "pre_resample_weight_summary": {
+          "ess": 64.00021029718674,
+          "ess_ratio": 0.5000016429467714,
+          "finite": true,
+          "max": 0.03922774202134582,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.8828990299946569,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.65625,
+            "accepted_count": 84,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.91335530728473,
+                "max_abs": 51.6587157595601,
+                "mean": -39.824092539120066,
+                "min": -51.6587157595601,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": {
+          "max_parent_index": 123,
+          "min_parent_index": 0,
+          "unique_parent_count": 81
+        },
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": "minimum_threshold_fallback",
+        "resampled": true,
+        "selection": {
+          "delta_beta": 0.08832603682409845,
+          "ess_ratio": 0.5000016429467714,
+          "iterations": 17,
+          "next_beta": 0.9712250668187553,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 5,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 0.21875
+      },
+      {
+        "beta": 1.0,
+        "delta_beta": 0.02877493318124469,
+        "pre_resample_weight_summary": {
+          "ess": 126.88049990456437,
+          "ess_ratio": 0.9912539055044092,
+          "finite": true,
+          "max": 0.010002188339361427,
+          "nonzero_count": 128,
+          "sum": 0.9999999999999999
+        },
+        "previous_beta": 0.9712250668187553,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.703125,
+            "accepted_count": 90,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.928140626910896,
+                "max_abs": 45.96842750914812,
+                "mean": -39.76608359100005,
+                "min": -45.96842750914812,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resample_policy": "phase2ac_force_fallback_or_boundary",
+        "resample_reason": null,
+        "resampled": false,
+        "selection": {
+          "delta_beta": 0.02877493318124469,
+          "ess_ratio": 0.9912539055044092,
+          "iterations": 0,
+          "next_beta": 1.0,
+          "rule": "terminal_beta_admissible",
+          "target_reached": true,
+          "vetoes": []
+        },
+        "stage_index": 6,
+        "terminal_pre_final_resampling_measurement": true,
+        "unique_ancestor_fraction_after_stage": 0.21875
+      }
+    ],
+    "terminal_beta": 1.0,
+    "terminal_pre_final_resampling_summary": {
+      "ess": 126.88049990456437,
+      "ess_ratio": 0.9912539055044092,
+      "finite": true,
+      "max": 0.010002188339361427,
+      "nonzero_count": 128,
+      "sum": 0.9999999999999999
+    },
+    "terminal_weighted_moments": {
+      "computed": true,
+      "mean_u_new": [
+        1.9326217084098882,
+        -0.4307894645725953,
+        -1.0886874903436403,
+        2.2970667840407772
+      ],
+      "second_moment_variance_u_new": [
+        1.7689425814419302,
+        1.1377207179362085,
+        1.4675700307015263,
+        2.1312991613887347
+      ],
+      "std_u_new": [
+        1.3300160079645396,
+        1.066639919530583,
+        1.2114330483776337,
+        1.4598969694429587
+      ],
+      "vetoes": []
+    },
+    "unique_ancestor_fraction": 0.21875,
+    "vetoes": []
+  },
+  "settings": {
+    "base_density": "standard_normal_N_0_I4",
+    "beta_tolerance": 1e-06,
+    "bisection_iterations": 32,
+    "coordinate": "phase2s_phase2u_map_local_u_new",
+    "cpu_hidden": true,
+    "dimension": 4,
+    "final_ancestor_measurement": "after_last_completed_resampling_and_rejuvenation",
+    "hmc_usage": false,
+    "launch_commit": "52ee244498988e046a6356f926003b581103083b",
+    "max_stages": 48,
+    "minimum_beta_increment": 0.0001,
+    "minimum_ess_ratio": 0.5,
+    "particle_count": 128,
+    "rejuvenation_acceptance_interval": [
+      0.1,
+      0.9
+    ],
+    "rejuvenation_moves_per_stage": 1,
+    "rejuvenation_scale": 0.45,
+    "repair_policy": "force_nonterminal_resampling_after_minimum_threshold_fallback_or_ess_within_resample_boundary_tolerance",
+    "resample_boundary_tolerance": 0.0001,
+    "resample_ess_ratio": 0.5,
+    "seed": [
+      20260709,
+      6801
+    ],
+    "target_ess_ratio": 0.7,
+    "target_route": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py::build_phase2u_adapter",
+    "terminal_max_weight_max": 0.08,
+    "terminal_weight_measurement": "beta_1_pre_final_resampling",
+    "unique_ancestor_fraction_min": 0.25,
+    "use_xla": false
+  },
+  "source_artifacts": {
+    "phase2ab_baseline_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json",
+    "phase2s_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json",
+    "phase2t_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json",
+    "phase2u_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json",
+    "phase2v_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json",
+    "phase2w_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json",
+    "phase2x_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json",
+    "phase2y_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json",
+    "phase2z_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json"
+  },
+  "subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md",
+  "target_scope": "scalar_ssl_lstm:svd_ukf_filtering_geometry:phase2u_map_local_u_new"
+}

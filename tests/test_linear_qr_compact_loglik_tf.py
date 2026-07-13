@@ -26,34 +26,43 @@ from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
 JITTER = tf.constant(1.0e-9, dtype=tf.float64)
 
 
-def _model(params: tf.Tensor | None = None) -> TFLinearGaussianStateSpace:
+def _jitter(dtype: tf.DType) -> tf.Tensor:
+    return tf.constant(1.0e-9, dtype=dtype)
+
+
+def _model(
+    params: tf.Tensor | None = None,
+    *,
+    dtype: tf.DType = tf.float64,
+) -> TFLinearGaussianStateSpace:
+    dtype = tf.as_dtype(dtype)
     if params is None:
-        rho = tf.constant(0.72, dtype=tf.float64)
-        obs_scale = tf.constant(1.1, dtype=tf.float64)
-        measurement_variance = tf.constant(0.12, dtype=tf.float64)
+        rho = tf.constant(0.72, dtype=dtype)
+        obs_scale = tf.constant(1.1, dtype=dtype)
+        measurement_variance = tf.constant(0.12, dtype=dtype)
     else:
-        rho_raw, obs_raw = tf.unstack(tf.convert_to_tensor(params, dtype=tf.float64))
+        rho_raw, obs_raw = tf.unstack(tf.convert_to_tensor(params, dtype=dtype))
         rho = 0.8 * tf.math.tanh(rho_raw)
         obs_scale = 1.0 + 0.2 * tf.math.tanh(obs_raw)
         measurement_variance = tf.exp(-2.0 + 0.2 * obs_raw)
     return TFLinearGaussianStateSpace(
-        initial_mean=tf.constant([0.15], dtype=tf.float64),
-        initial_covariance=tf.constant([[0.35]], dtype=tf.float64),
-        transition_offset=tf.constant([0.03], dtype=tf.float64),
+        initial_mean=tf.constant([0.15], dtype=dtype),
+        initial_covariance=tf.constant([[0.35]], dtype=dtype),
+        transition_offset=tf.constant([0.03], dtype=dtype),
         transition_matrix=tf.reshape(rho, [1, 1]),
-        transition_covariance=tf.constant([[0.08]], dtype=tf.float64),
-        observation_offset=tf.constant([0.01, -0.02], dtype=tf.float64),
+        transition_covariance=tf.constant([[0.08]], dtype=dtype),
+        observation_offset=tf.constant([0.01, -0.02], dtype=dtype),
         observation_matrix=tf.reshape(tf.stack([obs_scale, 0.5 * obs_scale]), [2, 1]),
         observation_covariance=tf.linalg.diag(
-            tf.stack([measurement_variance, measurement_variance + 0.04])
+            tf.stack([measurement_variance, measurement_variance + tf.constant(0.04, dtype=dtype)])
         ),
     )
 
 
-def _observations() -> tf.Tensor:
+def _observations(dtype: tf.DType = tf.float64) -> tf.Tensor:
     return tf.constant(
         [[0.12, 0.04], [0.18, 0.02], [0.08, -0.01], [0.20, 0.03]],
-        dtype=tf.float64,
+        dtype=dtype,
     )
 
 
@@ -75,7 +84,7 @@ def _compact_dense_value(observations: tf.Tensor, model: TFLinearGaussianStateSp
         observation_covariance=model.observation_covariance,
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
-        jitter=JITTER,
+        jitter=_jitter(model.initial_mean.dtype),
     )
 
 
@@ -93,7 +102,7 @@ def _while_loop_dense_value(
         observation_covariance=model.observation_covariance,
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
-        jitter=JITTER,
+        jitter=_jitter(model.initial_mean.dtype),
     )
 
 
@@ -111,7 +120,7 @@ def _batched_static_dense_value(
         observation_covariance=tf.stack([model.observation_covariance for model in models], axis=0),
         initial_state_mean=tf.stack([model.initial_mean for model in models], axis=0),
         initial_state_covariance=tf.stack([model.initial_covariance for model in models], axis=0),
-        jitter=JITTER,
+        jitter=_jitter(models[0].initial_mean.dtype),
     )
 
 
@@ -129,7 +138,7 @@ def _batched_static_while_loop_dense_value(
         observation_covariance=tf.stack([model.observation_covariance for model in models], axis=0),
         initial_state_mean=tf.stack([model.initial_mean for model in models], axis=0),
         initial_state_covariance=tf.stack([model.initial_covariance for model in models], axis=0),
-        jitter=JITTER,
+        jitter=_jitter(models[0].initial_mean.dtype),
     )
 
 
@@ -148,7 +157,7 @@ def _batched_static_masked_value(
         initial_state_mean=tf.stack([model.initial_mean for model in models], axis=0),
         initial_state_covariance=tf.stack([model.initial_covariance for model in models], axis=0),
         observation_mask=_mask(),
-        jitter=JITTER,
+        jitter=_jitter(models[0].initial_mean.dtype),
     )
 
 
@@ -163,7 +172,7 @@ def _filtered_dense_value(observations: tf.Tensor, model: TFLinearGaussianStateS
         observation_covariance=model.observation_covariance,
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
-        jitter=JITTER,
+        jitter=_jitter(model.initial_mean.dtype),
     )
     assert filtered_means is not None
     assert filtered_covariances is not None
@@ -182,7 +191,7 @@ def _compact_masked_value(observations: tf.Tensor, model: TFLinearGaussianStateS
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
         observation_mask=_mask(),
-        jitter=JITTER,
+        jitter=_jitter(model.initial_mean.dtype),
     )
 
 
@@ -198,11 +207,16 @@ def _filtered_masked_value(observations: tf.Tensor, model: TFLinearGaussianState
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
         observation_mask=_mask(),
-        jitter=JITTER,
+        jitter=_jitter(model.initial_mean.dtype),
     )
     assert filtered_means is not None
     assert filtered_covariances is not None
     return value
+
+
+def _assert_float32_matches_float64(value32: tf.Tensor, value64: tf.Tensor) -> None:
+    assert value32.dtype == tf.float32
+    np.testing.assert_allclose(value32.numpy(), value64.numpy(), rtol=2.0e-5, atol=2.0e-5)
 
 
 def test_compact_dense_qr_value_matches_existing_filtered_qr_value() -> None:
@@ -236,6 +250,108 @@ def test_compact_masked_qr_value_matches_existing_filtered_masked_qr_value() -> 
         _filtered_masked_value(observations, model).numpy(),
         atol=1.0e-12,
     )
+
+
+def test_qr_value_paths_preserve_float32_and_match_float64_reference() -> None:
+    observations32 = _observations(tf.float32)
+    observations64 = _observations(tf.float64)
+    model32 = _model(dtype=tf.float32)
+    model64 = _model(dtype=tf.float64)
+    params32 = (
+        tf.constant([0.25, -0.4], dtype=tf.float32),
+        tf.constant([-0.15, 0.3], dtype=tf.float32),
+    )
+    params64 = (
+        tf.constant([0.25, -0.4], dtype=tf.float64),
+        tf.constant([-0.15, 0.3], dtype=tf.float64),
+    )
+    models32 = tuple(_model(params, dtype=tf.float32) for params in params32)
+    models64 = tuple(_model(params, dtype=tf.float64) for params in params64)
+
+    _assert_float32_matches_float64(
+        _compact_dense_value(observations32, model32),
+        _compact_dense_value(observations64, model64),
+    )
+    _assert_float32_matches_float64(
+        _while_loop_dense_value(observations32, model32),
+        _while_loop_dense_value(observations64, model64),
+    )
+    _assert_float32_matches_float64(
+        _batched_static_dense_value(observations32, models32),
+        _batched_static_dense_value(observations64, models64),
+    )
+    _assert_float32_matches_float64(
+        _batched_static_while_loop_dense_value(observations32, models32),
+        _batched_static_while_loop_dense_value(observations64, models64),
+    )
+    _assert_float32_matches_float64(
+        _compact_masked_value(observations32, model32),
+        _compact_masked_value(observations64, model64),
+    )
+    _assert_float32_matches_float64(
+        _batched_static_masked_value(observations32, models32),
+        _batched_static_masked_value(observations64, models64),
+    )
+
+    dense_value, dense_means, dense_covariances = tf_qr_sqrt_kalman_filter(
+        observations=observations32,
+        transition_offset=model32.transition_offset,
+        transition_matrix=model32.transition_matrix,
+        transition_covariance=model32.transition_covariance,
+        observation_offset=model32.observation_offset,
+        observation_matrix=model32.observation_matrix,
+        observation_covariance=model32.observation_covariance,
+        initial_state_mean=model32.initial_mean,
+        initial_state_covariance=model32.initial_covariance,
+        jitter=_jitter(tf.float32),
+    )
+    masked_value, masked_means, masked_covariances = tf_qr_sqrt_masked_kalman_filter(
+        observations=observations32,
+        transition_offset=model32.transition_offset,
+        transition_matrix=model32.transition_matrix,
+        transition_covariance=model32.transition_covariance,
+        observation_offset=model32.observation_offset,
+        observation_matrix=model32.observation_matrix,
+        observation_covariance=model32.observation_covariance,
+        initial_state_mean=model32.initial_mean,
+        initial_state_covariance=model32.initial_covariance,
+        observation_mask=_mask(),
+        jitter=_jitter(tf.float32),
+    )
+    assert dense_value.dtype == tf.float32
+    assert dense_means is not None and dense_means.dtype == tf.float32
+    assert dense_covariances is not None and dense_covariances.dtype == tf.float32
+    assert masked_value.dtype == tf.float32
+    assert masked_means is not None and masked_means.dtype == tf.float32
+    assert masked_covariances is not None and masked_covariances.dtype == tf.float32
+
+
+def test_qr_dispatcher_preserves_float32_model_dtype() -> None:
+    observations = _observations(tf.float32)
+    model = _model(dtype=tf.float32)
+
+    value_only = tf_qr_linear_gaussian_log_likelihood(
+        observations,
+        model,
+        backend="tf_qr",
+        jitter=_jitter(tf.float32),
+        return_filtered=False,
+    )
+    filtered = tf_qr_linear_gaussian_log_likelihood(
+        observations,
+        model,
+        backend="tf_qr",
+        jitter=_jitter(tf.float32),
+        return_filtered=True,
+    )
+
+    assert value_only.log_likelihood.dtype == tf.float32
+    assert value_only.diagnostics.regularization.jitter.dtype == tf.float32
+    assert filtered.log_likelihood.dtype == tf.float32
+    assert filtered.filtered_means is not None
+    assert filtered.filtered_means.dtype == tf.float32
+    assert filtered.filtered_covariances is not None
+    assert filtered.filtered_covariances.dtype == tf.float32
 
 
 def test_dispatcher_preserves_return_filtered_true_and_false_contracts() -> None:

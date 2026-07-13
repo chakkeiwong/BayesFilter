@@ -1,0 +1,1573 @@
+{
+  "manifest": {
+    "autodiff_execution": "compiled_static_batch_row_loop",
+    "autodiff_value_backend": "scalar_while_loop_row_loop",
+    "batch_size": 4,
+    "batched_static_autodiff_gradient_status": "diagnostic_only_not_timed",
+    "benchmark_methods": [
+      "batch_native_analytical_qr_score",
+      "scalar_analytical_row_loop",
+      "autodiff_row_loop_qr_score"
+    ],
+    "command": "/home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 20 30 --parameter-counts 50 150 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --jit-compile --dtype float32 --isolate-each-row --row-subprocess-timeout-seconds 3600 --output-json docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.json --output-md docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.md --cpu-threads 4",
+    "cpu_thread_manifest": {
+      "inter_op_set_status": "set",
+      "intra_op_set_status": "set",
+      "omp_num_threads": "4",
+      "requested_cpu_threads": 4,
+      "tf_inter_op_parallelism_threads": 4,
+      "tf_intra_op_parallelism_threads": 4,
+      "tf_num_interop_threads_env": "4",
+      "tf_num_intraop_threads_env": "4"
+    },
+    "cpu_threads": 4,
+    "cuda_visible_devices": "-1",
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "device_manifest": {
+      "cpu_only_exception": true,
+      "logical_gpus": [],
+      "physical_gpus": [],
+      "requested_device": "cpu",
+      "selected_device": "/CPU:0",
+      "trust_basis": "cpu_debug_or_reference_exception"
+    },
+    "dimensions": [
+      10,
+      20,
+      30
+    ],
+    "git_commit": "52ee244498988e046a6356f926003b581103083b",
+    "git_status_short": "M bayesfilter/inference/hmc_diagnostics.py\n M bayesfilter/inference/hmc_kernel_tuning.py\n M bayesfilter/linear/kalman_qr_derivatives_tf.py\n M bayesfilter/linear/kalman_qr_tf.py\n M bayesfilter/linear/qr_factor_tf.py\n M bayesfilter/linear/types_tf.py\n M bayesfilter/results_tf.py\n M tests/test_common_inference_runtime_contracts.py\n M tests/test_hmc_kernel_tuning_outer_loop.py\n M tests/test_hmc_kernel_tuning_public_api.py\n M tests/test_linear_kalman_qr_derivatives_tf.py\n M tests/test_linear_qr_compact_loglik_tf.py\n?? bayesfilter/linear/dtypes_tf.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_batched_score_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_batched_score_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_overnight_status_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_cpu_threads1_float32_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_cpu_threads1_float32_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.md\n?? docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-core-batch-dtype-grid-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-core-batch-dtype-grid-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7b-full-ladder-blocker-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7b-full-ladder-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-stop-handoff-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-parameter-count-scaling-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase3-gpu-xla-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase4-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase5-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-stop-handoff-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase0-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2aa-claude-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ae-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-hypothesis-plan-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2z-subplan-codex-substitute-review-2026-07-09.md\n?? scripts/benchmark_kalman_qr_parameter_count_scaling.py\n?? tests/test_linear_qr_batched_analytical_score_tf.py\n?? tests/test_linear_qr_dtype_contracts.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1r.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot.py",
+    "isolate_each_row": true,
+    "jit_compile": true,
+    "json_path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.json",
+    "markdown_path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.md",
+    "parameter_counts": [
+      50,
+      150
+    ],
+    "plan_path": "docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "repeats": 1,
+    "requested_dtype": "float32",
+    "row_subprocess_timeout_seconds": 3600.0,
+    "selected_device_for_parent": "/CPU:0",
+    "tensorflow_version": "2.20.0",
+    "tf32_execution_enabled": true,
+    "timestamp_utc": "2026-07-09T19:53:24.951263+00:00",
+    "timesteps": 120,
+    "xla_flags": "UNSET"
+  },
+  "rows": [
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 1.341104507446289e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.0,
+        "batch_vs_scalar_score_max_abs_residual": 1.1920928955078125e-07,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 1.341104507446289e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 4,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 6.622701600019354,
+        "batch_native_analytical_qr_score": 24.02560212998651,
+        "scalar_analytical_row_loop": 159.40389957098523
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.1630173586146047,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.630820128960405,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 1.29610243299976,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "timed_method": false,
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 6.506167438055854,
+        "batch_native_analytical_qr_score": 22.865586113999598,
+        "scalar_analytical_row_loop": 157.79479450098006
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          50
+        ],
+        "parameters_batch": [
+          4,
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103847444057465,
+            -0.03739507496356964,
+            -0.11781922727823257,
+            -0.1407252997159958,
+            -0.0005728450487367809
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018213190138339996,
+            -0.03825972229242325,
+            -0.10782522708177567,
+            -0.12860289216041565,
+            -0.0004974127514287829
+          ],
+          "value": [
+            -382.24688720703125,
+            -382.24041748046875,
+            -382.23406982421875,
+            -382.22772216796875
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.01910385675728321,
+            -0.03739505633711815,
+            -0.1178191676735878,
+            -0.1407252550125122,
+            -0.0005728455143980682
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018213193863630295,
+            -0.03825969621539116,
+            -0.10782523453235626,
+            -0.12860290706157684,
+            -0.0004974127514287829
+          ],
+          "value": [
+            -382.24688720703125,
+            -382.24041748046875,
+            -382.23406982421875,
+            -382.22772216796875
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103843718767166,
+            -0.03739505633711815,
+            -0.11781919002532959,
+            -0.1407252550125122,
+            -0.0005728451069444418
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018213195726275444,
+            -0.03825971856713295,
+            -0.10782521218061447,
+            -0.12860289216041565,
+            -0.0004974127514287829
+          ],
+          "value": [
+            -382.24688720703125,
+            -382.24041748046875,
+            -382.23406982421875,
+            -382.22772216796875
+          ],
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.1646507729892619
+        ],
+        "batch_native_analytical_qr_score": [
+          1.010019880020991
+        ],
+        "scalar_analytical_row_loop": [
+          1.6471607509884052
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 50 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p50.md --cpu-threads 4 --jit-compile",
+        "elapsed_seconds": 201.15861044096528,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "external/local_xla/xla/stream_executor/cuda/cuda_diagnostics.cc:183] hostname: ubuntu-MZ72-HB2-00\n2026-07-10 03:53:26.646288: I external/local_xla/xla/stream_executor/cuda/cuda_diagnostics.cc:190] libcuda reported version is: 580.159.3\n2026-07-10 03:53:26.646311: I external/local_xla/xla/stream_executor/cuda/cuda_diagnostics.cc:194] kernel reported version is: 580.159.3\n2026-07-10 03:53:26.646318: I external/local_xla/xla/stream_executor/cuda/cuda_diagnostics.cc:284] kernel version seems to match DSO: 580.159.3\n2026-07-10 03:53:32.500830: I external/local_xla/xla/service/service.cc:163] XLA service 0x5cec618e07d0 initialized for platform Host (this does not guarantee that XLA will be used). Devices:\n2026-07-10 03:53:32.500868: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): Host, Default Version\n2026-07-10 03:53:32.990808: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 03:53:33.203207: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 03:53:33.206198: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 03:53:33.208590: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 03:53:33.208633: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 03:53:33.208666: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 03:53:33.208699: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 03:53:33.208737: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 03:53:33.208772: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 03:53:33.208805: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 03:53:33.208836: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 03:53:33.208868: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 03:53:33.208902: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 03:53:33.208933: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 03:53:33.208967: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 03:53:33.208997: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 03:53:33.209032: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 03:53:33.209064: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 03:53:33.209095: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 03:53:33.209128: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 03:53:33.209162: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783626829.691026 1583088 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p50.md\",\n  \"wall_time_seconds\": 197.1920929980115\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.1646507729892619,
+          "mean_seconds": 0.1646507729892619,
+          "median_seconds": 0.1646507729892619,
+          "min_seconds": 0.1646507729892619
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 1.010019880020991,
+          "mean_seconds": 1.010019880020991,
+          "median_seconds": 1.010019880020991,
+          "min_seconds": 1.010019880020991
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 1.6471607509884052,
+          "mean_seconds": 1.6471607509884052,
+          "median_seconds": 1.6471607509884052,
+          "min_seconds": 1.6471607509884052
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.11653416196350008,
+        "batch_native_analytical_qr_score": 1.160016015986912,
+        "scalar_analytical_row_loop": 1.609105070005171
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 1.341104507446289e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.0,
+        "batch_vs_scalar_score_max_abs_residual": 8.940696716308594e-08,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 1.341104507446289e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 4,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 8.268092455982696,
+        "batch_native_analytical_qr_score": 119.87293850001879,
+        "scalar_analytical_row_loop": 979.7422579429694
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.040446918677227266,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.4656999141411131,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 0.9783019250025973,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "timed_method": false,
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 8.0978703959845,
+        "batch_native_analytical_qr_score": 116.4169512760127,
+        "scalar_analytical_row_loop": 974.6375879379921
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          150
+        ],
+        "parameters_batch": [
+          4,
+          150
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.01910385489463806,
+            -0.037395380437374115,
+            -0.11782260239124298,
+            -0.14072930812835693,
+            -0.0005728610558435321
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            6.355636287480593e-06,
+            -0.00010265802848152816,
+            -0.0003128864336758852,
+            0.00025303970323875546,
+            -1.8676000479445065e-07
+          ],
+          "value": [
+            -382.15533447265625,
+            -382.15643310546875,
+            -382.15765380859375,
+            -382.1588439941406
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103864207863808,
+            -0.0373954102396965,
+            -0.11782270669937134,
+            -0.1407293975353241,
+            -0.0005728605319745839
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            6.355620826070663e-06,
+            -0.0001026579993776977,
+            -0.000312886229949072,
+            0.0002530396159272641,
+            -1.8675979163162992e-07
+          ],
+          "value": [
+            -382.15533447265625,
+            -382.15643310546875,
+            -382.15765380859375,
+            -382.1588439941406
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103866070508957,
+            -0.037395380437374115,
+            -0.11782263964414597,
+            -0.1407293677330017,
+            -0.0005728608812205493
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            6.3556253735441715e-06,
+            -0.00010265801392961293,
+            -0.00031288625905290246,
+            0.000253039674134925,
+            -1.8675983426419407e-07
+          ],
+          "value": [
+            -382.15533447265625,
+            -382.15643310546875,
+            -382.15765380859375,
+            -382.1588439941406
+          ],
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 150,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.13925213197944686
+        ],
+        "batch_native_analytical_qr_score": [
+          3.442836600006558
+        ],
+        "scalar_analytical_row_loop": [
+          5.046165309031494
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 150 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p150.md --cpu-threads 4 --jit-compile",
+        "elapsed_seconds": 1133.9535502250073,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 03:57:03.778872: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 03:57:03.782003: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 03:57:03.784943: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 03:57:03.784985: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 03:57:03.785021: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 03:57:03.785056: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 03:57:03.785088: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 03:57:03.785121: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 03:57:03.785153: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 03:57:03.785197: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 03:57:03.785233: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 03:57:03.785264: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 03:57:03.785295: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 03:57:03.785336: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 03:57:03.785373: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 03:57:03.785407: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 03:57:03.785439: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 03:57:03.785475: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 03:57:03.785507: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 03:57:03.785539: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783627124.226650 1583602 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 04:04:38.836158: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_260864__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.425254] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 04:15:00.811103: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 12m21.975207758s\n\n********************************\n[Compiling module a_inference_scalar_row_loop_score_260864__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.425254] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p150.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n10_p150.md\",\n  \"wall_time_seconds\": 1126.3645572700188\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 30,
+        "initial_mean": 0,
+        "observation_covariance_factor": 30,
+        "observation_matrix": 30,
+        "observation_offset": 0,
+        "transition_covariance_factor": 30,
+        "transition_matrix": 30,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.13925213197944686,
+          "mean_seconds": 0.13925213197944686,
+          "median_seconds": 0.13925213197944686,
+          "min_seconds": 0.13925213197944686
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 3.442836600006558,
+          "mean_seconds": 3.442836600006558,
+          "median_seconds": 3.442836600006558,
+          "min_seconds": 3.442836600006558
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 5.046165309031494,
+          "mean_seconds": 5.046165309031494,
+          "median_seconds": 5.046165309031494,
+          "min_seconds": 5.046165309031494
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.17022205999819562,
+        "batch_native_analytical_qr_score": 3.455987224006094,
+        "scalar_analytical_row_loop": 5.104670004977379
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 4.172325134277344e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.0001220703125,
+        "batch_vs_scalar_score_max_abs_residual": 4.023313522338867e-07,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 4.172325134277344e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 4,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 7.651383663003799,
+        "batch_native_analytical_qr_score": 27.51161346997833,
+        "scalar_analytical_row_loop": 237.0169020460453
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.1053595043876326,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.32073994948348,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 1.5065680380212143,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "timed_method": false,
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 7.381076512974687,
+        "batch_native_analytical_qr_score": 24.949061448976863,
+        "scalar_analytical_row_loop": 233.74362672300776
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          50
+        ],
+        "parameters_batch": [
+          4,
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.01910044439136982,
+            -0.03737470135092735,
+            -0.11782477796077728,
+            -0.14077304303646088,
+            -0.0005728266551159322
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018689781427383423,
+            -0.03820841759443283,
+            -0.10830654948949814,
+            -0.1282290518283844,
+            -0.0005112255457788706
+          ],
+          "value": [
+            -1051.13427734375,
+            -1051.1280517578125,
+            -1051.1212158203125,
+            -1051.1148681640625
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019100457429885864,
+            -0.037374697625637054,
+            -0.11782462149858475,
+            -0.1407734602689743,
+            -0.0005728261894546449
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.01868978515267372,
+            -0.038208432495594025,
+            -0.10830654203891754,
+            -0.128229022026062,
+            -0.0005112253711558878
+          ],
+          "value": [
+            -1051.1341552734375,
+            -1051.1279296875,
+            -1051.12109375,
+            -1051.11474609375
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.01910044439136982,
+            -0.03737470507621765,
+            -0.1178247332572937,
+            -0.14077305793762207,
+            -0.0005728261894546449
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018689770251512527,
+            -0.038208410143852234,
+            -0.10830654203891754,
+            -0.1282290816307068,
+            -0.0005112256621941924
+          ],
+          "value": [
+            -1051.1341552734375,
+            -1051.1279296875,
+            -1051.12109375,
+            -1051.11474609375
+          ],
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.26300729298964143
+        ],
+        "batch_native_analytical_qr_score": [
+          2.496284455002751
+        ],
+        "scalar_analytical_row_loop": [
+          3.2969426049967296
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 50 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p50.md --cpu-threads 4 --jit-compile",
+        "elapsed_seconds": 290.1899035599781,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "ow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 04:15:48.383383: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 04:15:48.386441: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 04:15:48.388887: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 04:15:48.388932: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 04:15:48.388965: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 04:15:48.389000: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 04:15:48.389033: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 04:15:48.389069: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 04:15:48.389101: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 04:15:48.389135: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 04:15:48.389167: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 04:15:48.389208: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 04:15:48.389239: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 04:15:48.389277: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 04:15:48.389308: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 04:15:48.389342: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 04:15:48.389374: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 04:15:48.389408: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 04:15:48.389442: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 04:15:48.389473: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783628166.938205 1585157 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 04:19:19.098219: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_90964__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.144054] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 04:20:02.682637: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m43.584601728s\n\n********************************\n[Compiling module a_inference_scalar_row_loop_score_90964__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.144054] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p50.md\",\n  \"wall_time_seconds\": 285.98781871201936\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.26300729298964143,
+          "mean_seconds": 0.26300729298964143,
+          "median_seconds": 0.26300729298964143,
+          "min_seconds": 0.26300729298964143
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 2.496284455002751,
+          "mean_seconds": 2.496284455002751,
+          "median_seconds": 2.496284455002751,
+          "min_seconds": 2.496284455002751
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 3.2969426049967296,
+          "mean_seconds": 3.2969426049967296,
+          "median_seconds": 3.2969426049967296,
+          "min_seconds": 3.2969426049967296
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.27030715002911165,
+        "batch_native_analytical_qr_score": 2.5625520210014656,
+        "scalar_analytical_row_loop": 3.2732753230375238
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 4.023313522338867e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.0003662109375,
+        "batch_vs_scalar_score_max_abs_residual": 3.8743019104003906e-07,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 4.023313522338867e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 4,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 13.084965394984465,
+        "batch_native_analytical_qr_score": 135.5397040619864,
+        "scalar_analytical_row_loop": 1770.2811848420533
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.03967114973788234,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.4956114718817097,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 1.2750384589890018,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "timed_method": false,
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 12.79872758797137,
+        "batch_native_analytical_qr_score": 127.87847255996894,
+        "scalar_analytical_row_loop": 1758.0703080660314
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          150
+        ],
+        "parameters_batch": [
+          4,
+          150
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 20,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019100477918982506,
+            -0.03737504035234451,
+            -0.1178281158208847,
+            -0.140777125954628,
+            -0.0005728426040150225
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            4.220211394567741e-06,
+            -0.00017956890224013478,
+            -0.0005095673259347677,
+            0.0004382335755508393,
+            -7.797194712111377e-07
+          ],
+          "value": [
+            -1051.0426025390625,
+            -1051.0438232421875,
+            -1051.045166015625,
+            -1051.04638671875
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019100472331047058,
+            -0.03737505525350571,
+            -0.1178281307220459,
+            -0.14077749848365784,
+            -0.0005728432442992926
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            4.220215487293899e-06,
+            -0.00017956894589588046,
+            -0.0005095675587654114,
+            0.000438234128523618,
+            -7.797190164637868e-07
+          ],
+          "value": [
+            -1051.0426025390625,
+            -1051.043701171875,
+            -1051.045166015625,
+            -1051.0460205078125
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019100474193692207,
+            -0.03737505152821541,
+            -0.11782818287611008,
+            -0.1407771110534668,
+            -0.000572842254769057
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            4.220187292958144e-06,
+            -0.00017956880037672818,
+            -0.0005095675005577505,
+            0.0004382343031466007,
+            -7.797181638125039e-07
+          ],
+          "value": [
+            -1051.0426025390625,
+            -1051.043701171875,
+            -1051.045166015625,
+            -1051.0460205078125
+          ],
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "parameter_capacity": 1110,
+      "parameter_count": 150,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.2970152990310453
+        ],
+        "batch_native_analytical_qr_score": [
+          7.486934484972153
+        ],
+        "scalar_analytical_row_loop": [
+          11.197545104951132
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 150 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p150.md --cpu-threads 4 --jit-compile",
+        "elapsed_seconds": 1970.9713124149712,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 04:20:48.071116: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 04:20:48.074159: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 04:20:48.077290: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 04:20:48.077333: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 04:20:48.077371: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 04:20:48.077406: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 04:20:48.077443: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 04:20:48.077479: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 04:20:48.077513: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 04:20:48.077550: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 04:20:48.077586: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 04:20:48.077621: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 04:20:48.077654: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 04:20:48.077689: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 04:20:48.077721: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 04:20:48.077757: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 04:20:48.077790: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 04:20:48.077824: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 04:20:48.077858: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 04:20:48.077891: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783628559.940374 1585598 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 04:28:39.496466: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_260864__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.425254] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 04:52:03.755431: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 25m24.259117011s\n\n********************************\n[Compiling module a_inference_scalar_row_loop_score_260864__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.425254] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p150.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n20_p150.md\",\n  \"wall_time_seconds\": 1959.4760511189816\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 30,
+        "initial_mean": 0,
+        "observation_covariance_factor": 30,
+        "observation_matrix": 30,
+        "observation_offset": 0,
+        "transition_covariance_factor": 30,
+        "transition_matrix": 30,
+        "transition_offset": 0
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.2970152990310453,
+          "mean_seconds": 0.2970152990310453,
+          "median_seconds": 0.2970152990310453,
+          "min_seconds": 0.2970152990310453
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 7.486934484972153,
+          "mean_seconds": 7.486934484972153,
+          "median_seconds": 7.486934484972153,
+          "min_seconds": 7.486934484972153
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 11.197545104951132,
+          "mean_seconds": 11.197545104951132,
+          "median_seconds": 11.197545104951132,
+          "min_seconds": 11.197545104951132
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.2862378070130944,
+        "batch_native_analytical_qr_score": 7.661231502017472,
+        "scalar_analytical_row_loop": 12.210876776021905
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 3.0547380447387695e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.00048828125,
+        "batch_vs_scalar_score_max_abs_residual": 2.682209014892578e-07,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 3.0547380447387695e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 4,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 7.790770825988147,
+        "batch_native_analytical_qr_score": 30.606820721004624,
+        "scalar_analytical_row_loop": 250.66407273698132
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.09916013361318095,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.2628529457880728,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 1.6528249540133402,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "timed_method": false,
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 7.298241556971334,
+        "batch_native_analytical_qr_score": 26.258790765015874,
+        "scalar_analytical_row_loop": 244.61507492995588
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          50
+        ],
+        "parameters_batch": [
+          4,
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.0190980713814497,
+            -0.03735930845141411,
+            -0.11782442033290863,
+            -0.14081025123596191,
+            -0.0005727995885536075
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018836243078112602,
+            -0.0382014624774456,
+            -0.1084989458322525,
+            -0.1280987411737442,
+            -0.0005156022380106151
+          ],
+          "value": [
+            -1955.1851806640625,
+            -1955.1785888671875,
+            -1955.1722412109375,
+            -1955.1651611328125
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019098099321126938,
+            -0.03735925257205963,
+            -0.11782411485910416,
+            -0.14081017673015594,
+            -0.000572799879591912
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.018836243078112602,
+            -0.03820153698325157,
+            -0.10849884152412415,
+            -0.12809862196445465,
+            -0.0005156021215952933
+          ],
+          "value": [
+            -1955.1856689453125,
+            -1955.1785888671875,
+            -1955.1722412109375,
+            -1955.1651611328125
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.0190980713814497,
+            -0.03735930845141411,
+            -0.11782428622245789,
+            -0.1408102959394455,
+            -0.0005727995303459466
+          ],
+          "score_shape": [
+            4,
+            50
+          ],
+          "score_tail": [
+            -0.0188362468034029,
+            -0.03820148855447769,
+            -0.10849889367818832,
+            -0.12809868156909943,
+            -0.0005156021798029542
+          ],
+          "value": [
+            -1955.1856689453125,
+            -1955.1785888671875,
+            -1955.1722412109375,
+            -1955.1651611328125
+          ],
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.48336227802792564
+        ],
+        "batch_native_analytical_qr_score": [
+          4.874562593002338
+        ],
+        "scalar_analytical_row_loop": [
+          6.155855730001349
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 50 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p50.md --cpu-threads 4 --jit-compile",
+        "elapsed_seconds": 317.78571304900106,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "ow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 04:53:29.561487: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 04:53:29.564581: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 04:53:29.566967: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 04:53:29.567010: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 04:53:29.567043: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 04:53:29.567081: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 04:53:29.567114: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 04:53:29.567146: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 04:53:29.567188: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 04:53:29.567234: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 04:53:29.567273: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 04:53:29.567304: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 04:53:29.567333: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 04:53:29.567368: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 04:53:29.567399: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 04:53:29.567432: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 04:53:29.567468: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 04:53:29.567500: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 04:53:29.567530: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 04:53:29.567561: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783630428.704652 1592008 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 04:57:05.337045: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_90964__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.144054] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 04:57:57.788369: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m52.451476708s\n\n********************************\n[Compiling module a_inference_scalar_row_loop_score_90964__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.144054] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p50.md\",\n  \"wall_time_seconds\": 313.2592379449634\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.48336227802792564,
+          "mean_seconds": 0.48336227802792564,
+          "median_seconds": 0.48336227802792564,
+          "min_seconds": 0.48336227802792564
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 4.874562593002338,
+          "mean_seconds": 4.874562593002338,
+          "median_seconds": 4.874562593002338,
+          "min_seconds": 4.874562593002338
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 6.155855730001349,
+          "mean_seconds": 6.155855730001349,
+          "median_seconds": 6.155855730001349,
+          "min_seconds": 6.155855730001349
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.4925292690168135,
+        "batch_native_analytical_qr_score": 4.34802995598875,
+        "scalar_analytical_row_loop": 6.048997807025444
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 2.682209014892578e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.0003662109375,
+        "batch_vs_scalar_score_max_abs_residual": 2.086162567138672e-07,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 2.682209014892578e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 4,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 10.27030749298865,
+        "batch_native_analytical_qr_score": 139.9736483579618,
+        "scalar_analytical_row_loop": 1579.9271045560017
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.03778277149081714,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.4865162281202726,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 1.320330129005015,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "timed_method": false,
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 9.805852383025922,
+        "batch_native_analytical_qr_score": 127.42220402293606,
+        "scalar_analytical_row_loop": 1561.1885909609846
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          150
+        ],
+        "parameters_batch": [
+          4,
+          150
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 30,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.01909809559583664,
+            -0.03735964000225067,
+            -0.11782770603895187,
+            -0.14081431925296783,
+            -0.0005728158866986632
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            5.282402526063379e-06,
+            -0.00020452565513551235,
+            -0.0005648884107358754,
+            0.0004982815007679164,
+            -9.429905958313611e-07
+          ],
+          "value": [
+            -1955.093505859375,
+            -1955.0946044921875,
+            -1955.0958251953125,
+            -1955.09716796875
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019098134711384773,
+            -0.0373595766723156,
+            -0.11782759428024292,
+            -0.14081431925296783,
+            -0.0005728167598135769
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            5.2823879741481505e-06,
+            -0.00020452561147976667,
+            -0.0005648885271511972,
+            0.0004982809186913073,
+            -9.429915053260629e-07
+          ],
+          "value": [
+            -1955.093505859375,
+            -1955.094970703125,
+            -1955.0958251953125,
+            -1955.09716796875
+          ],
+          "value_shape": [
+            4
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019098101183772087,
+            -0.037359632551670074,
+            -0.11782771348953247,
+            -0.14081436395645142,
+            -0.0005728157120756805
+          ],
+          "score_shape": [
+            4,
+            150
+          ],
+          "score_tail": [
+            5.282363417791203e-06,
+            -0.00020452587341424078,
+            -0.0005648891092278063,
+            0.0004982808604836464,
+            -9.42992301133927e-07
+          ],
+          "value": [
+            -1955.093505859375,
+            -1955.094970703125,
+            -1955.0958251953125,
+            -1955.09716796875
+          ],
+          "value_shape": [
+            4
+          ]
+        }
+      },
+      "parameter_capacity": 2415,
+      "parameter_count": 150,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.4703954549622722
+        ],
+        "batch_native_analytical_qr_score": [
+          12.449998674041126
+        ],
+        "scalar_analytical_row_loop": [
+          18.50712506903801
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 150 --timesteps 120 --repeats 1 --batch-size 4 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p150.md --cpu-threads 4 --jit-compile",
+        "elapsed_seconds": 1802.8676554750418,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 04:58:57.139580: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 04:58:57.142799: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 04:58:57.145831: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 04:58:57.145874: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 04:58:57.145908: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 04:58:57.145947: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 04:58:57.145984: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 04:58:57.146016: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 04:58:57.146049: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 04:58:57.146084: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 04:58:57.146115: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 04:58:57.146147: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 04:58:57.146189: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 04:58:57.146234: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 04:58:57.146266: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 04:58:57.146299: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 04:58:57.146331: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 04:58:57.146365: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 04:58:57.146397: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 04:58:57.146428: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783630847.019519 1594195 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 05:06:50.007414: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_260864__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.425254] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 05:26:58.430862: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 22m8.423595458s\n\n********************************\n[Compiling module a_inference_scalar_row_loop_score_260864__XlaMustCompile_true_config_proto_17942301665530697240_executor_type_11160318154034397263_.425254] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p150.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1583053/row_n30_p150.md\",\n  \"wall_time_seconds\": 1794.8319770849776\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 30,
+        "initial_mean": 0,
+        "observation_covariance_factor": 30,
+        "observation_matrix": 30,
+        "observation_offset": 0,
+        "transition_covariance_factor": 30,
+        "transition_matrix": 30,
+        "transition_offset": 0
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.4703954549622722,
+          "mean_seconds": 0.4703954549622722,
+          "median_seconds": 0.4703954549622722,
+          "min_seconds": 0.4703954549622722
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 12.449998674041126,
+          "mean_seconds": 12.449998674041126,
+          "median_seconds": 12.449998674041126,
+          "min_seconds": 12.449998674041126
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 18.50712506903801,
+          "mean_seconds": 18.50712506903801,
+          "median_seconds": 18.50712506903801,
+          "min_seconds": 18.50712506903801
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.4644551099627279,
+        "batch_native_analytical_qr_score": 12.551444335025735,
+        "scalar_analytical_row_loop": 18.73851359501714
+      }
+    }
+  ],
+  "schema": "kalman_qr_parameter_count_scaling_v1",
+  "summary": {
+    "all_applicable_rows_parity_passed": true,
+    "applicable_row_count": 6,
+    "inapplicable_row_count": 0,
+    "nonclaims": [
+      "descriptive timing only",
+      "no HMC readiness claim",
+      "no posterior correctness claim",
+      "no production default change",
+      "no statistically supported ranking"
+    ],
+    "run_status": "complete",
+    "wall_time_seconds": 5716.94376852602
+  }
+}

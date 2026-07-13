@@ -1,0 +1,187 @@
+{
+  "manifest": {
+    "autodiff_execution": "compiled_full",
+    "autodiff_value_backend": "while_loop",
+    "command": "scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 50 --timesteps 8 --repeats 1 --device cpu --jit-compile --dtype float64 --output-json docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.json --output-md docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.md",
+    "cuda_visible_devices": "-1",
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "device_manifest": {
+      "cpu_only_exception": true,
+      "logical_gpus": [],
+      "physical_gpus": [],
+      "requested_device": "cpu",
+      "selected_device": "/CPU:0",
+      "trust_basis": "cpu_debug_or_reference_exception"
+    },
+    "dimensions": [
+      10
+    ],
+    "git_commit": "52ee244498988e046a6356f926003b581103083b",
+    "git_status_short": "M bayesfilter/inference/hmc_diagnostics.py\n M bayesfilter/inference/hmc_kernel_tuning.py\n M bayesfilter/linear/kalman_qr_derivatives_tf.py\n M bayesfilter/linear/kalman_qr_tf.py\n M bayesfilter/linear/qr_factor_tf.py\n M bayesfilter/linear/types_tf.py\n M bayesfilter/results_tf.py\n M tests/test_common_inference_runtime_contracts.py\n M tests/test_hmc_kernel_tuning_outer_loop.py\n M tests/test_hmc_kernel_tuning_public_api.py\n M tests/test_linear_kalman_qr_derivatives_tf.py\n M tests/test_linear_qr_compact_loglik_tf.py\n?? bayesfilter/linear/dtypes_tf.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-stop-handoff-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-parameter-count-scaling-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase3-gpu-xla-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase4-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase5-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-stop-handoff-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase0-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2aa-claude-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ae-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-hypothesis-plan-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2z-subplan-codex-substitute-review-2026-07-09.md\n?? scripts/benchmark_kalman_qr_parameter_count_scaling.py\n?? tests/test_linear_qr_dtype_contracts.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1r.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot.py",
+    "isolate_each_row": false,
+    "jit_compile": true,
+    "json_path": "docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.json",
+    "markdown_path": "docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.md",
+    "parameter_counts": [
+      50
+    ],
+    "plan_path": "docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-subplan-2026-07-09.md",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "repeats": 1,
+    "requested_dtype": "float64",
+    "row_subprocess_timeout_seconds": 1800.0,
+    "tensorflow_version": "2.20.0",
+    "tf32_execution_enabled": true,
+    "timestamp_utc": "2026-07-09T12:12:12.865296+00:00",
+    "timesteps": 8
+  },
+  "rows": [
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 4.336808689942018e-18,
+        "score_relative_residual": 4.336808689942018e-18,
+        "value_abs_residual": 0.0
+      },
+      "applicable": true,
+      "compile_first_call_seconds": {
+        "analytical_qr_score": 28.414098012959585,
+        "autodiff_qr_score": 2.0877223249990493
+      },
+      "descriptive_autodiff_over_analytical_median_ratio": 0.11101498948860195,
+      "device_name": "/CPU:0",
+      "first_minus_warm_start_seconds": {
+        "analytical_qr_score": 28.372416203957982,
+        "autodiff_qr_score": 2.083555787045043
+      },
+      "input_shapes": {
+        "observations": [
+          8,
+          10
+        ],
+        "parameters": [
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "observed_dtype_check": {
+        "expected": "float64",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "analytical_qr_score": "float64",
+        "autodiff_qr_score": "float64"
+      },
+      "observed_value_dtypes": {
+        "analytical_qr_score": "float64",
+        "autodiff_qr_score": "float64"
+      },
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "analytical_score_head": [
+          -0.00176186859168358,
+          -0.002683936889568407,
+          -0.007222675110881432,
+          -0.008912961244969327,
+          -0.0005728301188047879
+        ],
+        "analytical_score_tail": [
+          -0.0016616503294003828,
+          -0.0027224676709562677,
+          -0.006667109944435446,
+          -0.008176895916322964,
+          -0.0004974141261965267
+        ],
+        "analytical_value": -27.809371373473564,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "autodiff_score_head": [
+          -0.0017618685916835802,
+          -0.002683936889568406,
+          -0.007222675110881436,
+          -0.008912961244969325,
+          -0.0005728301188047882
+        ],
+        "autodiff_score_tail": [
+          -0.0016616503294003822,
+          -0.002722467670956268,
+          -0.006667109944435444,
+          -0.008176895916322964,
+          -0.0004974141261965267
+        ],
+        "autodiff_value": -27.809371373473564
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          0.03985927504254505
+        ],
+        "autodiff_qr_score": [
+          0.004424976999871433
+        ]
+      },
+      "requested_dtype": "float64",
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 8,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 0.03985927504254505,
+          "mean_seconds": 0.03985927504254505,
+          "median_seconds": 0.03985927504254505,
+          "min_seconds": 0.03985927504254505
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.004424976999871433,
+          "mean_seconds": 0.004424976999871433,
+          "median_seconds": 0.004424976999871433,
+          "min_seconds": 0.004424976999871433
+        }
+      },
+      "warm_start_call_seconds": {
+        "analytical_qr_score": 0.04168180900160223,
+        "autodiff_qr_score": 0.004166537954006344
+      }
+    }
+  ],
+  "schema": "kalman_qr_parameter_count_scaling_v1",
+  "summary": {
+    "all_applicable_rows_parity_passed": true,
+    "applicable_row_count": 1,
+    "inapplicable_row_count": 0,
+    "nonclaims": [
+      "descriptive timing only",
+      "no HMC readiness claim",
+      "no posterior correctness claim",
+      "no production default change",
+      "no statistically supported ranking"
+    ],
+    "run_status": "complete",
+    "wall_time_seconds": 30.66108518600231
+  }
+}

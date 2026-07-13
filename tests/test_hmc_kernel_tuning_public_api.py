@@ -196,6 +196,7 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "num_burnin_steps": 16,
             "chain_count": 4,
+            "rhat_threshold_role": "diagnostic_early_stop_only_not_tuning_handoff_gate",
             "step_size": 0.2,
             "num_leapfrog_steps": 8,
         },
@@ -206,7 +207,7 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "max_results": 64,
             "all_finite_rhat_at_or_below_threshold": False,
             "cap_hit": True,
-            "acceptance_rate": 0.82,
+            "acceptance_rate": 0.70,
             "runtime_finite": True,
             "log_accept_ratio_finite": True,
             "samples_all_finite": True,
@@ -224,15 +225,21 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
             "reports_posterior_convergence": False,
         },
         verification_callback_result=attempt.verification_callback_result,
-        final_status="repair_or_retry",
-        diagnostic_role="verification_rhat_repair_trigger",
+        final_status="passed",
+        diagnostic_role="sequential_rhat_fixed_kernel_verification_passed",
         hard_vetoes=(),
-        repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
-        ),
+        repair_triggers=(),
         handoff_state_payload=attempt.handoff_state_payload,
     )
+    final_kernel_payload = {
+        "schema": "bayesfilter.hmc_phase7_final_kernel_public_handoff.v1",
+        "hmc_mechanics_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "reports_default_readiness": False,
+        "reports_gpu_or_xla_readiness": False,
+    }
+    final_kernel_hash = stable_config_hash(final_kernel_payload)
     return HMCTuneVerifyRepairLoopResult(
         config=base.config,
         geometry_artifact_hash=base.geometry_artifact_hash,
@@ -240,15 +247,12 @@ def _loop_result_with_rhat_cap_public_summary() -> HMCTuneVerifyRepairLoopResult
         adapter_signature=base.adapter_signature,
         target_dimension=base.target_dimension,
         attempts=(attempt,),
-        final_status="budget_exhausted",
-        diagnostic_role="budget_exhausted_non_promoting",
+        final_status="passed",
+        diagnostic_role="fresh_fixed_kernel_verification_passed",
         hard_vetoes=(),
-        repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
-        ),
-        final_kernel_payload=None,
-        final_kernel_hash=None,
+        repair_triggers=(),
+        final_kernel_payload=final_kernel_payload,
+        final_kernel_hash=final_kernel_hash,
         seed_report=base.seed_report,
         diagnostic_roles=base.diagnostic_roles,
     )
@@ -1964,7 +1968,7 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     phase7 = payload["phase7_public_summary"]
     attempt = phase7["attempt_summaries"][0]
     verification = attempt["stage_statuses"]["verification"]
-    assert result.final_kernel_hash is None
+    assert result.final_kernel_hash is not None
     assert phase7["attempt_count"] == 1
     assert attempt["attempt_index"] == 0
     assert attempt["budget_public_summary"]["public_budget_class"] == (
@@ -1975,7 +1979,11 @@ def test_public_artifact_exposes_attempt_and_verification_summary_without_mechan
     assert verification["sequential_rhat_verification"] is True
     assert verification["cap_hit"] is True
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
-    assert verification["acceptance_relation"] == "above_acceptance_band"
+    assert (
+        verification["rhat_threshold_role"]
+        == "diagnostic_early_stop_only_not_tuning_handoff_gate"
+    )
+    assert verification["acceptance_relation"] == "inside_acceptance_band"
     assert verification["acceptance_band_from_payload"] is True
     assert verification["acceptance_band_fallback_used"] is False
     assert verification["max_results"] == 64
@@ -2141,6 +2149,25 @@ def test_public_exports_are_available() -> None:
     assert bayesfilter.HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS is HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS
     assert "tune_hmc_kernel" in bayesfilter.__all__
     assert "no posterior convergence claim" in HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS
+    private_phase7_names = {
+        "_HMCPhase7FixedKernelVerificationInput",
+        "_HMCPhase7FixedKernelVerificationOutcome",
+        "_HMCPhase7FixedKernelVerificationExecution",
+        "_phase7_direct_candidate_seed",
+        "_phase7_direct_candidate_verification_input",
+        "_run_phase7_direct_candidate_verification",
+        "_run_phase7_fixed_kernel_verification",
+        "KillableChildSpec",
+        "build_hmc_tuning_engineering_artifact",
+        "run_killable_child",
+        "validate_hmc_tuning_engineering_artifact",
+    }
+    assert private_phase7_names.isdisjoint(bayesfilter.__all__)
+    assert not any(hasattr(bayesfilter, name) for name in private_phase7_names)
+    loop_parameters = inspect.signature(
+        bayesfilter.run_hmc_tune_verify_repair_loop
+    ).parameters
+    assert "_phase7_direct_verification_runner" not in loop_parameters
 
 
 def test_public_artifacts_include_sanitized_bootstrap_summary(

@@ -1,0 +1,283 @@
+{
+  "artifacts": {
+    "authorized_snapshot": {
+      "byte_count": 54027,
+      "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_authorized_snapshot_2026-07-13.json",
+      "sha256": "7b9436a392c5d8d40b145f0c5dd0eda3e4b6e194792a5b118e6bc4fb09e240aa"
+    },
+    "discriminator": {
+      "byte_count": 52401,
+      "path": "docs/benchmarks/discriminate_kalman_qr_phase6_gateb_r3_autodiff_attribution_2026_07_13.py",
+      "sha256": "d367206d2b2dc476ec8878e75ee2be2e443a7cc498b563eb2dc54df88701f7ea"
+    },
+    "durable_result": {
+      "byte_count": 62349977,
+      "discriminator_payload_sha256": "5ba99bfca3c3afa28d6593d48ca6a85e428e992d663b0b68d7f87e22bad4b2e3",
+      "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13.json",
+      "sha256": "8494478c0c9857818d72222c7a5966039083a8c16c44d35ab1dab24f74c22265"
+    },
+    "guard": {
+      "byte_count": 13520,
+      "path": "docs/benchmarks/run_guarded_kalman_qr_phase6_gateb_r3_autodiff_attribution_2026_07_13.py",
+      "sha256": "55362c3ebe36c43191bfe533fb3fd9624e0c8053e26b6a2ed6ff1936145334d9"
+    },
+    "test": {
+      "byte_count": 14246,
+      "path": "tests/test_kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator.py",
+      "sha256": "a8e8f1cadd27852a07fdcf587eb927dc595a34369df9d72fe0047c08c7f20cf6"
+    }
+  },
+  "checks": {
+    "all_18_autodiff_boundaries_have_one_forward_and_one_reverse_while": true,
+    "all_36_graph_bindings_reproduced": true,
+    "all_durable_result_checks_true": true,
+    "analytical_lane_preserved_unresolved": true,
+    "atomic_occurrence_count_exact": true,
+    "authorized_repository_write_set_exact": true,
+    "canonical_payload_equal_across_three_runs": true,
+    "descriptor_and_source_hashes_match": true,
+    "focused_guard_and_mutation_suite_passed": true,
+    "forbidden_r3_directories_absent": true,
+    "framework_proof_candidate_is_question_only": true,
+    "gate_b_still_rejected": true,
+    "gate_c_and_runtime_still_blocked": true,
+    "nested_integer_occurrence_count_exact": true,
+    "no_debug_info_fabricated": true,
+    "no_framework_necessity_claim": true,
+    "no_memory_or_performance_claim": true,
+    "no_target_worker": true,
+    "no_tensorflow_module_imported": true,
+    "no_unique_local_control_point_nominated": true,
+    "no_unresolved_invalid_occurrence": true,
+    "observation_count_exact": true,
+    "other_lane_delta_is_out_of_scope": true,
+    "parent_payload_reproduced": true,
+    "partition_validator_passed": true,
+    "protected_algorithm_hashes_match": true,
+    "r3_budget_closed_and_lease_released": true,
+    "r3_root_and_108_trace_file_inventory_exact": true,
+    "scratch_write_set_exact": true,
+    "static_boundary_scan_passed": true,
+    "target_count_exact": true
+  },
+  "commands": [
+    {
+      "command_contract": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1; CPython ast.parse scan of exactly discriminator, guard, and focused test; preserve imports, calls, file hashes, violations, and state",
+      "exit_code": 0,
+      "log": {
+        "byte_count": 1715,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13_static_scan.txt",
+        "sha256": "25b1c31cda53451042aa9e27da2675d2332cd7c4b697b2d0427ff8501ef1f3b6"
+      },
+      "pass_predicate": "state == passed and violations == []",
+      "role": "pre_load_static_boundary_scan"
+    },
+    {
+      "command_contract": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -c <three explicit py_compile.compile(source, cfile=authorized_path, doraise=True) calls>",
+      "exit_code": 0,
+      "log": {
+        "byte_count": 1339,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13_py_compile.txt",
+        "sha256": "65bfafc84670bc03b0a77c964b8af7772cc9ad6dbebe4841af50ef97b968a014"
+      },
+      "outputs": [
+        {
+          "path": "/tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/py_compile/discriminator.pyc",
+          "sha256": "1a5742d306b2275fd5eecd78cf4c5342cf370959352d1b791406e4d74fa75bdd"
+        },
+        {
+          "path": "/tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/py_compile/guard.pyc",
+          "sha256": "5075ffeded053560cb8a4fd4ed1e459c4b2bbd67556a200b42c8327b0651a912"
+        },
+        {
+          "path": "/tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/py_compile/test.pyc",
+          "sha256": "44d365408f9c8cd53f48a5c39aaca39ea45aecfc47839a9fc977d11ef05b6091"
+        }
+      ],
+      "pass_predicate": "exactly three declared cfiles exist and match the logged hashes",
+      "role": "explicit_cfile_compile"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_guarded_kalman_qr_phase6_gateb_r3_autodiff_attribution_2026_07_13.py --mode test",
+      "exit_code": 0,
+      "log": {
+        "byte_count": 1657,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13_focused_pytest.txt",
+        "sha256": "d0989226c5bf408210ead3e60d170662cdfd153c9c5e9ff8784189b40efaf242"
+      },
+      "pass_predicate": "exactly 9 tests pass through the pre-load guard and TensorFlow remains absent",
+      "role": "focused_guarded_suite"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_guarded_kalman_qr_phase6_gateb_r3_autodiff_attribution_2026_07_13.py --mode discriminator --output-json /tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/run1.json",
+      "exit_code": 0,
+      "log": {
+        "byte_count": 740,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13_run1.txt",
+        "sha256": "a84534f579fa17ef2547a1e2f7f186ce9c1633d0bafc055f86fdacbf7091d4f8"
+      },
+      "output": {
+        "byte_count": 62349909,
+        "discriminator_payload_sha256": "5ba99bfca3c3afa28d6593d48ca6a85e428e992d663b0b68d7f87e22bad4b2e3",
+        "path": "/tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/run1.json",
+        "sha256": "e7d62749d71b8c47f294ec314433f1743b7ef761cedd0073fe7fcb3e89bd517d"
+      },
+      "pass_predicate": "complete exact structural partition with zero unresolved_invalid",
+      "role": "scratch_discriminator_1"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_guarded_kalman_qr_phase6_gateb_r3_autodiff_attribution_2026_07_13.py --mode discriminator --output-json /tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/run2.json",
+      "exit_code": 0,
+      "log": {
+        "byte_count": 740,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13_run2.txt",
+        "sha256": "3867bff93c078c93f86d4ff3becedc97a85ba9bae5b692fd8b539c8197f4c932"
+      },
+      "output": {
+        "byte_count": 62349909,
+        "discriminator_payload_sha256": "5ba99bfca3c3afa28d6593d48ca6a85e428e992d663b0b68d7f87e22bad4b2e3",
+        "path": "/tmp/kalman_qr_phase6_gateb_r3_autodiff_attribution_discriminator/run2.json",
+        "sha256": "bc2c0d3d9506bd1c13412afebf09618a19cd8d31c560fac003b9688c3cb13001"
+      },
+      "pass_predicate": "canonical payload digest and partition equal scratch run 1",
+      "role": "scratch_discriminator_2"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_guarded_kalman_qr_phase6_gateb_r3_autodiff_attribution_2026_07_13.py --mode discriminator --output-json /home/ubuntu/python/BayesFilter/docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13.json",
+      "exit_code": 0,
+      "log": {
+        "byte_count": 808,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13_durable_run.txt",
+        "sha256": "f4506413d0f7b9c81b5d6ad68e4e75d1e78315a2ab7bd0b9b38bf5cdbc15d478"
+      },
+      "output": {
+        "byte_count": 62349977,
+        "discriminator_payload_sha256": "5ba99bfca3c3afa28d6593d48ca6a85e428e992d663b0b68d7f87e22bad4b2e3",
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13.json",
+        "sha256": "8494478c0c9857818d72222c7a5966039083a8c16c44d35ab1dab24f74c22265"
+      },
+      "pass_predicate": "canonical payload digest and partition equal both scratch runs",
+      "role": "durable_discriminator"
+    }
+  ],
+  "decision": {
+    "analytical_lane": "unresolved",
+    "gate_b_status": "still_rejected",
+    "gate_c_status": "blocked",
+    "minimal_runtime_counterfactual_needed": false,
+    "next_branch": "autodiff_framework_proof",
+    "runtime_authorized": false,
+    "unique_local_control_point": false
+  },
+  "entry_and_closure_hashes": {
+    "parent_localization": "ee2903381039f7cf15a4ec5112304232ae138eebacef8e0858da1fda5f7452c1",
+    "parent_localization_check_manifest": "8aa6f6079a38f0e66e90a8b5964f25f146b5fdeb94585510d7d26133d7028bbf",
+    "parent_result": "0dfaccf6ecb3150290323d6efdd9248b4d6ceefd3c2520d5f1ca8086901ac9a4",
+    "parent_result_final_review": "fc5d4a16c256a259037880f8309d5e82dd9b1d233cda809583a7d80e3fcb1774",
+    "plan": "ce14737c2bee978e4fc1fe6134c5b306d6bc6c39de95b78658b46b49c5a8247b",
+    "plan_final_review": "24c74a874ef62034b607fbca5c2fddbb69647d3ec6a50d4ac95e2ae2f9af0e9e",
+    "protected_backprop_py": "c9a461d06085be50a2235e23e6c32a4649805fa2b5fb43d50e7fb421f92eed78",
+    "protected_benchmark_harness": "baf62b85f885073d0b72b5c13af0463ac5566f2429c16d5c98a542aa24c8eec9",
+    "protected_gradients_util_py": "1b4cf14a574b45f708ec4fba67bd450336a6b8e63f494ddf791fc5de5d981e98",
+    "protected_kalman_qr_tf": "ad1fc869ce0be2aaffa18c1762d44b39c86de19ee0752e77cdce1c4d9c9fd06b",
+    "protected_while_v2_py": "756344a1c87911ca4a0678bea1388d070c7218afb1ec34a3f07c03473804719a"
+  },
+  "other_lane_closure": {
+    "closure_normalized_path_count": 431,
+    "closure_normalized_porcelain_sha256": "50020678467ece95004006c406d1e6fd1078c003ed66b5a34bf6f7a20bf61845",
+    "delta": [
+      "?? docs/reviews/bayesfilter-ssl-lstm-completion-phase-a2-implementation-codex-substitute-review-2026-07-12.md"
+    ],
+    "entry_path_count": 430,
+    "entry_porcelain_sha256": "c17205537cee17f3ee91f7892ee397f3a1ef8ca090764adfa44c03923206bb2d",
+    "policy": "evidence_only_ignore_and_do_not_modify",
+    "protected_in_scope_path_drift": false
+  },
+  "outcome": {
+    "atomic_occurrence_count": 14270,
+    "debug_info": {
+      "autodiff_graph_count": 18,
+      "graph_debug_info_populated": 0,
+      "node_count": 25430,
+      "node_debug_info_populated": 0
+    },
+    "framework_proof_candidate_cohorts": {
+      "target_count": 420,
+      "uniform_constant_or_shape_origin_unresolved": 76,
+      "uniform_reverse_while_call_or_function": 344
+    },
+    "nested_integer_occurrence_count": 2386,
+    "observation_count": 12316,
+    "state_counts": {
+      "constant_or_shape_origin_unresolved": 1270,
+      "cross_region_composite": 24,
+      "forward_value_projection": 24,
+      "forward_while_call_or_function": 2016,
+      "forward_while_setup_not_parameter_descendant": 2184,
+      "local_pre_forward_while": 942,
+      "post_reverse_vjp": 1716,
+      "reverse_vjp_setup": 366,
+      "reverse_while_call_or_function": 2138,
+      "score_path_not_reverse_descendant": 468,
+      "structural_boundary_ambiguous": 3122,
+      "unresolved_invalid": 0
+    },
+    "target_aggregate_counts": {
+      "mixed_regions": 2,
+      "uniform_constant_or_shape_origin_unresolved": 76,
+      "uniform_cross_region_composite": 12,
+      "uniform_forward_value_projection": 1,
+      "uniform_forward_while_call_or_function": 84,
+      "uniform_forward_while_setup_not_parameter_descendant": 103,
+      "uniform_local_pre_forward_while": 39,
+      "uniform_post_reverse_vjp": 69,
+      "uniform_reverse_vjp_setup": 24,
+      "uniform_reverse_while_call_or_function": 344,
+      "uniform_score_path_not_reverse_descendant": 21,
+      "uniform_structural_boundary_ambiguous": 129
+    },
+    "target_count": 904
+  },
+  "repair_loop": [
+    {
+      "failure": "the first focused fixture used a renamed parameters_batch input despite that name being contract-bound",
+      "repair": "kept parameters_batch exact while perturbing only non-bound semantic names; reran focused checks",
+      "status": "closed"
+    },
+    {
+      "failure": "the first complete-corpus test rebuilt graph adjacency for every occurrence and was interrupted as non-viable",
+      "repair": "cached graph boundary and adjacency structures by graph identity; reran the complete guarded suite",
+      "status": "closed"
+    },
+    {
+      "failure": "the first static scan rejected a forbidden semantic-name fragment that appeared only in explanatory source-anchor text",
+      "repair": "replaced the prose fragment with the exact source-anchor wording and reran the scan before evidence",
+      "status": "closed"
+    },
+    {
+      "failure": "the first scratch artifact repeated large graph ledgers per atomic occurrence and reached approximately 356 MB",
+      "repair": "deleted that scratch-only output, deduplicated shared ledgers without changing the classification, and regenerated two scratch artifacts plus the 62,349,977-byte durable artifact",
+      "status": "closed"
+    }
+  ],
+  "run_manifest": {
+    "cpu_gpu_status": "CPU-only offline protobuf/JSON analysis; CUDA_VISIBLE_DEVICES=-1; no device enumeration",
+    "data_fixture_version": "frozen Gate B R3 36-GraphDef corpus",
+    "environment": "/home/ubuntu/anaconda3/envs/tfgpu; CPython 3.13.13; Linux 6.8.0-124-generic x86_64",
+    "git_commit": "a644d29c5c2fd09a0deb3a7b5212799ff1fcb163",
+    "jit_xla": "not_initialized_or_invoked",
+    "plan_file": "docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase6-gatec-r3-autodiff-attribution-discriminator-subplan-2026-07-13.md",
+    "random_seeds": "N/A deterministic offline analysis",
+    "result_file": "docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase6-gatec-r3-autodiff-attribution-discriminator-result-2026-07-13.md",
+    "tf32": "not_queried",
+    "trust_claim_boundary": "offline engineering structural attribution only",
+    "wall_seconds": {
+      "durable_discriminator": 77.36317605804652,
+      "focused_suite": 107.67,
+      "scratch_discriminator_1": 76.41056996502448,
+      "scratch_discriminator_2": 77.27301768108737
+    }
+  },
+  "schema": "bayesfilter.kalman_qr_batched_xla_repair.phase6.autodiff_attribution_discriminator_check_manifest.v1",
+  "state": "passed_complete_structural_region_partition"
+}

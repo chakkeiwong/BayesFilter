@@ -7,11 +7,19 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.linear.dtypes_tf import as_float_tensor, common_floating_dtype
 from bayesfilter.structural import StatePartition
 
 
-def _tensor(value: Any, *, rank: int | tuple[int, ...]) -> tf.Tensor:
-    tensor = tf.convert_to_tensor(value, dtype=tf.float64)
+def _tensor(
+    value: Any,
+    *,
+    rank: int | tuple[int, ...],
+    dtype: tf.DType | None = None,
+) -> tf.Tensor:
+    if dtype is None:
+        dtype = common_floating_dtype(value)
+    tensor = as_float_tensor(value, dtype)
     ranks = (rank,) if isinstance(rank, int) else tuple(rank)
     if tensor.shape.rank not in ranks:
         raise ValueError(f"expected tensor rank in {ranks}, got {tensor.shape.rank}")
@@ -43,41 +51,52 @@ class TFLinearGaussianStateSpace:
     partition: StatePartition | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "initial_mean", _tensor(self.initial_mean, rank=1))
+        dtype = common_floating_dtype(
+            self.initial_mean,
+            self.initial_covariance,
+            self.transition_offset,
+            self.transition_matrix,
+            self.transition_covariance,
+            self.observation_offset,
+            self.observation_matrix,
+            self.observation_covariance,
+            context="TFLinearGaussianStateSpace tensors",
+        )
+        object.__setattr__(self, "initial_mean", _tensor(self.initial_mean, rank=1, dtype=dtype))
         object.__setattr__(
             self,
             "initial_covariance",
-            _tensor(self.initial_covariance, rank=2),
+            _tensor(self.initial_covariance, rank=2, dtype=dtype),
         )
         object.__setattr__(
             self,
             "transition_offset",
-            _tensor(self.transition_offset, rank=(1, 2)),
+            _tensor(self.transition_offset, rank=(1, 2), dtype=dtype),
         )
         object.__setattr__(
             self,
             "transition_matrix",
-            _tensor(self.transition_matrix, rank=(2, 3)),
+            _tensor(self.transition_matrix, rank=(2, 3), dtype=dtype),
         )
         object.__setattr__(
             self,
             "transition_covariance",
-            _tensor(self.transition_covariance, rank=(2, 3)),
+            _tensor(self.transition_covariance, rank=(2, 3), dtype=dtype),
         )
         object.__setattr__(
             self,
             "observation_offset",
-            _tensor(self.observation_offset, rank=(1, 2)),
+            _tensor(self.observation_offset, rank=(1, 2), dtype=dtype),
         )
         object.__setattr__(
             self,
             "observation_matrix",
-            _tensor(self.observation_matrix, rank=(2, 3)),
+            _tensor(self.observation_matrix, rank=(2, 3), dtype=dtype),
         )
         object.__setattr__(
             self,
             "observation_covariance",
-            _tensor(self.observation_covariance, rank=(2, 3)),
+            _tensor(self.observation_covariance, rank=(2, 3), dtype=dtype),
         )
         if self.observation_mask is not None:
             object.__setattr__(
@@ -138,11 +157,18 @@ class TFLinearGaussianStateSpaceFirstDerivatives:
     d_observation_covariance: tf.Tensor
 
     def __post_init__(self) -> None:
+        dtype = common_floating_dtype(
+            *(
+                getattr(self, name)
+                for name in self.__dataclass_fields__
+            ),
+            context="TFLinearGaussianStateSpaceFirstDerivatives tensors",
+        )
         for name in self.__dataclass_fields__:
             object.__setattr__(
                 self,
                 name,
-                tf.convert_to_tensor(getattr(self, name), dtype=tf.float64),
+                as_float_tensor(getattr(self, name), dtype),
             )
         self.validate_static_shapes()
 
@@ -189,11 +215,12 @@ class TFLinearGaussianStateSpaceFirstDerivatives:
         m = self.observation_dim
         if p is None or n is None or m is None:
             raise ValueError("first-order derivative conversion requires static dimensions")
-        zeros_ppn = tf.zeros([p, p, n], dtype=tf.float64)
-        zeros_ppnn = tf.zeros([p, p, n, n], dtype=tf.float64)
-        zeros_ppm = tf.zeros([p, p, m], dtype=tf.float64)
-        zeros_ppmn = tf.zeros([p, p, m, n], dtype=tf.float64)
-        zeros_ppmm = tf.zeros([p, p, m, m], dtype=tf.float64)
+        dtype = self.d_initial_mean.dtype
+        zeros_ppn = tf.zeros([p, p, n], dtype=dtype)
+        zeros_ppnn = tf.zeros([p, p, n, n], dtype=dtype)
+        zeros_ppm = tf.zeros([p, p, m], dtype=dtype)
+        zeros_ppmn = tf.zeros([p, p, m, n], dtype=dtype)
+        zeros_ppmm = tf.zeros([p, p, m, m], dtype=dtype)
         return TFLinearGaussianStateSpaceDerivatives(
             d_initial_mean=self.d_initial_mean,
             d_initial_covariance=self.d_initial_covariance,
@@ -244,11 +271,18 @@ class TFLinearGaussianStateSpaceDerivatives:
     d2_observation_covariance: tf.Tensor
 
     def __post_init__(self) -> None:
+        dtype = common_floating_dtype(
+            *(
+                getattr(self, name)
+                for name in self.__dataclass_fields__
+            ),
+            context="TFLinearGaussianStateSpaceDerivatives tensors",
+        )
         for name in self.__dataclass_fields__:
             object.__setattr__(
                 self,
                 name,
-                tf.convert_to_tensor(getattr(self, name), dtype=tf.float64),
+                as_float_tensor(getattr(self, name), dtype),
             )
         self.validate_static_shapes()
 

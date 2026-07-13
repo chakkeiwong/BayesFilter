@@ -1,5 +1,92 @@
 # BayesFilter Agent Governance
 
+## Academic Risk-Tier Workflow
+
+Owner directive, 2026-07-13: BayesFilter is an academic research repository.
+Use governance proportional to the actual scientific, computational, and
+external-impact risk. Progress on engineering and scientific questions should
+not be blocked by security ceremony that does not mitigate a credible risk for
+the task.
+
+This section governs planning, artifact, and review depth unless a stricter
+domain-specific section below applies. It supersedes older BayesFilter plans and
+runbooks that require a dedicated subplan, frozen hash, authorized snapshot,
+finite write-set manifest, custom guard, or repeated Claude/Codex review for
+every diagnostic or phase. Those older documents remain historical evidence;
+they are not active execution policy unless the user explicitly reactivates
+them after this directive.
+
+### Tier 1: Routine Academic Engineering
+
+Use Tier 1 for read-only investigation, focused debugging, reversible local
+source/test edits, import/shape/compile smokes, and targeted checks expected to
+finish in about five minutes and not used for a scientific or default-policy
+claim.
+
+- A short working plan in the conversation is sufficient.
+- Run the smallest relevant check and report its result.
+- No plan file, phase subplan, external review, hash ledger, authorized
+  snapshot, run manifest, custom filesystem/import guard, or result table is
+  required unless it directly answers the engineering question.
+- Ordinary source inspection, including installed dependency source, does not
+  require a separate source-proof phase.
+
+### Tier 2: Material Research Engineering
+
+Use Tier 2 for numerical algorithm changes, differentiable-path changes,
+benchmarks or diagnostics expected to exceed about five minutes, GPU/XLA runs,
+meaningful method comparisons, or experiments that guide research direction.
+
+- Maintain one concise live plan under `docs/plans`. It should state the
+  question, exact baseline, candidate mechanism, pass/promotion criterion,
+  vetoes, explanatory diagnostics, commands/environment, resource stop, result
+  artifact, and nonclaims.
+- Perform the skeptical pre-execution audit and evidence contract required by
+  the global policy. Record them in that live plan; do not create a separate
+  governance phase.
+- Use one result or reset note after meaningful evidence. Preserve exact
+  commands, environment/device/JIT settings, seeds when applicable, wall time,
+  and output paths.
+- Review is required only when the work changes mathematical/numerical logic,
+  a public API or default, or supports a material scientific conclusion. Use
+  one focused review followed by a repair/recheck when needed. Repeated
+  convergence rounds are not the default.
+- A failed candidate is a repair signal, not an automatic stop for the research
+  direction. Continue to the next smallest discriminating repair unless an
+  evidence-validity, resource, safety, or authority veto fires.
+
+### Tier 3: High-Impact Or Irreversible Work
+
+Use Tier 3 for destructive operations, dependency or model-file changes,
+network/external disclosure, releases, public/default-policy promotion,
+expensive overnight or large-sweep execution, consequential scientific claims,
+or actions that affect systems or people outside the repository.
+
+- Use an explicit reviewed plan and obtain human/tool approval where required.
+- State budgets, cancellation and cleanup behavior, external effects, and
+  promotion evidence prospectively.
+- Review and artifacts should be detailed enough for the concrete risk, but a
+  Tier 3 program still does not require a new subplan for every internal step.
+
+### Proportional Artifact And Review Rules
+
+- Hash immutable inputs or outputs only when identity matters to reproducibility
+  or comparison integrity. Do not hash every intermediate document or log.
+- Use dirty-worktree snapshots, finite write sets, or custom guards only when a
+  credible concurrent-write, provenance, or boundary risk justifies them.
+  Normal Git status inspection and preservation of unrelated changes are
+  sufficient otherwise.
+- Claude is optional, read-only, and advisory. Use it only when explicitly
+  requested or when a material independent review is worth the disclosure and
+  latency. Native focused review is sufficient for ordinary academic work.
+- Do not let review mechanics replace decisive experiments. Prefer a bounded
+  counterfactual that can falsify a hypothesis over increasingly elaborate
+  offline provenance arguments.
+- All tiers retain the global scientific evidence rules, statistical humility,
+  mathematical sourcing, GPU trust requirements, unrelated-worktree
+  protection, and prohibitions on unsupported correctness, performance,
+  readiness, or scientific claims.
+
 ## Default Implementation Backend
 
 BayesFilter algorithmic implementation defaults to TensorFlow and TensorFlow

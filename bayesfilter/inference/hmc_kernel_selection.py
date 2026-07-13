@@ -1,0 +1,3036 @@
+"""Private fixed-trajectory candidate contracts for operational HMC tuning.
+
+The module owns deterministic policy and sanitized evidence only. Actual HMC
+transitions remain in the TensorFlow/TFP runners used by the orchestrator.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass
+from typing import Any, Callable, Mapping, Sequence
+
+import numpy as np
+
+from bayesfilter.inference.hmc_verification import (
+    HMCAcceptanceEvidence,
+    _evaluate_retained_target_health,
+    evaluate_hmc_acceptance_evidence,
+    hmc_acceptance_evidence_from_payload,
+    target_status_telemetry_has_failure,
+)
+from bayesfilter.inference.hmc_tuning_state import (
+    HMCStepRepair,
+    aggregate_bracketed_step_repair,
+    sanitize_health_failure_reasons,
+)
+
+
+class _CandidateRetuneHealthError(ValueError):
+    """The nominated exact-L setting failed local numerical/target health."""
+
+    def __init__(self, *reasons: str) -> None:
+        self.reasons = tuple(dict.fromkeys(str(item) for item in reasons))
+        super().__init__("exact-final-L epsilon retune candidate health failed")
+
+
+class _SharedRetuneInvalidityError(ValueError):
+    """The exact-L runner, adapter, or returned schema is invalid."""
+
+    def __init__(self, *reasons: str) -> None:
+        self.reasons = tuple(dict.fromkeys(str(item) for item in reasons))
+        super().__init__("exact-final-L epsilon retune shared contract is invalid")
+
+
+SELECTION_NONCLAIMS = (
+    "bounded fixed-trajectory kernel selection only",
+    "representative selection is a policy tie-break, not stochastic ranking",
+    "cost and ESJD are explanatory only",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+)
+
+_RETUNE_CANDIDATE_FAILURE_REASONS = frozenset(
+    {
+        "nonfinite_candidate_state",
+        "nonfinite_log_accept_ratio",
+        "nonfinite_target_log_prob",
+        "nonfinite_target_score",
+        "nonfinite_adapted_step_size",
+        "target_status_telemetry_failure",
+    }
+)
+_RETUNE_SHARED_FAILURE_REASONS = frozenset(
+    {
+        "shared_schema_invalid",
+        "shared_adapter_invalid",
+        "shared_callback_invalid",
+        "required_target_status_telemetry_missing",
+        "target_value_score_shape_invalid",
+    }
+)
+
+
+def _strict_integer(value: Any, *, name: str, minimum: int | None = None) -> int:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(
+        value,
+        (int, np.integer),
+    ):
+        raise ValueError(f"{name} must be an integer scalar")
+    result = int(value)
+    if minimum is not None and result < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    return result
+
+
+def _strict_seed(value: Any, *, name: str) -> tuple[int, int]:
+    try:
+        raw = tuple(value)
+    except TypeError as exc:
+        raise ValueError(f"{name} must contain exactly two integer scalars") from exc
+    if len(raw) != 2:
+        raise ValueError(f"{name} must contain exactly two integer scalars")
+    return tuple(
+        _strict_integer(item, name=f"{name} item", minimum=0) for item in raw
+    )
+
+
+def _strict_bool(value: Any, *, name: str) -> bool:
+    if not isinstance(value, (bool, np.bool_)):
+        raise ValueError(f"{name} must be boolean")
+    return bool(value)
+
+
+def _target_status_policy(value: Any) -> str:
+    policy = str(value)
+    if policy not in {"none", "per_chain_step"}:
+        raise ValueError(
+            "target_status_trace_policy must be 'none' or 'per_chain_step'"
+        )
+    return policy
+
+
+def _json_ready(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in sorted(value.items())}
+    if isinstance(value, (tuple, list)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+def _signature(label: str, payload: Mapping[str, Any]) -> str:
+    text = json.dumps(
+        {"label": label, "payload": _json_ready(payload)},
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    return hashlib.sha256(text.encode("ascii")).hexdigest()
+
+
+def private_start_bank_content_signature(
+    private_start_bank: Any,
+    coordinate_signature: str,
+) -> str:
+    bank = np.asarray(private_start_bank, dtype=float)
+    digest = hashlib.sha256(np.ascontiguousarray(bank).tobytes())
+    digest.update(str(coordinate_signature).encode("ascii"))
+    return digest.hexdigest()
+
+
+def _candidate_execution_contract_signature(
+    *,
+    candidate: "FixedTrajectoryCandidate",
+    replication_index: int,
+    seed: tuple[int, int],
+    frozen_step_size: float,
+    num_results: int,
+    num_burnin_steps: int,
+    target_scope: str,
+    acceptance_policy: Any,
+    target_status_trace_policy: str,
+    chain_execution_mode: str,
+    use_xla: bool,
+) -> str:
+    index = _strict_integer(replication_index, name="replication_index", minimum=0)
+    normalized_seed = _strict_seed(seed, name="candidate seed")
+    result_count = _strict_integer(num_results, name="num_results", minimum=1)
+    burnin_count = _strict_integer(
+        num_burnin_steps,
+        name="num_burnin_steps",
+        minimum=0,
+    )
+    jit = _strict_bool(use_xla, name="use_xla")
+    target_status_policy = _target_status_policy(target_status_trace_policy)
+    return _signature(
+        "bayesfilter.hmc_candidate_execution_contract.v3",
+        {
+            "candidate_signature": candidate.signature,
+            "replication_index": index,
+            "seed": normalized_seed,
+            "frozen_step_size": float(frozen_step_size),
+            "num_results": result_count,
+            "num_burnin_steps": burnin_count,
+            "target_scope": str(target_scope),
+            "acceptance_policy": acceptance_policy.payload(),
+            "target_status_trace_policy": target_status_policy,
+            "chain_execution_mode": str(chain_execution_mode),
+            "use_xla": jit,
+        },
+    )
+
+
+def fixed_trajectory_candidate_values(
+    anchor_l: int,
+    *,
+    max_leapfrog_steps: int,
+) -> tuple[int, ...]:
+    """Return distinct sorted ``{floor(L0/2), L0, 2*L0}`` within bounds."""
+
+    anchor = _strict_integer(anchor_l, name="anchor_l", minimum=1)
+    maximum = _strict_integer(
+        max_leapfrog_steps,
+        name="max_leapfrog_steps",
+        minimum=1,
+    )
+    if anchor <= 0 or maximum <= 0 or anchor > maximum:
+        raise ValueError("trajectory anchor and bound must satisfy 1 <= L0 <= Lmax")
+    return tuple(
+        sorted(
+            {
+                max(1, anchor // 2),
+                anchor,
+                min(maximum, 2 * anchor),
+            }
+        )
+    )
+
+
+def paired_candidate_seed(
+    root_seed: tuple[int, int],
+    *,
+    candidate_signature: str,
+    replication_index: int,
+    domain: str = "candidate_selection",
+) -> tuple[int, int]:
+    """Derive an order-independent seed from candidate identity and replicate."""
+
+    root = _strict_seed(root_seed, name="root_seed")
+    signature = str(candidate_signature)
+    lane = str(domain)
+    replication = _strict_integer(
+        replication_index,
+        name="replication_index",
+        minimum=0,
+    )
+    if not signature or not lane or replication < 0:
+        raise ValueError("candidate seed identity is invalid")
+    digest = hashlib.sha256(
+        f"{root[0]}:{root[1]}:{lane}:{signature}:{replication}".encode("ascii")
+    ).digest()
+    modulus = 2**31 - 1
+    seed = (
+        (root[0] + int.from_bytes(digest[:8], "big")) % modulus,
+        (root[1] + int.from_bytes(digest[8:16], "big")) % modulus,
+    )
+    return (0, 1) if seed == (0, 0) else seed
+
+
+@dataclass(frozen=True)
+class FixedTrajectoryCandidate:
+    """One predeclared deterministic trajectory candidate."""
+
+    anchor_l: int
+    num_leapfrog_steps: int
+    max_leapfrog_steps: int
+    coordinate_signature: str
+    metric_signature: str
+    start_bank_signature: str
+    replication_count: int = 3
+
+    def __post_init__(self) -> None:
+        anchor = _strict_integer(self.anchor_l, name="anchor_l", minimum=1)
+        leapfrog = _strict_integer(
+            self.num_leapfrog_steps,
+            name="num_leapfrog_steps",
+            minimum=1,
+        )
+        maximum = _strict_integer(
+            self.max_leapfrog_steps,
+            name="max_leapfrog_steps",
+            minimum=1,
+        )
+        replications = _strict_integer(
+            self.replication_count,
+            name="replication_count",
+            minimum=1,
+        )
+        if leapfrog not in fixed_trajectory_candidate_values(
+            anchor, max_leapfrog_steps=maximum
+        ):
+            raise ValueError("num_leapfrog_steps is not in the audited candidate set")
+        if replications != 3:
+            raise ValueError("operational selection requires exactly three replications")
+        for name in (
+            "coordinate_signature",
+            "metric_signature",
+            "start_bank_signature",
+        ):
+            value = str(getattr(self, name))
+            if not value:
+                raise ValueError(f"{name} must be non-empty")
+            object.__setattr__(self, name, value)
+        object.__setattr__(self, "anchor_l", anchor)
+        object.__setattr__(self, "num_leapfrog_steps", leapfrog)
+        object.__setattr__(self, "max_leapfrog_steps", maximum)
+        object.__setattr__(self, "replication_count", replications)
+
+    @property
+    def signature(self) -> str:
+        return _signature("bayesfilter.hmc_fixed_trajectory_candidate.v2", self.payload())
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "anchor_l": self.anchor_l,
+            "num_leapfrog_steps": self.num_leapfrog_steps,
+            "max_leapfrog_steps": self.max_leapfrog_steps,
+            "coordinate_signature": self.coordinate_signature,
+            "metric_signature": self.metric_signature,
+            "start_bank_signature": self.start_bank_signature,
+            "replication_count": self.replication_count,
+            "deterministic_fixed_l": True,
+        }
+
+
+def _exact_l_retune_signature(
+    *,
+    candidate: FixedTrajectoryCandidate,
+    root_seed: tuple[int, int],
+    adaptation_steps: int,
+    initial_step_size: float,
+    retuned_step_size: float,
+    target_scope: str,
+    acceptance_policy: Any,
+    target_status_trace_policy: str,
+    chain_execution_mode: str,
+    use_xla: bool,
+) -> str:
+    """Bind a selected handoff to the exact final-``L`` retune config."""
+
+    tune_seed = paired_candidate_seed(
+        root_seed,
+        candidate_signature=candidate.signature,
+        replication_index=0,
+        domain="exact_final_l_epsilon_tune",
+    )
+    adaptation_count = _strict_integer(
+        adaptation_steps,
+        name="adaptation_steps",
+        minimum=1,
+    )
+    jit = _strict_bool(use_xla, name="use_xla")
+    target_status_policy = _target_status_policy(target_status_trace_policy)
+    return _signature(
+        "bayesfilter.hmc_exact_final_l_epsilon_retune.v4",
+        {
+            "candidate_signature": candidate.signature,
+            "start_bank_signature": candidate.start_bank_signature,
+            "coordinate_signature": candidate.coordinate_signature,
+            "metric_signature": candidate.metric_signature,
+            "seed": tune_seed,
+            "num_results": 4,
+            "adaptation_steps": adaptation_count,
+            "initial_step_size": float(initial_step_size),
+            "retuned_step_size": float(retuned_step_size),
+            "target_scope": str(target_scope),
+            "acceptance_policy": acceptance_policy.payload(),
+            "target_status_trace_policy": target_status_policy,
+            "chain_execution_mode": str(chain_execution_mode),
+            "use_xla": jit,
+            "health_contract": (
+                "finite_four_result_four_chain_standard_adaptive_trace_with_requested_target_status_v2"
+            ),
+        },
+    )
+
+
+@dataclass(frozen=True)
+class FixedTrajectoryReplication:
+    """Sanitized evidence from one paired candidate replication."""
+
+    candidate: FixedTrajectoryCandidate
+    replication_index: int
+    seed: tuple[int, int]
+    acceptance_evidence_payload: Mapping[str, Any]
+    execution_contract_signature: str | None = None
+    mean_esjd_per_gradient: float | None = None
+    path_return_fraction: float | None = None
+    cost_gradient_evaluations: int | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate, FixedTrajectoryCandidate):
+            raise TypeError("candidate must be FixedTrajectoryCandidate")
+        index = _strict_integer(
+            self.replication_index,
+            name="replication_index",
+            minimum=0,
+        )
+        if not 0 <= index < self.candidate.replication_count:
+            raise ValueError("replication_index is outside the paired matrix")
+        seed = _strict_seed(self.seed, name="replication seed")
+        evidence = hmc_acceptance_evidence_from_payload(
+            self.acceptance_evidence_payload
+        )
+        execution_signature = (
+            None
+            if self.execution_contract_signature is None
+            else str(self.execution_contract_signature)
+        )
+        if execution_signature is not None and not execution_signature:
+            raise ValueError("candidate execution contract signature is empty")
+        for name in ("mean_esjd_per_gradient", "path_return_fraction"):
+            value = getattr(self, name)
+            if value is not None:
+                value = float(value)
+                if not np.isfinite(value) or value < 0.0:
+                    raise ValueError(f"{name} must be finite and nonnegative")
+                if name == "path_return_fraction" and value > 1.0:
+                    raise ValueError("path_return_fraction must lie inside [0, 1]")
+                object.__setattr__(self, name, value)
+        if self.cost_gradient_evaluations is not None:
+            cost = _strict_integer(
+                self.cost_gradient_evaluations,
+                name="cost_gradient_evaluations",
+                minimum=1,
+            )
+            if cost <= 0:
+                raise ValueError("cost_gradient_evaluations must be positive")
+            object.__setattr__(self, "cost_gradient_evaluations", cost)
+        object.__setattr__(self, "replication_index", index)
+        object.__setattr__(self, "seed", seed)
+        object.__setattr__(self, "acceptance_evidence_payload", evidence.payload())
+        object.__setattr__(
+            self,
+            "execution_contract_signature",
+            execution_signature,
+        )
+
+    @property
+    def evidence(self) -> HMCAcceptanceEvidence:
+        return hmc_acceptance_evidence_from_payload(self.acceptance_evidence_payload)
+
+    @property
+    def signature(self) -> str:
+        return _signature("bayesfilter.hmc_fixed_trajectory_replication.v2", self.payload())
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "candidate_signature": self.candidate.signature,
+            "replication_index": self.replication_index,
+            "seed": self.seed,
+            "acceptance_evidence": self.acceptance_evidence_payload,
+            "execution_contract_signature": self.execution_contract_signature,
+            "mean_esjd_per_gradient": self.mean_esjd_per_gradient,
+            "path_return_fraction": self.path_return_fraction,
+            "cost_gradient_evaluations": self.cost_gradient_evaluations,
+            "efficiency_role": "explanatory_only",
+        }
+
+
+@dataclass(frozen=True)
+class FixedTrajectoryCandidateResult:
+    """Complete three-replication evidence for one candidate."""
+
+    candidate: FixedTrajectoryCandidate
+    replications: tuple[FixedTrajectoryReplication, ...]
+    exact_l_retuned_step_size: float | None = None
+    exact_l_retune_signature: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate, FixedTrajectoryCandidate):
+            raise TypeError("candidate must be FixedTrajectoryCandidate")
+        replications = tuple(self.replications)
+        if len(replications) != self.candidate.replication_count:
+            raise ValueError("candidate result requires all three replications")
+        if any(item.candidate != self.candidate for item in replications):
+            raise ValueError("replication candidate lineage mismatch")
+        if tuple(sorted(item.replication_index for item in replications)) != (0, 1, 2):
+            raise ValueError("candidate result replication matrix is incomplete")
+        if len({item.seed for item in replications}) != len(replications):
+            raise ValueError("candidate replication seed collision")
+        object.__setattr__(
+            self,
+            "replications",
+            tuple(sorted(replications, key=lambda item: item.replication_index)),
+        )
+        step = self.exact_l_retuned_step_size
+        signature = self.exact_l_retune_signature
+        if (step is None) != (signature is None):
+            raise ValueError("exact-L retuned step and signature must be paired")
+        if step is not None:
+            step = float(step)
+            if not np.isfinite(step) or step <= 0.0 or not str(signature):
+                raise ValueError("exact-L retune fields are invalid")
+            object.__setattr__(self, "exact_l_retuned_step_size", step)
+            object.__setattr__(self, "exact_l_retune_signature", str(signature))
+
+    @property
+    def decisions(self) -> tuple[str, ...]:
+        return tuple(item.evidence.acceptance_decision for item in self.replications)
+
+    @property
+    def evidence_validities(self) -> tuple[str, ...]:
+        return tuple(item.evidence.evidence_validity for item in self.replications)
+
+    @property
+    def viable(self) -> bool:
+        return all(item.evidence.promotion_eligible for item in self.replications)
+
+    @property
+    def candidate_data_invalid(self) -> bool:
+        return any(
+            validity == "candidate_data_invalid"
+            for validity in self.evidence_validities
+        )
+
+    @property
+    def shared_invalidity(self) -> bool:
+        return any(
+            validity == "shared_execution_invalid"
+            for validity in self.evidence_validities
+        )
+
+    @property
+    def resonance_detected(self) -> bool:
+        return any(
+            item.evidence.evidence_validity == "valid"
+            and "path_return_resonance_detected"
+            in item.evidence.candidate_promotion_vetoes
+            for item in self.replications
+        )
+
+    @property
+    def resonance_repair_detected(self) -> bool:
+        return any(
+            item.evidence.evidence_validity == "valid"
+            and item.evidence.acceptance_decision == "repair_trajectory"
+            and "path_return_resonance_detected"
+            in item.evidence.candidate_promotion_vetoes
+            for item in self.replications
+        )
+
+    @property
+    def trajectory_repair_detected(self) -> bool:
+        return any(
+            item.evidence.evidence_validity == "valid"
+            and item.evidence.acceptance_decision == "repair_trajectory"
+            for item in self.replications
+        )
+
+    @property
+    def signature(self) -> str:
+        return _signature(
+            "bayesfilter.hmc_fixed_trajectory_candidate_result.v3",
+            self.payload(),
+        )
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_fixed_trajectory_candidate_result.v3",
+            "candidate": self.candidate.payload(),
+            "candidate_signature": self.candidate.signature,
+            "replications": tuple(item.payload() for item in self.replications),
+            "decisions": self.decisions,
+            "evidence_validities": self.evidence_validities,
+            "viable": self.viable,
+            "candidate_data_invalid": self.candidate_data_invalid,
+            "shared_invalidity": self.shared_invalidity,
+            "resonance_detected": self.resonance_detected,
+            "resonance_repair_detected": self.resonance_repair_detected,
+            "trajectory_repair_detected": self.trajectory_repair_detected,
+            "exact_l_retuned_step_size": self.exact_l_retuned_step_size,
+            "exact_l_retune_signature": self.exact_l_retune_signature,
+            "nonclaims": SELECTION_NONCLAIMS,
+        }
+
+
+@dataclass(frozen=True)
+class FixedTrajectoryCandidateRetuneFailure:
+    """One candidate-local exact-``L`` failure in deterministic nominee order."""
+
+    candidate_signature: str
+    seed: tuple[int, int]
+    reasons: tuple[str, ...]
+    nomination_ordinal: int
+
+    def __post_init__(self) -> None:
+        candidate_signature = str(self.candidate_signature)
+        seed = _strict_seed(self.seed, name="candidate retune failure seed")
+        reasons = tuple(dict.fromkeys(str(item) for item in self.reasons))
+        ordinal = _strict_integer(
+            self.nomination_ordinal,
+            name="candidate retune nomination_ordinal",
+            minimum=0,
+        )
+        if (
+            not candidate_signature
+            or not reasons
+            or not set(reasons).issubset(_RETUNE_CANDIDATE_FAILURE_REASONS)
+        ):
+            raise ValueError("candidate retune failure provenance is invalid")
+        object.__setattr__(self, "candidate_signature", candidate_signature)
+        object.__setattr__(self, "seed", seed)
+        object.__setattr__(self, "reasons", reasons)
+        object.__setattr__(self, "nomination_ordinal", ordinal)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_fixed_trajectory_candidate_retune_failure.v1",
+            "candidate_signature": self.candidate_signature,
+            "seed": self.seed,
+            "reasons": self.reasons,
+            "nomination_ordinal": self.nomination_ordinal,
+            "failure_scope": "candidate_data_invalid",
+        }
+
+
+def _ordered_viable_candidate_results(
+    results: Sequence[FixedTrajectoryCandidateResult],
+    *,
+    anchor_l: int,
+) -> tuple[FixedTrajectoryCandidateResult, ...]:
+    return tuple(
+        sorted(
+            (item for item in results if item.viable),
+            key=lambda item: (
+                abs(item.candidate.num_leapfrog_steps - anchor_l),
+                item.candidate.num_leapfrog_steps,
+                item.signature,
+            ),
+        )
+    )
+
+
+@dataclass(frozen=True)
+class FixedTrajectorySelection:
+    """Permutation-invariant representative selection over completed candidates."""
+
+    anchor_l: int
+    candidate_results: tuple[FixedTrajectoryCandidateResult, ...]
+    representative_signature: str | None
+    disposition: str
+    retune_failure_scope: str | None = None
+    retune_failure_reasons: tuple[str, ...] = ()
+    retune_candidate_signature: str | None = None
+    candidate_retune_failures: tuple[
+        FixedTrajectoryCandidateRetuneFailure, ...
+    ] = ()
+
+    def __post_init__(self) -> None:
+        anchor = _strict_integer(self.anchor_l, name="anchor_l", minimum=1)
+        results = tuple(sorted(self.candidate_results, key=lambda item: item.signature))
+        if anchor <= 0 or not results:
+            raise ValueError("selection requires a positive anchor and completed candidates")
+        if len({item.candidate.signature for item in results}) != len(results):
+            raise ValueError("selection contains duplicate candidates")
+        allowed = {
+            "representative_nominated",
+            "representative_selected",
+            "repair_required",
+            "inconclusive_conflict",
+            "inconclusive_resonance",
+            "inconclusive_trajectory",
+            "candidate_set_exhausted",
+            "shared_invalidity",
+            "inconclusive_evidence",
+            "candidate_retune_failed",
+        }
+        disposition = str(self.disposition)
+        if disposition not in allowed:
+            raise ValueError("invalid trajectory selection disposition")
+        viable = _ordered_viable_candidate_results(results, anchor_l=anchor)
+        failures = tuple(self.candidate_retune_failures)
+        if any(
+            not isinstance(item, FixedTrajectoryCandidateRetuneFailure)
+            for item in failures
+        ):
+            raise TypeError("candidate retune failure history has invalid type")
+        if len(failures) > len(viable):
+            raise ValueError("candidate retune failure history exceeds viable candidates")
+        for ordinal, failure in enumerate(failures):
+            expected_candidate = viable[ordinal]
+            if (
+                failure.nomination_ordinal != ordinal
+                or failure.candidate_signature
+                != expected_candidate.candidate.signature
+                or expected_candidate.exact_l_retuned_step_size is not None
+            ):
+                raise ValueError(
+                    "candidate retune failures must be the deterministic policy prefix"
+                )
+        remaining_viable = viable[len(failures) :]
+        expected = remaining_viable[0].signature if remaining_viable else None
+        has_shared_invalidity = any(item.shared_invalidity for item in results)
+        all_replications_candidate_invalid = all(
+            validity == "candidate_data_invalid"
+            for item in results
+            for validity in item.evidence_validities
+        )
+        retune_scope = (
+            None if self.retune_failure_scope is None else str(self.retune_failure_scope)
+        )
+        retune_reasons = tuple(
+            dict.fromkeys(str(item) for item in self.retune_failure_reasons)
+        )
+        retune_candidate = (
+            None
+            if self.retune_candidate_signature is None
+            else str(self.retune_candidate_signature)
+        )
+        if retune_scope == "candidate_data_invalid":
+            if (
+                has_shared_invalidity
+                or not failures
+                or remaining_viable
+                or retune_reasons != failures[-1].reasons
+                or retune_candidate != failures[-1].candidate_signature
+            ):
+                raise ValueError("exact-L retune failure provenance is invalid")
+            expected_disposition = "candidate_retune_failed"
+        elif retune_scope == "shared_execution_invalid":
+            if (
+                has_shared_invalidity
+                or not retune_reasons
+                or not set(retune_reasons).issubset(_RETUNE_SHARED_FAILURE_REASONS)
+                or not remaining_viable
+                or retune_candidate
+                != remaining_viable[0].candidate.signature
+            ):
+                raise ValueError("exact-L retune failure provenance is invalid")
+            expected_disposition = "shared_invalidity"
+        elif retune_scope is not None:
+            raise ValueError("exact-L retune failure provenance is invalid")
+        elif retune_reasons or retune_candidate is not None:
+            raise ValueError("exact-L retune failure fields must be paired")
+        elif has_shared_invalidity:
+            if failures:
+                raise ValueError("screen invalidity cannot carry retune failure history")
+            expected_disposition = "shared_invalidity"
+        elif viable:
+            if not remaining_viable:
+                raise ValueError("exhausted retune failures require terminal provenance")
+            chosen = remaining_viable[0]
+            expected_disposition = (
+                "representative_selected"
+                if chosen.exact_l_retuned_step_size is not None
+                else "representative_nominated"
+            )
+        elif all_replications_candidate_invalid:
+            if failures:
+                raise ValueError("nonviable selection cannot carry retune failures")
+            expected_disposition = "candidate_set_exhausted"
+        elif any(item.resonance_repair_detected for item in results):
+            expected_disposition = "inconclusive_resonance"
+        elif any(item.trajectory_repair_detected for item in results):
+            expected_disposition = "inconclusive_trajectory"
+        else:
+            directions = {
+                decision
+                for item in results
+                for decision in item.decisions
+                if decision in {"repair_step_lower", "repair_step_higher"}
+            }
+            has_neutral_pass = any(
+                replication.evidence.evidence_validity == "valid"
+                and replication.evidence.acceptance_decision == "passed"
+                for item in results
+                for replication in item.replications
+            )
+            if len(directions) > 1:
+                expected_disposition = "inconclusive_conflict"
+            elif has_neutral_pass or not directions:
+                expected_disposition = "inconclusive_evidence"
+            else:
+                expected_disposition = "repair_required"
+        if disposition != expected_disposition:
+            raise ValueError(
+                "trajectory selection disposition is inconsistent with completed evidence"
+            )
+        representative = (
+            None if self.representative_signature is None else str(self.representative_signature)
+        )
+        if disposition in {"representative_nominated", "representative_selected"}:
+            if representative != expected:
+                raise ValueError("representative does not match the audited policy tie-break")
+            chosen = next(item for item in viable if item.signature == representative)
+            if (
+                disposition == "representative_selected"
+                and chosen.exact_l_retuned_step_size is None
+            ):
+                raise ValueError("representative requires exact-final-L epsilon retuning")
+            if (
+                disposition == "representative_nominated"
+                and chosen.exact_l_retuned_step_size is not None
+            ):
+                raise ValueError("a retuned representative must be finalized")
+        elif representative is not None:
+            raise ValueError("non-selection disposition cannot carry a representative")
+        object.__setattr__(self, "anchor_l", anchor)
+        object.__setattr__(self, "candidate_results", results)
+        object.__setattr__(self, "representative_signature", representative)
+        object.__setattr__(self, "disposition", disposition)
+        object.__setattr__(self, "candidate_retune_failures", failures)
+        object.__setattr__(self, "retune_failure_scope", retune_scope)
+        object.__setattr__(self, "retune_failure_reasons", retune_reasons)
+        object.__setattr__(self, "retune_candidate_signature", retune_candidate)
+
+    @property
+    def representative(self) -> FixedTrajectoryCandidateResult | None:
+        return next(
+            (
+                item
+                for item in self.candidate_results
+                if item.signature == self.representative_signature
+            ),
+            None,
+        )
+
+    @property
+    def signature(self) -> str:
+        return _signature("bayesfilter.hmc_fixed_trajectory_selection.v4", self.payload())
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_fixed_trajectory_selection.v4",
+            "anchor_l": self.anchor_l,
+            "candidate_results": tuple(item.payload() for item in self.candidate_results),
+            "representative_signature": self.representative_signature,
+            "disposition": self.disposition,
+            "candidate_retune_failures": tuple(
+                item.payload() for item in self.candidate_retune_failures
+            ),
+            "candidate_retune_failure_count": len(self.candidate_retune_failures),
+            "retune_failure_scope": self.retune_failure_scope,
+            "retune_failure_reasons": self.retune_failure_reasons,
+            "retune_candidate_signature": self.retune_candidate_signature,
+            "selection_rule": "closest_to_anchor_then_lower_l_then_content_signature",
+            "stochastic_ranking_performed": False,
+            "nonclaims": SELECTION_NONCLAIMS,
+        }
+
+
+def select_fixed_trajectory_representative(
+    results: Sequence[FixedTrajectoryCandidateResult],
+    *,
+    anchor_l: int,
+) -> FixedTrajectorySelection:
+    """Aggregate a completed candidate batch without using descriptive ranking."""
+
+    completed = tuple(results)
+    anchor = _strict_integer(anchor_l, name="anchor_l", minimum=1)
+    viable = _ordered_viable_candidate_results(completed, anchor_l=anchor)
+    if any(item.shared_invalidity for item in completed):
+        disposition = "shared_invalidity"
+    elif viable:
+        representative = viable[0]
+        return FixedTrajectorySelection(
+            anchor_l=anchor,
+            candidate_results=completed,
+            representative_signature=representative.signature,
+            disposition=(
+                "representative_selected"
+                if representative.exact_l_retuned_step_size is not None
+                else "representative_nominated"
+            ),
+        )
+    elif all(
+        validity == "candidate_data_invalid"
+        for item in completed
+        for validity in item.evidence_validities
+    ):
+        disposition = "candidate_set_exhausted"
+    elif any(item.resonance_repair_detected for item in completed):
+        disposition = "inconclusive_resonance"
+    elif any(item.trajectory_repair_detected for item in completed):
+        disposition = "inconclusive_trajectory"
+    else:
+        directions = {
+            decision
+            for item in completed
+            for decision in item.decisions
+            if decision in {"repair_step_lower", "repair_step_higher"}
+        }
+        has_neutral_pass = any(
+            item_evidence.evidence_validity == "valid"
+            and item_evidence.acceptance_decision == "passed"
+            for item in completed
+            for item_evidence in (replication.evidence for replication in item.replications)
+        )
+        if len(directions) > 1:
+            disposition = "inconclusive_conflict"
+        elif has_neutral_pass:
+            disposition = "inconclusive_evidence"
+        elif directions:
+            disposition = "repair_required"
+        else:
+            disposition = "inconclusive_evidence"
+    return FixedTrajectorySelection(
+        anchor_l=anchor,
+        candidate_results=completed,
+        representative_signature=None,
+        disposition=disposition,
+    )
+
+
+@dataclass(frozen=True)
+class FixedTrajectoryEvidenceExtensionSlot:
+    """One inconclusive replication replaced by a fresh longer trace."""
+
+    candidate: FixedTrajectoryCandidate
+    replication_index: int
+    checkpoint: int
+    prior_replication_signature: str
+    prior_seed: tuple[int, int]
+    prior_decision: str
+    extended_replication: FixedTrajectoryReplication
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate, FixedTrajectoryCandidate):
+            raise TypeError("evidence extension candidate has invalid type")
+        index = _strict_integer(
+            self.replication_index,
+            name="replication_index",
+            minimum=0,
+        )
+        checkpoint = _strict_integer(
+            self.checkpoint,
+            name="checkpoint",
+            minimum=1,
+        )
+        prior_seed = _strict_seed(self.prior_seed, name="prior_seed")
+        prior_signature = str(self.prior_replication_signature)
+        if not 0 <= index < self.candidate.replication_count:
+            raise ValueError("evidence extension replication index is invalid")
+        if checkpoint <= 0 or len(prior_seed) != 2 or not prior_signature:
+            raise ValueError("evidence extension source identity is invalid")
+        if str(self.prior_decision) != "inconclusive_evidence":
+            raise ValueError("evidence extension may replace only inconclusive evidence")
+        extended = self.extended_replication
+        if not isinstance(extended, FixedTrajectoryReplication):
+            raise TypeError("extended replication has invalid type")
+        if extended.candidate != self.candidate or extended.replication_index != index:
+            raise ValueError("extended replication changed candidate identity")
+        if extended.seed == prior_seed:
+            raise ValueError("evidence extension reused the prior replication seed")
+        object.__setattr__(self, "replication_index", index)
+        object.__setattr__(self, "checkpoint", checkpoint)
+        object.__setattr__(self, "prior_seed", prior_seed)
+        object.__setattr__(self, "prior_replication_signature", prior_signature)
+        object.__setattr__(self, "prior_decision", "inconclusive_evidence")
+
+    @property
+    def extended_decision(self) -> str:
+        return self.extended_replication.evidence.acceptance_decision
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "candidate_signature": self.candidate.signature,
+            "num_leapfrog_steps": self.candidate.num_leapfrog_steps,
+            "replication_index": self.replication_index,
+            "checkpoint": self.checkpoint,
+            "prior_replication_signature": self.prior_replication_signature,
+            "prior_seed": self.prior_seed,
+            "prior_decision": self.prior_decision,
+            "extended_replication_signature": self.extended_replication.signature,
+            "extended_seed": self.extended_replication.seed,
+            "extended_decision": self.extended_decision,
+            "coordinate_signature": self.candidate.coordinate_signature,
+            "metric_signature": self.candidate.metric_signature,
+            "start_bank_signature": self.candidate.start_bank_signature,
+            "fresh_trace_replaces_prior_evidence": True,
+            "traces_concatenated": False,
+            "private_handoff_only": True,
+            "raw_samples_exposed": False,
+            "raw_start_bank_exposed": False,
+        }
+
+
+@dataclass(frozen=True)
+class FixedTrajectoryEvidenceExtension:
+    """Complete candidate-matrix barrier for one fixed extension checkpoint."""
+
+    round_index: int
+    checkpoint: int
+    root_seed: tuple[int, int]
+    frozen_step_size: float
+    screen_num_burnin_steps: int
+    acceptance_policy_signature: str
+    target_scope: str
+    target_status_trace_policy: str
+    chain_execution_mode: str
+    use_xla: bool
+    source_selection: FixedTrajectorySelection
+    matrix_selection: FixedTrajectorySelection
+    finalized_selection: FixedTrajectorySelection
+    slots: tuple[FixedTrajectoryEvidenceExtensionSlot, ...]
+
+    def __post_init__(self) -> None:
+        round_index = _strict_integer(
+            self.round_index,
+            name="round_index",
+            minimum=0,
+        )
+        checkpoint = _strict_integer(
+            self.checkpoint,
+            name="checkpoint",
+            minimum=1,
+        )
+        root_seed = _strict_seed(self.root_seed, name="root_seed")
+        frozen_step = float(self.frozen_step_size)
+        burnin = _strict_integer(
+            self.screen_num_burnin_steps,
+            name="screen_num_burnin_steps",
+            minimum=1,
+        )
+        slots = tuple(
+            sorted(
+                self.slots,
+                key=lambda item: (
+                    item.candidate.num_leapfrog_steps,
+                    item.replication_index,
+                ),
+            )
+        )
+        if (
+            round_index < 0
+            or checkpoint <= 0
+            or len(root_seed) != 2
+            or not np.isfinite(frozen_step)
+            or frozen_step <= 0.0
+            or burnin <= 0
+            or not slots
+        ):
+            raise ValueError("evidence extension round is incomplete")
+        policy_signature = str(self.acceptance_policy_signature)
+        if not policy_signature:
+            raise ValueError("evidence extension policy signature is missing")
+        target_scope = str(self.target_scope)
+        target_status_policy = _target_status_policy(self.target_status_trace_policy)
+        execution_mode = str(self.chain_execution_mode)
+        use_xla = _strict_bool(self.use_xla, name="use_xla")
+        if not target_scope or not execution_mode:
+            raise ValueError("evidence extension execution contract is incomplete")
+        source = self.source_selection
+        matrix = self.matrix_selection
+        finalized = self.finalized_selection
+        if any(
+            not isinstance(item, FixedTrajectorySelection)
+            for item in (source, matrix, finalized)
+        ):
+            raise TypeError("evidence extension selections have invalid type")
+        if source.disposition != "inconclusive_evidence":
+            raise ValueError("evidence extension source is not inconclusive")
+        if source.anchor_l != matrix.anchor_l or source.anchor_l != finalized.anchor_l:
+            raise ValueError("evidence extension changed the trajectory anchor")
+        if any(not isinstance(item, FixedTrajectoryEvidenceExtensionSlot) for item in slots):
+            raise TypeError("evidence extension slot has invalid type")
+        if any(item.checkpoint != checkpoint for item in slots):
+            raise ValueError("evidence extension checkpoint barrier is inconsistent")
+        identities = tuple(
+            (item.candidate.signature, item.replication_index) for item in slots
+        )
+        if len(set(identities)) != len(identities):
+            raise ValueError("evidence extension contains duplicate slots")
+        new_seeds = tuple(item.extended_replication.seed for item in slots)
+        if len(set(new_seeds)) != len(new_seeds):
+            raise ValueError("evidence extension reused a fresh seed")
+
+        source_replications = {
+            (result.candidate.signature, replication.replication_index): replication
+            for result in source.candidate_results
+            for replication in result.replications
+        }
+        if any(
+            _signature(
+                "bayesfilter.hmc_acceptance_policy.v3",
+                replication.evidence.policy.payload(),
+            )
+            != policy_signature
+            for replication in source_replications.values()
+        ):
+            raise ValueError("evidence extension source changed the acceptance policy")
+        expected_identities = {
+            identity
+            for identity, replication in source_replications.items()
+            if (
+                replication.evidence.evidence_validity == "valid"
+                and replication.evidence.acceptance_decision
+                == "inconclusive_evidence"
+            )
+        }
+        if set(identities) != expected_identities:
+            raise ValueError(
+                "evidence extension must replace every and only inconclusive slot"
+            )
+        domain = f"selection_evidence_extension_{round_index}_{checkpoint}"
+        replacements: dict[
+            tuple[str, int], FixedTrajectoryReplication
+        ] = {}
+        for slot in slots:
+            identity = (slot.candidate.signature, slot.replication_index)
+            prior = source_replications[identity]
+            if (
+                slot.prior_replication_signature != prior.signature
+                or slot.prior_seed != prior.seed
+                or slot.prior_decision != prior.evidence.acceptance_decision
+            ):
+                raise ValueError("evidence extension source slot does not match selection")
+            expected_seed = paired_candidate_seed(
+                root_seed,
+                candidate_signature=slot.candidate.signature,
+                replication_index=slot.replication_index,
+                domain=domain,
+            )
+            if slot.extended_replication.seed != expected_seed:
+                raise ValueError("evidence extension seed does not match its domain")
+            expected_execution_signature = _candidate_execution_contract_signature(
+                candidate=slot.candidate,
+                replication_index=slot.replication_index,
+                seed=expected_seed,
+                frozen_step_size=frozen_step,
+                num_results=checkpoint,
+                num_burnin_steps=burnin,
+                target_scope=target_scope,
+                acceptance_policy=slot.extended_replication.evidence.policy,
+                target_status_trace_policy=target_status_policy,
+                chain_execution_mode=execution_mode,
+                use_xla=use_xla,
+            )
+            if (
+                slot.extended_replication.execution_contract_signature
+                != expected_execution_signature
+            ):
+                raise ValueError("evidence extension execution contract is invalid")
+            extended_policy_signature = _signature(
+                "bayesfilter.hmc_acceptance_policy.v3",
+                slot.extended_replication.evidence.policy.payload(),
+            )
+            if extended_policy_signature != policy_signature:
+                raise ValueError("evidence extension changed the acceptance policy")
+            replacements[identity] = slot.extended_replication
+
+        rebuilt_results = tuple(
+            FixedTrajectoryCandidateResult(
+                candidate=result.candidate,
+                replications=tuple(
+                    replacements.get(
+                        (result.candidate.signature, replication.replication_index),
+                        replication,
+                    )
+                    for replication in result.replications
+                ),
+            )
+            for result in source.candidate_results
+        )
+        rebuilt_matrix = select_fixed_trajectory_representative(
+            rebuilt_results,
+            anchor_l=source.anchor_l,
+        )
+        if rebuilt_matrix.signature != matrix.signature:
+            raise ValueError("evidence extension matrix is not an exact slot replacement")
+        if matrix.disposition == "representative_nominated":
+            representative = finalized.representative
+            if (
+                finalized.disposition != "representative_selected"
+                or representative is None
+                or representative.exact_l_retuned_step_size is None
+            ):
+                raise ValueError("evidence extension lost exact-final-L retuning")
+            matrix_replications = {
+                item.candidate.signature: tuple(rep.signature for rep in item.replications)
+                for item in matrix.candidate_results
+            }
+            finalized_replications = {
+                item.candidate.signature: tuple(rep.signature for rep in item.replications)
+                for item in finalized.candidate_results
+            }
+            if matrix_replications != finalized_replications:
+                raise ValueError("exact-final-L retuning changed extension evidence")
+        elif finalized.signature != matrix.signature:
+            raise ValueError("non-nominated extension matrix changed during finalization")
+
+        object.__setattr__(self, "round_index", round_index)
+        object.__setattr__(self, "checkpoint", checkpoint)
+        object.__setattr__(self, "root_seed", root_seed)
+        object.__setattr__(self, "frozen_step_size", frozen_step)
+        object.__setattr__(self, "screen_num_burnin_steps", burnin)
+        object.__setattr__(self, "acceptance_policy_signature", policy_signature)
+        object.__setattr__(self, "target_scope", target_scope)
+        object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        object.__setattr__(self, "chain_execution_mode", execution_mode)
+        object.__setattr__(self, "use_xla", use_xla)
+        object.__setattr__(self, "slots", slots)
+
+    @property
+    def source_selection_signature(self) -> str:
+        return self.source_selection.signature
+
+    @property
+    def matrix_selection_signature(self) -> str:
+        return self.matrix_selection.signature
+
+    @property
+    def finalized_selection_signature(self) -> str:
+        return self.finalized_selection.signature
+
+    @property
+    def matrix_disposition(self) -> str:
+        return self.matrix_selection.disposition
+
+    @property
+    def finalized_disposition(self) -> str:
+        return self.finalized_selection.disposition
+
+    @property
+    def seeds(self) -> tuple[tuple[int, int], ...]:
+        return tuple(item.extended_replication.seed for item in self.slots)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_fixed_trajectory_evidence_extension.v2",
+            "round_index": self.round_index,
+            "checkpoint": self.checkpoint,
+            "root_seed": self.root_seed,
+            "frozen_step_size": self.frozen_step_size,
+            "screen_num_burnin_steps": self.screen_num_burnin_steps,
+            "acceptance_policy_signature": self.acceptance_policy_signature,
+            "target_scope": self.target_scope,
+            "target_status_trace_policy": self.target_status_trace_policy,
+            "chain_execution_mode": self.chain_execution_mode,
+            "use_xla": self.use_xla,
+            "source_selection_signature": self.source_selection_signature,
+            "matrix_selection_signature": self.matrix_selection_signature,
+            "finalized_selection_signature": self.finalized_selection_signature,
+            "matrix_disposition": self.matrix_disposition,
+            "finalized_disposition": self.finalized_disposition,
+            "slots": tuple(item.payload() for item in self.slots),
+            "extended_slot_count": len(self.slots),
+            "complete_matrix_barrier": True,
+            "fresh_traces_concatenated": False,
+            "stochastic_ranking_performed": False,
+            "private_handoff_only": True,
+            "raw_samples_exposed": False,
+            "raw_start_bank_exposed": False,
+        }
+
+
+@dataclass(frozen=True)
+class FixedTrajectorySelectionRepairAttempt:
+    """One complete paired-selection matrix and its optional step repair."""
+
+    attempt_index: int
+    root_seed: tuple[int, int]
+    input_step_size: float
+    selection: FixedTrajectorySelection
+    bracket_before: tuple[float | None, float | None]
+    repair: HMCStepRepair | None = None
+    evidence_extensions: tuple[FixedTrajectoryEvidenceExtension, ...] = ()
+    initial_replication_seeds: tuple[tuple[int, int], ...] | None = None
+    initial_selection_signature: str | None = None
+    lower_bound_source_attempt_index_before: int | None = None
+
+    def __post_init__(self) -> None:
+        index = _strict_integer(
+            self.attempt_index,
+            name="attempt_index",
+            minimum=0,
+        )
+        seed = _strict_seed(self.root_seed, name="attempt root_seed")
+        step = float(self.input_step_size)
+        if index < 0 or len(seed) != 2:
+            raise ValueError("selection repair attempt identity is invalid")
+        if not np.isfinite(step) or step <= 0.0:
+            raise ValueError("selection repair input step must be positive and finite")
+        if not isinstance(self.selection, FixedTrajectorySelection):
+            raise TypeError("selection repair attempt requires a selection")
+        lower, upper = _coerce_empirical_bracket(self.bracket_before)
+        lower_source = self.lower_bound_source_attempt_index_before
+        if lower_source is not None:
+            lower_source = _strict_integer(
+                lower_source,
+                name="lower_bound_source_attempt_index_before",
+                minimum=0,
+            )
+            if lower is None or lower_source < 0 or lower_source >= index:
+                raise ValueError("selection attempt lower-bound provenance is invalid")
+        repair = self.repair
+        if repair is not None and not isinstance(repair, HMCStepRepair):
+            raise TypeError("selection repair attempt has invalid repair evidence")
+        evidence_records = tuple(
+            sorted(
+                (
+                    replication.evidence
+                    for result in self.selection.candidate_results
+                    for replication in result.replications
+                ),
+                key=lambda item: repr(item.payload()),
+            )
+        )
+        if repair is not None:
+            expected_decisions = tuple(
+                item.acceptance_decision for item in evidence_records
+            )
+            if repair.source_decisions != expected_decisions:
+                raise ValueError("selection repair decisions do not match its evidence")
+            if repair.source_health_failures:
+                expected_health = tuple(
+                    sanitize_health_failure_reasons(
+                        item.engineering_invalidity_reasons
+                    )
+                    for item in evidence_records
+                )
+                if repair.source_health_failures != expected_health:
+                    raise ValueError("selection repair health reasons do not match its evidence")
+        if self.selection.disposition == "repair_required" and repair is None:
+            raise ValueError("repair-required selection must be aggregated")
+        if (
+            self.selection.disposition
+            not in {"repair_required", "candidate_set_exhausted"}
+            and repair is not None
+        ):
+            raise ValueError("terminal selection cannot carry a step repair")
+        if self.selection.disposition == "candidate_set_exhausted" and repair is not None:
+            raise ValueError("candidate-invalid evidence cannot supply step repair")
+        if repair is not None and not np.isclose(
+            repair.base_step_size, step, rtol=1.0e-12, atol=0.0
+        ):
+            raise ValueError("selection repair base step does not match its attempt")
+        extensions = tuple(self.evidence_extensions)
+        if any(not isinstance(item, FixedTrajectoryEvidenceExtension) for item in extensions):
+            raise TypeError("selection attempt evidence extension has invalid type")
+        if tuple(item.round_index for item in extensions) != tuple(range(len(extensions))):
+            raise ValueError("evidence extension round indices are not contiguous")
+        if any(
+            left.checkpoint >= right.checkpoint
+            for left, right in zip(extensions, extensions[1:])
+        ):
+            raise ValueError("evidence extension checkpoints must increase")
+        if any(item.root_seed != seed for item in extensions):
+            raise ValueError("evidence extension changed the attempt root seed")
+        if any(
+            not np.isclose(
+                item.frozen_step_size,
+                step,
+                rtol=1.0e-12,
+                atol=0.0,
+            )
+            for item in extensions
+        ):
+            raise ValueError("evidence extension changed the frozen step size")
+        initial_selection_signature = (
+            self.selection.signature
+            if self.initial_selection_signature is None
+            else str(self.initial_selection_signature)
+        )
+        if not initial_selection_signature:
+            raise ValueError("initial selection signature must be non-empty")
+        if extensions and extensions[0].source_selection_signature != initial_selection_signature:
+            raise ValueError("evidence extension lost its initial selection lineage")
+        if any(
+            left.finalized_selection_signature != right.source_selection_signature
+            for left, right in zip(extensions, extensions[1:])
+        ):
+            raise ValueError("evidence extension selection lineage is not append-only")
+        if extensions and extensions[-1].finalized_selection_signature != self.selection.signature:
+            raise ValueError("evidence extension lost its final selection lineage")
+        initial_seeds = (
+            tuple(self.replication_seeds)
+            if self.initial_replication_seeds is None
+            else tuple(
+                _strict_seed(seed, name="initial replication seed")
+                for seed in self.initial_replication_seeds
+            )
+        )
+        if len(initial_seeds) != sum(
+            len(item.replications) for item in self.selection.candidate_results
+        ) or any(len(seed) != 2 for seed in initial_seeds):
+            raise ValueError("selection attempt initial replication seed matrix is incomplete")
+        if len(set(initial_seeds)) != len(initial_seeds):
+            raise ValueError("selection attempt initial replication seeds collide")
+        for failure in self.selection.candidate_retune_failures:
+            expected_seed = paired_candidate_seed(
+                seed,
+                candidate_signature=failure.candidate_signature,
+                replication_index=0,
+                domain="exact_final_l_epsilon_tune",
+            )
+            if failure.seed != expected_seed:
+                raise ValueError("candidate retune failure seed lost its lineage")
+        if extensions:
+            source_seeds = tuple(
+                replication.seed
+                for result in extensions[0].source_selection.candidate_results
+                for replication in result.replications
+            )
+            if initial_seeds != source_seeds:
+                raise ValueError("selection attempt initial seed matrix lost its lineage")
+        object.__setattr__(self, "attempt_index", index)
+        object.__setattr__(self, "root_seed", seed)
+        object.__setattr__(self, "input_step_size", step)
+        object.__setattr__(self, "bracket_before", (lower, upper))
+        object.__setattr__(
+            self,
+            "lower_bound_source_attempt_index_before",
+            lower_source,
+        )
+        object.__setattr__(self, "evidence_extensions", extensions)
+        object.__setattr__(self, "initial_replication_seeds", initial_seeds)
+        object.__setattr__(
+            self,
+            "initial_selection_signature",
+            initial_selection_signature,
+        )
+
+    @property
+    def replication_seeds(self) -> tuple[tuple[int, int], ...]:
+        if self.initial_replication_seeds is not None:
+            return self.initial_replication_seeds
+        return tuple(
+            replication.seed
+            for result in self.selection.candidate_results
+            for replication in result.replications
+        )
+
+    @property
+    def extension_seeds(self) -> tuple[tuple[int, int], ...]:
+        return tuple(seed for extension in self.evidence_extensions for seed in extension.seeds)
+
+    @property
+    def all_replication_execution_seeds(self) -> tuple[tuple[int, int], ...]:
+        return self.replication_seeds + self.extension_seeds
+
+    @property
+    def exact_l_retune_seed(self) -> tuple[int, int] | None:
+        seeds = self.exact_l_retune_seeds
+        return None if not seeds else seeds[-1]
+
+    @property
+    def exact_l_retune_seeds(self) -> tuple[tuple[int, int], ...]:
+        seeds = tuple(item.seed for item in self.selection.candidate_retune_failures)
+        failed_candidates = {
+            item.candidate_signature
+            for item in self.selection.candidate_retune_failures
+        }
+        representative = self.selection.representative
+        candidate_signature = (
+            None
+            if representative is None
+            else representative.candidate.signature
+        )
+        if candidate_signature is None:
+            candidate_signature = self.selection.retune_candidate_signature
+        if candidate_signature is None or candidate_signature in failed_candidates:
+            return seeds
+        final_seed = paired_candidate_seed(
+            self.root_seed,
+            candidate_signature=candidate_signature,
+            replication_index=0,
+            domain="exact_final_l_epsilon_tune",
+        )
+        return seeds + (final_seed,)
+
+    @property
+    def output_step_size(self) -> float | None:
+        if self.repair is None:
+            return None
+        return self.repair.repaired_step_size
+
+    @property
+    def bracket_after(self) -> tuple[float | None, float | None]:
+        if self.repair is None:
+            return self.bracket_before
+        return self.repair.bracket
+
+    @property
+    def lower_bound_source_attempt_index_after(self) -> int | None:
+        before = self.lower_bound_source_attempt_index_before
+        if self.repair is None or self.repair.direction != "higher_epsilon":
+            return before
+        prior_lower = self.bracket_before[0]
+        next_lower = self.bracket_after[0]
+        lower_changed = prior_lower is None or not np.isclose(
+            float(prior_lower),
+            float(next_lower),
+            rtol=1.0e-12,
+            atol=0.0,
+        )
+        if set(self.repair.source_decisions) == {"repair_step_higher"}:
+            if np.isclose(
+                float(next_lower),
+                self.input_step_size,
+                rtol=1.0e-12,
+                atol=0.0,
+            ):
+                return self.attempt_index
+            return before
+        return None if lower_changed else before
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_fixed_trajectory_selection_repair_attempt.v3",
+            "attempt_index": self.attempt_index,
+            "root_seed": self.root_seed,
+            "input_step_size": self.input_step_size,
+            "selection_signature": self.selection.signature,
+            "initial_selection_signature": self.initial_selection_signature,
+            "selection_disposition": self.selection.disposition,
+            "candidate_decisions": tuple(
+                (
+                    item.candidate.num_leapfrog_steps,
+                    item.decisions,
+                )
+                for item in sorted(
+                    self.selection.candidate_results,
+                    key=lambda result: result.candidate.num_leapfrog_steps,
+                )
+            ),
+            "candidate_evidence": tuple(
+                (
+                    item.candidate.num_leapfrog_steps,
+                    tuple(
+                        {
+                            "replication_index": replication.replication_index,
+                            "evidence_validity": (
+                                replication.evidence.evidence_validity
+                            ),
+                            "acceptance_decision": (
+                                replication.evidence.acceptance_decision
+                            ),
+                            "engineering_invalidity_reasons": (
+                                sanitize_health_failure_reasons(
+                                    replication.evidence.engineering_invalidity_reasons
+                                )
+                            ),
+                            "candidate_promotion_vetoes": (
+                                replication.evidence.candidate_promotion_vetoes
+                            ),
+                            "candidate_health_alerts": (
+                                replication.evidence.candidate_health_alerts
+                            ),
+                            "execution_contract_signature": (
+                                replication.execution_contract_signature
+                            ),
+                        }
+                        for replication in item.replications
+                    ),
+                )
+                for item in sorted(
+                    self.selection.candidate_results,
+                    key=lambda result: result.candidate.num_leapfrog_steps,
+                )
+            ),
+            "replication_seeds": self.replication_seeds,
+            "extension_seeds": self.extension_seeds,
+            "evidence_extensions": tuple(
+                item.payload() for item in self.evidence_extensions
+            ),
+            "evidence_extension_count": len(self.evidence_extensions),
+            "exact_l_retune_seed": self.exact_l_retune_seed,
+            "exact_l_retune_seeds": self.exact_l_retune_seeds,
+            "bracket_before": self.bracket_before,
+            "bracket_after": self.bracket_after,
+            "lower_bound_source_attempt_index_before": (
+                self.lower_bound_source_attempt_index_before
+            ),
+            "lower_bound_source_attempt_index_after": (
+                self.lower_bound_source_attempt_index_after
+            ),
+            "repair": None if self.repair is None else self.repair.payload(),
+            "output_step_size": self.output_step_size,
+            "step_veto_recovery_applied": bool(
+                self.selection.disposition == "candidate_set_exhausted"
+                and self.repair is not None
+                and self.repair.disposition == "repair_step"
+            ),
+            "private_handoff_only": True,
+            "raw_samples_exposed": False,
+            "raw_start_bank_exposed": False,
+        }
+
+
+@dataclass(frozen=True)
+class BoundedFixedTrajectorySelectionResult:
+    """Terminal result of the BayesFilter-owned bounded selection repair loop."""
+
+    attempts: tuple[FixedTrajectorySelectionRepairAttempt, ...]
+    max_attempts: int
+    terminal_disposition: str
+    evidence_extension_checkpoints: tuple[int, ...] = ()
+
+    def __post_init__(self) -> None:
+        attempts = tuple(self.attempts)
+        maximum = _strict_integer(
+            self.max_attempts,
+            name="max_attempts",
+            minimum=1,
+        )
+        allowed = {
+            "representative_selected",
+            "shared_invalidity",
+            "candidate_set_exhausted",
+            "candidate_retune_failed",
+            "inconclusive_conflict",
+            "inconclusive_resonance",
+            "inconclusive_trajectory",
+            "inconclusive_stalled_or_oscillating",
+            "budget_exhausted_valid",
+        }
+        terminal = str(self.terminal_disposition)
+        extension_checkpoints = tuple(
+            int(item) for item in self.evidence_extension_checkpoints
+        )
+        if maximum <= 0 or maximum > 5:
+            raise ValueError("bounded selection requires one to five attempts")
+        if not attempts or len(attempts) > maximum:
+            raise ValueError("bounded selection attempt count is invalid")
+        if tuple(item.attempt_index for item in attempts) != tuple(range(len(attempts))):
+            raise ValueError("bounded selection attempt indices are not contiguous")
+        if terminal not in allowed:
+            raise ValueError("bounded selection terminal disposition is invalid")
+        if any(item <= 0 for item in extension_checkpoints) or any(
+            left >= right
+            for left, right in zip(
+                extension_checkpoints,
+                extension_checkpoints[1:],
+            )
+        ):
+            raise ValueError("configured evidence extension ladder is invalid")
+        if len(extension_checkpoints) > 2:
+            raise ValueError("configured evidence extension ladder is too long")
+        for attempt in attempts:
+            executed = tuple(
+                item.checkpoint for item in attempt.evidence_extensions
+            )
+            if executed != extension_checkpoints[: len(executed)]:
+                raise ValueError("executed evidence extensions changed the configured ladder")
+        if len({item.root_seed for item in attempts}) != len(attempts):
+            raise ValueError("bounded selection reused an attempt root seed")
+        replication_seeds = tuple(
+            seed
+            for attempt in attempts
+            for seed in attempt.all_replication_execution_seeds
+        )
+        if len(set(replication_seeds)) != len(replication_seeds):
+            raise ValueError("bounded selection reused a replication seed")
+        execution_seeds = tuple(
+            [
+                *replication_seeds,
+                *(seed for attempt in attempts for seed in attempt.exact_l_retune_seeds),
+            ]
+        )
+        if len(set(execution_seeds)) != len(execution_seeds):
+            raise ValueError("bounded selection reused an execution seed")
+        lineage_seeds = tuple(item.root_seed for item in attempts) + execution_seeds
+        if len(set(lineage_seeds)) != len(lineage_seeds):
+            raise ValueError("bounded selection seed lineage contains a collision")
+        for previous, current in zip(attempts, attempts[1:]):
+            if previous.output_step_size is None or not np.isclose(
+                previous.output_step_size,
+                current.input_step_size,
+                rtol=1.0e-12,
+                atol=0.0,
+            ):
+                raise ValueError("bounded selection step history is not append-only")
+            if previous.bracket_after != current.bracket_before:
+                raise ValueError("bounded selection bracket history is not append-only")
+            if (
+                previous.lower_bound_source_attempt_index_after
+                != current.lower_bound_source_attempt_index_before
+            ):
+                raise ValueError(
+                    "bounded selection lower-bound provenance is not append-only"
+                )
+        for attempt in attempts:
+            source_index = attempt.lower_bound_source_attempt_index_before
+            if source_index is None:
+                continue
+            source = attempts[source_index]
+            if (
+                source.lower_bound_source_attempt_index_after != source_index
+                or source.repair is None
+                or source.repair.direction != "higher_epsilon"
+                or set(source.repair.source_decisions) != {"repair_step_higher"}
+                or not np.isclose(
+                    float(source.bracket_after[0]),
+                    float(attempt.bracket_before[0]),
+                    rtol=1.0e-12,
+                    atol=0.0,
+                )
+            ):
+                raise ValueError("bounded selection lower-bound source is invalid")
+        final = attempts[-1]
+        if terminal == "representative_selected":
+            if final.selection.disposition != terminal:
+                raise ValueError("selected result lost its terminal representative")
+        elif terminal == "budget_exhausted_valid":
+            unresolved = final.selection.disposition in {
+                "repair_required",
+                "inconclusive_evidence",
+            }
+            exhausted_repairs = (
+                len(attempts) == maximum
+                and final.selection.disposition == "repair_required"
+            )
+            exhausted_evidence = (
+                final.selection.disposition == "inconclusive_evidence"
+                and tuple(
+                    item.checkpoint for item in final.evidence_extensions
+                )
+                == extension_checkpoints
+            )
+            if not unresolved or not (exhausted_repairs or exhausted_evidence):
+                raise ValueError(
+                    "budget exhaustion requires unresolved repair or extension evidence"
+                )
+        elif final.selection.disposition == "repair_required":
+            if final.repair is None or final.repair.disposition != terminal:
+                raise ValueError("terminal repair disposition does not match evidence")
+        elif final.selection.disposition != terminal:
+            raise ValueError("terminal selection disposition does not match evidence")
+        object.__setattr__(self, "attempts", attempts)
+        object.__setattr__(self, "max_attempts", maximum)
+        object.__setattr__(self, "terminal_disposition", terminal)
+        object.__setattr__(
+            self,
+            "evidence_extension_checkpoints",
+            extension_checkpoints,
+        )
+
+    @property
+    def selection(self) -> FixedTrajectorySelection:
+        return self.attempts[-1].selection
+
+    @property
+    def representative(self) -> FixedTrajectoryCandidateResult | None:
+        return self.selection.representative
+
+    @property
+    def repair_direction_history(self) -> tuple[str, ...]:
+        return tuple(
+            str(attempt.repair.direction)
+            for attempt in self.attempts
+            if attempt.repair is not None
+            and attempt.repair.disposition == "repair_step"
+        )
+
+    @property
+    def repaired_step_history(self) -> tuple[float, ...]:
+        return tuple(
+            float(attempt.repair.repaired_step_size)
+            for attempt in self.attempts
+            if attempt.repair is not None
+            and attempt.repair.repaired_step_size is not None
+        )
+
+    @property
+    def step_veto_recovery_count(self) -> int:
+        return sum(
+            attempt.selection.disposition == "candidate_set_exhausted"
+            and attempt.repair is not None
+            and attempt.repair.disposition == "repair_step"
+            for attempt in self.attempts
+        )
+
+    @property
+    def final_bracket(self) -> tuple[float | None, float | None]:
+        return self.attempts[-1].bracket_after
+
+    @property
+    def signature(self) -> str:
+        return _signature("bayesfilter.hmc_bounded_fixed_trajectory_selection.v4", self.payload())
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_bounded_fixed_trajectory_selection.v4",
+            "attempts": tuple(item.payload() for item in self.attempts),
+            "attempt_count": len(self.attempts),
+            "max_attempts": self.max_attempts,
+            "terminal_disposition": self.terminal_disposition,
+            "evidence_extension_checkpoints": self.evidence_extension_checkpoints,
+            "terminal_selection_signature": self.selection.signature,
+            "repair_direction_history": self.repair_direction_history,
+            "repaired_step_history": self.repaired_step_history,
+            "final_bracket": self.final_bracket,
+            "selection_repair_loop_exercised": len(self.attempts) > 1,
+            "repair_loop_validated": False,
+            "evidence_extension_count": sum(
+                len(attempt.evidence_extensions) for attempt in self.attempts
+            ),
+            "step_veto_recovery_count": self.step_veto_recovery_count,
+            "stochastic_ranking_performed": False,
+            "nonclaims": SELECTION_NONCLAIMS,
+        }
+
+
+def run_bounded_operational_fixed_trajectory_selection(
+    *,
+    adapter: Any,
+    private_start_bank: Any,
+    private_start_bank_signature: str,
+    coordinate_signature: str,
+    metric_signature: str,
+    anchor_l: int,
+    max_leapfrog_steps: int,
+    initial_step_size: float,
+    root_seed: tuple[int, int],
+    target_scope: str,
+    acceptance_policy: Any,
+    max_attempts: int,
+    repair_factor: float = 2.0,
+    screen_num_results: int = 64,
+    screen_num_burnin_steps: int = 16,
+    final_tune_adaptation_steps: int = 64,
+    chain_execution_mode: str = "tf_function",
+    use_xla: bool = False,
+    target_status_trace_policy: str = "none",
+    run_full_chain: Callable[..., Any] | None = None,
+    selector: Callable[..., FixedTrajectorySelection] | None = None,
+    evidence_extension_checkpoints: Sequence[int] = (),
+    evidence_extender: Callable[..., tuple[
+        FixedTrajectorySelection,
+        FixedTrajectoryEvidenceExtension,
+    ]]
+    | None = None,
+) -> BoundedFixedTrajectorySelectionResult:
+    """Run complete paired matrices until selection or a typed bounded stop."""
+
+    maximum = _strict_integer(max_attempts, name="max_attempts", minimum=1)
+    if maximum <= 0 or maximum > 5:
+        raise ValueError("max_attempts must lie inside [1, 5]")
+    step = float(initial_step_size)
+    if not np.isfinite(step) or step <= 0.0:
+        raise ValueError("initial_step_size must be positive and finite")
+    bank = _validated_operational_start_bank(private_start_bank, acceptance_policy)
+    target_status_policy = _target_status_policy(target_status_trace_policy)
+    expected_bank_signature = private_start_bank_content_signature(
+        bank,
+        str(coordinate_signature),
+    )
+    if str(private_start_bank_signature) != expected_bank_signature:
+        raise ValueError("private start bank signature does not match its content")
+    batch_selector = (
+        run_operational_fixed_trajectory_selection if selector is None else selector
+    )
+    extension_runner = (
+        extend_operational_fixed_trajectory_evidence
+        if evidence_extender is None
+        else evidence_extender
+    )
+    screen_results = _strict_integer(
+        screen_num_results,
+        name="screen_num_results",
+        minimum=1,
+    )
+    extension_checkpoints = tuple(
+        _strict_integer(item, name="evidence extension checkpoint", minimum=1)
+        for item in evidence_extension_checkpoints
+    )
+    if any(item <= screen_results for item in extension_checkpoints):
+        raise ValueError("evidence extension checkpoints must exceed the initial screen")
+    if any(
+        left >= right
+        for left, right in zip(extension_checkpoints, extension_checkpoints[1:])
+    ):
+        raise ValueError("evidence extension checkpoints must increase")
+    if len(extension_checkpoints) > 2:
+        raise ValueError("bounded selection supports at most two evidence extensions")
+    attempts: list[FixedTrajectorySelectionRepairAttempt] = []
+    direction_history: list[str] = []
+    step_history: list[float] = []
+    bracket: tuple[float | None, float | None] = (None, None)
+    lower_bound_source_attempt_index: int | None = None
+    for attempt_index in range(maximum):
+        attempt_seed = _selection_attempt_root_seed(root_seed, attempt_index)
+        selection = batch_selector(
+            adapter=adapter,
+            private_start_bank=private_start_bank,
+            private_start_bank_signature=private_start_bank_signature,
+            coordinate_signature=coordinate_signature,
+            metric_signature=metric_signature,
+            anchor_l=anchor_l,
+            max_leapfrog_steps=max_leapfrog_steps,
+            frozen_step_size=step,
+            root_seed=attempt_seed,
+            target_scope=target_scope,
+            acceptance_policy=acceptance_policy,
+            screen_num_results=screen_num_results,
+            screen_num_burnin_steps=screen_num_burnin_steps,
+            final_tune_adaptation_steps=final_tune_adaptation_steps,
+            chain_execution_mode=chain_execution_mode,
+            use_xla=use_xla,
+            target_status_trace_policy=target_status_policy,
+            run_full_chain=run_full_chain,
+        )
+        initial_replication_seeds = tuple(
+            replication.seed
+            for result in selection.candidate_results
+            for replication in result.replications
+        )
+        _validate_initial_selection_seed_lineage(
+            selection,
+            root_seed=attempt_seed,
+        )
+        _validate_selection_execution_contract(
+            selection,
+            frozen_step_size=step,
+            num_results=screen_num_results,
+            num_burnin_steps=screen_num_burnin_steps,
+            target_scope=target_scope,
+            acceptance_policy=acceptance_policy,
+            chain_execution_mode=chain_execution_mode,
+            use_xla=use_xla,
+            target_status_trace_policy=target_status_policy,
+        )
+        initial_selection_signature = selection.signature
+        _validate_selection_frozen_lineage(
+            selection,
+            anchor_l=anchor_l,
+            max_leapfrog_steps=max_leapfrog_steps,
+            coordinate_signature=str(coordinate_signature),
+            metric_signature=str(metric_signature),
+            start_bank_signature=str(private_start_bank_signature),
+        )
+        _validate_selection_exact_l_retune_lineage(
+            selection,
+            root_seed=attempt_seed,
+            frozen_step_size=step,
+            final_tune_adaptation_steps=final_tune_adaptation_steps,
+            target_scope=target_scope,
+            acceptance_policy=acceptance_policy,
+            chain_execution_mode=chain_execution_mode,
+            use_xla=use_xla,
+            target_status_trace_policy=target_status_policy,
+        )
+        extensions: list[FixedTrajectoryEvidenceExtension] = []
+        if selection.disposition == "inconclusive_evidence":
+            for extension_index, checkpoint in enumerate(extension_checkpoints):
+                source_selection = selection
+                selection, extension = extension_runner(
+                    selection=source_selection,
+                    adapter=adapter,
+                    private_start_bank=private_start_bank,
+                    private_start_bank_signature=private_start_bank_signature,
+                    coordinate_signature=coordinate_signature,
+                    metric_signature=metric_signature,
+                    frozen_step_size=step,
+                    root_seed=attempt_seed,
+                    target_scope=target_scope,
+                    acceptance_policy=acceptance_policy,
+                    checkpoint=checkpoint,
+                    extension_round_index=extension_index,
+                    screen_num_burnin_steps=screen_num_burnin_steps,
+                    final_tune_adaptation_steps=final_tune_adaptation_steps,
+                    chain_execution_mode=chain_execution_mode,
+                    use_xla=use_xla,
+                    target_status_trace_policy=target_status_policy,
+                    run_full_chain=run_full_chain,
+                )
+                _validate_returned_evidence_extension(
+                    extension,
+                    source_selection=source_selection,
+                    finalized_selection=selection,
+                    root_seed=attempt_seed,
+                    frozen_step_size=step,
+                    screen_num_burnin_steps=screen_num_burnin_steps,
+                    acceptance_policy=acceptance_policy,
+                    checkpoint=checkpoint,
+                    extension_round_index=extension_index,
+                    target_scope=target_scope,
+                    chain_execution_mode=chain_execution_mode,
+                    use_xla=use_xla,
+                    target_status_trace_policy=target_status_policy,
+                )
+                extensions.append(extension)
+                _validate_selection_frozen_lineage(
+                    selection,
+                    anchor_l=anchor_l,
+                    max_leapfrog_steps=max_leapfrog_steps,
+                    coordinate_signature=str(coordinate_signature),
+                    metric_signature=str(metric_signature),
+                    start_bank_signature=str(private_start_bank_signature),
+                )
+                _validate_selection_exact_l_retune_lineage(
+                    selection,
+                    root_seed=attempt_seed,
+                    frozen_step_size=step,
+                    final_tune_adaptation_steps=final_tune_adaptation_steps,
+                    target_scope=target_scope,
+                    acceptance_policy=acceptance_policy,
+                    chain_execution_mode=chain_execution_mode,
+                    use_xla=use_xla,
+                    target_status_trace_policy=target_status_policy,
+                )
+                if selection.disposition != "inconclusive_evidence":
+                    break
+        evidence = tuple(
+            replication.evidence
+            for result in selection.candidate_results
+            for replication in result.replications
+        )
+        reserved = attempt_index + 1 < maximum
+        if selection.disposition != "repair_required":
+            attempts.append(
+                FixedTrajectorySelectionRepairAttempt(
+                    attempt_index=attempt_index,
+                    root_seed=attempt_seed,
+                    input_step_size=step,
+                    selection=selection,
+                    bracket_before=bracket,
+                    evidence_extensions=tuple(extensions),
+                    initial_replication_seeds=initial_replication_seeds,
+                    initial_selection_signature=initial_selection_signature,
+                    lower_bound_source_attempt_index_before=(
+                        lower_bound_source_attempt_index
+                    ),
+                )
+            )
+            terminal = (
+                "budget_exhausted_valid"
+                if selection.disposition == "inconclusive_evidence"
+                else selection.disposition
+            )
+            return BoundedFixedTrajectorySelectionResult(
+                attempts=tuple(attempts),
+                max_attempts=maximum,
+                terminal_disposition=terminal,
+                evidence_extension_checkpoints=extension_checkpoints,
+            )
+
+        repair = aggregate_bracketed_step_repair(
+            evidence,
+            base_step_size=step,
+            repair_factor=repair_factor,
+            empirical_bracket=bracket,
+            direction_history=direction_history,
+            repaired_step_history=step_history,
+            verification_reserved=reserved,
+        )
+        attempt = FixedTrajectorySelectionRepairAttempt(
+            attempt_index=attempt_index,
+            root_seed=attempt_seed,
+            input_step_size=step,
+            selection=selection,
+            bracket_before=bracket,
+            repair=repair,
+            evidence_extensions=tuple(extensions),
+            initial_replication_seeds=initial_replication_seeds,
+            initial_selection_signature=initial_selection_signature,
+            lower_bound_source_attempt_index_before=(
+                lower_bound_source_attempt_index
+            ),
+        )
+        attempts.append(attempt)
+        if repair.disposition != "repair_step":
+            terminal = (
+                "budget_exhausted_valid"
+                if not reserved and repair.disposition == "inconclusive_evidence"
+                else repair.disposition
+            )
+            return BoundedFixedTrajectorySelectionResult(
+                attempts=tuple(attempts),
+                max_attempts=maximum,
+                terminal_disposition=terminal,
+                evidence_extension_checkpoints=extension_checkpoints,
+            )
+        if repair.direction is None or repair.repaired_step_size is None:
+            raise AssertionError("applied selection repair lost its direction or step")
+        direction_history.append(repair.direction)
+        step = repair.repaired_step_size
+        step_history.append(step)
+        bracket = repair.bracket
+        lower_bound_source_attempt_index = (
+            attempt.lower_bound_source_attempt_index_after
+        )
+    raise AssertionError("bounded selection loop escaped its terminal disposition")
+
+
+def _selection_attempt_root_seed(
+    root_seed: tuple[int, int], attempt_index: int
+) -> tuple[int, int]:
+    index = _strict_integer(
+        attempt_index,
+        name="selection attempt index",
+        minimum=0,
+    )
+    root = _strict_seed(root_seed, name="root_seed")
+    if index == 0:
+        return root
+    return paired_candidate_seed(
+        root,
+        candidate_signature="bounded_fixed_trajectory_selection_attempt",
+        replication_index=index,
+        domain="selection_attempt_root",
+    )
+
+
+def _coerce_empirical_bracket(
+    bracket: tuple[float | None, float | None],
+) -> tuple[float | None, float | None]:
+    lower, upper = bracket
+    lower = None if lower is None else float(lower)
+    upper = None if upper is None else float(upper)
+    for name, value in (("lower", lower), ("upper", upper)):
+        if value is not None and (not np.isfinite(value) or value <= 0.0):
+            raise ValueError(f"empirical bracket {name} bound is invalid")
+    if lower is not None and upper is not None and lower >= upper:
+        raise ValueError("empirical acceptance bracket is inverted")
+    return lower, upper
+
+
+def _validate_selection_frozen_lineage(
+    selection: FixedTrajectorySelection,
+    *,
+    anchor_l: int,
+    max_leapfrog_steps: int,
+    coordinate_signature: str,
+    metric_signature: str,
+    start_bank_signature: str,
+) -> None:
+    anchor = _strict_integer(anchor_l, name="anchor_l", minimum=1)
+    maximum = _strict_integer(
+        max_leapfrog_steps,
+        name="max_leapfrog_steps",
+        minimum=1,
+    )
+    expected_l = fixed_trajectory_candidate_values(
+        anchor,
+        max_leapfrog_steps=maximum,
+    )
+    observed_l = tuple(
+        sorted(
+            result.candidate.num_leapfrog_steps
+            for result in selection.candidate_results
+        )
+    )
+    if selection.anchor_l != anchor or observed_l != expected_l:
+        raise ValueError("selection repair changed the declared candidate set")
+    for result in selection.candidate_results:
+        candidate = result.candidate
+        if (
+            candidate.anchor_l != anchor
+            or candidate.max_leapfrog_steps != maximum
+            or candidate.coordinate_signature != coordinate_signature
+            or candidate.metric_signature != metric_signature
+            or candidate.start_bank_signature != start_bank_signature
+        ):
+            raise ValueError("selection repair changed frozen candidate lineage")
+
+
+def _validate_initial_selection_seed_lineage(
+    selection: FixedTrajectorySelection,
+    *,
+    root_seed: tuple[int, int],
+) -> None:
+    for result in selection.candidate_results:
+        for replication in result.replications:
+            expected = paired_candidate_seed(
+                root_seed,
+                candidate_signature=result.candidate.signature,
+                replication_index=replication.replication_index,
+                domain="candidate_selection",
+            )
+            if replication.seed != expected:
+                raise ValueError("selection candidate seed does not match its domain")
+
+
+def _validate_selection_execution_contract(
+    selection: FixedTrajectorySelection,
+    *,
+    frozen_step_size: float,
+    num_results: int,
+    num_burnin_steps: int,
+    target_scope: str,
+    acceptance_policy: Any,
+    target_status_trace_policy: str,
+    chain_execution_mode: str,
+    use_xla: bool,
+) -> None:
+    expected_policy = acceptance_policy.payload()
+    for result in selection.candidate_results:
+        for replication in result.replications:
+            evidence = replication.evidence
+            if evidence.policy.payload() != expected_policy:
+                raise ValueError("selection candidate changed the acceptance policy")
+            observed_decisions = (
+                evidence.usable_decisions_per_chain
+                + evidence.excluded_remainder_per_chain
+            )
+            expected_observed = (
+                int(num_results) if evidence.evidence_validity == "valid" else 0
+            )
+            if observed_decisions != expected_observed:
+                raise ValueError("selection candidate changed the screen draw budget")
+            expected = _candidate_execution_contract_signature(
+                candidate=result.candidate,
+                replication_index=replication.replication_index,
+                seed=replication.seed,
+                frozen_step_size=frozen_step_size,
+                num_results=num_results,
+                num_burnin_steps=num_burnin_steps,
+                target_scope=target_scope,
+                acceptance_policy=acceptance_policy,
+                target_status_trace_policy=target_status_trace_policy,
+                chain_execution_mode=chain_execution_mode,
+                use_xla=use_xla,
+            )
+            if replication.execution_contract_signature != expected:
+                raise ValueError("selection candidate execution contract is invalid")
+
+
+def _validate_selection_exact_l_retune_lineage(
+    selection: FixedTrajectorySelection,
+    *,
+    root_seed: tuple[int, int],
+    frozen_step_size: float,
+    final_tune_adaptation_steps: int,
+    target_scope: str,
+    acceptance_policy: Any,
+    target_status_trace_policy: str,
+    chain_execution_mode: str,
+    use_xla: bool,
+) -> None:
+    if selection.disposition != "representative_selected":
+        return
+    representative = selection.representative
+    if representative is None or representative.exact_l_retuned_step_size is None:
+        raise ValueError("selected trajectory lost exact-final-L retune evidence")
+    expected = _exact_l_retune_signature(
+        candidate=representative.candidate,
+        root_seed=root_seed,
+        adaptation_steps=final_tune_adaptation_steps,
+        initial_step_size=frozen_step_size,
+        retuned_step_size=representative.exact_l_retuned_step_size,
+        target_scope=target_scope,
+        acceptance_policy=acceptance_policy,
+        target_status_trace_policy=target_status_trace_policy,
+        chain_execution_mode=chain_execution_mode,
+        use_xla=use_xla,
+    )
+    if representative.exact_l_retune_signature != expected:
+        raise ValueError("selected trajectory exact-final-L retune lineage is invalid")
+
+
+def _validate_returned_evidence_extension(
+    extension: FixedTrajectoryEvidenceExtension,
+    *,
+    source_selection: FixedTrajectorySelection,
+    finalized_selection: FixedTrajectorySelection,
+    root_seed: tuple[int, int],
+    frozen_step_size: float,
+    screen_num_burnin_steps: int,
+    acceptance_policy: Any,
+    checkpoint: int,
+    extension_round_index: int,
+    target_scope: str,
+    target_status_trace_policy: str,
+    chain_execution_mode: str,
+    use_xla: bool,
+) -> None:
+    if not isinstance(extension, FixedTrajectoryEvidenceExtension):
+        raise TypeError("evidence extender returned an invalid extension record")
+    expected_policy_signature = _signature(
+        "bayesfilter.hmc_acceptance_policy.v3",
+        acceptance_policy.payload(),
+    )
+    if (
+        extension.source_selection_signature != source_selection.signature
+        or extension.finalized_selection_signature != finalized_selection.signature
+        or extension.root_seed != _strict_seed(root_seed, name="root_seed")
+        or not np.isclose(
+            extension.frozen_step_size,
+            float(frozen_step_size),
+            rtol=1.0e-12,
+            atol=0.0,
+        )
+        or extension.screen_num_burnin_steps
+        != _strict_integer(
+            screen_num_burnin_steps,
+            name="screen_num_burnin_steps",
+            minimum=1,
+        )
+        or extension.acceptance_policy_signature != expected_policy_signature
+        or extension.target_scope != str(target_scope)
+        or extension.target_status_trace_policy
+        != _target_status_policy(target_status_trace_policy)
+        or extension.chain_execution_mode != str(chain_execution_mode)
+        or extension.use_xla is not _strict_bool(use_xla, name="use_xla")
+        or extension.checkpoint
+        != _strict_integer(checkpoint, name="checkpoint", minimum=1)
+        or extension.round_index
+        != _strict_integer(
+            extension_round_index,
+            name="extension_round_index",
+            minimum=0,
+        )
+    ):
+        raise ValueError("evidence extender changed the declared extension contract")
+
+
+def extend_operational_fixed_trajectory_evidence(
+    *,
+    selection: FixedTrajectorySelection,
+    adapter: Any,
+    private_start_bank: Any,
+    private_start_bank_signature: str,
+    coordinate_signature: str,
+    metric_signature: str,
+    frozen_step_size: float,
+    root_seed: tuple[int, int],
+    target_scope: str,
+    acceptance_policy: Any,
+    checkpoint: int,
+    extension_round_index: int,
+    screen_num_burnin_steps: int = 16,
+    final_tune_adaptation_steps: int = 64,
+    chain_execution_mode: str = "tf_function",
+    use_xla: bool = False,
+    target_status_trace_policy: str = "none",
+    run_full_chain: Callable[..., Any] | None = None,
+) -> tuple[FixedTrajectorySelection, FixedTrajectoryEvidenceExtension]:
+    """Replace every inconclusive slot with a fresh longer fixed-kernel trace."""
+
+    from bayesfilter.inference.hmc import run_full_chain_tfp_hmc
+    from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
+
+    if not isinstance(selection, FixedTrajectorySelection):
+        raise TypeError("selection must be FixedTrajectorySelection")
+    if selection.disposition != "inconclusive_evidence":
+        raise ValueError("evidence extension requires inconclusive selection evidence")
+    if not isinstance(acceptance_policy, HMCAcceptancePolicy):
+        raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
+    checkpoint_count = _strict_integer(
+        checkpoint,
+        name="checkpoint",
+        minimum=1,
+    )
+    round_index = _strict_integer(
+        extension_round_index,
+        name="extension_round_index",
+        minimum=0,
+    )
+    target_status_policy = _target_status_policy(target_status_trace_policy)
+    if checkpoint_count < acceptance_policy.min_decisions_per_chain:
+        raise ValueError("evidence extension checkpoint or round is invalid")
+    bank = _validated_operational_start_bank(private_start_bank, acceptance_policy)
+    bank_signature = str(private_start_bank_signature)
+    if not bank_signature or not str(coordinate_signature) or not str(metric_signature):
+        raise ValueError("evidence extension signatures must be non-empty")
+    if bank_signature != private_start_bank_content_signature(
+        bank,
+        str(coordinate_signature),
+    ):
+        raise ValueError("private start bank signature does not match its content")
+    _validate_selection_frozen_lineage(
+        selection,
+        anchor_l=selection.anchor_l,
+        max_leapfrog_steps=max(
+            item.candidate.max_leapfrog_steps
+            for item in selection.candidate_results
+        ),
+        coordinate_signature=str(coordinate_signature),
+        metric_signature=str(metric_signature),
+        start_bank_signature=bank_signature,
+    )
+    runner = run_full_chain_tfp_hmc if run_full_chain is None else run_full_chain
+    domain = f"selection_evidence_extension_{round_index}_{checkpoint_count}"
+    slots: list[FixedTrajectoryEvidenceExtensionSlot] = []
+    updated_results: list[FixedTrajectoryCandidateResult] = []
+    for result in selection.candidate_results:
+        updated_replications: list[FixedTrajectoryReplication] = []
+        for replication in result.replications:
+            if (
+                replication.evidence.evidence_validity != "valid"
+                or replication.evidence.acceptance_decision
+                != "inconclusive_evidence"
+            ):
+                updated_replications.append(replication)
+                continue
+            seed = paired_candidate_seed(
+                root_seed,
+                candidate_signature=result.candidate.signature,
+                replication_index=replication.replication_index,
+                domain=domain,
+            )
+            extended = _run_operational_candidate_replication(
+                adapter=adapter,
+                bank=bank,
+                candidate=result.candidate,
+                replication_index=replication.replication_index,
+                seed=seed,
+                step_size=frozen_step_size,
+                num_results=checkpoint_count,
+                num_burnin_steps=screen_num_burnin_steps,
+                target_scope=target_scope,
+                acceptance_policy=acceptance_policy,
+                chain_execution_mode=chain_execution_mode,
+                use_xla=use_xla,
+                target_status_trace_policy=target_status_policy,
+                runner=runner,
+            )
+            slots.append(
+                FixedTrajectoryEvidenceExtensionSlot(
+                    candidate=result.candidate,
+                    replication_index=replication.replication_index,
+                    checkpoint=checkpoint_count,
+                    prior_replication_signature=replication.signature,
+                    prior_seed=replication.seed,
+                    prior_decision=replication.evidence.acceptance_decision,
+                    extended_replication=extended,
+                )
+            )
+            updated_replications.append(extended)
+        updated_results.append(
+            FixedTrajectoryCandidateResult(
+                candidate=result.candidate,
+                replications=tuple(updated_replications),
+            )
+        )
+    if not slots:
+        raise ValueError("evidence extension found no inconclusive replication slots")
+    matrix_selection = select_fixed_trajectory_representative(
+        updated_results,
+        anchor_l=selection.anchor_l,
+    )
+    finalized = _finalize_operational_selection_nomination(
+        selection=matrix_selection,
+        adapter=adapter,
+        bank=bank,
+        bank_signature=bank_signature,
+        coordinate_signature=str(coordinate_signature),
+        metric_signature=str(metric_signature),
+        frozen_step_size=frozen_step_size,
+        root_seed=root_seed,
+        target_scope=target_scope,
+        acceptance_policy=acceptance_policy,
+        final_tune_adaptation_steps=final_tune_adaptation_steps,
+        chain_execution_mode=chain_execution_mode,
+        use_xla=use_xla,
+        target_status_trace_policy=target_status_policy,
+        runner=runner,
+    )
+    extension = FixedTrajectoryEvidenceExtension(
+        round_index=round_index,
+        checkpoint=checkpoint_count,
+        root_seed=root_seed,
+        frozen_step_size=frozen_step_size,
+        screen_num_burnin_steps=screen_num_burnin_steps,
+        acceptance_policy_signature=_signature(
+            "bayesfilter.hmc_acceptance_policy.v3",
+            acceptance_policy.payload(),
+        ),
+        target_scope=target_scope,
+        target_status_trace_policy=target_status_policy,
+        chain_execution_mode=chain_execution_mode,
+        use_xla=use_xla,
+        source_selection=selection,
+        matrix_selection=matrix_selection,
+        finalized_selection=finalized,
+        slots=tuple(slots),
+    )
+    return finalized, extension
+
+
+def run_operational_fixed_trajectory_selection(
+    *,
+    adapter: Any,
+    private_start_bank: Any,
+    private_start_bank_signature: str,
+    coordinate_signature: str,
+    metric_signature: str,
+    anchor_l: int,
+    max_leapfrog_steps: int,
+    frozen_step_size: float,
+    root_seed: tuple[int, int],
+    target_scope: str,
+    acceptance_policy: Any,
+    screen_num_results: int = 64,
+    screen_num_burnin_steps: int = 16,
+    final_tune_adaptation_steps: int = 64,
+    chain_execution_mode: str = "tf_function",
+    use_xla: bool = False,
+    target_status_trace_policy: str = "none",
+    run_full_chain: Callable[..., Any] | None = None,
+) -> FixedTrajectorySelection:
+    """Execute the repaired paired-candidate policy through TF/TFP HMC.
+
+    Candidate screens share the frozen epsilon and start bank. Only after all
+    screens finish is a representative nominated and epsilon retuned under its
+    exact final ``L`` with a disjoint seed domain.
+    """
+
+    from bayesfilter.inference.hmc import run_full_chain_tfp_hmc
+    from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
+
+    if not isinstance(acceptance_policy, HMCAcceptancePolicy):
+        raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
+    runner = run_full_chain_tfp_hmc if run_full_chain is None else run_full_chain
+    target_status_policy = _target_status_policy(target_status_trace_policy)
+    bank = _validated_operational_start_bank(private_start_bank, acceptance_policy)
+    bank_signature = str(private_start_bank_signature)
+    if not bank_signature or not str(coordinate_signature) or not str(metric_signature):
+        raise ValueError("operational selection signatures must be non-empty")
+    if bank_signature != private_start_bank_content_signature(
+        bank,
+        str(coordinate_signature),
+    ):
+        raise ValueError("private start bank signature does not match its content")
+    step = float(frozen_step_size)
+    if not np.isfinite(step) or step <= 0.0:
+        raise ValueError("frozen_step_size must be positive and finite")
+    results_count = _strict_integer(
+        screen_num_results,
+        name="screen_num_results",
+        minimum=1,
+    )
+    burnin_count = _strict_integer(
+        screen_num_burnin_steps,
+        name="screen_num_burnin_steps",
+        minimum=1,
+    )
+    adaptation_count = _strict_integer(
+        final_tune_adaptation_steps,
+        name="final_tune_adaptation_steps",
+        minimum=1,
+    )
+    if results_count < acceptance_policy.min_decisions_per_chain:
+        raise ValueError("candidate screen budget cannot support acceptance evidence")
+    if burnin_count <= 0 or adaptation_count <= 0:
+        raise ValueError("screen burn-in and final tune adaptation must be positive")
+
+    candidate_results: list[FixedTrajectoryCandidateResult] = []
+    for leapfrog in fixed_trajectory_candidate_values(
+        anchor_l, max_leapfrog_steps=max_leapfrog_steps
+    ):
+        candidate = FixedTrajectoryCandidate(
+            anchor_l=anchor_l,
+            num_leapfrog_steps=leapfrog,
+            max_leapfrog_steps=max_leapfrog_steps,
+            coordinate_signature=str(coordinate_signature),
+            metric_signature=str(metric_signature),
+            start_bank_signature=bank_signature,
+        )
+        replications: list[FixedTrajectoryReplication] = []
+        for replication_index in range(candidate.replication_count):
+            seed = paired_candidate_seed(
+                root_seed,
+                candidate_signature=candidate.signature,
+                replication_index=replication_index,
+                domain="candidate_selection",
+            )
+            replications.append(
+                _run_operational_candidate_replication(
+                    adapter=adapter,
+                    bank=bank,
+                    candidate=candidate,
+                    replication_index=replication_index,
+                    seed=seed,
+                    step_size=step,
+                    num_results=results_count,
+                    num_burnin_steps=burnin_count,
+                    target_scope=target_scope,
+                    acceptance_policy=acceptance_policy,
+                    chain_execution_mode=chain_execution_mode,
+                    use_xla=use_xla,
+                    target_status_trace_policy=target_status_policy,
+                    runner=runner,
+                )
+            )
+        candidate_results.append(
+            FixedTrajectoryCandidateResult(
+                candidate=candidate,
+                replications=tuple(replications),
+            )
+        )
+
+    nomination = select_fixed_trajectory_representative(
+        candidate_results, anchor_l=anchor_l
+    )
+    return _finalize_operational_selection_nomination(
+        selection=nomination,
+        adapter=adapter,
+        bank=bank,
+        bank_signature=bank_signature,
+        coordinate_signature=str(coordinate_signature),
+        metric_signature=str(metric_signature),
+        frozen_step_size=step,
+        root_seed=root_seed,
+        target_scope=target_scope,
+        acceptance_policy=acceptance_policy,
+        final_tune_adaptation_steps=adaptation_count,
+        chain_execution_mode=chain_execution_mode,
+        use_xla=use_xla,
+        target_status_trace_policy=target_status_policy,
+        runner=runner,
+    )
+
+
+def _validated_operational_start_bank(
+    private_start_bank: Any,
+    acceptance_policy: Any,
+) -> np.ndarray:
+    bank = np.asarray(private_start_bank, dtype=float)
+    if (
+        bank.ndim != 2
+        or bank.shape[0] != acceptance_policy.chain_count
+        or bank.shape[1] == 0
+    ):
+        raise ValueError("private_start_bank must contain the policy chain count")
+    if not np.all(np.isfinite(bank)):
+        raise ValueError("private_start_bank must be finite")
+    return bank
+
+
+def _run_operational_candidate_replication(
+    *,
+    adapter: Any,
+    bank: np.ndarray,
+    candidate: FixedTrajectoryCandidate,
+    replication_index: int,
+    seed: tuple[int, int],
+    step_size: float,
+    num_results: int,
+    num_burnin_steps: int,
+    target_scope: str,
+    acceptance_policy: Any,
+    chain_execution_mode: str,
+    use_xla: bool,
+    target_status_trace_policy: str,
+    runner: Callable[..., Any],
+) -> FixedTrajectoryReplication:
+    from bayesfilter.inference.hmc import FullChainHMCConfig
+
+    config = FullChainHMCConfig(
+        num_results=int(num_results),
+        num_burnin_steps=int(num_burnin_steps),
+        step_size=float(step_size),
+        num_leapfrog_steps=candidate.num_leapfrog_steps,
+        seed=seed,
+        use_xla=use_xla,
+        trace_policy="standard",
+        target_status_trace_policy=target_status_trace_policy,
+        target_scope=str(target_scope),
+        chain_execution_mode=chain_execution_mode,
+    )
+    run = runner(adapter, bank, config)
+    expected_sample_shape = (
+        int(num_results),
+        acceptance_policy.chain_count,
+        int(bank.shape[1]),
+    )
+    expected_trace_shape = expected_sample_shape[:2]
+    samples = _numpy(run.samples)
+    trace = dict(run.trace) if isinstance(run.trace, Mapping) else {}
+    missing = tuple(
+        key
+        for key in ("log_accept_ratio", "is_accepted", "target_log_prob")
+        if key not in trace
+    )
+    malformed = []
+    if samples.shape != expected_sample_shape:
+        malformed.append("samples_shape")
+    for key in ("log_accept_ratio", "target_log_prob"):
+        if key in trace and _numpy(trace[key]).shape != expected_trace_shape:
+            malformed.append(f"{key}_shape")
+    if "is_accepted" in trace:
+        accepted_value = _numpy(trace["is_accepted"])
+        if accepted_value.shape != expected_trace_shape:
+            malformed.append("is_accepted_shape")
+        elif not np.issubdtype(accepted_value.dtype, np.bool_):
+            malformed.append("is_accepted_dtype")
+    schema_invalid = bool(malformed)
+    candidate_samples_nonfinite = bool(
+        not schema_invalid and not np.all(np.isfinite(samples))
+    )
+    shape = expected_trace_shape
+    log_accept = (
+        np.zeros(shape, dtype=float)
+        if missing or schema_invalid
+        else _numpy(trace["log_accept_ratio"])
+    )
+    is_accepted = (
+        np.zeros(shape, dtype=bool)
+        if missing or schema_invalid
+        else _numpy(trace["is_accepted"])
+    )
+    target_log_prob = (
+        np.zeros(shape, dtype=float)
+        if missing or schema_invalid
+        else _numpy(trace["target_log_prob"])
+    )
+    diagnostics = dict(run.diagnostics) if isinstance(run.diagnostics, Mapping) else {}
+    evidence_samples = (
+        np.zeros(expected_sample_shape, dtype=float)
+        if schema_invalid
+        else samples
+    )
+    shared_invalidity_reasons = []
+    candidate_health_failures = []
+    if missing:
+        shared_invalidity_reasons.append("required_standard_acceptance_trace_missing")
+    if schema_invalid:
+        shared_invalidity_reasons.append("shared_schema_invalid")
+    if candidate_samples_nonfinite:
+        candidate_health_failures.append("nonfinite_candidate_state")
+    if target_status_trace_policy == "per_chain_step":
+        target_status_trace = trace.get("target_status_telemetry")
+        if target_status_trace is None:
+            shared_invalidity_reasons.append(
+                "required_target_status_telemetry_missing"
+            )
+        else:
+            try:
+                if target_status_telemetry_has_failure(
+                    target_status_trace,
+                    expected_shape=expected_trace_shape,
+                ):
+                    candidate_health_failures.append(
+                        "target_status_telemetry_failure"
+                    )
+            except (TypeError, ValueError):
+                shared_invalidity_reasons.append("shared_schema_invalid")
+    if not missing and not schema_invalid and not candidate_samples_nonfinite:
+        health = _evaluate_retained_target_health(
+            adapter=adapter,
+            samples=samples,
+            target_status_trace_policy=target_status_trace_policy,
+        )
+        shared_invalidity_reasons.extend(health["shared_invalidity_reasons"])
+        candidate_health_failures.extend(
+            health["candidate_data_invalidity_reasons"]
+        )
+    evidence = evaluate_hmc_acceptance_evidence(
+        # Invalid candidate endpoints are never reused or re-evaluated. A
+        # finite placeholder lets the typed local-invalidity record own scope.
+        samples=(
+            np.zeros(expected_sample_shape, dtype=float)
+            if candidate_samples_nonfinite
+            else evidence_samples
+        ),
+        log_accept_ratio=log_accept,
+        is_accepted=is_accepted,
+        target_log_prob=target_log_prob,
+        policy=acceptance_policy,
+        native_divergence_status=str(
+            diagnostics.get("native_divergence_status", "not_collected")
+        ),
+        native_divergence_count=_optional_int(diagnostics.get("divergence_count")),
+        candidate_local_health_failures=tuple(candidate_health_failures),
+        shared_invalidity_reasons=tuple(shared_invalidity_reasons),
+    )
+    mean_esjd_per_gradient = None
+    if evidence.evidence_validity == "valid" and samples.shape[0] >= 2:
+        jump = samples[1:] - samples[:-1]
+        mean_esjd = float(np.mean(np.sum(np.square(jump), axis=-1)))
+        mean_esjd_per_gradient = mean_esjd / float(candidate.num_leapfrog_steps)
+    path_return_fraction = (
+        max(evidence.path_return_fraction_by_chain)
+        if evidence.evidence_validity == "valid"
+        and evidence.path_return_fraction_by_chain
+        else None
+    )
+    gradient_cost = (
+        acceptance_policy.chain_count
+        * (
+            1
+            + (int(num_results) + int(num_burnin_steps))
+            * candidate.num_leapfrog_steps
+        )
+    )
+    return FixedTrajectoryReplication(
+        candidate=candidate,
+        replication_index=replication_index,
+        seed=seed,
+        acceptance_evidence_payload=evidence.payload(),
+        execution_contract_signature=_candidate_execution_contract_signature(
+            candidate=candidate,
+            replication_index=replication_index,
+            seed=seed,
+            frozen_step_size=step_size,
+            num_results=num_results,
+            num_burnin_steps=num_burnin_steps,
+            target_scope=target_scope,
+            acceptance_policy=acceptance_policy,
+            target_status_trace_policy=target_status_trace_policy,
+            chain_execution_mode=chain_execution_mode,
+            use_xla=use_xla,
+        ),
+        mean_esjd_per_gradient=mean_esjd_per_gradient,
+        path_return_fraction=path_return_fraction,
+        cost_gradient_evaluations=gradient_cost,
+    )
+
+
+def _finalize_operational_selection_nomination(
+    *,
+    selection: FixedTrajectorySelection,
+    adapter: Any,
+    bank: np.ndarray,
+    bank_signature: str,
+    coordinate_signature: str,
+    metric_signature: str,
+    frozen_step_size: float,
+    root_seed: tuple[int, int],
+    target_scope: str,
+    acceptance_policy: Any,
+    final_tune_adaptation_steps: int,
+    chain_execution_mode: str,
+    use_xla: bool,
+    target_status_trace_policy: str,
+    runner: Callable[..., Any],
+) -> FixedTrajectorySelection:
+    from bayesfilter.inference.hmc import FullChainHMCConfig
+    from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
+
+    if selection.disposition != "representative_nominated":
+        return selection
+    viable = _ordered_viable_candidate_results(
+        selection.candidate_results,
+        anchor_l=selection.anchor_l,
+    )
+    failures: list[FixedTrajectoryCandidateRetuneFailure] = []
+    for ordinal, representative in enumerate(viable):
+        tune_seed = paired_candidate_seed(
+            root_seed,
+            candidate_signature=representative.candidate.signature,
+            replication_index=0,
+            domain="exact_final_l_epsilon_tune",
+        )
+        tune_config = FullChainHMCConfig(
+            num_results=4,
+            num_burnin_steps=int(final_tune_adaptation_steps),
+            step_size=float(frozen_step_size),
+            num_leapfrog_steps=representative.candidate.num_leapfrog_steps,
+            seed=tune_seed,
+            use_xla=use_xla,
+            trace_policy="standard",
+            target_status_trace_policy=target_status_trace_policy,
+            tuning_policy=HMCTuningPolicy.fixed_mass_dual_averaging(
+                num_adaptation_steps=int(final_tune_adaptation_steps),
+                target_accept_prob=acceptance_policy.target,
+                source=(
+                    "bayesfilter.inference.hmc_kernel_selection."
+                    "exact_final_l_retune"
+                ),
+            ),
+            target_scope=str(target_scope),
+            chain_execution_mode=chain_execution_mode,
+        )
+        try:
+            tuned_run = runner(adapter, bank, tune_config)
+            tuned_step = _validated_exact_l_retune_step(
+                tuned_run,
+                adapter=adapter,
+                expected_results=tune_config.num_results,
+                expected_chains=acceptance_policy.chain_count,
+                expected_dimension=int(bank.shape[1]),
+                target_status_trace_policy=target_status_trace_policy,
+            )
+        except _CandidateRetuneHealthError as exc:
+            failures.append(
+                FixedTrajectoryCandidateRetuneFailure(
+                    candidate_signature=representative.candidate.signature,
+                    seed=tune_seed,
+                    reasons=exc.reasons,
+                    nomination_ordinal=ordinal,
+                )
+            )
+            continue
+        except _SharedRetuneInvalidityError as exc:
+            return FixedTrajectorySelection(
+                anchor_l=selection.anchor_l,
+                candidate_results=selection.candidate_results,
+                representative_signature=None,
+                disposition="shared_invalidity",
+                candidate_retune_failures=tuple(failures),
+                retune_failure_scope="shared_execution_invalid",
+                retune_failure_reasons=exc.reasons,
+                retune_candidate_signature=representative.candidate.signature,
+            )
+        retune_signature = _exact_l_retune_signature(
+            candidate=representative.candidate,
+            root_seed=root_seed,
+            adaptation_steps=final_tune_adaptation_steps,
+            initial_step_size=frozen_step_size,
+            retuned_step_size=tuned_step,
+            target_scope=target_scope,
+            acceptance_policy=acceptance_policy,
+            target_status_trace_policy=target_status_trace_policy,
+            chain_execution_mode=chain_execution_mode,
+            use_xla=use_xla,
+        )
+        finalized_results = tuple(
+            (
+                FixedTrajectoryCandidateResult(
+                    candidate=item.candidate,
+                    replications=item.replications,
+                    exact_l_retuned_step_size=tuned_step,
+                    exact_l_retune_signature=retune_signature,
+                )
+                if item.signature == representative.signature
+                else item
+            )
+            for item in selection.candidate_results
+        )
+        return FixedTrajectorySelection(
+            anchor_l=selection.anchor_l,
+            candidate_results=finalized_results,
+            representative_signature=next(
+                item.signature
+                for item in finalized_results
+                if item.candidate.signature == representative.candidate.signature
+            ),
+            disposition="representative_selected",
+            candidate_retune_failures=tuple(failures),
+        )
+    if not failures:
+        raise AssertionError("representative nomination lost its viable candidates")
+    return FixedTrajectorySelection(
+        anchor_l=selection.anchor_l,
+        candidate_results=selection.candidate_results,
+        representative_signature=None,
+        disposition="candidate_retune_failed",
+        candidate_retune_failures=tuple(failures),
+        retune_failure_scope="candidate_data_invalid",
+        retune_failure_reasons=failures[-1].reasons,
+        retune_candidate_signature=failures[-1].candidate_signature,
+    )
+
+
+def _validated_exact_l_retune_step(
+    run: Any,
+    *,
+    adapter: Any,
+    expected_results: int,
+    expected_chains: int,
+    expected_dimension: int,
+    target_status_trace_policy: str,
+) -> float:
+    """Bind an exact-L retuned step to its finite adaptive TF/TFP trace."""
+
+    samples = _numpy(run.samples)
+    expected_sample_shape = (
+        int(expected_results),
+        int(expected_chains),
+        int(expected_dimension),
+    )
+    if samples.shape != expected_sample_shape:
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    if not np.all(np.isfinite(samples)):
+        raise _CandidateRetuneHealthError("nonfinite_candidate_state")
+    if not isinstance(run.trace, Mapping):
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    trace = dict(run.trace)
+    expected_trace_shape = expected_sample_shape[:2]
+    required = ("log_accept_ratio", "is_accepted", "target_log_prob", "step_size")
+    if any(key not in trace for key in required):
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    for key in ("log_accept_ratio", "target_log_prob"):
+        array = _numpy(trace[key])
+        if array.shape != expected_trace_shape:
+            raise _SharedRetuneInvalidityError("shared_schema_invalid")
+        if not np.all(np.isfinite(array)):
+            raise _CandidateRetuneHealthError(
+                "nonfinite_log_accept_ratio"
+                if key == "log_accept_ratio"
+                else "nonfinite_target_log_prob"
+            )
+    target_status_policy = _target_status_policy(target_status_trace_policy)
+    if target_status_policy == "per_chain_step":
+        target_status_trace = trace.get("target_status_telemetry")
+        if target_status_trace is None:
+            raise _SharedRetuneInvalidityError(
+                "required_target_status_telemetry_missing"
+            )
+        try:
+            target_status_failed = target_status_telemetry_has_failure(
+                target_status_trace,
+                expected_shape=expected_trace_shape,
+            )
+        except (TypeError, ValueError) as exc:
+            raise _SharedRetuneInvalidityError("shared_schema_invalid") from exc
+        if target_status_failed:
+            raise _CandidateRetuneHealthError("target_status_telemetry_failure")
+    accepted = _numpy(trace["is_accepted"])
+    if (
+        accepted.shape != expected_trace_shape
+        or not np.issubdtype(accepted.dtype, np.bool_)
+    ):
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    health = _evaluate_retained_target_health(
+        adapter=adapter,
+        samples=samples,
+        target_status_trace_policy=target_status_policy,
+    )
+    if health["shared_invalidity_reasons"]:
+        raise _SharedRetuneInvalidityError(*health["shared_invalidity_reasons"])
+    if health["candidate_data_invalidity_reasons"]:
+        raise _CandidateRetuneHealthError(
+            *health["candidate_data_invalidity_reasons"]
+        )
+    step_trace = _numpy(trace["step_size"])
+    if step_trace.shape != (int(expected_results),):
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    if not np.all(np.isfinite(step_trace)) or np.any(step_trace <= 0.0):
+        raise _CandidateRetuneHealthError("nonfinite_adapted_step_size")
+    diagnostics = dict(run.diagnostics) if isinstance(run.diagnostics, Mapping) else {}
+    tuned_step = _optional_float(diagnostics.get("final_step_size"))
+    if tuned_step is None:
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    if tuned_step <= 0.0:
+        raise _CandidateRetuneHealthError("nonfinite_adapted_step_size")
+    if not np.isclose(
+            tuned_step,
+            float(step_trace[-1]),
+            rtol=1.0e-12,
+            atol=0.0,
+        ):
+        raise _SharedRetuneInvalidityError("shared_schema_invalid")
+    return tuned_step
+
+
+def _numpy(value: Any) -> np.ndarray:
+    if hasattr(value, "numpy"):
+        value = value.numpy()
+    return np.asarray(value)
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if hasattr(value, "numpy"):
+        value = value.numpy()
+    array = np.asarray(value)
+    if array.size != 1:
+        return None
+    result = float(array.reshape(()))
+    return result if np.isfinite(result) else None
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    if hasattr(value, "numpy"):
+        value = value.numpy()
+    array = np.asarray(value)
+    if array.size != 1:
+        return None
+    scalar = array.reshape(()).item()
+    if isinstance(scalar, (bool, np.bool_)):
+        return None
+    if isinstance(scalar, (int, np.integer)):
+        return int(scalar)
+    return None

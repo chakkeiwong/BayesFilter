@@ -1,0 +1,222 @@
+{
+  "schema": "bayesfilter.kalman_qr_batched_xla_repair.phase6.gateb_r3_bindings_repair_check_manifest.v1",
+  "date": "2026-07-12",
+  "state": "passed_no_target",
+  "scope": "R3 mixed-format authority, pre-budget ordering, checkpoint invalidation, immutable R2 archival, and local harness closure only",
+  "git_commit": "a644d29c5c2fd09a0deb3a7b5212799ff1fcb163",
+  "environment": {
+    "interpreter": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python": "3.13.13",
+    "platform": "Linux 6.8.0-124-generic x86_64 GNU/Linux",
+    "gpu_policy": "CUDA_VISIBLE_DEVICES=-1 before framework imports for local checks",
+    "target_cpu_xla_node": "deselected",
+    "target_tensorflow_trace": false,
+    "target_xla_compile": false,
+    "target_kalman_execution": false,
+    "data_version": "N/A; deterministic contract tests and synthetic fixtures",
+    "random_seeds": "N/A; no stochastic experiment"
+  },
+  "plan": {
+    "path": "docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase6-gateb-r3-mixed-format-bindings-repair-subplan-2026-07-12.md",
+    "sha256": "3af2959c719e62b4fb02d9e7c78b3be86521d7e62b757d35d2e4acede679ba1a"
+  },
+  "agreeing_plan_review": {
+    "path": "docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase6-gateb-r3-bindings-repair-subplan-review-final-2026-07-12.md",
+    "sha256": "99523d5660988dc08cf5509391a3f7c6ff0ba51cd4352a9da09272f2d1bc4b27"
+  },
+  "commands": [
+    {
+      "name": "compile",
+      "role": "primary_local_engineering_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 PYTHONPYCACHEPREFIX=/tmp/kalman_qr_phase6_gateb_r3_binding_repair/pycache /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m py_compile scripts/kalman_qr_benchmark_contract.py scripts/benchmark_kalman_qr_parameter_count_scaling.py docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py tests/test_kalman_qr_phase6_cpu_xla_gates.py tests/test_kalman_qr_phase6_gatea_runtime_controls.py tests/test_kalman_qr_phase6_gateb_runtime_repair.py tests/test_kalman_qr_phase6_import_discovery_cli.py",
+      "exit_code": 0,
+      "output_bytes": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "artifact": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_py_compile_2026-07-12.txt"
+    },
+    {
+      "name": "focused_final_implementation_suite",
+      "role": "primary_local_engineering_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_kalman_qr_phase6_gateb_runtime_repair.py",
+      "exit_code": 0,
+      "result": "42 passed in 19.31s",
+      "output_bytes": 100,
+      "output_sha256": "abc4c9180021bb04018bd2e8a9ecd552001577033aa0dacfd2ccb978020cd87a",
+      "artifact": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_focused_pytest_2026-07-12.txt"
+    },
+    {
+      "name": "consolidated_final_implementation_suite",
+      "role": "primary_local_engineering_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_kalman_qr_phase6_cpu_xla_gates.py tests/test_kalman_qr_phase6_gatea_runtime_controls.py tests/test_kalman_qr_phase6_import_discovery_cli.py tests/test_kalman_qr_measurement_boundaries.py tests/test_kalman_qr_parameter_count_scaling_harness.py tests/test_kalman_qr_benchmark_contract.py tests/test_kalman_qr_batch_native_autodiff.py tests/test_kalman_qr_phase6_gateb_runtime_repair.py --deselect=tests/test_kalman_qr_batch_native_autodiff.py::test_batch_native_autodiff_cpu_xla_preserves_dtype_signature_and_value",
+      "exit_code": 0,
+      "result": "403 passed, 1 deselected, 6634 warnings in 214.43s",
+      "output_bytes": 16581,
+      "output_sha256": "9a4de98dc4634e6612b89f5b12cad16588e4100125ed0a4857309923ce63a99f",
+      "artifact": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_consolidated_pytest_2026-07-12.txt",
+      "warning_disposition": "Existing Gast/AutoGraph deprecations; explanatory only"
+    },
+    {
+      "name": "round1_evidence_repair_focused_recheck",
+      "role": "post_review_repair_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_kalman_qr_phase6_gateb_runtime_repair.py",
+      "exit_code": 0,
+      "result": "42 passed in 19.32s",
+      "output_bytes": 100,
+      "output_sha256": "015e438f603d63f0c9ea266b38787331239d9de6ba4e76472f21048540f46941",
+      "artifact": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_round1_focused_recheck_2026-07-12.txt"
+    },
+    {
+      "name": "closed_trailing_whitespace_scan",
+      "role": "applicable_static_check",
+      "command": "rg -n '[ \\t]+$' scripts/kalman_qr_benchmark_contract.py scripts/benchmark_kalman_qr_parameter_count_scaling.py docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py tests/test_kalman_qr_phase6_cpu_xla_gates.py tests/test_kalman_qr_phase6_gatea_runtime_controls.py tests/test_kalman_qr_phase6_gateb_runtime_repair.py tests/test_kalman_qr_phase6_import_discovery_cli.py docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase6-gateb-r3-mixed-format-bindings-repair-result-2026-07-12.md",
+      "exit_code": 1,
+      "interpretation": "expected no-match exit; no trailing whitespace found"
+    },
+    {
+      "name": "source_contract_and_order_check",
+      "role": "applicable_static_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -c 'import json; from pathlib import Path; c=Path(\"scripts/kalman_qr_benchmark_contract.py\").read_text(encoding=\"utf-8\"); b=c[c.index(\"def _phase6_bindings_valid\"):c.index(\"def new_phase6_ledger\")]; a=b[b.index(\"and isinstance(bindings.get(\\\"authority_inputs\\\")\"):b.index(\"and isinstance(bindings.get(\\\"runtime_predecessors\\\")\")]; r=Path(\"docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py\").read_text(encoding=\"utf-8\"); p=r[r.index(\"def run_phase6_pilot\"):r.index(\"def run_phase6_scalar_references\")]; checks={\"authority_blob_validation_retained\":\"phase6_blob_record_valid(record)\" in a and \"record.get(\\\"present\\\") is True\" in a,\"authority_semantic_json_not_required\":\"strict_json\" not in a,\"proposal_semantic_json_required\":\"bindings[\\\"proposal\\\"].get(\\\"strict_json\\\") is not None\" in b,\"attestation_semantic_json_required\":\"bindings[\\\"attestation\\\"].get(\\\"strict_json\\\") is not None\" in b,\"phase45_semantic_json_required\":\"record.get(\\\"strict_json\\\") is not None\" in b[b.index(\"phase45_evidence\"):b.index(\"authority_inputs\")],\"prebudget_order\":p.index(\"trace_bindings = _phase6_bindings_for_gate\") < p.index(\"phase6_revalidate_launch_authority(trace_bindings)\") < p.index(\"trace_initial_payload = contract.new_phase6_ledger\") < p.index(\"contract.phase6_ledger_checks(trace_initial_payload\") < p.index(\"with phase6_budget_lease\")}; print(json.dumps(checks, sort_keys=True)); raise SystemExit(0 if all(checks.values()) else 1)'",
+      "exit_code": 0,
+      "source_contract_checks": {
+        "attestation_semantic_json_required": true,
+        "authority_blob_validation_retained": true,
+        "authority_semantic_json_not_required": true,
+        "phase45_semantic_json_required": true,
+        "prebudget_order": true,
+        "proposal_semantic_json_required": true
+      }
+    },
+    {
+      "name": "r2_archive_validation",
+      "role": "hard_veto_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -c 'from pathlib import Path; from scripts import kalman_qr_benchmark_contract as c; p=Path(\"docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r2_invalid_harness_archive_2026-07-12.json\"); a=c.read_strict_json(p); checks=c.phase6_r2_archive_checks(a); c.validate_phase6_r2_archive(a); print(c.strict_json_dumps({\"all_passed\": all(checks.values()), \"archive_sha256\": c.file_sha256(p), \"checks\": checks}))'",
+      "exit_code": 0,
+      "all_passed": true,
+      "checks": {
+        "absent_paths": true,
+        "authority_identity": true,
+        "budget_state_closed": true,
+        "closed_schema": true,
+        "diagnosis": true,
+        "disposition_identity": true,
+        "files_closed": true,
+        "files_current": true,
+        "no_live_process": true,
+        "nonclaims": true,
+        "protected_hashes": true,
+        "schema_identity": true,
+        "work_root_closed": true
+      }
+    },
+    {
+      "name": "no_live_target_process",
+      "role": "hard_veto_check",
+      "command": "CUDA_VISIBLE_DEVICES=-1 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -c 'import importlib.util; from pathlib import Path; p=Path(\"docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py\"); s=importlib.util.spec_from_file_location(\"r3_check_runner\", p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); pids=m._phase6_live_target_pids(); print(pids); raise SystemExit(1 if pids else 0)'",
+      "exit_code": 0,
+      "matching_pids": []
+    },
+    {
+      "name": "r3_root_absence",
+      "role": "hard_veto_check",
+      "command": "test ! -e /tmp/kalman_qr_phase6_cpu_xla_gateb_r3 && test ! -L /tmp/kalman_qr_phase6_cpu_xla_gateb_r3",
+      "exit_code": 0,
+      "present": false,
+      "dangling_symlink": false
+    },
+    {
+      "name": "scoped_git_diff_check_tracked_view",
+      "role": "informational_only",
+      "command": "git diff --check -- scripts/kalman_qr_benchmark_contract.py scripts/benchmark_kalman_qr_parameter_count_scaling.py docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py tests/test_kalman_qr_phase6_cpu_xla_gates.py tests/test_kalman_qr_phase6_gatea_runtime_controls.py tests/test_kalman_qr_phase6_gateb_runtime_repair.py tests/test_kalman_qr_phase6_import_discovery_cli.py",
+      "exit_code": 0,
+      "applicable": false,
+      "reason": "All seven scoped lane implementation/harness files are untracked, so Git emitted no diff to check. The per-file no-index checks below are the applicable Git whitespace checks."
+    },
+    {
+      "name": "untracked_git_no_index_checks",
+      "role": "applicable_static_check",
+      "commands": [
+        "git diff --no-index --check /dev/null scripts/kalman_qr_benchmark_contract.py",
+        "git diff --no-index --check /dev/null scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+        "git diff --no-index --check /dev/null docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py",
+        "git diff --no-index --check /dev/null tests/test_kalman_qr_phase6_cpu_xla_gates.py",
+        "git diff --no-index --check /dev/null tests/test_kalman_qr_phase6_gatea_runtime_controls.py",
+        "git diff --no-index --check /dev/null tests/test_kalman_qr_phase6_gateb_runtime_repair.py",
+        "git diff --no-index --check /dev/null tests/test_kalman_qr_phase6_import_discovery_cli.py"
+      ],
+      "exit_codes": [1, 1, 1, 1, 1, 1, 1],
+      "output_bytes": [0, 0, 0, 0, 0, 0, 0],
+      "interpretation": "For git diff --no-index --check against /dev/null, exit 1 means the nonempty file differs from empty; zero diagnostic bytes means no whitespace error was reported."
+    },
+    {
+      "name": "protected_and_lineage_hashes",
+      "role": "hard_veto_check",
+      "command": "sha256sum bayesfilter/linear/kalman_qr_tf.py bayesfilter/linear/kalman_qr_derivatives_tf.py bayesfilter/linear/qr_factor_tf.py docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase6-gateb-r3-mixed-format-bindings-repair-subplan-2026-07-12.md docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase6-gateb-r3-bindings-repair-subplan-review-final-2026-07-12.md docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r2_invalid_harness_archive_2026-07-12.json /tmp/kalman_qr_phase6_cpu_xla_gateb_r2/import_discovery.json /tmp/kalman_qr_phase6_cpu_xla_gateb_r2/budget_state/gate_b-4807a429ce935c95392f6af62266ef53a2e6165c8b8cc5e0cb415ba80fb26096.json /tmp/kalman_qr_phase6_cpu_xla_gateb_r2/budget_state/gate_b-4807a429ce935c95392f6af62266ef53a2e6165c8b8cc5e0cb415ba80fb26096.json.lease",
+      "exit_code": 0,
+      "result": "All values equal the protected_hashes, plan, agreeing_plan_review, and immutable_r2 bindings in this manifest."
+    },
+    {
+      "name": "implementation_hashes",
+      "role": "hard_veto_check",
+      "command": "sha256sum scripts/kalman_qr_benchmark_contract.py scripts/benchmark_kalman_qr_parameter_count_scaling.py docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py tests/test_kalman_qr_phase6_cpu_xla_gates.py tests/test_kalman_qr_phase6_gatea_runtime_controls.py tests/test_kalman_qr_phase6_gateb_runtime_repair.py tests/test_kalman_qr_phase6_import_discovery_cli.py",
+      "exit_code": 0,
+      "result": "All values equal implementation_hashes in this manifest."
+    },
+    {
+      "name": "durable_log_hashes",
+      "role": "artifact_binding_check",
+      "command": "sha256sum docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_py_compile_2026-07-12.txt docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_focused_pytest_2026-07-12.txt docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_consolidated_pytest_2026-07-12.txt docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_round1_focused_recheck_2026-07-12.txt",
+      "exit_code": 0,
+      "sha256": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "abc4c9180021bb04018bd2e8a9ecd552001577033aa0dacfd2ccb978020cd87a",
+        "9a4de98dc4634e6612b89f5b12cad16588e4100125ed0a4857309923ce63a99f",
+        "015e438f603d63f0c9ea266b38787331239d9de6ba4e76472f21048540f46941"
+      ]
+    },
+    {
+      "name": "durable_log_byte_counts",
+      "role": "artifact_binding_check",
+      "command": "wc -c docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_py_compile_2026-07-12.txt docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_focused_pytest_2026-07-12.txt docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_consolidated_pytest_2026-07-12.txt docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_bindings_repair_round1_focused_recheck_2026-07-12.txt",
+      "exit_code": 0,
+      "byte_counts": [0, 100, 16581, 100],
+      "total_bytes": 16781
+    }
+  ],
+  "protected_hashes": {
+    "bayesfilter/linear/kalman_qr_derivatives_tf.py": "d24ae4363d4bf14a08149c81cf018b36fe9a3ca85a3c5cb7d6064ce4915bfb57",
+    "bayesfilter/linear/kalman_qr_tf.py": "ad1fc869ce0be2aaffa18c1762d44b39c86de19ee0752e77cdce1c4d9c9fd06b",
+    "bayesfilter/linear/qr_factor_tf.py": "bfde07b558e6c900a51f888d83ece817f562c06cf393c0dfdc76959adc087401"
+  },
+  "implementation_hashes": {
+    "docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py": "66c2f43acc4312640ee39af777830e72fc4fb5112fcb8844453a53bcde2b03eb",
+    "scripts/benchmark_kalman_qr_parameter_count_scaling.py": "baf62b85f885073d0b72b5c13af0463ac5566f2429c16d5c98a542aa24c8eec9",
+    "scripts/kalman_qr_benchmark_contract.py": "f52a20624eb3c8c72c59cc2809f4cd870de4c3c84276fed97f308bc4f0a75e64",
+    "tests/test_kalman_qr_phase6_cpu_xla_gates.py": "08941fa01eeba361a6939facc4a238d00691ea3d65b1705ed70e50f6e7df1447",
+    "tests/test_kalman_qr_phase6_gatea_runtime_controls.py": "376bdfcd2b67c1dc6e7393b9606308e4edc60ff8ced08e7a395347bb29b4c270",
+    "tests/test_kalman_qr_phase6_gateb_runtime_repair.py": "8cfd51086291b5f29c07662421b88cc7d48d83152f36038970f2e0a3d7d5ecb8",
+    "tests/test_kalman_qr_phase6_import_discovery_cli.py": "a203abb1fc553598749e31ed3b33b8ab566b1dfb9846132c7fad2c0c9dcccfa9"
+  },
+  "immutable_r2": {
+    "archive": {
+      "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r2_invalid_harness_archive_2026-07-12.json",
+      "sha256": "40e6a186a28cd15d4ab3901f516854a6d84065fcb9759716108ab8e103e7834d"
+    },
+    "import_discovery_sha256": "8ae6086bd6b8bbebd7bf236536a80cb6b8befa993a9e686801c451e8fec4c8ac",
+    "running_budget_state_sha256": "a4cc284b64d6527a7357171f4c47395a7f29f7fed7e50b15563257feae09390f",
+    "released_lease_sha256": "ae711efe84056ae416d5fe2d2d40751b91afaa7f3a2e3530f095fb501a03b456"
+  },
+  "review_repair": {
+    "round": 1,
+    "review_sha256": "bd582675e6ce546eb5c43b931fc5277e5f1c19d821127a3612f6baf128c5cde8",
+    "finding": "Compile/static commands were not fully recorded and final logs existed only under /tmp.",
+    "repair": "Preserved final logs under docs/benchmarks, recorded byte counts and SHA-256 values, recorded exact compile/test commands and applicable static checks, disclosed the untracked-file Git limitation, and reran the focused suite.",
+    "target_execution_required": false,
+    "target_execution_performed": false
+  },
+  "nonclaims": [
+    "No trace-structure or CPU-XLA viability result",
+    "No Kalman numerical-correctness result from this repair",
+    "No memory reduction or performance improvement claim",
+    "No scalability, GPU, HMC, posterior, default, production, or scientific-validity claim"
+  ]
+}

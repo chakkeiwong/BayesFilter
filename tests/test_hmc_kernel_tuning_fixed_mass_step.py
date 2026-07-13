@@ -1087,3 +1087,364 @@ def test_fixed_mass_step_stage_public_exports_are_scoped_without_final_tuner() -
     assert bayesfilter.run_hmc_fixed_mass_step_stage is run_hmc_fixed_mass_step_stage
     assert hasattr(bayesfilter, "tune_hmc_kernel")
     assert "tune_hmc_kernel" in bayesfilter.__all__
+
+
+def test_phase5_private_candidate_handoff_preserves_identity_selection_and_payload() -> None:
+    run, _calls = _scripted_step_runner({3: 0.82, 4: 0.66, 5: 0.70, 7: 0.73})
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(),
+        run_full_chain=run,
+    )
+    without_handoff = replace(result, _candidate_batch_handoff=None)
+
+    handoff = hmc_kernel_tuning._phase5_candidate_batch_handoff(result)
+    assert handoff is not None
+    assert handoff.candidate_count == result.diagnostics["candidate_count"]
+    assert tuple(record.batch_ordinal for record in handoff.candidate_records) == tuple(
+        range(handoff.candidate_count)
+    )
+    source_keys = tuple(record.source_key for record in handoff.candidate_records)
+    assert len(set(source_keys)) == len(source_keys)
+    round_local_indices = tuple(
+        record.source_round_candidate_index for record in handoff.candidate_records
+    )
+    assert len(set(round_local_indices)) < len(round_local_indices)
+
+    assert handoff.selected_batch_ordinal is not None
+    selected = handoff.candidate_records[handoff.selected_batch_ordinal]
+    assert selected.record_hash == handoff.selected_record_hash
+    assert selected.handoff_eligible is True
+    assert selected.source_grid_stage == "final_local"
+    assert selected.num_leapfrog_steps == result.fixed_num_leapfrog_steps
+    assert selected.selected_step_size == result.selected_step_size
+    assert selected.selected_step_hash == result.selected_step_hash
+    assert selected.ladder_artifact_hash == result.budget_ladder_result.artifact_hash
+    assert handoff.repair_batch_ordinal is None
+    assert handoff.verification_order_seed[0] == handoff.selected_batch_ordinal
+
+    assert result.payload() == without_handoff.payload()
+    assert result.artifact_hash == without_handoff.artifact_hash
+    assert repr(result) == repr(without_handoff)
+    assert result == without_handoff
+    assert "_candidate_batch_handoff" not in result.payload()
+    assert handoff.handoff_hash not in json.dumps(result.payload(), sort_keys=True)
+    assert handoff.handoff_hash not in json.dumps(
+        hmc_kernel_tuning._stage_status_public_summary(result),
+        sort_keys=True,
+    )
+    assert not any(name.startswith("_HMCPhase5Candidate") for name in bayesfilter.__all__)
+    assert "_phase5_candidate_batch_handoff" not in bayesfilter.__all__
+
+    original_record_payload = selected.payload()
+    original_record_hash = selected.record_hash
+    original_handoff_hash = handoff.handoff_hash
+    source_candidate = result.diagnostics["candidates"][selected.batch_ordinal]
+    assert isinstance(source_candidate, dict)
+    source_candidate["selected_step_size"] = 999.0
+    source_candidate["hard_vetoes"] = ("mutated_after_handoff",)
+    assert selected.payload() == original_record_payload
+    assert selected.record_hash == original_record_hash
+    assert handoff.handoff_hash == original_handoff_hash
+
+
+def test_phase5_private_candidate_handoff_anchors_repair_to_exact_ladder() -> None:
+    run, _calls = _scripted_step_runner({3: 0.82, 4: 0.83, 5: 0.84, 7: 0.84})
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(),
+        run_full_chain=run,
+    )
+
+    handoff = hmc_kernel_tuning._phase5_candidate_batch_handoff(result)
+    assert handoff is not None
+    assert result.final_status == "repair_or_retry"
+    assert handoff.selected_batch_ordinal is None
+    assert handoff.repair_batch_ordinal is not None
+    repair = handoff.candidate_records[handoff.repair_batch_ordinal]
+    assert repair.record_hash == handoff.repair_record_hash
+    assert repair.repair_config_hash == result.repair_step_hash
+    assert repair.num_leapfrog_steps == result.repair_step_payload["num_leapfrog_steps"]
+    assert repair.ladder_artifact_hash == result.budget_ladder_result.artifact_hash
+    repairable = tuple(
+        record for record in handoff.candidate_records if record.repair_config_hash
+    )
+    assert len(repairable) > 1
+    assert sum(
+        record.ladder_artifact_hash == result.budget_ladder_result.artifact_hash
+        for record in repairable
+    ) == 1
+
+    wrong_repair = next(
+        record
+        for record in repairable
+        if record.batch_ordinal != repair.batch_ordinal
+    )
+    cross_wired = replace(
+        handoff,
+        repair_batch_ordinal=wrong_repair.batch_ordinal,
+        repair_record_hash=wrong_repair.record_hash,
+        handoff_hash="",
+    )
+    with pytest.raises(ValueError, match="repair candidate"):
+        hmc_kernel_tuning._phase5_candidate_batch_handoff(
+            replace(result, _candidate_batch_handoff=cross_wired)
+        )
+
+    anchorless = replace(
+        handoff,
+        repair_batch_ordinal=None,
+        repair_record_hash=None,
+        handoff_hash="",
+    )
+    with pytest.raises(ValueError, match="lost candidate provenance"):
+        hmc_kernel_tuning._phase5_candidate_batch_handoff(
+            replace(result, _candidate_batch_handoff=anchorless)
+        )
+
+
+def test_phase5_private_candidate_handoff_projects_phase23_nomination_policy() -> None:
+    def run(_adapter: Any, _initial_state: Any, config: Any) -> _FakeRunResult:
+        uses_tuning = bool(config.tuning_policy.uses_dual_averaging)
+        return _fake_result(
+            num_results=int(config.num_results),
+            acceptance=0.70,
+            step_size=10.0 if uses_tuning else None,
+            num_adaptation_steps=(
+                config.tuning_policy.num_adaptation_steps if uses_tuning else None
+            ),
+            samples=np.zeros((int(config.num_results), 2)),
+        )
+
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(
+            handoff_screen_policy="phase23_nomination_only",
+            trajectory_window_lower_multiplier=0.8,
+            trajectory_window_upper_multiplier=1.25,
+        ),
+        run_full_chain=run,
+    )
+
+    handoff = hmc_kernel_tuning._phase5_candidate_batch_handoff(result)
+    assert handoff is not None
+    assert result.final_status == "passed"
+    selected = handoff.candidate_records[handoff.selected_batch_ordinal]
+    assert selected.trajectory_window_relation == "above_trajectory_window"
+    assert selected.viable is False
+    assert selected.nomination_eligible is True
+    assert selected.handoff_eligible is True
+    assert all(
+        record.handoff_eligible == record.nomination_eligible
+        for record in handoff.candidate_records
+    )
+
+
+def test_phase5_private_candidate_signals_retain_sources_and_hashes_fail_closed() -> None:
+    run, _calls = _scripted_step_runner({3: 0.82, 4: 0.66, 5: 0.70, 7: 0.73})
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(),
+        run_full_chain=run,
+    )
+    handoff = hmc_kernel_tuning._phase5_candidate_batch_handoff(result)
+    assert handoff is not None
+    first = replace(
+        handoff.candidate_records[0],
+        hard_vetoes=("same_code", "same_code"),
+        continuation_vetoes=(),
+        repair_triggers=(),
+        record_hash="",
+    )
+    second = replace(
+        handoff.candidate_records[1],
+        hard_vetoes=("same_code",),
+        continuation_vetoes=(),
+        repair_triggers=(),
+        record_hash="",
+    )
+    signals = hmc_kernel_tuning._phase5_candidate_signal_records((first, second))
+    assert tuple(signal.payload() for signal in signals) == (
+        {
+            "role": "hard_veto",
+            "code": "same_code",
+            "source_batch_ordinal": first.batch_ordinal,
+        },
+        {
+            "role": "hard_veto",
+            "code": "same_code",
+            "source_batch_ordinal": second.batch_ordinal,
+        },
+    )
+
+    changed_l = replace(
+        handoff.candidate_records[0],
+        num_leapfrog_steps=handoff.candidate_records[0].num_leapfrog_steps + 1,
+        record_hash="",
+    )
+    assert changed_l.record_hash != handoff.candidate_records[0].record_hash
+
+    selected = handoff.candidate_records[handoff.selected_batch_ordinal]
+    changed_step = replace(
+        selected,
+        selected_step_size=selected.selected_step_size + 0.01,
+        record_hash="",
+    )
+    changed_source = replace(
+        selected,
+        source_round_candidate_index=selected.source_round_candidate_index + 100,
+        record_hash="",
+    )
+    changed_ladder = replace(
+        selected,
+        ladder_artifact_hash="changed-ladder-hash",
+        record_hash="",
+    )
+    assert len(
+        {
+            selected.record_hash,
+            changed_step.record_hash,
+            changed_source.record_hash,
+            changed_ladder.record_hash,
+        }
+    ) == 4
+
+    first_signal = handoff.signal_records[0]
+    changed_signal = replace(
+        first_signal,
+        source_batch_ordinal=(first_signal.source_batch_ordinal + 1)
+        % handoff.candidate_count,
+    )
+    changed_signal_handoff = replace(
+        handoff,
+        signal_records=(changed_signal, *handoff.signal_records[1:]),
+        handoff_hash="",
+    )
+    assert changed_signal_handoff.handoff_hash != handoff.handoff_hash
+    with pytest.raises(ValueError, match="signal provenance mismatch"):
+        hmc_kernel_tuning._phase5_candidate_batch_handoff(
+            replace(result, _candidate_batch_handoff=changed_signal_handoff)
+        )
+
+    duplicate_ordinal = replace(
+        handoff.candidate_records[1],
+        batch_ordinal=handoff.candidate_records[0].batch_ordinal,
+        record_hash="",
+    )
+    bad_identity = replace(
+        handoff,
+        candidate_records=(
+            handoff.candidate_records[0],
+            duplicate_ordinal,
+            *handoff.candidate_records[2:],
+        ),
+        handoff_hash="",
+    )
+    with pytest.raises(ValueError, match="ordinals must be contiguous"):
+        hmc_kernel_tuning._phase5_candidate_batch_handoff(
+            replace(result, _candidate_batch_handoff=bad_identity)
+        )
+
+    count_mismatch = replace(
+        result,
+        diagnostics={
+            **result.diagnostics,
+            "candidate_count": result.diagnostics["candidate_count"] + 1,
+        },
+    )
+    with pytest.raises(ValueError, match="count does not match"):
+        hmc_kernel_tuning._phase5_candidate_batch_handoff(count_mismatch)
+
+    corrupted = replace(handoff, handoff_hash="")
+    object.__setattr__(corrupted, "handoff_hash", "corrupted")
+    with pytest.raises(ValueError, match="handoff hash mismatch"):
+        hmc_kernel_tuning._phase5_candidate_batch_handoff(
+            replace(result, _candidate_batch_handoff=corrupted)
+        )
+
+
+def test_phase5_private_candidate_normalization_distinguishes_missing_and_nonfinite() -> None:
+    missing = hmc_kernel_tuning._phase5_normalize_optional_number({}, "value")
+    nonfinite = hmc_kernel_tuning._phase5_normalize_optional_number(
+        {"value": np.nan},
+        "value",
+    )
+    assert missing == (None, False, False)
+    assert nonfinite == (None, True, False)
+
+    run, _calls = _scripted_step_runner({3: 0.82, 4: 0.66, 5: 0.70, 7: 0.73})
+    result = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        windowed_stage=_windowed_stage(),
+        config=_stage_config(),
+        run_full_chain=run,
+    )
+    handoff = hmc_kernel_tuning._phase5_candidate_batch_handoff(result)
+    assert handoff is not None
+    record = handoff.candidate_records[0]
+    missing_record = replace(
+        record,
+        selected_step_size=None,
+        selected_step_size_observed=False,
+        selected_step_size_finite=False,
+        selected_step_hash=None,
+        handoff_eligible=False,
+        record_hash="",
+    )
+    nonfinite_record = replace(
+        missing_record,
+        selected_step_size_observed=True,
+        record_hash="",
+    )
+    assert missing_record.record_hash != nonfinite_record.record_hash
+    assert "NaN" not in json.dumps(nonfinite_record.payload(), sort_keys=True)
+    assert "Infinity" not in json.dumps(nonfinite_record.payload(), sort_keys=True)
+
+
+def test_phase5_private_candidate_handoff_preserves_historical_phase6_entry() -> None:
+    geometry = _geometry()
+    bootstrap = _bootstrap()
+    windowed = _windowed_stage()
+    run, _calls = _scripted_step_runner({3: 0.82, 4: 0.66, 5: 0.70, 7: 0.73})
+    fixed = run_hmc_fixed_mass_step_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        config=_stage_config(),
+        run_full_chain=run,
+    )
+
+    def phase6_run(_adapter: Any, _initial_state: Any, config: Any) -> _FakeRunResult:
+        return _fake_result(
+            num_results=int(config.num_results),
+            acceptance=0.70,
+            samples=np.zeros((int(config.num_results), 2)),
+        )
+
+    trajectory = run_hmc_frozen_step_trajectory_stage(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        fixed_mass_step_stage=fixed,
+        run_full_chain=phase6_run,
+    )
+
+    assert hmc_kernel_tuning._phase5_candidate_batch_handoff(fixed) is not None
+    assert trajectory.passed is True
+    assert trajectory.fixed_mass_step_stage_artifact_hash == fixed.artifact_hash

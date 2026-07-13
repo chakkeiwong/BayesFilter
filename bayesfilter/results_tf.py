@@ -9,13 +9,19 @@ from typing import Any, Mapping
 import tensorflow as tf
 
 from bayesfilter.diagnostics import TFFilterDiagnostics
+from bayesfilter.linear.dtypes_tf import as_float_tensor, common_floating_dtype
 from bayesfilter.structural import FilterRunMetadata
 
 
-def _to_tensor_or_none(value: Any | None) -> tf.Tensor | None:
+def _to_tensor_or_none(
+    value: Any | None,
+    dtype: tf.DType | None = None,
+) -> tf.Tensor | None:
     if value is None:
         return None
-    return tf.convert_to_tensor(value, dtype=tf.float64)
+    if dtype is None:
+        dtype = common_floating_dtype(value)
+    return as_float_tensor(value, dtype)
 
 
 def _freeze_mapping(values: Mapping[str, Any] | None) -> Mapping[str, Any]:
@@ -38,7 +44,10 @@ class TFFilterValueResult:
         object.__setattr__(
             self,
             "log_likelihood",
-            tf.convert_to_tensor(self.log_likelihood, dtype=tf.float64),
+            as_float_tensor(
+                self.log_likelihood,
+                common_floating_dtype(self.log_likelihood),
+            ),
         )
         object.__setattr__(
             self,
@@ -70,17 +79,18 @@ class TFFilterDerivativeResult:
     trace: tuple[Mapping[str, Any], ...] | None = None
 
     def __post_init__(self) -> None:
+        dtype = common_floating_dtype(self.log_likelihood, self.score, self.hessian)
         object.__setattr__(
             self,
             "log_likelihood",
-            tf.convert_to_tensor(self.log_likelihood, dtype=tf.float64),
+            as_float_tensor(self.log_likelihood, dtype),
         )
         object.__setattr__(
             self,
             "score",
-            tf.convert_to_tensor(self.score, dtype=tf.float64),
+            as_float_tensor(self.score, dtype),
         )
-        object.__setattr__(self, "hessian", _to_tensor_or_none(self.hessian))
+        object.__setattr__(self, "hessian", _to_tensor_or_none(self.hessian, dtype))
         diagnostics = self.diagnostics
         if isinstance(diagnostics, TFFilterDiagnostics):
             frozen_diagnostics: TFFilterDiagnostics | Mapping[str, Any] = diagnostics

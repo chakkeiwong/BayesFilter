@@ -62,11 +62,41 @@ from bayesfilter.inference.hmc_tuning import (
     WindowedMassAdaptationResult,
     run_windowed_mass_adaptation_diagnostic,
 )
+from bayesfilter.inference.hmc_coordinates import (
+    AffineCoordinateTransform,
+    WarmupTrajectoryPolicy,
+    transform_from_precomputed_mass_artifact,
+)
+from bayesfilter.inference.hmc_warmup import (
+    OperationalWindowedWarmupResult,
+    compose_base_transform_with_nested_artifact,
+    compose_operational_transform_in_base_coordinates,
+    run_operational_windowed_warmup,
+)
+from bayesfilter.inference.hmc_verification import (
+    HMCAcceptanceEvidence,
+    HMCAcceptancePolicy,
+    evaluate_hmc_acceptance_evidence,
+    hmc_acceptance_evidence_from_payload,
+)
+from bayesfilter.inference.hmc_kernel_selection import (
+    BoundedFixedTrajectorySelectionResult,
+    FixedTrajectorySelection,
+    paired_candidate_seed,
+    private_start_bank_content_signature,
+    run_bounded_operational_fixed_trajectory_selection,
+)
+from bayesfilter.inference.hmc_tuning_state import aggregate_step_repair
 from bayesfilter.inference.posterior_adapter import (
     ValueScoreCapability,
     value_score_capability,
 )
 from bayesfilter.runtime import stable_config_hash
+
+
+_OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER = (
+    build_reusable_full_chain_tfp_hmc_runner
+)
 
 
 GEOMETRY_INITIALIZATION_NONCLAIMS = (
@@ -112,6 +142,43 @@ FIXED_MASS_STEP_STAGE_NONCLAIMS = (
     "no default-readiness claim",
     "no GPU or XLA readiness claim",
 )
+
+_PHASE5_CANDIDATE_HANDOFF_NONCLAIMS = (
+    "private Phase 5 candidate handoff only",
+    "verification order is scheduling metadata only",
+    "no Phase 7 verification claim",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+    "no GPU or XLA readiness claim",
+)
+
+_PHASE7_FIXED_KERNEL_VERIFICATION_NONCLAIMS = (
+    "private Phase 7 fixed-kernel verification handoff only",
+    "verification is a kernel handoff screen only",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+    "no GPU or XLA readiness claim",
+)
+
+_PHASE7_DIRECT_CANDIDATE_SEED_POLICY = (
+    "bayesfilter.phase7_direct_candidate_seed.v1"
+)
+_PHASE7_HISTORICAL_PHASE6_SEED_POLICY = (
+    "bayesfilter.phase7_historical_phase6_seed.v1"
+)
+_PHASE7_OPERATIONAL_SELECTION_SEED_POLICY = (
+    "bayesfilter.phase7_operational_selection_verification_seed.v2"
+)
+_PHASE7_OPERATIONAL_REPAIR_SEED_POLICY = (
+    "bayesfilter.phase7_operational_repair_verification_seed.v2"
+)
+_PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY = (
+    "bayesfilter.phase7_operational_evidence_extension_seed.v2"
+)
+_PHASE5_JOINT_L_EPSILON_ALGORITHM = "joint_l_epsilon_grid_fixed_mass_hmc"
+_PHASE7_DIRECT_QUEUE_MAX_STARTS = 2
 
 FROZEN_STEP_TRAJECTORY_STAGE_NONCLAIMS = (
     "selected joint L/epsilon handoff screen only",
@@ -1962,6 +2029,7 @@ class HMCWindowedMassStageResult:
     windowed_mass_result: WindowedMassAdaptationResult | None
     seed_report: Mapping[str, Any]
     diagnostic_roles: Mapping[str, str]
+    operational_warmup_result: OperationalWindowedWarmupResult | None = None
     nonclaims: tuple[str, ...] = WINDOWED_MASS_STAGE_NONCLAIMS
 
     def __post_init__(self) -> None:
@@ -2004,6 +2072,13 @@ class HMCWindowedMassStageResult:
         )
         object.__setattr__(self, "diagnostic_run_config_payload", payload)
         object.__setattr__(self, "windowed_config_payload", dict(self.windowed_config_payload))
+        if self.operational_warmup_result is not None and not isinstance(
+            self.operational_warmup_result,
+            OperationalWindowedWarmupResult,
+        ):
+            raise TypeError(
+                "operational_warmup_result must be OperationalWindowedWarmupResult"
+            )
         object.__setattr__(self, "seed_report", dict(self.seed_report))
         object.__setattr__(self, "diagnostic_roles", dict(self.diagnostic_roles))
         nonclaims = tuple(str(item) for item in self.nonclaims)
@@ -2065,6 +2140,9 @@ class HMCWindowedMassStageResult:
             "windowed_mass_result": None
             if self.windowed_mass_result is None
             else self.windowed_mass_result.payload(),
+            "operational_warmup_result": None
+            if self.operational_warmup_result is None
+            else self.operational_warmup_result.public_payload(),
             "adapted_mass_artifact_payload": self.adapted_mass_artifact_payload,
             "adapted_mass_artifact_signature": self.adapted_mass_artifact_signature,
             "candidate_step_size": self.candidate_step_size,
@@ -2134,13 +2212,16 @@ class HMCFixedMassStepStageConfig:
                 name="step_repair_factor",
             ),
         )
+        min_directional_factor = _validate_step_repair_multiplier(
+            self.step_repair_min_directional_factor,
+            name="step_repair_min_directional_factor",
+        )
+        if min_directional_factor > 2.0:
+            raise ValueError("step_repair_min_directional_factor must be at most 2")
         object.__setattr__(
             self,
             "step_repair_min_directional_factor",
-            _validate_step_repair_multiplier(
-                self.step_repair_min_directional_factor,
-                name="step_repair_min_directional_factor",
-            ),
+            min_directional_factor,
         )
         high_factor = (
             self.step_repair_factor
@@ -2299,6 +2380,1149 @@ class HMCFixedMassStepStageConfig:
 
 
 @dataclass(frozen=True)
+class _HMCPhase5CandidateSourceContext:
+    """Immutable upstream lineage for the private Phase 5 candidate batch."""
+
+    schema_runtime_version: str
+    phase5_config_hash: str
+    target_scope: str
+    target_dimension: int
+    windowed_stage_artifact_hash: str
+    selected_bootstrap_kernel_hash: str
+    adapter_signature: str
+    phase4_hmc_adapter_signature: str
+    ladder_adapter_signature: str
+    ladder_hmc_adapter_signature: str
+    adapted_mass_artifact_signature: str
+    handoff_screen_policy: str
+    nonclaims: tuple[str, ...] = _PHASE5_CANDIDATE_HANDOFF_NONCLAIMS
+    private_handoff_only: bool = True
+
+    def __post_init__(self) -> None:
+        for name in (
+            "schema_runtime_version",
+            "phase5_config_hash",
+            "target_scope",
+            "windowed_stage_artifact_hash",
+            "selected_bootstrap_kernel_hash",
+            "adapter_signature",
+            "phase4_hmc_adapter_signature",
+            "ladder_adapter_signature",
+            "ladder_hmc_adapter_signature",
+            "adapted_mass_artifact_signature",
+        ):
+            value = str(getattr(self, name))
+            if not value:
+                raise ValueError(f"{name} must be non-empty")
+            object.__setattr__(self, name, value)
+        dimension = int(self.target_dimension)
+        if dimension <= 0:
+            raise ValueError("target_dimension must be positive")
+        object.__setattr__(self, "target_dimension", dimension)
+        object.__setattr__(
+            self,
+            "handoff_screen_policy",
+            _validate_handoff_screen_policy(self.handoff_screen_policy),
+        )
+        nonclaims = tuple(str(item) for item in self.nonclaims)
+        if not nonclaims:
+            raise ValueError("candidate source context nonclaims must be non-empty")
+        object.__setattr__(self, "nonclaims", nonclaims)
+        if self.private_handoff_only is not True:
+            raise ValueError("candidate source context must remain private")
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema_runtime_version": self.schema_runtime_version,
+            "phase5_config_hash": self.phase5_config_hash,
+            "target_scope": self.target_scope,
+            "target_dimension": self.target_dimension,
+            "windowed_stage_artifact_hash": self.windowed_stage_artifact_hash,
+            "selected_bootstrap_kernel_hash": self.selected_bootstrap_kernel_hash,
+            "adapter_signature": self.adapter_signature,
+            "phase4_hmc_adapter_signature": self.phase4_hmc_adapter_signature,
+            "ladder_adapter_signature": self.ladder_adapter_signature,
+            "ladder_hmc_adapter_signature": self.ladder_hmc_adapter_signature,
+            "adapted_mass_artifact_signature": self.adapted_mass_artifact_signature,
+            "handoff_screen_policy": self.handoff_screen_policy,
+            "nonclaims": self.nonclaims,
+            "private_handoff_only": self.private_handoff_only,
+        }
+
+
+@dataclass(frozen=True)
+class _HMCPhase5CandidateRecord:
+    """One normalized Phase 5 candidate with source-complete private lineage."""
+
+    source_candidate_schema: str
+    batch_ordinal: int
+    source_round_index: int
+    source_grid_stage: str
+    source_round_candidate_index: int
+    num_leapfrog_steps: int
+    handoff_screen_policy: str
+    ladder_final_status: str
+    ladder_passed: bool
+    selected_round_index: int | None
+    selected_budget: int | None
+    selected_step_size: float | None
+    selected_step_size_observed: bool
+    selected_step_size_finite: bool
+    selected_step_hash: str | None
+    screen_acceptance_rate: float | None
+    screen_acceptance_observed: bool
+    screen_acceptance_finite: bool
+    trajectory_length: float | None
+    trajectory_length_observed: bool
+    trajectory_length_finite: bool
+    trajectory_window_relation: str
+    hard_vetoes: tuple[str, ...]
+    continuation_vetoes: tuple[str, ...]
+    repair_triggers: tuple[str, ...]
+    viable: bool
+    nomination_eligible: bool
+    nomination_role: str
+    handoff_eligible: bool
+    ladder_artifact_hash: str | None
+    repair_config_hash: str | None
+    ladder_adapter_signature: str | None
+    ladder_hmc_adapter_signature: str | None
+    ladder_mass_artifact_signature: str | None
+    ladder_target_scope: str | None
+    ladder_target_dimension: int | None
+    candidate_error_type: str | None
+    nonclaims: tuple[str, ...] = _PHASE5_CANDIDATE_HANDOFF_NONCLAIMS
+    private_handoff_only: bool = True
+    record_hash: str = ""
+
+    @property
+    def source_key(self) -> tuple[int, str, int]:
+        return (
+            self.source_round_index,
+            self.source_grid_stage,
+            self.source_round_candidate_index,
+        )
+
+    def __post_init__(self) -> None:
+        if int(self.batch_ordinal) < 0:
+            raise ValueError("batch_ordinal must be non-negative")
+        object.__setattr__(self, "batch_ordinal", int(self.batch_ordinal))
+        object.__setattr__(self, "source_round_index", int(self.source_round_index))
+        object.__setattr__(
+            self,
+            "source_round_candidate_index",
+            int(self.source_round_candidate_index),
+        )
+        leapfrog = int(self.num_leapfrog_steps)
+        if leapfrog <= 0:
+            raise ValueError("candidate num_leapfrog_steps must be positive")
+        object.__setattr__(self, "num_leapfrog_steps", leapfrog)
+        for name in (
+            "source_candidate_schema",
+            "source_grid_stage",
+            "ladder_final_status",
+            "trajectory_window_relation",
+            "nomination_role",
+        ):
+            value = str(getattr(self, name))
+            if not value:
+                raise ValueError(f"{name} must be non-empty")
+            object.__setattr__(self, name, value)
+        object.__setattr__(
+            self,
+            "handoff_screen_policy",
+            _validate_handoff_screen_policy(self.handoff_screen_policy),
+        )
+        for name in ("hard_vetoes", "continuation_vetoes", "repair_triggers"):
+            object.__setattr__(
+                self,
+                name,
+                tuple(str(item) for item in getattr(self, name)),
+            )
+        for name in (
+            "selected_step_hash",
+            "ladder_artifact_hash",
+            "repair_config_hash",
+            "ladder_adapter_signature",
+            "ladder_hmc_adapter_signature",
+            "ladder_mass_artifact_signature",
+            "ladder_target_scope",
+            "candidate_error_type",
+        ):
+            value = getattr(self, name)
+            object.__setattr__(self, name, None if value is None else str(value))
+        selected_round = (
+            None if self.selected_round_index is None else int(self.selected_round_index)
+        )
+        selected_budget = None if self.selected_budget is None else int(self.selected_budget)
+        ladder_dimension = (
+            None
+            if self.ladder_target_dimension is None
+            else int(self.ladder_target_dimension)
+        )
+        object.__setattr__(self, "selected_round_index", selected_round)
+        object.__setattr__(self, "selected_budget", selected_budget)
+        object.__setattr__(self, "ladder_target_dimension", ladder_dimension)
+        for name in (
+            "ladder_passed",
+            "selected_step_size_observed",
+            "selected_step_size_finite",
+            "screen_acceptance_observed",
+            "screen_acceptance_finite",
+            "trajectory_length_observed",
+            "trajectory_length_finite",
+            "viable",
+            "nomination_eligible",
+            "handoff_eligible",
+        ):
+            object.__setattr__(self, name, bool(getattr(self, name)))
+        for value_name, observed_name, finite_name in (
+            (
+                "selected_step_size",
+                "selected_step_size_observed",
+                "selected_step_size_finite",
+            ),
+            (
+                "screen_acceptance_rate",
+                "screen_acceptance_observed",
+                "screen_acceptance_finite",
+            ),
+            (
+                "trajectory_length",
+                "trajectory_length_observed",
+                "trajectory_length_finite",
+            ),
+        ):
+            value = getattr(self, value_name)
+            observed = getattr(self, observed_name)
+            finite = getattr(self, finite_name)
+            if not observed:
+                if value is not None or finite:
+                    raise ValueError(f"unobserved {value_name} must be None/nonfinite")
+            elif finite:
+                if value is None or not np.isfinite(float(value)):
+                    raise ValueError(f"finite {value_name} requires a finite value")
+                object.__setattr__(self, value_name, float(value))
+            elif value is not None:
+                raise ValueError(f"observed nonfinite {value_name} must normalize to None")
+        if self.handoff_eligible:
+            if (
+                not self.ladder_passed
+                or not self.selected_step_size_finite
+                or self.selected_step_hash is None
+                or self.ladder_artifact_hash is None
+                or self.ladder_adapter_signature is None
+                or self.ladder_hmc_adapter_signature is None
+                or self.ladder_mass_artifact_signature is None
+                or self.ladder_target_scope is None
+                or self.ladder_target_dimension is None
+            ):
+                raise ValueError("handoff-eligible candidate lacks verifier lineage")
+        nonclaims = tuple(str(item) for item in self.nonclaims)
+        if not nonclaims:
+            raise ValueError("candidate record nonclaims must be non-empty")
+        object.__setattr__(self, "nonclaims", nonclaims)
+        if self.private_handoff_only is not True:
+            raise ValueError("candidate record must remain private")
+        expected_hash = stable_config_hash(self.payload())
+        record_hash = str(self.record_hash)
+        if record_hash and record_hash != expected_hash:
+            raise ValueError("candidate record hash mismatch")
+        object.__setattr__(self, "record_hash", expected_hash)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "source_candidate_schema": self.source_candidate_schema,
+            "batch_ordinal": self.batch_ordinal,
+            "source_round_index": self.source_round_index,
+            "source_grid_stage": self.source_grid_stage,
+            "source_round_candidate_index": self.source_round_candidate_index,
+            "source_key": self.source_key,
+            "num_leapfrog_steps": self.num_leapfrog_steps,
+            "handoff_screen_policy": self.handoff_screen_policy,
+            "ladder_final_status": self.ladder_final_status,
+            "ladder_passed": self.ladder_passed,
+            "selected_round_index": self.selected_round_index,
+            "selected_budget": self.selected_budget,
+            "selected_step_size": self.selected_step_size,
+            "selected_step_size_observed": self.selected_step_size_observed,
+            "selected_step_size_finite": self.selected_step_size_finite,
+            "selected_step_hash": self.selected_step_hash,
+            "screen_acceptance_rate": self.screen_acceptance_rate,
+            "screen_acceptance_observed": self.screen_acceptance_observed,
+            "screen_acceptance_finite": self.screen_acceptance_finite,
+            "trajectory_length": self.trajectory_length,
+            "trajectory_length_observed": self.trajectory_length_observed,
+            "trajectory_length_finite": self.trajectory_length_finite,
+            "trajectory_window_relation": self.trajectory_window_relation,
+            "hard_vetoes": self.hard_vetoes,
+            "continuation_vetoes": self.continuation_vetoes,
+            "repair_triggers": self.repair_triggers,
+            "viable": self.viable,
+            "nomination_eligible": self.nomination_eligible,
+            "nomination_role": self.nomination_role,
+            "handoff_eligible": self.handoff_eligible,
+            "ladder_artifact_hash": self.ladder_artifact_hash,
+            "repair_config_hash": self.repair_config_hash,
+            "ladder_adapter_signature": self.ladder_adapter_signature,
+            "ladder_hmc_adapter_signature": self.ladder_hmc_adapter_signature,
+            "ladder_mass_artifact_signature": self.ladder_mass_artifact_signature,
+            "ladder_target_scope": self.ladder_target_scope,
+            "ladder_target_dimension": self.ladder_target_dimension,
+            "candidate_error_type": self.candidate_error_type,
+            "nonclaims": self.nonclaims,
+            "private_handoff_only": self.private_handoff_only,
+        }
+
+
+@dataclass(frozen=True)
+class _HMCPhase5CandidateSignalRecord:
+    role: str
+    code: str
+    source_batch_ordinal: int
+
+    def __post_init__(self) -> None:
+        role = str(self.role)
+        if role not in {"hard_veto", "continuation_veto", "repair_trigger"}:
+            raise ValueError("invalid candidate signal role")
+        code = str(self.code)
+        if not code:
+            raise ValueError("candidate signal code must be non-empty")
+        ordinal = int(self.source_batch_ordinal)
+        if ordinal < 0:
+            raise ValueError("candidate signal ordinal must be non-negative")
+        object.__setattr__(self, "role", role)
+        object.__setattr__(self, "code", code)
+        object.__setattr__(self, "source_batch_ordinal", ordinal)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "role": self.role,
+            "code": self.code,
+            "source_batch_ordinal": self.source_batch_ordinal,
+        }
+
+
+@dataclass(frozen=True)
+class _HMCPhase5CandidateBatchHandoff:
+    """Private immutable Phase 5 batch consumed by later BayesFilter phases."""
+
+    source_context: _HMCPhase5CandidateSourceContext
+    candidate_records: tuple[_HMCPhase5CandidateRecord, ...]
+    signal_records: tuple[_HMCPhase5CandidateSignalRecord, ...]
+    final_status: str
+    selected_batch_ordinal: int | None
+    selected_record_hash: str | None
+    repair_batch_ordinal: int | None
+    repair_record_hash: str | None
+    verification_order_seed: tuple[int, ...]
+    nonclaims: tuple[str, ...] = _PHASE5_CANDIDATE_HANDOFF_NONCLAIMS
+    private_handoff_only: bool = True
+    handoff_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.source_context, _HMCPhase5CandidateSourceContext):
+            raise TypeError("candidate batch source_context has invalid type")
+        records = tuple(self.candidate_records)
+        signals = tuple(self.signal_records)
+        if not records:
+            raise ValueError("candidate batch requires at least one completed candidate")
+        if not all(isinstance(item, _HMCPhase5CandidateRecord) for item in records):
+            raise TypeError("candidate batch contains an invalid candidate record")
+        if not all(isinstance(item, _HMCPhase5CandidateSignalRecord) for item in signals):
+            raise TypeError("candidate batch contains an invalid signal record")
+        object.__setattr__(self, "candidate_records", records)
+        object.__setattr__(self, "signal_records", signals)
+        final_status = str(self.final_status)
+        if final_status not in {
+            "passed",
+            "repair_or_retry",
+            "budget_exhausted",
+            "hard_veto",
+        }:
+            raise ValueError("invalid Phase 5 candidate batch final status")
+        object.__setattr__(self, "final_status", final_status)
+        for name in ("selected_batch_ordinal", "repair_batch_ordinal"):
+            value = getattr(self, name)
+            object.__setattr__(self, name, None if value is None else int(value))
+        for name in ("selected_record_hash", "repair_record_hash"):
+            value = getattr(self, name)
+            object.__setattr__(self, name, None if value is None else str(value))
+        object.__setattr__(
+            self,
+            "verification_order_seed",
+            tuple(int(item) for item in self.verification_order_seed),
+        )
+        nonclaims = tuple(str(item) for item in self.nonclaims)
+        if not nonclaims:
+            raise ValueError("candidate batch nonclaims must be non-empty")
+        object.__setattr__(self, "nonclaims", nonclaims)
+        if self.private_handoff_only is not True:
+            raise ValueError("candidate batch must remain private")
+        expected_hash = stable_config_hash(self.payload())
+        handoff_hash = str(self.handoff_hash)
+        if handoff_hash and handoff_hash != expected_hash:
+            raise ValueError("candidate batch handoff hash mismatch")
+        object.__setattr__(self, "handoff_hash", expected_hash)
+
+    @property
+    def candidate_count(self) -> int:
+        return len(self.candidate_records)
+
+    @property
+    def handoff_eligible_count(self) -> int:
+        return sum(record.handoff_eligible for record in self.candidate_records)
+
+    def flattened_codes(self, role: str) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(
+                signal.code for signal in self.signal_records if signal.role == role
+            )
+        )
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_phase5_candidate_batch_handoff.v1",
+            "source_context": self.source_context.payload(),
+            "candidate_records": tuple(
+                {**record.payload(), "record_hash": record.record_hash}
+                for record in self.candidate_records
+            ),
+            "signal_records": tuple(signal.payload() for signal in self.signal_records),
+            "final_status": self.final_status,
+            "candidate_count": self.candidate_count,
+            "handoff_eligible_count": self.handoff_eligible_count,
+            "selected_reference": None
+            if self.selected_batch_ordinal is None
+            else (self.selected_batch_ordinal, self.selected_record_hash),
+            "repair_reference": None
+            if self.repair_batch_ordinal is None
+            else (self.repair_batch_ordinal, self.repair_record_hash),
+            "verification_order_seed": self.verification_order_seed,
+            "nonclaims": self.nonclaims,
+            "private_handoff_only": self.private_handoff_only,
+        }
+
+
+@dataclass(frozen=True, repr=False)
+class _HMCPhase7DirectCandidateQueuePlan:
+    """Private, pre-draw identity/seed/allocation contract for one attempt."""
+
+    phase5_status: str
+    fixed_mass_step_stage_artifact_hash: str
+    candidate_batch_hash: str
+    candidate_identities: tuple[tuple[int, int, str, int], ...]
+    candidate_record_hashes: tuple[str, ...]
+    verification_seeds: tuple[tuple[int, int], ...]
+    verification_num_results: int
+    verification_num_burnin_steps: int
+    maximum_candidate_starts: int = _PHASE7_DIRECT_QUEUE_MAX_STARTS
+    private_handoff_only: bool = True
+    plan_hash: str = ""
+
+    def __post_init__(self) -> None:
+        status = str(self.phase5_status)
+        if status not in {"passed", "repair_or_retry"}:
+            raise ValueError("direct candidate queue requires a verifiable Phase 5 status")
+        object.__setattr__(self, "phase5_status", status)
+        for name in (
+            "fixed_mass_step_stage_artifact_hash",
+            "candidate_batch_hash",
+        ):
+            value = str(getattr(self, name))
+            if not value:
+                raise ValueError(f"{name} must be non-empty")
+            object.__setattr__(self, name, value)
+        identities = tuple(
+            (int(item[0]), int(item[1]), str(item[2]), int(item[3]))
+            for item in self.candidate_identities
+        )
+        if not identities or len(set(identities)) != len(identities):
+            raise ValueError("direct candidate queue identities must be non-empty and unique")
+        if any(not identity[2] for identity in identities):
+            raise ValueError("direct candidate queue grid stage must be non-empty")
+        object.__setattr__(self, "candidate_identities", identities)
+        record_hashes = tuple(str(item) for item in self.candidate_record_hashes)
+        if (
+            len(record_hashes) != len(identities)
+            or any(not item for item in record_hashes)
+            or len(set(record_hashes)) != len(record_hashes)
+        ):
+            raise ValueError("direct candidate queue record hashes are invalid")
+        object.__setattr__(self, "candidate_record_hashes", record_hashes)
+        seeds = tuple(_validate_seed(seed) for seed in self.verification_seeds)
+        if len(seeds) != len(identities):
+            raise ValueError("direct candidate queue seed count mismatch")
+        if len(set(seeds)) != len(seeds):
+            raise ValueError("direct candidate verification seed collision")
+        object.__setattr__(self, "verification_seeds", seeds)
+        for name in (
+            "verification_num_results",
+            "verification_num_burnin_steps",
+            "maximum_candidate_starts",
+        ):
+            value = int(getattr(self, name))
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+            object.__setattr__(self, name, value)
+        if self.maximum_candidate_starts != _PHASE7_DIRECT_QUEUE_MAX_STARTS:
+            raise ValueError("direct candidate queue start cap is fixed at two")
+        if self.private_handoff_only is not True:
+            raise ValueError("direct candidate queue plan must remain private")
+        expected_hash = stable_config_hash(self.payload())
+        plan_hash = str(self.plan_hash)
+        if plan_hash and plan_hash != expected_hash:
+            raise ValueError("direct candidate queue plan hash mismatch")
+        object.__setattr__(self, "plan_hash", expected_hash)
+
+    @property
+    def candidate_count(self) -> int:
+        return len(self.candidate_identities)
+
+    @property
+    def allocated_start_count(self) -> int:
+        return min(self.candidate_count, self.maximum_candidate_starts)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_phase7_direct_candidate_queue_plan.v1",
+            "phase5_status": self.phase5_status,
+            "fixed_mass_step_stage_artifact_hash": (
+                self.fixed_mass_step_stage_artifact_hash
+            ),
+            "candidate_batch_hash": self.candidate_batch_hash,
+            "candidate_identities": self.candidate_identities,
+            "candidate_record_hashes": self.candidate_record_hashes,
+            "verification_seeds": self.verification_seeds,
+            "candidate_count": self.candidate_count,
+            "verification_num_results": self.verification_num_results,
+            "verification_num_burnin_steps": self.verification_num_burnin_steps,
+            "maximum_candidate_starts": self.maximum_candidate_starts,
+            "allocated_start_count": self.allocated_start_count,
+            "total_result_cap": (
+                self.maximum_candidate_starts * self.verification_num_results
+            ),
+            "total_burnin_cap": (
+                self.maximum_candidate_starts * self.verification_num_burnin_steps
+            ),
+            "unused_quota_carries_across_attempts": False,
+            "private_handoff_only": self.private_handoff_only,
+        }
+
+    def __repr__(self) -> str:
+        return (
+            "_HMCPhase7DirectCandidateQueuePlan("
+            f"phase5_status={self.phase5_status!r}, "
+            f"candidate_count={self.candidate_count}, "
+            f"maximum_candidate_starts={self.maximum_candidate_starts}, "
+            "private_handoff_only=True)"
+        )
+
+
+@dataclass(frozen=True, repr=False)
+class _HMCPhase7FixedKernelVerificationInput:
+    """Immutable source-normalized mechanics and lineage for one verifier call."""
+
+    source_kind: str
+    attempt_index: int
+    target_scope: str
+    target_dimension: int
+    windowed_stage_artifact_hash: str
+    adapted_mass_artifact_signature: str
+    fixed_mass_step_stage_artifact_hash: str
+    candidate_batch_hash: str | None
+    candidate_identity: tuple[int, int, str, int] | None
+    candidate_record_hash: str | None
+    operational_selection_signature: str | None
+    operational_candidate_signature: str | None
+    trajectory_stage_artifact_hash: str | None
+    selected_step_hash: str
+    step_size: float
+    num_leapfrog_steps: int
+    adapter_signature: str
+    phase4_adapter_signature: str
+    verification_hmc_adapter_signature: str
+    verification_seed: tuple[int, int]
+    seed_policy: str
+    coordinate_signature: str | None
+    metric_signature: str | None
+    trajectory_signature: str | None
+    start_bank_signature: str | None
+    nonclaims: tuple[str, ...] = _PHASE7_FIXED_KERNEL_VERIFICATION_NONCLAIMS
+    private_handoff_only: bool = True
+    input_hash: str = ""
+
+    def __post_init__(self) -> None:
+        source_kind = str(self.source_kind)
+        if source_kind not in {
+            "direct_phase5_candidate",
+            "operational_selection_v2",
+            "historical_phase6",
+        }:
+            raise ValueError("invalid Phase 7 verification source kind")
+        object.__setattr__(self, "source_kind", source_kind)
+        attempt_index = int(self.attempt_index)
+        if attempt_index < 0:
+            raise ValueError("Phase 7 verification attempt index must be non-negative")
+        object.__setattr__(self, "attempt_index", attempt_index)
+        dimension = int(self.target_dimension)
+        if dimension <= 0:
+            raise ValueError("Phase 7 verification target dimension must be positive")
+        object.__setattr__(self, "target_dimension", dimension)
+        for name in (
+            "target_scope",
+            "windowed_stage_artifact_hash",
+            "adapted_mass_artifact_signature",
+            "fixed_mass_step_stage_artifact_hash",
+            "selected_step_hash",
+            "adapter_signature",
+            "phase4_adapter_signature",
+            "verification_hmc_adapter_signature",
+            "seed_policy",
+        ):
+            value = str(getattr(self, name))
+            if not value:
+                raise ValueError(f"{name} must be non-empty")
+            object.__setattr__(self, name, value)
+        step = float(self.step_size)
+        if not np.isfinite(step) or step <= 0.0:
+            raise ValueError("Phase 7 verification step size must be positive and finite")
+        object.__setattr__(self, "step_size", step)
+        leapfrog = int(self.num_leapfrog_steps)
+        if leapfrog <= 0:
+            raise ValueError("Phase 7 verification L must be positive")
+        object.__setattr__(self, "num_leapfrog_steps", leapfrog)
+        object.__setattr__(self, "verification_seed", _validate_seed(self.verification_seed))
+        for name in (
+            "candidate_batch_hash",
+            "candidate_record_hash",
+            "operational_selection_signature",
+            "operational_candidate_signature",
+            "trajectory_stage_artifact_hash",
+            "coordinate_signature",
+            "metric_signature",
+            "trajectory_signature",
+            "start_bank_signature",
+        ):
+            value = getattr(self, name)
+            object.__setattr__(self, name, None if value is None else str(value))
+        identity = self.candidate_identity
+        if identity is not None:
+            if len(tuple(identity)) != 4:
+                raise ValueError("candidate identity must contain four components")
+            normalized_identity = (
+                int(identity[0]),
+                int(identity[1]),
+                str(identity[2]),
+                int(identity[3]),
+            )
+            if normalized_identity[0] < 0 or not normalized_identity[2]:
+                raise ValueError("candidate identity is invalid")
+            object.__setattr__(self, "candidate_identity", normalized_identity)
+        if source_kind == "direct_phase5_candidate":
+            if (
+                self.candidate_batch_hash is None
+                or self.candidate_record_hash is None
+                or self.candidate_identity is None
+            ):
+                raise ValueError("direct Phase 5 verification requires candidate lineage")
+            if self.trajectory_stage_artifact_hash is not None:
+                raise ValueError("direct Phase 5 verification forbids Phase 6 lineage")
+            if self.seed_policy != _PHASE7_DIRECT_CANDIDATE_SEED_POLICY:
+                raise ValueError("direct Phase 5 verification seed policy mismatch")
+            if any(
+                value is not None
+                for value in (
+                    self.operational_selection_signature,
+                    self.operational_candidate_signature,
+                    self.coordinate_signature,
+                    self.metric_signature,
+                    self.trajectory_signature,
+                    self.start_bank_signature,
+                )
+            ):
+                raise ValueError("direct Phase 5 verification forbids operational lineage")
+        elif source_kind == "operational_selection_v2":
+            if (
+                self.operational_selection_signature is None
+                or self.operational_candidate_signature is None
+                or self.coordinate_signature is None
+                or self.metric_signature is None
+                or self.trajectory_signature is None
+                or self.start_bank_signature is None
+            ):
+                raise ValueError("operational verification requires selection lineage")
+            if any(
+                value is not None
+                for value in (
+                    self.candidate_batch_hash,
+                    self.candidate_identity,
+                    self.candidate_record_hash,
+                    self.trajectory_stage_artifact_hash,
+                )
+            ):
+                raise ValueError("operational verification forbids v1 candidate/Phase 6 lineage")
+            if self.seed_policy not in {
+                _PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+                _PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+                _PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY,
+            }:
+                raise ValueError("operational verification seed policy mismatch")
+        else:
+            if self.trajectory_stage_artifact_hash is None:
+                raise ValueError("historical verification requires Phase 6 lineage")
+            if any(
+                value is not None
+                for value in (
+                    self.candidate_batch_hash,
+                    self.candidate_identity,
+                    self.candidate_record_hash,
+                    self.operational_selection_signature,
+                    self.operational_candidate_signature,
+                    self.coordinate_signature,
+                    self.metric_signature,
+                    self.trajectory_signature,
+                    self.start_bank_signature,
+                )
+            ):
+                raise ValueError("historical verification forbids direct candidate lineage")
+            if self.seed_policy != _PHASE7_HISTORICAL_PHASE6_SEED_POLICY:
+                raise ValueError("historical Phase 6 verification seed policy mismatch")
+        nonclaims = tuple(str(item) for item in self.nonclaims)
+        if not nonclaims:
+            raise ValueError("Phase 7 verification nonclaims must be non-empty")
+        object.__setattr__(self, "nonclaims", nonclaims)
+        if self.private_handoff_only is not True:
+            raise ValueError("Phase 7 verification input must remain private")
+        expected_hash = stable_config_hash(self.payload())
+        input_hash = str(self.input_hash)
+        if input_hash and input_hash != expected_hash:
+            raise ValueError("Phase 7 verification input hash mismatch")
+        object.__setattr__(self, "input_hash", expected_hash)
+
+    @property
+    def source_identity(self) -> Mapping[str, Any]:
+        if self.source_kind == "direct_phase5_candidate":
+            return {
+                "source_kind": self.source_kind,
+                "candidate_batch_hash": self.candidate_batch_hash,
+                "candidate_identity": self.candidate_identity,
+                "candidate_record_hash": self.candidate_record_hash,
+            }
+        if self.source_kind == "operational_selection_v2":
+            return {
+                "source_kind": self.source_kind,
+                "operational_selection_signature": (
+                    self.operational_selection_signature
+                ),
+                "operational_candidate_signature": (
+                    self.operational_candidate_signature
+                ),
+                "coordinate_signature": self.coordinate_signature,
+                "metric_signature": self.metric_signature,
+                "trajectory_signature": self.trajectory_signature,
+                "start_bank_signature": self.start_bank_signature,
+            }
+        return {
+            "source_kind": self.source_kind,
+            "trajectory_stage_artifact_hash": self.trajectory_stage_artifact_hash,
+        }
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_phase7_fixed_kernel_verification_input.v1",
+            "source_kind": self.source_kind,
+            "attempt_index": self.attempt_index,
+            "target_scope": self.target_scope,
+            "target_dimension": self.target_dimension,
+            "windowed_stage_artifact_hash": self.windowed_stage_artifact_hash,
+            "adapted_mass_artifact_signature": self.adapted_mass_artifact_signature,
+            "fixed_mass_step_stage_artifact_hash": (
+                self.fixed_mass_step_stage_artifact_hash
+            ),
+            "candidate_batch_hash": self.candidate_batch_hash,
+            "candidate_identity": self.candidate_identity,
+            "candidate_record_hash": self.candidate_record_hash,
+            "operational_selection_signature": self.operational_selection_signature,
+            "operational_candidate_signature": self.operational_candidate_signature,
+            "trajectory_stage_artifact_hash": self.trajectory_stage_artifact_hash,
+            "selected_step_hash": self.selected_step_hash,
+            "step_size": self.step_size,
+            "num_leapfrog_steps": self.num_leapfrog_steps,
+            "adapter_signature": self.adapter_signature,
+            "phase4_adapter_signature": self.phase4_adapter_signature,
+            "verification_hmc_adapter_signature": (
+                self.verification_hmc_adapter_signature
+            ),
+            "verification_seed": self.verification_seed,
+            "seed_policy": self.seed_policy,
+            "coordinate_signature": self.coordinate_signature,
+            "metric_signature": self.metric_signature,
+            "trajectory_signature": self.trajectory_signature,
+            "start_bank_signature": self.start_bank_signature,
+            "nonclaims": self.nonclaims,
+            "private_handoff_only": self.private_handoff_only,
+        }
+
+    def __repr__(self) -> str:
+        return (
+            "_HMCPhase7FixedKernelVerificationInput("
+            f"source_kind={self.source_kind!r}, attempt_index={self.attempt_index}, "
+            f"target_dimension={self.target_dimension}, private_handoff_only=True)"
+        )
+
+
+@dataclass(frozen=True, repr=False)
+class _HMCPhase7FixedKernelVerificationOutcome:
+    """Private role-separated result from the shared Phase 7 verifier core."""
+
+    verification_input: _HMCPhase7FixedKernelVerificationInput = dataclasses.field(
+        repr=False
+    )
+    verification_config_payload: Mapping[str, Any] | None = dataclasses.field(
+        repr=False
+    )
+    diagnostics: Mapping[str, Any] = dataclasses.field(repr=False)
+    callback_result: FixedMassHMCTuningBudgetCallbackResult = dataclasses.field(
+        repr=False
+    )
+    final_status: str
+    diagnostic_role: str
+    hard_vetoes: tuple[str, ...]
+    continuation_scope: str
+    repair_triggers: tuple[str, ...]
+    repair_evidence: Mapping[str, Any] | None = dataclasses.field(
+        default=None,
+        repr=False,
+    )
+    nonclaims: tuple[str, ...] = _PHASE7_FIXED_KERNEL_VERIFICATION_NONCLAIMS
+    private_handoff_only: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.verification_input,
+            _HMCPhase7FixedKernelVerificationInput,
+        ):
+            raise TypeError("verification_input has invalid type")
+        config_payload = (
+            None
+            if self.verification_config_payload is None
+            else dict(self.verification_config_payload)
+        )
+        object.__setattr__(self, "verification_config_payload", config_payload)
+        object.__setattr__(self, "diagnostics", dict(self.diagnostics))
+        if not isinstance(
+            self.callback_result,
+            FixedMassHMCTuningBudgetCallbackResult,
+        ):
+            raise TypeError("callback_result has invalid type")
+        status = str(self.final_status)
+        if status not in {
+            "passed",
+            "hard_veto",
+            "repair_or_retry",
+            "budget_exhausted",
+        }:
+            raise ValueError("invalid Phase 7 verification status")
+        object.__setattr__(self, "final_status", status)
+        role = str(self.diagnostic_role)
+        if not role:
+            raise ValueError("Phase 7 verification diagnostic role must be non-empty")
+        object.__setattr__(self, "diagnostic_role", role)
+        object.__setattr__(self, "hard_vetoes", _string_tuple(self.hard_vetoes))
+        object.__setattr__(
+            self,
+            "repair_triggers",
+            _string_tuple(self.repair_triggers),
+        )
+        scope = str(self.continuation_scope)
+        if scope not in {
+            "passed",
+            "candidate_local_hard_veto",
+            "candidate_local_cost_stop",
+            "candidate_local_promotion_veto",
+            "shared_continuation_veto",
+            "repair_or_retry",
+        }:
+            raise ValueError("invalid Phase 7 verification continuation scope")
+        if status == "passed" and scope != "passed":
+            raise ValueError("passed verification requires passed scope")
+        if status == "repair_or_retry" and scope != "repair_or_retry":
+            raise ValueError("repair verification requires repair scope")
+        if status == "budget_exhausted" and scope not in {
+            "candidate_local_cost_stop",
+            "candidate_local_promotion_veto",
+        }:
+            raise ValueError(
+                "nonpromoting verification requires a candidate-local scope"
+            )
+        if status == "hard_veto" and scope not in {
+            "candidate_local_hard_veto",
+            "shared_continuation_veto",
+        }:
+            raise ValueError("hard-veto verification requires a veto scope")
+        object.__setattr__(self, "continuation_scope", scope)
+        repair_evidence = (
+            None if self.repair_evidence is None else dict(self.repair_evidence)
+        )
+        object.__setattr__(self, "repair_evidence", repair_evidence)
+        nonclaims = tuple(str(item) for item in self.nonclaims)
+        if not nonclaims:
+            raise ValueError("Phase 7 verification outcome nonclaims must be non-empty")
+        object.__setattr__(self, "nonclaims", nonclaims)
+        if self.private_handoff_only is not True:
+            raise ValueError("Phase 7 verification outcome must remain private")
+
+    def historical_tuple(self) -> tuple[
+        Mapping[str, Any] | None,
+        Mapping[str, Any],
+        FixedMassHMCTuningBudgetCallbackResult,
+        str,
+        str,
+        tuple[str, ...],
+        tuple[str, ...],
+    ]:
+        return (
+            self.verification_config_payload,
+            self.diagnostics,
+            self.callback_result,
+            self.final_status,
+            self.diagnostic_role,
+            self.hard_vetoes,
+            self.repair_triggers,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            "_HMCPhase7FixedKernelVerificationOutcome("
+            f"source_kind={self.verification_input.source_kind!r}, "
+            f"final_status={self.final_status!r}, "
+            f"continuation_scope={self.continuation_scope!r}, "
+            "private_handoff_only=True)"
+        )
+
+
+@dataclass(frozen=True, repr=False)
+class _HMCPhase7DirectCandidateQueueResult:
+    """Private aggregate preserving per-candidate states without public leakage."""
+
+    plan: _HMCPhase7DirectCandidateQueuePlan = dataclasses.field(repr=False)
+    candidate_results: tuple[Mapping[str, Any], ...] = dataclasses.field(repr=False)
+    representative_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = (
+        dataclasses.field(default=None, repr=False)
+    )
+    admitted_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = (
+        dataclasses.field(default=None, repr=False)
+    )
+    repair_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = (
+        dataclasses.field(default=None, repr=False)
+    )
+    repair_directions: tuple[str, ...] = ()
+    final_status: str = "architecture_blocked"
+    diagnostic_role: str = "architecture_blocked"
+    hard_vetoes: tuple[str, ...] = ()
+    repair_triggers: tuple[str, ...] = ()
+    timeout_closeout: Mapping[str, Any] | None = dataclasses.field(
+        default=None,
+        repr=False,
+    )
+    private_handoff_only: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan, _HMCPhase7DirectCandidateQueuePlan):
+            raise TypeError("direct queue result plan has invalid type")
+        results = tuple(dict(item) for item in self.candidate_results)
+        if len(results) != self.plan.candidate_count:
+            raise ValueError("direct queue result count mismatch")
+        expected_identities = self.plan.candidate_identities
+        observed_identities = tuple(
+            tuple(item.get("candidate_identity", ())) for item in results
+        )
+        if observed_identities != expected_identities:
+            raise ValueError("direct queue result identity order mismatch")
+        allowed_states = {
+            "passed",
+            "repair_or_retry",
+            "candidate_local_hard_veto",
+            "candidate_local_cost_stop",
+            "candidate_local_promotion_veto",
+            "shared_continuation_veto",
+            "not_run",
+        }
+        if any(str(item.get("state")) not in allowed_states for item in results):
+            raise ValueError("direct queue result contains an invalid candidate state")
+        started_count = sum(item.get("started") is True for item in results)
+        if started_count > self.plan.maximum_candidate_starts:
+            raise ValueError("direct queue result exceeded its start cap")
+        object.__setattr__(self, "candidate_results", results)
+        for name in ("representative_outcome", "admitted_outcome", "repair_outcome"):
+            value = getattr(self, name)
+            if value is not None and not isinstance(
+                value,
+                _HMCPhase7FixedKernelVerificationOutcome,
+            ):
+                raise TypeError(f"{name} has invalid type")
+        status = str(self.final_status)
+        if status not in {
+            "passed",
+            "repair_or_retry",
+            "hard_veto",
+            "budget_exhausted",
+            "architecture_blocked",
+        }:
+            raise ValueError("direct queue result status is invalid")
+        object.__setattr__(self, "final_status", status)
+        role = str(self.diagnostic_role)
+        if not role:
+            raise ValueError("direct queue diagnostic role must be non-empty")
+        object.__setattr__(self, "diagnostic_role", role)
+        object.__setattr__(self, "hard_vetoes", _string_tuple(self.hard_vetoes))
+        object.__setattr__(
+            self,
+            "repair_triggers",
+            _string_tuple(self.repair_triggers),
+        )
+        directions = tuple(sorted(set(str(item) for item in self.repair_directions)))
+        if any(item not in {"lower_epsilon", "higher_epsilon"} for item in directions):
+            raise ValueError("direct queue repair direction is invalid")
+        observed_directions = tuple(
+            sorted(
+                {
+                    str(item.get("repair_direction"))
+                    for item in results
+                    if item.get("repair_direction") is not None
+                }
+            )
+        )
+        if directions != observed_directions:
+            raise ValueError("direct queue repair directions do not match candidate evidence")
+        object.__setattr__(self, "repair_directions", directions)
+        closeout = None if self.timeout_closeout is None else dict(self.timeout_closeout)
+        object.__setattr__(self, "timeout_closeout", closeout)
+        if status == "passed" and self.admitted_outcome is None:
+            raise ValueError("passed direct queue requires an admitted outcome")
+        if status == "repair_or_retry" and self.repair_outcome is None:
+            raise ValueError("repairing direct queue requires a finite repair outcome")
+        conflict = len(directions) > 1
+        conflict_trigger = "verification_acceptance_inconclusive_conflict"
+        if conflict and (
+            status != "repair_or_retry"
+            or role != "verification_acceptance_conflict"
+            or conflict_trigger not in self.repair_triggers
+        ):
+            raise ValueError("direct queue repair conflict is not classified truthfully")
+        if not conflict and (
+            role == "verification_acceptance_conflict"
+            or conflict_trigger in self.repair_triggers
+        ):
+            raise ValueError("direct queue claims a repair conflict without opposed directions")
+        if status == "hard_veto" and not self.hard_vetoes:
+            raise ValueError("hard-veto direct queue requires a shared veto")
+        if self.private_handoff_only is not True:
+            raise ValueError("direct queue result must remain private")
+
+    @property
+    def started_count(self) -> int:
+        return sum(item.get("started") is True for item in self.candidate_results)
+
+    @property
+    def not_run_count(self) -> int:
+        return sum(item.get("state") == "not_run" for item in self.candidate_results)
+
+    @property
+    def cost_stopped_count(self) -> int:
+        return sum(
+            item.get("state") == "candidate_local_cost_stop"
+            for item in self.candidate_results
+        )
+
+    @property
+    def promotion_vetoed_count(self) -> int:
+        return sum(
+            item.get("state") == "candidate_local_promotion_veto"
+            for item in self.candidate_results
+        )
+
+    @property
+    def repair_direction_conflict(self) -> bool:
+        return len(self.repair_directions) > 1
+
+    def private_diagnostics(self) -> Mapping[str, Any]:
+        representative = self.representative_outcome
+        diagnostics = {} if representative is None else dict(representative.diagnostics)
+        return {
+            **diagnostics,
+            "phase7_direct_candidate_queue": {
+                "schema": "bayesfilter.hmc_phase7_direct_candidate_queue_result.v2",
+                "plan_hash": self.plan.plan_hash,
+                "candidate_batch_hash": self.plan.candidate_batch_hash,
+                "verification_seed_policy": _PHASE7_DIRECT_CANDIDATE_SEED_POLICY,
+                "seed_map_precomputed": True,
+                "candidate_results": self.candidate_results,
+                "candidate_count": self.plan.candidate_count,
+                "started_count": self.started_count,
+                "not_run_count": self.not_run_count,
+                "cost_stopped_count": self.cost_stopped_count,
+                "promotion_vetoed_count": self.promotion_vetoed_count,
+                "repair_directions": self.repair_directions,
+                "repair_direction_conflict": self.repair_direction_conflict,
+                "maximum_candidate_starts": self.plan.maximum_candidate_starts,
+                "unused_start_quota": max(
+                    0,
+                    self.plan.maximum_candidate_starts - self.started_count,
+                ),
+                "timeout_closeout": self.timeout_closeout,
+                "private_handoff_only": True,
+            },
+            "phase7_direct_candidate_queue_active": True,
+            "reports_posterior_convergence": False,
+        }
+
+    def __repr__(self) -> str:
+        return (
+            "_HMCPhase7DirectCandidateQueueResult("
+            f"final_status={self.final_status!r}, "
+            f"started_count={self.started_count}, "
+            f"not_run_count={self.not_run_count}, "
+            "private_handoff_only=True)"
+        )
+
+
+@dataclass(frozen=True, repr=False)
+class _HMCPhase7FixedKernelVerificationExecution:
+    """Execution-mode output consumed once by the shared Phase 7 finalizer."""
+
+    verification_config_payload: Mapping[str, Any] | None
+    diagnostics: Mapping[str, Any]
+    callback_result: FixedMassHMCTuningBudgetCallbackResult
+    runner_error: Exception | None
+    runner_error_origin: str | None
+    callback_error: Exception | None
+    observed_step_size: Any
+    observed_num_leapfrog_steps: Any
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "verification_config_payload",
+            None
+            if self.verification_config_payload is None
+            else dict(self.verification_config_payload),
+        )
+        object.__setattr__(self, "diagnostics", dict(self.diagnostics))
+        if not isinstance(
+            self.callback_result,
+            FixedMassHMCTuningBudgetCallbackResult,
+        ):
+            raise TypeError("verification execution callback_result has invalid type")
+        origin = self.runner_error_origin
+        if origin not in {None, "runner", "checkpoint"}:
+            raise ValueError("invalid verification runner error origin")
+        if (self.runner_error is None) != (origin is None):
+            raise ValueError("verification runner error and origin must be paired")
+
+
+@dataclass(frozen=True)
 class HMCFixedMassStepStageResult:
     """Phase 5 fixed-mass step handoff; not trajectory or posterior evidence."""
 
@@ -2329,6 +3553,17 @@ class HMCFixedMassStepStageResult:
     seed_report: Mapping[str, Any]
     diagnostic_roles: Mapping[str, str]
     nonclaims: tuple[str, ...] = FIXED_MASS_STEP_STAGE_NONCLAIMS
+    _candidate_batch_handoff: _HMCPhase5CandidateBatchHandoff | None = (
+        dataclasses.field(default=None, repr=False, compare=False)
+    )
+    _operational_selection: FixedTrajectorySelection | None = dataclasses.field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
+    _operational_selection_loop: BoundedFixedTrajectorySelectionResult | None = (
+        dataclasses.field(default=None, repr=False, compare=False)
+    )
 
     def __post_init__(self) -> None:
         for name in (
@@ -2391,11 +3626,39 @@ class HMCFixedMassStepStageResult:
         if not nonclaims:
             raise ValueError("nonclaims must be non-empty")
         object.__setattr__(self, "nonclaims", nonclaims)
+        if self._candidate_batch_handoff is not None and not isinstance(
+            self._candidate_batch_handoff,
+            _HMCPhase5CandidateBatchHandoff,
+        ):
+            raise TypeError("_candidate_batch_handoff has invalid type")
+        operational_selection = self._operational_selection
+        if operational_selection is not None and not isinstance(
+            operational_selection,
+            FixedTrajectorySelection,
+        ):
+            raise TypeError("_operational_selection has invalid type")
+        if operational_selection is not None and self._candidate_batch_handoff is not None:
+            raise ValueError("operational and historical Phase 5 authorities are exclusive")
+        operational_loop = self._operational_selection_loop
+        if operational_loop is not None and not isinstance(
+            operational_loop, BoundedFixedTrajectorySelectionResult
+        ):
+            raise TypeError("_operational_selection_loop has invalid type")
+        if operational_loop is not None and operational_selection is None:
+            raise ValueError("operational selection loop lost its terminal selection")
+        if (
+            operational_loop is not None
+            and operational_loop.selection.signature != operational_selection.signature
+        ):
+            raise ValueError("operational selection loop terminal lineage mismatch")
         if self.final_status == "passed":
             if self.hard_vetoes:
                 raise ValueError("passed fixed-mass step stage cannot have hard vetoes")
-            if self.budget_ladder_result is None or not self.budget_ladder_result.passed:
-                raise ValueError("passed fixed-mass step stage requires passed ladder")
+            if operational_selection is None:
+                if self.budget_ladder_result is None or not self.budget_ladder_result.passed:
+                    raise ValueError("passed fixed-mass step stage requires passed ladder")
+            elif operational_selection.disposition != "representative_selected":
+                raise ValueError("passed operational Phase 5 requires a selected representative")
             if self.selected_step_payload is None or self.selected_step_hash is None:
                 raise ValueError("passed fixed-mass step stage requires selected step")
             if self.repair_step_payload is not None or self.repair_step_hash is not None:
@@ -2458,6 +3721,69 @@ class HMCFixedMassStepStageResult:
             "repair_step_hash": self.repair_step_hash,
             "repair_step_available": self.repair_step_payload is not None,
             "repair_step_payload_exposed": False,
+            "operational_selection_summary": None
+            if self._operational_selection is None
+            else {
+                "schema": "bayesfilter.hmc_fixed_trajectory_selection_summary.v4",
+                "selection_signature": self._operational_selection.signature,
+                "disposition": self._operational_selection.disposition,
+                "candidate_count": len(self._operational_selection.candidate_results),
+                "replication_count_per_candidate": 3,
+                "representative_signature": (
+                    self._operational_selection.representative_signature
+                ),
+                "candidate_retune_failures": tuple(
+                    item.payload()
+                    for item in self._operational_selection.candidate_retune_failures
+                ),
+                "candidate_retune_failure_count": len(
+                    self._operational_selection.candidate_retune_failures
+                ),
+                "retune_failure_scope": (
+                    self._operational_selection.retune_failure_scope
+                ),
+                "retune_failure_reasons": (
+                    self._operational_selection.retune_failure_reasons
+                ),
+                "retune_candidate_signature": (
+                    self._operational_selection.retune_candidate_signature
+                ),
+                "raw_start_bank_exposed": False,
+                "raw_samples_exposed": False,
+                "candidate_mechanics_exposed": False,
+                "stochastic_ranking_performed": False,
+            },
+            "operational_selection_repair_summary": None
+            if self._operational_selection_loop is None
+            else {
+                "schema": "bayesfilter.hmc_bounded_selection_repair_summary.v2",
+                "loop_signature": self._operational_selection_loop.signature,
+                "attempt_count": len(self._operational_selection_loop.attempts),
+                "max_attempts": self._operational_selection_loop.max_attempts,
+                "terminal_disposition": (
+                    self._operational_selection_loop.terminal_disposition
+                ),
+                "repair_count": len(
+                    self._operational_selection_loop.repair_direction_history
+                ),
+                "repair_direction_history": (
+                    self._operational_selection_loop.repair_direction_history
+                ),
+                "empirical_bracket_available": all(
+                    item is not None
+                    for item in self._operational_selection_loop.final_bracket
+                ),
+                "selection_repair_loop_exercised": len(
+                    self._operational_selection_loop.attempts
+                ) > 1,
+                "repair_loop_validated": False,
+                "step_veto_recovery_count": (
+                    self._operational_selection_loop.step_veto_recovery_count
+                ),
+                "raw_step_history_exposed": False,
+                "raw_start_bank_exposed": False,
+                "raw_samples_exposed": False,
+            },
             "frozen_mass_invariant": self.frozen_mass_invariant,
             "seed_report": self.seed_report,
             "diagnostic_roles": self.diagnostic_roles,
@@ -2469,6 +3795,470 @@ class HMCFixedMassStepStageResult:
             "reports_gpu_or_xla_readiness": False,
             "nonclaims": self.nonclaims,
         }
+
+
+def _phase5_candidate_batch_handoff(
+    result: HMCFixedMassStepStageResult,
+) -> _HMCPhase5CandidateBatchHandoff | None:
+    """Return the validated private Phase 5 candidate batch, when one exists."""
+
+    if not isinstance(result, HMCFixedMassStepStageResult):
+        raise TypeError("result must be HMCFixedMassStepStageResult")
+    handoff = result._candidate_batch_handoff
+    candidate_count = int(result.diagnostics.get("candidate_count", 0))
+    if handoff is None:
+        if result._operational_selection is not None:
+            # Operational v3 candidates live in the typed selection authority;
+            # their diagnostic count does not imply a legacy v1 candidate batch.
+            return None
+        if candidate_count != 0:
+            raise ValueError("completed Phase 5 candidates require a private handoff")
+        is_current_joint = (
+            result.diagnostics.get("algorithm") == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+        )
+        historical_compatibility = (
+            result.diagnostics.get("historical_phase5_compatibility_fixture") is True
+            and not is_current_joint
+        )
+        if (
+            result.final_status == "passed" or result.repair_step_payload is not None
+        ) and not historical_compatibility:
+            raise ValueError("selected or repair Phase 5 state requires a private handoff")
+        return None
+    if not isinstance(handoff, _HMCPhase5CandidateBatchHandoff):
+        raise TypeError("invalid private Phase 5 candidate handoff")
+    _validate_phase5_candidate_batch_handoff(result, handoff)
+    return handoff
+
+
+def _phase5_candidate_source_key(
+    candidate: Mapping[str, Any],
+) -> tuple[int, str, int]:
+    return (
+        int(candidate["round_index"]),
+        str(candidate["grid_stage"]),
+        int(candidate["candidate_index"]),
+    )
+
+
+def _phase5_normalize_optional_number(
+    source: Mapping[str, Any],
+    key: str,
+) -> tuple[float | None, bool, bool]:
+    raw_value = source.get(key)
+    if raw_value is None:
+        return None, False, False
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        return None, True, False
+    if not np.isfinite(value):
+        return None, True, False
+    return value, True, True
+
+
+def _phase5_candidate_ladders_by_source(
+    rounds: Sequence[Mapping[str, Any]],
+) -> Mapping[tuple[int, str, int], FixedMassHMCTuningBudgetLadderResult]:
+    ladders_by_source: dict[
+        tuple[int, str, int], FixedMassHMCTuningBudgetLadderResult
+    ] = {}
+    for round_payload in rounds:
+        expected_round_index = int(round_payload["round_index"])
+        expected_grid_stage = str(round_payload["grid_stage"])
+        ladders = round_payload.get("ladders_by_candidate_index", {})
+        if not isinstance(ladders, Mapping):
+            raise ValueError("Phase 5 round ladder mapping is unavailable")
+        for candidate in tuple(round_payload.get("candidates", ())):
+            if not isinstance(candidate, Mapping):
+                raise TypeError("Phase 5 candidate must be a mapping")
+            source_key = _phase5_candidate_source_key(candidate)
+            if source_key[:2] != (expected_round_index, expected_grid_stage):
+                raise ValueError("Phase 5 candidate source does not match its round")
+            if source_key in ladders_by_source:
+                raise ValueError("duplicate Phase 5 candidate source key")
+            ladder = ladders.get(source_key[2])
+            if ladder is None:
+                if candidate.get("run_error_type") is None:
+                    raise ValueError("completed Phase 5 candidate lost ladder provenance")
+                continue
+            if not isinstance(ladder, FixedMassHMCTuningBudgetLadderResult):
+                raise TypeError("Phase 5 candidate ladder has invalid type")
+            ladders_by_source[source_key] = ladder
+    return ladders_by_source
+
+
+def _phase5_ladder_target_scope(
+    ladder: FixedMassHMCTuningBudgetLadderResult,
+) -> str:
+    for payload in (ladder.selected_config_payload, ladder.repair_config_payload):
+        if isinstance(payload, Mapping) and payload.get("target_scope") is not None:
+            return str(payload["target_scope"])
+    return str(ladder.config.target_scope)
+
+
+def _phase5_candidate_record(
+    *,
+    batch_ordinal: int,
+    candidate: Mapping[str, Any],
+    ladder: FixedMassHMCTuningBudgetLadderResult | None,
+    handoff_screen_policy: str,
+) -> _HMCPhase5CandidateRecord:
+    source_key = _phase5_candidate_source_key(candidate)
+    candidate_policy = _validate_handoff_screen_policy(
+        candidate.get("handoff_screen_policy")
+    )
+    if candidate_policy != handoff_screen_policy:
+        raise ValueError("Phase 5 candidate handoff policy mismatch")
+    selected_step, selected_observed, selected_finite = (
+        _phase5_normalize_optional_number(candidate, "selected_step_size")
+    )
+    acceptance, acceptance_observed, acceptance_finite = (
+        _phase5_normalize_optional_number(candidate, "screen_acceptance_rate")
+    )
+    trajectory, trajectory_observed, trajectory_finite = (
+        _phase5_normalize_optional_number(candidate, "trajectory_length")
+    )
+    if ladder is None:
+        if candidate.get("run_error_type") is None:
+            raise ValueError("non-error candidate requires ladder provenance")
+        ladder_artifact_hash = None
+        selected_step_hash = None
+        repair_config_hash = None
+        ladder_adapter_signature = None
+        ladder_hmc_adapter_signature = None
+        ladder_mass_artifact_signature = None
+        ladder_target_scope = None
+        ladder_target_dimension = None
+    else:
+        ladder_artifact_hash = str(ladder.artifact_hash)
+        if stable_config_hash(ladder.payload()) != ladder_artifact_hash:
+            raise ValueError("Phase 5 ladder artifact hash mismatch")
+        source_ladder_hash = candidate.get("ladder_artifact_hash")
+        if source_ladder_hash is None or str(source_ladder_hash) != ladder_artifact_hash:
+            raise ValueError("Phase 5 candidate ladder lineage mismatch")
+        selected_step_hash = ladder.selected_config_hash
+        repair_config_hash = ladder.repair_config_hash
+        ladder_adapter_signature = ladder.adapter_signature
+        ladder_hmc_adapter_signature = ladder.hmc_adapter_signature
+        ladder_mass_artifact_signature = ladder.mass_artifact_signature
+        ladder_target_scope = _phase5_ladder_target_scope(ladder)
+        ladder_target_dimension = ladder.target_dimension
+        if bool(candidate.get("ladder_passed")) != bool(ladder.passed):
+            raise ValueError("Phase 5 candidate ladder pass state mismatch")
+        if str(candidate.get("ladder_final_status")) != str(ladder.final_status):
+            raise ValueError("Phase 5 candidate ladder status mismatch")
+        if selected_finite:
+            if ladder.selected_round is None or ladder.selected_round.tuned_step_size is None:
+                raise ValueError("Phase 5 selected step lost ladder source")
+            if float(selected_step) != float(ladder.selected_round.tuned_step_size):
+                raise ValueError("Phase 5 selected step does not match its ladder")
+    handoff_eligible = bool(
+        candidate.get("viable")
+        if handoff_screen_policy == _HANDOFF_SCREEN_POLICY_PHASE22_HEURISTIC_GATE
+        else candidate.get("nomination_eligible")
+    )
+    return _HMCPhase5CandidateRecord(
+        source_candidate_schema=str(candidate.get("schema", "")),
+        batch_ordinal=int(batch_ordinal),
+        source_round_index=source_key[0],
+        source_grid_stage=source_key[1],
+        source_round_candidate_index=source_key[2],
+        num_leapfrog_steps=int(candidate["num_leapfrog_steps"]),
+        handoff_screen_policy=handoff_screen_policy,
+        ladder_final_status=str(candidate.get("ladder_final_status", "")),
+        ladder_passed=bool(candidate.get("ladder_passed")),
+        selected_round_index=candidate.get("selected_round_index"),
+        selected_budget=candidate.get("selected_budget"),
+        selected_step_size=selected_step,
+        selected_step_size_observed=selected_observed,
+        selected_step_size_finite=selected_finite,
+        selected_step_hash=selected_step_hash,
+        screen_acceptance_rate=acceptance,
+        screen_acceptance_observed=acceptance_observed,
+        screen_acceptance_finite=acceptance_finite,
+        trajectory_length=trajectory,
+        trajectory_length_observed=trajectory_observed,
+        trajectory_length_finite=trajectory_finite,
+        trajectory_window_relation=str(
+            candidate.get("trajectory_window_relation", "unavailable")
+        ),
+        hard_vetoes=tuple(str(item) for item in candidate.get("hard_vetoes", ())),
+        continuation_vetoes=tuple(
+            str(item) for item in candidate.get("continuation_vetoes", ())
+        ),
+        repair_triggers=tuple(
+            str(item) for item in candidate.get("repair_triggers", ())
+        ),
+        viable=bool(candidate.get("viable")),
+        nomination_eligible=bool(candidate.get("nomination_eligible")),
+        nomination_role=str(candidate.get("nomination_role", "")),
+        handoff_eligible=handoff_eligible,
+        ladder_artifact_hash=ladder_artifact_hash,
+        repair_config_hash=repair_config_hash,
+        ladder_adapter_signature=ladder_adapter_signature,
+        ladder_hmc_adapter_signature=ladder_hmc_adapter_signature,
+        ladder_mass_artifact_signature=ladder_mass_artifact_signature,
+        ladder_target_scope=ladder_target_scope,
+        ladder_target_dimension=ladder_target_dimension,
+        candidate_error_type=candidate.get("run_error_type"),
+    )
+
+
+def _phase5_candidate_signal_records(
+    records: Sequence[_HMCPhase5CandidateRecord],
+) -> tuple[_HMCPhase5CandidateSignalRecord, ...]:
+    signals: list[_HMCPhase5CandidateSignalRecord] = []
+    seen: set[tuple[str, str, int]] = set()
+    for record in records:
+        for role, codes in (
+            ("hard_veto", record.hard_vetoes),
+            ("continuation_veto", record.continuation_vetoes),
+            ("repair_trigger", record.repair_triggers),
+        ):
+            for code in codes:
+                key = (role, code, record.batch_ordinal)
+                if key in seen:
+                    continue
+                seen.add(key)
+                signals.append(
+                    _HMCPhase5CandidateSignalRecord(
+                        role=role,
+                        code=code,
+                        source_batch_ordinal=record.batch_ordinal,
+                    )
+                )
+    return tuple(signals)
+
+
+def _phase5_candidate_reference(
+    records: Sequence[_HMCPhase5CandidateRecord],
+    source_key: tuple[int, str, int] | None,
+) -> tuple[int | None, str | None]:
+    if source_key is None:
+        return None, None
+    matches = [record for record in records if record.source_key == source_key]
+    if len(matches) != 1:
+        raise ValueError("Phase 5 candidate reference is ambiguous or missing")
+    record = matches[0]
+    return record.batch_ordinal, record.record_hash
+
+
+def _phase5_verification_order_seed(
+    records: Sequence[_HMCPhase5CandidateRecord],
+    *,
+    selected_batch_ordinal: int | None,
+) -> tuple[int, ...]:
+    eligible = [record.batch_ordinal for record in records if record.handoff_eligible]
+    if selected_batch_ordinal is None:
+        return tuple(eligible)
+    if selected_batch_ordinal not in eligible:
+        raise ValueError("selected Phase 5 candidate is not handoff eligible")
+    return (selected_batch_ordinal, *(
+        ordinal for ordinal in eligible if ordinal != selected_batch_ordinal
+    ))
+
+
+def _build_phase5_candidate_batch_handoff(
+    *,
+    result: HMCFixedMassStepStageResult,
+    rounds: Sequence[Mapping[str, Any]],
+    candidates: Sequence[Mapping[str, Any]],
+    target_scope: str,
+    selected_source_key: tuple[int, str, int] | None,
+    repair_source_key: tuple[int, str, int] | None,
+) -> _HMCPhase5CandidateBatchHandoff | None:
+    candidate_items = tuple(candidates)
+    if not candidate_items:
+        return None
+    ladders_by_source = _phase5_candidate_ladders_by_source(rounds)
+    policy = _validate_handoff_screen_policy(result.config.handoff_screen_policy)
+    records = tuple(
+        _phase5_candidate_record(
+            batch_ordinal=batch_ordinal,
+            candidate=candidate,
+            ladder=ladders_by_source.get(_phase5_candidate_source_key(candidate)),
+            handoff_screen_policy=policy,
+        )
+        for batch_ordinal, candidate in enumerate(candidate_items)
+    )
+    selected_ordinal, selected_hash = _phase5_candidate_reference(
+        records,
+        selected_source_key,
+    )
+    repair_ordinal, repair_hash = _phase5_candidate_reference(
+        records,
+        repair_source_key,
+    )
+    source_context = _HMCPhase5CandidateSourceContext(
+        schema_runtime_version="bayesfilter.hmc_phase5_candidate_batch_handoff.v1",
+        phase5_config_hash=stable_config_hash(result.config.payload()),
+        target_scope=str(target_scope),
+        target_dimension=result.target_dimension,
+        windowed_stage_artifact_hash=result.windowed_stage_artifact_hash,
+        selected_bootstrap_kernel_hash=result.selected_bootstrap_kernel_hash,
+        adapter_signature=result.adapter_signature,
+        phase4_hmc_adapter_signature=result.phase4_hmc_adapter_signature,
+        ladder_adapter_signature=result.ladder_adapter_signature,
+        ladder_hmc_adapter_signature=result.ladder_hmc_adapter_signature,
+        adapted_mass_artifact_signature=result.adapted_mass_artifact_signature,
+        handoff_screen_policy=policy,
+    )
+    handoff = _HMCPhase5CandidateBatchHandoff(
+        source_context=source_context,
+        candidate_records=records,
+        signal_records=_phase5_candidate_signal_records(records),
+        final_status=result.final_status,
+        selected_batch_ordinal=selected_ordinal,
+        selected_record_hash=selected_hash,
+        repair_batch_ordinal=repair_ordinal,
+        repair_record_hash=repair_hash,
+        verification_order_seed=_phase5_verification_order_seed(
+            records,
+            selected_batch_ordinal=selected_ordinal,
+        ),
+    )
+    _validate_phase5_candidate_batch_handoff(result, handoff)
+    return handoff
+
+
+def _validate_phase5_candidate_batch_handoff(
+    result: HMCFixedMassStepStageResult,
+    handoff: _HMCPhase5CandidateBatchHandoff,
+) -> None:
+    records = handoff.candidate_records
+    if handoff.handoff_hash != stable_config_hash(handoff.payload()):
+        raise ValueError("candidate batch handoff hash mismatch")
+    if any(record.record_hash != stable_config_hash(record.payload()) for record in records):
+        raise ValueError("candidate batch record hash mismatch")
+    if tuple(record.batch_ordinal for record in records) != tuple(range(len(records))):
+        raise ValueError("candidate batch ordinals must be contiguous")
+    source_keys = tuple(record.source_key for record in records)
+    if len(set(source_keys)) != len(source_keys):
+        raise ValueError("candidate batch source keys must be unique")
+    if int(result.diagnostics.get("candidate_count", -1)) != len(records):
+        raise ValueError("candidate batch count does not match Phase 5 diagnostics")
+    context = handoff.source_context
+    expected_context = {
+        "phase5_config_hash": stable_config_hash(result.config.payload()),
+        "target_dimension": result.target_dimension,
+        "windowed_stage_artifact_hash": result.windowed_stage_artifact_hash,
+        "selected_bootstrap_kernel_hash": result.selected_bootstrap_kernel_hash,
+        "adapter_signature": result.adapter_signature,
+        "phase4_hmc_adapter_signature": result.phase4_hmc_adapter_signature,
+        "ladder_adapter_signature": result.ladder_adapter_signature,
+        "ladder_hmc_adapter_signature": result.ladder_hmc_adapter_signature,
+        "adapted_mass_artifact_signature": result.adapted_mass_artifact_signature,
+        "handoff_screen_policy": result.config.handoff_screen_policy,
+    }
+    for name, expected in expected_context.items():
+        if getattr(context, name) != expected:
+            raise ValueError(f"candidate batch source context mismatch: {name}")
+    if (
+        result.config.target_scope is not None
+        and context.target_scope != result.config.target_scope
+    ):
+        raise ValueError("candidate batch source context mismatch: target_scope")
+    for record in records:
+        if record.ladder_artifact_hash is None:
+            continue
+        if (
+            record.ladder_mass_artifact_signature
+            != context.adapted_mass_artifact_signature
+            or record.ladder_target_scope != context.target_scope
+            or record.ladder_target_dimension != context.target_dimension
+        ):
+            raise ValueError("candidate ladder lineage does not match batch context")
+    expected_signals = _phase5_candidate_signal_records(records)
+    if handoff.signal_records != expected_signals:
+        raise ValueError("candidate batch signal provenance mismatch")
+    expected_order = _phase5_verification_order_seed(
+        records,
+        selected_batch_ordinal=handoff.selected_batch_ordinal,
+    )
+    if handoff.verification_order_seed != expected_order:
+        raise ValueError("candidate batch verification order mismatch")
+    if handoff.final_status != result.final_status:
+        raise ValueError("candidate batch final status mismatch")
+
+    def referenced_record(
+        ordinal: int | None,
+        record_hash: str | None,
+        role: str,
+    ) -> _HMCPhase5CandidateRecord | None:
+        if ordinal is None:
+            if record_hash is not None:
+                raise ValueError(f"{role} record hash requires an ordinal")
+            return None
+        if ordinal not in range(len(records)):
+            raise ValueError(f"{role} candidate ordinal is out of range")
+        record = records[ordinal]
+        if record_hash != record.record_hash:
+            raise ValueError(f"{role} candidate record hash mismatch")
+        return record
+
+    selected = referenced_record(
+        handoff.selected_batch_ordinal,
+        handoff.selected_record_hash,
+        "selected",
+    )
+    repair = referenced_record(
+        handoff.repair_batch_ordinal,
+        handoff.repair_record_hash,
+        "repair",
+    )
+    if result.final_status == "passed":
+        if selected is None or repair is not None:
+            raise ValueError("passed Phase 5 handoff requires selected-only reference")
+        if not selected.handoff_eligible or selected.hard_vetoes or selected.continuation_vetoes:
+            raise ValueError("selected Phase 5 candidate is not a valid handoff")
+        if selected.num_leapfrog_steps != result.fixed_num_leapfrog_steps:
+            raise ValueError("selected Phase 5 candidate leapfrog mismatch")
+        if selected.selected_step_size != result.selected_step_size:
+            raise ValueError("selected Phase 5 candidate step mismatch")
+        if selected.selected_step_hash != result.selected_step_hash:
+            raise ValueError("selected Phase 5 candidate step hash mismatch")
+        selected_ladder_hash = result.diagnostics.get("selected_ladder_artifact_hash")
+        if selected.ladder_artifact_hash != selected_ladder_hash:
+            raise ValueError("selected Phase 5 candidate ladder mismatch")
+        if (
+            result.budget_ladder_result is None
+            or selected.ladder_artifact_hash
+            != result.budget_ladder_result.artifact_hash
+        ):
+            raise ValueError("selected Phase 5 candidate representative ladder mismatch")
+        if (
+            selected.ladder_adapter_signature != context.ladder_adapter_signature
+            or selected.ladder_hmc_adapter_signature
+            != context.ladder_hmc_adapter_signature
+        ):
+            raise ValueError("selected Phase 5 candidate adapter lineage mismatch")
+    else:
+        if selected is not None:
+            raise ValueError("non-passed Phase 5 handoff cannot select a candidate")
+        if result.final_status == "repair_or_retry" and result.repair_step_payload is not None:
+            if repair is None:
+                raise ValueError("Phase 5 repair handoff lost candidate provenance")
+            if repair.repair_config_hash != result.repair_step_hash:
+                raise ValueError("Phase 5 repair candidate hash mismatch")
+            if (
+                result.budget_ladder_result is None
+                or repair.ladder_artifact_hash
+                != result.budget_ladder_result.artifact_hash
+            ):
+                raise ValueError("Phase 5 repair representative ladder mismatch")
+            if (
+                repair.ladder_adapter_signature != context.ladder_adapter_signature
+                or repair.ladder_hmc_adapter_signature
+                != context.ladder_hmc_adapter_signature
+            ):
+                raise ValueError("Phase 5 repair adapter lineage mismatch")
+            if repair.num_leapfrog_steps != int(
+                result.repair_step_payload["num_leapfrog_steps"]
+            ):
+                raise ValueError("Phase 5 repair candidate leapfrog mismatch")
+        elif repair is not None:
+            raise ValueError("Phase 5 status cannot carry a repair reference")
 
 
 @dataclass(frozen=True)
@@ -2896,13 +4686,16 @@ class HMCTuneVerifyRepairLoopConfig:
                 name="step_repair_factor",
             ),
         )
+        min_directional_factor = _validate_step_repair_multiplier(
+            self.step_repair_min_directional_factor,
+            name="step_repair_min_directional_factor",
+        )
+        if min_directional_factor > 2.0:
+            raise ValueError("step_repair_min_directional_factor must be at most 2")
         object.__setattr__(
             self,
             "step_repair_min_directional_factor",
-            _validate_step_repair_multiplier(
-                self.step_repair_min_directional_factor,
-                name="step_repair_min_directional_factor",
-            ),
+            min_directional_factor,
         )
         high_factor = (
             self.step_repair_factor
@@ -3373,13 +5166,16 @@ class HMCKernelTuningConfig:
                 name="step_repair_factor",
             ),
         )
+        min_directional_factor = _validate_step_repair_multiplier(
+            self.step_repair_min_directional_factor,
+            name="step_repair_min_directional_factor",
+        )
+        if min_directional_factor > 2.0:
+            raise ValueError("step_repair_min_directional_factor must be at most 2")
         object.__setattr__(
             self,
             "step_repair_min_directional_factor",
-            _validate_step_repair_multiplier(
-                self.step_repair_min_directional_factor,
-                name="step_repair_min_directional_factor",
-            ),
+            min_directional_factor,
         )
         high_factor = (
             self.step_repair_factor
@@ -4171,6 +5967,8 @@ def _expected_phase4_adapter_signature(
 
 
 def _expected_final_adapter_signature(tuning_payload: Mapping[str, Any]) -> str:
+    final_kernel = _replay_final_kernel_payload(tuning_payload)
+    direct_signature = final_kernel.get("verification_hmc_adapter_signature")
     trajectory_candidates: list[str] = []
     fallback_candidates: list[str] = []
     for attempt in _replay_attempts(tuning_payload):
@@ -4192,8 +5990,11 @@ def _expected_final_adapter_signature(tuning_payload: Mapping[str, Any]) -> str:
                         "hmc_adapter_signature"
                     ):
                         fallback_candidates.append(str(static_payload["hmc_adapter_signature"]))
+    candidates = trajectory_candidates or fallback_candidates
+    if direct_signature:
+        candidates = [str(direct_signature), *fallback_candidates]
     return _single_replay_signature(
-        trajectory_candidates or fallback_candidates,
+        candidates,
         label="final HMC adapter signature",
     )
 
@@ -4795,6 +6596,196 @@ def run_hmc_bootstrap_screen(
     )
 
 
+def _operational_windowed_mass_capture(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    hmc_adapter_signature: str,
+    stage_mass_artifact: PrecomputedMassArtifact,
+    mass_window_seed_kernel: Mapping[str, Any],
+    windowed_config: WindowedMassAdaptationConfig,
+    config: HMCWindowedMassStageConfig,
+    stage_seed: tuple[int, int],
+    target_scope: str,
+    attempt_state: "_HMCPhaseAttemptState | None",
+) -> tuple[OperationalWindowedWarmupResult, WindowedMassAdaptationResult, Mapping[str, Any]]:
+    """Run R3 and build a deliberately non-operational v1 compatibility view."""
+
+    _base_estimate, base_transform = transform_from_precomputed_mass_artifact(
+        geometry.mass_artifact,
+        source_coordinate_signature=geometry.mass_artifact_signature,
+        estimator_family="geometry_position_covariance",
+    )
+    active_transform = compose_base_transform_with_nested_artifact(
+        base_transform=base_transform,
+        nested_artifact=stage_mass_artifact,
+        source_coordinate_signature=_mass_artifact_signature(stage_mass_artifact),
+    )
+    initial_theta = (
+        np.asarray(active_transform.center, dtype=float)
+        if attempt_state is None or attempt_state.canonical_theta_state is None
+        else np.asarray(attempt_state.canonical_theta_state, dtype=float)
+    )
+    trajectory_policy = WarmupTrajectoryPolicy(
+        int(mass_window_seed_kernel["num_leapfrog_steps"]),
+        _GEOMETRY_MAX_LEAPFROG,
+    )
+    operational_result = run_operational_windowed_warmup(
+        adapter=adapter,
+        initial_transform=active_transform,
+        initial_canonical_theta=initial_theta,
+        initial_step_size=float(mass_window_seed_kernel["step_size"]),
+        trajectory_policy=trajectory_policy,
+        config=windowed_config,
+        target_accept_prob=config.target_accept_prob,
+        seed=stage_seed,
+        target_scope=target_scope,
+        chain_execution_mode=config.chain_execution_mode,
+        target_status_trace_policy=config.target_status_trace_policy,
+    )
+    effective_config = operational_result.config
+    compatibility_mass = compose_operational_transform_in_base_coordinates(
+        base_transform=base_transform,
+        final_transform=operational_result.final_kernel_state.transform,
+        adapter_signature=hmc_adapter_signature,
+    )
+    canonical_draws = np.concatenate(
+        [
+            np.asarray(window.adaptation_canonical_states, dtype=float).reshape(
+                (-1, geometry.target_dimension)
+            )
+            for window in operational_result.windows
+        ],
+        axis=0,
+    )
+    original_latent_draws = np.asarray(
+        base_transform.theta_to_latent(canonical_draws).numpy(), dtype=float
+    )
+    log_accept_ratio = np.concatenate(
+        [window.log_accept_ratio for window in operational_result.windows]
+    ).astype(float, copy=False)
+    acceptance_probability = np.exp(np.minimum(log_accept_ratio, 0.0))
+    binary_acceptance = np.concatenate(
+        [window.is_accepted for window in operational_result.windows]
+    ).astype(bool, copy=False)
+    target_log_prob = np.concatenate(
+        [window.target_log_prob for window in operational_result.windows]
+    ).astype(float, copy=False)
+    policy = HMCTuningPolicy.windowed_mass_adaptation(
+        num_adaptation_steps=effective_config.warmup_steps,
+        target_accept_prob=config.target_accept_prob,
+        source=config.source,
+    )
+    legacy_result = run_windowed_mass_adaptation_diagnostic(
+        policy,
+        config=effective_config,
+        initial_mass_artifact=stage_mass_artifact,
+        warmup_draws=original_latent_draws,
+        initial_step_size=float(operational_result.reasonable_epsilon.selected_step_size),
+        acceptance_trace=acceptance_probability,
+        expected_adapter_signature=hmc_adapter_signature,
+        target_failure_classification={
+            "classification": "tuning_diagnostic_passed_not_convergence",
+            "diagnostic_role": "diagnostic_only",
+            "projection_role": "legacy_v1_compatibility_only",
+            "operational_metric_evidence": False,
+            "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
+        },
+    )
+    projected_updates = tuple(
+        dataclasses.replace(
+            update,
+            reset_event={
+                **dict(update.reset_event),
+                "diagnostic_role": "legacy_v1_nonoperational_projection",
+                "operational_metric_evidence": False,
+                "replay_as_operational_update_forbidden": True,
+            },
+        )
+        for update in legacy_result.mass_updates
+    )
+    windowed_result = dataclasses.replace(
+        legacy_result,
+        mass_updates=projected_updates,
+        final_mass_artifact_payload=compatibility_mass.signature_payload(),
+        final_mass_artifact_signature=_mass_artifact_signature(compatibility_mass),
+        step_size_trace=tuple(
+            float(operational_result.final_kernel_state.epsilon)
+            for _ in legacy_result.step_size_trace
+        ),
+        final_mass_artifact=compatibility_mass,
+    )
+    binary_trace = binary_acceptance.astype(float, copy=False)
+    capture = {
+        "warmup_draws": original_latent_draws,
+        "acceptance_trace": binary_trace,
+        "mean_acceptance_probability_trace": acceptance_probability,
+        "log_accept_ratio": log_accept_ratio,
+        "target_log_prob": target_log_prob,
+        "runtime_s": operational_result.elapsed_s,
+        "runtime_finite": bool(np.isfinite(operational_result.elapsed_s)),
+        "samples_shape": tuple(original_latent_draws.shape),
+        "acceptance_shape": tuple(binary_trace.shape),
+        "log_accept_shape": tuple(log_accept_ratio.shape),
+        "target_log_prob_shape": tuple(target_log_prob.shape),
+        "expected_steps": effective_config.warmup_steps,
+        "target_dimension": geometry.target_dimension,
+        "finite_sample_count": int(original_latent_draws.shape[0]),
+        "nonfinite_sample_count": 0,
+        "raw_diagnostics": {
+            "accepted_decision_count": int(np.sum(binary_acceptance)),
+            "acceptance_decision_count": int(binary_acceptance.size),
+            "acceptance_trace_decision_count": int(binary_acceptance.shape[0]),
+            "acceptance_raw_chain_count": 1,
+            "raw_acceptance_shape": tuple(binary_acceptance.shape),
+            "acceptance_decision_source": "operational_window_binary_trace",
+            "mean_acceptance_probability": float(np.mean(acceptance_probability)),
+            "operational_metric_update_count": operational_result.operational_metric_update_count,
+            "target_status_trace_policy": operational_result.target_status_trace_policy,
+            "target_status_failure_count": sum(
+                int(window.target_status_failure_count or 0)
+                for window in operational_result.windows
+            )
+            if operational_result.target_status_trace_policy == "per_chain_step"
+            else None,
+            "consumed_coordinate_signature": active_transform.signature,
+            "consumed_step_source": mass_window_seed_kernel.get(
+                "private_kernel_source", "bootstrap_or_geometry_handoff"
+            ),
+            "consumed_num_leapfrog_steps": int(
+                mass_window_seed_kernel["num_leapfrog_steps"]
+            ),
+        },
+        "runtime_metadata": {
+            "runtime": "tfp.mcmc.operational_interleaved_windowed_warmup",
+            "fixture_or_synthetic": False,
+            "operational_warmup": True,
+            "windowed_stage_route_category": "operational_windowed_warmup",
+            "legacy_v1_mass_updates_operational": False,
+            "target_status_trace_policy": operational_result.target_status_trace_policy,
+        },
+        "runtime_evidence": "tfp_hmc_runtime",
+        "fixture_or_synthetic": False,
+        "acceptance_trace_key_present": True,
+        "acceptance_policy_filled_or_default": False,
+        "trace_summary": {
+            "trace_keys": (
+                "is_accepted",
+                "mean_acceptance_probability",
+                "log_accept_ratio",
+                "target_log_prob",
+                *(
+                    ("target_status_telemetry",)
+                    if operational_result.target_status_trace_policy == "per_chain_step"
+                    else ()
+                ),
+            ),
+            "trace_unavailability": {},
+        },
+    }
+    return operational_result, windowed_result, capture
+
+
 def run_hmc_windowed_mass_stage(
     *,
     adapter: Any,
@@ -4888,6 +6879,14 @@ def run_hmc_windowed_mass_stage(
     run_error: Exception | None = None
     diagnostic_run_config_payload: Mapping[str, Any] | None = diagnostic_config.signature_payload()
     windowed_result: WindowedMassAdaptationResult | None = None
+    operational_warmup_result: OperationalWindowedWarmupResult | None = None
+    use_operational_warmup = (
+        run_full_chain is run_full_chain_tfp_hmc
+        and build_reusable_full_chain_tfp_hmc_runner
+        is _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER
+        and cfg.public_timeout_budget_s is None
+        and not cfg.use_xla
+    )
     timeout_closeout = _windowed_mass_public_timeout_preflight(
         cfg,
         stage="windowed_mass_runner_build_start",
@@ -4906,230 +6905,249 @@ def run_hmc_windowed_mass_stage(
         capture = _windowed_stage_public_timeout_capture(timeout_closeout)
     else:
         try:
-            _emit_windowed_mass_progress(
-                _progress_callback,
-                "windowed_mass_runner_build_start",
-                attempt_index=progress_attempt_index,
-                route_category=route_category,
-                started=True,
-                elapsed_s=0.0,
-                started_perf_counter_s=time.perf_counter(),
-            )
-            runner_build_start = time.perf_counter()
-            runner_build_s = 0.0
-            if use_segmented_runner:
-                segment_size = max(
-                    1,
-                    min(_WINDOWED_MASS_SEGMENT_SIZE, int(windowed_config.warmup_steps)),
+            if use_operational_warmup:
+                (
+                    operational_warmup_result,
+                    windowed_result,
+                    capture,
+                ) = _operational_windowed_mass_capture(
+                    adapter=adapter,
+                    geometry=geometry,
+                    hmc_adapter_signature=hmc_adapter_signature,
+                    stage_mass_artifact=stage_mass_artifact,
+                    mass_window_seed_kernel=mass_window_seed_kernel,
+                    windowed_config=windowed_config,
+                    config=cfg,
+                    stage_seed=stage_seed,
+                    target_scope=target_scope,
+                    attempt_state=_attempt_state,
                 )
-                initial_chunk_config = _windowed_stage_chunk_run_config(
-                    cfg,
-                    diagnostic_config=diagnostic_config,
-                    max_results=segment_size,
-                    num_burnin_steps=int(diagnostic_config.num_burnin_steps),
-                )
-                continuation_chunk_config = _windowed_stage_chunk_run_config(
-                    cfg,
-                    diagnostic_config=diagnostic_config,
-                    max_results=segment_size,
-                    num_burnin_steps=0,
-                )
-                segmented_initial_runner = build_fixed_size_hmc_chunk_runner(
-                    hmc_adapter,
-                    hmc_adapter.initial_position(),
-                    initial_chunk_config,
-                )
-                segmented_continuation_runner = (
-                    segmented_initial_runner
-                    if int(diagnostic_config.num_burnin_steps) == 0
-                    else build_fixed_size_hmc_chunk_runner(
-                        hmc_adapter,
-                        hmc_adapter.initial_position(),
-                        continuation_chunk_config,
-                    )
-                )
-            elif use_reusable_runner:
-                reusable_runner = build_reusable_full_chain_tfp_hmc_runner(
-                    hmc_adapter,
-                    hmc_adapter.initial_position(),
-                    diagnostic_config,
-                )
-            runner_build_s = time.perf_counter() - runner_build_start
-            _emit_windowed_mass_progress(
-                _progress_callback,
-                "windowed_mass_runner_build_complete",
-                attempt_index=progress_attempt_index,
-                route_category=route_category,
-                completed=True,
-                elapsed_s=runner_build_s,
-            )
-            timeout_closeout = _windowed_mass_public_timeout_preflight(
-                cfg,
-                stage="windowed_mass_runner_execute_start",
-                attempt_index=progress_attempt_index,
-            )
-            if timeout_closeout is not None:
-                _emit_windowed_mass_progress(
-                    _progress_callback,
-                    "windowed_mass_public_timeout_closeout",
-                    attempt_index=progress_attempt_index,
-                    route_category=route_category,
-                    completed=True,
-                    elapsed_s=0.0,
-                    timeout_closeout=timeout_closeout,
-                )
-                capture = _windowed_stage_public_timeout_capture(timeout_closeout)
+                route_category = "operational_windowed_warmup"
             else:
-                checkpoint_reference = None
-                checkpoint_reference_public_safe = None
-                if _checkpoint_writer_config is not None:
-                    checkpoint_reference = write_sequential_rhat_boundary_handoff_checkpoint(
-                        writer_config=_checkpoint_writer_config,
-                        adapter=hmc_adapter,
-                        config_private_payload={
-                            "schema": "bayesfilter.phase7_boundary_config_private.v1",
-                            "source": "run_hmc_windowed_mass_stage",
-                            "stage": "windowed_mass_runner_execute_start",
-                            "target_scope": target_scope,
-                            "target_dimension": int(geometry.target_dimension),
-                            "attempt_index": progress_attempt_index,
-                            "route_category": route_category,
-                            "chain_execution_mode": cfg.chain_execution_mode,
-                            "use_xla": bool(cfg.use_xla),
-                            "budget_payload": None
-                            if _attempt_budget_policy is None
-                            else _attempt_budget_policy.payload(),
-                        },
-                        boundary_private_payload={
-                            "schema": "bayesfilter.phase7_boundary_handoff_private.v1",
-                            "stage": "windowed_mass_runner_execute_start",
-                            "target_scope": target_scope,
-                            "target_dimension": int(geometry.target_dimension),
-                            "attempt_index": progress_attempt_index,
-                            "route_category": route_category,
-                            "hmc_adapter_signature": hmc_adapter_signature,
-                            "bootstrap_artifact_hash": bootstrap.artifact_hash,
-                            "geometry_artifact_hash": geometry.artifact_hash,
-                            "windowed_config_hash": stable_config_hash(windowed_config.payload()),
-                            "diagnostic_config_hash": stable_config_hash(
-                                diagnostic_config.signature_payload()
-                            ),
-                            "budget_payload": None
-                            if _attempt_budget_policy is None
-                            else _attempt_budget_policy.payload(),
-                            "private_raw_state_allowed": False,
-                            "private_raw_samples_allowed": False,
-                            "private_hmc_mechanics_allowed": False,
-                            "milestone": "target_forced_stop_observability_checkpoint",
-                            "reports_verifier_entry_durability": False,
-                        },
-                        state_summary_private_payload={
-                            "schema": "bayesfilter.phase7_boundary_state_summary_private.v1",
-                            "summary_only": True,
-                            "initial_state_shape": tuple(
-                                int(dim) for dim in np.shape(hmc_adapter.initial_position())
-                            ),
-                            "raw_state_included": False,
-                            "raw_samples_included": False,
-                            "tensor_payload_included": False,
-                        },
-                    )
-                    assert_sequential_rhat_checkpoint_public_reference_safe(
-                        checkpoint_reference
-                    )
-                    checkpoint_reference_public_safe = True
                 _emit_windowed_mass_progress(
                     _progress_callback,
-                    "windowed_mass_runner_execute_start",
+                    "windowed_mass_runner_build_start",
                     attempt_index=progress_attempt_index,
                     route_category=route_category,
                     started=True,
                     elapsed_s=0.0,
                     started_perf_counter_s=time.perf_counter(),
-                    checkpoint_reference=checkpoint_reference,
-                    checkpoint_reference_public_safe=checkpoint_reference_public_safe,
                 )
-                runner_execute_start = time.perf_counter()
-                segmented_timeout_closeout = False
+                runner_build_start = time.perf_counter()
+                runner_build_s = 0.0
                 if use_segmented_runner:
-                    capture = _windowed_stage_segmented_capture_payload(
-                        config=cfg,
-                        hmc_adapter=hmc_adapter,
-                        initial_runner=segmented_initial_runner,
-                        continuation_runner=segmented_continuation_runner,
+                    segment_size = max(
+                        1,
+                        min(_WINDOWED_MASS_SEGMENT_SIZE, int(windowed_config.warmup_steps)),
+                    )
+                    initial_chunk_config = _windowed_stage_chunk_run_config(
+                        cfg,
                         diagnostic_config=diagnostic_config,
-                        windowed_config=windowed_config,
-                        target_dimension=geometry.target_dimension,
-                        progress_callback=_progress_callback,
-                        attempt_index=progress_attempt_index,
-                        route_category=route_category,
+                        max_results=segment_size,
+                        num_burnin_steps=int(diagnostic_config.num_burnin_steps),
                     )
-                    segmented_timeout_closeout = (
-                        capture.get("public_timeout_closeout") is not None
+                    continuation_chunk_config = _windowed_stage_chunk_run_config(
+                        cfg,
+                        diagnostic_config=diagnostic_config,
+                        max_results=segment_size,
+                        num_burnin_steps=0,
                     )
-                    run_result = None
+                    segmented_initial_runner = build_fixed_size_hmc_chunk_runner(
+                        hmc_adapter,
+                        hmc_adapter.initial_position(),
+                        initial_chunk_config,
+                    )
+                    segmented_continuation_runner = (
+                        segmented_initial_runner
+                        if int(diagnostic_config.num_burnin_steps) == 0
+                        else build_fixed_size_hmc_chunk_runner(
+                            hmc_adapter,
+                            hmc_adapter.initial_position(),
+                            continuation_chunk_config,
+                        )
+                    )
                 elif use_reusable_runner:
-                    run_result = reusable_runner.run(
-                        current_state=hmc_adapter.initial_position(),
-                        seed=diagnostic_config.seed,
-                        step_size=diagnostic_config.step_size,
-                    )
-                else:
-                    run_result = run_full_chain(
+                    reusable_runner = build_reusable_full_chain_tfp_hmc_runner(
                         hmc_adapter,
                         hmc_adapter.initial_position(),
                         diagnostic_config,
                     )
-                runner_execute_s = time.perf_counter() - runner_execute_start
-                if segmented_timeout_closeout:
-                    capture = _with_windowed_stage_timing_metadata(
-                        capture,
-                        runner_build_s=runner_build_s,
-                        runner_execute_s=runner_execute_s,
-                        capture_s=0.0,
-                        route_category=route_category,
-                    )
-                else:
+                runner_build_s = time.perf_counter() - runner_build_start
+                _emit_windowed_mass_progress(
+                    _progress_callback,
+                    "windowed_mass_runner_build_complete",
+                    attempt_index=progress_attempt_index,
+                    route_category=route_category,
+                    completed=True,
+                    elapsed_s=runner_build_s,
+                )
+                timeout_closeout = _windowed_mass_public_timeout_preflight(
+                    cfg,
+                    stage="windowed_mass_runner_execute_start",
+                    attempt_index=progress_attempt_index,
+                )
+                if timeout_closeout is not None:
                     _emit_windowed_mass_progress(
                         _progress_callback,
-                        "windowed_mass_runner_execute_complete",
+                        "windowed_mass_public_timeout_closeout",
                         attempt_index=progress_attempt_index,
                         route_category=route_category,
                         completed=True,
-                        elapsed_s=runner_execute_s,
+                        elapsed_s=0.0,
+                        timeout_closeout=timeout_closeout,
                     )
+                    capture = _windowed_stage_public_timeout_capture(timeout_closeout)
+                else:
+                    checkpoint_reference = None
+                    checkpoint_reference_public_safe = None
+                    if _checkpoint_writer_config is not None:
+                        checkpoint_reference = write_sequential_rhat_boundary_handoff_checkpoint(
+                            writer_config=_checkpoint_writer_config,
+                            adapter=hmc_adapter,
+                            config_private_payload={
+                                "schema": "bayesfilter.phase7_boundary_config_private.v1",
+                                "source": "run_hmc_windowed_mass_stage",
+                                "stage": "windowed_mass_runner_execute_start",
+                                "target_scope": target_scope,
+                                "target_dimension": int(geometry.target_dimension),
+                                "attempt_index": progress_attempt_index,
+                                "route_category": route_category,
+                                "chain_execution_mode": cfg.chain_execution_mode,
+                                "use_xla": bool(cfg.use_xla),
+                                "budget_payload": None
+                                if _attempt_budget_policy is None
+                                else _attempt_budget_policy.payload(),
+                            },
+                            boundary_private_payload={
+                                "schema": "bayesfilter.phase7_boundary_handoff_private.v1",
+                                "stage": "windowed_mass_runner_execute_start",
+                                "target_scope": target_scope,
+                                "target_dimension": int(geometry.target_dimension),
+                                "attempt_index": progress_attempt_index,
+                                "route_category": route_category,
+                                "hmc_adapter_signature": hmc_adapter_signature,
+                                "bootstrap_artifact_hash": bootstrap.artifact_hash,
+                                "geometry_artifact_hash": geometry.artifact_hash,
+                                "windowed_config_hash": stable_config_hash(windowed_config.payload()),
+                                "diagnostic_config_hash": stable_config_hash(
+                                    diagnostic_config.signature_payload()
+                                ),
+                                "budget_payload": None
+                                if _attempt_budget_policy is None
+                                else _attempt_budget_policy.payload(),
+                                "private_raw_state_allowed": False,
+                                "private_raw_samples_allowed": False,
+                                "private_hmc_mechanics_allowed": False,
+                                "milestone": "target_forced_stop_observability_checkpoint",
+                                "reports_verifier_entry_durability": False,
+                            },
+                            state_summary_private_payload={
+                                "schema": "bayesfilter.phase7_boundary_state_summary_private.v1",
+                                "summary_only": True,
+                                "initial_state_shape": tuple(
+                                    int(dim) for dim in np.shape(hmc_adapter.initial_position())
+                                ),
+                                "raw_state_included": False,
+                                "raw_samples_included": False,
+                                "tensor_payload_included": False,
+                            },
+                        )
+                        assert_sequential_rhat_checkpoint_public_reference_safe(
+                            checkpoint_reference
+                        )
+                        checkpoint_reference_public_safe = True
                     _emit_windowed_mass_progress(
                         _progress_callback,
-                        "windowed_mass_capture_start",
+                        "windowed_mass_runner_execute_start",
                         attempt_index=progress_attempt_index,
                         route_category=route_category,
                         started=True,
                         elapsed_s=0.0,
                         started_perf_counter_s=time.perf_counter(),
+                        checkpoint_reference=checkpoint_reference,
+                        checkpoint_reference_public_safe=checkpoint_reference_public_safe,
                     )
-                    capture_start = time.perf_counter()
-                    if not use_segmented_runner:
-                        capture = _windowed_stage_capture_payload(
-                            run_result,
-                            expected_steps=windowed_config.warmup_steps,
+                    runner_execute_start = time.perf_counter()
+                    segmented_timeout_closeout = False
+                    if use_segmented_runner:
+                        capture = _windowed_stage_segmented_capture_payload(
+                            config=cfg,
+                            hmc_adapter=hmc_adapter,
+                            initial_runner=segmented_initial_runner,
+                            continuation_runner=segmented_continuation_runner,
+                            diagnostic_config=diagnostic_config,
+                            windowed_config=windowed_config,
                             target_dimension=geometry.target_dimension,
+                            progress_callback=_progress_callback,
+                            attempt_index=progress_attempt_index,
+                            route_category=route_category,
                         )
-                    capture_s = time.perf_counter() - capture_start
-                    capture = _with_windowed_stage_timing_metadata(
-                        capture,
-                        runner_build_s=runner_build_s,
-                        runner_execute_s=runner_execute_s,
-                        capture_s=capture_s,
-                        route_category=route_category,
-                    )
-                    _emit_windowed_mass_progress(
-                        _progress_callback,
-                        "windowed_mass_capture_complete",
-                        attempt_index=progress_attempt_index,
-                        route_category=route_category,
-                        completed=True,
-                        elapsed_s=capture_s,
-                    )
+                        segmented_timeout_closeout = (
+                            capture.get("public_timeout_closeout") is not None
+                        )
+                        run_result = None
+                    elif use_reusable_runner:
+                        run_result = reusable_runner.run(
+                            current_state=hmc_adapter.initial_position(),
+                            seed=diagnostic_config.seed,
+                            step_size=diagnostic_config.step_size,
+                        )
+                    else:
+                        run_result = run_full_chain(
+                            hmc_adapter,
+                            hmc_adapter.initial_position(),
+                            diagnostic_config,
+                        )
+                    runner_execute_s = time.perf_counter() - runner_execute_start
+                    if segmented_timeout_closeout:
+                        capture = _with_windowed_stage_timing_metadata(
+                            capture,
+                            runner_build_s=runner_build_s,
+                            runner_execute_s=runner_execute_s,
+                            capture_s=0.0,
+                            route_category=route_category,
+                        )
+                    else:
+                        _emit_windowed_mass_progress(
+                            _progress_callback,
+                            "windowed_mass_runner_execute_complete",
+                            attempt_index=progress_attempt_index,
+                            route_category=route_category,
+                            completed=True,
+                            elapsed_s=runner_execute_s,
+                        )
+                        _emit_windowed_mass_progress(
+                            _progress_callback,
+                            "windowed_mass_capture_start",
+                            attempt_index=progress_attempt_index,
+                            route_category=route_category,
+                            started=True,
+                            elapsed_s=0.0,
+                            started_perf_counter_s=time.perf_counter(),
+                        )
+                        capture_start = time.perf_counter()
+                        if not use_segmented_runner:
+                            capture = _windowed_stage_capture_payload(
+                                run_result,
+                                expected_steps=windowed_config.warmup_steps,
+                                target_dimension=geometry.target_dimension,
+                            )
+                        capture_s = time.perf_counter() - capture_start
+                        capture = _with_windowed_stage_timing_metadata(
+                            capture,
+                            runner_build_s=runner_build_s,
+                            runner_execute_s=runner_execute_s,
+                            capture_s=capture_s,
+                            route_category=route_category,
+                        )
+                        _emit_windowed_mass_progress(
+                            _progress_callback,
+                            "windowed_mass_capture_complete",
+                            attempt_index=progress_attempt_index,
+                            route_category=route_category,
+                            completed=True,
+                            elapsed_s=capture_s,
+                        )
         except Exception as exc:  # noqa: BLE001 - return fail-closed artifact.
             run_error = exc
             capture = _windowed_stage_error_capture(exc)
@@ -5139,7 +7157,7 @@ def run_hmc_windowed_mass_stage(
             run_error=run_error,
         )
     )
-    if not hard_vetoes:
+    if not hard_vetoes and not use_operational_warmup:
         _emit_windowed_mass_progress(
             _progress_callback,
             "windowed_mass_semantic_diagnostic_start",
@@ -5242,8 +7260,13 @@ def run_hmc_windowed_mass_stage(
         warmup_draw_provenance=_warmup_draw_provenance(capture, draw_capture_policy),
         acceptance_telemetry_provenance=_acceptance_telemetry_provenance(capture),
         diagnostic_run_config_payload=diagnostic_run_config_payload,
-        windowed_config_payload=windowed_config.payload(),
+        windowed_config_payload=(
+            operational_warmup_result.config.payload()
+            if operational_warmup_result is not None
+            else windowed_config.payload()
+        ),
         windowed_mass_result=windowed_result,
+        operational_warmup_result=operational_warmup_result,
         seed_report={
             "geometry_root_seed": geometry.seed_report.get("root_seed"),
             "bootstrap_root_seed": bootstrap.seed_report.get("bootstrap_root_seed"),
@@ -5277,6 +7300,8 @@ def run_hmc_fixed_mass_step_stage(
     _attempt_index: int | None = None,
     _max_leapfrog_steps: int = _GEOMETRY_MAX_LEAPFROG,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
+    _repair_verification_reserved: bool = False,
+    _selection_max_attempts: int = 1,
 ) -> HMCFixedMassStepStageResult:
     """Run Phase 5 fixed-mass step tuning from a passed Phase 4 handoff.
 
@@ -5334,6 +7359,25 @@ def run_hmc_fixed_mass_step_stage(
         windowed_stage=windowed_stage,
         target_scope=target_scope,
     )
+    if windowed_stage.operational_warmup_result is not None:
+        return _run_operational_fixed_mass_step_stage(
+            adapter=adapter,
+            geometry=geometry,
+            bootstrap=bootstrap,
+            windowed_stage=windowed_stage,
+            config=cfg,
+            target_scope=target_scope,
+            phase4_adapter=phase4_adapter,
+            adapted_mass=adapted_mass,
+            initial_step=initial_step,
+            anchor_l=anchor_l,
+            max_leapfrog_steps=max_leapfrog_steps,
+            attempt_budget_policy=_attempt_budget_policy,
+            attempt_state=_attempt_state,
+            repair_verification_reserved=_repair_verification_reserved,
+            selection_max_attempts=_selection_max_attempts,
+            run_full_chain=run_full_chain,
+        )
     initial_state_factory = _fixed_mass_step_initial_state_factory(
         adapted_mass.dimension
     )
@@ -5457,10 +7501,12 @@ def run_hmc_fixed_mass_step_stage(
         after_signature,
     )
     ladder_result = selected_ladder
-    repair_ladder = _select_joint_l_epsilon_repair_ladder(
+    repair_ladder, repair_ladder_source_key = (
+        _select_joint_l_epsilon_repair_ladder_with_source(
         joint_rounds,
         target_accept_prob=cfg.target_accept_prob,
         target_trajectory=target_trajectory,
+        )
     )
     candidate_hard_vetoes = tuple(
         dict.fromkeys(
@@ -5653,7 +7699,7 @@ def run_hmc_fixed_mass_step_stage(
         "reports_sampler_superiority": False,
         "nonclaims": FIXED_MASS_STEP_STAGE_NONCLAIMS,
     }
-    return HMCFixedMassStepStageResult(
+    result = HMCFixedMassStepStageResult(
         config=cfg,
         windowed_stage_artifact_hash=windowed_stage.artifact_hash,
         selected_bootstrap_kernel_hash=windowed_stage.selected_bootstrap_kernel_hash,
@@ -5707,6 +7753,280 @@ def run_hmc_fixed_mass_step_stage(
             "callback_promotion_veto": "repair_trigger",
             "runtime": "explanatory_or_hard_veto_when_missing",
         },
+    )
+    selected_source_key = (
+        _phase5_candidate_source_key(selected_candidate)
+        if final_status == "passed" and selected_candidate is not None
+        else None
+    )
+    repair_source_key = (
+        repair_ladder_source_key
+        if final_status == "repair_or_retry" and repair_payload is not None
+        else None
+    )
+    candidate_handoff = _build_phase5_candidate_batch_handoff(
+        result=result,
+        rounds=joint_rounds,
+        candidates=joint_candidates,
+        target_scope=target_scope,
+        selected_source_key=selected_source_key,
+        repair_source_key=repair_source_key,
+    )
+    result = dataclasses.replace(
+        result,
+        _candidate_batch_handoff=candidate_handoff,
+    )
+    _phase5_candidate_batch_handoff(result)
+    return result
+
+
+def _run_operational_fixed_mass_step_stage(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    bootstrap: HMCBootstrapScreenResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    config: HMCFixedMassStepStageConfig,
+    target_scope: str,
+    phase4_adapter: Any,
+    adapted_mass: PrecomputedMassArtifact,
+    initial_step: float,
+    anchor_l: int,
+    max_leapfrog_steps: int,
+    attempt_budget_policy: "_HMCAttemptBudgetPolicy | None",
+    attempt_state: "_HMCPhaseAttemptState | None",
+    repair_verification_reserved: bool,
+    selection_max_attempts: int,
+    run_full_chain: RunFullChainFn,
+) -> HMCFixedMassStepStageResult:
+    """Run R5 from the frozen operational bank, never historical latent zero."""
+
+    operational = windowed_stage.operational_warmup_result
+    if operational is None:
+        raise ValueError("operational Phase 5 requires operational warmup")
+    if run_full_chain is not run_full_chain_tfp_hmc:
+        raise ValueError("operational Phase 5 requires the real TF/TFP runner")
+    mass_signature = _mass_artifact_signature(adapted_mass)
+    final_adapter = _build_fixed_mass_hmc_adapter(
+        adapter=phase4_adapter,
+        mass_artifact=adapted_mass,
+        mass_signature=mass_signature,
+        target_scope=target_scope,
+    )
+    final_adapter_signature = stable_adapter_signature(final_adapter)
+    start_bank, start_summary = _phase7_verification_initial_state(
+        windowed_stage=windowed_stage,
+        phase4_adapter=phase4_adapter,
+        verification_adapter=final_adapter,
+        verification_hmc_signature=final_adapter_signature,
+    )
+    if start_summary.get("frozen_post_warmup_bank_consumed") is not True:
+        raise ValueError("operational Phase 5 did not consume the frozen start bank")
+    active_start_bank_signature = str(start_summary.get("active_signature", ""))
+    if not active_start_bank_signature:
+        raise ValueError("operational Phase 5 active start-bank signature is missing")
+    screen_results = (
+        64
+        if attempt_budget_policy is None
+        else max(64, int(attempt_budget_policy.phase5_screen_num_results))
+    )
+    screen_burnin = (
+        16
+        if attempt_budget_policy is None
+        else max(16, int(attempt_budget_policy.phase5_screen_burnin_steps))
+    )
+    final_adaptation = (
+        64
+        if attempt_budget_policy is None
+        else max(64, int(attempt_budget_policy.phase5_tune_budgets[-1]))
+    )
+    selection_attempts = int(selection_max_attempts)
+    if selection_attempts <= 0 or selection_attempts > 5:
+        raise ValueError("operational selection attempt budget must lie inside [1, 5]")
+    if selection_attempts > 1 and not repair_verification_reserved:
+        raise ValueError("multi-attempt operational selection requires repair reservation")
+    selection_loop = run_bounded_operational_fixed_trajectory_selection(
+        adapter=final_adapter,
+        private_start_bank=start_bank,
+        private_start_bank_signature=active_start_bank_signature,
+        coordinate_signature=operational.final_kernel_state.transform.signature,
+        metric_signature=operational.final_kernel_state.momentum_metric.signature,
+        anchor_l=anchor_l,
+        max_leapfrog_steps=max_leapfrog_steps,
+        initial_step_size=initial_step,
+        root_seed=config.seed,
+        target_scope=target_scope,
+        acceptance_policy=HMCAcceptancePolicy(
+            target=config.target_accept_prob,
+            practical_region=config.acceptance_band,
+            repair_region=config.repair_band,
+        ),
+        max_attempts=selection_attempts,
+        repair_factor=config.step_repair_factor,
+        screen_num_results=screen_results,
+        screen_num_burnin_steps=screen_burnin,
+        final_tune_adaptation_steps=final_adaptation,
+        chain_execution_mode=config.chain_execution_mode,
+        use_xla=config.use_xla,
+        target_status_trace_policy=config.target_status_trace_policy,
+        run_full_chain=run_full_chain,
+    )
+    selection = selection_loop.selection
+    representative = selection.representative
+    selected_payload = None
+    selected_hash = None
+    repair_payload = None
+    repair_hash = None
+    hard_vetoes: tuple[str, ...] = ()
+    repair_triggers: tuple[str, ...] = ()
+    final_status = "repair_or_retry"
+    diagnostic_role = "repair_trigger"
+    if selection.disposition == "representative_selected":
+        if representative is None or representative.exact_l_retuned_step_size is None:
+            raise ValueError("operational selection lost its exact-L representative")
+        selected_payload = {
+            "schema": "bayesfilter.hmc_operational_exact_l_step.v2",
+            "step_size": representative.exact_l_retuned_step_size,
+            "num_leapfrog_steps": representative.candidate.num_leapfrog_steps,
+            "selection_signature": selection.signature,
+            "candidate_signature": representative.candidate.signature,
+            "exact_l_retune_signature": representative.exact_l_retune_signature,
+            "coordinate_signature": representative.candidate.coordinate_signature,
+            "metric_signature": representative.candidate.metric_signature,
+            "start_bank_signature": representative.candidate.start_bank_signature,
+            "private_handoff_only": True,
+        }
+        selected_hash = stable_config_hash(selected_payload)
+        final_status = "passed"
+        diagnostic_role = "operational_fixed_trajectory_handoff_only"
+    elif selection.disposition == "shared_invalidity":
+        final_status = "hard_veto"
+        diagnostic_role = "shared_invalidity"
+        hard_vetoes = ("operational_candidate_shared_invalidity",)
+    elif selection.disposition == "candidate_retune_failed":
+        final_status = "budget_exhausted"
+        diagnostic_role = "candidate_retune_failed_non_promoting"
+        repair_triggers = ("operational_candidate_retune_failed",)
+    elif selection_loop.terminal_disposition == "candidate_set_exhausted":
+        final_status = "budget_exhausted"
+        diagnostic_role = "candidate_set_exhausted"
+        repair_triggers = ("operational_candidate_set_exhausted",)
+    elif selection_loop.terminal_disposition in {
+        "inconclusive_conflict",
+        "inconclusive_resonance",
+        "inconclusive_trajectory",
+        "inconclusive_evidence",
+        "inconclusive_stalled_or_oscillating",
+        "budget_exhausted_valid",
+    }:
+        final_status = "budget_exhausted"
+        diagnostic_role = selection_loop.terminal_disposition
+        repair_triggers = (
+            f"operational_candidate_{selection_loop.terminal_disposition}",
+        )
+    else:
+        raise AssertionError("operational selection returned an unknown disposition")
+    selected_l = (
+        anchor_l
+        if representative is None
+        else representative.candidate.num_leapfrog_steps
+    )
+    diagnostics = {
+        "passed": final_status == "passed",
+        "algorithm": "operational_paired_fixed_trajectory_selection_v3",
+        "promoted_default": False,
+        "candidate_count": len(selection.candidate_results),
+        "replication_count_per_candidate": 3,
+        "selection_disposition": selection.disposition,
+        "selection_signature": selection.signature,
+        "selection_loop_signature": selection_loop.signature,
+        "selection_attempt_count": len(selection_loop.attempts),
+        "selection_attempt_budget": selection_loop.max_attempts,
+        "selection_terminal_disposition": selection_loop.terminal_disposition,
+        "selection_retune_failure_scope": selection.retune_failure_scope,
+        "selection_retune_failure_reasons": selection.retune_failure_reasons,
+        "selection_retune_candidate_signature": selection.retune_candidate_signature,
+        "selection_candidate_retune_failures": tuple(
+            item.payload() for item in selection.candidate_retune_failures
+        ),
+        "selection_candidate_retune_failure_count": len(
+            selection.candidate_retune_failures
+        ),
+        "selection_repair_count": len(selection_loop.repair_direction_history),
+        "selection_step_veto_recovery_count": (
+            selection_loop.step_veto_recovery_count
+        ),
+        "selection_repair_direction_history": (
+            selection_loop.repair_direction_history
+        ),
+        "selection_empirical_bracket_available": all(
+            item is not None for item in selection_loop.final_bracket
+        ),
+        "representative_signature": selection.representative_signature,
+        "selected_num_leapfrog_steps": selected_l if representative is not None else None,
+        "selected_step_size": None
+        if representative is None
+        else representative.exact_l_retuned_step_size,
+        "frozen_start_bank_consumed": True,
+        "frozen_start_bank_signature": active_start_bank_signature,
+        "frozen_start_bank_source_signature": (
+            operational.private_start_bank_signature
+        ),
+        "candidate_seed_domain": "candidate_selection",
+        "exact_l_retune_seed_domain": "exact_final_l_epsilon_tune",
+        "independent_verification_seed_reserved": True,
+        "historical_zero_start_factory_used": False,
+        "historical_first_pass_queue_used": False,
+        "phase6_bypassed_on_repaired_joint_route": True,
+        "stochastic_ranking_performed": False,
+        "raw_start_bank_exposed": False,
+        "raw_samples_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "nonclaims": FIXED_MASS_STEP_STAGE_NONCLAIMS,
+    }
+    return HMCFixedMassStepStageResult(
+        config=config,
+        windowed_stage_artifact_hash=windowed_stage.artifact_hash,
+        selected_bootstrap_kernel_hash=windowed_stage.selected_bootstrap_kernel_hash,
+        adapter_signature=windowed_stage.adapter_signature,
+        phase4_hmc_adapter_signature=windowed_stage.hmc_adapter_signature,
+        ladder_adapter_signature=stable_adapter_signature(phase4_adapter),
+        ladder_hmc_adapter_signature=final_adapter_signature,
+        adapted_mass_artifact_payload=adapted_mass.to_payload(include_arrays=True),
+        adapted_mass_artifact_signature=mass_signature,
+        initial_step_size=initial_step,
+        fixed_num_leapfrog_steps=int(selected_l),
+        target_dimension=windowed_stage.target_dimension,
+        final_status=final_status,
+        diagnostic_role=diagnostic_role,
+        hard_vetoes=hard_vetoes,
+        repair_triggers=repair_triggers,
+        diagnostics=diagnostics,
+        budget_ladder_config_payload=None,
+        budget_ladder_result=None,
+        selected_step_payload=selected_payload,
+        selected_step_hash=selected_hash,
+        repair_step_payload=repair_payload,
+        repair_step_hash=repair_hash,
+        frozen_mass_invariant={
+            "before_signature": mass_signature,
+            "after_signature": _mass_artifact_signature(adapted_mass),
+            "passed": mass_signature == _mass_artifact_signature(adapted_mass),
+        },
+        seed_report={
+            "windowed_stage_seed": windowed_stage.seed_report.get("windowed_stage_seed"),
+            "operational_selection_root_seed": config.seed,
+            "seed_owner": "BayesFilter",
+        },
+        diagnostic_roles={
+            "acceptance_evidence": "promotion_criterion_and_repair_trigger",
+            "movement_and_health": "promotion_veto_and_repair_trigger",
+            "efficiency": "explanatory_only",
+            "representative_tie_break": "policy_not_stochastic_ranking",
+        },
+        _operational_selection=selection,
+        _operational_selection_loop=selection_loop,
     )
 
 
@@ -6395,6 +8715,7 @@ def run_hmc_tune_verify_repair_loop(
     repair_triggers: list[str] = []
     attempt_state: _HMCPhaseAttemptState | None = None
     verification_only_retry_bundle: Mapping[str, Any] | None = None
+    operational_repair_verification_bundle: Mapping[str, Any] | None = None
     final_kernel_payload: Mapping[str, Any] | None = None
     final_kernel_hash: str | None = None
     final_status = "budget_exhausted"
@@ -6519,12 +8840,18 @@ def run_hmc_tune_verify_repair_loop(
         attempt_status = "repair_or_retry"
         attempt_role = "repair_trigger"
         handoff_state: _HMCPhaseAttemptState | None = None
+        direct_queue_result: _HMCPhase7DirectCandidateQueueResult | None = None
+        direct_handoff_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = None
         use_verification_only_retry = (
             verification_only_retry_bundle is not None
             and _phase7_should_retry_verification_only(attempt_state)
         )
+        use_operational_repair_verification = (
+            operational_repair_verification_bundle is not None
+            and _phase7_should_run_operational_repair_verification(attempt_state)
+        )
         pre_windowed_timeout: Mapping[str, Any] | None = None
-        if not use_verification_only_retry:
+        if not use_verification_only_retry and not use_operational_repair_verification:
             pre_windowed_timeout = _phase7_public_timeout_before_windowed_mass(
                 config=_phase7_windowed_stage_config(cfg, attempt_index=attempt_index),
                 attempt_index=attempt_index,
@@ -6580,6 +8907,81 @@ def run_hmc_tune_verify_repair_loop(
         try:
             if pre_windowed_timeout is not None:
                 pass
+            elif use_operational_repair_verification:
+                windowed_stage = operational_repair_verification_bundle[
+                    "windowed_stage"
+                ]
+                fixed_stage = operational_repair_verification_bundle[
+                    "fixed_mass_step_stage"
+                ]
+                trajectory_stage = None
+                if attempt_state is None:
+                    raise ValueError("operational repair verification lost attempt state")
+                _emit_phase7_progress(
+                    _progress_callback,
+                    "operational_repair_verification_start",
+                    attempt_index=attempt_index,
+                    budget_policy=budget_policy,
+                    started=True,
+                    extra={
+                        "retry_source": "phase7_operational_scalar_step_repair",
+                        "skips_phase4_phase5_phase6": True,
+                        "reservation_consumed": True,
+                        "hmc_mechanics_exposed": False,
+                        "reports_posterior_convergence": False,
+                    },
+                )
+                direct_handoff_outcome = _run_phase7_operational_repair_verification(
+                    adapter=adapter,
+                    geometry=geometry,
+                    windowed_stage=windowed_stage,
+                    fixed_mass_step_stage=fixed_stage,
+                    config=cfg,
+                    budget_policy=budget_policy,
+                    attempt_state=attempt_state,
+                    attempt_index=attempt_index,
+                    target_scope=target_scope,
+                    verification_callback=verification_callback,
+                    checkpoint_writer_config=verification_checkpoint_writer_config,
+                    verification_start_callback=None,
+                    checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
+                        _progress_callback,
+                        "verification_checkpoint_written",
+                        attempt_index=attempt_index,
+                        budget_policy=budget_policy,
+                        completed=True,
+                        extra=_phase7_checkpoint_progress_extra(reference),
+                    ),
+                    run_full_chain=run_full_chain,
+                )
+                verification_config_payload = (
+                    direct_handoff_outcome.verification_config_payload
+                )
+                verification_diagnostics = {
+                    **dict(direct_handoff_outcome.diagnostics),
+                    "phase7_retry_class": "operational_scalar_repair_verification",
+                    "phase7_operational_repair_verification": True,
+                    "phase7_reused_frozen_kernel_handoff": True,
+                    "reports_posterior_convergence": False,
+                }
+                verification_callback_result = direct_handoff_outcome.callback_result
+                attempt_status = direct_handoff_outcome.final_status
+                attempt_role = direct_handoff_outcome.diagnostic_role
+                attempt_hard_vetoes.extend(direct_handoff_outcome.hard_vetoes)
+                attempt_repair_triggers.extend(direct_handoff_outcome.repair_triggers)
+                if attempt_status == "passed":
+                    final_kernel_payload = _phase7_direct_final_kernel_payload(
+                        config=cfg,
+                        geometry=geometry,
+                        bootstrap=bootstrap,
+                        windowed_stage=windowed_stage,
+                        fixed_mass_step_stage=fixed_stage,
+                        outcome=direct_handoff_outcome,
+                        budget_policy=budget_policy,
+                        attempt_index=attempt_index,
+                        target_scope=target_scope,
+                    )
+                    final_kernel_hash = stable_config_hash(final_kernel_payload)
             elif use_verification_only_retry:
                 windowed_stage = verification_only_retry_bundle["windowed_stage"]
                 fixed_stage = verification_only_retry_bundle["fixed_mass_step_stage"]
@@ -6604,37 +9006,110 @@ def run_hmc_tune_verify_repair_loop(
                     budget_policy=budget_policy,
                     started=True,
                 )
-                (
-                    verification_config_payload,
-                    verification_diagnostics,
-                    verification_callback_result,
-                    verify_status,
-                    verify_role,
-                    verify_hard_vetoes,
-                    verify_repair_triggers,
-                ) = phase7_final_verification_runner(
-                    adapter=adapter,
-                    geometry=geometry,
-                    windowed_stage=windowed_stage,
-                    fixed_mass_step_stage=fixed_stage,
-                    trajectory_stage=trajectory_stage,
-                    config=cfg,
-                    budget_policy=budget_policy,
-                    attempt_index=attempt_index,
-                    target_scope=target_scope,
-                    verification_callback=verification_callback,
-                    checkpoint_writer_config=verification_checkpoint_writer_config,
-                    verification_start_callback=None,
-                    checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
-                        _progress_callback,
-                        "verification_checkpoint_written",
-                        attempt_index=attempt_index,
+                if verification_only_retry_bundle.get("source_kind") == (
+                    "direct_phase5_candidate"
+                ):
+                    direct_handoff_outcome = _run_phase7_direct_candidate_verification(
+                        adapter=adapter,
+                        geometry=geometry,
+                        windowed_stage=windowed_stage,
+                        fixed_mass_step_stage=fixed_stage,
+                        candidate_identity=verification_only_retry_bundle[
+                            "candidate_identity"
+                        ],
+                        config=cfg,
                         budget_policy=budget_policy,
-                        completed=True,
-                        extra=_phase7_checkpoint_progress_extra(reference),
-                    ),
-                    run_full_chain=run_full_chain,
-                )
+                        attempt_index=attempt_index,
+                        target_scope=target_scope,
+                        verification_callback=verification_callback,
+                        checkpoint_writer_config=verification_checkpoint_writer_config,
+                        verification_start_callback=None,
+                        checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
+                            _progress_callback,
+                            "verification_checkpoint_written",
+                            attempt_index=attempt_index,
+                            budget_policy=budget_policy,
+                            completed=True,
+                            extra=_phase7_checkpoint_progress_extra(reference),
+                        ),
+                        run_full_chain=run_full_chain,
+                    )
+                    verification_config_payload = (
+                        direct_handoff_outcome.verification_config_payload
+                    )
+                    verification_diagnostics = direct_handoff_outcome.diagnostics
+                    verification_callback_result = direct_handoff_outcome.callback_result
+                    verify_status = direct_handoff_outcome.final_status
+                    verify_role = direct_handoff_outcome.diagnostic_role
+                    verify_hard_vetoes = direct_handoff_outcome.hard_vetoes
+                    verify_repair_triggers = direct_handoff_outcome.repair_triggers
+                elif verification_only_retry_bundle.get("source_kind") == (
+                    "operational_selection_v2"
+                ):
+                    direct_handoff_outcome = (
+                        _run_phase7_operational_evidence_extension(
+                            adapter=adapter,
+                            geometry=geometry,
+                            windowed_stage=windowed_stage,
+                            fixed_mass_step_stage=fixed_stage,
+                            config=cfg,
+                            budget_policy=budget_policy,
+                            attempt_index=attempt_index,
+                            target_scope=target_scope,
+                            verification_callback=verification_callback,
+                            checkpoint_writer_config=verification_checkpoint_writer_config,
+                            checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
+                                _progress_callback,
+                                "verification_checkpoint_written",
+                                attempt_index=attempt_index,
+                                budget_policy=budget_policy,
+                                completed=True,
+                                extra=_phase7_checkpoint_progress_extra(reference),
+                            ),
+                            run_full_chain=run_full_chain,
+                        )
+                    )
+                    verification_config_payload = (
+                        direct_handoff_outcome.verification_config_payload
+                    )
+                    verification_diagnostics = direct_handoff_outcome.diagnostics
+                    verification_callback_result = direct_handoff_outcome.callback_result
+                    verify_status = direct_handoff_outcome.final_status
+                    verify_role = direct_handoff_outcome.diagnostic_role
+                    verify_hard_vetoes = direct_handoff_outcome.hard_vetoes
+                    verify_repair_triggers = direct_handoff_outcome.repair_triggers
+                else:
+                    (
+                        verification_config_payload,
+                        verification_diagnostics,
+                        verification_callback_result,
+                        verify_status,
+                        verify_role,
+                        verify_hard_vetoes,
+                        verify_repair_triggers,
+                    ) = phase7_final_verification_runner(
+                        adapter=adapter,
+                        geometry=geometry,
+                        windowed_stage=windowed_stage,
+                        fixed_mass_step_stage=fixed_stage,
+                        trajectory_stage=trajectory_stage,
+                        config=cfg,
+                        budget_policy=budget_policy,
+                        attempt_index=attempt_index,
+                        target_scope=target_scope,
+                        verification_callback=verification_callback,
+                        checkpoint_writer_config=verification_checkpoint_writer_config,
+                        verification_start_callback=None,
+                        checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
+                            _progress_callback,
+                            "verification_checkpoint_written",
+                            attempt_index=attempt_index,
+                            budget_policy=budget_policy,
+                            completed=True,
+                            extra=_phase7_checkpoint_progress_extra(reference),
+                        ),
+                        run_full_chain=run_full_chain,
+                    )
                 retry_remains_verification_only = (
                     _phase7_verification_result_supports_verification_only_retry(
                         config=cfg,
@@ -6675,19 +9150,32 @@ def run_hmc_tune_verify_repair_loop(
                 attempt_hard_vetoes.extend(verify_hard_vetoes)
                 attempt_repair_triggers.extend(verify_repair_triggers)
                 if attempt_status == "passed":
-                    final_kernel_payload = _phase7_final_kernel_payload(
-                        config=cfg,
-                        geometry=geometry,
-                        bootstrap=bootstrap,
-                        windowed_stage=windowed_stage,
-                        fixed_mass_step_stage=fixed_stage,
-                        trajectory_stage=trajectory_stage,
-                        verification_config_payload=verification_config_payload,
-                        verification_diagnostics=verification_diagnostics,
-                        budget_policy=budget_policy,
-                        attempt_index=attempt_index,
-                        target_scope=target_scope,
-                    )
+                    if direct_handoff_outcome is not None:
+                        final_kernel_payload = _phase7_direct_final_kernel_payload(
+                            config=cfg,
+                            geometry=geometry,
+                            bootstrap=bootstrap,
+                            windowed_stage=windowed_stage,
+                            fixed_mass_step_stage=fixed_stage,
+                            outcome=direct_handoff_outcome,
+                            budget_policy=budget_policy,
+                            attempt_index=attempt_index,
+                            target_scope=target_scope,
+                        )
+                    else:
+                        final_kernel_payload = _phase7_final_kernel_payload(
+                            config=cfg,
+                            geometry=geometry,
+                            bootstrap=bootstrap,
+                            windowed_stage=windowed_stage,
+                            fixed_mass_step_stage=fixed_stage,
+                            trajectory_stage=trajectory_stage,
+                            verification_config_payload=verification_config_payload,
+                            verification_diagnostics=verification_diagnostics,
+                            budget_policy=budget_policy,
+                            attempt_index=attempt_index,
+                            target_scope=target_scope,
+                        )
                     final_kernel_hash = stable_config_hash(final_kernel_payload)
             else:
                 verification_only_retry_bundle = None
@@ -6768,6 +9256,15 @@ def run_hmc_tune_verify_repair_loop(
                         _attempt_index=attempt_index,
                         _max_leapfrog_steps=cfg.max_leapfrog_steps,
                         _private_diagnostic_callback=_private_diagnostic_callback,
+                        _repair_verification_reserved=(
+                            attempt_index + 1 < int(cfg.max_attempts)
+                        ),
+                        _selection_max_attempts=(
+                            min(
+                                5,
+                                int(cfg.max_attempts) - int(attempt_index),
+                            )
+                        ),
                     )
                     _emit_phase7_progress(
                         _progress_callback,
@@ -6781,10 +9278,20 @@ def run_hmc_tune_verify_repair_loop(
                             "artifact_hash": fixed_stage.artifact_hash,
                         },
                     )
+                    phase5_route = _phase7_direct_candidate_queue_route(
+                        fixed_mass_step_stage=fixed_stage,
+                        fixed_mass_step_stage_runner=_fixed_mass_step_stage_runner,
+                    )
                     if fixed_stage.final_status == "hard_veto":
                         attempt_hard_vetoes.extend(fixed_stage.hard_vetoes)
                         attempt_status = "hard_veto"
                         attempt_role = "hard_veto"
+                        verification_diagnostics = (
+                            _phase7_phase5_candidates_not_run_diagnostics(
+                                fixed_mass_step_stage=fixed_stage,
+                                reason="phase5_hard_veto",
+                            )
+                        )
                     elif fixed_stage.final_status == "budget_exhausted":
                         attempt_repair_triggers.extend(fixed_stage.repair_triggers)
                         attempt_repair_triggers.append(
@@ -6792,12 +9299,177 @@ def run_hmc_tune_verify_repair_loop(
                         )
                         attempt_status = "budget_exhausted"
                         attempt_role = fixed_stage.diagnostic_role
+                        verification_diagnostics = (
+                            _phase7_phase5_candidates_not_run_diagnostics(
+                                fixed_mass_step_stage=fixed_stage,
+                                reason="phase5_budget_exhausted",
+                            )
+                        )
+                    elif phase5_route == "direct_phase5_candidate_queue":
+                        handoff = _phase5_candidate_batch_handoff(fixed_stage)
+                        if handoff is None:
+                            raise ValueError("direct Phase 5 route lost its candidate batch")
+                        if (
+                            fixed_stage.final_status == "repair_or_retry"
+                            and handoff.handoff_eligible_count == 0
+                        ):
+                            attempt_repair_triggers.extend(fixed_stage.repair_triggers)
+                            attempt_repair_triggers.append(
+                                "phase5_repair_handoff_without_eligible_candidate"
+                            )
+                            verification_diagnostics = (
+                                _phase7_phase5_candidates_not_run_diagnostics(
+                                    fixed_mass_step_stage=fixed_stage,
+                                    reason="phase5_repair_handoff_without_eligible_candidate",
+                                )
+                            )
+                        else:
+                            direct_queue_result = _run_phase7_direct_candidate_queue(
+                                adapter=adapter,
+                                geometry=geometry,
+                                windowed_stage=windowed_stage,
+                                fixed_mass_step_stage=fixed_stage,
+                                config=cfg,
+                                budget_policy=budget_policy,
+                                attempt_index=attempt_index,
+                                target_scope=target_scope,
+                                verification_callback=verification_callback,
+                                checkpoint_writer_config=(
+                                    verification_checkpoint_writer_config
+                                ),
+                                progress_callback=_progress_callback,
+                                run_full_chain=run_full_chain,
+                            )
+                            direct_handoff_outcome = (
+                                direct_queue_result.admitted_outcome
+                                or direct_queue_result.repair_outcome
+                            )
+                            representative = direct_queue_result.representative_outcome
+                            if representative is not None:
+                                verification_config_payload = (
+                                    representative.verification_config_payload
+                                )
+                                verification_callback_result = representative.callback_result
+                            verification_diagnostics = (
+                                direct_queue_result.private_diagnostics()
+                            )
+                            attempt_status = direct_queue_result.final_status
+                            attempt_role = direct_queue_result.diagnostic_role
+                            attempt_hard_vetoes.extend(
+                                direct_queue_result.hard_vetoes
+                            )
+                            attempt_repair_triggers.extend(
+                                direct_queue_result.repair_triggers
+                            )
+                            if attempt_status == "passed":
+                                if direct_queue_result.admitted_outcome is None:
+                                    raise ValueError(
+                                        "passed direct queue lost its admitted outcome"
+                                    )
+                                final_kernel_payload = (
+                                    _phase7_direct_final_kernel_payload(
+                                        config=cfg,
+                                        geometry=geometry,
+                                        bootstrap=bootstrap,
+                                        windowed_stage=windowed_stage,
+                                        fixed_mass_step_stage=fixed_stage,
+                                        outcome=direct_queue_result.admitted_outcome,
+                                        budget_policy=budget_policy,
+                                        attempt_index=attempt_index,
+                                        target_scope=target_scope,
+                                    )
+                                )
+                                final_kernel_hash = stable_config_hash(
+                                    final_kernel_payload
+                                )
+                    elif phase5_route == "operational_selection_v2":
+                        if not fixed_stage.passed:
+                            attempt_repair_triggers.extend(fixed_stage.repair_triggers)
+                            attempt_repair_triggers.append(
+                                f"phase5_operational_selection_status:{fixed_stage.final_status}"
+                            )
+                            attempt_status = fixed_stage.final_status
+                            attempt_role = fixed_stage.diagnostic_role
+                            verification_diagnostics = {
+                                "attempt_index": attempt_index,
+                                "not_run": True,
+                                "reason": "operational_selection_not_ready_for_verification",
+                                "operational_selection_summary": fixed_stage.payload().get(
+                                    "operational_selection_summary"
+                                ),
+                                "reports_posterior_convergence": False,
+                            }
+                        else:
+                            direct_handoff_outcome = (
+                                _run_phase7_operational_selection_verification(
+                                    adapter=adapter,
+                                    geometry=geometry,
+                                    windowed_stage=windowed_stage,
+                                    fixed_mass_step_stage=fixed_stage,
+                                    config=cfg,
+                                    budget_policy=budget_policy,
+                                    attempt_index=attempt_index,
+                                    target_scope=target_scope,
+                                    verification_callback=verification_callback,
+                                    checkpoint_writer_config=(
+                                        verification_checkpoint_writer_config
+                                    ),
+                                    verification_start_callback=lambda: _emit_phase7_progress(
+                                        _progress_callback,
+                                        "verification_start",
+                                        attempt_index=attempt_index,
+                                        budget_policy=budget_policy,
+                                        started=True,
+                                    ),
+                                    checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
+                                        _progress_callback,
+                                        "verification_checkpoint_written",
+                                        attempt_index=attempt_index,
+                                        budget_policy=budget_policy,
+                                        completed=True,
+                                        extra=_phase7_checkpoint_progress_extra(reference),
+                                    ),
+                                    run_full_chain=run_full_chain,
+                                )
+                            )
+                            verification_config_payload = (
+                                direct_handoff_outcome.verification_config_payload
+                            )
+                            verification_diagnostics = direct_handoff_outcome.diagnostics
+                            verification_callback_result = (
+                                direct_handoff_outcome.callback_result
+                            )
+                            attempt_status = direct_handoff_outcome.final_status
+                            attempt_role = direct_handoff_outcome.diagnostic_role
+                            attempt_hard_vetoes.extend(
+                                direct_handoff_outcome.hard_vetoes
+                            )
+                            attempt_repair_triggers.extend(
+                                direct_handoff_outcome.repair_triggers
+                            )
+                            if attempt_status == "passed":
+                                final_kernel_payload = (
+                                    _phase7_direct_final_kernel_payload(
+                                        config=cfg,
+                                        geometry=geometry,
+                                        bootstrap=bootstrap,
+                                        windowed_stage=windowed_stage,
+                                        fixed_mass_step_stage=fixed_stage,
+                                        outcome=direct_handoff_outcome,
+                                        budget_policy=budget_policy,
+                                        attempt_index=attempt_index,
+                                        target_scope=target_scope,
+                                    )
+                                )
+                                final_kernel_hash = stable_config_hash(
+                                    final_kernel_payload
+                                )
                     elif not fixed_stage.passed:
                         attempt_repair_triggers.extend(fixed_stage.repair_triggers)
                         attempt_repair_triggers.append(
                             f"phase5_fixed_mass_step_status:{fixed_stage.final_status}"
                         )
-                    else:
+                    elif phase5_route == "historical_phase6_compatibility":
                         _emit_phase7_progress(
                             _progress_callback,
                             "trajectory_start",
@@ -6922,6 +9594,8 @@ def run_hmc_tune_verify_repair_loop(
                                     target_scope=target_scope,
                                 )
                                 final_kernel_hash = stable_config_hash(final_kernel_payload)
+                    else:
+                        raise ValueError("unsupported Phase 5 outer-loop route")
         except Exception as exc:  # noqa: BLE001 - Phase 7 must fail closed.
             attempt_status = "hard_veto"
             attempt_role = "hard_veto"
@@ -6935,17 +9609,38 @@ def run_hmc_tune_verify_repair_loop(
             }
 
         if windowed_stage is not None and windowed_stage.passed:
-            handoff_state = _phase7_attempt_state_from_stages(
-                config=cfg,
-                windowed_stage=windowed_stage,
-                fixed_mass_step_stage=fixed_stage,
-                frozen_step_trajectory_stage=trajectory_stage,
-                verification_config_payload=verification_config_payload,
-                verification_diagnostics=verification_diagnostics,
-                verification_final_status=attempt_status,
-                verification_diagnostic_role=attempt_role,
-                verification_repair_triggers=attempt_repair_triggers,
+            later_verification_reserved = (
+                attempt_index + 1 < int(cfg.max_attempts)
+                and not use_operational_repair_verification
             )
+            if direct_handoff_outcome is not None:
+                handoff_state = _phase7_attempt_state_from_direct_outcome(
+                    config=cfg,
+                    windowed_stage=windowed_stage,
+                    outcome=direct_handoff_outcome,
+                    incoming_state=attempt_state,
+                    repair_verification_reserved=later_verification_reserved,
+                    suppress_scalar_repair_disposition=(
+                        "inconclusive_conflict"
+                        if direct_queue_result is not None
+                        and direct_queue_result.repair_direction_conflict
+                        else None
+                    ),
+                )
+            else:
+                handoff_state = _phase7_attempt_state_from_stages(
+                    config=cfg,
+                    windowed_stage=windowed_stage,
+                    fixed_mass_step_stage=fixed_stage,
+                    frozen_step_trajectory_stage=trajectory_stage,
+                    verification_config_payload=verification_config_payload,
+                    verification_diagnostics=verification_diagnostics,
+                    verification_final_status=attempt_status,
+                    verification_diagnostic_role=attempt_role,
+                    verification_repair_triggers=attempt_repair_triggers,
+                    incoming_state=attempt_state,
+                    repair_verification_reserved=later_verification_reserved,
+                )
             if _private_diagnostic_callback is not None and handoff_state is not None:
                 _private_diagnostic_callback(
                     "phase7_handoff_kernel_change",
@@ -7054,6 +9749,18 @@ def run_hmc_tune_verify_repair_loop(
         attempts.append(attempt)
         hard_vetoes.extend(attempt_hard_vetoes)
         repair_triggers.extend(attempt_repair_triggers)
+        if (
+            handoff_state is not None
+            and _phase7_should_run_operational_repair_verification(handoff_state)
+            and windowed_stage is not None
+            and fixed_stage is not None
+        ):
+            operational_repair_verification_bundle = {
+                "windowed_stage": windowed_stage,
+                "fixed_mass_step_stage": fixed_stage,
+            }
+        else:
+            operational_repair_verification_bundle = None
         if _phase7_should_prepare_verification_only_retry(
             attempt_status=attempt_status,
             attempt_role=attempt_role,
@@ -7066,6 +9773,14 @@ def run_hmc_tune_verify_repair_loop(
                 "windowed_stage": windowed_stage,
                 "fixed_mass_step_stage": fixed_stage,
                 "trajectory_stage": trajectory_stage,
+                **(
+                    {}
+                    if handoff_state is None
+                    or handoff_state.direct_candidate_handoff is None
+                    else {
+                        **dict(handoff_state.direct_candidate_handoff),
+                    }
+                ),
             }
         else:
             verification_only_retry_bundle = None
@@ -7153,8 +9868,24 @@ def run_hmc_tune_verify_repair_loop(
                 _derive_seed(_phase7_attempt_seed(cfg.seed, attempt.attempt_index), stage_index=4)
                 for attempt in attempts
             ),
+            "verification_seeds_role": (
+                "historical_phase6_compatibility_seed_per_attempt"
+            ),
+            "historical_verification_seed_policy": (
+                _PHASE7_HISTORICAL_PHASE6_SEED_POLICY
+            ),
+            "direct_candidate_verification_seed_policy": (
+                _PHASE7_DIRECT_CANDIDATE_SEED_POLICY
+            ),
+            "direct_candidate_verification_seed_maps": (
+                _phase7_direct_candidate_seed_reports(
+                    attempts=attempts,
+                    root_seed=cfg.seed,
+                )
+            ),
             "seed_owner": "BayesFilter",
             "verification_seed_independent_of_stage_seeds": True,
+            "direct_seed_maps_private_handoff_only": True,
         },
         diagnostic_roles={
             "fresh_fixed_kernel_verification": "promotion_or_repair_or_hard_veto",
@@ -9024,6 +11755,8 @@ def _phase7_resume_split_entry_stage(handoff_state: Mapping[str, Any]) -> str:
         return "phase5_fixed_mass_step"
     if handoff_stage == "phase6":
         return "phase7_final_verification_or_verification_only_retry"
+    if handoff_stage == "phase7_direct":
+        return "phase7_direct_verification_or_verification_only_retry"
     raise ValueError("Phase 7 resume/split contract has unsupported handoff stage")
 
 
@@ -9914,6 +12647,14 @@ def _phase7_verification_public_summary(
             diagnostics.get("sequential_rhat_verification")
         ),
         "rhat_threshold": diagnostics.get("rhat_threshold"),
+        "rhat_threshold_role": (
+            config_payload.get("rhat_threshold_role")
+            or (
+                sequential_policy.get("rhat_threshold_role")
+                if isinstance(sequential_policy, Mapping)
+                else None
+            )
+        ),
         "check_interval": diagnostics.get("check_interval"),
         "max_results": diagnostics.get("max_results")
         or config_payload.get("max_results")
@@ -11317,6 +14058,8 @@ def _phase7_verification_acceptance_budget_blocker(
 ) -> Mapping[str, Any] | None:
     if config.public_timeout_budget_s is None or attempt_state is None:
         return None
+    if _phase7_should_run_operational_repair_verification(attempt_state):
+        return None
     budget_guard_repair_triggers = {
         _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER,
         _PHASE6_TRAJECTORY_ACCEPTANCE_REPAIR_TRIGGER,
@@ -11708,6 +14451,26 @@ def _phase7_should_retry_verification_only(
     )
 
 
+def _phase7_should_run_operational_repair_verification(
+    attempt_state: "_HMCPhaseAttemptState | None",
+) -> bool:
+    if attempt_state is None or attempt_state.direct_candidate_handoff is None:
+        return False
+    return (
+        attempt_state.direct_candidate_handoff.get("source_kind")
+        == "operational_selection_v2"
+        and attempt_state.has_final_kernel_handoff
+        and attempt_state.verification_repair_applied
+        and attempt_state.verification_repair_trigger
+        == _PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER
+        and attempt_state.verification_repair_direction
+        in {"lower_epsilon", "higher_epsilon"}
+        and attempt_state.verification_repair_step_size is not None
+        and attempt_state.verification_repair_step_hash is not None
+        and attempt_state.repair_verification_reserved
+    )
+
+
 def _phase7_should_prepare_verification_only_retry(
     *,
     attempt_status: str,
@@ -11827,6 +14590,9 @@ def _emit_phase7_progress(
 class _HMCPhaseAttemptState:
     mass_artifact_payload: Mapping[str, Any] | None = None
     mass_artifact_signature: str | None = None
+    canonical_theta_state: Any | None = dataclasses.field(default=None, repr=False)
+    private_start_bank_theta: Any | None = dataclasses.field(default=None, repr=False)
+    private_start_bank_signature: str | None = None
     selected_step_size: float | None = None
     selected_step_hash: str | None = None
     selected_num_leapfrog_steps: int | None = None
@@ -11841,9 +14607,15 @@ class _HMCPhaseAttemptState:
     verification_repair_step_hash: str | None = None
     verification_repair_applied: bool = False
     verification_repair_max_step_size: float | None = None
+    verification_repair_direction: str | None = None
+    verification_repair_disposition: str = "not_requested"
+    repair_direction_history: tuple[str, ...] = ()
+    repaired_step_history: tuple[float, ...] = ()
+    repair_verification_reserved: bool = False
     verification_budget_results: int | None = None
     fixed_mass_bracket_state: Mapping[str, Any] | None = None
     handoff_stage: str = "initial"
+    direct_candidate_handoff: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         payload = (
@@ -11856,6 +14628,36 @@ class _HMCPhaseAttemptState:
             else str(self.mass_artifact_signature)
         )
         object.__setattr__(self, "mass_artifact_signature", mass_signature)
+        canonical_theta = None
+        if self.canonical_theta_state is not None:
+            canonical_theta = np.asarray(self.canonical_theta_state, dtype=float).copy()
+            if canonical_theta.ndim != 1 or not np.all(np.isfinite(canonical_theta)):
+                raise ValueError("canonical_theta_state must be one-dimensional and finite")
+            canonical_theta.setflags(write=False)
+        object.__setattr__(self, "canonical_theta_state", canonical_theta)
+        start_bank = None
+        if self.private_start_bank_theta is not None:
+            start_bank = np.asarray(self.private_start_bank_theta, dtype=float).copy()
+            if (
+                start_bank.ndim != 2
+                or start_bank.shape[0] != 4
+                or not np.all(np.isfinite(start_bank))
+            ):
+                raise ValueError("private_start_bank_theta must contain four finite rows")
+            if canonical_theta is not None and start_bank.shape[1] != canonical_theta.shape[0]:
+                raise ValueError("private start bank dimension must match canonical state")
+            start_bank.setflags(write=False)
+        start_bank_signature = (
+            None
+            if self.private_start_bank_signature is None
+            else str(self.private_start_bank_signature)
+        )
+        if (start_bank is None) != (start_bank_signature is None):
+            raise ValueError("private start bank values/signature must be paired")
+        if start_bank_signature is not None and not start_bank_signature:
+            raise ValueError("private_start_bank_signature must be non-empty")
+        object.__setattr__(self, "private_start_bank_theta", start_bank)
+        object.__setattr__(self, "private_start_bank_signature", start_bank_signature)
         step = None if self.selected_step_size is None else float(self.selected_step_size)
         if step is not None and (not np.isfinite(step) or step <= 0.0):
             raise ValueError("attempt handoff selected_step_size must be positive")
@@ -11894,9 +14696,73 @@ class _HMCPhaseAttemptState:
         if (retry_leapfrog is None) != (retry_anchor_source is None):
             raise ValueError("phase6 retry anchor L/source must be paired")
         object.__setattr__(self, "phase6_retry_anchor_source", retry_anchor_source)
+        direct_handoff = (
+            None
+            if self.direct_candidate_handoff is None
+            else dict(self.direct_candidate_handoff)
+        )
+        if direct_handoff is not None:
+            source_kind = str(direct_handoff.get("source_kind", ""))
+            if source_kind == "direct_phase5_candidate":
+                required_direct_keys = (
+                    "source_kind",
+                    "candidate_batch_hash",
+                    "candidate_identity",
+                    "candidate_record_hash",
+                    "verification_input_hash",
+                )
+            elif source_kind == "operational_selection_v2":
+                required_direct_keys = (
+                    "source_kind",
+                    "operational_selection_signature",
+                    "operational_candidate_signature",
+                    "coordinate_signature",
+                    "metric_signature",
+                    "trajectory_signature",
+                    "start_bank_signature",
+                    "verification_seed_policy",
+                    "verification_input_hash",
+                )
+            else:
+                raise ValueError("direct private handoff source kind mismatch")
+            if any(not direct_handoff.get(key) for key in required_direct_keys):
+                raise ValueError("direct candidate handoff is incomplete")
+            if source_kind == "direct_phase5_candidate":
+                identity = tuple(direct_handoff["candidate_identity"])
+                if len(identity) != 4 or not str(identity[2]):
+                    raise ValueError("direct candidate handoff identity is invalid")
+                direct_handoff["candidate_identity"] = (
+                    int(identity[0]),
+                    int(identity[1]),
+                    str(identity[2]),
+                    int(identity[3]),
+                )
+            elif any(
+                direct_handoff.get(key) is not None
+                for key in (
+                    "candidate_batch_hash",
+                    "candidate_identity",
+                    "candidate_record_hash",
+                )
+            ):
+                raise ValueError("operational handoff cannot carry v1 candidate lineage")
+            if direct_handoff.get("private_handoff_only") is not True:
+                raise ValueError("direct candidate handoff must remain private")
+        object.__setattr__(self, "direct_candidate_handoff", direct_handoff)
         stage = str(self.handoff_stage)
-        if stage not in {"initial", "phase4", "phase5_repair", "phase5_selected", "phase6"}:
+        if stage not in {
+            "initial",
+            "phase4",
+            "phase5_repair",
+            "phase5_selected",
+            "phase6",
+            "phase7_direct",
+        }:
             raise ValueError("attempt handoff_stage is invalid")
+        if (stage == "phase7_direct") != (direct_handoff is not None):
+            raise ValueError("phase7_direct stage and direct handoff must be paired")
+        if direct_handoff is not None and trajectory_hash is not None:
+            raise ValueError("direct candidate handoff forbids a trajectory hash")
         object.__setattr__(self, "handoff_stage", stage)
         acceptance = (
             None
@@ -11960,6 +14826,39 @@ class _HMCPhaseAttemptState:
         ):
             raise ValueError("verification_repair_max_step_size must be positive and finite")
         object.__setattr__(self, "verification_repair_max_step_size", repair_max_step)
+        repair_direction = (
+            None
+            if self.verification_repair_direction is None
+            else str(self.verification_repair_direction)
+        )
+        if repair_direction not in {None, "lower_epsilon", "higher_epsilon"}:
+            raise ValueError("verification_repair_direction is invalid")
+        repair_disposition = str(self.verification_repair_disposition)
+        if repair_disposition not in {
+            "not_requested",
+            "repair_step",
+            "inconclusive_conflict",
+            "inconclusive_evidence",
+            "inconclusive_resonance",
+            "inconclusive_stalled_or_oscillating",
+            "candidate_data_invalid",
+            "shared_invalidity",
+        }:
+            raise ValueError("verification_repair_disposition is invalid")
+        direction_history = tuple(str(item) for item in self.repair_direction_history)
+        if any(item not in {"lower_epsilon", "higher_epsilon"} for item in direction_history):
+            raise ValueError("repair_direction_history contains an invalid direction")
+        step_history = tuple(float(item) for item in self.repaired_step_history)
+        if any(not np.isfinite(item) or item <= 0.0 for item in step_history):
+            raise ValueError("repaired_step_history must contain positive finite values")
+        if len(direction_history) != len(step_history):
+            raise ValueError("repair direction and step histories must have equal length")
+        repair_reserved = bool(self.repair_verification_reserved)
+        object.__setattr__(self, "verification_repair_direction", repair_direction)
+        object.__setattr__(self, "verification_repair_disposition", repair_disposition)
+        object.__setattr__(self, "repair_direction_history", direction_history)
+        object.__setattr__(self, "repaired_step_history", step_history)
+        object.__setattr__(self, "repair_verification_reserved", repair_reserved)
         budget_results = (
             None
             if self.verification_budget_results is None
@@ -11987,6 +14886,21 @@ class _HMCPhaseAttemptState:
             or repair_hash is None
         ):
             raise ValueError("verification repair handoff is incomplete")
+        if repair_applied and repair_direction is not None:
+            if (
+                not direction_history
+                or direction_history[-1] != repair_direction
+                or not step_history
+                or not np.isclose(step_history[-1], repair_step, rtol=1.0e-12, atol=0.0)
+            ):
+                raise ValueError("applied repair is missing append-only repair history")
+        if (
+            repair_applied
+            and direct_handoff is not None
+            and direct_handoff.get("source_kind") == "operational_selection_v2"
+            and (repair_direction is None or not repair_reserved)
+        ):
+            raise ValueError("operational repair requires direction and reserved verification")
         object.__setattr__(self, "verification_repair_applied", repair_applied)
 
     @property
@@ -12014,6 +14928,13 @@ class _HMCPhaseAttemptState:
             return self.has_mass_handoff
         if self.handoff_stage in {"phase5_repair", "phase5_selected"}:
             return self.has_step_handoff
+        if self.handoff_stage == "phase7_direct":
+            return (
+                self.has_step_handoff
+                and self.selected_num_leapfrog_steps is not None
+                and self.direct_candidate_handoff is not None
+                and self.selected_trajectory_hash is None
+            )
         if self.handoff_stage != "phase6":
             return False
         return (
@@ -12027,6 +14948,8 @@ class _HMCPhaseAttemptState:
 
     @property
     def has_final_kernel_handoff(self) -> bool:
+        if self.handoff_stage == "phase7_direct":
+            return self.has_stage_repair_handoff
         return (
             self.mass_artifact_payload is not None
             and self.mass_artifact_signature is not None
@@ -12037,10 +14960,26 @@ class _HMCPhaseAttemptState:
         )
 
     def payload(self) -> Mapping[str, Any]:
-        return {
+        canonical_theta_signature = (
+            None
+            if self.canonical_theta_state is None
+            else stable_config_hash(
+                {
+                    "schema": "bayesfilter.hmc_private_canonical_theta.v2",
+                    "values": self.canonical_theta_state.tolist(),
+                }
+            )
+        )
+        payload = {
             "handoff_stage": self.handoff_stage,
             "mass_artifact_payload": self.mass_artifact_payload,
             "mass_artifact_signature": self.mass_artifact_signature,
+            "canonical_theta_state_signature": canonical_theta_signature,
+            "canonical_theta_state_available": self.canonical_theta_state is not None,
+            "private_start_bank_signature": self.private_start_bank_signature,
+            "private_start_bank_available": self.private_start_bank_theta is not None,
+            "private_raw_state_values_exposed": False,
+            "private_start_bank_values_exposed": False,
             "selected_step_size": self.selected_step_size,
             "selected_step_hash": self.selected_step_hash,
             "selected_num_leapfrog_steps": self.selected_num_leapfrog_steps,
@@ -12055,6 +14994,11 @@ class _HMCPhaseAttemptState:
             "verification_repair_step_hash": self.verification_repair_step_hash,
             "verification_repair_applied": self.verification_repair_applied,
             "verification_repair_max_step_size": self.verification_repair_max_step_size,
+            "verification_repair_direction": self.verification_repair_direction,
+            "verification_repair_disposition": self.verification_repair_disposition,
+            "repair_direction_history": self.repair_direction_history,
+            "repaired_step_history": self.repaired_step_history,
+            "repair_verification_reserved": self.repair_verification_reserved,
             "verification_budget_results": self.verification_budget_results,
             "fixed_mass_bracket_state": self.fixed_mass_bracket_state,
             "fixed_mass_bracket_state_available": (
@@ -12066,6 +15010,9 @@ class _HMCPhaseAttemptState:
             "required_private_handoff_complete": self.has_required_repair_handoff,
             "final_kernel_handoff_complete": self.has_final_kernel_handoff,
         }
+        if self.direct_candidate_handoff is not None:
+            payload["direct_candidate_handoff"] = self.direct_candidate_handoff
+        return payload
 
 
 def _coerce_phase7_fixed_mass_bracket_state(
@@ -12090,7 +15037,7 @@ def _coerce_phase7_fixed_mass_bracket_state(
         and float(high_bound) >= float(low_bound)
     ):
         raise ValueError("fixed_mass_bracket_state requires high bound below low bound")
-    return {
+    result = {
         "schema": str(state.get("schema", "bayesfilter.fixed_mass_bracket_state.v1")),
         "next_step_size": float(step),
         "high_acceptance_step_lower_bound": high_bound,
@@ -12105,6 +15052,9 @@ def _coerce_phase7_fixed_mass_bracket_state(
         "public_progress_exposes_step": False,
         "reports_posterior_convergence": False,
     }
+    if state.get("bracket_role") is not None:
+        result["bracket_role"] = state.get("bracket_role")
+    return result
 
 
 def _phase7_positive_finite_or_none(value: Any) -> float | None:
@@ -12134,6 +15084,420 @@ def _default_attempt_budget_policy(
 
 def _phase7_attempt_seed(root_seed: tuple[int, int], attempt_index: int) -> tuple[int, int]:
     return _derive_seed(root_seed, stage_index=10 + int(attempt_index))
+
+
+def _phase7_direct_candidate_seed_reports(
+    *,
+    attempts: Sequence[HMCTuneVerifyRepairAttempt],
+    root_seed: tuple[int, int],
+) -> tuple[Mapping[str, Any], ...]:
+    """Preserve private direct seed provenance without changing legacy fields."""
+
+    reports: list[Mapping[str, Any]] = []
+    for attempt in attempts:
+        diagnostics = attempt.verification_diagnostics
+        queue = (
+            diagnostics.get("phase7_direct_candidate_queue")
+            if isinstance(diagnostics, Mapping)
+            else None
+        )
+        if isinstance(queue, Mapping) and queue.get("seed_map_precomputed") is True:
+            candidates = tuple(queue.get("candidate_results", ()))
+            seed_map: list[Mapping[str, Any]] = []
+            for candidate in candidates:
+                if not isinstance(candidate, Mapping):
+                    raise ValueError("direct queue seed report candidate must be a mapping")
+                identity = tuple(candidate.get("candidate_identity", ()))
+                if len(identity) != 4:
+                    raise ValueError("direct queue seed report identity is invalid")
+                normalized_identity = (
+                    int(identity[0]),
+                    int(identity[1]),
+                    str(identity[2]),
+                    int(identity[3]),
+                )
+                seed = _validate_seed(candidate.get("verification_seed"))
+                expected_seed = _phase7_direct_candidate_seed(
+                    root_seed,
+                    int(attempt.attempt_index),
+                    normalized_identity,
+                )
+                if seed != expected_seed:
+                    raise ValueError("direct queue seed report does not match policy")
+                seed_map.append(
+                    {
+                        "candidate_identity": normalized_identity,
+                        "verification_seed": seed,
+                    }
+                )
+            if len(seed_map) != int(queue.get("candidate_count", -1)):
+                raise ValueError("direct queue seed report count mismatch")
+            reports.append(
+                {
+                    "attempt_index": int(attempt.attempt_index),
+                    "route": "direct_phase5_candidate_queue",
+                    "candidate_batch_hash": queue.get("candidate_batch_hash"),
+                    "plan_hash": queue.get("plan_hash"),
+                    "verification_seed_policy": _PHASE7_DIRECT_CANDIDATE_SEED_POLICY,
+                    "seed_map_precomputed": True,
+                    "candidate_seed_map": tuple(seed_map),
+                    "private_handoff_only": True,
+                }
+            )
+            continue
+
+        handoff = attempt.handoff_state_payload
+        direct_handoff = (
+            handoff.get("direct_candidate_handoff")
+            if isinstance(handoff, Mapping)
+            else None
+        )
+        if not isinstance(direct_handoff, Mapping):
+            continue
+        source_kind = str(direct_handoff.get("source_kind", ""))
+        if source_kind == "operational_selection_v2":
+            candidate_signature = str(
+                direct_handoff.get("operational_candidate_signature", "")
+            )
+            seed_policy = str(direct_handoff.get("verification_seed_policy", ""))
+            domain = (
+                "repair_verification"
+                if seed_policy == _PHASE7_OPERATIONAL_REPAIR_SEED_POLICY
+                else (
+                    "evidence_extension"
+                    if seed_policy
+                    == _PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY
+                    else "independent_final_verification"
+                )
+            )
+            if seed_policy not in {
+                _PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+                _PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+                _PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY,
+            } or not candidate_signature:
+                raise ValueError("operational seed report lineage is invalid")
+            expected_seed = paired_candidate_seed(
+                _phase7_attempt_seed(root_seed, int(attempt.attempt_index)),
+                candidate_signature=candidate_signature,
+                replication_index=0,
+                domain=domain,
+            )
+            seed = _validate_seed(direct_handoff.get("verification_seed"))
+            if seed != expected_seed:
+                raise ValueError("operational seed report does not match policy")
+            reports.append(
+                {
+                    "attempt_index": int(attempt.attempt_index),
+                    "route": (
+                        "operational_scalar_repair_verification"
+                        if domain == "repair_verification"
+                        else (
+                            "operational_evidence_extension"
+                            if domain == "evidence_extension"
+                            else "operational_selection_verification"
+                        )
+                    ),
+                    "operational_selection_signature": direct_handoff.get(
+                        "operational_selection_signature"
+                    ),
+                    "operational_candidate_signature": candidate_signature,
+                    "coordinate_signature": direct_handoff.get("coordinate_signature"),
+                    "metric_signature": direct_handoff.get("metric_signature"),
+                    "trajectory_signature": direct_handoff.get("trajectory_signature"),
+                    "start_bank_signature": direct_handoff.get("start_bank_signature"),
+                    "verification_seed_policy": seed_policy,
+                    "verification_seed_domain": domain,
+                    "verification_seed": seed,
+                    "private_handoff_only": True,
+                }
+            )
+            continue
+        if source_kind != "direct_phase5_candidate":
+            raise ValueError("direct retry seed report source kind is invalid")
+        identity = tuple(direct_handoff.get("candidate_identity", ()))
+        if len(identity) != 4:
+            raise ValueError("direct retry seed report identity is invalid")
+        normalized_identity = (
+            int(identity[0]),
+            int(identity[1]),
+            str(identity[2]),
+            int(identity[3]),
+        )
+        reports.append(
+            {
+                "attempt_index": int(attempt.attempt_index),
+                "route": "direct_phase5_candidate_verification_only_retry",
+                "candidate_batch_hash": direct_handoff.get("candidate_batch_hash"),
+                "plan_hash": None,
+                "verification_seed_policy": _PHASE7_DIRECT_CANDIDATE_SEED_POLICY,
+                "seed_map_precomputed": True,
+                "candidate_seed_map": (
+                    {
+                        "candidate_identity": normalized_identity,
+                        "verification_seed": _phase7_direct_candidate_seed(
+                            root_seed,
+                            int(attempt.attempt_index),
+                            normalized_identity,
+                        ),
+                    },
+                ),
+                "private_handoff_only": True,
+            }
+        )
+    return tuple(reports)
+
+
+def _phase7_direct_candidate_seed(
+    root_seed: tuple[int, int],
+    attempt_index: int,
+    candidate_identity: tuple[int, int, str, int],
+) -> tuple[int, int]:
+    """Fold stable candidate identity into the attempt seed without Python hash()."""
+
+    identity = (
+        int(candidate_identity[0]),
+        int(candidate_identity[1]),
+        str(candidate_identity[2]),
+        int(candidate_identity[3]),
+    )
+    if identity[0] < 0 or not identity[2]:
+        raise ValueError("candidate identity is invalid")
+    attempt_seed = _phase7_attempt_seed(_validate_seed(root_seed), int(attempt_index))
+    digest = stable_config_hash(
+        {
+            "schema": _PHASE7_DIRECT_CANDIDATE_SEED_POLICY,
+            "attempt_seed": attempt_seed,
+            "candidate_identity": identity,
+        }
+    )
+    word0 = int(digest[0:8], 16)
+    word1 = int(digest[8:16], 16)
+    modulus = 2**31 - 1
+    seed = (
+        (int(attempt_seed[0]) + word0) % modulus,
+        (int(attempt_seed[1]) + word1) % modulus,
+    )
+    return (0, 1) if seed == (0, 0) else seed
+
+
+def _phase7_direct_candidate_queue_plan(
+    *,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_index: int,
+) -> _HMCPhase7DirectCandidateQueuePlan:
+    """Validate the entire direct queue and its seed map before any draw."""
+
+    handoff = _phase5_candidate_batch_handoff(fixed_mass_step_stage)
+    if handoff is None:
+        raise ValueError("direct Phase 7 queue requires a Phase 5 candidate batch")
+    if handoff.final_status not in {"passed", "repair_or_retry"}:
+        raise ValueError("Phase 5 status does not authorize direct verification")
+    records_by_ordinal = {
+        record.batch_ordinal: record for record in handoff.candidate_records
+    }
+    identities: list[tuple[int, int, str, int]] = []
+    record_hashes: list[str] = []
+    seeds: list[tuple[int, int]] = []
+    for ordinal in handoff.verification_order_seed:
+        record = records_by_ordinal.get(int(ordinal))
+        if record is None or not record.handoff_eligible:
+            raise ValueError("direct Phase 7 queue contains an invalid eligible reference")
+        identity = (
+            record.batch_ordinal,
+            record.source_round_index,
+            record.source_grid_stage,
+            record.source_round_candidate_index,
+        )
+        identities.append(identity)
+        record_hashes.append(record.record_hash)
+        seeds.append(_phase7_direct_candidate_seed(config.seed, attempt_index, identity))
+    if not identities:
+        raise ValueError("direct Phase 7 queue has no eligible candidates")
+    return _HMCPhase7DirectCandidateQueuePlan(
+        phase5_status=handoff.final_status,
+        fixed_mass_step_stage_artifact_hash=fixed_mass_step_stage.artifact_hash,
+        candidate_batch_hash=handoff.handoff_hash,
+        candidate_identities=tuple(identities),
+        candidate_record_hashes=tuple(record_hashes),
+        verification_seeds=tuple(seeds),
+        verification_num_results=budget_policy.verification_num_results,
+        verification_num_burnin_steps=budget_policy.verification_num_burnin_steps,
+    )
+
+
+def _phase7_direct_candidate_queue_route(
+    *,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    fixed_mass_step_stage_runner: Callable[..., HMCFixedMassStepStageResult],
+) -> str:
+    """Choose direct, terminal-joint, or explicit historical compatibility."""
+
+    if fixed_mass_step_stage._operational_selection is not None:
+        if fixed_mass_step_stage.diagnostics.get("algorithm") != (
+            "operational_paired_fixed_trajectory_selection_v3"
+        ):
+            raise ValueError("operational selection authority/algorithm mismatch")
+        return "operational_selection_v2"
+    algorithm = fixed_mass_step_stage.diagnostics.get("algorithm")
+    is_current_joint = algorithm == _PHASE5_JOINT_L_EPSILON_ALGORITHM
+    handoff = _phase5_candidate_batch_handoff(fixed_mass_step_stage)
+    if is_current_joint and fixed_mass_step_stage.final_status in {
+        "budget_exhausted",
+        "hard_veto",
+    }:
+        return "direct_phase5_terminal_no_queue"
+    if handoff is not None:
+        return "direct_phase5_candidate_queue"
+    if is_current_joint:
+        raise ValueError("current joint Phase 5 result is missing its candidate batch")
+    explicitly_injected = fixed_mass_step_stage_runner is not run_hmc_fixed_mass_step_stage
+    historical_fixture = (
+        fixed_mass_step_stage.diagnostics.get("historical_phase5_compatibility_fixture")
+        is True
+    )
+    if explicitly_injected and historical_fixture:
+        return "historical_phase6_compatibility"
+    raise ValueError("Phase 5 route is neither current joint nor reviewed historical")
+
+
+def _phase7_direct_candidate_queue_timeout_closeout(
+    *,
+    config: HMCTuneVerifyRepairLoopConfig,
+    attempt_index: int,
+    stage_start_perf_counter_s: float,
+    completed_elapsed_s: Sequence[float],
+) -> Mapping[str, Any] | None:
+    """Apply the existing reserve policy before every direct verifier start."""
+
+    completed = tuple(float(item) for item in completed_elapsed_s)
+    estimated_next_s = (
+        _FROZEN_STEP_TRAJECTORY_SOFT_DEADLINE_RESERVE_S
+        if not completed
+        else max(completed[-_FROZEN_STEP_TRAJECTORY_SOFT_DEADLINE_RECENT_WINDOW:])
+        * _FROZEN_STEP_TRAJECTORY_SOFT_DEADLINE_SAFETY_MULTIPLIER
+    )
+    if config.staged_timeout_policy is not None and config.staged_timeout_policy.enabled:
+        policy = config.staged_timeout_policy
+        state = dict(
+            _staged_timeout_public_state(
+                policy=policy,
+                stage="fresh_fixed_kernel_verification",
+                attempt_index=attempt_index,
+                global_started_perf_counter_s=(
+                    config.staged_timeout_global_started_perf_counter_s
+                ),
+                stage_started_perf_counter_s=stage_start_perf_counter_s,
+                enlargement_rounds=config.staged_timeout_enlargement_rounds,
+            )
+        )
+        reserve_s = float(policy.reserve_s)
+        effective_remaining_s = min(
+            float(state["stage_remaining_s"]),
+            float(state["global_remaining_s"]),
+        )
+        closeout_required = bool(
+            state["cap_hit"]
+            or effective_remaining_s <= reserve_s + float(estimated_next_s)
+        )
+        if not closeout_required:
+            return None
+        return {
+            **state,
+            "schema": "bayesfilter.hmc_phase7_direct_queue_timeout_closeout.v1",
+            "effective_remaining_s": effective_remaining_s,
+            "reserve_s": reserve_s,
+            "estimated_next_candidate_s": float(estimated_next_s),
+            "completed_candidate_elapsed_count": len(completed),
+            "closeout_required_before_next_candidate": True,
+            "diagnostic_role": "phase7_direct_queue_timeout_closeout",
+            "progress_only": True,
+            "public_closeout_artifact_expected": True,
+            "hmc_mechanics_exposed": False,
+            "reports_posterior_convergence": False,
+            "reports_sampler_superiority": False,
+            "reports_default_readiness": False,
+            "reports_gpu_or_xla_readiness": False,
+        }
+    if config.public_timeout_budget_s is None:
+        return None
+    state = dict(
+        _phase6_soft_deadline_state(
+            stage_start_perf_counter_s=stage_start_perf_counter_s,
+            timeout_budget_s=config.public_timeout_budget_s,
+            public_timeout_started_perf_counter_s=(
+                config.public_timeout_started_perf_counter_s
+            ),
+        )
+    )
+    closeout_required = bool(
+        state["within_closeout_window"]
+        or float(state["remaining_s"])
+        <= float(state["reserve_s"]) + float(estimated_next_s)
+    )
+    if not closeout_required:
+        return None
+    return {
+        **state,
+        "schema": "bayesfilter.hmc_phase7_direct_queue_timeout_closeout.v1",
+        "estimated_next_candidate_s": float(estimated_next_s),
+        "completed_candidate_elapsed_count": len(completed),
+        "closeout_required_before_next_candidate": True,
+        "diagnostic_role": "phase7_direct_queue_timeout_closeout",
+        "progress_only": True,
+        "public_closeout_artifact_expected": True,
+        "hmc_mechanics_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "reports_default_readiness": False,
+        "reports_gpu_or_xla_readiness": False,
+    }
+
+
+def _phase7_phase5_candidates_not_run_diagnostics(
+    *,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    reason: str,
+) -> Mapping[str, Any]:
+    """Preserve private candidate closeout without treating unrun work as failure."""
+
+    handoff = _phase5_candidate_batch_handoff(fixed_mass_step_stage)
+    records = () if handoff is None else handoff.candidate_records
+    return {
+        "not_run": True,
+        "phase7_direct_candidate_queue_active": handoff is not None,
+        "phase7_direct_candidate_queue": {
+            "schema": "bayesfilter.hmc_phase7_direct_candidate_queue_result.v2",
+            "candidate_batch_hash": None if handoff is None else handoff.handoff_hash,
+            "candidate_results": tuple(
+                {
+                    "candidate_identity": (
+                        record.batch_ordinal,
+                        record.source_round_index,
+                        record.source_grid_stage,
+                        record.source_round_candidate_index,
+                    ),
+                    "candidate_record_hash": record.record_hash,
+                    "state": "not_run",
+                    "started": False,
+                    "not_run_reason": str(reason),
+                    "private_handoff_only": True,
+                }
+                for record in records
+            ),
+            "candidate_count": len(records),
+            "repair_directions": (),
+            "repair_direction_conflict": False,
+            "started_count": 0,
+            "not_run_count": len(records),
+            "maximum_candidate_starts": _PHASE7_DIRECT_QUEUE_MAX_STARTS,
+            "unused_start_quota": _PHASE7_DIRECT_QUEUE_MAX_STARTS,
+            "private_handoff_only": True,
+        },
+        "reports_posterior_convergence": False,
+        "nonclaims": TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS,
+    }
 
 
 def _staged_timeout_stage_budget(
@@ -12441,6 +15805,12 @@ def _fixed_mass_step_initial_step(
     *,
     attempt_state: _HMCPhaseAttemptState | None,
 ) -> float:
+    operational = windowed_stage.operational_warmup_result
+    if operational is not None:
+        step = operational.final_kernel_state.epsilon
+        if step is None or not np.isfinite(step) or step <= 0.0:
+            raise ValueError("operational warmup did not produce a current epsilon")
+        return float(step)
     if (
         attempt_state is not None
         and attempt_state.verification_repair_applied
@@ -13248,8 +16618,29 @@ def _select_joint_l_epsilon_repair_ladder(
     target_accept_prob: float,
     target_trajectory: float,
 ) -> FixedMassHMCTuningBudgetLadderResult | None:
+    ladder, _source_key = _select_joint_l_epsilon_repair_ladder_with_source(
+        rounds,
+        target_accept_prob=target_accept_prob,
+        target_trajectory=target_trajectory,
+    )
+    return ladder
+
+
+def _select_joint_l_epsilon_repair_ladder_with_source(
+    rounds: Sequence[Mapping[str, Any]],
+    *,
+    target_accept_prob: float,
+    target_trajectory: float,
+) -> tuple[
+    FixedMassHMCTuningBudgetLadderResult | None,
+    tuple[int, str, int] | None,
+]:
     repair_options: list[
-        tuple[tuple[float, float, int, int, int], FixedMassHMCTuningBudgetLadderResult]
+        tuple[
+            tuple[float, float, int, int, int],
+            FixedMassHMCTuningBudgetLadderResult,
+            tuple[int, str, int],
+        ]
     ] = []
     for round_payload in rounds:
         ladders = round_payload.get("ladders_by_candidate_index", {})
@@ -13293,11 +16684,13 @@ def _select_joint_l_epsilon_repair_ladder(
                         candidate_index,
                     ),
                     ladder,
+                    _phase5_candidate_source_key(candidate),
                 )
             )
     if not repair_options:
-        return None
-    return min(repair_options, key=lambda item: item[0])[1]
+        return None, None
+    _key, ladder, source_key = min(repair_options, key=lambda item: item[0])
+    return ladder, source_key
 
 
 def _fixed_mass_step_frozen_mass_invariant(
@@ -13886,6 +17279,33 @@ def _call_trajectory_screen_callback(
         )
 
 
+def _call_phase7_verification_callback(
+    callback: VerificationCallback | None,
+    *,
+    round_payload: Mapping[str, Any],
+    samples: Any,
+    diagnostics: Mapping[str, Any],
+) -> tuple[FixedMassHMCTuningBudgetCallbackResult, Exception | None]:
+    """Preserve callback output while retaining private exception provenance."""
+
+    if callback is None:
+        return FixedMassHMCTuningBudgetCallbackResult(), None
+    try:
+        raw = callback(round_payload, samples, diagnostics)
+        return _coerce_trajectory_callback_result(raw), None
+    except Exception as exc:  # noqa: BLE001 - callback failures are fail-closed.
+        return (
+            FixedMassHMCTuningBudgetCallbackResult(
+                hard_vetoes=("callback_error",),
+                diagnostics={
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                },
+            ),
+            exc,
+        )
+
+
 def _coerce_trajectory_callback_result(
     raw: Any,
 ) -> FixedMassHMCTuningBudgetCallbackResult:
@@ -14220,6 +17640,629 @@ def _acceptance_relation_to_band(
     return "inside_acceptance_band"
 
 
+def _phase7_verification_runtime_context(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    target_scope: str,
+) -> tuple[PrecomputedMassArtifact, str, Any, Any, str]:
+    """Rebuild the shared Phase 4 and fixed-mass adapters for verification."""
+
+    scope = str(target_scope)
+    if not scope:
+        raise ValueError("Phase 7 verification target scope must be non-empty")
+    adapter_signature = stable_adapter_signature(adapter)
+    if adapter_signature != geometry.adapter_signature:
+        raise ValueError("Phase 7 verification adapter must match geometry")
+    if adapter_signature != windowed_stage.adapter_signature:
+        raise ValueError("Phase 7 verification adapter must match Phase 4")
+    if geometry.artifact_hash != windowed_stage.geometry_artifact_hash:
+        raise ValueError("Phase 7 verification geometry lineage mismatch")
+    if geometry.target_dimension != windowed_stage.target_dimension:
+        raise ValueError("Phase 7 verification target dimension mismatch")
+    if not windowed_stage.passed:
+        raise ValueError("Phase 7 verification requires passed Phase 4")
+    adapted_mass = _phase4_adapted_mass_artifact(windowed_stage)
+    mass_signature = _mass_artifact_signature(adapted_mass)
+    if mass_signature != windowed_stage.adapted_mass_artifact_signature:
+        raise ValueError("Phase 7 verification Phase 4 mass signature mismatch")
+    if adapted_mass.dimension != geometry.target_dimension:
+        raise ValueError("Phase 7 verification adapted mass dimension mismatch")
+    phase4_adapter = _phase4_latent_adapter_for_step_stage(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=scope,
+    )
+    phase4_signature = stable_adapter_signature(phase4_adapter)
+    if phase4_signature != windowed_stage.hmc_adapter_signature:
+        raise ValueError("Phase 7 verification Phase 4 adapter signature mismatch")
+    adapted_mass.validate_for_adapter(
+        phase4_adapter,
+        expected_dim=geometry.target_dimension,
+    )
+    verification_adapter = _build_fixed_mass_hmc_adapter(
+        adapter=phase4_adapter,
+        mass_artifact=adapted_mass,
+        mass_signature=mass_signature,
+        target_scope=scope,
+    )
+    verification_signature = stable_adapter_signature(verification_adapter)
+    return (
+        adapted_mass,
+        mass_signature,
+        phase4_adapter,
+        verification_adapter,
+        verification_signature,
+    )
+
+
+def _phase7_verification_initial_state(
+    *,
+    windowed_stage: HMCWindowedMassStageResult,
+    phase4_adapter: Any,
+    verification_adapter: Any,
+    verification_hmc_signature: str,
+) -> tuple[np.ndarray, Mapping[str, Any]]:
+    """Map the frozen canonical start bank through both active affine layers."""
+
+    operational = windowed_stage.operational_warmup_result
+    if operational is None:
+        return np.zeros(windowed_stage.target_dimension, dtype=float), {
+            "source": "historical_compatibility_zero_template",
+            "count": 4,
+            "frozen_post_warmup_bank_consumed": False,
+            "raw_values_exposed": False,
+            "reports_operational_start_lineage": False,
+        }
+    canonical = np.asarray(operational.private_start_bank_theta, dtype=float)
+    if canonical.shape != (4, windowed_stage.target_dimension):
+        raise ValueError("operational verification start bank shape mismatch")
+    source_signature = operational.private_start_bank_signature
+    if not source_signature:
+        raise ValueError("operational verification start bank signature is missing")
+    phase4_latent = np.asarray(
+        phase4_adapter.transform.position_to_latent(canonical), dtype=float
+    )
+    verification_latent = np.asarray(
+        verification_adapter.transform.position_to_latent(phase4_latent), dtype=float
+    )
+    round_trip_phase4 = np.asarray(
+        verification_adapter.latent_to_position(verification_latent), dtype=float
+    )
+    round_trip_theta = np.asarray(
+        phase4_adapter.latent_to_position(round_trip_phase4), dtype=float
+    )
+    operational_latent = np.asarray(
+        operational.final_kernel_state.transform.theta_to_latent(canonical).numpy(),
+        dtype=float,
+    )
+    if not np.allclose(round_trip_phase4, phase4_latent, rtol=1.0e-10, atol=1.0e-10):
+        raise ValueError("verification nested start-bank transform did not round trip")
+    if not np.allclose(round_trip_theta, canonical, rtol=1.0e-10, atol=1.0e-10):
+        raise ValueError("verification canonical start bank did not round trip")
+    if not np.allclose(
+        verification_latent,
+        operational_latent,
+        rtol=1.0e-10,
+        atol=1.0e-10,
+    ):
+        raise ValueError("verification start bank does not match final warmup coordinates")
+    active_signature = private_start_bank_content_signature(
+        verification_latent,
+        operational.final_kernel_state.transform.signature,
+    )
+    return verification_latent, {
+        "source": "operational_warmup_private_start_bank",
+        "source_signature": source_signature,
+        "active_signature": active_signature,
+        "count": 4,
+        "frozen_post_warmup_bank_consumed": True,
+        "canonical_round_trip_passed": True,
+        "final_coordinate_match_passed": True,
+        "raw_values_exposed": False,
+        "reports_operational_start_lineage": True,
+    }
+
+
+def _phase7_historical_verification_input(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    trajectory_stage: HMCFrozenStepTrajectoryStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    attempt_index: int,
+    target_scope: str,
+) -> _HMCPhase7FixedKernelVerificationInput:
+    """Normalize the existing Phase-6-fed verifier without changing replay."""
+
+    scope = str(target_scope)
+    if not scope or (config.target_scope is not None and scope != config.target_scope):
+        raise ValueError("Phase 7 historical target scope mismatch")
+    (
+        _adapted_mass,
+        mass_signature,
+        phase4_adapter,
+        verification_adapter,
+        verification_signature,
+    ) = _phase7_verification_runtime_context(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=scope,
+    )
+    adapter_signature = stable_adapter_signature(adapter)
+    phase4_signature = stable_adapter_signature(phase4_adapter)
+    if not fixed_mass_step_stage.passed:
+        raise ValueError("Phase 7 historical verification requires passed Phase 5")
+    if not trajectory_stage.passed:
+        raise ValueError("Phase 7 historical verification requires passed Phase 6")
+    if fixed_mass_step_stage.windowed_stage_artifact_hash != windowed_stage.artifact_hash:
+        raise ValueError("Phase 7 historical Phase 5 lineage mismatch")
+    if trajectory_stage.windowed_stage_artifact_hash != windowed_stage.artifact_hash:
+        raise ValueError("Phase 7 historical Phase 6/Phase 4 lineage mismatch")
+    if trajectory_stage.geometry_artifact_hash != geometry.artifact_hash:
+        raise ValueError("Phase 7 historical Phase 6 geometry lineage mismatch")
+    if trajectory_stage.bootstrap_artifact_hash != windowed_stage.bootstrap_artifact_hash:
+        raise ValueError("Phase 7 historical Phase 6 bootstrap lineage mismatch")
+    if (
+        trajectory_stage.fixed_mass_step_stage_artifact_hash
+        != fixed_mass_step_stage.artifact_hash
+    ):
+        raise ValueError("Phase 7 historical Phase 6/Phase 5 lineage mismatch")
+    if (
+        fixed_mass_step_stage.adapter_signature != adapter_signature
+        or trajectory_stage.adapter_signature != adapter_signature
+    ):
+        raise ValueError("Phase 7 historical source adapter signature mismatch")
+    if (
+        fixed_mass_step_stage.selected_bootstrap_kernel_hash
+        != windowed_stage.selected_bootstrap_kernel_hash
+        or trajectory_stage.selected_bootstrap_kernel_hash
+        != windowed_stage.selected_bootstrap_kernel_hash
+    ):
+        raise ValueError("Phase 7 historical bootstrap handoff lineage mismatch")
+    if (
+        fixed_mass_step_stage.phase4_hmc_adapter_signature != phase4_signature
+        or trajectory_stage.phase4_hmc_adapter_signature != phase4_signature
+    ):
+        raise ValueError("Phase 7 historical Phase 4 adapter lineage mismatch")
+    if (
+        fixed_mass_step_stage.ladder_hmc_adapter_signature != verification_signature
+        or trajectory_stage.phase5_ladder_hmc_adapter_signature
+        != verification_signature
+        or trajectory_stage.trajectory_hmc_adapter_signature != verification_signature
+    ):
+        raise ValueError("Phase 7 historical fixed-mass adapter lineage mismatch")
+    if (
+        fixed_mass_step_stage.adapted_mass_artifact_signature != mass_signature
+        or trajectory_stage.adapted_mass_artifact_signature != mass_signature
+    ):
+        raise ValueError("Phase 7 historical adapted mass lineage mismatch")
+    if (
+        fixed_mass_step_stage.target_dimension != geometry.target_dimension
+        or trajectory_stage.target_dimension != geometry.target_dimension
+    ):
+        raise ValueError("Phase 7 historical source dimension mismatch")
+    if fixed_mass_step_stage.selected_step_payload is None:
+        raise ValueError("Phase 7 historical verification requires selected step payload")
+    selected_step_hash = fixed_mass_step_stage.selected_step_hash
+    if selected_step_hash is None or stable_config_hash(
+        fixed_mass_step_stage.selected_step_payload
+    ) != selected_step_hash:
+        raise ValueError("Phase 7 historical selected step hash mismatch")
+    step = _required_selected_step_size(fixed_mass_step_stage)
+    if (
+        trajectory_stage.selected_step_hash != selected_step_hash
+        or trajectory_stage.frozen_step_size != step
+    ):
+        raise ValueError("Phase 7 historical Phase 6 step mismatch")
+    trajectory_payload = trajectory_stage.selected_trajectory_payload
+    trajectory_hash = trajectory_stage.selected_trajectory_hash
+    if (
+        trajectory_payload is None
+        or trajectory_hash is None
+        or stable_config_hash(trajectory_payload) != trajectory_hash
+    ):
+        raise ValueError("Phase 7 historical selected trajectory hash mismatch")
+    leapfrog = trajectory_stage.selected_num_leapfrog_steps
+    if leapfrog is None or int(leapfrog) <= 0:
+        raise ValueError("Phase 7 historical verification requires selected L")
+    if (
+        int(trajectory_payload.get("num_leapfrog_steps", 0)) != int(leapfrog)
+        or float(trajectory_payload.get("step_size", np.nan)) != step
+        or str(trajectory_payload.get("selected_step_hash", "")) != selected_step_hash
+        or str(trajectory_payload.get("target_scope", "")) != scope
+        or str(
+            trajectory_payload.get("fixed_mass_step_stage_artifact_hash", "")
+        )
+        != fixed_mass_step_stage.artifact_hash
+        or str(trajectory_payload.get("adapted_mass_artifact_signature", ""))
+        != mass_signature
+        or str(trajectory_payload.get("phase4_hmc_adapter_signature", ""))
+        != phase4_signature
+        or str(trajectory_payload.get("trajectory_hmc_adapter_signature", ""))
+        != verification_signature
+        or str(trajectory_payload.get("selected_bootstrap_kernel_hash", ""))
+        != windowed_stage.selected_bootstrap_kernel_hash
+    ):
+        raise ValueError("Phase 7 historical selected trajectory mechanics mismatch")
+    verification_seed = _derive_seed(
+        _phase7_attempt_seed(config.seed, int(attempt_index)),
+        stage_index=4,
+    )
+    return _HMCPhase7FixedKernelVerificationInput(
+        source_kind="historical_phase6",
+        attempt_index=attempt_index,
+        target_scope=scope,
+        target_dimension=geometry.target_dimension,
+        windowed_stage_artifact_hash=windowed_stage.artifact_hash,
+        adapted_mass_artifact_signature=mass_signature,
+        fixed_mass_step_stage_artifact_hash=fixed_mass_step_stage.artifact_hash,
+        candidate_batch_hash=None,
+        candidate_identity=None,
+        candidate_record_hash=None,
+        operational_selection_signature=None,
+        operational_candidate_signature=None,
+        trajectory_stage_artifact_hash=trajectory_stage.artifact_hash,
+        selected_step_hash=selected_step_hash,
+        step_size=step,
+        num_leapfrog_steps=int(leapfrog),
+        adapter_signature=adapter_signature,
+        phase4_adapter_signature=phase4_signature,
+        verification_hmc_adapter_signature=verification_signature,
+        verification_seed=verification_seed,
+        seed_policy=_PHASE7_HISTORICAL_PHASE6_SEED_POLICY,
+        coordinate_signature=None,
+        metric_signature=None,
+        trajectory_signature=None,
+        start_bank_signature=None,
+    )
+
+
+def _phase7_direct_candidate_verification_input(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    attempt_index: int,
+    target_scope: str,
+    candidate_identity: tuple[int, int, str, int],
+) -> _HMCPhase7FixedKernelVerificationInput:
+    """Normalize one eligible Phase 5 record without constructing Phase 6."""
+
+    handoff = _phase5_candidate_batch_handoff(fixed_mass_step_stage)
+    if handoff is None:
+        raise ValueError("direct Phase 7 verification requires Phase 5 candidate batch")
+    identity = (
+        int(candidate_identity[0]),
+        int(candidate_identity[1]),
+        str(candidate_identity[2]),
+        int(candidate_identity[3]),
+    )
+    matches = tuple(
+        record
+        for record in handoff.candidate_records
+        if (
+            record.batch_ordinal,
+            record.source_round_index,
+            record.source_grid_stage,
+            record.source_round_candidate_index,
+        )
+        == identity
+    )
+    if len(matches) != 1:
+        raise ValueError("direct Phase 7 candidate identity is missing or ambiguous")
+    record = matches[0]
+    if not record.handoff_eligible:
+        raise ValueError("direct Phase 7 candidate is not handoff eligible")
+    if record.hard_vetoes or record.continuation_vetoes:
+        raise ValueError("direct Phase 7 candidate carries a pre-verification veto")
+    if (
+        record.record_hash != stable_config_hash(record.payload())
+        or handoff.handoff_hash != stable_config_hash(handoff.payload())
+    ):
+        raise ValueError("direct Phase 7 candidate hash mismatch")
+    scope = str(target_scope)
+    if not scope or (config.target_scope is not None and scope != config.target_scope):
+        raise ValueError("direct Phase 7 target scope mismatch")
+    (
+        _adapted_mass,
+        mass_signature,
+        phase4_adapter,
+        verification_adapter,
+        verification_signature,
+    ) = _phase7_verification_runtime_context(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=scope,
+    )
+    adapter_signature = stable_adapter_signature(adapter)
+    phase4_signature = stable_adapter_signature(phase4_adapter)
+    context = handoff.source_context
+    if (
+        context.target_scope != scope
+        or context.target_dimension != geometry.target_dimension
+        or context.windowed_stage_artifact_hash != windowed_stage.artifact_hash
+        or context.selected_bootstrap_kernel_hash
+        != windowed_stage.selected_bootstrap_kernel_hash
+        or context.adapter_signature != adapter_signature
+        or context.phase4_hmc_adapter_signature != phase4_signature
+        or context.adapted_mass_artifact_signature != mass_signature
+    ):
+        raise ValueError("direct Phase 7 candidate batch source lineage mismatch")
+    if (
+        fixed_mass_step_stage.windowed_stage_artifact_hash != windowed_stage.artifact_hash
+        or fixed_mass_step_stage.selected_bootstrap_kernel_hash
+        != windowed_stage.selected_bootstrap_kernel_hash
+        or fixed_mass_step_stage.adapter_signature != adapter_signature
+        or fixed_mass_step_stage.phase4_hmc_adapter_signature != phase4_signature
+        or fixed_mass_step_stage.adapted_mass_artifact_signature != mass_signature
+        or fixed_mass_step_stage.target_dimension != geometry.target_dimension
+    ):
+        raise ValueError("direct Phase 7 Phase 5 stage lineage mismatch")
+    if (
+        not record.ladder_passed
+        or not record.selected_step_size_finite
+        or record.selected_step_size is None
+        or record.selected_step_hash is None
+        or record.ladder_artifact_hash is None
+        or record.ladder_adapter_signature != phase4_signature
+        or record.ladder_hmc_adapter_signature != verification_signature
+        or record.ladder_mass_artifact_signature != mass_signature
+        or record.ladder_target_scope != scope
+        or record.ladder_target_dimension != geometry.target_dimension
+    ):
+        raise ValueError("direct Phase 7 candidate verifier lineage mismatch")
+    if handoff.selected_batch_ordinal == record.batch_ordinal:
+        if (
+            handoff.selected_record_hash != record.record_hash
+            or fixed_mass_step_stage.selected_step_size != record.selected_step_size
+            or fixed_mass_step_stage.selected_step_hash != record.selected_step_hash
+            or fixed_mass_step_stage.fixed_num_leapfrog_steps
+            != record.num_leapfrog_steps
+            or fixed_mass_step_stage.budget_ladder_result is None
+            or fixed_mass_step_stage.budget_ladder_result.artifact_hash
+            != record.ladder_artifact_hash
+        ):
+            raise ValueError("direct Phase 7 selected candidate/stage mismatch")
+    verification_seed = _phase7_direct_candidate_seed(
+        config.seed,
+        int(attempt_index),
+        identity,
+    )
+    return _HMCPhase7FixedKernelVerificationInput(
+        source_kind="direct_phase5_candidate",
+        attempt_index=attempt_index,
+        target_scope=scope,
+        target_dimension=geometry.target_dimension,
+        windowed_stage_artifact_hash=windowed_stage.artifact_hash,
+        adapted_mass_artifact_signature=mass_signature,
+        fixed_mass_step_stage_artifact_hash=fixed_mass_step_stage.artifact_hash,
+        candidate_batch_hash=handoff.handoff_hash,
+        candidate_identity=identity,
+        candidate_record_hash=record.record_hash,
+        operational_selection_signature=None,
+        operational_candidate_signature=None,
+        trajectory_stage_artifact_hash=None,
+        selected_step_hash=record.selected_step_hash,
+        step_size=float(record.selected_step_size),
+        num_leapfrog_steps=record.num_leapfrog_steps,
+        adapter_signature=adapter_signature,
+        phase4_adapter_signature=phase4_signature,
+        verification_hmc_adapter_signature=verification_signature,
+        verification_seed=verification_seed,
+        seed_policy=_PHASE7_DIRECT_CANDIDATE_SEED_POLICY,
+        coordinate_signature=None,
+        metric_signature=None,
+        trajectory_signature=None,
+        start_bank_signature=None,
+    )
+
+
+def _phase7_operational_selection_verification_input(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    attempt_index: int,
+    target_scope: str,
+) -> _HMCPhase7FixedKernelVerificationInput:
+    """Normalize the R5 v2 representative without v1 or Phase 6 lineage."""
+
+    selection = fixed_mass_step_stage._operational_selection
+    if selection is None or selection.disposition != "representative_selected":
+        raise ValueError("operational verification requires a selected R5 authority")
+    representative = selection.representative
+    if representative is None or representative.exact_l_retuned_step_size is None:
+        raise ValueError("operational verification lost exact-L retuning")
+    if not fixed_mass_step_stage.passed:
+        raise ValueError("operational verification requires passed Phase 5")
+    scope = str(target_scope)
+    if not scope or (config.target_scope is not None and scope != config.target_scope):
+        raise ValueError("operational verification target scope mismatch")
+    (
+        _adapted_mass,
+        mass_signature,
+        phase4_adapter,
+        verification_adapter,
+        verification_signature,
+    ) = _phase7_verification_runtime_context(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=scope,
+    )
+    operational = windowed_stage.operational_warmup_result
+    if operational is None:
+        raise ValueError("operational verification requires operational warmup")
+    _active_bank, active_bank_summary = _phase7_verification_initial_state(
+        windowed_stage=windowed_stage,
+        phase4_adapter=phase4_adapter,
+        verification_adapter=verification_adapter,
+        verification_hmc_signature=verification_signature,
+    )
+    active_start_bank_signature = str(
+        active_bank_summary.get("active_signature", "")
+    )
+    candidate = representative.candidate
+    selected_trajectory_policy = WarmupTrajectoryPolicy(
+        candidate.num_leapfrog_steps,
+        operational.final_kernel_state.trajectory_policy.max_leapfrog_steps,
+    )
+    if (
+        fixed_mass_step_stage.windowed_stage_artifact_hash != windowed_stage.artifact_hash
+        or fixed_mass_step_stage.adapted_mass_artifact_signature != mass_signature
+        or fixed_mass_step_stage.ladder_hmc_adapter_signature != verification_signature
+        or fixed_mass_step_stage.fixed_num_leapfrog_steps
+        != candidate.num_leapfrog_steps
+        or fixed_mass_step_stage.selected_step_size
+        != representative.exact_l_retuned_step_size
+        or fixed_mass_step_stage.selected_step_hash is None
+        or fixed_mass_step_stage.selected_step_payload is None
+        or stable_config_hash(fixed_mass_step_stage.selected_step_payload)
+        != fixed_mass_step_stage.selected_step_hash
+        or candidate.coordinate_signature
+        != operational.final_kernel_state.transform.signature
+        or candidate.metric_signature
+        != operational.final_kernel_state.momentum_metric.signature
+        or candidate.start_bank_signature != active_start_bank_signature
+    ):
+        raise ValueError("operational verification source lineage mismatch")
+    verification_seed = paired_candidate_seed(
+        _phase7_attempt_seed(config.seed, int(attempt_index)),
+        candidate_signature=candidate.signature,
+        replication_index=0,
+        domain="independent_final_verification",
+    )
+    return _HMCPhase7FixedKernelVerificationInput(
+        source_kind="operational_selection_v2",
+        attempt_index=attempt_index,
+        target_scope=scope,
+        target_dimension=geometry.target_dimension,
+        windowed_stage_artifact_hash=windowed_stage.artifact_hash,
+        adapted_mass_artifact_signature=mass_signature,
+        fixed_mass_step_stage_artifact_hash=fixed_mass_step_stage.artifact_hash,
+        candidate_batch_hash=None,
+        candidate_identity=None,
+        candidate_record_hash=None,
+        operational_selection_signature=selection.signature,
+        operational_candidate_signature=candidate.signature,
+        trajectory_stage_artifact_hash=None,
+        selected_step_hash=fixed_mass_step_stage.selected_step_hash,
+        step_size=representative.exact_l_retuned_step_size,
+        num_leapfrog_steps=candidate.num_leapfrog_steps,
+        adapter_signature=stable_adapter_signature(adapter),
+        phase4_adapter_signature=stable_adapter_signature(phase4_adapter),
+        verification_hmc_adapter_signature=verification_signature,
+        verification_seed=verification_seed,
+        seed_policy=_PHASE7_OPERATIONAL_SELECTION_SEED_POLICY,
+        coordinate_signature=candidate.coordinate_signature,
+        metric_signature=candidate.metric_signature,
+        trajectory_signature=selected_trajectory_policy.signature,
+        start_bank_signature=candidate.start_bank_signature,
+    )
+
+
+def _phase7_operational_repair_verification_input(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    attempt_state: _HMCPhaseAttemptState,
+    attempt_index: int,
+    target_scope: str,
+) -> _HMCPhase7FixedKernelVerificationInput:
+    """Change only epsilon while preserving the frozen operational kernel."""
+
+    if not _phase7_should_run_operational_repair_verification(attempt_state):
+        raise ValueError("operational repair verification state is incomplete")
+    base = _phase7_operational_selection_verification_input(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        attempt_index=attempt_index,
+        target_scope=target_scope,
+    )
+    handoff = attempt_state.direct_candidate_handoff
+    if handoff is None:
+        raise ValueError("operational repair verification lost its private handoff")
+    expected_lineage = {
+        "operational_selection_signature": base.operational_selection_signature,
+        "operational_candidate_signature": base.operational_candidate_signature,
+        "coordinate_signature": base.coordinate_signature,
+        "metric_signature": base.metric_signature,
+        "trajectory_signature": base.trajectory_signature,
+        "start_bank_signature": base.start_bank_signature,
+    }
+    if any(handoff.get(key) != value for key, value in expected_lineage.items()):
+        raise ValueError("operational repair verification signature lineage mismatch")
+    if (
+        attempt_state.verification_repair_step_size is None
+        or attempt_state.verification_repair_step_hash is None
+    ):
+        raise ValueError("operational repair verification lost its repaired epsilon")
+    verification_seed = paired_candidate_seed(
+        _phase7_attempt_seed(config.seed, int(attempt_index)),
+        candidate_signature=str(base.operational_candidate_signature),
+        replication_index=0,
+        domain="repair_verification",
+    )
+    return dataclasses.replace(
+        base,
+        selected_step_hash=attempt_state.verification_repair_step_hash,
+        step_size=attempt_state.verification_repair_step_size,
+        verification_seed=verification_seed,
+        seed_policy=_PHASE7_OPERATIONAL_REPAIR_SEED_POLICY,
+        input_hash="",
+    )
+
+
+def _phase7_operational_evidence_extension_input(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    attempt_index: int,
+    target_scope: str,
+) -> _HMCPhase7FixedKernelVerificationInput:
+    base = _phase7_operational_selection_verification_input(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        attempt_index=attempt_index,
+        target_scope=target_scope,
+    )
+    verification_seed = paired_candidate_seed(
+        _phase7_attempt_seed(config.seed, int(attempt_index)),
+        candidate_signature=str(base.operational_candidate_signature),
+        replication_index=0,
+        domain="evidence_extension",
+    )
+    return dataclasses.replace(
+        base,
+        verification_seed=verification_seed,
+        seed_policy=_PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY,
+        input_hash="",
+    )
+
+
 def _frozen_step_trajectory_public_summary(
     stage: HMCFrozenStepTrajectoryStageResult | None,
 ) -> Mapping[str, Any] | None:
@@ -14403,57 +18446,638 @@ def _run_phase7_final_verification(
     tuple[str, ...],
     tuple[str, ...],
 ]:
-    adapted_mass = _phase4_adapted_mass_artifact(windowed_stage)
-    mass_signature = _mass_artifact_signature(adapted_mass)
-    step = _required_selected_step_size(fixed_mass_step_stage)
-    leapfrog = trajectory_stage.selected_num_leapfrog_steps
-    if leapfrog is None:
-        raise ValueError("Phase 7 final verification requires selected L")
-    phase4_adapter = _phase4_latent_adapter_for_step_stage(
+    verification_input = _phase7_historical_verification_input(
         adapter=adapter,
         geometry=geometry,
         windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        trajectory_stage=trajectory_stage,
+        config=config,
+        attempt_index=attempt_index,
         target_scope=target_scope,
     )
-    verification_adapter = _build_fixed_mass_hmc_adapter(
-        adapter=phase4_adapter,
-        mass_artifact=adapted_mass,
-        mass_signature=mass_signature,
+    return _run_phase7_fixed_kernel_verification(
+        verification_input=verification_input,
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        config=config,
+        budget_policy=budget_policy,
+        verification_callback=verification_callback,
+        checkpoint_writer_config=checkpoint_writer_config,
+        verification_start_callback=verification_start_callback,
+        checkpoint_reference_callback=checkpoint_reference_callback,
+        run_full_chain=run_full_chain,
+    ).historical_tuple()
+
+
+def _run_phase7_direct_candidate_verification(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    candidate_identity: tuple[int, int, str, int],
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_index: int,
+    target_scope: str,
+    verification_callback: VerificationCallback | None,
+    checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
+    verification_start_callback: Callable[[], None] | None,
+    checkpoint_reference_callback: Callable[[Mapping[str, Any]], None] | None,
+    run_full_chain: RunFullChainFn,
+) -> _HMCPhase7FixedKernelVerificationOutcome:
+    verification_input = _phase7_direct_candidate_verification_input(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        attempt_index=attempt_index,
+        target_scope=target_scope,
+        candidate_identity=candidate_identity,
+    )
+    return _run_phase7_fixed_kernel_verification(
+        verification_input=verification_input,
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        config=config,
+        budget_policy=budget_policy,
+        verification_callback=verification_callback,
+        checkpoint_writer_config=checkpoint_writer_config,
+        verification_start_callback=verification_start_callback,
+        checkpoint_reference_callback=checkpoint_reference_callback,
+        run_full_chain=run_full_chain,
+    )
+
+
+def _run_phase7_operational_selection_verification(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_index: int,
+    target_scope: str,
+    verification_callback: VerificationCallback | None,
+    checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
+    verification_start_callback: Callable[[], None] | None,
+    checkpoint_reference_callback: Callable[[Mapping[str, Any]], None] | None,
+    run_full_chain: RunFullChainFn,
+) -> _HMCPhase7FixedKernelVerificationOutcome:
+    verification_input = _phase7_operational_selection_verification_input(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        attempt_index=attempt_index,
         target_scope=target_scope,
     )
-    verification_hmc_signature = stable_adapter_signature(verification_adapter)
-    if verification_hmc_signature != trajectory_stage.trajectory_hmc_adapter_signature:
-        raise ValueError("Phase 7 verification HMC adapter signature mismatch")
-    before_mass_signature = mass_signature
-    before_step = step
-    before_l = int(leapfrog)
-    verification_seed = _derive_seed(
-        _phase7_attempt_seed(config.seed, attempt_index),
-        stage_index=4,
+    return _run_phase7_fixed_kernel_verification(
+        verification_input=verification_input,
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        config=config,
+        budget_policy=budget_policy,
+        verification_callback=verification_callback,
+        checkpoint_writer_config=checkpoint_writer_config,
+        verification_start_callback=verification_start_callback,
+        checkpoint_reference_callback=checkpoint_reference_callback,
+        run_full_chain=run_full_chain,
     )
-    if run_full_chain is run_full_chain_tfp_hmc:
-        return _run_phase7_sequential_rhat_final_verification(
-            adapted_mass=adapted_mass,
-            mass_signature=mass_signature,
-            step=step,
-            leapfrog=int(leapfrog),
-            verification_adapter=verification_adapter,
-            verification_hmc_signature=verification_hmc_signature,
-            phase4_adapter=phase4_adapter,
+
+
+def _run_phase7_operational_repair_verification(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_state: _HMCPhaseAttemptState,
+    attempt_index: int,
+    target_scope: str,
+    verification_callback: VerificationCallback | None,
+    checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
+    verification_start_callback: Callable[[], None] | None,
+    checkpoint_reference_callback: Callable[[Mapping[str, Any]], None] | None,
+    run_full_chain: RunFullChainFn,
+) -> _HMCPhase7FixedKernelVerificationOutcome:
+    verification_input = _phase7_operational_repair_verification_input(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        attempt_state=attempt_state,
+        attempt_index=attempt_index,
+        target_scope=target_scope,
+    )
+    return _run_phase7_fixed_kernel_verification(
+        verification_input=verification_input,
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        config=config,
+        budget_policy=budget_policy,
+        verification_callback=verification_callback,
+        checkpoint_writer_config=checkpoint_writer_config,
+        verification_start_callback=verification_start_callback,
+        checkpoint_reference_callback=checkpoint_reference_callback,
+        run_full_chain=run_full_chain,
+    )
+
+
+def _run_phase7_operational_evidence_extension(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_index: int,
+    target_scope: str,
+    verification_callback: VerificationCallback | None,
+    checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
+    checkpoint_reference_callback: Callable[[Mapping[str, Any]], None] | None,
+    run_full_chain: RunFullChainFn,
+) -> _HMCPhase7FixedKernelVerificationOutcome:
+    verification_input = _phase7_operational_evidence_extension_input(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        attempt_index=attempt_index,
+        target_scope=target_scope,
+    )
+    return _run_phase7_fixed_kernel_verification(
+        verification_input=verification_input,
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        config=config,
+        budget_policy=budget_policy,
+        verification_callback=verification_callback,
+        checkpoint_writer_config=checkpoint_writer_config,
+        verification_start_callback=None,
+        checkpoint_reference_callback=checkpoint_reference_callback,
+        run_full_chain=run_full_chain,
+    )
+
+
+def _run_phase7_direct_candidate_queue(
+    *,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_index: int,
+    target_scope: str,
+    verification_callback: VerificationCallback | None,
+    checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
+    progress_callback: LoopProgressCallback | None,
+    run_full_chain: RunFullChainFn,
+    verification_runner: Callable[
+        ...,
+        _HMCPhase7FixedKernelVerificationOutcome,
+    ] | None = None,
+) -> _HMCPhase7DirectCandidateQueueResult:
+    """Run the audited two-start serial reference queue."""
+
+    candidate_verifier = (
+        _run_phase7_direct_candidate_verification
+        if verification_runner is None
+        else verification_runner
+    )
+    plan = _phase7_direct_candidate_queue_plan(
+        fixed_mass_step_stage=fixed_mass_step_stage,
+        config=config,
+        budget_policy=budget_policy,
+        attempt_index=attempt_index,
+    )
+    handoff = _phase5_candidate_batch_handoff(fixed_mass_step_stage)
+    if handoff is None or handoff.handoff_hash != plan.candidate_batch_hash:
+        raise ValueError("direct candidate queue handoff changed after planning")
+    records_by_identity = {
+        (
+            record.batch_ordinal,
+            record.source_round_index,
+            record.source_grid_stage,
+            record.source_round_candidate_index,
+        ): record
+        for record in handoff.candidate_records
+    }
+    candidate_results: list[dict[str, Any]] = [
+        {
+            "candidate_identity": identity,
+            "candidate_record_hash": record_hash,
+            "verification_seed": seed,
+            "state": "not_run",
+            "started": False,
+            "not_run_reason": "pending",
+            "private_handoff_only": True,
+        }
+        for identity, record_hash, seed in zip(
+            plan.candidate_identities,
+            plan.candidate_record_hashes,
+            plan.verification_seeds,
+            strict=True,
+        )
+    ]
+    completed_elapsed_s: list[float] = []
+    stage_start = time.perf_counter()
+    started_count = 0
+    cost_stopped_count = 0
+    promotion_vetoed_count = 0
+    admitted_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = None
+    repair_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = None
+    repair_directions: list[str] = []
+    representative_outcome: _HMCPhase7FixedKernelVerificationOutcome | None = None
+    timeout_closeout: Mapping[str, Any] | None = None
+    shared_hard_vetoes: list[str] = []
+    all_repair_triggers: list[str] = []
+
+    _emit_phase7_progress(
+        progress_callback,
+        "direct_verification_queue_start",
+        attempt_index=attempt_index,
+        budget_policy=budget_policy,
+        started=True,
+        extra={
+            "candidate_count": plan.candidate_count,
+            "maximum_candidate_starts": plan.maximum_candidate_starts,
+            "seed_map_precomputed": True,
+            "phase6_skipped": True,
+            "hmc_mechanics_exposed": False,
+        },
+    )
+    stop_reason: str | None = None
+    for queue_index, identity in enumerate(plan.candidate_identities):
+        record = records_by_identity.get(identity)
+        if record is None or record.record_hash != plan.candidate_record_hashes[queue_index]:
+            raise ValueError("direct candidate queue record changed after planning")
+        if record.hard_vetoes or record.continuation_vetoes:
+            candidate_results[queue_index].update(
+                {
+                    "state": "candidate_local_hard_veto",
+                    "not_run_reason": None,
+                    "hard_vetoes": tuple(
+                        dict.fromkeys([*record.hard_vetoes, *record.continuation_vetoes])
+                    ),
+                    "failure_origin": "phase5_candidate_record",
+                }
+            )
+            continue
+        if started_count >= plan.maximum_candidate_starts:
+            candidate_results[queue_index]["not_run_reason"] = "start_quota_exhausted"
+            continue
+        timeout_closeout = _phase7_direct_candidate_queue_timeout_closeout(
+            config=config,
+            attempt_index=attempt_index,
+            stage_start_perf_counter_s=stage_start,
+            completed_elapsed_s=completed_elapsed_s,
+        )
+        if timeout_closeout is not None:
+            candidate_results[queue_index]["not_run_reason"] = "timeout_closeout"
+            stop_reason = "timeout_closeout"
+            break
+
+        call_started = time.perf_counter()
+        started_count += 1
+        candidate_results[queue_index].update(
+            {
+                "started": True,
+                "not_run_reason": None,
+                "start_ordinal": started_count - 1,
+                "verification_num_results": plan.verification_num_results,
+                "verification_num_burnin_steps": plan.verification_num_burnin_steps,
+            }
+        )
+        outcome = candidate_verifier(
+            adapter=adapter,
+            geometry=geometry,
+            windowed_stage=windowed_stage,
             fixed_mass_step_stage=fixed_mass_step_stage,
-            trajectory_stage=trajectory_stage,
+            candidate_identity=identity,
             config=config,
             budget_policy=budget_policy,
             attempt_index=attempt_index,
-            verification_seed=verification_seed,
+            target_scope=target_scope,
+            verification_callback=verification_callback,
+            checkpoint_writer_config=checkpoint_writer_config,
+            verification_start_callback=lambda: _emit_phase7_progress(
+                progress_callback,
+                "verification_start",
+                attempt_index=attempt_index,
+                budget_policy=budget_policy,
+                started=True,
+                extra={
+                    "queue_index": queue_index,
+                    "started_candidate_count": started_count,
+                    "maximum_candidate_starts": plan.maximum_candidate_starts,
+                    "phase6_skipped": True,
+                    "hmc_mechanics_exposed": False,
+                },
+            ),
+            checkpoint_reference_callback=lambda reference: _emit_phase7_progress(
+                progress_callback,
+                "verification_checkpoint_written",
+                attempt_index=attempt_index,
+                budget_policy=budget_policy,
+                completed=True,
+                extra=_phase7_checkpoint_progress_extra(reference),
+            ),
+            run_full_chain=run_full_chain,
+        )
+        elapsed_s = max(0.0, time.perf_counter() - call_started)
+        completed_elapsed_s.append(elapsed_s)
+        expected_seed = plan.verification_seeds[queue_index]
+        if (
+            not isinstance(outcome, _HMCPhase7FixedKernelVerificationOutcome)
+            or outcome.verification_input.source_kind != "direct_phase5_candidate"
+            or outcome.verification_input.candidate_identity != identity
+            or outcome.verification_input.candidate_record_hash != record.record_hash
+            or outcome.verification_input.candidate_batch_hash != handoff.handoff_hash
+            or outcome.verification_input.verification_seed != expected_seed
+            or outcome.verification_input.attempt_index != int(attempt_index)
+        ):
+            raise ValueError("direct candidate verifier returned cross-wired lineage")
+        representative_outcome = outcome
+        outcome_cost_stop_reasons: tuple[str, ...] = ()
+        outcome_cost_stop_scope: str | None = None
+        outcome_promotion_vetoes = tuple(outcome.callback_result.promotion_vetoes)
+        canonical_acceptance_evidence: Mapping[str, Any] | None = None
+        outcome_repair_direction: str | None = None
+        outcome_evidence_payload = outcome.diagnostics.get("acceptance_evidence")
+        if isinstance(outcome_evidence_payload, Mapping):
+            try:
+                outcome_evidence = hmc_acceptance_evidence_from_payload(
+                    outcome_evidence_payload
+                )
+            except (TypeError, ValueError):
+                outcome_evidence = None
+            if outcome_evidence is not None:
+                canonical_acceptance_evidence = outcome_evidence.payload()
+                outcome_repair_direction = outcome_evidence.repair_direction
+                outcome_promotion_vetoes = tuple(
+                    dict.fromkeys(
+                        [
+                            *outcome_promotion_vetoes,
+                            *outcome_evidence.candidate_promotion_vetoes,
+                        ]
+                    )
+                )
+                outcome_cost_stop_reasons = outcome_evidence.cost_stop_reasons
+                outcome_cost_stop_scope = outcome_evidence.cost_stop_scope
+        candidate_results[queue_index].update(
+            {
+                "state": outcome.continuation_scope,
+                "final_status": outcome.final_status,
+                "diagnostic_role": outcome.diagnostic_role,
+                "hard_vetoes": outcome.hard_vetoes,
+                "repair_triggers": outcome.repair_triggers,
+                "acceptance_evidence": canonical_acceptance_evidence,
+                "candidate_promotion_vetoes": outcome_promotion_vetoes,
+                "repair_direction": outcome_repair_direction,
+                "cost_stop_reasons": outcome_cost_stop_reasons,
+                "cost_stop_scope": outcome_cost_stop_scope,
+                "verification_input_hash": outcome.verification_input.input_hash,
+                "elapsed_s": elapsed_s,
+            }
+        )
+        all_repair_triggers.extend(outcome.repair_triggers)
+        _emit_phase7_progress(
+            progress_callback,
+            "verification_complete",
+            attempt_index=attempt_index,
+            budget_policy=budget_policy,
+            completed=True,
+            extra={
+                "queue_index": queue_index,
+                "final_status": outcome.final_status,
+                "diagnostic_role": outcome.diagnostic_role,
+                "continuation_scope": outcome.continuation_scope,
+                "hard_veto_count": len(outcome.hard_vetoes),
+                "repair_trigger_count": len(outcome.repair_triggers),
+                "phase6_skipped": True,
+                "hmc_mechanics_exposed": False,
+            },
+        )
+        if outcome.continuation_scope == "passed":
+            admitted_outcome = outcome
+            stop_reason = "first_admission"
+            break
+        if outcome.continuation_scope == "repair_or_retry":
+            if repair_outcome is None:
+                repair_outcome = outcome
+            if outcome_repair_direction is not None:
+                repair_directions.append(outcome_repair_direction)
+            continue
+        if outcome.continuation_scope == "candidate_local_hard_veto":
+            continue
+        if outcome.continuation_scope == "candidate_local_cost_stop":
+            cost_stopped_count += 1
+            continue
+        if outcome.continuation_scope == "candidate_local_promotion_veto":
+            promotion_vetoed_count += 1
+            continue
+        shared_hard_vetoes.extend(outcome.hard_vetoes)
+        if not outcome.hard_vetoes:
+            shared_hard_vetoes.append("phase7_direct_queue_shared_continuation_veto")
+        stop_reason = "shared_continuation_veto"
+        break
+
+    for result in candidate_results:
+        if result["state"] != "not_run" or result["not_run_reason"] != "pending":
+            continue
+        result["not_run_reason"] = stop_reason or "queue_not_started"
+
+    if admitted_outcome is not None:
+        final_status = "passed"
+        diagnostic_role = admitted_outcome.diagnostic_role
+        representative_outcome = admitted_outcome
+    elif shared_hard_vetoes:
+        final_status = "hard_veto"
+        diagnostic_role = "hard_veto"
+    elif repair_outcome is not None and len(set(repair_directions)) > 1:
+        final_status = "repair_or_retry"
+        diagnostic_role = "verification_acceptance_conflict"
+        representative_outcome = repair_outcome
+        all_repair_triggers.append("verification_acceptance_inconclusive_conflict")
+    elif repair_outcome is not None:
+        final_status = "repair_or_retry"
+        diagnostic_role = repair_outcome.diagnostic_role
+        representative_outcome = repair_outcome
+    elif timeout_closeout is not None:
+        final_status = "budget_exhausted"
+        diagnostic_role = "phase7_direct_queue_timeout_closeout"
+        all_repair_triggers.append("phase7_direct_queue_timeout_closeout")
+    elif cost_stopped_count and promotion_vetoed_count:
+        final_status = "budget_exhausted"
+        diagnostic_role = "candidate_local_nonpromotion_exhausted"
+    elif cost_stopped_count:
+        final_status = "budget_exhausted"
+        diagnostic_role = "candidate_cost_stop_nonpromoting"
+    elif promotion_vetoed_count:
+        final_status = "budget_exhausted"
+        diagnostic_role = "candidate_promotion_veto_nonpromoting"
+    else:
+        final_status = "architecture_blocked"
+        diagnostic_role = "architecture_blocked"
+        all_repair_triggers.append("phase7_direct_queue_no_finite_repair_handoff")
+
+    result = _HMCPhase7DirectCandidateQueueResult(
+        plan=plan,
+        candidate_results=tuple(candidate_results),
+        representative_outcome=representative_outcome,
+        admitted_outcome=admitted_outcome,
+        repair_outcome=repair_outcome,
+        repair_directions=tuple(repair_directions),
+        final_status=final_status,
+        diagnostic_role=diagnostic_role,
+        hard_vetoes=tuple(shared_hard_vetoes),
+        repair_triggers=tuple(dict.fromkeys(all_repair_triggers)),
+        timeout_closeout=timeout_closeout,
+    )
+    _emit_phase7_progress(
+        progress_callback,
+        "direct_verification_queue_complete",
+        attempt_index=attempt_index,
+        budget_policy=budget_policy,
+        completed=True,
+        extra={
+            "final_status": result.final_status,
+            "diagnostic_role": result.diagnostic_role,
+            "candidate_count": plan.candidate_count,
+            "started_count": result.started_count,
+            "not_run_count": result.not_run_count,
+            "maximum_candidate_starts": plan.maximum_candidate_starts,
+            "phase6_skipped": True,
+            "hmc_mechanics_exposed": False,
+        },
+    )
+    return result
+
+
+def _run_phase7_fixed_kernel_verification(
+    *,
+    verification_input: _HMCPhase7FixedKernelVerificationInput,
+    adapter: Any,
+    geometry: HMCGeometryInitializationResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    verification_callback: VerificationCallback | None,
+    checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
+    verification_start_callback: Callable[[], None] | None,
+    checkpoint_reference_callback: Callable[[Mapping[str, Any]], None] | None,
+    run_full_chain: RunFullChainFn,
+) -> _HMCPhase7FixedKernelVerificationOutcome:
+    if not isinstance(
+        verification_input,
+        _HMCPhase7FixedKernelVerificationInput,
+    ):
+        raise TypeError("verification_input has invalid type")
+    if verification_input.input_hash != stable_config_hash(verification_input.payload()):
+        raise ValueError("Phase 7 verification input hash mismatch")
+    if verification_input.attempt_index != int(budget_policy.attempt_index):
+        raise ValueError("Phase 7 verification attempt/budget mismatch")
+    if verification_input.target_dimension != int(budget_policy.target_dimension):
+        raise ValueError("Phase 7 verification dimension/budget mismatch")
+    if (
+        config.target_scope is not None
+        and verification_input.target_scope != config.target_scope
+    ):
+        raise ValueError("Phase 7 verification config target scope mismatch")
+    (
+        adapted_mass,
+        mass_signature,
+        phase4_adapter,
+        verification_adapter,
+        verification_hmc_signature,
+    ) = _phase7_verification_runtime_context(
+        adapter=adapter,
+        geometry=geometry,
+        windowed_stage=windowed_stage,
+        target_scope=verification_input.target_scope,
+    )
+    expected_runtime = {
+        "target_dimension": geometry.target_dimension,
+        "windowed_stage_artifact_hash": windowed_stage.artifact_hash,
+        "adapted_mass_artifact_signature": mass_signature,
+        "adapter_signature": stable_adapter_signature(adapter),
+        "phase4_adapter_signature": stable_adapter_signature(phase4_adapter),
+        "verification_hmc_adapter_signature": verification_hmc_signature,
+    }
+    for name, expected in expected_runtime.items():
+        if getattr(verification_input, name) != expected:
+            raise ValueError(f"Phase 7 normalized runtime mismatch: {name}")
+    if run_full_chain is run_full_chain_tfp_hmc:
+        execution = _run_phase7_sequential_rhat_final_verification(
+            verification_input=verification_input,
+            windowed_stage=windowed_stage,
+            adapted_mass=adapted_mass,
+            mass_signature=mass_signature,
+            verification_adapter=verification_adapter,
+            verification_hmc_signature=verification_hmc_signature,
+            phase4_adapter=phase4_adapter,
+            config=config,
+            budget_policy=budget_policy,
             verification_callback=verification_callback,
             checkpoint_writer_config=checkpoint_writer_config,
             verification_start_callback=verification_start_callback,
             checkpoint_reference_callback=checkpoint_reference_callback,
-            before_mass_signature=before_mass_signature,
-            before_step=before_step,
-            before_l=before_l,
         )
+    else:
+        execution = _run_phase7_injected_final_verification(
+            verification_input=verification_input,
+            adapted_mass=adapted_mass,
+            mass_signature=mass_signature,
+            verification_adapter=verification_adapter,
+            verification_hmc_signature=verification_hmc_signature,
+            phase4_adapter=phase4_adapter,
+            config=config,
+            budget_policy=budget_policy,
+            verification_callback=verification_callback,
+            verification_start_callback=verification_start_callback,
+            run_full_chain=run_full_chain,
+        )
+    return _finalize_phase7_fixed_kernel_verification(
+        verification_input=verification_input,
+        adapted_mass=adapted_mass,
+        config=config,
+        execution=execution,
+    )
+
+
+def _run_phase7_injected_final_verification(
+    *,
+    verification_input: _HMCPhase7FixedKernelVerificationInput,
+    adapted_mass: PrecomputedMassArtifact,
+    mass_signature: str,
+    verification_adapter: Any,
+    verification_hmc_signature: str,
+    phase4_adapter: Any,
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    verification_callback: VerificationCallback | None,
+    verification_start_callback: Callable[[], None] | None,
+    run_full_chain: RunFullChainFn,
+) -> _HMCPhase7FixedKernelVerificationExecution:
+    step = verification_input.step_size
+    leapfrog = verification_input.num_leapfrog_steps
+    verification_seed = verification_input.verification_seed
     verification_config = FullChainHMCConfig(
         num_results=budget_policy.verification_num_results,
         num_burnin_steps=budget_policy.verification_num_burnin_steps,
@@ -14463,7 +19087,7 @@ def _run_phase7_final_verification(
         use_xla=config.use_xla,
         trace_policy="standard",
         target_status_trace_policy=config.target_status_trace_policy,
-        target_scope=target_scope,
+        target_scope=verification_input.target_scope,
         chain_execution_mode=config.chain_execution_mode,
     )
     runner_cache: dict[str, Any] = {}
@@ -14485,10 +19109,10 @@ def _run_phase7_final_verification(
             initial_state=np.zeros(adapted_mass.dimension, dtype=float),
             config=verification_config,
             hmc_adapter_signature=verification_hmc_signature,
-            target_dimension=windowed_stage.target_dimension,
+            target_dimension=verification_input.target_dimension,
             mass_signature=mass_signature,
             event_payload={
-                "attempt_index": int(attempt_index),
+                "attempt_index": int(verification_input.attempt_index),
                 "num_leapfrog_steps": int(leapfrog),
                 "step_size": step,
                 "verification_num_results": int(
@@ -14521,111 +19145,90 @@ def _run_phase7_final_verification(
             "primarily consistency and regression protection rather than warm-call reuse"
         ),
     )
-    callback_result = _call_trajectory_screen_callback(
-        verification_callback,
-        round_payload={
-            "attempt_index": attempt_index,
-            "seed": verification_seed,
-            "step_size": step,
-            "num_leapfrog_steps": int(leapfrog),
-            "trajectory_length": float(step) * int(leapfrog),
-            "verification_config_payload": {
-                **verification_config.signature_payload(),
-                "acceptance_band": tuple(float(item) for item in config.acceptance_band),
+    callback_samples = None
+    sample_conversion_error: Exception | None = None
+    if run_result is not None:
+        try:
+            callback_samples = verification_adapter.latent_to_position(
+                run_result.samples
+            )
+        except Exception as exc:  # noqa: BLE001 - sample conversion is shared invalidity.
+            run_error = exc
+            sample_conversion_error = exc
+            diagnostics.update(_bootstrap_error_diagnostics(exc))
+    if sample_conversion_error is not None:
+        callback_result = FixedMassHMCTuningBudgetCallbackResult()
+        callback_error = None
+    else:
+        callback_result, callback_error = _call_phase7_verification_callback(
+            verification_callback,
+            round_payload={
+                "attempt_index": verification_input.attempt_index,
+                "seed": verification_seed,
+                "step_size": step,
+                "num_leapfrog_steps": int(leapfrog),
+                "trajectory_length": float(step) * int(leapfrog),
+                "verification_config_payload": {
+                    **verification_config.signature_payload(),
+                    "acceptance_band": tuple(float(item) for item in config.acceptance_band),
+                },
+                "adapter_signature": stable_adapter_signature(phase4_adapter),
+                "hmc_adapter_signature": verification_hmc_signature,
+                "mass_artifact_signature": mass_signature,
+                "sample_space": "phase4_latent_position",
+                "hmc_sample_space": "adapted_mass_latent",
+                "diagnostic_role": "fresh_fixed_kernel_verification",
             },
-            "adapter_signature": stable_adapter_signature(phase4_adapter),
-            "hmc_adapter_signature": verification_hmc_signature,
-            "mass_artifact_signature": mass_signature,
-            "sample_space": "phase4_latent_position",
-            "hmc_sample_space": "adapted_mass_latent",
-            "diagnostic_role": "fresh_fixed_kernel_verification",
-        },
-        samples=None
-        if run_result is None
-        else verification_adapter.latent_to_position(run_result.samples),
-        diagnostics=diagnostics,
-    )
-    (
-        final_status,
-        diagnostic_role,
-        hard_vetoes,
-        repair_triggers,
-    ) = _classify_phase7_final_verification(
-        config,
-        diagnostics=diagnostics,
-        screen_error=run_error,
-        callback_result=callback_result,
-    )
-    after_mass_signature = _mass_artifact_signature(adapted_mass)
-    mass_signature_unchanged = before_mass_signature == after_mass_signature
-    step_size_unchanged = before_step == _required_selected_step_size(fixed_mass_step_stage)
-    num_leapfrog_steps_unchanged = before_l == trajectory_stage.selected_num_leapfrog_steps
-    invariant = {
-        "mass_signature_unchanged": mass_signature_unchanged,
-        "kernel_scale_unchanged": step_size_unchanged,
-        "trajectory_count_unchanged": num_leapfrog_steps_unchanged,
-        "kernel_mechanics_publicized": False,
-        "role": "hard_veto",
-    }
-    diagnostics["frozen_kernel_invariant"] = invariant
-    invariant_vetoes: list[str] = []
-    if not mass_signature_unchanged:
-        invariant_vetoes.append("verification_mass_signature_mutated")
-    if not step_size_unchanged:
-        invariant_vetoes.append("verification_step_size_mutated")
-    if not num_leapfrog_steps_unchanged:
-        invariant_vetoes.append("verification_leapfrog_count_mutated")
-    if invariant_vetoes:
-        final_status = "hard_veto"
-        diagnostic_role = "hard_veto"
-        hard_vetoes = tuple(dict.fromkeys([*hard_vetoes, *invariant_vetoes]))
-    return (
-        {
+            samples=callback_samples,
+            diagnostics=diagnostics,
+        )
+    return _HMCPhase7FixedKernelVerificationExecution(
+        verification_config_payload={
             **verification_config.signature_payload(),
             "acceptance_band": tuple(float(item) for item in config.acceptance_band),
         },
-        diagnostics,
-        callback_result,
-        final_status,
-        diagnostic_role,
-        hard_vetoes,
-        repair_triggers,
+        diagnostics=diagnostics,
+        callback_result=callback_result,
+        runner_error=run_error,
+        runner_error_origin=None if run_error is None else "runner",
+        callback_error=callback_error,
+        observed_step_size=verification_config.step_size,
+        observed_num_leapfrog_steps=verification_config.num_leapfrog_steps,
     )
 
 
 def _run_phase7_sequential_rhat_final_verification(
     *,
+    verification_input: _HMCPhase7FixedKernelVerificationInput,
+    windowed_stage: HMCWindowedMassStageResult,
     adapted_mass: PrecomputedMassArtifact,
     mass_signature: str,
-    step: float,
-    leapfrog: int,
     verification_adapter: Any,
     verification_hmc_signature: str,
     phase4_adapter: Any,
-    fixed_mass_step_stage: HMCFixedMassStepStageResult,
-    trajectory_stage: HMCFrozenStepTrajectoryStageResult,
     config: HMCTuneVerifyRepairLoopConfig,
     budget_policy: _HMCAttemptBudgetPolicy,
-    attempt_index: int,
-    verification_seed: tuple[int, int],
     verification_callback: VerificationCallback | None,
     checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None,
     verification_start_callback: Callable[[], None] | None,
     checkpoint_reference_callback: Callable[[Mapping[str, Any]], None] | None,
-    before_mass_signature: str,
-    before_step: float,
-    before_l: int,
-) -> tuple[
-    Mapping[str, Any] | None,
-    Mapping[str, Any],
-    FixedMassHMCTuningBudgetCallbackResult,
-    str,
-    str,
-    tuple[str, ...],
-    tuple[str, ...],
-]:
+) -> _HMCPhase7FixedKernelVerificationExecution:
+    step = verification_input.step_size
+    leapfrog = verification_input.num_leapfrog_steps
+    verification_seed = verification_input.verification_seed
+    attempt_index = verification_input.attempt_index
+    sequential_target_scope = (
+        config.target_scope
+        if verification_input.source_kind == "historical_phase6"
+        else verification_input.target_scope
+    )
     max_results = int(budget_policy.verification_num_results)
-    check_interval = min(500, max_results)
+    check_interval = min(64, max_results)
+    acceptance_policy = HMCAcceptancePolicy(
+        target=config.target_accept_prob,
+        practical_region=config.acceptance_band,
+        repair_region=config.repair_band,
+    )
     sequential_config = SequentialRHatHMCVerificationConfig(
         check_interval=check_interval,
         max_results=max_results,
@@ -14635,70 +19238,142 @@ def _run_phase7_sequential_rhat_final_verification(
         seed=verification_seed,
         chain_count=4,
         rhat_threshold=1.01,
+        acceptance_policy=acceptance_policy,
         use_xla=config.use_xla,
-        target_scope=config.target_scope,
+        target_scope=sequential_target_scope,
         chain_execution_mode=config.chain_execution_mode,
     )
-    verifier = build_sequential_rhat_hmc_verifier(
-        verification_adapter,
-        np.zeros(adapted_mass.dimension, dtype=float),
-        sequential_config,
-    )
+    verifier = None
+    verifier_error: Exception | None = None
+    verification_initial_state = np.zeros(adapted_mass.dimension, dtype=float)
+    start_bank_summary: Mapping[str, Any] = {
+        "source": "unavailable",
+        "count": 0,
+        "frozen_post_warmup_bank_consumed": False,
+        "raw_values_exposed": False,
+        "reports_operational_start_lineage": False,
+    }
+    try:
+        verification_initial_state, start_bank_summary = _phase7_verification_initial_state(
+            windowed_stage=windowed_stage,
+            phase4_adapter=phase4_adapter,
+            verification_adapter=verification_adapter,
+            verification_hmc_signature=verification_hmc_signature,
+        )
+        verifier = build_sequential_rhat_hmc_verifier(
+            verification_adapter,
+            verification_initial_state,
+            sequential_config,
+        )
+        verifier._configure_retained_target_health_policy(
+            config.target_status_trace_policy
+        )
+    except Exception as exc:  # noqa: BLE001 - verifier construction is shared invalidity.
+        verifier_error = exc
     checkpoint_references: list[Mapping[str, Any]] = []
-    if checkpoint_writer_config is not None:
-        pre_verification_reference = (
-            write_sequential_rhat_pre_verification_handoff_checkpoint(
+    checkpoint_error: Exception | None = None
+    if verifier_error is None and checkpoint_writer_config is not None:
+        if verification_input.source_kind == "historical_phase6":
+            selected_kernel_private_payload = {
+                "attempt_index": int(attempt_index),
+                "target_scope": config.target_scope,
+                "target_dimension": int(adapted_mass.dimension),
+                "step_size": float(step),
+                "num_leapfrog_steps": int(leapfrog),
+                "trajectory_length": float(step) * int(leapfrog),
+                "verification_seed": tuple(int(item) for item in verification_seed),
+                "mass_artifact_signature": mass_signature,
+                "hmc_adapter_signature": verification_hmc_signature,
+                "fixed_mass_step_stage_artifact_hash": (
+                    verification_input.fixed_mass_step_stage_artifact_hash
+                ),
+                "frozen_step_trajectory_stage_artifact_hash": (
+                    verification_input.trajectory_stage_artifact_hash
+                ),
+                "private_handoff_only": True,
+                "public_progress_exposes_hmc_mechanics": False,
+            }
+        else:
+            selected_kernel_private_payload = {
+                "attempt_index": int(attempt_index),
+                "target_scope": verification_input.target_scope,
+                "target_dimension": int(adapted_mass.dimension),
+                "step_size": float(step),
+                "num_leapfrog_steps": int(leapfrog),
+                "trajectory_length": float(step) * int(leapfrog),
+                "verification_seed": tuple(int(item) for item in verification_seed),
+                "mass_artifact_signature": mass_signature,
+                "hmc_adapter_signature": verification_hmc_signature,
+                "fixed_mass_step_stage_artifact_hash": (
+                    verification_input.fixed_mass_step_stage_artifact_hash
+                ),
+                "phase5_candidate_batch_hash": verification_input.candidate_batch_hash,
+                "phase5_candidate_identity": verification_input.candidate_identity,
+                "phase5_candidate_record_hash": (
+                    verification_input.candidate_record_hash
+                ),
+                "operational_selection_signature": (
+                    verification_input.operational_selection_signature
+                ),
+                "operational_candidate_signature": (
+                    verification_input.operational_candidate_signature
+                ),
+                "coordinate_signature": verification_input.coordinate_signature,
+                "metric_signature": verification_input.metric_signature,
+                "trajectory_signature": verification_input.trajectory_signature,
+                "start_bank_signature": verification_input.start_bank_signature,
+                "verification_source_kind": verification_input.source_kind,
+                "verification_seed_policy": verification_input.seed_policy,
+                "verification_input_hash": verification_input.input_hash,
+                "private_handoff_only": True,
+                "public_progress_exposes_hmc_mechanics": False,
+            }
+        try:
+            pre_verification_reference = write_sequential_rhat_pre_verification_handoff_checkpoint(
                 writer_config=checkpoint_writer_config,
                 adapter=verification_adapter,
                 config_private_payload=sequential_config.signature_payload(),
-                selected_kernel_private_payload={
-                    "attempt_index": int(attempt_index),
-                    "target_scope": config.target_scope,
-                    "target_dimension": int(adapted_mass.dimension),
-                    "step_size": float(step),
-                    "num_leapfrog_steps": int(leapfrog),
-                    "trajectory_length": float(step) * int(leapfrog),
-                    "verification_seed": tuple(int(item) for item in verification_seed),
-                    "mass_artifact_signature": mass_signature,
-                    "hmc_adapter_signature": verification_hmc_signature,
-                    "fixed_mass_step_stage_artifact_hash": (
-                        fixed_mass_step_stage.artifact_hash
-                    ),
-                    "frozen_step_trajectory_stage_artifact_hash": (
-                        trajectory_stage.artifact_hash
-                    ),
-                    "private_handoff_only": True,
-                    "public_progress_exposes_hmc_mechanics": False,
-                },
+                selected_kernel_private_payload=selected_kernel_private_payload,
                 mass_payload=adapted_mass.to_payload(include_arrays=True),
-                final_state=np.zeros(adapted_mass.dimension, dtype=float),
+                final_state=verification_initial_state,
                 retained_count=0,
             )
-        )
-        checkpoint_references.append(pre_verification_reference)
-        if checkpoint_reference_callback is not None:
-            checkpoint_reference_callback(pre_verification_reference)
-    if verification_start_callback is not None:
-        verification_start_callback()
-    run_error: Exception | None = None
-    try:
-        def record_checkpoint_reference(reference: Mapping[str, Any]) -> None:
-            checkpoint_references.append(reference)
+            checkpoint_references.append(pre_verification_reference)
             if checkpoint_reference_callback is not None:
-                checkpoint_reference_callback(reference)
+                checkpoint_reference_callback(pre_verification_reference)
+        except Exception as exc:  # noqa: BLE001 - checkpoint failure is shared invalidity.
+            checkpoint_error = exc
+    if (
+        verifier_error is None
+        and checkpoint_error is None
+        and verification_start_callback is not None
+    ):
+        verification_start_callback()
+    run_error: Exception | None = verifier_error or checkpoint_error
+    if run_error is None:
+        try:
+            def record_checkpoint_reference(reference: Mapping[str, Any]) -> None:
+                checkpoint_references.append(reference)
+                if checkpoint_reference_callback is not None:
+                    checkpoint_reference_callback(reference)
 
-        result = verifier.run(
-            checkpoint_writer_config=checkpoint_writer_config,
-            checkpoint_reference_callback=(
-                None
-                if checkpoint_writer_config is None
-                else record_checkpoint_reference
-            ),
-        )
-        diagnostics = dict(result.diagnostics)
-    except Exception as exc:  # noqa: BLE001 - final verification is fail-closed.
-        run_error = exc
-        diagnostics = dict(_bootstrap_error_diagnostics(exc))
+            if verifier is None:
+                raise RuntimeError("Phase 7 sequential verifier is unavailable")
+            result = verifier.run(
+                checkpoint_writer_config=checkpoint_writer_config,
+                checkpoint_reference_callback=(
+                    None
+                    if checkpoint_writer_config is None
+                    else record_checkpoint_reference
+                ),
+            )
+            diagnostics = dict(result.diagnostics)
+        except Exception as exc:  # noqa: BLE001 - final verification is fail-closed.
+            run_error = exc
+            diagnostics = dict(_bootstrap_error_diagnostics(exc))
+    else:
+        diagnostics = dict(_bootstrap_error_diagnostics(run_error))
+    if run_error is not None:
         diagnostics["sequential_rhat_verification"] = True
         diagnostics["rhat_threshold"] = 1.01
         diagnostics["check_interval"] = check_interval
@@ -14709,12 +19384,20 @@ def _run_phase7_sequential_rhat_final_verification(
     diagnostics["phase7_checkpointing_enabled"] = checkpoint_writer_config is not None
     diagnostics["phase7_checkpoint_count"] = len(checkpoint_references)
     diagnostics["phase7_checkpoint_references"] = tuple(checkpoint_references)
+    diagnostics["verification_start_bank"] = dict(start_bank_summary)
     diagnostics["sequential_rhat_policy"] = {
         "check_interval": check_interval,
         "rhat_threshold": 1.01,
         "max_results": max_results,
-        "stopping_rule": "stop_when_all_finite_parameter_rhat_at_or_below_threshold",
-        "cap_rule": "stop_at_budget_policy_verification_num_results_without_promotion",
+        "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
+        "handoff_gate": "dependence_aware_acceptance_evidence_and_hard_health",
+        "stopping_rule": "stop_at_first_fixed_checkpoint_with_typed_acceptance_decision",
+        "cap_rule": "stop_inconclusive_at_budget_policy_verification_num_results",
+        "acceptance_policy": acceptance_policy.payload(),
+        "target_status_trace_policy": config.target_status_trace_policy,
+        "retained_target_health_policy": (
+            "finite_value_and_score_per_retained_chain_batch"
+        ),
         "mechanics_publicized": False,
     }
     diagnostics["runner_route_summary"] = {
@@ -14724,7 +19407,7 @@ def _run_phase7_sequential_rhat_final_verification(
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
-            "R-hat is a tuning-verification stop rule, not posterior convergence proof",
+            "R-hat is historical explanatory telemetry, not a stopping rule, tuning handoff criterion, or posterior convergence proof",
         ),
     }
     verification_payload = {
@@ -14734,31 +19417,69 @@ def _run_phase7_sequential_rhat_final_verification(
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
+        "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
         "acceptance_band": tuple(float(item) for item in config.acceptance_band),
+        "acceptance_policy": acceptance_policy.payload(),
         "use_xla": sequential_config.use_xla,
         "chain_execution_mode": sequential_config.chain_execution_mode,
         "target_scope": sequential_config.target_scope,
-        "trace_policy": "reduced_public_safe_aggregate",
+        "target_status_trace_policy": config.target_status_trace_policy,
+        "retained_target_health_policy": (
+            "finite_value_and_score_per_retained_chain_batch"
+        ),
+        "trace_policy": "private_standard_trace_public_sanitized_v2_evidence",
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "hmc_mechanics_publicized": False,
         "internal_policy_only": True,
     }
-    callback_result = _call_trajectory_screen_callback(
-        verification_callback,
-        round_payload={
-            "attempt_index": attempt_index,
-            "verification_config_payload": verification_payload,
-            "adapter_signature": stable_adapter_signature(phase4_adapter),
-            "hmc_adapter_signature": verification_hmc_signature,
-            "mass_artifact_signature": mass_signature,
-            "sample_space": "phase4_latent_position",
-            "hmc_sample_space": "adapted_mass_latent",
-            "diagnostic_role": "sequential_rhat_fixed_kernel_verification",
-            "kernel_mechanics_publicized": False,
-        },
-        samples=None,
+    if verifier_error is not None or checkpoint_error is not None:
+        callback_result = FixedMassHMCTuningBudgetCallbackResult()
+        callback_error = None
+    else:
+        callback_result, callback_error = _call_phase7_verification_callback(
+            verification_callback,
+            round_payload={
+                "attempt_index": attempt_index,
+                "verification_config_payload": verification_payload,
+                "adapter_signature": stable_adapter_signature(phase4_adapter),
+                "hmc_adapter_signature": verification_hmc_signature,
+                "mass_artifact_signature": mass_signature,
+                "sample_space": "phase4_latent_position",
+                "hmc_sample_space": "adapted_mass_latent",
+                "diagnostic_role": "sequential_rhat_fixed_kernel_verification",
+                "kernel_mechanics_publicized": False,
+            },
+            samples=None,
+            diagnostics=diagnostics,
+        )
+    return _HMCPhase7FixedKernelVerificationExecution(
+        verification_config_payload=verification_payload,
         diagnostics=diagnostics,
+        callback_result=callback_result,
+        runner_error=run_error,
+        runner_error_origin=(
+            None
+            if run_error is None
+            else "checkpoint"
+            if checkpoint_error is not None
+            else "runner"
+        ),
+        callback_error=callback_error,
+        observed_step_size=sequential_config.step_size,
+        observed_num_leapfrog_steps=sequential_config.num_leapfrog_steps,
     )
+
+
+def _finalize_phase7_fixed_kernel_verification(
+    *,
+    verification_input: _HMCPhase7FixedKernelVerificationInput,
+    adapted_mass: PrecomputedMassArtifact,
+    config: HMCTuneVerifyRepairLoopConfig,
+    execution: _HMCPhase7FixedKernelVerificationExecution,
+) -> _HMCPhase7FixedKernelVerificationOutcome:
+    """Classify once, enforce fixed mechanics once, and assign private scope."""
+
+    diagnostics = dict(execution.diagnostics)
     (
         final_status,
         diagnostic_role,
@@ -14767,13 +19488,21 @@ def _run_phase7_sequential_rhat_final_verification(
     ) = _classify_phase7_final_verification(
         config,
         diagnostics=diagnostics,
-        screen_error=run_error,
-        callback_result=callback_result,
+        screen_error=execution.runner_error,
+        callback_result=execution.callback_result,
     )
     after_mass_signature = _mass_artifact_signature(adapted_mass)
-    mass_signature_unchanged = before_mass_signature == after_mass_signature
-    step_size_unchanged = before_step == _required_selected_step_size(fixed_mass_step_stage)
-    num_leapfrog_steps_unchanged = before_l == trajectory_stage.selected_num_leapfrog_steps
+    mass_signature_unchanged = (
+        verification_input.adapted_mass_artifact_signature == after_mass_signature
+    )
+    observed_step = _strict_finite_scalar_or_none(execution.observed_step_size)
+    step_size_unchanged = observed_step == verification_input.step_size
+    observed_l = _strict_scalar_int_or_none(
+        execution.observed_num_leapfrog_steps
+    )
+    num_leapfrog_steps_unchanged = (
+        observed_l == verification_input.num_leapfrog_steps
+    )
     invariant = {
         "mass_signature_unchanged": mass_signature_unchanged,
         "kernel_scale_unchanged": step_size_unchanged,
@@ -14793,14 +19522,82 @@ def _run_phase7_sequential_rhat_final_verification(
         final_status = "hard_veto"
         diagnostic_role = "hard_veto"
         hard_vetoes = tuple(dict.fromkeys([*hard_vetoes, *invariant_vetoes]))
-    return (
-        verification_payload,
-        diagnostics,
-        callback_result,
-        final_status,
-        diagnostic_role,
-        hard_vetoes,
-        repair_triggers,
+        repair_triggers = ()
+
+    if final_status == "passed":
+        continuation_scope = "passed"
+    elif final_status == "repair_or_retry":
+        continuation_scope = "repair_or_retry"
+    elif final_status == "budget_exhausted":
+        continuation_scope = (
+            "candidate_local_cost_stop"
+            if diagnostic_role == "candidate_cost_stop_nonpromoting"
+            else "candidate_local_promotion_veto"
+        )
+    elif (
+        execution.runner_error is not None
+        or execution.callback_error is not None
+        or execution.callback_result.continuation_vetoes
+        or invariant_vetoes
+        or diagnostic_role == "shared_invalidity"
+    ):
+        continuation_scope = "shared_continuation_veto"
+    else:
+        continuation_scope = "candidate_local_hard_veto"
+
+    repair_evidence: Mapping[str, Any] | None = None
+    acceptance = _scalar_or_none(diagnostics.get("acceptance_rate"))
+    acceptance_relation = _acceptance_relation_to_band(
+        acceptance,
+        config.acceptance_band,
+    )
+    acceptance_evidence_payload = diagnostics.get("acceptance_evidence")
+    acceptance_decision = None
+    if isinstance(acceptance_evidence_payload, Mapping):
+        try:
+            parsed_evidence = hmc_acceptance_evidence_from_payload(
+                acceptance_evidence_payload
+            )
+            acceptance_decision = parsed_evidence.acceptance_decision
+        except (TypeError, ValueError):
+            acceptance_decision = "invalid"
+    if (
+        verification_input.source_kind
+        in {"direct_phase5_candidate", "operational_selection_v2"}
+        and final_status == "repair_or_retry"
+        and acceptance is not None
+        and np.isfinite(acceptance)
+    ):
+        repair_evidence = {
+            **dict(verification_input.source_identity),
+            "fixed_mass_step_stage_artifact_hash": (
+                verification_input.fixed_mass_step_stage_artifact_hash
+            ),
+            "windowed_stage_artifact_hash": (
+                verification_input.windowed_stage_artifact_hash
+            ),
+            "observed_acceptance_rate": float(acceptance),
+            "acceptance_band": tuple(float(item) for item in config.acceptance_band),
+            "acceptance_relation": acceptance_relation,
+            "acceptance_evidence_decision": acceptance_decision,
+            "repair_triggers": tuple(repair_triggers),
+            "selected_step_hash": verification_input.selected_step_hash,
+            "step_size": verification_input.step_size,
+            "num_leapfrog_steps": verification_input.num_leapfrog_steps,
+            "input_hash": verification_input.input_hash,
+            "private_handoff_only": True,
+        }
+    return _HMCPhase7FixedKernelVerificationOutcome(
+        verification_input=verification_input,
+        verification_config_payload=execution.verification_config_payload,
+        diagnostics=diagnostics,
+        callback_result=execution.callback_result,
+        final_status=final_status,
+        diagnostic_role=diagnostic_role,
+        hard_vetoes=hard_vetoes,
+        continuation_scope=continuation_scope,
+        repair_triggers=repair_triggers,
+        repair_evidence=repair_evidence,
     )
 
 
@@ -14811,6 +19608,15 @@ def _classify_phase7_final_verification(
     screen_error: Exception | None,
     callback_result: FixedMassHMCTuningBudgetCallbackResult,
 ) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    if diagnostics.get("sequential_rhat_verification") is True:
+        return _classify_phase7_acceptance_evidence_verification(
+            diagnostics=diagnostics,
+            screen_error=screen_error,
+            callback_result=callback_result,
+        )
+
+    # Injected and historical test-only runners retain their v1 compatibility
+    # classifier. The repaired operational route above cannot use point estimates.
     hard_vetoes: list[str] = []
     if screen_error is not None:
         hard_vetoes.append("verification_hmc_error")
@@ -14854,29 +19660,6 @@ def _classify_phase7_final_verification(
             (),
             tuple(dict.fromkeys(repair_triggers)),
         )
-    if diagnostics.get("sequential_rhat_verification") is True:
-        if diagnostics.get("all_finite_rhat_at_or_below_threshold") is True:
-            acceptance_value = float(acceptance)
-            if config.acceptance_band[0] <= acceptance_value <= config.acceptance_band[1]:
-                return "passed", "sequential_rhat_fixed_kernel_verification_passed", (), ()
-            return (
-                "repair_or_retry",
-                "verification_acceptance_repair_trigger",
-                (),
-                ("verification_acceptance_outside_pass_band",),
-            )
-        triggers = ["verification_rhat_above_threshold_or_cap_hit"]
-        if diagnostics.get("cap_hit") is True:
-            triggers.append("verification_rhat_cap_hit")
-        acceptance_value = float(acceptance)
-        if not config.acceptance_band[0] <= acceptance_value <= config.acceptance_band[1]:
-            triggers.append(_PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER)
-        return (
-            "repair_or_retry",
-            "verification_rhat_repair_trigger",
-            (),
-            tuple(triggers),
-        )
     acceptance_value = float(acceptance)
     if config.acceptance_band[0] <= acceptance_value <= config.acceptance_band[1]:
         return "passed", "fresh_fixed_kernel_verification_passed", (), ()
@@ -14886,6 +19669,189 @@ def _classify_phase7_final_verification(
         (),
         ("verification_acceptance_outside_pass_band",),
     )
+
+
+def _classify_phase7_acceptance_evidence_verification(
+    *,
+    diagnostics: Mapping[str, Any],
+    screen_error: Exception | None,
+    callback_result: FixedMassHMCTuningBudgetCallbackResult,
+) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    """Classify operational verification from role-separated v3 evidence."""
+
+    if screen_error is not None:
+        return (
+            "hard_veto",
+            "shared_invalidity",
+            ("verification_hmc_error",),
+            (),
+        )
+    if diagnostics.get("runtime_finite") is not True:
+        return (
+            "hard_veto",
+            "shared_invalidity",
+            ("verification_runtime_missing_or_nonfinite",),
+            (),
+        )
+    payload = diagnostics.get("acceptance_evidence")
+    try:
+        evidence = hmc_acceptance_evidence_from_payload(payload)
+    except (TypeError, ValueError):
+        return (
+            "hard_veto",
+            "shared_invalidity",
+            ("verification_acceptance_evidence_missing_or_invalid",),
+            (),
+        )
+    if evidence.evidence_validity == "valid":
+        raw_retained_count = diagnostics.get("retained_sample_count")
+        if raw_retained_count is not None:
+            retained_count = _strict_scalar_int_or_none(raw_retained_count)
+            if retained_count is None:
+                return (
+                    "hard_veto",
+                    "shared_invalidity",
+                    ("verification_retained_sample_count_invalid",),
+                    (),
+                )
+            evidence_count = (
+                evidence.usable_decisions_per_chain
+                + evidence.excluded_remainder_per_chain
+            )
+            if retained_count != evidence_count:
+                return (
+                    "hard_veto",
+                    "shared_invalidity",
+                    ("verification_acceptance_evidence_count_mismatch",),
+                    (),
+                )
+        reported_acceptance = _scalar_or_none(diagnostics.get("acceptance_rate"))
+        if (
+            reported_acceptance is not None
+            and evidence.pooled_mean is not None
+            and not np.isclose(
+                reported_acceptance,
+                evidence.pooled_mean,
+                rtol=1.0e-12,
+                atol=1.0e-12,
+            )
+        ):
+            return (
+                "hard_veto",
+                "shared_invalidity",
+                ("verification_acceptance_evidence_mean_mismatch",),
+                (),
+            )
+    if evidence.evidence_validity == "shared_execution_invalid":
+        return (
+            "hard_veto",
+            "shared_invalidity",
+            tuple(
+                dict.fromkeys(
+                    [
+                        "verification_acceptance_shared_invalidity",
+                        *evidence.engineering_invalidity_reasons,
+                    ]
+                )
+            ),
+            (),
+        )
+    if callback_result.continuation_vetoes:
+        return (
+            "hard_veto",
+            "shared_invalidity",
+            tuple(
+                dict.fromkeys(
+                    [
+                        "verification_callback_continuation_veto",
+                        *callback_result.continuation_vetoes,
+                    ]
+                )
+            ),
+            (),
+        )
+    if evidence.evidence_validity == "candidate_data_invalid":
+        return (
+            "hard_veto",
+            "candidate_data_invalid",
+            tuple(
+                dict.fromkeys(
+                    [
+                        "verification_acceptance_candidate_data_invalid",
+                        *evidence.engineering_invalidity_reasons,
+                    ]
+                )
+            ),
+            (),
+        )
+    if callback_result.hard_vetoes:
+        return (
+            "hard_veto",
+            "candidate_local_hard_veto",
+            tuple(dict.fromkeys(callback_result.hard_vetoes)),
+            (),
+        )
+
+    callback_repairs = tuple(dict.fromkeys(callback_result.repair_triggers))
+    if callback_repairs:
+        return "repair_or_retry", "repair_trigger", (), callback_repairs
+    if evidence.acceptance_decision in {
+        "repair_step_lower",
+        "repair_step_higher",
+    }:
+        return (
+            "repair_or_retry",
+            "verification_acceptance_repair_trigger",
+            (),
+            (_PHASE7_VERIFICATION_ACCEPTANCE_REPAIR_TRIGGER,),
+        )
+    if evidence.acceptance_decision == "repair_trajectory":
+        return (
+            "repair_or_retry",
+            "verification_trajectory_repair_trigger",
+            (),
+            ("verification_trajectory_repair_required",),
+        )
+    if evidence.tuning_repair_triggers:
+        raise AssertionError("validated tuning repair trigger was not classified")
+    if evidence.cost_stop_reasons:
+        return (
+            "budget_exhausted",
+            "candidate_cost_stop_nonpromoting",
+            (),
+            (),
+        )
+    if callback_result.promotion_vetoes or evidence.candidate_promotion_vetoes:
+        return (
+            "budget_exhausted",
+            "candidate_promotion_veto_nonpromoting",
+            (),
+            (),
+        )
+    if evidence.promotion_eligible:
+        return (
+            "passed",
+            "dependence_aware_fixed_kernel_verification_passed",
+            (),
+            (),
+        )
+    if evidence.acceptance_decision == "passed":
+        raise AssertionError("nonpromoting passed evidence lost its typed reason")
+    if evidence.acceptance_decision == "inconclusive_conflict":
+        return (
+            "repair_or_retry",
+            "verification_acceptance_conflict",
+            (),
+            ("verification_acceptance_inconclusive_conflict",),
+        )
+    if evidence.acceptance_decision == "inconclusive_evidence":
+        return (
+            "repair_or_retry",
+            "verification_acceptance_inconclusive",
+            (),
+            ("verification_acceptance_evidence_inconclusive",),
+        )
+    raise AssertionError("validated acceptance evidence decision was not classified")
 
 
 def _phase7_attempt_state_from_stages(
@@ -14899,12 +19865,27 @@ def _phase7_attempt_state_from_stages(
     verification_final_status: str | None = None,
     verification_diagnostic_role: str | None = None,
     verification_repair_triggers: Sequence[str] = (),
+    incoming_state: _HMCPhaseAttemptState | None = None,
+    repair_verification_reserved: bool = False,
 ) -> _HMCPhaseAttemptState:
     mass_artifact = _phase4_adapted_mass_artifact(windowed_stage)
+    operational = windowed_stage.operational_warmup_result
+    canonical_theta_state = (
+        None
+        if operational is None
+        else operational.final_kernel_state.canonical_theta
+    )
+    private_start_bank_theta = (
+        None if operational is None else operational.private_start_bank_theta
+    )
+    private_start_bank_signature = (
+        None if operational is None else operational.private_start_bank_signature
+    )
     step_size = None
     step_hash = None
     fixed_mass_bracket_state = None
     handoff_stage = "phase4"
+    leapfrog = None
     if fixed_mass_step_stage is not None:
         if fixed_mass_step_stage.passed:
             step_size = fixed_mass_step_stage.selected_step_size
@@ -14920,7 +19901,8 @@ def _phase7_attempt_state_from_stages(
                 if isinstance(raw_bracket_state, Mapping):
                     fixed_mass_bracket_state = raw_bracket_state
             handoff_stage = "phase5_repair"
-    leapfrog = None
+        if fixed_mass_step_stage._operational_selection is not None:
+            leapfrog = int(fixed_mass_step_stage.fixed_num_leapfrog_steps)
     trajectory_hash = None
     phase6_retry_l = None
     phase6_retry_anchor_source = None
@@ -14945,6 +19927,13 @@ def _phase7_attempt_state_from_stages(
         verification_final_status=verification_final_status,
         verification_diagnostic_role=verification_diagnostic_role,
         verification_repair_triggers=verification_repair_triggers,
+        direction_history=(
+            () if incoming_state is None else incoming_state.repair_direction_history
+        ),
+        repaired_step_history=(
+            () if incoming_state is None else incoming_state.repaired_step_history
+        ),
+        verification_reserved=repair_verification_reserved,
     )
     if (
         not verification_repair["verification_repair_applied"]
@@ -14972,6 +19961,9 @@ def _phase7_attempt_state_from_stages(
     return _HMCPhaseAttemptState(
         mass_artifact_payload=mass_artifact.to_payload(include_arrays=True),
         mass_artifact_signature=_mass_artifact_signature(mass_artifact),
+        canonical_theta_state=canonical_theta_state,
+        private_start_bank_theta=private_start_bank_theta,
+        private_start_bank_signature=private_start_bank_signature,
         selected_step_size=step_size,
         selected_step_hash=step_hash,
         selected_num_leapfrog_steps=leapfrog,
@@ -14988,11 +19980,229 @@ def _phase7_attempt_state_from_stages(
         verification_repair_max_step_size=verification_repair.get(
             "verification_repair_max_step_size"
         ),
+        verification_repair_direction=verification_repair.get(
+            "verification_repair_direction"
+        ),
+        verification_repair_disposition=verification_repair.get(
+            "verification_repair_disposition",
+            "not_requested",
+        ),
+        repair_direction_history=verification_repair.get(
+            "repair_direction_history",
+            () if incoming_state is None else incoming_state.repair_direction_history,
+        ),
+        repaired_step_history=verification_repair.get(
+            "repaired_step_history",
+            () if incoming_state is None else incoming_state.repaired_step_history,
+        ),
+        repair_verification_reserved=verification_repair.get(
+            "repair_verification_reserved",
+            False,
+        ),
         verification_budget_results=None
         if verification_budget_results is None
         else int(verification_budget_results),
         fixed_mass_bracket_state=fixed_mass_bracket_state,
         handoff_stage=handoff_stage,
+    )
+
+
+def _phase7_attempt_state_from_direct_outcome(
+    *,
+    config: HMCTuneVerifyRepairLoopConfig,
+    windowed_stage: HMCWindowedMassStageResult,
+    outcome: _HMCPhase7FixedKernelVerificationOutcome,
+    incoming_state: _HMCPhaseAttemptState | None = None,
+    repair_verification_reserved: bool = False,
+    suppress_scalar_repair_disposition: str | None = None,
+) -> _HMCPhaseAttemptState:
+    """Build truthful retry/final state from a Phase 5 candidate, not Phase 6."""
+
+    if not isinstance(outcome, _HMCPhase7FixedKernelVerificationOutcome):
+        raise TypeError("direct attempt state requires a normalized outcome")
+    verification_input = outcome.verification_input
+    if verification_input.source_kind not in {
+        "direct_phase5_candidate",
+        "operational_selection_v2",
+    }:
+        raise ValueError("direct attempt state requires a direct private source")
+    is_operational = verification_input.source_kind == "operational_selection_v2"
+    if (
+        verification_input.windowed_stage_artifact_hash != windowed_stage.artifact_hash
+        or verification_input.target_dimension != windowed_stage.target_dimension
+        or verification_input.adapted_mass_artifact_signature
+        != windowed_stage.adapted_mass_artifact_signature
+        or verification_input.trajectory_stage_artifact_hash is not None
+    ):
+        raise ValueError("direct attempt state source lineage mismatch")
+    if is_operational:
+        if (
+            verification_input.operational_selection_signature is None
+            or verification_input.operational_candidate_signature is None
+            or any(
+                value is not None
+                for value in (
+                    verification_input.candidate_batch_hash,
+                    verification_input.candidate_identity,
+                    verification_input.candidate_record_hash,
+                )
+            )
+        ):
+            raise ValueError("operational attempt state source lineage mismatch")
+    elif (
+        verification_input.candidate_batch_hash is None
+        or verification_input.candidate_identity is None
+        or verification_input.candidate_record_hash is None
+    ):
+        raise ValueError("direct candidate attempt state lineage is incomplete")
+    mass_artifact = _phase4_adapted_mass_artifact(windowed_stage)
+    operational = windowed_stage.operational_warmup_result
+    if _mass_artifact_signature(mass_artifact) != (
+        verification_input.adapted_mass_artifact_signature
+    ):
+        raise ValueError("direct attempt state mass signature mismatch")
+    verification_repair = _phase7_verification_repair_handoff_payload(
+        config=config,
+        selected_step_size=verification_input.step_size,
+        selected_step_hash=verification_input.selected_step_hash,
+        verification_config_payload=outcome.verification_config_payload,
+        verification_diagnostics=outcome.diagnostics,
+        verification_final_status=outcome.final_status,
+        verification_diagnostic_role=outcome.diagnostic_role,
+        verification_repair_triggers=outcome.repair_triggers,
+        direction_history=(
+            () if incoming_state is None else incoming_state.repair_direction_history
+        ),
+        repaired_step_history=(
+            () if incoming_state is None else incoming_state.repaired_step_history
+        ),
+        verification_reserved=repair_verification_reserved,
+        enforce_reservation=is_operational,
+        use_directional_trust_region=is_operational,
+    )
+    if suppress_scalar_repair_disposition is not None:
+        disposition = str(suppress_scalar_repair_disposition)
+        if disposition != "inconclusive_conflict":
+            raise ValueError("unsupported direct queue scalar-repair suppression")
+        verification_repair = {
+            **dict(verification_repair),
+            "verification_acceptance_relation": "unavailable",
+            "verification_repair_trigger": None,
+            "verification_repair_source": None,
+            "verification_repair_step_size": None,
+            "verification_repair_step_hash": None,
+            "verification_repair_applied": False,
+            "verification_repair_direction": None,
+            "verification_repair_disposition": disposition,
+            "repair_direction_history": (
+                () if incoming_state is None else incoming_state.repair_direction_history
+            ),
+            "repaired_step_history": (
+                () if incoming_state is None else incoming_state.repaired_step_history
+            ),
+            "repair_verification_reserved": False,
+            "fixed_mass_bracket_state": None,
+        }
+    verification_budget_results = None
+    if outcome.verification_config_payload is not None:
+        verification_budget_results = _scalar_or_none(
+            outcome.verification_config_payload.get("max_results")
+            or outcome.verification_config_payload.get("num_results")
+        )
+    direct_handoff = {
+        "source_kind": verification_input.source_kind,
+        "fixed_mass_step_stage_artifact_hash": (
+            verification_input.fixed_mass_step_stage_artifact_hash
+        ),
+        "candidate_batch_hash": verification_input.candidate_batch_hash,
+        "candidate_identity": verification_input.candidate_identity,
+        "candidate_record_hash": verification_input.candidate_record_hash,
+        "operational_selection_signature": (
+            verification_input.operational_selection_signature
+        ),
+        "operational_candidate_signature": (
+            verification_input.operational_candidate_signature
+        ),
+        "verification_input_hash": verification_input.input_hash,
+        "verification_seed_policy": verification_input.seed_policy,
+        "verification_seed": verification_input.verification_seed,
+        "coordinate_signature": verification_input.coordinate_signature,
+        "metric_signature": verification_input.metric_signature,
+        "trajectory_signature": verification_input.trajectory_signature,
+        "start_bank_signature": verification_input.start_bank_signature,
+        "private_handoff_only": True,
+    }
+    return _HMCPhaseAttemptState(
+        mass_artifact_payload=mass_artifact.to_payload(include_arrays=True),
+        mass_artifact_signature=_mass_artifact_signature(mass_artifact),
+        canonical_theta_state=(
+            None
+            if operational is None
+            else operational.final_kernel_state.canonical_theta
+        ),
+        private_start_bank_theta=(
+            None if operational is None else operational.private_start_bank_theta
+        ),
+        private_start_bank_signature=(
+            None if operational is None else operational.private_start_bank_signature
+        ),
+        selected_step_size=verification_input.step_size,
+        selected_step_hash=verification_input.selected_step_hash,
+        selected_num_leapfrog_steps=verification_input.num_leapfrog_steps,
+        selected_trajectory_hash=None,
+        verification_acceptance_rate=verification_repair[
+            "verification_acceptance_rate"
+        ],
+        verification_acceptance_relation=verification_repair[
+            "verification_acceptance_relation"
+        ],
+        verification_repair_trigger=verification_repair[
+            "verification_repair_trigger"
+        ],
+        verification_repair_source=verification_repair[
+            "verification_repair_source"
+        ],
+        verification_repair_step_size=verification_repair[
+            "verification_repair_step_size"
+        ],
+        verification_repair_step_hash=verification_repair[
+            "verification_repair_step_hash"
+        ],
+        verification_repair_applied=verification_repair[
+            "verification_repair_applied"
+        ],
+        verification_repair_max_step_size=verification_repair.get(
+            "verification_repair_max_step_size"
+        ),
+        verification_repair_direction=verification_repair.get(
+            "verification_repair_direction"
+        ),
+        verification_repair_disposition=verification_repair.get(
+            "verification_repair_disposition",
+            "not_requested",
+        ),
+        repair_direction_history=verification_repair.get(
+            "repair_direction_history",
+            () if incoming_state is None else incoming_state.repair_direction_history,
+        ),
+        repaired_step_history=verification_repair.get(
+            "repaired_step_history",
+            () if incoming_state is None else incoming_state.repaired_step_history,
+        ),
+        repair_verification_reserved=verification_repair.get(
+            "repair_verification_reserved",
+            False,
+        ),
+        fixed_mass_bracket_state=verification_repair.get(
+            "fixed_mass_bracket_state"
+        ),
+        verification_budget_results=(
+            None
+            if verification_budget_results is None
+            else int(verification_budget_results)
+        ),
+        handoff_stage="phase7_direct",
+        direct_candidate_handoff=direct_handoff,
     )
 
 
@@ -15006,11 +20216,41 @@ def _phase7_verification_repair_handoff_payload(
     verification_final_status: str | None,
     verification_diagnostic_role: str | None,
     verification_repair_triggers: Sequence[str],
+    direction_history: Sequence[str] = (),
+    repaired_step_history: Sequence[float] = (),
+    verification_reserved: bool = False,
+    enforce_reservation: bool = False,
+    use_directional_trust_region: bool = False,
 ) -> Mapping[str, Any]:
     diagnostics = {} if verification_diagnostics is None else dict(verification_diagnostics)
     acceptance = _scalar_or_none(diagnostics.get("acceptance_rate"))
+    evidence: HMCAcceptanceEvidence | None = None
+    evidence_payload = diagnostics.get("acceptance_evidence")
+    if isinstance(evidence_payload, Mapping):
+        try:
+            evidence = hmc_acceptance_evidence_from_payload(evidence_payload)
+        except (TypeError, ValueError):
+            evidence = None
     relation = "unavailable"
-    if acceptance is not None:
+    if (
+        evidence is not None
+        and evidence.evidence_validity == "valid"
+        and evidence.acceptance_decision == "repair_step_lower"
+    ):
+        relation = "below_acceptance_band"
+    elif (
+        evidence is not None
+        and evidence.evidence_validity == "valid"
+        and evidence.acceptance_decision == "repair_step_higher"
+    ):
+        relation = "above_acceptance_band"
+    elif (
+        evidence is not None
+        and evidence.evidence_validity == "valid"
+        and evidence.acceptance_decision == "passed"
+    ):
+        relation = "inside_acceptance_band"
+    elif evidence is None and not enforce_reservation and acceptance is not None:
         if acceptance < float(config.acceptance_band[0]):
             relation = "below_acceptance_band"
         elif acceptance > float(config.acceptance_band[1]):
@@ -15027,15 +20267,105 @@ def _phase7_verification_repair_handoff_payload(
     repair_step_hash = None
     repair_source = None
     repair_applied = False
+    repair_direction = None
+    repair_disposition = "not_requested"
+    bracket_state = None
+    next_direction_history = tuple(str(item) for item in direction_history)
+    next_step_history = tuple(float(item) for item in repaired_step_history)
     if (
         trigger is not None
         and relation in {"below_acceptance_band", "above_acceptance_band"}
         and selected_step_size is not None
     ):
-        factor = 0.5 if relation == "below_acceptance_band" else 2.0
-        repair_step_size = float(selected_step_size) * factor
+        base_step = float(selected_step_size)
+        trust_bracket = (
+            (base_step / 2.0, base_step * 2.0)
+            if use_directional_trust_region
+            else (None, None)
+        )
+        effective_reservation = bool(verification_reserved or not enforce_reservation)
+        if evidence is not None:
+            repair = aggregate_step_repair(
+                (evidence,),
+                base_step_size=base_step,
+                repair_factor=config.step_repair_factor,
+                bracket=trust_bracket,
+                direction_history=next_direction_history,
+                repaired_step_history=next_step_history,
+                verification_reserved=effective_reservation,
+            )
+            repair_disposition = repair.disposition
+            repair_direction = repair.direction
+            repair_step_size = repair.repaired_step_size
+            directional_factor = repair.factor
+        elif not enforce_reservation:
+            repair_direction = (
+                "lower_epsilon"
+                if relation == "below_acceptance_band"
+                else "higher_epsilon"
+            )
+            directional_factor = float(
+                np.clip(
+                    config.step_repair_factor,
+                    config.step_repair_min_directional_factor,
+                    2.0,
+                )
+            )
+            repair_multiplier = (
+                1.0 / directional_factor
+                if repair_direction == "lower_epsilon"
+                else directional_factor
+            )
+            repair_step_size = base_step * repair_multiplier
+            if trust_bracket[0] is not None:
+                repair_step_size = max(repair_step_size, trust_bracket[0])
+            if trust_bracket[1] is not None:
+                repair_step_size = min(repair_step_size, trust_bracket[1])
+            repair_step_size = float(repair_step_size)
+            repair_disposition = (
+                "repair_step" if effective_reservation else "inconclusive_evidence"
+            )
+            if not effective_reservation:
+                repair_step_size = None
+                repair_direction = None
+                directional_factor = None
+        else:
+            raise ValueError(
+                "operational verification repair requires validated v3 evidence"
+            )
+        if repair_disposition != "repair_step":
+            return {
+                "verification_acceptance_rate": acceptance,
+                "verification_acceptance_relation": relation,
+                "verification_repair_trigger": trigger,
+                "verification_repair_source": None,
+                "verification_repair_step_size": None,
+                "verification_repair_step_hash": None,
+                "verification_repair_applied": False,
+                "verification_repair_max_step_size": None,
+                "verification_repair_direction": None,
+                "verification_repair_disposition": repair_disposition,
+                "repair_direction_history": next_direction_history,
+                "repaired_step_history": next_step_history,
+                "repair_verification_reserved": bool(verification_reserved),
+                "fixed_mass_bracket_state": None,
+            }
+        if repair_step_size is None or directional_factor is None or repair_direction is None:
+            raise AssertionError("applied repair lost its typed mechanics")
         if not np.isfinite(repair_step_size) or repair_step_size <= 0.0:
             raise ValueError("verification repair step size must be positive and finite")
+        repair_multiplier = repair_step_size / base_step
+        next_direction_history = (*next_direction_history, repair_direction)
+        next_step_history = (*next_step_history, repair_step_size)
+        if use_directional_trust_region:
+            bracket_state = {
+                "schema": "bayesfilter.fixed_mass_bracket_state.v1",
+                "next_step_size": repair_step_size,
+                "high_acceptance_step_lower_bound": trust_bracket[0],
+                "low_acceptance_step_upper_bound": trust_bracket[1],
+                "repair_action": repair_direction,
+                "bracket_role": "local_directional_trust_region_not_empirical_acceptance_bracket",
+            }
         repair_payload = {
             "runtime": "bayesfilter.inference.hmc_kernel_tuning.phase7_verification_repair",
             "repair_source": "phase7_final_verification_acceptance",
@@ -15045,10 +20375,22 @@ def _phase7_verification_repair_handoff_payload(
             "verification_acceptance_rate": acceptance,
             "verification_acceptance_relation": relation,
             "acceptance_band": tuple(float(item) for item in config.acceptance_band),
-            "base_step_size": float(selected_step_size),
+            "base_step_size": base_step,
             "base_step_hash": selected_step_hash,
-            "repair_factor": factor,
+            "acceptance_evidence_decision": (
+                None if evidence is None else evidence.acceptance_decision
+            ),
+            "acceptance_evidence_validity": (
+                None if evidence is None else evidence.evidence_validity
+            ),
+            "repair_factor": directional_factor,
+            "repair_multiplier": repair_multiplier,
+            "repair_direction": repair_direction,
             "step_size": repair_step_size,
+            "fixed_mass_bracket_state": bracket_state,
+            "repair_direction_history": next_direction_history,
+            "repaired_step_history": next_step_history,
+            "repair_verification_reserved": bool(verification_reserved),
             "verification_config_payload": (
                 None
                 if verification_config_payload is None
@@ -15069,6 +20411,12 @@ def _phase7_verification_repair_handoff_payload(
             "verification_repair_step_hash": repair_step_hash,
             "verification_repair_applied": repair_applied,
             "verification_repair_max_step_size": None,
+            "verification_repair_direction": repair_direction,
+            "verification_repair_disposition": repair_disposition,
+            "repair_direction_history": next_direction_history,
+            "repaired_step_history": next_step_history,
+            "repair_verification_reserved": bool(verification_reserved),
+            "fixed_mass_bracket_state": bracket_state,
         }
     return {
         "verification_acceptance_rate": acceptance,
@@ -15079,6 +20427,12 @@ def _phase7_verification_repair_handoff_payload(
         "verification_repair_step_hash": repair_step_hash,
         "verification_repair_applied": repair_applied,
         "verification_repair_max_step_size": None,
+        "verification_repair_direction": None,
+        "verification_repair_disposition": repair_disposition,
+        "repair_direction_history": next_direction_history,
+        "repaired_step_history": next_step_history,
+        "repair_verification_reserved": bool(verification_reserved),
+        "fixed_mass_bracket_state": None,
     }
 
 
@@ -15789,6 +21143,105 @@ def _phase7_final_kernel_payload(
         "verification_config_payload": verification_config_payload,
         "verification_acceptance_rate": verification_diagnostics.get("acceptance_rate"),
         "budget_policy": budget_policy.payload(),
+        "fresh_fixed_kernel_verification_passed": True,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "reports_default_readiness": False,
+        "reports_external_client_scientific_claim": False,
+        "reports_gpu_or_xla_readiness": False,
+        "nonclaims": TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS,
+    }
+
+
+def _phase7_direct_final_kernel_payload(
+    *,
+    config: HMCTuneVerifyRepairLoopConfig,
+    geometry: HMCGeometryInitializationResult,
+    bootstrap: HMCBootstrapScreenResult,
+    windowed_stage: HMCWindowedMassStageResult,
+    fixed_mass_step_stage: HMCFixedMassStepStageResult,
+    outcome: _HMCPhase7FixedKernelVerificationOutcome,
+    budget_policy: _HMCAttemptBudgetPolicy,
+    attempt_index: int,
+    target_scope: str,
+) -> Mapping[str, Any]:
+    """Emit a replayable private kernel without fabricating Phase 6 lineage."""
+
+    if not isinstance(outcome, _HMCPhase7FixedKernelVerificationOutcome):
+        raise TypeError("direct final kernel requires a normalized outcome")
+    if outcome.final_status != "passed" or outcome.continuation_scope != "passed":
+        raise ValueError("direct final kernel requires an admitted candidate")
+    verification_input = outcome.verification_input
+    if (
+        verification_input.source_kind not in {
+            "direct_phase5_candidate",
+            "operational_selection_v2",
+        }
+        or verification_input.attempt_index != int(attempt_index)
+        or verification_input.target_scope != str(target_scope)
+        or verification_input.target_dimension != geometry.target_dimension
+        or verification_input.windowed_stage_artifact_hash != windowed_stage.artifact_hash
+        or verification_input.fixed_mass_step_stage_artifact_hash
+        != fixed_mass_step_stage.artifact_hash
+        or verification_input.trajectory_stage_artifact_hash is not None
+    ):
+        raise ValueError("direct final kernel source lineage mismatch")
+    if verification_input.source_kind == "direct_phase5_candidate":
+        if (
+            verification_input.candidate_batch_hash is None
+            or verification_input.candidate_identity is None
+            or verification_input.candidate_record_hash is None
+        ):
+            raise ValueError("direct final kernel candidate lineage is incomplete")
+    elif (
+        verification_input.operational_selection_signature is None
+        or verification_input.operational_candidate_signature is None
+    ):
+        raise ValueError("operational final kernel lineage is incomplete")
+    adapted_mass = _phase4_adapted_mass_artifact(windowed_stage)
+    mass_signature = _mass_artifact_signature(adapted_mass)
+    if mass_signature != verification_input.adapted_mass_artifact_signature:
+        raise ValueError("direct final kernel mass signature mismatch")
+    step = verification_input.step_size
+    leapfrog = verification_input.num_leapfrog_steps
+    return {
+        "runtime": "bayesfilter.inference.run_hmc_tune_verify_repair_loop",
+        "schema": "bayesfilter.hmc_frozen_kernel_handoff.v1",
+        "attempt_index": int(attempt_index),
+        "target_scope": target_scope,
+        "target_dimension": geometry.target_dimension,
+        "adapted_mass_artifact_payload": adapted_mass.to_payload(include_arrays=True),
+        "adapted_mass_artifact_signature": mass_signature,
+        "step_size": float(step),
+        "num_leapfrog_steps": int(leapfrog),
+        "trajectory_length": float(step) * int(leapfrog),
+        "target_accept_prob": config.target_accept_prob,
+        "acceptance_band": config.acceptance_band,
+        "geometry_artifact_hash": geometry.artifact_hash,
+        "bootstrap_artifact_hash": bootstrap.artifact_hash,
+        "windowed_stage_artifact_hash": windowed_stage.artifact_hash,
+        "fixed_mass_step_stage_artifact_hash": fixed_mass_step_stage.artifact_hash,
+        "frozen_step_trajectory_stage_artifact_hash": None,
+        "selected_step_hash": verification_input.selected_step_hash,
+        "selected_trajectory_hash": None,
+        "verification_config_payload": outcome.verification_config_payload,
+        "verification_acceptance_rate": outcome.diagnostics.get("acceptance_rate"),
+        "budget_policy": budget_policy.payload(),
+        "verification_source_kind": verification_input.source_kind,
+        "verification_hmc_adapter_signature": (
+            verification_input.verification_hmc_adapter_signature
+        ),
+        "phase5_candidate_batch_hash": verification_input.candidate_batch_hash,
+        "phase5_candidate_identity": verification_input.candidate_identity,
+        "phase5_candidate_record_hash": verification_input.candidate_record_hash,
+        "operational_selection_signature": (
+            verification_input.operational_selection_signature
+        ),
+        "operational_candidate_signature": (
+            verification_input.operational_candidate_signature
+        ),
+        "verification_input_hash": verification_input.input_hash,
+        "direct_source_private_handoff_only": True,
         "fresh_fixed_kernel_verification_passed": True,
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
@@ -16558,8 +22011,12 @@ def _windowed_stage_acceptance_has_runtime_decision_support(
     raw = capture.get("raw_diagnostics")
     if not isinstance(raw, Mapping):
         return False
-    if raw.get("acceptance_decision_source") != "fixed_size_chunk_runner_trace_counts":
-        if raw.get("acceptance_decision_source") != "sample_chain_trace_counts":
+    decision_source = raw.get("acceptance_decision_source")
+    if decision_source not in {
+        "fixed_size_chunk_runner_trace_counts",
+        "operational_window_binary_trace",
+    }:
+        if decision_source != "sample_chain_trace_counts":
             return False
         metadata = capture.get("runtime_metadata")
         if not isinstance(metadata, Mapping):
@@ -16570,6 +22027,15 @@ def _windowed_stage_acceptance_has_runtime_decision_support(
         if invocation_count is None or invocation_count <= 0:
             return False
         if metadata.get("program_signature") is None:
+            return False
+    if decision_source == "operational_window_binary_trace":
+        metadata = capture.get("runtime_metadata")
+        if (
+            not isinstance(metadata, Mapping)
+            or metadata.get("runtime")
+            != "tfp.mcmc.operational_interleaved_windowed_warmup"
+            or metadata.get("operational_warmup") is not True
+        ):
             return False
     decision_count = _int_or_none(raw.get("acceptance_decision_count"))
     accepted_count = _int_or_none(raw.get("accepted_decision_count"))
@@ -16711,6 +22177,8 @@ def _windowed_stage_diagnostics(
         "trace_summary": capture.get("trace_summary", {}),
         "windowed_mass_error_type": capture.get("windowed_mass_error_type"),
         "windowed_mass_error_message": capture.get("windowed_mass_error_message"),
+        "hmc_error_type": capture.get("error_type"),
+        "hmc_error_message": capture.get("error_message"),
         "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
     }
 
@@ -17286,6 +22754,34 @@ def _scalar_or_none(value: Any) -> float | None:
 def _int_or_none(value: Any) -> int | None:
     scalar = _scalar_or_none(value)
     return None if scalar is None else int(scalar)
+
+
+def _strict_scalar_int_or_none(value: Any) -> int | None:
+    if value is None:
+        return None
+    array = np.asarray(_tensor_to_numpy(value))
+    if array.size != 1:
+        return None
+    scalar = array.reshape(()).item()
+    if isinstance(scalar, (bool, np.bool_)):
+        return None
+    return int(scalar) if isinstance(scalar, (int, np.integer)) else None
+
+
+def _strict_finite_scalar_or_none(value: Any) -> float | None:
+    if value is None:
+        return None
+    array = np.asarray(_tensor_to_numpy(value))
+    if array.size != 1:
+        return None
+    scalar = array.reshape(()).item()
+    if isinstance(scalar, (bool, np.bool_)):
+        return None
+    try:
+        result = float(scalar)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return result if np.isfinite(result) else None
 
 
 def _bool_or_none(value: Any) -> bool | None:

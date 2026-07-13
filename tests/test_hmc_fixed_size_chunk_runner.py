@@ -82,6 +82,23 @@ def _config(*, use_xla: bool = False, max_results: int = 5) -> FixedSizeHMCChunk
     )
 
 
+def _standard_verification_trace(
+    draws: int,
+    *,
+    chain_count: int = 3,
+    probability: float = 0.70,
+) -> Mapping[str, Any]:
+    shape = (int(draws), int(chain_count))
+    return {
+        "is_accepted": tf.ones(shape, dtype=tf.bool),
+        "log_accept_ratio": tf.fill(
+            shape,
+            tf.math.log(tf.constant(float(probability), dtype=tf.float64)),
+        ),
+        "target_log_prob": -tf.ones(shape, dtype=tf.float64),
+    }
+
+
 def _write_deterministic_sequential_rhat_checkpoints(
     monkeypatch,
     tmp_path,
@@ -130,7 +147,7 @@ def _write_deterministic_sequential_rhat_checkpoints(
                 samples=samples,
                 valid_mask=valid,
                 final_state=base,
-                trace={},
+                trace=_standard_verification_trace(draws),
                 diagnostics=diagnostics,
                 metadata=metadata,
             )
@@ -235,7 +252,7 @@ def test_fixed_size_chunk_runner_xla_compiles_tiny_contract() -> None:
     assert result.metadata["compile_trace_count"] == 1
 
 
-def test_sequential_rhat_verifier_stops_when_all_rhat_pass(monkeypatch) -> None:
+def test_sequential_verifier_does_not_stop_on_explanatory_rhat(monkeypatch) -> None:
     import bayesfilter.inference.hmc as hmc_module
 
     class _ScriptedChunkRunner:
@@ -281,7 +298,7 @@ def test_sequential_rhat_verifier_stops_when_all_rhat_pass(monkeypatch) -> None:
                 samples=samples,
                 valid_mask=valid,
                 final_state=base,
-                trace={},
+                trace=_standard_verification_trace(draws),
                 diagnostics=diagnostics,
                 metadata=metadata,
             )
@@ -306,11 +323,17 @@ def test_sequential_rhat_verifier_stops_when_all_rhat_pass(monkeypatch) -> None:
 
     result = verifier.run()
 
-    assert result.passed is True
-    assert result.cap_hit is False
-    assert result.retained_sample_count == 2
-    assert result.chunk_count == 1
+    assert result.passed is False
+    assert result.cap_hit is True
+    assert result.retained_sample_count == 6
+    assert result.chunk_count == 3
     assert result.max_finite_rhat <= 1.01
+    assert result.diagnostics["acceptance_evidence"]["decision"] == (
+        "inconclusive_evidence"
+    )
+    assert result.diagnostics["rhat_role"] == (
+        "historical_explanatory_only_not_stopping_or_admission"
+    )
     assert result.diagnostics["privacy_contract"][
         "public_summary_contains_step_size"
     ] is False
@@ -330,7 +353,366 @@ def test_sequential_rhat_verifier_stops_when_all_rhat_pass(monkeypatch) -> None:
         sort_keys=True,
     )
     assert "target_log_prob" not in public_text
-    assert "log_accept" not in public_text
+    assert '"log_accept_ratio":' not in public_text
+
+
+def test_sequential_verifier_rejects_retained_count_mismatch(monkeypatch) -> None:
+    import bayesfilter.inference.hmc as hmc_module
+
+    class _ShortMaskChunkRunner:
+        def __init__(self, _adapter, initial_state, _config) -> None:
+            self._state = tf.convert_to_tensor(initial_state, dtype=tf.float64)
+
+        def run(self, *, active_results, current_state=None, seed=None, step_size=None):
+            del seed, step_size
+            draws = int(active_results)
+            base = tf.convert_to_tensor(current_state, dtype=tf.float64)
+            samples = tf.ones((draws, 4, 2), dtype=tf.float64)
+            valid = tf.concat(
+                (tf.ones((draws - 1,), tf.bool), tf.zeros((1,), tf.bool)),
+                axis=0,
+            )
+            return hmc_module.FixedSizeHMCChunkRunResult(
+                samples=samples,
+                valid_mask=valid,
+                final_state=base,
+                trace=_standard_verification_trace(draws, chain_count=4),
+                diagnostics={
+                    "valid_sample_count": tf.constant(draws, tf.int32),
+                    "nonfinite_valid_sample_count": tf.constant(0, tf.int32),
+                    "acceptance_rate": tf.constant(0.70, tf.float64),
+                    "acceptance_decision_count": tf.constant(4 * draws, tf.int32),
+                    "log_accept_ratio_nonfinite_count": tf.constant(0, tf.int32),
+                    "target_log_prob_nonfinite_count": tf.constant(0, tf.int32),
+                    "divergence_status": "not_exposed_by_kernel",
+                    "divergence_count": None,
+                },
+                metadata={},
+            )
+
+    monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _ShortMaskChunkRunner)
+    result = build_sequential_rhat_hmc_verifier(
+        ReviewedBatchedGaussianAdapter(),
+        tf.zeros((2,), dtype=tf.float64),
+        SequentialRHatHMCVerificationConfig(
+            check_interval=64,
+            max_results=64,
+            num_burnin_steps=0,
+            step_size=0.05,
+            num_leapfrog_steps=1,
+            seed=(20260712, 73),
+            chain_count=4,
+            target_scope="fixed_size_hmc_chunk_gaussian",
+        ),
+    ).run()
+
+    assert result.passed is False
+    assert result.cap_hit is False
+    assert result.retained_sample_count == 63
+    assert result.diagnostics["acceptance_evidence_validity"] == (
+        "shared_execution_invalid"
+    )
+    assert "shared_schema_invalid" in result.diagnostics[
+        "engineering_invalidity_reasons"
+    ]
+    assert "chunk_retained_count_mismatch" in result.diagnostics["hard_vetoes"]
+    assert result.diagnostics["chunk_summaries"][0]["expected_active_results"] == 64
+    assert result.diagnostics["chunk_summaries"][0]["observed_valid_mask_count"] == 63
+
+
+def test_sequential_verifier_rejects_mixed_divergence_coverage(monkeypatch) -> None:
+    import bayesfilter.inference.hmc as hmc_module
+
+    class _MixedDivergenceChunkRunner:
+        def __init__(self, _adapter, initial_state, _config) -> None:
+            self.call_count = 0
+
+        def run(self, *, active_results, current_state=None, seed=None, step_size=None):
+            del seed, step_size
+            self.call_count += 1
+            draws = int(active_results)
+            base = tf.convert_to_tensor(current_state, dtype=tf.float64)
+            offset = tf.cast((self.call_count - 1) * draws, tf.float64)
+            draw = offset + tf.cast(tf.range(draws), tf.float64)
+            samples = tf.tile(draw[:, None, None], (1, 4, 2))
+            exposed = self.call_count == 1
+            return hmc_module.FixedSizeHMCChunkRunResult(
+                samples=samples,
+                valid_mask=tf.ones((draws,), tf.bool),
+                final_state=samples[-1],
+                trace=_standard_verification_trace(draws, chain_count=4),
+                diagnostics={
+                    "valid_sample_count": tf.constant(draws, tf.int32),
+                    "nonfinite_valid_sample_count": tf.constant(0, tf.int32),
+                    "acceptance_rate": tf.constant(0.70, tf.float64),
+                    "acceptance_decision_count": tf.constant(4 * draws, tf.int32),
+                    "log_accept_ratio_nonfinite_count": tf.constant(0, tf.int32),
+                    "target_log_prob_nonfinite_count": tf.constant(0, tf.int32),
+                    "divergence_status": (
+                        "available" if exposed else "not_exposed_by_kernel"
+                    ),
+                    "divergence_count": 0 if exposed else None,
+                },
+                metadata={},
+            )
+
+    monkeypatch.setattr(
+        hmc_module,
+        "FixedSizeHMCChunkRunner",
+        _MixedDivergenceChunkRunner,
+    )
+    result = build_sequential_rhat_hmc_verifier(
+        ReviewedBatchedGaussianAdapter(),
+        tf.zeros((2,), dtype=tf.float64),
+        SequentialRHatHMCVerificationConfig(
+            check_interval=32,
+            max_results=64,
+            num_burnin_steps=0,
+            step_size=0.05,
+            num_leapfrog_steps=1,
+            seed=(20260712, 74),
+            chain_count=4,
+            target_scope="fixed_size_hmc_chunk_gaussian",
+        ),
+    ).run()
+
+    assert result.passed is False
+    assert result.cap_hit is False
+    assert result.retained_sample_count == 64
+    assert result.chunk_count == 2
+    assert result.diagnostics["acceptance_evidence_validity"] == (
+        "shared_execution_invalid"
+    )
+    assert result.diagnostics["divergence_status"] == "not_collected"
+    assert result.diagnostics["divergence_count"] is None
+    assert result.diagnostics["divergence_provenance_consistent"] is False
+    assert "shared_schema_invalid" in result.diagnostics[
+        "engineering_invalidity_reasons"
+    ]
+
+
+def test_sequential_verifier_rejects_period_two_return_path(monkeypatch) -> None:
+    import bayesfilter.inference.hmc as hmc_module
+
+    class _PeriodTwoChunkRunner:
+        def __init__(self, _adapter, initial_state, _config) -> None:
+            self._initial_state = tf.convert_to_tensor(initial_state, dtype=tf.float64)
+
+        def run(self, *, active_results, current_state=None, seed=None, step_size=None):
+            draws = int(active_results)
+            state_a = tf.convert_to_tensor(current_state, dtype=tf.float64)
+            state_b = state_a + tf.constant([1.0, -0.5], dtype=tf.float64)
+            samples = tf.stack((state_a, state_b) * (draws // 2), axis=0)
+            valid = tf.ones((draws,), dtype=tf.bool)
+            diagnostics = {
+                "valid_sample_count": tf.constant(draws, dtype=tf.int32),
+                "nonfinite_valid_sample_count": tf.constant(0, dtype=tf.int32),
+                "acceptance_rate": tf.constant(0.70, dtype=tf.float64),
+                "acceptance_decision_count": tf.constant(4 * draws, dtype=tf.int32),
+                "log_accept_ratio_finite_count": tf.constant(4 * draws, dtype=tf.int32),
+                "log_accept_ratio_nonfinite_count": tf.constant(0, dtype=tf.int32),
+                "log_accept_ratio_max_abs_finite": tf.constant(0.36, dtype=tf.float64),
+                "target_log_prob_finite_count": tf.constant(4 * draws, dtype=tf.int32),
+                "target_log_prob_nonfinite_count": tf.constant(0, dtype=tf.int32),
+                "target_log_prob_min_finite": tf.constant(-1.0, dtype=tf.float64),
+                "target_log_prob_max_finite": tf.constant(-0.1, dtype=tf.float64),
+                "divergence_status": "not_exposed_by_kernel",
+                "divergence_count": None,
+            }
+            return hmc_module.FixedSizeHMCChunkRunResult(
+                samples=samples,
+                valid_mask=valid,
+                final_state=samples[-1],
+                trace=_standard_verification_trace(draws, chain_count=4),
+                diagnostics=diagnostics,
+                metadata={
+                    "compile_trace_count": 1,
+                    "first_call_s": 0.01,
+                    "warm_call_s": None,
+                    "chunk_call_s": 0.001,
+                },
+            )
+
+    monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _PeriodTwoChunkRunner)
+    result = build_sequential_rhat_hmc_verifier(
+        ReviewedBatchedGaussianAdapter(),
+        tf.zeros((2,), dtype=tf.float64),
+        SequentialRHatHMCVerificationConfig(
+            check_interval=64,
+            max_results=64,
+            num_burnin_steps=0,
+            step_size=0.05,
+            num_leapfrog_steps=1,
+            seed=(20260712, 72),
+            chain_count=4,
+            rhat_threshold=1.01,
+            target_scope="fixed_size_hmc_chunk_gaussian",
+            chain_execution_mode="tf_function",
+        ),
+    ).run()
+
+    evidence = result.diagnostics["acceptance_evidence"]
+    assert result.passed is False
+    assert result.cap_hit is False
+    assert result.retained_sample_count == 64
+    assert result.chunk_count == 1
+    assert evidence["acceptance_decision"] == "repair_trajectory"
+    assert evidence["path_return_fraction_by_chain"] == [1.0] * 4
+    assert evidence["candidate_promotion_vetoes"] == [
+        "path_return_resonance_detected"
+    ]
+    assert result.diagnostics["tuning_repair_triggers"] == [
+        "trajectory:repair_resonance"
+    ]
+    assert result.diagnostics["rhat_role"] == (
+        "historical_explanatory_only_not_stopping_or_admission"
+    )
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected_validity", "expected_reason", "expected_status_count"),
+    (
+        ("public_default", "valid", None, None),
+        (
+            "missing",
+            "shared_execution_invalid",
+            "required_target_status_telemetry_missing",
+            None,
+        ),
+        ("malformed", "shared_execution_invalid", "shared_schema_invalid", None),
+        (
+            "nonvalid",
+            "candidate_data_invalid",
+            "target_status_telemetry_failure",
+            64,
+        ),
+        (
+            "callback_exception",
+            "shared_execution_invalid",
+            "shared_callback_invalid",
+            None,
+        ),
+    ),
+)
+def test_sequential_verifier_private_retained_health_is_phase7_opt_in(
+    monkeypatch,
+    mode: str,
+    expected_validity: str,
+    expected_reason: str | None,
+    expected_status_count: int | None,
+) -> None:
+    import bayesfilter.inference.hmc as hmc_module
+
+    class _DeterministicChunkRunner:
+        def __init__(self, _adapter, initial_state, _config) -> None:
+            self._state = tf.convert_to_tensor(initial_state, dtype=tf.float64)
+
+        def run(self, *, active_results, current_state=None, seed=None, step_size=None):
+            del seed, step_size
+            draws = int(active_results)
+            base = tf.convert_to_tensor(current_state, dtype=tf.float64)
+            draw = tf.cast(tf.range(draws), tf.float64)[:, tf.newaxis, tf.newaxis]
+            chain = tf.cast(tf.range(4), tf.float64)[tf.newaxis, :, tf.newaxis]
+            direction = tf.constant([1.0, -0.5], tf.float64)[tf.newaxis, tf.newaxis, :]
+            samples = draw * direction + chain
+            probability = tf.fill((draws, 4), tf.constant(0.70, tf.float64))
+            diagnostics = {
+                "valid_sample_count": tf.constant(draws, tf.int32),
+                "nonfinite_valid_sample_count": tf.constant(0, tf.int32),
+                "acceptance_rate": tf.constant(0.70, tf.float64),
+                "acceptance_decision_count": tf.constant(4 * draws, tf.int32),
+                "log_accept_ratio_finite_count": tf.constant(4 * draws, tf.int32),
+                "log_accept_ratio_nonfinite_count": tf.constant(0, tf.int32),
+                "log_accept_ratio_max_abs_finite": -tf.math.log(
+                    tf.constant(0.70, tf.float64)
+                ),
+                "target_log_prob_finite_count": tf.constant(4 * draws, tf.int32),
+                "target_log_prob_nonfinite_count": tf.constant(0, tf.int32),
+                "target_log_prob_min_finite": tf.constant(-1.0, tf.float64),
+                "target_log_prob_max_finite": tf.constant(-0.1, tf.float64),
+                "divergence_status": "not_exposed_by_kernel",
+                "divergence_count": None,
+            }
+            return hmc_module.FixedSizeHMCChunkRunResult(
+                samples=samples,
+                valid_mask=tf.ones((draws,), tf.bool),
+                final_state=samples[-1] if draws else base,
+                trace={
+                    "is_accepted": tf.ones((draws, 4), tf.bool),
+                    "log_accept_ratio": tf.math.log(probability),
+                    "target_log_prob": -tf.reduce_sum(tf.square(samples), axis=-1),
+                },
+                diagnostics=diagnostics,
+                metadata={
+                    "compile_trace_count": 1,
+                    "first_call_s": 0.01,
+                    "warm_call_s": None,
+                    "chunk_call_s": 0.001,
+                },
+            )
+
+    class _StatusAdapter(ReviewedBatchedGaussianAdapter):
+        def log_prob_and_grad(self, theta):
+            if mode == "callback_exception":
+                raise RuntimeError("unexpected target callback failure")
+            return super().log_prob_and_grad(theta)
+
+        def target_status_telemetry(self, theta):
+            shape = tf.shape(theta)[:-1]
+            payload = {
+                "status_code": tf.zeros(shape, tf.int32),
+                "valid_pre_regularized_score": tf.ones(shape, tf.bool),
+                "floor_count_value": tf.zeros(shape, tf.int32),
+                "min_innovation_eigenvalue": tf.ones(shape, tf.float64),
+                "innovation_condition_estimate": tf.ones(shape, tf.float64),
+            }
+            if mode == "malformed":
+                payload.pop("floor_count_value")
+            elif mode == "nonvalid":
+                payload["status_code"] = tf.concat(
+                    (tf.ones((1,), tf.int32), tf.zeros((3,), tf.int32)),
+                    axis=0,
+                )
+            return payload
+
+    adapter = (
+        ReviewedBatchedGaussianAdapter()
+        if mode in {"public_default", "missing"}
+        else _StatusAdapter()
+    )
+    monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _DeterministicChunkRunner)
+    verifier = build_sequential_rhat_hmc_verifier(
+        adapter,
+        tf.zeros((4, 2), dtype=tf.float64),
+        SequentialRHatHMCVerificationConfig(
+            check_interval=64,
+            max_results=64,
+            num_burnin_steps=0,
+            step_size=0.05,
+            num_leapfrog_steps=1,
+            seed=(20260712, 1),
+            chain_count=4,
+            target_scope="fixed_size_hmc_chunk_gaussian",
+            chain_execution_mode="tf_function",
+        ),
+    )
+    if mode != "public_default":
+        verifier._configure_retained_target_health_policy("per_chain_step")
+
+    result = verifier.run()
+    diagnostics = result.diagnostics
+
+    assert diagnostics["acceptance_evidence_validity"] == expected_validity
+    assert diagnostics["target_status_failure_count"] == expected_status_count
+    if mode == "public_default":
+        assert result.passed is True
+        assert diagnostics["retained_target_health_policy"] == "disabled"
+        assert diagnostics["target_score_health_passed"] is None
+        assert diagnostics["retained_target_health_evaluated_draw_count"] == 0
+    else:
+        assert result.passed is False
+        assert diagnostics["retained_target_health_policy"] == "per_chain_step"
+        assert expected_reason in diagnostics["engineering_invalidity_reasons"]
 
 
 def test_sequential_rhat_verifier_stops_at_cap_when_rhat_fails(monkeypatch) -> None:
@@ -377,7 +759,7 @@ def test_sequential_rhat_verifier_stops_at_cap_when_rhat_fails(monkeypatch) -> N
                 samples=samples,
                 valid_mask=valid,
                 final_state=base,
-                trace={},
+                trace=_standard_verification_trace(draws),
                 diagnostics=diagnostics,
                 metadata=metadata,
             )
@@ -449,7 +831,7 @@ def test_sequential_rhat_verifier_default_does_not_call_checkpoint_writer(
                 samples=samples,
                 valid_mask=valid,
                 final_state=base,
-                trace={},
+                trace=_standard_verification_trace(draws),
                 diagnostics=diagnostics,
                 metadata=metadata,
             )
@@ -533,7 +915,7 @@ def test_sequential_rhat_verifier_opt_in_writes_private_checkpoints(
                 samples=samples,
                 valid_mask=valid,
                 final_state=base,
-                trace={},
+                trace=_standard_verification_trace(draws),
                 diagnostics=diagnostics,
                 metadata=metadata,
             )
@@ -603,7 +985,7 @@ def test_sequential_rhat_verifier_opt_in_writes_private_checkpoints(
         sort_keys=True,
     )
     assert "target_log_prob" not in public_text
-    assert "log_accept" not in public_text
+    assert '"log_accept_ratio":' not in public_text
     for reference in references:
         assert_sequential_rhat_checkpoint_public_reference_safe(reference)
         public_text = json.dumps(reference, sort_keys=True)
@@ -862,7 +1244,7 @@ def test_sequential_rhat_checkpoint_writer_runs_before_hard_veto_stop(
                 samples=samples,
                 valid_mask=valid,
                 final_state=base,
-                trace={},
+                trace=_standard_verification_trace(draws),
                 diagnostics=diagnostics,
                 metadata=metadata,
             )
@@ -920,7 +1302,7 @@ def test_sequential_rhat_checkpoint_writer_runs_before_hard_veto_stop(
         sort_keys=True,
     )
     assert "target_log_prob" not in public_text
-    assert "log_accept" not in public_text
+    assert '"log_accept_ratio":' not in public_text
     assert str(tmp_path) not in public_text
 
 

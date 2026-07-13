@@ -1,0 +1,348 @@
+{
+  "baseline": {
+    "description": "Current dirty Kalman QR source plus the failed 2026-07-09 benchmark artifacts",
+    "historical_artifact_disposition": "historical_debug_only_nonresumable_under_repaired_schema",
+    "reset_memo": "docs/plans/bayesfilter-kalman-qr-batched-xla-reset-memo-2026-07-10.md"
+  },
+  "confirmed_defects": [
+    {
+      "classification": "common_harness_fixture",
+      "evidence": "scripts/benchmark_kalman_qr_parameter_count_scaling.py:368",
+      "finding": "_batched_model_tensors requires a static B and constructs every row with a Python range loop, so tracing duplicates the fixture body across B."
+    },
+    {
+      "classification": "correctness_reference_misused_as_scaling_comparator",
+      "evidence": [
+        "scripts/benchmark_kalman_qr_parameter_count_scaling.py:625",
+        "scripts/benchmark_kalman_qr_parameter_count_scaling.py:669"
+      ],
+      "finding": "The scalar analytical and reverse-mode comparators are Python-unrolled across B and are compiled together with the nominal batch-native arm."
+    },
+    {
+      "classification": "common_analytical_graph_growth",
+      "evidence": [
+        "bayesfilter/linear/kalman_qr_derivatives_tf.py:205",
+        "bayesfilter/linear/kalman_qr_derivatives_tf.py:253",
+        "bayesfilter/linear/kalman_qr_derivatives_tf.py:285"
+      ],
+      "finding": "Three batched QR/Cholesky/covariance derivative helpers statically unroll the parameter axis P."
+    },
+    {
+      "classification": "diagnostic_harness_bug",
+      "evidence": "scripts/benchmark_kalman_qr_parameter_count_scaling.py:715",
+      "finding": "The batched-autodiff probe creates tf.reduce_sum(value) after leaving GradientTape, so the reduction is not recorded and tape.gradient can return None; the NaN fallback does not establish a Kalman/autodiff math failure."
+    },
+    {
+      "classification": "measurement_boundary",
+      "evidence": "scripts/benchmark_kalman_qr_parameter_count_scaling.py:783",
+      "finding": "_time_call includes _materialize, .numpy(), full device-to-host transfer, Python list conversion, and reporting preparation in every recorded call."
+    },
+    {
+      "classification": "method_failure_coupling",
+      "evidence": "scripts/benchmark_kalman_qr_parameter_count_scaling.py:836",
+      "finding": "benchmark_case constructs and executes all methods in one process; one method failure prevents preservation of later method evidence."
+    },
+    {
+      "classification": "artifact_status_integrity",
+      "evidence": "scripts/benchmark_kalman_qr_parameter_count_scaling.py:1440",
+      "finding": "The isolated-grid parent unconditionally flushes run_status=complete after collecting error rows. All three B=16 CPU artifacts and both GPU-preflight artifacts therefore say complete while containing failed rows."
+    },
+    {
+      "classification": "resume_integrity",
+      "evidence": "docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py:179",
+      "finding": "The historical supervisor skips any artifact whose summary.run_status equals complete without validating row success, schema, source hash, or config hash."
+    },
+    {
+      "classification": "supervisor_exit_integrity",
+      "evidence": "docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py:241",
+      "finding": "The historical supervisor records a GPU-preflight failure but returns failure only when cpu_failures is nonzero."
+    },
+    {
+      "classification": "strict_json_integrity",
+      "evidence": "scripts/benchmark_kalman_qr_parameter_count_scaling.py:1486",
+      "finding": "Artifact serialization does not set allow_nan=False, so non-finite Python floats may be emitted as non-standard JSON tokens."
+    }
+  ],
+  "created_at": "2026-07-11T02:32:26+08:00",
+  "environment": {
+    "CONDA_DEFAULT_ENV": "tfgpu",
+    "CONDA_PREFIX": "/home/ubuntu/anaconda3/envs/tfgpu",
+    "CUDA_VISIBLE_DEVICES": null,
+    "XLA_FLAGS": null,
+    "gpu_identity": "not_probed_phase0",
+    "interpreter": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "packages": {
+      "numpy": {
+        "distribution": "numpy",
+        "version": "2.1.3"
+      },
+      "tensorflow": {
+        "distribution": "tensorflow",
+        "version": "2.20.0"
+      },
+      "tensorflow_probability": {
+        "distribution": "tfp-nightly",
+        "version": "0.25.0"
+      }
+    },
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "python_implementation": "CPython",
+    "python_version": "3.13.13",
+    "tensorflow_imported": false
+  },
+  "git": {
+    "closing_head": "52ee244498988e046a6356f926003b581103083b",
+    "closing_relevant_status": [
+      " M bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      " M bayesfilter/linear/kalman_qr_tf.py",
+      " M bayesfilter/linear/qr_factor_tf.py",
+      " M tests/test_linear_kalman_qr_derivatives_tf.py",
+      "?? docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py",
+      "?? scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+      "?? tests/test_linear_qr_batched_analytical_score_tf.py"
+    ],
+    "fingerprint_stable": true,
+    "opening_head": "52ee244498988e046a6356f926003b581103083b",
+    "opening_relevant_status": [
+      " M bayesfilter/linear/kalman_qr_derivatives_tf.py",
+      " M bayesfilter/linear/kalman_qr_tf.py",
+      " M bayesfilter/linear/qr_factor_tf.py",
+      " M tests/test_linear_kalman_qr_derivatives_tf.py",
+      "?? docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py",
+      "?? scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+      "?? tests/test_linear_qr_batched_analytical_score_tf.py"
+    ],
+    "relevant_paths": [
+      {
+        "path": "scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+        "sha256": "0002e3270785a0f699894a148673b5abadded66806836df96b728c5c31d420ac",
+        "status": "untracked"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+        "sha256": "9434c3e0ccbc53b51545eddaee673095595cb7003b60e446c192ca7a255d84a5",
+        "status": "modified"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_tf.py",
+        "sha256": "cc99674daf80a3f26b230b38fa799a84162e3b4ca3ee459bcea3c58318013216",
+        "status": "modified"
+      },
+      {
+        "path": "bayesfilter/linear/qr_factor_tf.py",
+        "sha256": "bfde07b558e6c900a51f888d83ece817f562c06cf393c0dfdc76959adc087401",
+        "status": "modified"
+      },
+      {
+        "path": "tests/test_linear_qr_batched_analytical_score_tf.py",
+        "sha256": "b8525aaa7c9c5551e1ee80dfccc526c071f3145579e8ab0f977a88185f667e79",
+        "status": "untracked"
+      },
+      {
+        "path": "tests/test_linear_kalman_qr_derivatives_tf.py",
+        "sha256": "d7ae40b725124220a7a10d85ef6e94bec07e89dce31b659b51797b9c1f6dd7d3",
+        "status": "modified"
+      },
+      {
+        "path": "docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py",
+        "sha256": "9ad4eaf9f837984be7dd52b14684e2b59097aa5183d92aece99924f2b515eadd",
+        "status": "untracked"
+      }
+    ]
+  },
+  "historical_anchors": [
+    {
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema",
+      "invalidity_reason": "Historical diagnosis and handoff only; it is not an executable or resumable result artifact and contains no embedded source fingerprint.",
+      "path": "docs/plans/bayesfilter-kalman-qr-batched-xla-reset-memo-2026-07-10.md",
+      "sha256": "d708c187c71fb0fc30887fe3b180b7f45bf13ccd21718aa839145c0b4d0e5443",
+      "source_fingerprint": "unknown",
+      "status": "historical_reset_memo"
+    },
+    {
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema",
+      "invalidity_reason": "Supervisor summary reports complete_with_failures, has no source/config resume key, and was produced by the invalid all-method coupled schema.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_overnight_status_2026-07-09.json",
+      "sha256": "4c14bdf2a3bb7567b5db464528f053980debb5cc2bc121d5b04764e08aac19fc",
+      "source_fingerprint": "unknown",
+      "status": "complete_with_failures"
+    },
+    {
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema",
+      "invalidity_reason": "Historical runner source has status/resume and exit-code defects and must not be used to overwrite or resume dated outputs.",
+      "path": "docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py",
+      "sha256": "9ad4eaf9f837984be7dd52b14684e2b59097aa5183d92aece99924f2b515eadd",
+      "source_fingerprint": "unknown",
+      "status": "historical_runner_source"
+    },
+    {
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema",
+      "invalidity_reason": "Artifact says complete while its only row failed in the coupled autodiff row-loop XLA path; it cannot determine analytical-only GPU viability.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.json",
+      "sha256": "5952d766318867e54a45536e768ab427986cd06cb9fcb758dad8f1df59046332",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_with_failed_row"
+    }
+  ],
+  "historical_cpu_row_artifacts": [
+    {
+      "invalidity_reason": "Artifact says complete but contains five failed rows; coupled methods, host-materializing timing, and no repaired resume key make it non-resumable.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.json",
+      "sha256": "09c536d4d1d98672d5462d551ca5111c6d37c04c3d640f56e9c1d7634e97b061",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_with_5_failed_rows",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Historical all-method coupled v1 artifact includes host materialization in timing and lacks the repaired schema/source/config resume key.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch1_xla_2026-07-09.json",
+      "sha256": "bde3f11003b1201ab82449ae92637c4018d09a9a838824f25afc0af02717acd7",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_parity_passed",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Historical all-method coupled v1 artifact includes host materialization in timing and lacks the repaired schema/source/config resume key.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch4_xla_2026-07-09.json",
+      "sha256": "3ea36d34c4f1555b033695527543923f65f13ea105a756428ebb2e7fc3300997",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_parity_passed",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Artifact says complete but contains five failed rows; coupled methods, host-materializing timing, and no repaired resume key make it non-resumable.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.json",
+      "sha256": "08da616b1d82dd3d30c086f5f43b3e5079e3e2f94af0c462a755f22a973f6cb7",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_with_5_failed_rows",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Historical all-method coupled v1 artifact includes host materialization in timing and lacks the repaired schema/source/config resume key.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.json",
+      "sha256": "b712b17f097a26fc6047194d9a8e9b2c1acd2ec67aba09128dc5985a53a60743",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_parity_passed",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Historical all-method coupled v1 artifact includes host materialization in timing and lacks the repaired schema/source/config resume key.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.json",
+      "sha256": "cea9d9f468230df15a018d20eec73ebf1be4d46f927ed55db044c4443510298c",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_parity_passed",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Artifact says complete but contains five failed rows; coupled methods, host-materializing timing, and no repaired resume key make it non-resumable.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch16_xla_2026-07-09.json",
+      "sha256": "e8e9ccdc89219c75d761ecd0e24094c0dd86d46d8e5471a582e248bbbce8c483",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_with_5_failed_rows",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Historical all-method coupled v1 artifact includes host materialization in timing and lacks the repaired schema/source/config resume key.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.json",
+      "sha256": "c759212c6c331fd4a41d8b79a9ec88c1fa5ef915d58808557b2283645a1a55a0",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_parity_passed",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Historical all-method coupled v1 artifact includes host materialization in timing and lacks the repaired schema/source/config resume key.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.json",
+      "sha256": "f682ab85c0dbed05fb51ed693e81969de8aff6b68b96b38eddabbe66a09ca8ee",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_parity_passed",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    }
+  ],
+  "historical_gpu_preflight_artifacts": [
+    {
+      "invalidity_reason": "Artifact says complete while its only row failed; the all-method preflight couples analytical viability to autodiff-row-loop compilation.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.json",
+      "sha256": "561c2b7351576759d7a020fd3628968e7035c8ba3174a2662fa904fa75d14d37",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_with_failed_row",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    },
+    {
+      "invalidity_reason": "Artifact says complete while its only row failed; the all-method preflight couples analytical viability to autodiff-row-loop compilation.",
+      "path": "docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.json",
+      "sha256": "5952d766318867e54a45536e768ab427986cd06cb9fcb758dad8f1df59046332",
+      "source_fingerprint": "52ee244498988e046a6356f926003b581103083b",
+      "status": "complete_with_failed_row",
+      "disposition": "historical_debug_only_nonresumable_under_repaired_schema"
+    }
+  ],
+  "historical_gpu_configuration": {
+    "artifact": "docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.json",
+    "logical_gpus": [
+      "/device:GPU:0",
+      "/device:GPU:1"
+    ],
+    "physical_gpus": [
+      "/physical_device:GPU:0",
+      "/physical_device:GPU:1"
+    ],
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "hypotheses_for_later_phases": [
+    {
+      "hypothesis": "Replacing B-axis fixture construction and P-axis derivative helpers with tensor algebra will reduce graph growth and XLA compile pressure.",
+      "test_phase": 2
+    },
+    {
+      "hypothesis": "The existing P-vectorized formulas can reproduce current loop helpers exactly, but prior bounded diagnostics are not promotion evidence and must be rerun under Phase 3 tests.",
+      "test_phase": 3
+    },
+    {
+      "hypothesis": "Moving the batched likelihood reduction inside GradientTape will eliminate the probe's artificial None/NaN gradient; row-independence and scalar-reference parity remain required.",
+      "test_phase": 4
+    },
+    {
+      "hypothesis": "Method-isolated GPU XLA may preserve analytical evidence even if reverse-mode autodiff retains the historical layout failure.",
+      "test_phase": 7
+    }
+  ],
+  "nonclaims": [
+    "No implementation correctness claim",
+    "No XLA compile viability claim",
+    "No runtime or method-ranking claim",
+    "No current GPU identity or readiness claim",
+    "No HMC, posterior, production, default, or scientific claim"
+  ],
+  "process_checks": [
+    {
+      "command": "ps -C python -C python3 -o pid=,ppid=,stat=,etime=,args= filtered to kalman_qr|run_kalman_qr|benchmark_kalman|XLA_FLAGS|tfgpu/bin/python",
+      "matched_workers": [],
+      "position": "opening"
+    },
+    {
+      "command": "ps -C python -C python3 -o pid=,ppid=,stat=,etime=,args= filtered to kalman_qr|run_kalman_qr|benchmark_kalman|XLA_FLAGS|tfgpu/bin/python",
+      "matched_workers": [],
+      "position": "closing"
+    }
+  ],
+  "question": "Is there a complete, current, source-fingerprinted contract sufficient to begin surgical harness repair?",
+  "schema": "bayesfilter.kalman_qr_batched_xla_repair.phase0_inventory.v1",
+  "source_structure": {
+    "jit_defaults": [
+      "The benchmark CLI defaults --jit-compile to true.",
+      "tf_qr_sqrt_kalman_score_batched_static is decorated with jit_compile=True."
+    ],
+    "python_loop_boundaries": [
+      "B-axis fixture construction in _batched_model_tensors",
+      "B-axis scalar analytical comparator",
+      "B-axis autodiff comparator",
+      "P-axis batched QR/Cholesky/covariance derivative helpers",
+      "T-axis deterministic observation generation outside timed execution"
+    ],
+    "tensorflow_loop_boundaries": [
+      "Batched analytical score time recursion uses tf.while_loop with parallel_iterations=1.",
+      "Batched value likelihood time recursion uses tf.while_loop."
+    ]
+  },
+  "status": "phase0_inventory_complete"
+}

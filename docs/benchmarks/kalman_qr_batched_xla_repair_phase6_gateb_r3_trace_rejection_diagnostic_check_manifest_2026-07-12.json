@@ -1,0 +1,170 @@
+{
+  "artifacts": {
+    "diagnostic": {
+      "byte_count": 5780057,
+      "diagnostic_payload_sha256": "30a2753246d4c86a6952268fad5a49d8e77991084f4100a45d1eca051c710cd7",
+      "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_2026-07-12.json",
+      "sha256": "637273af37ed2606b9bd0bc4868a1719a65ad17d89d94ab018e5678082fb25ff"
+    },
+    "implementation": {
+      "byte_count": 45455,
+      "path": "docs/benchmarks/diagnose_kalman_qr_phase6_gateb_r3_trace_rejections_2026_07_12.py",
+      "sha256": "7e0f1818bb5bc349adea2b2ba703cdd4d552c3e6ffb195f9613f791cd6710c4a"
+    },
+    "test": {
+      "byte_count": 12806,
+      "path": "tests/test_kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic.py",
+      "sha256": "c902fc65c513960de7bcef36c493057aeb05577946df94cb62cdfb2d432ee44c"
+    }
+  },
+  "checks": {
+    "baseline_count_pairs_reproduced": true,
+    "budget_state_closed": true,
+    "diagnostic_payload_digest_equal_across_three_runs": true,
+    "durable_payload_validation_all_true": true,
+    "forbidden_branch_pairs_absent": true,
+    "git_no_index_whitespace_clean": true,
+    "lease_released": true,
+    "no_target_call_surface_ast_test": true,
+    "no_target_worker": true,
+    "protected_and_r2_hashes_match": true,
+    "r3_namespace_exact": true,
+    "trace_and_pilot_final_ledgers_valid": true,
+    "trailing_whitespace_absent": true
+  },
+  "commands": [
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONPYCACHEPREFIX=/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/pycache /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m py_compile docs/benchmarks/diagnose_kalman_qr_phase6_gateb_r3_trace_rejections_2026_07_12.py tests/test_kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic.py > docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_py_compile_2026-07-12.txt 2>&1",
+      "elapsed_seconds": 0.061549363,
+      "exit_code": 0,
+      "finished_utc": "2026-07-12T16:15:06.296592985+00:00",
+      "log": {
+        "byte_count": 0,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_py_compile_2026-07-12.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pass_predicate": "exit_code == 0",
+      "started_utc": "2026-07-12T16:15:06.228247431+00:00"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONPYCACHEPREFIX=/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/pycache /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q -o cache_dir=/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/.pytest_cache tests/test_kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic.py > docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_focused_pytest_2026-07-12.txt 2>&1",
+      "elapsed_seconds": 3.144399157,
+      "exit_code": 0,
+      "finished_utc": "2026-07-12T16:15:28.654768540+00:00",
+      "log": {
+        "byte_count": 99,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_focused_pytest_2026-07-12.txt",
+        "sha256": "b6fc5e0b2a2e217683a2277fb19aff365537a246eb8e02a102728aa3ac702954"
+      },
+      "pass_predicate": "exit_code == 0 and exactly 11 tests pass",
+      "started_utc": "2026-07-12T16:15:25.503515371+00:00"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONPYCACHEPREFIX=/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/pycache /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/diagnose_kalman_qr_phase6_gateb_r3_trace_rejections_2026_07_12.py --trace-input docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_census_2026-07-12.json --output-json /tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/run1.json > docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_run1_2026-07-12.txt 2>&1",
+      "elapsed_seconds": 41.74633153900504,
+      "exit_code": 0,
+      "finished_utc": "2026-07-12T16:07:21.296417+00:00",
+      "log": {
+        "byte_count": 888,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_run1_2026-07-12.txt",
+        "sha256": "40ff758b7206c68faf45d6049f0d293b59b4a2fbcde527f82750067b330c4e7e"
+      },
+      "output": {
+        "byte_count": 5779989,
+        "diagnostic_payload_sha256": "30a2753246d4c86a6952268fad5a49d8e77991084f4100a45d1eca051c710cd7",
+        "path": "/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/run1.json",
+        "sha256": "86fca0b0dda896ab053929738f18cb70be418eb0b6b4f138b6bcc2d58b7f6088"
+      },
+      "pass_predicate": "exit_code == 0 and all strict payload checks are true",
+      "started_utc": "2026-07-12T16:06:39.550142+00:00"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONPYCACHEPREFIX=/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/pycache /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/diagnose_kalman_qr_phase6_gateb_r3_trace_rejections_2026_07_12.py --trace-input docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_census_2026-07-12.json --output-json /tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/run2.json > docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_run2_2026-07-12.txt 2>&1",
+      "elapsed_seconds": 41.071354658924975,
+      "exit_code": 0,
+      "finished_utc": "2026-07-12T16:08:49.789617+00:00",
+      "log": {
+        "byte_count": 888,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_run2_2026-07-12.txt",
+        "sha256": "db9eff0b47eba8519bc46cd62a3c5777e63213c7ce7133cbf20e90fe4f52bfdb"
+      },
+      "output": {
+        "byte_count": 5779990,
+        "diagnostic_payload_sha256": "30a2753246d4c86a6952268fad5a49d8e77991084f4100a45d1eca051c710cd7",
+        "path": "/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/run2.json",
+        "sha256": "76c2dbbc1b42f5b3ba589bd8ca0ddadb3a843e381c03d3743c3c5555ac9f783c"
+      },
+      "pass_predicate": "exit_code == 0 and payload digest equals run1",
+      "started_utc": "2026-07-12T16:08:08.718306+00:00"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 PYTHONPYCACHEPREFIX=/tmp/kalman_qr_phase6_gateb_r3_trace_rejection_diagnostic/pycache /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/diagnose_kalman_qr_phase6_gateb_r3_trace_rejections_2026_07_12.py --trace-input docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_census_2026-07-12.json --output-json docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_2026-07-12.json > docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_durable_run_2026-07-12.txt 2>&1",
+      "elapsed_seconds": 41.71222290198784,
+      "exit_code": 0,
+      "finished_utc": "2026-07-12T16:10:32.757566+00:00",
+      "log": {
+        "byte_count": 956,
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_durable_run_2026-07-12.txt",
+        "sha256": "d60edf2c6c99e14b9cf73d714f728712a142a35a76b091324d552b14d7e424fb"
+      },
+      "output": {
+        "byte_count": 5780057,
+        "diagnostic_payload_sha256": "30a2753246d4c86a6952268fad5a49d8e77991084f4100a45d1eca051c710cd7",
+        "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_2026-07-12.json",
+        "sha256": "637273af37ed2606b9bd0bc4868a1719a65ad17d89d94ab018e5678082fb25ff"
+      },
+      "pass_predicate": "exit_code == 0 and payload digest equals both scratch runs",
+      "started_utc": "2026-07-12T16:09:51.045387+00:00"
+    }
+  ],
+  "environment": {
+    "git_commit": "a644d29c5c2fd09a0deb3a7b5212799ff1fcb163",
+    "gpu": "deliberately_hidden_no_enumeration",
+    "jit_xla": "not_initialized_or_invoked",
+    "kernel": "Linux 6.8.0-124-generic x86_64",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "tf32": "not_queried",
+    "working_directory": "/home/ubuntu/python/BayesFilter"
+  },
+  "frozen_inputs": {
+    "attestation_sha256": "9399be89c2263b0898c2a1c7718ca8484a81cb3fea31e8740c31750a0147e60f",
+    "authority_id": "7d630ff42cc759c02d3e6618c90b97923ec9a9e8cba5b99dd41ee94e09347a33",
+    "budget_sha256": "dd3a9495585a2f4b2995f1910da7d7b733f68467a285fa1856b5acf881f3886d",
+    "budget_state_sha256": "a44904233d54b5906a96c0ba26c6e75e8ef33980e531ea7546d43099cbdefc28",
+    "lease_sha256": "8005baec0a329003b46049b2aa21cfaf887e1934f8b60f8499a1f3aeb10ac14b",
+    "pilot_sha256": "1344f701eabfbec56e447b2cf40f3a8a4dd6cb79ef195659a50dfa4f03fb8ea2",
+    "protected_hashes": {
+      "bayesfilter/linear/kalman_qr_derivatives_tf.py": "d24ae4363d4bf14a08149c81cf018b36fe9a3ca85a3c5cb7d6064ce4915bfb57",
+      "bayesfilter/linear/kalman_qr_tf.py": "ad1fc869ce0be2aaffa18c1762d44b39c86de19ee0752e77cdce1c4d9c9fd06b",
+      "bayesfilter/linear/qr_factor_tf.py": "bfde07b558e6c900a51f888d83ece817f562c06cf393c0dfdc76959adc087401"
+    },
+    "r2_hashes": {
+      "archive": "40e6a186a28cd15d4ab3901f516854a6d84065fcb9759716108ab8e103e7834d",
+      "import_discovery": "8ae6086bd6b8bbebd7bf236536a80cb6b8befa993a9e686801c451e8fec4c8ac",
+      "lease": "ae711efe84056ae416d5fe2d2d40751b91afaa7f3a2e3530f095fb501a03b456",
+      "state": "a4cc284b64d6527a7357171f4c47395a7f29f7fed7e50b15563257feae09390f"
+    },
+    "review_final_sha256": "9defdc687ad2d8ec265a71c8d68745c1c1e2eba9976fa62837a6816fbfadba0a",
+    "subplan_sha256": "0afb2d033e62035c032a82db48ffce949a72776109ac9c37c97f28a04f3b3929",
+    "trace_sha256": "7444fb41ef9d125990dee93a5370227c4b9ec0987ee37cb9ab7dfd362281d2b6"
+  },
+  "repair_loop": {
+    "attempt0_interrupted_log": {
+      "byte_count": 330,
+      "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_attempt0_interrupted_2026-07-12.txt",
+      "sha256": "384739f73471fbc320263bc2afe7ed5792f429dcf34e09853d1389a349a1a612"
+    },
+    "classification": "implementation_efficiency_repair_then_post_run_attribution_red_team",
+    "pre_redteam_artifact": {
+      "byte_count": 5134362,
+      "disposition": "superseded_not_promotion_evidence",
+      "path": "docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_rejection_diagnostic_pre_redteam_2026-07-12.json",
+      "sha256": "06d9f976d642dd9a972cc651dacc44dc36b6c74e2dcd3cb13e79a55843602847"
+    },
+    "reason": "first scratch implementation recomputed consumer reachability quadratically; the later pre-red-team result did not prove complete residual attribution or consumer safety; both were preserved and superseded before final evidence"
+  },
+  "schema": "bayesfilter.kalman_qr_batched_xla_repair.phase6.trace_rejection_diagnostic_checks.v1",
+  "state": "passed",
+  "timestamp_utc": "2026-07-12T16:16:23.322222+00:00"
+}

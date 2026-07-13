@@ -1,0 +1,697 @@
+{
+  "cells": [
+    {
+      "baseline": {
+        "batch_size": 1,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "explicit_ones_seed",
+          "--parameter-count",
+          "50",
+          "--batch-size",
+          "1"
+        ],
+        "child_wall_seconds": 3.9148798499954864,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 769,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 15,
+            "While": 0
+          },
+          "serialized_bytes": 291517,
+          "sha256": "5227ff03f4d70cd86f51e18dcb30fc70576e8c7235257888cba205b37a918307",
+          "top_level_node_count": 622,
+          "total_node_count": 1391
+        },
+        "jit_compile": false,
+        "method": "explicit_ones_seed",
+        "output_digest": "a294f3e145c76265186184a7c534c083c90aba373d1e4744232dfc0cfde08e77",
+        "parameter_count": 50,
+        "stderr_tail": "2026-07-13 13:47:56.793257: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.3114352870034054
+      },
+      "batch_size": 1,
+      "candidate": {
+        "analytical_output_digest": "12105aaaf52785ca73d55a6eb93e6d0c99c103946db1f4a0273cfac117138b35",
+        "batch_size": 1,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "reduce_sum",
+          "--parameter-count",
+          "50",
+          "--batch-size",
+          "1"
+        ],
+        "child_wall_seconds": 5.382456477964297,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 769,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 16,
+            "While": 0
+          },
+          "serialized_bytes": 292135,
+          "sha256": "62294459a5d5ced0785d46544ecf5cad7fd4c341e790be8ffc84601065230cee",
+          "top_level_node_count": 628,
+          "total_node_count": 1397
+        },
+        "jit_compile": false,
+        "method": "reduce_sum",
+        "output_digest": "a294f3e145c76265186184a7c534c083c90aba373d1e4744232dfc0cfde08e77",
+        "parameter_count": 50,
+        "stderr_tail": "2026-07-13 13:48:00.636515: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.3008209379622713
+      },
+      "checks": {
+        "baseline_metadata": true,
+        "candidate_metadata": true,
+        "score_candidate_vs_analytical": {
+          "actual_count": 50,
+          "atol": 0.0002,
+          "expected_count": 50,
+          "max_abs_residual": 3.725290298461914e-09,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "score_candidate_vs_baseline": {
+          "actual_count": 50,
+          "atol": 0.0002,
+          "expected_count": 50,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_analytical": {
+          "actual_count": 1,
+          "atol": 0.0002,
+          "expected_count": 1,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_baseline": {
+          "actual_count": 1,
+          "atol": 0.0002,
+          "expected_count": 1,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        }
+      },
+      "correctness_passed": true,
+      "parameter_count": 50,
+      "structural_delta": {
+        "serialized_bytes_reduction_percent": -0.21199449774798726,
+        "total_node_count_reduction_percent": -0.43134435657800146
+      }
+    },
+    {
+      "baseline": {
+        "batch_size": 4,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "explicit_ones_seed",
+          "--parameter-count",
+          "50",
+          "--batch-size",
+          "4"
+        ],
+        "child_wall_seconds": 4.418384163058363,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 771,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 16,
+            "While": 0
+          },
+          "serialized_bytes": 293795,
+          "sha256": "642779fd4ae74070f11a23e208f2c3bbd8fc7fdd1e0a483cce74d5023e6ee229",
+          "top_level_node_count": 638,
+          "total_node_count": 1409
+        },
+        "jit_compile": false,
+        "method": "explicit_ones_seed",
+        "output_digest": "8600636900fe5b80cde215fe3869dc164aeec3a91367bfc5ebea3c2f00690ad3",
+        "parameter_count": 50,
+        "perturbed_output_digest": "1cf9e7dfcbc869f3d6116ce84aef4594fcaaa975605a1465aa026ad21657a5c4",
+        "stderr_tail": "2026-07-13 13:48:06.163520: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.3309178730705753
+      },
+      "batch_size": 4,
+      "candidate": {
+        "analytical_output_digest": "2f775557116c4690c6138b0e45f4e53bf8730e28b6ea4410b552ba41f479835a",
+        "analytical_perturbed_output_digest": "bf89fe576cb4f24fc6eeeff4cf78ff03cbaf8ba97399fb875cdb8802f5daa52b",
+        "batch_size": 4,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "reduce_sum",
+          "--parameter-count",
+          "50",
+          "--batch-size",
+          "4"
+        ],
+        "child_wall_seconds": 5.543439539032988,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 771,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 17,
+            "While": 0
+          },
+          "serialized_bytes": 294413,
+          "sha256": "3d105b60dbed57accefde8ddfd737e1753048c9166c64b3f6c676f031511d0a8",
+          "top_level_node_count": 644,
+          "total_node_count": 1415
+        },
+        "jit_compile": false,
+        "method": "reduce_sum",
+        "output_digest": "8600636900fe5b80cde215fe3869dc164aeec3a91367bfc5ebea3c2f00690ad3",
+        "parameter_count": 50,
+        "perturbed_output_digest": "1cf9e7dfcbc869f3d6116ce84aef4594fcaaa975605a1465aa026ad21657a5c4",
+        "stderr_tail": "2026-07-13 13:48:10.496353: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.2992833550088108
+      },
+      "checks": {
+        "baseline_metadata": true,
+        "candidate_metadata": true,
+        "perturbed_row_changed": true,
+        "perturbed_score_candidate_vs_analytical": {
+          "actual_count": 200,
+          "atol": 0.0002,
+          "expected_count": 200,
+          "max_abs_residual": 3.725290298461914e-09,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "perturbed_score_candidate_vs_baseline": {
+          "actual_count": 200,
+          "atol": 0.0002,
+          "expected_count": 200,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "perturbed_value_candidate_vs_analytical": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "perturbed_value_candidate_vs_baseline": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "score_candidate_vs_analytical": {
+          "actual_count": 200,
+          "atol": 0.0002,
+          "expected_count": 200,
+          "max_abs_residual": 3.725290298461914e-09,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "score_candidate_vs_baseline": {
+          "actual_count": 200,
+          "atol": 0.0002,
+          "expected_count": 200,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "unaffected_score_row_independence": {
+          "actual_count": 150,
+          "atol": 0.0002,
+          "expected_count": 150,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "unaffected_value_row_independence": {
+          "actual_count": 3,
+          "atol": 0.0002,
+          "expected_count": 3,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_analytical": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_baseline": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        }
+      },
+      "correctness_passed": true,
+      "parameter_count": 50,
+      "structural_delta": {
+        "serialized_bytes_reduction_percent": -0.21035075477799145,
+        "total_node_count_reduction_percent": -0.42583392476933996
+      }
+    },
+    {
+      "baseline": {
+        "batch_size": 1,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "explicit_ones_seed",
+          "--parameter-count",
+          "150",
+          "--batch-size",
+          "1"
+        ],
+        "child_wall_seconds": 4.068496325984597,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 769,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 15,
+            "While": 0
+          },
+          "serialized_bytes": 291572,
+          "sha256": "c090c1ad659dc0ba29e04c851aad59b677bbde19171be416392dc49b844f1fae",
+          "top_level_node_count": 622,
+          "total_node_count": 1391
+        },
+        "jit_compile": false,
+        "method": "explicit_ones_seed",
+        "output_digest": "2c7ffa9a723a45ce90d95d9d21aed6e88137ed3eb9468db76e9b21c4756664f4",
+        "parameter_count": 150,
+        "stderr_tail": "2026-07-13 13:48:16.073385: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.3673356159124523
+      },
+      "batch_size": 1,
+      "candidate": {
+        "analytical_output_digest": "1565ff2e1b6e44ce61d7e5797b7d411ad3827b386398ad21c1a9386f2192ebad",
+        "batch_size": 1,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "reduce_sum",
+          "--parameter-count",
+          "150",
+          "--batch-size",
+          "1"
+        ],
+        "child_wall_seconds": 5.725321368081495,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 769,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 16,
+            "While": 0
+          },
+          "serialized_bytes": 292190,
+          "sha256": "bed141ad8f18b47c71b09b2edde4c10067ce8e2a962c1ae3165248b9e4140ff1",
+          "top_level_node_count": 628,
+          "total_node_count": 1397
+        },
+        "jit_compile": false,
+        "method": "reduce_sum",
+        "output_digest": "2c7ffa9a723a45ce90d95d9d21aed6e88137ed3eb9468db76e9b21c4756664f4",
+        "parameter_count": 150,
+        "stderr_tail": "2026-07-13 13:48:20.139356: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.4217767489608377
+      },
+      "checks": {
+        "baseline_metadata": true,
+        "candidate_metadata": true,
+        "score_candidate_vs_analytical": {
+          "actual_count": 150,
+          "atol": 0.0002,
+          "expected_count": 150,
+          "max_abs_residual": 3.725290298461914e-09,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "score_candidate_vs_baseline": {
+          "actual_count": 150,
+          "atol": 0.0002,
+          "expected_count": 150,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_analytical": {
+          "actual_count": 1,
+          "atol": 0.0002,
+          "expected_count": 1,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_baseline": {
+          "actual_count": 1,
+          "atol": 0.0002,
+          "expected_count": 1,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        }
+      },
+      "correctness_passed": true,
+      "parameter_count": 150,
+      "structural_delta": {
+        "serialized_bytes_reduction_percent": -0.2119545086633833,
+        "total_node_count_reduction_percent": -0.43134435657800146
+      }
+    },
+    {
+      "baseline": {
+        "batch_size": 4,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "explicit_ones_seed",
+          "--parameter-count",
+          "150",
+          "--batch-size",
+          "4"
+        ],
+        "child_wall_seconds": 3.8637840189039707,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 771,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 16,
+            "While": 0
+          },
+          "serialized_bytes": 293850,
+          "sha256": "949d67911c1889b639726161af31166cdf4ccb093931f52ea7ed0f99ffaa85bf",
+          "top_level_node_count": 638,
+          "total_node_count": 1409
+        },
+        "jit_compile": false,
+        "method": "explicit_ones_seed",
+        "output_digest": "8ed03ba3d910f6951e05b79fce972322bfb102bf200d37341c4d2fa9537326fa",
+        "parameter_count": 150,
+        "perturbed_output_digest": "c5501c29228e7a4d7630134e3c5ee616e9663d85348779ad78840903461cb1dd",
+        "stderr_tail": "2026-07-13 13:48:25.772806: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.299304762040265
+      },
+      "batch_size": 4,
+      "candidate": {
+        "analytical_output_digest": "632e80a9b881ceb591474a8b1141994007376cba99afe7c404685aeca4b7ecf0",
+        "analytical_perturbed_output_digest": "266cbadca9cccaa777a8a5c306eb9fe557542a86f5730a83906ddc1b832eb3ac",
+        "batch_size": 4,
+        "child_command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py",
+          "--child",
+          "--method",
+          "reduce_sum",
+          "--parameter-count",
+          "150",
+          "--batch-size",
+          "4"
+        ],
+        "child_wall_seconds": 5.596355313085951,
+        "cuda_visible_devices": "-1",
+        "dimension": 10,
+        "dtype": "float32",
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 771,
+          "selected_op_counts": {
+            "BroadcastGradientArgs": 0,
+            "Fill": 9,
+            "OnesLike": 0,
+            "StatelessWhile": 2,
+            "Sum": 17,
+            "While": 0
+          },
+          "serialized_bytes": 294468,
+          "sha256": "fc9a4bf00d2f95d51a41ea2374b5be4612008adb0a7e5d5a69b083a17be2d5bb",
+          "top_level_node_count": 644,
+          "total_node_count": 1415
+        },
+        "jit_compile": false,
+        "method": "reduce_sum",
+        "output_digest": "8ed03ba3d910f6951e05b79fce972322bfb102bf200d37341c4d2fa9537326fa",
+        "parameter_count": 150,
+        "perturbed_output_digest": "c5501c29228e7a4d7630134e3c5ee616e9663d85348779ad78840903461cb1dd",
+        "stderr_tail": "2026-07-13 13:48:29.642821: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected\n",
+        "tensorflow_version": "2.20.0",
+        "timesteps": 8,
+        "trace_seconds": 1.2970854369923472
+      },
+      "checks": {
+        "baseline_metadata": true,
+        "candidate_metadata": true,
+        "perturbed_row_changed": true,
+        "perturbed_score_candidate_vs_analytical": {
+          "actual_count": 600,
+          "atol": 0.0002,
+          "expected_count": 600,
+          "max_abs_residual": 4.6566128730773926e-09,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "perturbed_score_candidate_vs_baseline": {
+          "actual_count": 600,
+          "atol": 0.0002,
+          "expected_count": 600,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "perturbed_value_candidate_vs_analytical": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "perturbed_value_candidate_vs_baseline": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "score_candidate_vs_analytical": {
+          "actual_count": 600,
+          "atol": 0.0002,
+          "expected_count": 600,
+          "max_abs_residual": 4.6566128730773926e-09,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "score_candidate_vs_baseline": {
+          "actual_count": 600,
+          "atol": 0.0002,
+          "expected_count": 600,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "unaffected_score_row_independence": {
+          "actual_count": 450,
+          "atol": 0.0002,
+          "expected_count": 450,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "unaffected_value_row_independence": {
+          "actual_count": 3,
+          "atol": 0.0002,
+          "expected_count": 3,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_analytical": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        },
+        "value_candidate_vs_baseline": {
+          "actual_count": 4,
+          "atol": 0.0002,
+          "expected_count": 4,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "rtol": 0.0002
+        }
+      },
+      "correctness_passed": true,
+      "parameter_count": 150,
+      "structural_delta": {
+        "serialized_bytes_reduction_percent": -0.21031138335885655,
+        "total_node_count_reduction_percent": -0.42583392476933996
+      }
+    }
+  ],
+  "checks": {
+    "all_correctness_checks_passed": true,
+    "both_p150_cells_met_material_reduction": false,
+    "candidate_nominated": false,
+    "no_graph_metric_regressed_over_one_percent": true
+  },
+  "decision": "reject_output_seed_candidate_and_test_broadcast_gradients",
+  "evidence_roles": {
+    "correctness": "promotion_veto",
+    "graphdef_size": "nomination_only",
+    "trace_time": "explanatory_only"
+  },
+  "nonclaims": [
+    "no measured compile-memory repair",
+    "no XLA or GPU viability conclusion",
+    "no runtime ranking",
+    "no production/default readiness",
+    "no HMC, posterior, or scientific-validity claim"
+  ],
+  "question": "Does differentiating reduce_sum(value) reduce true-batched autodiff graph burden without changing Kalman QR value/score semantics?",
+  "run_manifest": {
+    "batch_sizes": [
+      1,
+      4
+    ],
+    "command": [
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py"
+    ],
+    "data_version": "synthetic nested Kalman QR fixture in benchmark source",
+    "device_status": "CPU-only diagnostic; GPU intentionally hidden",
+    "dimension": 10,
+    "dtype": "float32",
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "OMP_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "TF_CPP_MIN_LOG_LEVEL": "2",
+      "TF_NUM_INTEROP_THREADS": "1",
+      "TF_NUM_INTRAOP_THREADS": "1"
+    },
+    "git_commit": "a644d29c5c2fd09a0deb3a7b5212799ff1fcb163",
+    "jit_compile": false,
+    "output_artifact": "docs/benchmarks/kalman_qr_output_seed_counterfactual_2026-07-13.json",
+    "parameter_counts": [
+      50,
+      150
+    ],
+    "plan_file": "docs/plans/bayesfilter-kalman-qr-batched-xla-lean-repair-plan-2026-07-13.md",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "random_seeds": "N/A; deterministic fixture and parameter cloud",
+    "result_file": "docs/plans/bayesfilter-kalman-qr-batched-xla-lean-repair-result-2026-07-13.md",
+    "source_sha256": {
+      "docs/benchmarks/diagnose_kalman_qr_output_seed_counterfactual_2026_07_13.py": "28df200594477a2a619e033f1c8b641c9d6627769eb40327a807b8d016388344",
+      "docs/plans/bayesfilter-kalman-qr-batched-xla-lean-repair-plan-2026-07-13.md": "8bc5b987a472e6c6bb97841668550a8d3d0f1f8a88d700bda99c2cd40aa301db",
+      "scripts/benchmark_kalman_qr_parameter_count_scaling.py": "ae7a79022ede2070cf5b3f4fd2b19ad18041372ad9fd7dd507e34214cac300df"
+    },
+    "timesteps": 8,
+    "wall_time_seconds": 38.53454571997281
+  },
+  "schema": "bayesfilter.kalman_qr.output_seed_counterfactual.v1",
+  "state": "passed",
+  "thresholds": {
+    "atol": 0.0002,
+    "maximum_per_cell_regression_percent": 1.0,
+    "p150_minimum_reduction_percent": 5.0,
+    "rtol": 0.0002
+  }
+}

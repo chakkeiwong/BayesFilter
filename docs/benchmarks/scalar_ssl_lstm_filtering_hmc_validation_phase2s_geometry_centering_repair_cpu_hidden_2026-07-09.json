@@ -1,0 +1,1239 @@
+{
+  "artifact_role": "cpu_hidden_scalar_filtering_hmc_phase2s_geometry_centering_repair",
+  "classification": "extension_or_invention",
+  "created_at_utc": "2026-07-08T22:19:14.224975+00:00",
+  "decision": {
+    "next_justified_action": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+    "phase2s_geometry_centering_repair_passed": true,
+    "vetoes": [],
+    "viable_for_map_local_reference_subplan": true,
+    "zero_divergence_claim_made": false
+  },
+  "decision_table": {
+    "decision": "Phase 2S MAP-local geometry centering repair",
+    "main_uncertainty": "A usable SPD quadratic initializer is still a local diagnostic and does not establish posterior covariance correctness or HMC readiness.",
+    "next_justified_action": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+    "primary_criterion_status": "passed",
+    "veto_diagnostic_status": "no vetoes",
+    "what_is_not_being_concluded": "No certified global MAP, posterior covariance correctness, HMC readiness, convergence, zero-divergence claim, sampler superiority, GPU/XLA readiness, default readiness, or Zhao-Cui source faithfulness."
+  },
+  "diagnostic_points": {
+    "center_free": [
+      0.35,
+      -0.08,
+      0.65,
+      0.05
+    ],
+    "coordinate_formula": "free = center + scale * (factor @ u)",
+    "distances": {
+      "pooled_hmc_minus_reference_initial_norm": 2.232897165162737,
+      "pooled_hmc_minus_truth_free_norm": 2.2123574201968936,
+      "reference_initial_minus_truth_free_norm": 0.10985803680981891
+    },
+    "factor": [
+      [
+        2.3111010775572005,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.0471860780019015,
+        2.0181451554750534,
+        0.0,
+        0.0
+      ],
+      [
+        -0.2885072764011383,
+        -0.1821265653075305,
+        0.49127822043632646,
+        0.0
+      ],
+      [
+        -0.03163590167697455,
+        -1.1257578019936056,
+        0.09617611890528324,
+        0.4560300531246419
+      ]
+    ],
+    "passed": true,
+    "points": {
+      "phase1r_pooled_hmc_mean": {
+        "free": [
+          2.5211419229209477,
+          0.318346038921132,
+          0.6069520766126955,
+          -0.09189931220153659
+        ],
+        "gate_required": false,
+        "role": "phase1r_pooled_hmc_mean_explanatory",
+        "u": [
+          2.684115678520539,
+          0.6267063734817137,
+          1.5582468030301495,
+          0.5156267037406872
+        ]
+      },
+      "phase2_reference_mean_initial": {
+        "free": [
+          0.3139518402292532,
+          0.022022045649693317,
+          0.6667503339657361,
+          0.05895806576993293
+        ],
+        "gate_required": true,
+        "role": "phase2_reference_mean_initial_position",
+        "u": [
+          -0.044565226160942085,
+          0.14339340258862682,
+          0.12440293581509161,
+          0.3807781120936724
+        ]
+      },
+      "truth_free_center": {
+        "free": [
+          0.35,
+          -0.08,
+          0.65,
+          0.05
+        ],
+        "gate_required": false,
+        "role": "old_truth_free_geometry_center",
+        "u": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "scale": [
+      0.35,
+      0.35,
+      0.35,
+      0.35
+    ],
+    "vetoes": []
+  },
+  "environment": {
+    "cpu_hidden": true,
+    "cuda_visible_devices": "-1",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf_physical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/physical_device:CPU:0"
+      }
+    ]
+  },
+  "git": {
+    "commit": "f297b103303c64019302ed5d9b9aaf2c8f919b64",
+    "dirty": true,
+    "dirty_line_count": 44,
+    "dirty_preview": [
+      " M bayesfilter/inference/hmc_diagnostics.py",
+      " M bayesfilter/linear/kalman_qr_tf.py",
+      " M tests/test_common_inference_runtime_contracts.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md",
+      "?? docs/plans/bayesfilter-kalman-qr-analytic-vs-autodiff-score-scaling-subplan-2026-07-09.md",
+      "?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md"
+    ]
+  },
+  "inference_status": {
+    "default_readiness": "not assessed",
+    "descriptive_only_differences": "locator movement, target replay values, fit residuals, eigen summaries, and distances to old reference/HMC summaries",
+    "gpu_xla_readiness": "blocked until local repair handoff passes",
+    "hard_veto_screen": "passed",
+    "hmc_readiness": "not assessed",
+    "next_evidence_needed": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+    "posterior_correctness": "not assessed",
+    "statistically_supported_ranking": "none; single diagnostic initializer",
+    "zero_divergence_claim": "not made"
+  },
+  "initializer": {
+    "accepted": true,
+    "covariance": [
+      [
+        0.6742164361152683,
+        0.009646601201772888,
+        0.152513826215239,
+        -0.10395595000265133
+      ],
+      [
+        0.009646601201772888,
+        0.48835241975983645,
+        -0.01692853011584348,
+        -0.335183319845506
+      ],
+      [
+        0.152513826215239,
+        -0.01692853011584348,
+        0.06973565400318418,
+        -0.013075540285710462
+      ],
+      [
+        -0.10395595000265133,
+        -0.335183319845506,
+        -0.013075540285710462,
+        0.27100637461535715
+      ]
+    ],
+    "covariance_eigen_summary": {
+      "condition_number": 45.007315283204306,
+      "eigenvalues": [
+        0.017594888784467865,
+        0.03290977436601861,
+        0.6609075144476984,
+        0.7918987068954606
+      ],
+      "finite": true,
+      "max": 0.7918987068954606,
+      "min": 0.017594888784467865,
+      "positive": true
+    },
+    "covariance_source": "low_rank_spd_quadratic_geometry_precision_theta_coordinates",
+    "diagnostics": {
+      "classification": "diagnostic_initializer_accepted",
+      "covariance_authority": "covariance_from_precision",
+      "covariance_transform": "C_theta = diag(scale) @ C_z @ diag(scale)",
+      "geometry_center_refinement_accepted": false,
+      "geometry_coordinate_transform": "theta = center + scale * z",
+      "geometry_fit_coordinate_system": "whitened_z",
+      "geometry_precision_coordinate_system": "z",
+      "locator_config": {
+        "enabled": true,
+        "log_prob_tolerance": 1e-08,
+        "max_iterations": 50,
+        "parallel_iterations": 1,
+        "tolerance": 1e-08
+      },
+      "map_candidate_role": "locator_position_geometry_covariance_only",
+      "mass_config": {
+        "dense": true,
+        "eigenvalue_floor": 0.0001,
+        "jitter": 1e-09,
+        "max_condition_number": 100000.0
+      },
+      "mass_covariance_coordinate_system": "theta",
+      "mass_precision_coordinate_system": "theta",
+      "optimizer_authority": "locator_only",
+      "precision_authority": "low_rank_spd_quadratic_geometry_precision_transformed_to_theta",
+      "precision_transform": "P_theta = diag(1 / scale) @ P_z @ diag(1 / scale)",
+      "quadratic_config": {
+        "center_log_prob_tolerance": 1e-08,
+        "center_score_improvement_factor": 0.95,
+        "eigenvalue_floor": 0.0001,
+        "fit_max_iterations": 300,
+        "fit_tolerance": 1e-08,
+        "holdout_fraction": 0.25,
+        "holdout_rmse_abs_tolerance": 0.1,
+        "holdout_rmse_rel_tolerance": 0.01,
+        "max_condition_number": 100000.0,
+        "min_samples_per_parameter": 5,
+        "pilot_direction_count": 96,
+        "pilot_radius": 0.1,
+        "rank": 4,
+        "sample_count": 90,
+        "seed": [
+          20260709,
+          6201
+        ],
+        "trust_radius": 0.6
+      },
+      "reports_default_readiness": false,
+      "reports_hmc_convergence": false,
+      "reports_map_quality": false,
+      "scale_all_ones": false,
+      "scale_max": 0.35,
+      "scale_min": 0.35
+    },
+    "dimension": 4,
+    "geometry": {
+      "accepted": true,
+      "center": [
+        0.5704394246369003,
+        -0.1242247342531544,
+        0.6609123192759063,
+        0.1354211218811133
+      ],
+      "center_refinement_accepted": false,
+      "covariance": [
+        [
+          5.503807645746912,
+          0.0787477652673462,
+          1.2450108271828415,
+          -0.8486200008664513
+        ],
+        [
+          0.0787477652673462,
+          3.9865503682535204,
+          -0.13819208260765214,
+          -2.736190368169915
+        ],
+        [
+          1.2450108271828415,
+          -0.13819208260765214,
+          0.5692706451572679,
+          -0.10673910449262247
+        ],
+        [
+          -0.8486200008664513,
+          -2.736190368169915,
+          -0.10673910449262247,
+          2.21229693724187
+        ]
+      ],
+      "covariance_eigen_summary": {
+        "condition_number": 45.00731531805385,
+        "eigenvalues": [
+          0.1436317451818566,
+          0.2686512193232786,
+          5.395163386812251,
+          6.464479245082181
+        ],
+        "finite": true,
+        "max": 6.464479245082181,
+        "min": 0.1436317451818566,
+        "positive": true
+      },
+      "diagnostics": {
+        "artifact_hash": "d81b3a7442fe307f",
+        "center_log_prob": -37.77528495512359,
+        "center_refinement": {
+          "accepted": false,
+          "center_log_prob": -37.77528495512359,
+          "center_score_norm": 3.560334102635541e-11,
+          "reason": "score_norm_not_improved_enough",
+          "refined_center": [
+            0.5704394246238771,
+            -0.12422473425066469,
+            0.660912319269574,
+            0.13542112188085456
+          ],
+          "refined_log_prob": -37.77528495512359,
+          "refined_score_norm": 5.843964230049952e-11,
+          "z_norm": 4.198838884512482e-11
+        },
+        "center_score_norm": 3.560334102635541e-11,
+        "classification": "extension_or_invention",
+        "config": {
+          "center_log_prob_tolerance": 1e-08,
+          "center_score_improvement_factor": 0.95,
+          "eigenvalue_floor": 0.0001,
+          "fit_max_iterations": 300,
+          "fit_tolerance": 1e-08,
+          "holdout_fraction": 0.25,
+          "holdout_rmse_abs_tolerance": 0.1,
+          "holdout_rmse_rel_tolerance": 0.01,
+          "max_condition_number": 100000.0,
+          "min_samples_per_parameter": 5,
+          "pilot_direction_count": 96,
+          "pilot_radius": 0.1,
+          "rank": 4,
+          "sample_count": 90,
+          "seed": [
+            20260709,
+            6201
+          ],
+          "trust_radius": 0.6
+        },
+        "coordinate_system": "whitened_center_plus_scale_times_z",
+        "covariance_eigen_summary": {
+          "condition_number": 45.00731531805385,
+          "eigenvalues": [
+            0.1436317451818566,
+            0.2686512193232786,
+            5.395163386812251,
+            6.464479245082181
+          ],
+          "finite": true,
+          "max": 6.464479245082181,
+          "min": 0.1436317451818566,
+          "positive": true
+        },
+        "dimension": 4,
+        "finite_sample_count": 90,
+        "fit": {
+          "condition_bound": 45.00731531805385,
+          "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+          "intercept": -37.77742721920832,
+          "lambda0": 0.1546915013704689,
+          "linear_term": [
+            -3.814027219051219e-13,
+            -5.569793497944841e-12,
+            -3.398919236341502e-11,
+            -9.009141306234869e-12
+          ],
+          "loss": 0.007417892697385555,
+          "mu": [
+            6.807557677833383,
+            3.567606884316947,
+            0.03065969715752459
+          ],
+          "mu_clipped_count": 0,
+          "optimizer_converged": true,
+          "optimizer_failed": false,
+          "optimizer_iterations": 0,
+          "precision": null,
+          "raw_lambda0": 0.1546915013704689,
+          "raw_mu": [
+            6.807557677833383,
+            3.567606884316947,
+            0.03065969715752459
+          ],
+          "score_design_condition_number": 4.817772093566697,
+          "score_design_rank": 4,
+          "score_lstsq_residual_sum_squares": 25.49414656956031,
+          "score_rmse": 0.30615107387554297,
+          "status": "usable"
+        },
+        "holdout_count": 22,
+        "holdout_passed": true,
+        "holdout_rmse": 0.058211774395612294,
+        "holdout_threshold": 0.3777528495512359,
+        "nonfinite_sample_count": 0,
+        "pilot": {
+          "basis_source": "directional_curvature_sketch",
+          "center_score_norm": 3.560334102635541e-11,
+          "curvature_max": 6.943289246599887,
+          "curvature_min": 0.11476015618103959,
+          "curvature_source": "central_score_difference_directional_curvature",
+          "finite_positive_curvature_count": 96,
+          "pilot_direction_count": 96,
+          "sketch_eigenvalues": [
+            90.72412870656171,
+            64.84209258979632,
+            47.98002749912827,
+            39.4008674868511
+          ]
+        },
+        "precision_eigen_summary": {
+          "condition_number": 45.00731531805376,
+          "eigenvalues": [
+            0.15469150137046908,
+            0.1853511985279935,
+            3.722298385687413,
+            6.962249179203848
+          ],
+          "finite": true,
+          "max": 6.962249179203848,
+          "min": 0.15469150137046908,
+          "positive": true
+        },
+        "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+        "rank": 3,
+        "regression_parameter_count": 9,
+        "reports_default_readiness": false,
+        "reports_hmc_convergence": false,
+        "reports_map_quality": false,
+        "required_finite_samples": 45,
+        "sample_count": 90,
+        "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+        "train_rmse": 0.08612718907166049
+      },
+      "dimension": 4,
+      "intercept": -37.77742721920832,
+      "lambda0": 0.1546915013704689,
+      "linear_term": [
+        -3.814027219051219e-13,
+        -5.569793497944841e-12,
+        -3.398919236341502e-11,
+        -9.009141306234869e-12
+      ],
+      "mu": [
+        6.807557677833383,
+        3.567606884316947,
+        0.03065969715752459
+      ],
+      "nonclaims": [
+        "low-rank quadratic geometry diagnostic only",
+        "not a certified MAP covariance",
+        "not posterior correctness evidence",
+        "not HMC convergence evidence",
+        "not sampler superiority evidence",
+        "not default-readiness evidence",
+        "not source-faithful Zhao-Cui evidence"
+      ],
+      "precision": [
+        [
+          0.4386091773185103,
+          0.3654621697448116,
+          -0.7611204878018305,
+          0.5835316445145924
+        ],
+        [
+          0.3654621697448116,
+          2.418783340615591,
+          0.3785252973879008,
+          3.1500263459420137
+        ],
+        [
+          -0.7611204878018305,
+          0.3785252973879008,
+          3.578525540616248,
+          0.348860861496795
+        ],
+        [
+          0.5835316445145924,
+          3.1500263459420137,
+          0.348860861496795,
+          4.588672206239381
+        ]
+      ],
+      "precision_eigen_summary": {
+        "condition_number": 45.00731531805376,
+        "eigenvalues": [
+          0.15469150137046908,
+          0.1853511985279935,
+          3.722298385687413,
+          6.962249179203848
+        ],
+        "finite": true,
+        "max": 6.962249179203848,
+        "min": 0.15469150137046908,
+        "positive": true
+      },
+      "q_basis": [
+        [
+          -0.08924248256064549,
+          0.24507059566392872,
+          -0.7094531171436833
+        ],
+        [
+          -0.5747919496959879,
+          0.03348304609312164,
+          0.5982133097785465
+        ],
+        [
+          -0.12705990337975734,
+          -0.9636255884656404,
+          -0.19311139315164788
+        ],
+        [
+          -0.8034337401579701,
+          0.10121765665881241,
+          -0.3186300368984969
+        ]
+      ],
+      "rank": 3,
+      "refined_center": null,
+      "scale": [
+        0.35,
+        0.35,
+        0.35,
+        0.35
+      ],
+      "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v1",
+      "status": "usable"
+    },
+    "initial_position": [
+      0.3139518402292532,
+      0.022022045649693317,
+      0.6667503339657361,
+      0.05895806576993293
+    ],
+    "locator_diagnostics": {
+      "accepted_optimizer_position": true,
+      "candidate_evaluation_status": "finite",
+      "candidate_log_prob": -37.77528495512359,
+      "candidate_score_norm": 1.017238315038726e-10,
+      "config": {
+        "enabled": true,
+        "log_prob_tolerance": 1e-08,
+        "max_iterations": 50,
+        "parallel_iterations": 1,
+        "tolerance": 1e-08
+      },
+      "fallback_reason": null,
+      "initial_log_prob": -37.786099036348105,
+      "initial_score_norm": 0.9312012159249712,
+      "locator_log_prob": -37.77528495512359,
+      "locator_score_norm": 1.017238315038726e-10,
+      "method": "tfp_lbfgs_minimize_negative_log_prob",
+      "optimizer_converged": true,
+      "optimizer_failed": false,
+      "optimizer_iterations": 9,
+      "optimizer_objective_value": 37.77528495512359,
+      "optimizer_role": "finite_neighborhood_locator_only",
+      "schema": "bayesfilter.quadratic_map_covariance.locator.v1",
+      "status": "tfp_lbfgs_locator_accepted",
+      "uses_optimizer_inverse_hessian": false
+    },
+    "locator_position": [
+      0.5704394246369003,
+      -0.1242247342531544,
+      0.6609123192759063,
+      0.1354211218811133
+    ],
+    "map_candidate": [
+      0.5704394246369003,
+      -0.1242247342531544,
+      0.6609123192759063,
+      0.1354211218811133
+    ],
+    "map_candidate_role": "locator_position_geometry_covariance_only",
+    "mass_matrix": {
+      "covariance": [
+        [
+          0.6742164361152683,
+          0.009646601201772888,
+          0.152513826215239,
+          -0.10395595000265133
+        ],
+        [
+          0.009646601201772888,
+          0.48835241975983645,
+          -0.01692853011584348,
+          -0.335183319845506
+        ],
+        [
+          0.152513826215239,
+          -0.01692853011584348,
+          0.06973565400318418,
+          -0.013075540285710462
+        ],
+        [
+          -0.10395595000265133,
+          -0.335183319845506,
+          -0.013075540285710462,
+          0.27100637461535715
+        ]
+      ],
+      "covariance_eigen_summary": {
+        "condition_number": 45.007315283204306,
+        "eigenvalues": [
+          0.017594888784467865,
+          0.03290977436601861,
+          0.6609075144476984,
+          0.7918987068954606
+        ],
+        "finite": true,
+        "max": 0.7918987068954606,
+        "min": 0.017594888784467865,
+        "positive": true
+      },
+      "eigenvalue_floor": 0.0005683468717817434,
+      "jitter": 1e-09,
+      "matrix_kind": "dense",
+      "precision_eigen_summary": {
+        "condition_number": 45.0073152832043,
+        "eigenvalues": [
+          1.2627877672895487,
+          1.5130710093917887,
+          30.38610927191768,
+          56.83468717817434
+        ],
+        "finite": true,
+        "max": 56.83468717817434,
+        "min": 1.2627877672895487,
+        "positive": true
+      },
+      "regularization_report": {
+        "clipped_eigenvalue_count": 0,
+        "diagonal_fallback_used": false,
+        "effective_eigenvalue_floor": 0.0005683468717817434,
+        "input_asymmetric": false,
+        "input_asymmetry_max_abs": 0.0,
+        "jitter": 1e-09,
+        "max_condition_number": 100000.0,
+        "method": "symmetric_eigendecomposition_floor",
+        "raw_max_eigenvalue": 56.83468717817434,
+        "raw_min_eigenvalue": 1.2627877672895491,
+        "raw_nonpositive_eigenvalue_count": 0,
+        "regularized_max_eigenvalue": 56.83468717817434,
+        "regularized_min_eigenvalue": 1.2627877672895491,
+        "requested_eigenvalue_floor": 0.0001,
+        "silent_eigenvalue_reflection": false,
+        "symmetry_projection": "average_with_transpose"
+      },
+      "regularized_precision": [
+        [
+          3.5804830811511055,
+          2.9833646509780536,
+          -6.213228471851678,
+          4.76352362869055
+        ],
+        [
+          2.9833646509780536,
+          19.745170128474243,
+          3.0900024276563403,
+          25.714500783200123
+        ],
+        [
+          -6.213228471851678,
+          3.0900024276563403,
+          29.212453393785715,
+          2.8478437673207857
+        ],
+        [
+          4.76352362869055,
+          25.714500783200123,
+          2.8478437673207857,
+          37.458548623362304
+        ]
+      ],
+      "source": "low_rank_spd_quadratic_geometry_precision_theta_coordinates"
+    },
+    "nonclaims": [
+      "quadratic MAP-candidate covariance diagnostic only",
+      "optimizer output is a locator only",
+      "not a certified global MAP",
+      "not posterior covariance correctness evidence",
+      "not HMC convergence evidence",
+      "not HMC readiness evidence",
+      "not sampler superiority evidence",
+      "not default-readiness evidence",
+      "not source-faithful Zhao-Cui evidence"
+    ],
+    "precision": [
+      [
+        3.5804830811511055,
+        2.9833646509780536,
+        -6.213228471851678,
+        4.76352362869055
+      ],
+      [
+        2.9833646509780536,
+        19.745170128474243,
+        3.0900024276563403,
+        25.714500783200123
+      ],
+      [
+        -6.213228471851678,
+        3.0900024276563403,
+        29.212453393785715,
+        2.8478437673207857
+      ],
+      [
+        4.76352362869055,
+        25.714500783200123,
+        2.8478437673207857,
+        37.458548623362304
+      ]
+    ],
+    "precision_eigen_summary": {
+      "condition_number": 45.0073152832043,
+      "eigenvalues": [
+        1.2627877672895487,
+        1.5130710093917887,
+        30.38610927191768,
+        56.83468717817434
+      ],
+      "finite": true,
+      "max": 56.83468717817434,
+      "min": 1.2627877672895487,
+      "positive": true
+    },
+    "schema": "bayesfilter.quadratic_map_covariance.v1",
+    "status": "usable"
+  },
+  "map_local_handoff": {
+    "center_free_parameter_values": [
+      0.5704394246369003,
+      -0.1242247342531544,
+      0.6609123192759063,
+      0.1354211218811133
+    ],
+    "center_role": "locator_position_geometry_covariance_only",
+    "coordinate_formula": "free = center_free_parameter_values + scale * (factor_z @ u_new)",
+    "covariance_theta": [
+      [
+        0.6742164361152683,
+        0.009646601201772888,
+        0.152513826215239,
+        -0.10395595000265133
+      ],
+      [
+        0.009646601201772888,
+        0.48835241975983645,
+        -0.01692853011584348,
+        -0.335183319845506
+      ],
+      [
+        0.152513826215239,
+        -0.01692853011584348,
+        0.06973565400318418,
+        -0.013075540285710462
+      ],
+      [
+        -0.10395595000265133,
+        -0.335183319845506,
+        -0.013075540285710462,
+        0.27100637461535715
+      ]
+    ],
+    "covariance_z": [
+      [
+        5.503807645746912,
+        0.0787477652673462,
+        1.2450108271828415,
+        -0.8486200008664513
+      ],
+      [
+        0.0787477652673462,
+        3.9865503682535204,
+        -0.13819208260765214,
+        -2.736190368169915
+      ],
+      [
+        1.2450108271828415,
+        -0.13819208260765214,
+        0.5692706451572679,
+        -0.10673910449262247
+      ],
+      [
+        -0.8486200008664513,
+        -2.736190368169915,
+        -0.10673910449262247,
+        2.21229693724187
+      ]
+    ],
+    "factor_z": [
+      [
+        2.346019532260316,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0335665428972261,
+        1.9963525879592134,
+        0.0,
+        0.0
+      ],
+      [
+        0.5306907338419783,
+        -0.078145281966347,
+        0.5305952365767437,
+        0.0
+      ],
+      [
+        -0.3617275939935729,
+        -1.3645126816769872,
+        -0.040339318874546184,
+        0.4668275547575418
+      ]
+    ],
+    "nonclaims": [
+      "MAP-local handoff candidate only",
+      "not posterior covariance correctness evidence",
+      "not HMC readiness evidence"
+    ],
+    "precision_theta": [
+      [
+        3.5804830811511055,
+        2.9833646509780536,
+        -6.213228471851678,
+        4.76352362869055
+      ],
+      [
+        2.9833646509780536,
+        19.745170128474243,
+        3.0900024276563403,
+        25.714500783200123
+      ],
+      [
+        -6.213228471851678,
+        3.0900024276563403,
+        29.212453393785715,
+        2.8478437673207857
+      ],
+      [
+        4.76352362869055,
+        25.714500783200123,
+        2.8478437673207857,
+        37.458548623362304
+      ]
+    ],
+    "precision_z": [
+      [
+        0.4386091773185103,
+        0.3654621697448116,
+        -0.7611204878018305,
+        0.5835316445145924
+      ],
+      [
+        0.3654621697448116,
+        2.418783340615591,
+        0.3785252973879008,
+        3.1500263459420137
+      ],
+      [
+        -0.7611204878018305,
+        0.3785252973879008,
+        3.578525540616248,
+        0.348860861496795
+      ],
+      [
+        0.5835316445145924,
+        3.1500263459420137,
+        0.348860861496795,
+        4.588672206239381
+      ]
+    ],
+    "scale": [
+      0.35,
+      0.35,
+      0.35,
+      0.35
+    ]
+  },
+  "metric_roles": {
+    "geometry_finite_sample_count": "hard_veto_evidence",
+    "geometry_holdout_rmse": "geometry_fit_gate_only_not_hmc_evidence",
+    "geometry_score_rmse": "explanatory_geometry_fit_diagnostic",
+    "input_artifacts_valid": "hard_veto_evidence",
+    "locator_accepted_optimizer_position": "hard_veto_evidence",
+    "native_divergence_unavailable": "telemetry_availability_not_zero_divergences",
+    "optimizer_inverse_hessian_unused": "hard_veto_evidence",
+    "phase2s_geometry_centering_repair_passed": "primary_phase2s_pass_fail",
+    "precision_spd_and_condition": "hard_veto_evidence",
+    "target_replay": "diagnostic_only"
+  },
+  "nonclaims": [
+    "Phase 2S MAP-local geometry centering diagnostic only",
+    "optimizer output is a finite-neighborhood locator only",
+    "not a certified global MAP",
+    "not posterior covariance correctness evidence",
+    "not an HMC run",
+    "not HMC readiness evidence",
+    "not HMC convergence evidence",
+    "not posterior correctness evidence",
+    "not a zero-divergence claim when native divergence is unavailable",
+    "not sampler superiority evidence",
+    "not statistically supported ranking evidence",
+    "not GPU/XLA production-readiness evidence",
+    "not default-readiness evidence",
+    "not Zhao-Cui source-faithfulness evidence"
+  ],
+  "plan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+  "precondition": {
+    "coordinate_contract": {
+      "center_role": "truth_free_initial_center",
+      "coordinate_system": "whitened_center_plus_scale_times_z",
+      "free_parameter_indices": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "free_parameter_names": [
+        "latent_mean_weight.0.0",
+        "latent_mean_bias.0",
+        "observation_weight.0.0",
+        "observation_bias.0"
+      ],
+      "refined_center_reason": "phase1_center_refinement_rejected; mass handoff uses declared center",
+      "refined_center_used": false,
+      "scale": [
+        0.35,
+        0.35,
+        0.35,
+        0.35
+      ],
+      "theta_from_z": "theta = center + scale * z"
+    },
+    "passed": true,
+    "phase1r_decision": {
+      "base_replicated_diagnostic_passed": true,
+      "base_replicated_vetoes": [],
+      "next_justified_action": "write Phase 1R result and refresh/review Phase 2 reference-agreement subplan",
+      "passed_seed_count": 3,
+      "phase1r_acceptance_repair_screen_passed": true,
+      "seed_count": 3,
+      "vetoes": [],
+      "viable_for_phase2_reference_agreement_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2_decision": {
+      "next_justified_action": "write Phase 2 result and draft reference/localization repair before GPU/XLA",
+      "phase2_local_quadratic_reference_agreement_passed": false,
+      "vetoes": [
+        "mean_abs_error_above_0p5",
+        "std_ratio_outside_0p5_2p0"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2r_decision": {
+      "next_justified_action": "draft geometry/centering repair or MAP-local reference subplan",
+      "phase2r_localization_passed": true,
+      "selected_outcome": "outside_geometry_trust_region",
+      "vetoes": [],
+      "zero_divergence_claim_made": false
+    },
+    "vetoes": []
+  },
+  "result_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 timeout 420 python docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py --json-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json --markdown-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md",
+    "conda_env": "tfgpu",
+    "cpu_gpu_status": "CPU-hidden debug/reference exception",
+    "data_version": "stateless_simulated_scalar_ssl_lstm_filtering_path_v1",
+    "environment": {
+      "cpu_hidden": true,
+      "cuda_visible_devices": "-1",
+      "python": "3.13.13",
+      "tensorflow": "2.20.0",
+      "tf_physical_devices": [
+        {
+          "device_type": "CPU",
+          "name": "/physical_device:CPU:0"
+        }
+      ]
+    },
+    "git": {
+      "commit": "f297b103303c64019302ed5d9b9aaf2c8f919b64",
+      "dirty": true,
+      "dirty_line_count": 44,
+      "dirty_preview": [
+        " M bayesfilter/inference/hmc_diagnostics.py",
+        " M bayesfilter/linear/kalman_qr_tf.py",
+        " M tests/test_common_inference_runtime_contracts.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md",
+        "?? docs/plans/bayesfilter-kalman-qr-analytic-vs-autodiff-score-scaling-subplan-2026-07-09.md",
+        "?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md"
+      ]
+    },
+    "jit_compile": false,
+    "output_artifacts": [
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json",
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md"
+    ],
+    "plan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+    "random_seeds": {
+      "phase1r": [
+        [
+          20260709,
+          6101
+        ],
+        [
+          20260709,
+          6102
+        ],
+        [
+          20260709,
+          6103
+        ]
+      ],
+      "quadratic_geometry": [
+        20260709,
+        6201
+      ]
+    },
+    "result_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md",
+    "subplan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md",
+    "tf32_mode": "disabled_by_cpu_hidden_debug_contract",
+    "wall_time_seconds": 58.14801573997829
+  },
+  "schema_version": "scalar_ssl_lstm.filtering_hmc_validation_phase2s_geometry_centering_repair.v1",
+  "script": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+  "settings": {
+    "initial_position_source": "phase2_reference_mean_u_transformed_to_free_parameters",
+    "locator": {
+      "enabled": true,
+      "fallback_is_phase2s_veto": true,
+      "log_prob_tolerance": 1e-08,
+      "max_iterations": 50,
+      "tolerance": 1e-08
+    },
+    "mass": {
+      "dense": true,
+      "eigenvalue_floor": 0.0001,
+      "jitter": 1e-09,
+      "max_condition_number": 100000.0
+    },
+    "quadratic": {
+      "effective_rank_for_dim4": 3,
+      "eigenvalue_floor": 0.0001,
+      "holdout_fraction": 0.25,
+      "holdout_rmse_abs_tolerance": 0.1,
+      "holdout_rmse_rel_tolerance": 0.01,
+      "max_condition_number": 100000.0,
+      "min_samples_per_parameter": 5,
+      "pilot_direction_count": 96,
+      "pilot_radius": 0.1,
+      "rank": 4,
+      "regression_parameter_count": 9,
+      "required_finite_samples": 45,
+      "sample_count": 90,
+      "seed": [
+        20260709,
+        6201
+      ],
+      "trust_radius": 0.6
+    }
+  },
+  "source_artifacts": {
+    "geometry_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_geometry_cpu_hidden_2026-07-08.json",
+    "mass_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_mass_handoff_cpu_hidden_2026-07-08.json",
+    "phase1r_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json",
+    "phase2_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json",
+    "phase2r_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json"
+  },
+  "subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md",
+  "target_replay": {
+    "computed": true,
+    "passed": true,
+    "role": "target replay for Phase 2S gate-required locator/map points and explanatory comparisons",
+    "values": {
+      "locator_position": {
+        "free": [
+          0.5704394246369003,
+          -0.1242247342531544,
+          0.6609123192759063,
+          0.1354211218811133
+        ],
+        "gate_required": true,
+        "role": "optimizer_locator_position",
+        "score": [
+          -1.0897220625860626e-12,
+          -1.5913695708413833e-11,
+          -9.711197818118578e-11,
+          -2.5740403732099626e-11
+        ],
+        "score_norm": 1.017238315038726e-10,
+        "status": "finite",
+        "u": null,
+        "value": -37.77528495512359
+      },
+      "map_candidate": {
+        "free": [
+          0.5704394246369003,
+          -0.1242247342531544,
+          0.6609123192759063,
+          0.1354211218811133
+        ],
+        "gate_required": true,
+        "role": "locator_position_geometry_covariance_only",
+        "score": [
+          -1.0897220625860626e-12,
+          -1.5913695708413833e-11,
+          -9.711197818118578e-11,
+          -2.5740403732099626e-11
+        ],
+        "score_norm": 1.017238315038726e-10,
+        "status": "finite",
+        "u": null,
+        "value": -37.77528495512359
+      },
+      "phase1r_pooled_hmc_mean": {
+        "free": [
+          2.5211419229209477,
+          0.318346038921132,
+          0.6069520766126955,
+          -0.09189931220153659
+        ],
+        "gate_required": false,
+        "role": "phase1r_pooled_hmc_mean_explanatory",
+        "score": [
+          -0.21816802763513315,
+          -2.2022664848572866,
+          0.4525102056310218,
+          -3.3683313524394936
+        ],
+        "score_norm": 4.05561296780585,
+        "status": "finite",
+        "u": [
+          2.684115678520539,
+          0.6267063734817137,
+          1.5582468030301495,
+          0.5156267037406872
+        ],
+        "value": -38.12895023622733
+      },
+      "phase2_reference_mean_initial": {
+        "free": [
+          0.3139518402292532,
+          0.022022045649693317,
+          0.6667503339657361,
+          0.05895806576993293
+        ],
+        "gate_required": true,
+        "role": "phase2_reference_mean_initial_position",
+        "score": [
+          0.012467212431252928,
+          -0.5153584283624892,
+          -0.18014179579036765,
+          -0.7542777319260495
+        ],
+        "score_norm": 0.9312012159249712,
+        "status": "finite",
+        "u": [
+          -0.044565226160942085,
+          0.14339340258862682,
+          0.12440293581509161,
+          0.3807781120936724
+        ],
+        "value": -37.786099036348105
+      },
+      "truth_free_center": {
+        "free": [
+          0.35,
+          -0.08,
+          0.65,
+          0.05
+        ],
+        "gate_required": false,
+        "role": "old_truth_free_geometry_center",
+        "score": [
+          0.04136499462054382,
+          1.5569199957141024,
+          0.25645839913165336,
+          2.385670540067278
+        ],
+        "score_norm": 2.860577873798304,
+        "status": "finite",
+        "u": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": -37.84742912954012
+      }
+    },
+    "vetoes": []
+  },
+  "target_scope": "scalar_ssl_lstm:svd_ukf_filtering_geometry:phase3_mechanics_u",
+  "telemetry_policy": {
+    "log_accept_threshold_used_as_native_divergence": false,
+    "native_divergence_interpretation": "native divergence unavailable for at least one seed; unavailable is not zero divergences",
+    "native_divergence_statuses": [
+      "not_exposed_by_kernel",
+      "not_exposed_by_kernel",
+      "not_exposed_by_kernel"
+    ],
+    "unavailable_native_divergence_is_zero_divergence": false,
+    "zero_divergence_claim_made": false
+  }
+}

@@ -1,0 +1,3881 @@
+{
+  "checks": {
+    "all_16_tensor_parity": true,
+    "graph_structure": true,
+    "nested_fixture_identity": true
+  },
+  "declared_source_manifest": {
+    "declared_source_fingerprint": "a0f9cc056665697329663aaf4e4361d0761429978be1ec3ba89beabc1a26673d",
+    "files": [
+      {
+        "path": "scripts/kalman_qr_benchmark_contract.py",
+        "sha256": "7644045a3e9f5e69a18d327f15022ae60ab0b810c1d57eb626a4981e736ec623"
+      },
+      {
+        "path": "scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+        "sha256": "5163bec4ad9816cabc5495f6c84b787720364aeb9e3e73452d50846726303a96"
+      },
+      {
+        "path": "docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py",
+        "sha256": "c18b6be3c156e55088bf8aa58567036c071f21879d6eb103073d263f2d4a38e3"
+      },
+      {
+        "path": "tests/test_kalman_qr_batched_fixture.py",
+        "sha256": "5278e28224f5e113daa34abfd1e12af2e68730b383fdd058a9f02b96432fa8d2"
+      },
+      {
+        "path": "tests/test_kalman_qr_benchmark_contract.py",
+        "sha256": "62a65ebe795f6a95a58949cd92f9c547cf62741d1b6902193a0fc9ea41d92987"
+      },
+      {
+        "path": "tests/test_kalman_qr_parameter_count_scaling_harness.py",
+        "sha256": "607baf19f1df85846a3e89255ae4672b22a6742d004078bec91aac6237cc40d7"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+        "sha256": "9434c3e0ccbc53b51545eddaee673095595cb7003b60e446c192ca7a255d84a5"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_tf.py",
+        "sha256": "cc99674daf80a3f26b230b38fa799a84162e3b4ca3ee459bcea3c58318013216"
+      },
+      {
+        "path": "bayesfilter/linear/qr_factor_tf.py",
+        "sha256": "bfde07b558e6c900a51f888d83ece817f562c06cf393c0dfdc76959adc087401"
+      }
+    ]
+  },
+  "fixture_contract": {
+    "batch_sizes": [
+      1,
+      4,
+      16
+    ],
+    "canonical_proposal_row_coordinates": "linspace(-1, 1, 16)",
+    "deterministic": true,
+    "dimension": 10,
+    "dtypes": [
+      "float32",
+      "float64"
+    ],
+    "nested_parameter_counts": [
+      50,
+      150
+    ],
+    "observation_source": "parameter-independent base model",
+    "parameter_formula": "theta[j] = -0.2 + 0.4 * j / 149",
+    "parity_parameter_counts": [
+      3,
+      50
+    ],
+    "proposal_row_ids": {
+      "1": [
+        7
+      ],
+      "16": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "4": [
+        2,
+        7,
+        8,
+        13
+      ]
+    },
+    "random_seeds": [],
+    "timesteps": 8
+  },
+  "graph": {
+    "checks": {
+      "constant_count_equal": true,
+      "constant_inventory_digest_equal": true,
+      "node_count_equal": true,
+      "normalized_structural_digest_equal": true,
+      "output_batch_shapes_exact": true
+    },
+    "passed": true,
+    "rows": [
+      {
+        "batch_size": 1,
+        "constant_count": 93,
+        "constant_inventory_digest": "c23f4b6c95884427898f17ec6982d6bb94875ab4eb9ff15b430f62d8f0ecf344",
+        "node_count": 174,
+        "normalized_structural_digest": "09575a25f543fd100faaab32312a74253931ed6cf48acd0cf78b402fcd4be1bc",
+        "output_shapes": [
+          [
+            1,
+            10
+          ],
+          [
+            1,
+            10,
+            10
+          ],
+          [
+            1,
+            10,
+            10
+          ],
+          [
+            1,
+            10
+          ],
+          [
+            1,
+            10,
+            10
+          ],
+          [
+            1,
+            10,
+            10
+          ],
+          [
+            1,
+            10
+          ],
+          [
+            1,
+            10,
+            10
+          ],
+          [
+            1,
+            50,
+            10
+          ],
+          [
+            1,
+            50,
+            10,
+            10
+          ],
+          [
+            1,
+            50,
+            10
+          ],
+          [
+            1,
+            50,
+            10,
+            10
+          ],
+          [
+            1,
+            50,
+            10,
+            10
+          ],
+          [
+            1,
+            50,
+            10
+          ],
+          [
+            1,
+            50,
+            10,
+            10
+          ],
+          [
+            1,
+            50,
+            10,
+            10
+          ]
+        ],
+        "parameter_input_name": "parameters_batch",
+        "serialized_bytes": 131754
+      },
+      {
+        "batch_size": 4,
+        "constant_count": 93,
+        "constant_inventory_digest": "c23f4b6c95884427898f17ec6982d6bb94875ab4eb9ff15b430f62d8f0ecf344",
+        "node_count": 174,
+        "normalized_structural_digest": "09575a25f543fd100faaab32312a74253931ed6cf48acd0cf78b402fcd4be1bc",
+        "output_shapes": [
+          [
+            4,
+            10
+          ],
+          [
+            4,
+            10,
+            10
+          ],
+          [
+            4,
+            10,
+            10
+          ],
+          [
+            4,
+            10
+          ],
+          [
+            4,
+            10,
+            10
+          ],
+          [
+            4,
+            10,
+            10
+          ],
+          [
+            4,
+            10
+          ],
+          [
+            4,
+            10,
+            10
+          ],
+          [
+            4,
+            50,
+            10
+          ],
+          [
+            4,
+            50,
+            10,
+            10
+          ],
+          [
+            4,
+            50,
+            10
+          ],
+          [
+            4,
+            50,
+            10,
+            10
+          ],
+          [
+            4,
+            50,
+            10,
+            10
+          ],
+          [
+            4,
+            50,
+            10
+          ],
+          [
+            4,
+            50,
+            10,
+            10
+          ],
+          [
+            4,
+            50,
+            10,
+            10
+          ]
+        ],
+        "parameter_input_name": "parameters_batch",
+        "serialized_bytes": 131754
+      },
+      {
+        "batch_size": 16,
+        "constant_count": 93,
+        "constant_inventory_digest": "c23f4b6c95884427898f17ec6982d6bb94875ab4eb9ff15b430f62d8f0ecf344",
+        "node_count": 174,
+        "normalized_structural_digest": "09575a25f543fd100faaab32312a74253931ed6cf48acd0cf78b402fcd4be1bc",
+        "output_shapes": [
+          [
+            16,
+            10
+          ],
+          [
+            16,
+            10,
+            10
+          ],
+          [
+            16,
+            10,
+            10
+          ],
+          [
+            16,
+            10
+          ],
+          [
+            16,
+            10,
+            10
+          ],
+          [
+            16,
+            10,
+            10
+          ],
+          [
+            16,
+            10
+          ],
+          [
+            16,
+            10,
+            10
+          ],
+          [
+            16,
+            50,
+            10
+          ],
+          [
+            16,
+            50,
+            10,
+            10
+          ],
+          [
+            16,
+            50,
+            10
+          ],
+          [
+            16,
+            50,
+            10,
+            10
+          ],
+          [
+            16,
+            50,
+            10,
+            10
+          ],
+          [
+            16,
+            50,
+            10
+          ],
+          [
+            16,
+            50,
+            10,
+            10
+          ],
+          [
+            16,
+            50,
+            10,
+            10
+          ]
+        ],
+        "parameter_input_name": "parameters_batch",
+        "serialized_bytes": 131754
+      }
+    ]
+  },
+  "nested_fixture_rows": [
+    {
+      "checks": {
+        "base_model_hash_common": true,
+        "derivative_prefix_exact": true,
+        "locked_row_ids_exact": true,
+        "observation_hash_common": true,
+        "parameter_prefix_exact": true,
+        "proposal_cloud_prefix_exact": true,
+        "selected_rows_nested_across_batch_exact": true,
+        "selected_rows_prefix_across_parameter_count_exact": true
+      },
+      "derivative_prefix_checks": {
+        "d_initial_covariance_factor": true,
+        "d_initial_mean": true,
+        "d_observation_covariance_factor": true,
+        "d_observation_matrix": true,
+        "d_observation_offset": true,
+        "d_transition_covariance_factor": true,
+        "d_transition_matrix": true,
+        "d_transition_offset": true
+      },
+      "dtype": "float32",
+      "identity_rows": [
+        {
+          "base_model_hash": "88b5c60746062c3ab3cc4bc4abaa3f35ed9b99c9d0a4f4b1387eeaa2205a2356",
+          "batch_size": 1,
+          "derivative_basis_hash": "80e3bd679a2a7bc9312c961cb4193c3db628dff1971eeec8a80d8c8d7b4d1fa9",
+          "dtype": "float32",
+          "observation_hash": "d2eee1f3eb54bb4d40ce72fe252757a95abd7c49b5359712830165a58ae92216",
+          "parameter_count": 50,
+          "parameter_hash": "f1e8c63935b7733b3774429aa060c5142710ef9992424b53d50fe765a774ce50",
+          "proposal_cloud_hash": "3931b0bd205ee41e5d8ce9551d19aaa0c08aa32ca4a5d5ed47344c47e566fbc5",
+          "proposal_row_ids": [
+            7
+          ],
+          "selected_parameter_hash": "896b2ccf3105369c0d43ffc103de36ed6a482fb98edd734cdd73eb4c3b276c12"
+        },
+        {
+          "base_model_hash": "88b5c60746062c3ab3cc4bc4abaa3f35ed9b99c9d0a4f4b1387eeaa2205a2356",
+          "batch_size": 4,
+          "derivative_basis_hash": "80e3bd679a2a7bc9312c961cb4193c3db628dff1971eeec8a80d8c8d7b4d1fa9",
+          "dtype": "float32",
+          "observation_hash": "d2eee1f3eb54bb4d40ce72fe252757a95abd7c49b5359712830165a58ae92216",
+          "parameter_count": 50,
+          "parameter_hash": "f1e8c63935b7733b3774429aa060c5142710ef9992424b53d50fe765a774ce50",
+          "proposal_cloud_hash": "3931b0bd205ee41e5d8ce9551d19aaa0c08aa32ca4a5d5ed47344c47e566fbc5",
+          "proposal_row_ids": [
+            2,
+            7,
+            8,
+            13
+          ],
+          "selected_parameter_hash": "82cb3fbc7131bcefcca817365b50a974b11fab1e1a01de0c8f44f9f541b5a7f4"
+        },
+        {
+          "base_model_hash": "88b5c60746062c3ab3cc4bc4abaa3f35ed9b99c9d0a4f4b1387eeaa2205a2356",
+          "batch_size": 16,
+          "derivative_basis_hash": "80e3bd679a2a7bc9312c961cb4193c3db628dff1971eeec8a80d8c8d7b4d1fa9",
+          "dtype": "float32",
+          "observation_hash": "d2eee1f3eb54bb4d40ce72fe252757a95abd7c49b5359712830165a58ae92216",
+          "parameter_count": 50,
+          "parameter_hash": "f1e8c63935b7733b3774429aa060c5142710ef9992424b53d50fe765a774ce50",
+          "proposal_cloud_hash": "3931b0bd205ee41e5d8ce9551d19aaa0c08aa32ca4a5d5ed47344c47e566fbc5",
+          "proposal_row_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "selected_parameter_hash": "3931b0bd205ee41e5d8ce9551d19aaa0c08aa32ca4a5d5ed47344c47e566fbc5"
+        },
+        {
+          "base_model_hash": "88b5c60746062c3ab3cc4bc4abaa3f35ed9b99c9d0a4f4b1387eeaa2205a2356",
+          "batch_size": 1,
+          "derivative_basis_hash": "eb3352651377f5f75c1c179d34d30b00235ef2d88b46ed7a5fd43880ed0a175b",
+          "dtype": "float32",
+          "observation_hash": "d2eee1f3eb54bb4d40ce72fe252757a95abd7c49b5359712830165a58ae92216",
+          "parameter_count": 150,
+          "parameter_hash": "60df848a823751c1090c8c18146ef46a7ea24e7810960faac8b561fb47a0bbb1",
+          "proposal_cloud_hash": "cffc35186f154ef7352179d9728cb2bcdb3ec08d2142bfa433b7c2f24e812c9f",
+          "proposal_row_ids": [
+            7
+          ],
+          "selected_parameter_hash": "6e95d51d0d2c94a0241826a5e322b85c48b814773971ef70b5f8aa9998a0927d"
+        },
+        {
+          "base_model_hash": "88b5c60746062c3ab3cc4bc4abaa3f35ed9b99c9d0a4f4b1387eeaa2205a2356",
+          "batch_size": 4,
+          "derivative_basis_hash": "eb3352651377f5f75c1c179d34d30b00235ef2d88b46ed7a5fd43880ed0a175b",
+          "dtype": "float32",
+          "observation_hash": "d2eee1f3eb54bb4d40ce72fe252757a95abd7c49b5359712830165a58ae92216",
+          "parameter_count": 150,
+          "parameter_hash": "60df848a823751c1090c8c18146ef46a7ea24e7810960faac8b561fb47a0bbb1",
+          "proposal_cloud_hash": "cffc35186f154ef7352179d9728cb2bcdb3ec08d2142bfa433b7c2f24e812c9f",
+          "proposal_row_ids": [
+            2,
+            7,
+            8,
+            13
+          ],
+          "selected_parameter_hash": "c690b103e5ad6b7bc0fd61a595a032ffd4098f22f4314f26d43caf2dd22f916b"
+        },
+        {
+          "base_model_hash": "88b5c60746062c3ab3cc4bc4abaa3f35ed9b99c9d0a4f4b1387eeaa2205a2356",
+          "batch_size": 16,
+          "derivative_basis_hash": "eb3352651377f5f75c1c179d34d30b00235ef2d88b46ed7a5fd43880ed0a175b",
+          "dtype": "float32",
+          "observation_hash": "d2eee1f3eb54bb4d40ce72fe252757a95abd7c49b5359712830165a58ae92216",
+          "parameter_count": 150,
+          "parameter_hash": "60df848a823751c1090c8c18146ef46a7ea24e7810960faac8b561fb47a0bbb1",
+          "proposal_cloud_hash": "cffc35186f154ef7352179d9728cb2bcdb3ec08d2142bfa433b7c2f24e812c9f",
+          "proposal_row_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "selected_parameter_hash": "cffc35186f154ef7352179d9728cb2bcdb3ec08d2142bfa433b7c2f24e812c9f"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "checks": {
+        "base_model_hash_common": true,
+        "derivative_prefix_exact": true,
+        "locked_row_ids_exact": true,
+        "observation_hash_common": true,
+        "parameter_prefix_exact": true,
+        "proposal_cloud_prefix_exact": true,
+        "selected_rows_nested_across_batch_exact": true,
+        "selected_rows_prefix_across_parameter_count_exact": true
+      },
+      "derivative_prefix_checks": {
+        "d_initial_covariance_factor": true,
+        "d_initial_mean": true,
+        "d_observation_covariance_factor": true,
+        "d_observation_matrix": true,
+        "d_observation_offset": true,
+        "d_transition_covariance_factor": true,
+        "d_transition_matrix": true,
+        "d_transition_offset": true
+      },
+      "dtype": "float64",
+      "identity_rows": [
+        {
+          "base_model_hash": "f873f53aa6e5361985526d6ecdfffea14f18d6bd96a8c640ac64b164c5f727bf",
+          "batch_size": 1,
+          "derivative_basis_hash": "783c4da38765077c10cd55d9b3174d5553653cc628fc1029e1dbad66208c75f2",
+          "dtype": "float64",
+          "observation_hash": "ed9032a439a47142871766b497c496bbe12a7586f9dd074fa71c80aacf28965f",
+          "parameter_count": 50,
+          "parameter_hash": "cdbc8ad9f345ff42a12a9084700e2a711c68dc5a9728254bfef85fc6e63d4a06",
+          "proposal_cloud_hash": "c910448bb7b3ba0433b5e345f355b8f7f03ab28191fe9d6a79e38279a7f15cca",
+          "proposal_row_ids": [
+            7
+          ],
+          "selected_parameter_hash": "e5e23925b8c3d3494d84b5e245cccdc603392fddaa253cd2a4809640bd0333d3"
+        },
+        {
+          "base_model_hash": "f873f53aa6e5361985526d6ecdfffea14f18d6bd96a8c640ac64b164c5f727bf",
+          "batch_size": 4,
+          "derivative_basis_hash": "783c4da38765077c10cd55d9b3174d5553653cc628fc1029e1dbad66208c75f2",
+          "dtype": "float64",
+          "observation_hash": "ed9032a439a47142871766b497c496bbe12a7586f9dd074fa71c80aacf28965f",
+          "parameter_count": 50,
+          "parameter_hash": "cdbc8ad9f345ff42a12a9084700e2a711c68dc5a9728254bfef85fc6e63d4a06",
+          "proposal_cloud_hash": "c910448bb7b3ba0433b5e345f355b8f7f03ab28191fe9d6a79e38279a7f15cca",
+          "proposal_row_ids": [
+            2,
+            7,
+            8,
+            13
+          ],
+          "selected_parameter_hash": "820b79e3e4e2859c800887563c43ea279761d9aee5e19e2d86b996c189a6fa9d"
+        },
+        {
+          "base_model_hash": "f873f53aa6e5361985526d6ecdfffea14f18d6bd96a8c640ac64b164c5f727bf",
+          "batch_size": 16,
+          "derivative_basis_hash": "783c4da38765077c10cd55d9b3174d5553653cc628fc1029e1dbad66208c75f2",
+          "dtype": "float64",
+          "observation_hash": "ed9032a439a47142871766b497c496bbe12a7586f9dd074fa71c80aacf28965f",
+          "parameter_count": 50,
+          "parameter_hash": "cdbc8ad9f345ff42a12a9084700e2a711c68dc5a9728254bfef85fc6e63d4a06",
+          "proposal_cloud_hash": "c910448bb7b3ba0433b5e345f355b8f7f03ab28191fe9d6a79e38279a7f15cca",
+          "proposal_row_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "selected_parameter_hash": "c910448bb7b3ba0433b5e345f355b8f7f03ab28191fe9d6a79e38279a7f15cca"
+        },
+        {
+          "base_model_hash": "f873f53aa6e5361985526d6ecdfffea14f18d6bd96a8c640ac64b164c5f727bf",
+          "batch_size": 1,
+          "derivative_basis_hash": "fcb6250d7e1f9ed6f8b8e0f5a267b4df31846fc8efbc9226849e4c62c8b008b4",
+          "dtype": "float64",
+          "observation_hash": "ed9032a439a47142871766b497c496bbe12a7586f9dd074fa71c80aacf28965f",
+          "parameter_count": 150,
+          "parameter_hash": "4c54e43e101e0b5259080e963ef0e24a193f423539cb51d4f8551c87f34291ea",
+          "proposal_cloud_hash": "4069dcb5f7fa8f55b313803d93c59285656048856af0f39b7e16b623daa02b71",
+          "proposal_row_ids": [
+            7
+          ],
+          "selected_parameter_hash": "76f94eac85c27cc294a939a578e981285a94c764160e3fc414c153eaa2bc5f39"
+        },
+        {
+          "base_model_hash": "f873f53aa6e5361985526d6ecdfffea14f18d6bd96a8c640ac64b164c5f727bf",
+          "batch_size": 4,
+          "derivative_basis_hash": "fcb6250d7e1f9ed6f8b8e0f5a267b4df31846fc8efbc9226849e4c62c8b008b4",
+          "dtype": "float64",
+          "observation_hash": "ed9032a439a47142871766b497c496bbe12a7586f9dd074fa71c80aacf28965f",
+          "parameter_count": 150,
+          "parameter_hash": "4c54e43e101e0b5259080e963ef0e24a193f423539cb51d4f8551c87f34291ea",
+          "proposal_cloud_hash": "4069dcb5f7fa8f55b313803d93c59285656048856af0f39b7e16b623daa02b71",
+          "proposal_row_ids": [
+            2,
+            7,
+            8,
+            13
+          ],
+          "selected_parameter_hash": "0aa276bece97a6c872170cd09d363b6c7452a11c4c1226a2bbd33d9e4b42ccd8"
+        },
+        {
+          "base_model_hash": "f873f53aa6e5361985526d6ecdfffea14f18d6bd96a8c640ac64b164c5f727bf",
+          "batch_size": 16,
+          "derivative_basis_hash": "fcb6250d7e1f9ed6f8b8e0f5a267b4df31846fc8efbc9226849e4c62c8b008b4",
+          "dtype": "float64",
+          "observation_hash": "ed9032a439a47142871766b497c496bbe12a7586f9dd074fa71c80aacf28965f",
+          "parameter_count": 150,
+          "parameter_hash": "4c54e43e101e0b5259080e963ef0e24a193f423539cb51d4f8551c87f34291ea",
+          "proposal_cloud_hash": "4069dcb5f7fa8f55b313803d93c59285656048856af0f39b7e16b623daa02b71",
+          "proposal_row_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "selected_parameter_hash": "4069dcb5f7fa8f55b313803d93c59285656048856af0f39b7e16b623daa02b71"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "nonclaims": [
+    "no analytical score correctness claim",
+    "no autodiff correctness claim",
+    "no XLA viability claim",
+    "no warm runtime or method ranking claim",
+    "no GPU readiness claim",
+    "no HMC or posterior correctness claim",
+    "no default, production, or scientific validity claim"
+  ],
+  "parity_rows": [
+    {
+      "batch_size": 1,
+      "dtype": "float32",
+      "parameter_count": 3,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 4,
+      "dtype": "float32",
+      "parameter_count": 3,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": false,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 7.450580596923828e-09,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": false,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 1.4901161193847656e-08,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": false,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 4.656612873077393e-10,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 1,
+      "dtype": "float32",
+      "parameter_count": 50,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 4,
+      "dtype": "float32",
+      "parameter_count": 50,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": false,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 7.450580596923828e-09,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": false,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 1.4901161193847656e-08,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": false,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 2.9802322387695312e-08,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float32",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-06,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float32",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-06,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 1,
+      "dtype": "float64",
+      "parameter_count": 3,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 4,
+      "dtype": "float64",
+      "parameter_count": 3,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            3,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 1,
+      "dtype": "float64",
+      "parameter_count": 50,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            1,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        }
+      ]
+    },
+    {
+      "batch_size": 4,
+      "dtype": "float64",
+      "parameter_count": 50,
+      "passed": true,
+      "tensor_count": 16,
+      "tensors": [
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_mean",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_initial_state_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_transition_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_offset",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": true,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_matrix",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        },
+        {
+          "actual_dtype": "float64",
+          "actual_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "atol": 2e-13,
+          "dtype_matches": true,
+          "exact_passed": true,
+          "exact_required": false,
+          "expected_dtype": "float64",
+          "expected_shape": [
+            4,
+            50,
+            10,
+            10
+          ],
+          "max_abs_residual": 0.0,
+          "name": "d_observation_covariance",
+          "near_passed": true,
+          "rtol": 2e-13,
+          "shape_matches": true
+        }
+      ]
+    }
+  ],
+  "run_manifest": {
+    "command_argv": [
+      "scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+      "--phase2-fixture-diagnostic",
+      "--device",
+      "cpu",
+      "--cpu-threads",
+      "1",
+      "--no-jit-compile",
+      "--output-json",
+      "docs/benchmarks/kalman_qr_batched_xla_repair_phase2_graphdef_2026-07-11.json",
+      "--phase2-log-path",
+      "/tmp/kalman_qr_phase2_fixture/phase2_graphdef.log"
+    ],
+    "conda_default_env": "tfgpu",
+    "conda_prefix": "/home/ubuntu/anaconda3/envs/tfgpu",
+    "cpu_thread_manifest": {
+      "inter_op_set_status": "set",
+      "intra_op_set_status": "set",
+      "omp_num_threads": "1",
+      "requested_cpu_threads": 1,
+      "tf_inter_op_parallelism_threads": 1,
+      "tf_intra_op_parallelism_threads": 1,
+      "tf_num_interop_threads_env": "1",
+      "tf_num_intraop_threads_env": "1"
+    },
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "device_status": {
+      "cuda_visible_devices": "-1",
+      "gpu_detection_by_harness": "not_called",
+      "requested_device": "cpu",
+      "trust_basis": "cpu_debug_or_reference_exception"
+    },
+    "git_commit": "a644d29c5c2fd09a0deb3a7b5212799ff1fcb163",
+    "git_status_short": "M bayesfilter/inference/hmc_diagnostics.py\n M bayesfilter/inference/hmc_kernel_tuning.py\n M bayesfilter/linear/kalman_qr_derivatives_tf.py\n M bayesfilter/linear/kalman_qr_tf.py\n M bayesfilter/linear/qr_factor_tf.py\n M bayesfilter/linear/types_tf.py\n M bayesfilter/results_tf.py\n M tests/test_common_inference_runtime_contracts.py\n M tests/test_hmc_kernel_tuning_fixed_mass_step.py\n M tests/test_hmc_kernel_tuning_outer_loop.py\n M tests/test_hmc_kernel_tuning_public_api.py\n M tests/test_linear_kalman_qr_derivatives_tf.py\n M tests/test_linear_qr_compact_loglik_tf.py\n?? bayesfilter/linear/dtypes_tf.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_batched_score_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_batched_score_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_batched_xla_repair_phase0_inventory_2026-07-11.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch16_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch16_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_overnight_status_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_cpu_threads1_float32_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_cpu_threads1_float32_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.md\n?? docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py\n?? docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-master-program-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase0-contract-baseline-result-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase0-contract-baseline-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase1-harness-integrity-result-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase1-harness-integrity-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase2-batched-fixture-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase3-parameter-vectorization-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase4-batched-autodiff-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase5-measurement-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase6-cpu-xla-gates-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase7-gpu-xla-gates-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase8-comparison-ladder-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase9-closeout-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-review-boundary-blocker-result-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-visible-execution-ledger-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-visible-gated-execution-runbook-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-repair-visible-stop-handoff-2026-07-11.md\n?? docs/plans/bayesfilter-kalman-qr-batched-xla-reset-memo-2026-07-10.md\n?? docs/plans/bayesfilter-kalman-qr-core-batch-dtype-grid-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-core-batch-dtype-grid-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7b-full-ladder-blocker-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7b-full-ladder-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-stop-handoff-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-parameter-count-scaling-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase3-gpu-xla-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase4-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase5-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-stop-handoff-2026-07-09.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-approval-boundary-ledger-2026-07-11.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-claude-review-boundary-blocker-2026-07-11.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-phase-a0-governance-target-lock-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-roadmap-2026-07-11.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-visible-execution-ledger-2026-07-11.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-visible-gated-execution-runbook-2026-07-11.md\n?? docs/plans/bayesfilter-ssl-lstm-completion-visible-stop-handoff-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-master-codex-substitute-review-round1-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-master-codex-substitute-review-round2-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-master-codex-substitute-review-round3-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-master-review-bundle-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase0-codex-substitute-review-round1-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase0-codex-substitute-review-round2-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase0-codex-substitute-review-round3-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase0-review-bundle-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase1-subplan-codex-substitute-review-round1-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase1-subplan-codex-substitute-review-round2-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase1-subplan-codex-substitute-review-round3-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase2-subplan-codex-substitute-review-round1-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase2-subplan-codex-substitute-review-round2-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-batched-xla-repair-phase2-subplan-codex-substitute-review-round3-2026-07-11.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase0-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2aa-claude-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ae-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-hypothesis-plan-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2z-subplan-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-ssl-lstm-completion-phase-a0-review-bundle-2026-07-11.md\n?? docs/reviews/bayesfilter-ssl-lstm-completion-roadmap-review-bundle-2026-07-11.md\n?? docs/reviews/bayesfilter-ssl-lstm-completion-runbook-review-bundle-2026-07-11.md\n?? scripts/benchmark_kalman_qr_parameter_count_scaling.py\n?? scripts/kalman_qr_benchmark_contract.py\n?? tests/test_kalman_qr_batched_fixture.py\n?? tests/test_kalman_qr_benchmark_contract.py\n?? tests/test_kalman_qr_parameter_count_scaling_harness.py\n?? tests/test_linear_qr_batched_analytical_score_tf.py\n?? tests/test_linear_qr_dtype_contracts.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1r.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot.py",
+    "jit_compile": false,
+    "log_path": "/tmp/kalman_qr_phase2_fixture/phase2_graphdef.log",
+    "output_json": "docs/benchmarks/kalman_qr_batched_xla_repair_phase2_graphdef_2026-07-11.json",
+    "plan_path": "docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase2-batched-fixture-subplan-2026-07-11.md",
+    "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "result_path": "docs/plans/bayesfilter-kalman-qr-batched-xla-repair-phase2-batched-fixture-result-2026-07-11.md",
+    "tf32_status": "not_queried_not_relevant_to_cpu_trace_only_diagnostic",
+    "timestamp_utc": "2026-07-10T20:52:52.506741+00:00",
+    "wall_time_seconds": 1.5896000229986385,
+    "xla_execution": "not_run",
+    "xla_flags": "UNSET"
+  },
+  "runtime_manifest": {
+    "runtime": {
+      "distributions": {
+        "numpy": {
+          "distribution": "numpy",
+          "version": "2.1.3"
+        },
+        "tensorflow": {
+          "distribution": "tensorflow",
+          "version": "2.20.0"
+        },
+        "tensorflow_probability": {
+          "distribution": "tfp-nightly",
+          "version": "0.25.0"
+        }
+      },
+      "interpreter": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python3.13",
+      "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+      "python_implementation": "CPython",
+      "python_version": "3.13.13"
+    },
+    "runtime_fingerprint": "6f902fc31d2e5d834f7d2f7a9196ecb177f44fa3a8ee2c0b21a9cd0e44f70f26"
+  },
+  "schema": "bayesfilter.kalman_qr_batched_xla_repair.phase2.v1",
+  "source_manifest": {
+    "files": [
+      {
+        "path": "bayesfilter/__init__.py",
+        "sha256": "986fd24cc5c86812c53fff10f2e169525783921496ab7997d988d5423ff9663b"
+      },
+      {
+        "path": "bayesfilter/diagnostics.py",
+        "sha256": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4"
+      },
+      {
+        "path": "bayesfilter/linear/__init__.py",
+        "sha256": "df9e248a8fc24063112d3bdcfbff0b1e46ef30781c13d05b36d932909c5bb46e"
+      },
+      {
+        "path": "bayesfilter/linear/dtypes_tf.py",
+        "sha256": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+        "sha256": "9434c3e0ccbc53b51545eddaee673095595cb7003b60e446c192ca7a255d84a5"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_tf.py",
+        "sha256": "cc99674daf80a3f26b230b38fa799a84162e3b4ca3ee459bcea3c58318013216"
+      },
+      {
+        "path": "bayesfilter/linear/qr_factor_tf.py",
+        "sha256": "bfde07b558e6c900a51f888d83ece817f562c06cf393c0dfdc76959adc087401"
+      },
+      {
+        "path": "bayesfilter/linear/types_tf.py",
+        "sha256": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8"
+      },
+      {
+        "path": "bayesfilter/results_tf.py",
+        "sha256": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6"
+      },
+      {
+        "path": "bayesfilter/structural.py",
+        "sha256": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f"
+      },
+      {
+        "path": "docs/benchmarks/run_kalman_qr_batched_xla_repair_2026_07_11.py",
+        "sha256": "c18b6be3c156e55088bf8aa58567036c071f21879d6eb103073d263f2d4a38e3"
+      },
+      {
+        "path": "scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+        "sha256": "5163bec4ad9816cabc5495f6c84b787720364aeb9e3e73452d50846726303a96"
+      },
+      {
+        "path": "scripts/kalman_qr_benchmark_contract.py",
+        "sha256": "7644045a3e9f5e69a18d327f15022ae60ab0b810c1d57eb626a4981e736ec623"
+      }
+    ],
+    "source_fingerprint": "9578dd08a4eadcf24d986966dc7421763568729d446141f02a9b292a222419ec"
+  },
+  "state": "passed",
+  "versions": {
+    "fixture_contract_version": "nested-prefix-base-observation-phase2-v1",
+    "observation_generation_version": "base-model-deterministic-sine-phase2-v1",
+    "parameter_batch_version": "canonical-b16-locked-row-map-phase2-v1"
+  }
+}

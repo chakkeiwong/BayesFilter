@@ -1,0 +1,1851 @@
+{
+  "adapter_audit": {
+    "adapter_signature": "cf79ab984f8c8f48a6b790078dff62dc7eac0e6a9085b3d883b43fb5cafa3b39",
+    "base_adapter_signature": "ae11b184bc93a26476117c94bb2b975dd8d4a9b29d78e4333cc08e09b8d89988",
+    "built": true,
+    "coordinate_contract": {
+      "adapter_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+      "base_adapter_coordinate": "free parameter values",
+      "factor_orientation": "row_right_transpose",
+      "free_parameter_names": [
+        "latent_mean_weight.0.0",
+        "latent_mean_bias.0",
+        "observation_weight.0.0",
+        "observation_bias.0"
+      ],
+      "hmc_coordinate": "u_new"
+    },
+    "matrix_checks": {
+      "diagnostics": {
+        "adapter_coordinate_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+        "adapter_factor": [
+          [
+            0.8211068362911105,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.011748290014029134,
+            0.6987234057857247,
+            0.0,
+            0.0
+          ],
+          [
+            0.18574175684469238,
+            -0.02735084868822145,
+            0.18570833280186028,
+            0.0
+          ],
+          [
+            -0.12660465789775052,
+            -0.4775794385869455,
+            -0.014118761606091164,
+            0.16338964416513962
+          ]
+        ],
+        "adapter_factor_orientation": "row_right_transpose",
+        "center_free_parameter_values": [
+          0.5704394246369003,
+          -0.1242247342531544,
+          0.6609123192759063,
+          0.1354211218811133
+        ],
+        "covariance_theta_eigen_summary": {
+          "condition_number": 45.007315283204306,
+          "eigenvalues": [
+            0.017594888784467865,
+            0.03290977436601861,
+            0.6609075144476984,
+            0.7918987068954606
+          ],
+          "finite": true,
+          "max": 0.7918987068954606,
+          "min": 0.017594888784467865,
+          "positive": true
+        },
+        "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+        "covariance_z_eigen_summary": {
+          "condition_number": 45.00731531805385,
+          "eigenvalues": [
+            0.1436317451818566,
+            0.2686512193232786,
+            5.395163386812251,
+            6.464479245082181
+          ],
+          "finite": true,
+          "max": 6.464479245082181,
+          "min": 0.1436317451818566,
+          "positive": true
+        },
+        "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+        "precision_theta_eigen_summary": {
+          "condition_number": 45.0073152832043,
+          "eigenvalues": [
+            1.2627877672895487,
+            1.5130710093917887,
+            30.38610927191768,
+            56.83468717817434
+          ],
+          "finite": true,
+          "max": 56.83468717817434,
+          "min": 1.2627877672895487,
+          "positive": true
+        },
+        "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+        "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+        "precision_z_eigen_summary": {
+          "condition_number": 45.00731531805376,
+          "eigenvalues": [
+            0.15469150137046908,
+            0.1853511985279935,
+            3.722298385687413,
+            6.962249179203848
+          ],
+          "finite": true,
+          "max": 6.962249179203848,
+          "min": 0.15469150137046908,
+          "positive": true
+        },
+        "scale": [
+          0.35,
+          0.35,
+          0.35,
+          0.35
+        ]
+      },
+      "passed": true,
+      "vetoes": []
+    },
+    "target_replay": {
+      "map_local_center_score_norm": 1.017238315038726e-10,
+      "map_local_center_value": -37.77528495512359
+    },
+    "vetoes": []
+  },
+  "artifact_role": "cpu_hidden_scalar_filtering_hmc_phase2ab_transport_or_sequential_reference",
+  "classification": "extension_or_invention",
+  "created_at_utc": "2026-07-09T07:50:04.596318+00:00",
+  "decision": {
+    "aggregate_rejuvenation_acceptance": 0.625,
+    "candidate_nominated_for_phase2ac_replication": false,
+    "next_justified_action": "write Phase 2AB result and draft/reference-method blocker or focused repair subplan",
+    "phase2ab_transport_or_sequential_reference_passed": false,
+    "runs_hmc": false,
+    "stage_count": 2,
+    "terminal_beta": 0.3419540270406287,
+    "terminal_pre_final_resampling_ess_ratio": 0.5000012436397635,
+    "terminal_pre_final_resampling_max_weight": 0.06553946724924992,
+    "unique_ancestor_fraction": 1.0,
+    "vetoes": [
+      "temperature_increment_stalled",
+      "temperature_schedule_did_not_reach_beta_one",
+      "terminal_beta_not_one"
+    ],
+    "viable_for_phase3_gpu_xla_subplan": false,
+    "zero_divergence_claim_made": false
+  },
+  "decision_table": {
+    "decision": "Phase 2AB sequential tempering reference viability pilot",
+    "main_uncertainty": "A one-seed CPU-hidden sequential pilot can nominate a reference route for replication only; it cannot establish posterior correctness or HMC readiness.",
+    "next_justified_action": "draft focused repair only if the artifact identifies one discriminating repair question",
+    "primary_criterion_status": "failed",
+    "veto_diagnostic_status": "vetoes: ('temperature_increment_stalled', 'temperature_schedule_did_not_reach_beta_one', 'terminal_beta_not_one')",
+    "what_is_not_being_concluded": "No valid replicated reference, HMC-vs-reference agreement, posterior correctness, HMC readiness, convergence, zero-divergence claim, sampler superiority, statistical ranking, GPU/XLA readiness, default readiness, or Zhao-Cui source faithfulness."
+  },
+  "environment": {
+    "cpu_hidden": true,
+    "cuda_visible_devices": "-1",
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf_logical_gpus": [],
+    "tf_physical_devices": [
+      {
+        "device_type": "CPU",
+        "name": "/physical_device:CPU:0"
+      }
+    ]
+  },
+  "git": {
+    "commit": "52ee244498988e046a6356f926003b581103083b",
+    "dirty": true,
+    "dirty_line_count": 103,
+    "dirty_preview": [
+      " M bayesfilter/inference/hmc_diagnostics.py",
+      " M tests/test_common_inference_runtime_contracts.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+      "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json"
+    ]
+  },
+  "inference_status": {
+    "default_readiness": "not assessed",
+    "descriptive_only_differences": "temperature schedule, ESS trajectory, ancestor diversity, rejuvenation acceptance, terminal moments, and runtime",
+    "gpu_xla_readiness": "blocked",
+    "hard_veto_screen": "failed",
+    "hmc_readiness": "not assessed",
+    "hmc_reference_agreement": "not assessed",
+    "next_evidence_needed": "reviewed focused repair or reference-method blocker",
+    "posterior_correctness": "not assessed",
+    "reference_validity": "not established; Phase 2AB can only nominate Phase 2AC replication",
+    "statistically_supported_ranking": "none",
+    "zero_divergence_claim": "not made"
+  },
+  "metric_roles": {
+    "particle_moments": "explanatory_only",
+    "phase2ab_transport_or_sequential_reference_passed": "primary_phase2ab_nomination_gate",
+    "phase2v_hmc_moment_comparison": "not_evaluated_in_phase2ab",
+    "rejuvenation_acceptance": "promotion_veto",
+    "runtime": "explanatory_only",
+    "target_log_prob_finiteness": "hard_veto_evidence",
+    "temperature_reaches_one": "promotion_veto",
+    "terminal_pre_final_resampling_ess_ratio": "promotion_veto",
+    "terminal_pre_final_resampling_max_weight": "promotion_veto",
+    "unique_ancestor_fraction": "promotion_veto"
+  },
+  "nonclaims": [
+    "Phase 2AB sequential-reference viability pilot only",
+    "not a valid replicated reference by itself",
+    "not HMC-vs-reference agreement evidence",
+    "not an HMC run",
+    "not HMC readiness evidence",
+    "not HMC convergence evidence",
+    "not posterior correctness evidence",
+    "not a zero-divergence claim when native divergence is unavailable",
+    "not sampler superiority evidence",
+    "not statistically supported ranking evidence",
+    "not GPU/XLA production-readiness evidence",
+    "not default-readiness evidence",
+    "not Zhao-Cui source-faithfulness evidence"
+  ],
+  "phase2ab_gate": {
+    "aggregate_rejuvenation_acceptance": 0.625,
+    "interpretation": "no valid sequential-reference nomination",
+    "minimum_adaptive_post_temperature_ess_ratio": 0.5000012436397635,
+    "phase2ab_candidate_nominated": false,
+    "terminal_pre_final_resampling_ess_ratio": 0.5000012436397635,
+    "terminal_pre_final_resampling_max_weight": 0.06553946724924992,
+    "unique_ancestor_fraction": 1.0,
+    "vetoes": [
+      "temperature_increment_stalled",
+      "temperature_schedule_did_not_reach_beta_one",
+      "terminal_beta_not_one"
+    ]
+  },
+  "plan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+  "post_run_red_team": {
+    "strongest_alternative_explanation": "A passing pilot may reflect a lucky one-seed sequential path or loose diversity gates; independent replication is required before any agreement interpretation.",
+    "weakest_evidence": "One CPU-hidden pilot with 128 particles and no uncertainty analysis.",
+    "what_would_overturn": "Failure to replicate with fresh seeds, nonfinite target evaluations, severe ancestor collapse, or disagreement under a later valid reference-agreement phase."
+  },
+  "precondition": {
+    "passed": true,
+    "phase2u_decision": {
+      "candidate_count": 4,
+      "next_justified_action": "write Phase 2U result and draft/review longer selected-kernel MAP-local screen subplan",
+      "passed_candidate_count": 4,
+      "phase2u_retuned_map_local_hmc_screen_passed": true,
+      "selected_candidate": {
+        "acceptance_rate": 0.34375,
+        "candidate_index": 0,
+        "num_leapfrog_steps": 2,
+        "selection_policy": "first_passing_candidate_in_predeclared_order",
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      "vetoes": [],
+      "viable_for_longer_map_local_selected_kernel_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2u_precondition": {
+      "matrix_checks": {
+        "diagnostics": {
+          "adapter_coordinate_formula": "free = center_free_parameter_values + u_new @ (diag(scale) @ factor_z).T",
+          "adapter_factor": [
+            [
+              0.8211068362911105,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.011748290014029134,
+              0.6987234057857247,
+              0.0,
+              0.0
+            ],
+            [
+              0.18574175684469238,
+              -0.02735084868822145,
+              0.18570833280186028,
+              0.0
+            ],
+            [
+              -0.12660465789775052,
+              -0.4775794385869455,
+              -0.014118761606091164,
+              0.16338964416513962
+            ]
+          ],
+          "adapter_factor_orientation": "row_right_transpose",
+          "center_free_parameter_values": [
+            0.5704394246369003,
+            -0.1242247342531544,
+            0.6609123192759063,
+            0.1354211218811133
+          ],
+          "covariance_theta_eigen_summary": {
+            "condition_number": 45.007315283204306,
+            "eigenvalues": [
+              0.017594888784467865,
+              0.03290977436601861,
+              0.6609075144476984,
+              0.7918987068954606
+            ],
+            "finite": true,
+            "max": 0.7918987068954606,
+            "min": 0.017594888784467865,
+            "positive": true
+          },
+          "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+          "covariance_z_eigen_summary": {
+            "condition_number": 45.00731531805385,
+            "eigenvalues": [
+              0.1436317451818566,
+              0.2686512193232786,
+              5.395163386812251,
+              6.464479245082181
+            ],
+            "finite": true,
+            "max": 6.464479245082181,
+            "min": 0.1436317451818566,
+            "positive": true
+          },
+          "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+          "precision_theta_eigen_summary": {
+            "condition_number": 45.0073152832043,
+            "eigenvalues": [
+              1.2627877672895487,
+              1.5130710093917887,
+              30.38610927191768,
+              56.83468717817434
+            ],
+            "finite": true,
+            "max": 56.83468717817434,
+            "min": 1.2627877672895487,
+            "positive": true
+          },
+          "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+          "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+          "precision_z_eigen_summary": {
+            "condition_number": 45.00731531805376,
+            "eigenvalues": [
+              0.15469150137046908,
+              0.1853511985279935,
+              3.722298385687413,
+              6.962249179203848
+            ],
+            "finite": true,
+            "max": 6.962249179203848,
+            "min": 0.15469150137046908,
+            "positive": true
+          },
+          "scale": [
+            0.35,
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "passed": true,
+        "vetoes": []
+      },
+      "passed": true,
+      "phase2s_decision": {
+        "next_justified_action": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+        "phase2s_geometry_centering_repair_passed": true,
+        "vetoes": [],
+        "viable_for_map_local_reference_subplan": true,
+        "zero_divergence_claim_made": false
+      },
+      "phase2t_decision": {
+        "next_justified_action": "draft and review Phase 2U retuned MAP-local fixed-kernel HMC screen subplan",
+        "phase2t_map_local_reference_handoff_passed": true,
+        "vetoes": [],
+        "viable_for_phase2u_retuned_map_local_hmc_screen_subplan": true,
+        "zero_divergence_claim_made": false
+      },
+      "phase2t_next_contract": {
+        "acceptance_envelope": {
+          "lower_exclusive": 0.05,
+          "upper_exclusive": 0.99
+        },
+        "all_trajectory_lengths_equal_1p57": true,
+        "candidate_grid": [
+          {
+            "num_leapfrog_steps": 2,
+            "step_size": 0.785,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 4,
+            "step_size": 0.3925,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 8,
+            "step_size": 0.19625,
+            "trajectory_length_L_times_epsilon": 1.57
+          },
+          {
+            "num_leapfrog_steps": 16,
+            "step_size": 0.098125,
+            "trajectory_length_L_times_epsilon": 1.57
+          }
+        ],
+        "candidate_grid_predeclared": true,
+        "hard_vetoes": [
+          "runtime_error",
+          "nonfinite_samples",
+          "nonfinite_target_log_prob",
+          "nonfinite_log_accept_ratio",
+          "positive_native_divergence_when_available",
+          "artifact_invalid"
+        ],
+        "if_no_candidate_passes": "write blocker/repair result; do not proceed to GPU/XLA",
+        "native_divergence_policy": "positive native divergence is a hard veto when available; unavailable native divergence is recorded as unavailable and is not zero-divergence evidence",
+        "next_subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md",
+        "nonclaims": [
+          "Phase 2U finite/acceptance retuning screen only",
+          "not posterior correctness evidence",
+          "not HMC readiness evidence"
+        ],
+        "selection_policy": "first candidate in listed order that passes hard vetoes and acceptance envelope",
+        "selection_policy_predeclared": true
+      },
+      "vetoes": []
+    },
+    "phase2v_decision": {
+      "acceptance_rate": 0.40625,
+      "next_justified_action": "write Phase 2V result and draft/review scalar reference/posterior-agreement subplan",
+      "phase2v_longer_selected_map_local_screen_passed": true,
+      "selected_kernel": {
+        "num_leapfrog_steps": 2,
+        "phase2u_selected_candidate_index": 0,
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "viable_for_scalar_reference_posterior_agreement_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "phase2w_decision": {
+      "agreement_passed": false,
+      "next_justified_action": "write Phase 2W blocker or narrower reference/tuning/localization repair result",
+      "phase2w_importance_reference_agreement_passed": false,
+      "reference_ess": 22.894679726459746,
+      "reference_ess_ratio": 0.022358085670370845,
+      "reference_valid": false,
+      "vetoes": [
+        "reference_ess_below_threshold",
+        "reference_ess_ratio_below_threshold"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2x_decision": {
+      "agreement_passed": false,
+      "next_justified_action": "write Phase 2X blocker or narrower reference/tuning/localization repair result",
+      "phase2x_shifted_mixture_reference_repair_passed": false,
+      "reference_ess": 33.4215730897076,
+      "reference_ess_ratio": 0.01631912748520879,
+      "reference_valid": false,
+      "vetoes": [
+        "reference_ess_below_threshold",
+        "reference_ess_ratio_below_threshold"
+      ],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "viable_for_reference_replication_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2y_decision": {
+      "artifact_bug_indicated": false,
+      "next_justified_action": "write Phase 2Y result and draft/review proposal redesign or local-reference-abandonment subplan",
+      "phase2y_target_geometry_localization_passed": true,
+      "proposal_family_mismatch_indicated": true,
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "phase2z_decision": {
+      "candidate_nominated": false,
+      "next_justified_action": "write Phase 2Z result and draft/review SNIS-abandonment or transport/sequential-reference decision subplan",
+      "nominated_candidate_count": 0,
+      "nominated_candidates": [],
+      "phase2z_proposal_strategy_pilot_passed": true,
+      "pilot_artifact_valid": true,
+      "vetoes": [],
+      "viable_for_phase3_gpu_xla_subplan": false,
+      "zero_divergence_claim_made": false
+    },
+    "vetoes": []
+  },
+  "result_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md",
+  "review_record": {
+    "claude_round_1": "VERDICT_REVISE",
+    "claude_round_1_process_note": "worker issued read/status commands despite read-only/no-command prompt; no edits were made",
+    "focused_local_review": "VERDICT_AGREE_FOR_IMPLEMENTATION_AND_CPU_HIDDEN_PILOT",
+    "review_strength": "Claude compact review plus local focused repair review"
+  },
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 timeout 600 python docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py --json-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json --markdown-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md",
+    "conda_env": "tfgpu",
+    "cpu_gpu_status": "CPU-hidden debug/reference exception",
+    "data_version": "stateless_simulated_scalar_ssl_lstm_filtering_path_v1",
+    "environment": {
+      "cpu_hidden": true,
+      "cuda_visible_devices": "-1",
+      "python": "3.13.13",
+      "tensorflow": "2.20.0",
+      "tf_logical_gpus": [],
+      "tf_physical_devices": [
+        {
+          "device_type": "CPU",
+          "name": "/physical_device:CPU:0"
+        }
+      ]
+    },
+    "git": {
+      "commit": "52ee244498988e046a6356f926003b581103083b",
+      "dirty": true,
+      "dirty_line_count": 103,
+      "dirty_preview": [
+        " M bayesfilter/inference/hmc_diagnostics.py",
+        " M tests/test_common_inference_runtime_contracts.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+        "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json"
+      ]
+    },
+    "jit_compile": false,
+    "output_artifacts": [
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json",
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md"
+    ],
+    "plan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+    "random_seeds": [
+      [
+        20260709,
+        6801
+      ]
+    ],
+    "result_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md",
+    "subplan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md",
+    "tf32_mode": "disabled_by_cpu_hidden_debug_contract",
+    "wall_time_seconds": 59.509127364028245
+  },
+  "schema_version": "scalar_ssl_lstm.filtering_hmc_validation_phase2ab_transport_or_sequential_reference.v1",
+  "script": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py",
+  "sequential_reference": {
+    "aggregate_rejuvenation_acceptance": 0.625,
+    "aggregate_rejuvenation_accepted_count": 160,
+    "aggregate_rejuvenation_proposal_count": 256,
+    "computed": true,
+    "final_log_weights": [
+      -11.909262920186913,
+      -11.85063757776893,
+      -12.218901069483918,
+      -11.893999857471163,
+      -10.870024866234766,
+      -10.885196309574306,
+      -10.909098881360359,
+      -13.634310020143532,
+      -11.906772441859772,
+      -11.095162749613568,
+      -11.659788813132307,
+      -13.598143043349438,
+      -11.897298580091903,
+      -11.86836843572041,
+      -12.00109776665824,
+      -9.332063934703218,
+      -11.923021398582355,
+      -11.628111409263425,
+      -11.083608539117902,
+      -11.752045114790315,
+      -11.765136788008226,
+      -11.478815081270264,
+      -12.626671443850435,
+      -12.180455690803825,
+      -12.980659184979437,
+      -11.986222299296829,
+      -11.567519047083987,
+      -11.627705997995598,
+      -11.657664942811698,
+      -10.817728053937639,
+      -11.456278626851073,
+      -12.065013808729159,
+      -11.547751641420717,
+      -11.528860869314792,
+      -11.647471841790152,
+      -11.973115193033173,
+      -11.775145339545247,
+      -11.733561064562563,
+      -11.620196319246258,
+      -13.195963878667582,
+      -11.152799777842304,
+      -12.783743917165872,
+      -11.59580738162192,
+      -12.614995925334473,
+      -12.041809150389067,
+      -13.23682715767113,
+      -12.048629709558506,
+      -11.350173676512501,
+      -11.665257767805885,
+      -11.626891846633127,
+      -10.647668418671172,
+      -12.027582031203472,
+      -11.502085905255973,
+      -19.56568856239457,
+      -11.867085549182473,
+      -10.760262243597523,
+      -11.534512060619171,
+      -11.350804338683684,
+      -10.36221388166762,
+      -11.07551403482652,
+      -11.89535583828925,
+      -11.408501571875771,
+      -11.571437831331071,
+      -11.135606934512435,
+      -11.656022785880593,
+      -10.915791002301455,
+      -13.346784255247467,
+      -11.691984411632642,
+      -11.706523990374317,
+      -11.875350009675376,
+      -10.897129079925483,
+      -11.299882605436744,
+      -11.684630363273044,
+      -12.093115938800242,
+      -10.91682746623833,
+      -11.840716154713881,
+      -10.926295993149555,
+      -11.978760426956438,
+      -11.215865351262478,
+      -11.649854300828666,
+      -11.596116674140198,
+      -11.722766608759002,
+      -13.058349596449672,
+      -12.417526279810799,
+      -11.595456683942798,
+      -11.97958175905367,
+      -11.52711826870853,
+      -11.600588596494019,
+      -11.901096246840902,
+      -11.13954553225083,
+      -17.68661485805084,
+      -11.157242901638732,
+      -12.519868242320149,
+      -11.880964207626374,
+      -16.888733162626316,
+      -11.864660366730618,
+      -11.533641907247848,
+      -11.370500056832071,
+      -11.618790581810115,
+      -11.682951408421488,
+      -11.31793541431013,
+      -11.22253470548798,
+      -10.562024294980791,
+      -9.59286036757409,
+      -14.677837487979144,
+      -11.600396097595638,
+      -11.503412550115275,
+      -11.736142680768058,
+      -11.37362651242722,
+      -11.346141139961192,
+      -11.715996321217764,
+      -10.866000421462594,
+      -13.914721887794537,
+      -11.462586182458612,
+      -13.798969171923646,
+      -11.755089214939021,
+      -10.097800277864552,
+      -11.093674286805939,
+      -12.372193554831744,
+      -11.667420722987353,
+      -11.911881666072183,
+      -13.552398153046225,
+      -11.217276984484002,
+      -11.568889811643851,
+      -11.747318999971343,
+      -11.610512968469457,
+      -11.173077994898026,
+      -11.484790637015067
+    ],
+    "final_normalized_weights": [
+      0.004980117719040616,
+      0.005280806707382324,
+      0.00365397413658964,
+      0.005056712617524345,
+      0.014079102179987524,
+      0.013867114028250005,
+      0.013539584334624707,
+      0.000887280980309881,
+      0.004992536051661919,
+      0.01124084140423778,
+      0.006391235739611464,
+      0.0009199586146345231,
+      0.005040059407487755,
+      0.005187998688116084,
+      0.004543141270734575,
+      0.06553946724924992,
+      0.004912068080194818,
+      0.006596934292897747,
+      0.01137147367506971,
+      0.005827985116369971,
+      0.005752184302086817,
+      0.00765915273046853,
+      0.002430373636611956,
+      0.0037971878697741004,
+      0.001705839328394521,
+      0.004611227774197858,
+      0.0070090165742263425,
+      0.006599609306596915,
+      0.006404824320594793,
+      0.01483498726601588,
+      0.007833722581122698,
+      0.004261847026353501,
+      0.007148945103756321,
+      0.007285277857702631,
+      0.006470443203726815,
+      0.004672065458666505,
+      0.005694900411615694,
+      0.005936711643674599,
+      0.006649356812460953,
+      0.00137541096574272,
+      0.010611270292903,
+      0.0020770996719010307,
+      0.006813521322718117,
+      0.002458915807093974,
+      0.004361898066211327,
+      0.0013203400164324478,
+      0.004332248709894867,
+      0.008710618274542316,
+      0.006356377766263406,
+      0.006604984575349934,
+      0.01758503103242715,
+      0.004424398858753723,
+      0.007482975777205046,
+      2.3555710117053116e-06,
+      0.00519465857281671,
+      0.015712462789572303,
+      0.007244223471178487,
+      0.008705126549002745,
+      0.023394537797034026,
+      0.011463893659893516,
+      0.005049860458960106,
+      0.00821707969280352,
+      0.006981603498533887,
+      0.010795285540447983,
+      0.006415350687853323,
+      0.01344927830522593,
+      0.0011828564032361315,
+      0.00618874325413946,
+      0.0060994125235787336,
+      0.005151904435553386,
+      0.013702624301998428,
+      0.00915988701377201,
+      0.006234423332194668,
+      0.0041437472467002546,
+      0.01343534583478442,
+      0.005333460593625527,
+      0.013308733264382883,
+      0.004645764862603119,
+      0.009962729677393733,
+      0.00645504598673532,
+      0.006811414277413346,
+      0.006001142336642249,
+      0.001578329253167104,
+      0.002995736674677124,
+      0.006815911227875248,
+      0.004641950713361285,
+      0.007297984255186814,
+      0.006781022167870731,
+      0.005020955240054126,
+      0.010752850874628269,
+      1.542295324517667e-05,
+      0.010564227690797054,
+      0.0027043138141766977,
+      0.005123061664499072,
+      3.425178107895729e-05,
+      0.0052072718562055555,
+      0.007250529799993281,
+      0.008535350251385495,
+      0.006658710635227577,
+      0.006244899439489579,
+      0.008996009004087088,
+      0.009896505784892198,
+      0.019157459203427814,
+      0.05049407899237737,
+      0.0003125093036173015,
+      0.006782327632814191,
+      0.007473055107915409,
+      0.005921405099001008,
+      0.008508706529744708,
+      0.008745815079624778,
+      0.006041909643311333,
+      0.014135876915919575,
+      0.0006703164005174401,
+      0.007784466446537751,
+      0.0007525764275861119,
+      0.00581027112127708,
+      0.030475289394222355,
+      0.011257585436938007,
+      0.003134666831124466,
+      0.006342644064083925,
+      0.004967093117759599,
+      0.000963019417591804,
+      0.00994867587894221,
+      0.006999415444654343,
+      0.005855594033259069,
+      0.006714057621664185,
+      0.01039825968753344,
+      0.00761352150810656
+    ],
+    "final_particles": [
+      [
+        1.0622660703724784,
+        0.42338060774686265,
+        1.9861416393200768,
+        -0.7418791226474846
+      ],
+      [
+        -1.1215469612792943,
+        -0.03890852215259899,
+        0.27522799682874655,
+        1.0185463065974454
+      ],
+      [
+        1.313363022352239,
+        -0.40610728321919237,
+        0.9726100922034435,
+        0.7191078871255665
+      ],
+      [
+        -0.7597154312512727,
+        1.1850941065399696,
+        -0.4482995276837046,
+        -0.7744217792164045
+      ],
+      [
+        -0.42397181581079013,
+        2.17223601077739,
+        0.6213379447217311,
+        0.4381477555936981
+      ],
+      [
+        -0.7135788909882474,
+        0.35227737183683433,
+        2.089258512595128,
+        -0.9860615442428569
+      ],
+      [
+        -1.6329789166062076,
+        0.369828268698855,
+        0.699862507322296,
+        -2.0514809810546057
+      ],
+      [
+        0.22759183152032028,
+        -0.9751370336108469,
+        -2.395963753804867,
+        0.27710035992955223
+      ],
+      [
+        -0.9259326922598644,
+        -0.6539715039146535,
+        0.48416104183787406,
+        0.7611272140938375
+      ],
+      [
+        0.5427153676654,
+        0.7717081163008426,
+        0.5516671135198613,
+        0.4871703934149395
+      ],
+      [
+        0.10736972963557254,
+        -1.0783873117155522,
+        0.46291715363382124,
+        -0.14018071023134926
+      ],
+      [
+        1.4569670040926037,
+        -1.3786314305411438,
+        -0.11061974999051943,
+        -0.9247038840038146
+      ],
+      [
+        -0.43528317536917704,
+        -2.0872838213726723,
+        -1.0132852990213146,
+        -0.3059360345891149
+      ],
+      [
+        0.2795770142387568,
+        -2.289820844068598,
+        0.4646926596815403,
+        -0.25807816603872685
+      ],
+      [
+        1.1550540906738622,
+        -0.27839116492506644,
+        -0.2792242226269602,
+        -1.0562782754089572
+      ],
+      [
+        2.033517520799571,
+        -0.5968604099668401,
+        -1.5208019412436315,
+        3.060091810811257
+      ],
+      [
+        -0.21776530890918744,
+        -0.45618801558312566,
+        -0.21648597283854398,
+        1.7567885270406303
+      ],
+      [
+        0.03634155043337772,
+        1.0825958049527378,
+        0.8825873111542883,
+        2.830474156024469
+      ],
+      [
+        -0.7309117760225927,
+        1.8461246823904327,
+        0.18824119270444883,
+        0.13888807582114981
+      ],
+      [
+        0.5123307355513511,
+        -0.2663721459070812,
+        0.21594206834100263,
+        1.2189199270889566
+      ],
+      [
+        0.9296876759880497,
+        0.41545539051920777,
+        0.3921927062472294,
+        0.7404313510448581
+      ],
+      [
+        0.9405538854752041,
+        -0.44804504509174636,
+        -1.185587434239592,
+        -0.28324660829303966
+      ],
+      [
+        -1.013102235935027,
+        -0.7226759912249708,
+        -0.800843280840015,
+        -0.24869495096456376
+      ],
+      [
+        -0.9284093453444673,
+        0.2920934624785676,
+        -1.030017135073958,
+        -1.037180943302981
+      ],
+      [
+        -1.3761996447252982,
+        -0.43018588327509066,
+        -0.20895536836648013,
+        0.42881092159469897
+      ],
+      [
+        0.8219097508201668,
+        -0.17334782013329775,
+        -1.2863817457047078,
+        -2.3255894591279986
+      ],
+      [
+        1.0416891714624819,
+        -0.48099097433788995,
+        -0.5746123033543815,
+        -0.3474670362888894
+      ],
+      [
+        -0.5901005930906891,
+        0.28321821297305,
+        0.5194266849716378,
+        -0.17156218737481804
+      ],
+      [
+        1.240142070319253,
+        -1.0369805160302639,
+        1.1049783703561882,
+        2.12523425090449
+      ],
+      [
+        0.0584971771694612,
+        -2.215524948828483,
+        -0.1431413614147845,
+        0.5934528144189419
+      ],
+      [
+        1.0952950426599555,
+        -0.13161455653807874,
+        -1.406134135347562,
+        -0.3788318140582863
+      ],
+      [
+        -0.4675003465348451,
+        -0.48920511921042764,
+        -0.2426247364575833,
+        -0.30600650616341846
+      ],
+      [
+        0.746667884205613,
+        0.8735573038019688,
+        -1.962886929961071,
+        -0.35128008813697775
+      ],
+      [
+        -0.28736304878789165,
+        -0.6790477042917396,
+        0.12219032438047639,
+        -0.3875090291846336
+      ],
+      [
+        0.16926380663279067,
+        -0.49820083693176653,
+        0.4865699930252985,
+        0.336625928606446
+      ],
+      [
+        -0.38049255542697025,
+        -0.385533503178072,
+        -1.9803003893305378,
+        -1.6450427377080619
+      ],
+      [
+        -1.006858510199097,
+        0.3433559606842797,
+        -0.2625651694522364,
+        -0.9088029511875033
+      ],
+      [
+        0.40888072631880706,
+        0.13340707794367263,
+        0.7445661761490432,
+        -0.1853593370724046
+      ],
+      [
+        1.2130036273091058,
+        0.32840166683589067,
+        1.11342960532679,
+        -0.8703809122325455
+      ],
+      [
+        0.03398247132298943,
+        1.1216710130977645,
+        -1.311884834948955,
+        -1.7530055522821533
+      ],
+      [
+        1.3343703748792084,
+        1.3449180404712542,
+        0.06719992304783187,
+        -1.0512295397868385
+      ],
+      [
+        1.4110016661935463,
+        -0.6939136693820827,
+        0.34756827074626134,
+        -0.7154488102342342
+      ],
+      [
+        -0.34640220000895555,
+        0.7216117806344349,
+        0.8089496925920486,
+        1.1485858304188874
+      ],
+      [
+        0.7162314365692677,
+        -0.3036402843099094,
+        -0.4698334619448684,
+        -1.2779969214294513
+      ],
+      [
+        0.01419243986966968,
+        0.2960774671349463,
+        2.257923262783737,
+        0.12071498413762793
+      ],
+      [
+        1.6676028491224286,
+        -0.8983373518733421,
+        2.0647364340440046,
+        0.3565026869739248
+      ],
+      [
+        1.917565748685474,
+        -0.48216079948588436,
+        0.23728099437008127,
+        0.5241850348091613
+      ],
+      [
+        0.7923184998662205,
+        -0.557718429236467,
+        0.6721257497681594,
+        1.7221514646631784
+      ],
+      [
+        -0.11864076730668036,
+        -0.12584230950092357,
+        0.04550049882854473,
+        -0.43243635390638524
+      ],
+      [
+        -0.44048985375054406,
+        -0.15016372401981976,
+        0.8350969782276759,
+        0.535510119653749
+      ],
+      [
+        -1.3053167458389656,
+        -0.49219821500663885,
+        2.008529912836611,
+        1.269880918619129
+      ],
+      [
+        -1.4409437362675837,
+        1.2820878468001502,
+        0.4239062209909718,
+        -0.3910490510464598
+      ],
+      [
+        0.43451239251908574,
+        -0.37116010154399853,
+        -0.6000360670335719,
+        0.24132089108400057
+      ],
+      [
+        -0.5628707767015423,
+        -1.6000706511142107,
+        -1.3805826647019253,
+        1.2926862707056959
+      ],
+      [
+        -0.27942139143289857,
+        -1.2467501013068931,
+        -1.0372047853077375,
+        -1.1584125527124431
+      ],
+      [
+        2.5602128880416464,
+        0.7442046510130551,
+        -1.0384945290178198,
+        0.9074239578607995
+      ],
+      [
+        1.8897707377351547,
+        0.2559900809236875,
+        -0.15321496586096583,
+        0.533321384122176
+      ],
+      [
+        1.0276956290578096,
+        -0.5125781002371684,
+        -0.16903703719187815,
+        1.179259202034637
+      ],
+      [
+        1.3643810372243639,
+        0.08723970812734659,
+        -0.6282307653678406,
+        2.3169924128648423
+      ],
+      [
+        -2.888014247609545,
+        1.4709850338861252,
+        0.9307645067818339,
+        -0.6392636712116898
+      ],
+      [
+        -0.4236796795851975,
+        0.07100587488820204,
+        -0.571642596099433,
+        -0.1586283682674875
+      ],
+      [
+        -0.779956533730293,
+        -0.5785293712617399,
+        0.533678768995552,
+        -0.33495971122983603
+      ],
+      [
+        -0.671760314146599,
+        1.6765089563339746,
+        -1.2155599493123765,
+        0.567551933324936
+      ],
+      [
+        -0.2708168900632809,
+        -0.48208194253077696,
+        -0.5546569378338906,
+        -1.7358911283168563
+      ],
+      [
+        0.01354546591061763,
+        -0.1991096336780115,
+        -0.23977575509667542,
+        1.01920331175183
+      ],
+      [
+        -0.2753308640472585,
+        1.4279998494067256,
+        1.5357898424211596,
+        -0.29045212887219735
+      ],
+      [
+        1.3061204953486552,
+        0.6583924683720981,
+        -2.416458382787196,
+        -0.5467393277609346
+      ],
+      [
+        -0.4204303076313181,
+        0.33590514878671707,
+        0.7223818530505092,
+        -0.5515431011379257
+      ],
+      [
+        0.2834835177932988,
+        1.1883274918757922,
+        -0.11306742668674802,
+        -2.4039193949687294
+      ],
+      [
+        0.3059789793960228,
+        -0.9002700345643431,
+        0.42737346304616625,
+        -0.6720645157399876
+      ],
+      [
+        1.711482798728355,
+        2.225632863824063,
+        -0.472944017483682,
+        1.8044105047884995
+      ],
+      [
+        -1.138033781375274,
+        -0.1093308946930393,
+        0.705005549942257,
+        -0.7061191688721884
+      ],
+      [
+        -0.3952413456529773,
+        -0.4627873588280285,
+        0.7369306502510179,
+        -1.7437958407028573
+      ],
+      [
+        0.9327089637231982,
+        -1.8020210219703845,
+        1.0936122961351993,
+        1.5265346876845762
+      ],
+      [
+        1.9070885996911495,
+        1.3550136712971572,
+        -0.45817338785167194,
+        -1.202283775003155
+      ],
+      [
+        1.2546291158612253,
+        1.0692229969204348,
+        1.9431679122418473,
+        0.6721221930655086
+      ],
+      [
+        -1.3596880149444253,
+        1.076296496910368,
+        0.15290006630081043,
+        0.30879342558870204
+      ],
+      [
+        -1.365693067032348,
+        0.3545959393133297,
+        0.009243206890631739,
+        -0.016190975549362864
+      ],
+      [
+        0.702406393092842,
+        1.9700879794157555,
+        -0.3015848894502029,
+        0.2862414530088007
+      ],
+      [
+        -0.3368795472564075,
+        -0.30293481542862793,
+        0.49141575836018603,
+        0.957639357390736
+      ],
+      [
+        -0.1574669066220472,
+        0.7767891559726368,
+        0.14491728617127353,
+        0.29296087161198975
+      ],
+      [
+        -0.24255779687505818,
+        -0.3716321364507062,
+        0.45297049672491463,
+        0.6577412743522018
+      ],
+      [
+        -2.4994812102208916,
+        0.3240800895095639,
+        -1.2106083206981124,
+        0.47128167212875405
+      ],
+      [
+        2.70622246818158,
+        0.6372171047678239,
+        0.4300352219040205,
+        -1.654145889809513
+      ],
+      [
+        0.08445871092384144,
+        0.3722979994035116,
+        1.5523585279145706,
+        -0.40003081362118065
+      ],
+      [
+        0.45070812700628105,
+        -0.566461708797195,
+        -0.4705354048466959,
+        2.2398438289694984
+      ],
+      [
+        -0.2882447157724831,
+        -0.11633861283411262,
+        0.6512515393930522,
+        -0.1559186437460452
+      ],
+      [
+        -0.13740199028993005,
+        -0.8741365263135015,
+        -0.6092843153004692,
+        0.21654540849861353
+      ],
+      [
+        1.1438017077829015,
+        -0.1084904535974856,
+        0.9738885379259303,
+        0.5753810673329226
+      ],
+      [
+        1.821724055831221,
+        1.278627979901641,
+        -0.5305571077667033,
+        0.5481686744561285
+      ],
+      [
+        -1.7161700429376008,
+        -0.7678866190200213,
+        1.3316387381108816,
+        -0.23153438120300424
+      ],
+      [
+        0.8075730157357316,
+        1.9829312273373516,
+        -0.16176450892951805,
+        0.16313364722843243
+      ],
+      [
+        -0.15764851254865808,
+        1.0436156905432048,
+        -1.3120870907164133,
+        -0.8730963870166526
+      ],
+      [
+        0.7916579052590496,
+        -0.3339050745758676,
+        -1.1052472264471889,
+        -1.8430535293769919
+      ],
+      [
+        -1.3276431348488824,
+        -0.7297964688052576,
+        -0.18387041540793647,
+        2.6748687901124946
+      ],
+      [
+        0.7504810366517229,
+        -0.9394728298886703,
+        -0.804283059299717,
+        0.893140339340502
+      ],
+      [
+        -0.858218742523942,
+        0.954691199187655,
+        0.31932398192174133,
+        -0.11617350687686656
+      ],
+      [
+        0.41292980211164987,
+        0.8666582115618,
+        -0.12266282772006776,
+        -0.22695603542985474
+      ],
+      [
+        -0.2646653780309606,
+        -0.21329981726185687,
+        0.459109388104904,
+        0.7738066407133215
+      ],
+      [
+        0.8887823472727838,
+        -0.25925394338776425,
+        0.1747025104564461,
+        0.8179690990952367
+      ],
+      [
+        1.1609385488775124,
+        -0.18252542713264594,
+        -0.24592406147746787,
+        1.2520502064378762
+      ],
+      [
+        0.6785360903818921,
+        -0.05491265661980782,
+        -1.5106697152800965,
+        -0.42293170367681837
+      ],
+      [
+        -0.201391246925276,
+        -1.8962163557516052,
+        1.1723682287966493,
+        1.7574204131496736
+      ],
+      [
+        2.4705708012090817,
+        -1.357433751792756,
+        -0.9004251455939535,
+        2.853393026391987
+      ],
+      [
+        -1.4101653187955538,
+        -0.7213357135879925,
+        -1.3074284631160134,
+        -0.25226873791303533
+      ],
+      [
+        0.42994770996553117,
+        0.06573580001174495,
+        -0.32964211038591695,
+        -0.09199323624087993
+      ],
+      [
+        0.00626831229509095,
+        -0.9603217886747462,
+        -0.7057428368369103,
+        -0.03295757184661008
+      ],
+      [
+        -0.14773186053936307,
+        -0.2510172751037928,
+        0.38004960981527547,
+        0.40249307753073843
+      ],
+      [
+        1.9797901788607888,
+        -0.038681165526693206,
+        -0.45877660978787527,
+        0.41277222722302087
+      ],
+      [
+        0.5308125486375215,
+        1.3157233190877429,
+        -0.45568561721881545,
+        0.41343787161292456
+      ],
+      [
+        -0.6893734318958782,
+        -0.688254436967586,
+        0.4377818742118171,
+        0.6447772133920588
+      ],
+      [
+        -0.947038914427427,
+        0.709747065880316,
+        1.2467563084386928,
+        -1.1839162597208035
+      ],
+      [
+        -0.9946887500328696,
+        -0.45033115830856474,
+        -1.7259799237024778,
+        0.1379322613577281
+      ],
+      [
+        -1.7316214046207574,
+        -0.38519536979166713,
+        0.3439594776052651,
+        -1.0213940705762288
+      ],
+      [
+        0.8414511007216665,
+        -1.2717222048017578,
+        -2.0723751498775766,
+        -1.7596362118067996
+      ],
+      [
+        0.2934593211909725,
+        0.5688504497333053,
+        0.39088227121863667,
+        -1.0988883521965918
+      ],
+      [
+        1.5248121079093735,
+        -0.05923011754647537,
+        -0.20216682130393868,
+        3.564240648462616
+      ],
+      [
+        2.659487478897484,
+        0.6266352266737014,
+        -0.49367627892160293,
+        -1.293284191080095
+      ],
+      [
+        -1.5468398318733851,
+        1.8342357530099092,
+        0.293739085977289,
+        -1.3780037873265583
+      ],
+      [
+        -0.1931315368984121,
+        0.11582323055282534,
+        -0.7017265168773202,
+        0.18528318003334943
+      ],
+      [
+        0.5434847279666084,
+        -1.6099371964125366,
+        -1.392579158576618,
+        0.6488835074111022
+      ],
+      [
+        0.9700900187236728,
+        -2.0714614975063776,
+        -1.10914653321664,
+        1.2815429001761873
+      ],
+      [
+        -0.2931760306927852,
+        -1.441904746349781,
+        0.5396729903130357,
+        -0.40993661391765657
+      ],
+      [
+        0.01079250210007393,
+        0.2288230128891734,
+        0.6528066902230824,
+        0.016557467221820985
+      ],
+      [
+        0.20644183005976163,
+        -0.24417791795575677,
+        -0.21053051711848358,
+        1.0136185668836404
+      ],
+      [
+        -1.7368525759919287,
+        0.7491514877993334,
+        -0.5278669620573213,
+        -0.5458643192473271
+      ],
+      [
+        -0.45806968782444296,
+        -1.239230325491849,
+        -0.9679156756221856,
+        -1.3614373566219071
+      ],
+      [
+        0.7278408520479055,
+        0.025443546955319696,
+        -1.0062782123027534,
+        -0.051157550030438335
+      ]
+    ],
+    "final_weight_summary": {
+      "ess": 64.00015918588973,
+      "ess_ratio": 0.5000012436397635,
+      "finite": true,
+      "max": 0.06553946724924992,
+      "nonzero_count": 128,
+      "sum": 1.0
+    },
+    "initial_target_eval": {
+      "first_error": null,
+      "summary": {
+        "finite_count": 128,
+        "max": -37.815344283720826,
+        "max_abs": 67.97826338709383,
+        "mean": -40.59134766576561,
+        "min": -67.97826338709383,
+        "nonfinite_count": 0,
+        "shape": [
+          128
+        ]
+      },
+      "vetoes": []
+    },
+    "particle_summary": {
+      "max": [
+        2.70622246818158,
+        2.225632863824063,
+        2.257923262783737,
+        3.564240648462616
+      ],
+      "max_abs": 3.564240648462616,
+      "mean": [
+        0.156532267412647,
+        -0.03585927763737357,
+        -0.0598379205073061,
+        0.08015007413238036
+      ],
+      "min": [
+        -2.888014247609545,
+        -2.289820844068598,
+        -2.416458382787196,
+        -2.4039193949687294
+      ],
+      "std": [
+        1.078761797707162,
+        0.9512055210227817,
+        0.9567507573270364,
+        1.1287808727845243
+      ]
+    },
+    "stage_count": 2,
+    "stage_rows": [
+      {
+        "beta": 0.2527170181274414,
+        "delta_beta": 0.2527170181274414,
+        "pre_resample_weight_summary": {
+          "ess": 89.60017360234886,
+          "ess_ratio": 0.7000013562683505,
+          "finite": true,
+          "max": 0.04017182623114065,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.0,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.6328125,
+            "accepted_count": 81,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.794361160572784,
+                "max_abs": 65.0042295025407,
+                "mean": -41.1134543210365,
+                "min": -65.0042295025407,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resampled": false,
+        "selection": {
+          "delta_beta": 0.2527170181274414,
+          "ess_ratio": 0.7000013562683505,
+          "iterations": 20,
+          "next_beta": 0.2527170181274414,
+          "rule": "bisection_largest_target_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 0,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 1.0
+      },
+      {
+        "beta": 0.3419540270406287,
+        "delta_beta": 0.08923700891318731,
+        "pre_resample_weight_summary": {
+          "ess": 64.00015918588973,
+          "ess_ratio": 0.5000012436397635,
+          "finite": true,
+          "max": 0.06553946724924992,
+          "nonzero_count": 128,
+          "sum": 1.0
+        },
+        "previous_beta": 0.2527170181274414,
+        "rejuvenation": [
+          {
+            "acceptance_rate": 0.6171875,
+            "accepted_count": 79,
+            "first_error": null,
+            "proposal_count": 128,
+            "target_eval": {
+              "first_error": null,
+              "summary": {
+                "finite_count": 128,
+                "max": -37.79108703764027,
+                "max_abs": 72.41804082110208,
+                "mean": -41.0149312835222,
+                "min": -72.41804082110208,
+                "nonfinite_count": 0,
+                "shape": [
+                  128
+                ]
+              },
+              "vetoes": []
+            },
+            "vetoes": []
+          }
+        ],
+        "resample_index_summary": null,
+        "resampled": false,
+        "selection": {
+          "delta_beta": 0.08923700891318731,
+          "ess_ratio": 0.5000012436397635,
+          "iterations": 20,
+          "next_beta": 0.3419540270406287,
+          "rule": "bisection_largest_minimum_admissible_increment",
+          "target_reached": false,
+          "vetoes": []
+        },
+        "stage_index": 1,
+        "terminal_pre_final_resampling_measurement": false,
+        "unique_ancestor_fraction_after_stage": 1.0
+      }
+    ],
+    "terminal_beta": 0.3419540270406287,
+    "terminal_pre_final_resampling_summary": {
+      "ess": 64.00015918588973,
+      "ess_ratio": 0.5000012436397635,
+      "finite": true,
+      "max": 0.06553946724924992,
+      "nonzero_count": 128,
+      "sum": 1.0
+    },
+    "terminal_weighted_moments": {
+      "computed": true,
+      "mean_u_new": [
+        0.4428629798361046,
+        0.007277466779339755,
+        -0.06883958596569373,
+        0.5224212680464585
+      ],
+      "second_moment_variance_u_new": [
+        1.4743809682556064,
+        1.009627744528026,
+        0.8693370633705997,
+        2.106053294804959
+      ],
+      "std_u_new": [
+        1.2142409020682865,
+        1.0048023410243558,
+        0.9323824662500897,
+        1.4512247568192043
+      ],
+      "vetoes": []
+    },
+    "unique_ancestor_fraction": 1.0,
+    "vetoes": [
+      "temperature_increment_stalled",
+      "temperature_schedule_did_not_reach_beta_one"
+    ]
+  },
+  "settings": {
+    "base_density": "standard_normal_N_0_I4",
+    "beta_tolerance": 1e-06,
+    "bisection_iterations": 32,
+    "coordinate": "phase2s_phase2u_map_local_u_new",
+    "cpu_hidden": true,
+    "dimension": 4,
+    "final_ancestor_measurement": "after_last_completed_resampling_and_rejuvenation",
+    "hmc_usage": false,
+    "launch_commit": "52ee244498988e046a6356f926003b581103083b",
+    "max_stages": 48,
+    "minimum_beta_increment": 0.0001,
+    "minimum_ess_ratio": 0.5,
+    "particle_count": 128,
+    "rejuvenation_acceptance_interval": [
+      0.1,
+      0.9
+    ],
+    "rejuvenation_moves_per_stage": 1,
+    "rejuvenation_scale": 0.45,
+    "resample_ess_ratio": 0.5,
+    "seed": [
+      20260709,
+      6801
+    ],
+    "target_ess_ratio": 0.7,
+    "target_route": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py::build_phase2u_adapter",
+    "terminal_max_weight_max": 0.08,
+    "terminal_weight_measurement": "beta_1_pre_final_resampling",
+    "unique_ancestor_fraction_min": 0.25,
+    "use_xla": false
+  },
+  "source_artifacts": {
+    "phase2s_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json",
+    "phase2t_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json",
+    "phase2u_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json",
+    "phase2v_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json",
+    "phase2w_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json",
+    "phase2x_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json",
+    "phase2y_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json",
+    "phase2z_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json"
+  },
+  "subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md",
+  "target_scope": "scalar_ssl_lstm:svd_ukf_filtering_geometry:phase2u_map_local_u_new"
+}

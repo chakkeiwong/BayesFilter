@@ -8,6 +8,7 @@ from typing import Literal
 import tensorflow as tf
 
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
+from bayesfilter.linear.dtypes_tf import as_float_tensor, common_floating_dtype
 from bayesfilter.linear.qr_factor_tf import (
     cholesky_factor,
     factor_solve,
@@ -21,8 +22,37 @@ from bayesfilter.structural import FilterRunMetadata
 TFQRLinearValueBackend = Literal["tf_qr", "tf_masked_qr"]
 
 
-def _to_tensor(value: object) -> tf.Tensor:
-    return tf.convert_to_tensor(value, dtype=tf.float64)
+def _to_tensor(value: object, dtype: tf.DType) -> tf.Tensor:
+    return as_float_tensor(value, dtype)
+
+
+def _value_dtype(
+    observations: object,
+    transition_offset: object,
+    transition_matrix: object,
+    transition_covariance: object,
+    observation_offset: object,
+    observation_matrix: object,
+    observation_covariance: object,
+    initial_state_mean: object,
+    initial_state_covariance: object,
+    jitter: object,
+    *,
+    context: str,
+) -> tf.DType:
+    return common_floating_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context=context,
+    )
 
 
 def _matvec(matrix: tf.Tensor, vector: tf.Tensor) -> tf.Tensor:
@@ -33,8 +63,13 @@ def _matrix_transpose(matrix: tf.Tensor) -> tf.Tensor:
     return tf.linalg.matrix_transpose(matrix)
 
 
-def _as_observation_matrix(observations: tf.Tensor) -> tf.Tensor:
-    y = tf.convert_to_tensor(observations, dtype=tf.float64)
+def _as_observation_matrix(
+    observations: tf.Tensor,
+    dtype: tf.DType | None = None,
+) -> tf.Tensor:
+    if dtype is None:
+        dtype = common_floating_dtype(observations, context="observations")
+    y = as_float_tensor(observations, dtype, name="observations")
     if y.shape.rank == 1:
         y = y[:, tf.newaxis]
     if y.shape.rank != 2:
@@ -69,8 +104,11 @@ def _static_num_timesteps(observations: tf.Tensor) -> int:
     return int(n_timesteps)
 
 
-def _as_batched_static_observation_matrix(observations: tf.Tensor) -> tf.Tensor:
-    y = _as_observation_matrix(observations)
+def _as_batched_static_observation_matrix(
+    observations: tf.Tensor,
+    dtype: tf.DType | None = None,
+) -> tf.Tensor:
+    y = _as_observation_matrix(observations, dtype)
     if y.shape.rank != 2:
         raise ValueError("batched-static observations must have shape [time, observation]")
     return y
@@ -107,7 +145,8 @@ def _validate_batched_static_shapes(
 def _batched_qr_positive(matrix: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
     """Batched thin QR with a positive diagonal in the triangular factor."""
 
-    matrix = tf.convert_to_tensor(matrix, dtype=tf.float64)
+    dtype = common_floating_dtype(matrix, context="batched QR matrix")
+    matrix = as_float_tensor(matrix, dtype, name="matrix")
     q, r = tf.linalg.qr(matrix, full_matrices=False)
     signs = tf.sign(tf.linalg.diag_part(r))
     signs = tf.where(tf.equal(signs, 0.0), tf.ones_like(signs), signs)
@@ -124,6 +163,9 @@ def _batched_lower_factor_from_horizontal_stack(stack: tf.Tensor) -> tf.Tensor:
 def _batched_factor_solve(factor: tf.Tensor, rhs: tf.Tensor) -> tf.Tensor:
     """Solve batched ``(factor @ factor.T) x = rhs`` for lower factors."""
 
+    dtype = common_floating_dtype(factor, rhs, context="batched factor solve inputs")
+    factor = as_float_tensor(factor, dtype, name="factor")
+    rhs = as_float_tensor(rhs, dtype, name="rhs")
     first = tf.linalg.triangular_solve(factor, rhs, lower=True)
     return tf.linalg.triangular_solve(_matrix_transpose(factor), first, lower=False)
 
@@ -131,13 +173,14 @@ def _batched_factor_solve(factor: tf.Tensor, rhs: tf.Tensor) -> tf.Tensor:
 def _batched_cholesky_factor(covariance: tf.Tensor, jitter: tf.Tensor | float = 0.0) -> tf.Tensor:
     """Return batched lower Cholesky factors of symmetrized covariances."""
 
-    covariance = _to_tensor(covariance)
+    dtype = common_floating_dtype(covariance, jitter, context="batched Cholesky inputs")
+    covariance = _to_tensor(covariance, dtype)
     if covariance.shape.rank != 3:
         raise ValueError("batched Cholesky requires covariance shape [batch, dim, dim]")
     symmetric = 0.5 * (covariance + _matrix_transpose(covariance))
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    jitter_tensor = _to_tensor(jitter, dtype)
     dim = tf.shape(symmetric)[-1]
-    identity = tf.eye(dim, batch_shape=[tf.shape(symmetric)[0]], dtype=tf.float64)
+    identity = tf.eye(dim, batch_shape=[tf.shape(symmetric)[0]], dtype=dtype)
     return tf.linalg.cholesky(symmetric + jitter_tensor * identity)
 
 
@@ -219,25 +262,38 @@ def tf_qr_sqrt_kalman_log_likelihood_compact(
 ) -> tf.Tensor:
     """QR/square-root prediction-error log likelihood without filtered stacks."""
 
-    y = _as_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="QR compact value inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
     n_timesteps = _static_num_timesteps(y)
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     state_dim = tf.shape(mean)[0]
     obs_dim = tf.shape(_matrix_at_time(observation_matrix, tf.constant(0, dtype=tf.int32)))[0]
-    state_identity = tf.eye(state_dim, dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, dtype=tf.float64)
+    state_identity = tf.eye(state_dim, dtype=dtype)
+    obs_identity = tf.eye(obs_dim, dtype=dtype)
     covariance_factor = cholesky_factor(initial_state_covariance, 0.0)
-    log_likelihood = tf.constant(0.0, dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
+    log_likelihood = tf.constant(0.0, dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
 
     for t in range(n_timesteps):
         c = _vector_at_time(transition_offset, t)
@@ -290,7 +346,7 @@ def tf_qr_sqrt_kalman_log_likelihood_compact(
         mahalanobis = tf.reduce_sum(tf.square(solve_innovation))
         log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi) + log_det + mahalanobis
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi) + log_det + mahalanobis
         )
         mean = filtered_mean
         covariance_factor = filtered_factor
@@ -322,25 +378,38 @@ def tf_qr_sqrt_kalman_log_likelihood_while_loop(
     do not grow by duplicating one Python loop body per observation time.
     """
 
-    y = _as_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="QR while-loop value inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
     n_timesteps = tf.shape(y)[0]
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean0 = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean0 = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     state_dim = tf.shape(mean0)[0]
     obs_dim = tf.shape(_matrix_at_time(observation_matrix, tf.constant(0, dtype=tf.int32)))[0]
-    state_identity = tf.eye(state_dim, dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, dtype=tf.float64)
+    state_identity = tf.eye(state_dim, dtype=dtype)
+    obs_identity = tf.eye(obs_dim, dtype=dtype)
     covariance_factor0 = cholesky_factor(initial_state_covariance, 0.0)
-    log_likelihood0 = tf.constant(0.0, dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
+    log_likelihood0 = tf.constant(0.0, dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
     t0 = tf.constant(0, dtype=tf.int32)
 
     def cond(t, *_state):
@@ -397,7 +466,7 @@ def tf_qr_sqrt_kalman_log_likelihood_while_loop(
         mahalanobis = tf.reduce_sum(tf.square(solve_innovation))
         log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi) + log_det + mahalanobis
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi) + log_det + mahalanobis
         )
         return t + 1, filtered_mean, filtered_factor, log_likelihood + contribution
 
@@ -434,16 +503,29 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static(
     It does not implement batched time-varying tensors.
     """
 
-    y = _as_batched_static_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="QR batched-static value inputs",
+    )
+    y = _as_batched_static_observation_matrix(observations, dtype)
     n_timesteps = _static_num_timesteps(y)
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
     _validate_batched_static_shapes(
         transition_offset=transition_offset,
         transition_matrix=transition_matrix,
@@ -454,13 +536,13 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static(
         initial_state_mean=mean,
         initial_state_covariance=initial_state_covariance,
     )
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     batch_size = tf.shape(mean)[0]
     state_dim = tf.shape(mean)[1]
     obs_dim = tf.shape(observation_offset)[1]
-    state_identity = tf.eye(state_dim, batch_shape=[batch_size], dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, batch_shape=[batch_size], dtype=tf.float64)
+    state_identity = tf.eye(state_dim, batch_shape=[batch_size], dtype=dtype)
+    obs_identity = tf.eye(obs_dim, batch_shape=[batch_size], dtype=dtype)
     covariance_factor = _batched_cholesky_factor(initial_state_covariance, 0.0)
     transition_covariance_factor = _batched_cholesky_factor(transition_covariance, 0.0)
     observation_covariance_factor = _batched_cholesky_factor(
@@ -472,8 +554,8 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static(
         if jitter_updates_filtered_covariance
         else _batched_cholesky_factor(observation_covariance, 0.0)
     )
-    log_likelihood = tf.zeros((batch_size,), dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
+    log_likelihood = tf.zeros((batch_size,), dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
 
     for t in range(n_timesteps):
         predicted_mean = transition_offset + _matvec(transition_matrix, mean)
@@ -527,7 +609,7 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static(
             axis=-1,
         )
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi) + log_det + mahalanobis
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi) + log_det + mahalanobis
         )
         mean = filtered_mean
         covariance_factor = filtered_factor
@@ -557,16 +639,29 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
     batch covariance factors, and accumulated batch log likelihoods.
     """
 
-    y = _as_batched_static_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="QR batched-static while-loop value inputs",
+    )
+    y = _as_batched_static_observation_matrix(observations, dtype)
     n_timesteps = tf.shape(y)[0]
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean0 = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean0 = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
     _validate_batched_static_shapes(
         transition_offset=transition_offset,
         transition_matrix=transition_matrix,
@@ -577,13 +672,13 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
         initial_state_mean=mean0,
         initial_state_covariance=initial_state_covariance,
     )
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     batch_size = tf.shape(mean0)[0]
     state_dim = tf.shape(mean0)[1]
     obs_dim = tf.shape(observation_offset)[1]
-    state_identity = tf.eye(state_dim, batch_shape=[batch_size], dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, batch_shape=[batch_size], dtype=tf.float64)
+    state_identity = tf.eye(state_dim, batch_shape=[batch_size], dtype=dtype)
+    obs_identity = tf.eye(obs_dim, batch_shape=[batch_size], dtype=dtype)
     covariance_factor0 = _batched_cholesky_factor(initial_state_covariance, 0.0)
     transition_covariance_factor = _batched_cholesky_factor(transition_covariance, 0.0)
     observation_covariance_factor = _batched_cholesky_factor(
@@ -595,8 +690,8 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
         if jitter_updates_filtered_covariance
         else _batched_cholesky_factor(observation_covariance, 0.0)
     )
-    log_likelihood0 = tf.zeros((batch_size,), dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
+    log_likelihood0 = tf.zeros((batch_size,), dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
     t0 = tf.constant(0, dtype=tf.int32)
 
     def cond(t, *_state):
@@ -654,7 +749,7 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
             axis=-1,
         )
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi) + log_det + mahalanobis
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi) + log_det + mahalanobis
         )
         return t + 1, filtered_mean, filtered_factor, log_likelihood + contribution
 
@@ -662,6 +757,7 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
         cond,
         body,
         (t0, mean0, covariance_factor0, log_likelihood0),
+        maximum_iterations=n_timesteps,
         parallel_iterations=1,
     )
     return log_likelihood
@@ -690,18 +786,31 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
     variance and their dummy normalizing constants are subtracted.
     """
 
-    y = _as_batched_static_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="masked QR batched-static value inputs",
+    )
+    y = _as_batched_static_observation_matrix(observations, dtype)
     n_timesteps = _static_num_timesteps(y)
     observation_mask = tf.convert_to_tensor(observation_mask, dtype=tf.bool)
     _validate_mask_shape(y, observation_mask)
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
     _validate_batched_static_shapes(
         transition_offset=transition_offset,
         transition_matrix=transition_matrix,
@@ -712,18 +821,18 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
         initial_state_mean=mean,
         initial_state_covariance=initial_state_covariance,
     )
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     batch_size = tf.shape(mean)[0]
     state_dim = tf.shape(mean)[1]
     obs_dim = tf.shape(observation_offset)[1]
-    state_identity = tf.eye(state_dim, batch_shape=[batch_size], dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, batch_shape=[batch_size], dtype=tf.float64)
+    state_identity = tf.eye(state_dim, batch_shape=[batch_size], dtype=dtype)
+    obs_identity = tf.eye(obs_dim, batch_shape=[batch_size], dtype=dtype)
     covariance_factor = _batched_cholesky_factor(initial_state_covariance, 0.0)
     transition_covariance_factor = _batched_cholesky_factor(transition_covariance, 0.0)
-    log_likelihood = tf.zeros((batch_size,), dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
-    dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=tf.float64)
+    log_likelihood = tf.zeros((batch_size,), dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
+    dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=dtype)
 
     for t in range(n_timesteps):
         predicted_mean = transition_offset + _matvec(transition_matrix, mean)
@@ -738,7 +847,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
         predicted_covariance = predicted_factor @ _matrix_transpose(predicted_factor)
 
         base_observation_covariance = observation_covariance + jitter_tensor * obs_identity
-        row_weight = tf.cast(observation_mask[t], tf.float64)
+        row_weight = tf.cast(observation_mask[t], dtype)
         missing_weight = 1.0 - row_weight
         row_outer = row_weight[:, tf.newaxis] * row_weight[tf.newaxis, :]
         masked_observation_matrix = observation_matrix * row_weight[tf.newaxis, :, tf.newaxis]
@@ -793,7 +902,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
         )
         missing_count = tf.reduce_sum(missing_weight)
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi)
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi)
             + log_det
             + mahalanobis
             - missing_count * dummy_log_norm
@@ -821,28 +930,41 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_compact(
 ) -> tf.Tensor:
     """Masked QR/square-root log likelihood without filtered stacks."""
 
-    y = _as_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="masked QR compact value inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
     n_timesteps = _static_num_timesteps(y)
     observation_mask = tf.convert_to_tensor(observation_mask, dtype=tf.bool)
     _validate_mask_shape(y, observation_mask)
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     state_dim = tf.shape(mean)[0]
     obs_dim = tf.shape(_matrix_at_time(observation_matrix, tf.constant(0, dtype=tf.int32)))[0]
-    state_identity = tf.eye(state_dim, dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, dtype=tf.float64)
+    state_identity = tf.eye(state_dim, dtype=dtype)
+    obs_identity = tf.eye(obs_dim, dtype=dtype)
     covariance_factor = cholesky_factor(initial_state_covariance, 0.0)
-    log_likelihood = tf.constant(0.0, dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
-    dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=tf.float64)
+    log_likelihood = tf.constant(0.0, dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
+    dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=dtype)
 
     for t in range(n_timesteps):
         c = _vector_at_time(transition_offset, t)
@@ -862,7 +984,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_compact(
         predicted_factor = lower_factor_from_horizontal_stack(prediction_stack)
         predicted_covariance = predicted_factor @ tf.transpose(predicted_factor)
 
-        row_weight = tf.cast(observation_mask[t], tf.float64)
+        row_weight = tf.cast(observation_mask[t], dtype)
         missing_weight = 1.0 - row_weight
         row_outer = row_weight[:, tf.newaxis] * row_weight[tf.newaxis, :]
         masked_observation_matrix = Z * row_weight[:, tf.newaxis]
@@ -903,7 +1025,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_compact(
         log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
         missing_count = tf.reduce_sum(missing_weight)
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi)
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi)
             + log_det
             + mahalanobis
             - missing_count * dummy_log_norm
@@ -931,25 +1053,38 @@ def tf_qr_sqrt_kalman_filter(
 ) -> tuple[tf.Tensor, tf.Tensor | None, tf.Tensor | None]:
     """Dense direct-QR square-root Kalman recursion."""
 
-    y = _as_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="QR filtered value inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
     n_timesteps = _static_num_timesteps(y)
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     state_dim = tf.shape(mean)[0]
     obs_dim = tf.shape(_matrix_at_time(observation_matrix, tf.constant(0, dtype=tf.int32)))[0]
-    state_identity = tf.eye(state_dim, dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, dtype=tf.float64)
+    state_identity = tf.eye(state_dim, dtype=dtype)
+    obs_identity = tf.eye(obs_dim, dtype=dtype)
     covariance_factor = cholesky_factor(initial_state_covariance, 0.0)
-    log_likelihood = tf.constant(0.0, dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
+    log_likelihood = tf.constant(0.0, dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
     means = []
     covariances = []
 
@@ -1005,7 +1140,7 @@ def tf_qr_sqrt_kalman_filter(
         mahalanobis = tf.reduce_sum(tf.square(solve_innovation))
         log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi) + log_det + mahalanobis
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi) + log_det + mahalanobis
         )
         mean = filtered_mean
         covariance_factor = filtered_factor
@@ -1033,28 +1168,41 @@ def tf_qr_sqrt_masked_kalman_filter(
 ) -> tuple[tf.Tensor, tf.Tensor | None, tf.Tensor | None]:
     """Direct-QR square-root Kalman recursion with static observation masks."""
 
-    y = _as_observation_matrix(observations)
+    dtype = _value_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_covariance,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_covariance,
+        jitter,
+        context="masked QR filtered value inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
     n_timesteps = _static_num_timesteps(y)
     observation_mask = tf.convert_to_tensor(observation_mask, dtype=tf.bool)
     _validate_mask_shape(y, observation_mask)
-    transition_offset = _to_tensor(transition_offset)
-    transition_matrix = _to_tensor(transition_matrix)
-    transition_covariance = _to_tensor(transition_covariance)
-    observation_offset = _to_tensor(observation_offset)
-    observation_matrix = _to_tensor(observation_matrix)
-    observation_covariance = _to_tensor(observation_covariance)
-    mean = _to_tensor(initial_state_mean)
-    initial_state_covariance = _to_tensor(initial_state_covariance)
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_covariance = _to_tensor(transition_covariance, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean = _to_tensor(initial_state_mean, dtype)
+    initial_state_covariance = _to_tensor(initial_state_covariance, dtype)
+    jitter_tensor = _to_tensor(jitter, dtype)
 
     state_dim = tf.shape(mean)[0]
     obs_dim = tf.shape(_matrix_at_time(observation_matrix, tf.constant(0, dtype=tf.int32)))[0]
-    state_identity = tf.eye(state_dim, dtype=tf.float64)
-    obs_identity = tf.eye(obs_dim, dtype=tf.float64)
+    state_identity = tf.eye(state_dim, dtype=dtype)
+    obs_identity = tf.eye(obs_dim, dtype=dtype)
     covariance_factor = cholesky_factor(initial_state_covariance, 0.0)
-    log_likelihood = tf.constant(0.0, dtype=tf.float64)
-    two_pi = tf.constant(2.0 * math.pi, dtype=tf.float64)
-    dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=tf.float64)
+    log_likelihood = tf.constant(0.0, dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
+    dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=dtype)
     means = []
     covariances = []
 
@@ -1076,7 +1224,7 @@ def tf_qr_sqrt_masked_kalman_filter(
         predicted_factor = lower_factor_from_horizontal_stack(prediction_stack)
         predicted_covariance = predicted_factor @ tf.transpose(predicted_factor)
 
-        row_weight = tf.cast(observation_mask[t], tf.float64)
+        row_weight = tf.cast(observation_mask[t], dtype)
         missing_weight = 1.0 - row_weight
         row_outer = row_weight[:, tf.newaxis] * row_weight[tf.newaxis, :]
         masked_observation_matrix = Z * row_weight[:, tf.newaxis]
@@ -1118,7 +1266,7 @@ def tf_qr_sqrt_masked_kalman_filter(
         log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
         missing_count = tf.reduce_sum(missing_weight)
         contribution = -0.5 * (
-            tf.cast(obs_dim, tf.float64) * tf.math.log(two_pi)
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi)
             + log_det
             + mahalanobis
             - missing_count * dummy_log_norm
@@ -1154,15 +1302,17 @@ def _diagnostics(
     backend: str,
     mask_convention: str,
     jitter: tf.Tensor | float,
+    dtype: tf.DType = tf.float64,
 ) -> TFFilterDiagnostics:
+    dtype = tf.as_dtype(dtype)
     return TFFilterDiagnostics(
         backend=backend,
         mask_convention=mask_convention,
         regularization=TFRegularizationDiagnostics(
-            jitter=tf.convert_to_tensor(jitter, dtype=tf.float64),
-            singular_floor=tf.constant(0.0, dtype=tf.float64),
+            jitter=tf.convert_to_tensor(jitter, dtype=dtype),
+            singular_floor=tf.constant(0.0, dtype=dtype),
             floor_count=tf.constant(0, dtype=tf.int32),
-            psd_projection_residual=tf.constant(0.0, dtype=tf.float64),
+            psd_projection_residual=tf.constant(0.0, dtype=dtype),
             implemented_covariance=None,
             branch_label="qr_square_root",
             derivative_target="implemented_regularized_law",
@@ -1182,8 +1332,21 @@ def tf_qr_linear_gaussian_log_likelihood(
 ) -> TFFilterValueResult:
     """Dispatch to a QR/square-root TensorFlow linear Gaussian value backend."""
 
-    y = _as_observation_matrix(observations)
     mask = observation_mask if observation_mask is not None else model.observation_mask
+    dtype = _value_dtype(
+        observations,
+        model.transition_offset,
+        model.transition_matrix,
+        model.transition_covariance,
+        model.observation_offset,
+        model.observation_matrix,
+        model.observation_covariance,
+        model.initial_mean,
+        model.initial_covariance,
+        jitter,
+        context="TensorFlow QR dispatcher inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
     if backend == "tf_qr":
         if mask is None:
             if return_filtered:
@@ -1304,5 +1467,6 @@ def tf_qr_linear_gaussian_log_likelihood(
             backend=backend,
             mask_convention=mask_convention,
             jitter=jitter,
+            dtype=dtype,
         ),
     )

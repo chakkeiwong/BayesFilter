@@ -1,0 +1,289 @@
+{
+  "manifest": {
+    "autodiff_execution": "compiled_full",
+    "autodiff_value_backend": "while_loop",
+    "command": "scripts/benchmark_kalman_qr_analytic_vs_autodiff_score.py --dimensions 10 20 30 --timesteps 120 --warmups 0 --repeats 1 --jit-compile --device cpu --autodiff-execution compiled_full --autodiff-value-backend while_loop --flush-after-row --output-json docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json --output-md docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+    "cuda_visible_devices": "-1",
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "device_manifest": {
+      "cpu_only_exception": true,
+      "logical_gpus": [],
+      "physical_gpus": [],
+      "requested_device": "cpu",
+      "selected_device": "/CPU:0",
+      "trust_basis": "cpu_debug_or_reference_exception"
+    },
+    "dimensions": [
+      10,
+      20,
+      30
+    ],
+    "git_commit": "52ee244498988e046a6356f926003b581103083b",
+    "git_status_short": "M bayesfilter/inference/hmc_diagnostics.py\n M tests/test_common_inference_runtime_contracts.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase3-gpu-xla-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase4-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase5-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-stop-handoff-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase0-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-hypothesis-plan-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2z-subplan-codex-substitute-review-2026-07-09.md\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1r.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization.py",
+    "jit_compile": true,
+    "json_path": "docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json",
+    "markdown_path": "docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md",
+    "parameter_dim": 2,
+    "plan_path": "docs/plans/bayesfilter-kalman-qr-analytic-vs-autodiff-score-scaling-subplan-2026-07-09.md",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "repeats": 1,
+    "tensorflow_version": "2.20.0",
+    "tf32_execution_enabled": true,
+    "timestamp_utc": "2026-07-09T06:37:02.564746+00:00",
+    "timesteps": 120,
+    "warmups": 0
+  },
+  "rows": [
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 4.547473508864641e-13,
+        "score_relative_residual": 7.414317593370941e-16,
+        "value_abs_residual": 0.0
+      },
+      "autodiff_execution": "compiled_full",
+      "autodiff_value_backend": "while_loop",
+      "descriptive_autodiff_over_analytical_median_ratio": 1.6317494559372934,
+      "device_name": "/CPU:0",
+      "first_call_seconds": {
+        "analytical_qr_score": 2.422515704005491,
+        "autodiff_qr_score": 1.498404466023203
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          2
+        ]
+      },
+      "jit_compile": true,
+      "observation_dim": 10,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "analytical_score": [
+          -6.07633429886099,
+          -613.3066572095554
+        ],
+        "analytical_value": -150.38192347028559,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "autodiff_score": [
+          -6.076334298860989,
+          -613.3066572095559
+        ],
+        "autodiff_value": -150.38192347028559
+      },
+      "parameter_dim": 2,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          0.021953794988803566
+        ],
+        "autodiff_qr_score": [
+          0.035823093028739095
+        ]
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 0.021953794988803566,
+          "mean_seconds": 0.021953794988803566,
+          "median_seconds": 0.021953794988803566,
+          "min_seconds": 0.021953794988803566
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.035823093028739095,
+          "mean_seconds": 0.035823093028739095,
+          "median_seconds": 0.035823093028739095,
+          "min_seconds": 0.035823093028739095
+        }
+      },
+      "warmup_call_seconds": {
+        "analytical_qr_score": [],
+        "autodiff_qr_score": []
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 2.2737367544323206e-13,
+        "score_relative_residual": 1.8725905829439842e-16,
+        "value_abs_residual": 0.0
+      },
+      "autodiff_execution": "compiled_full",
+      "autodiff_value_backend": "while_loop",
+      "descriptive_autodiff_over_analytical_median_ratio": 0.7958676630138587,
+      "device_name": "/CPU:0",
+      "first_call_seconds": {
+        "analytical_qr_score": 1.5797522529610433,
+        "autodiff_qr_score": 1.4598789689480327
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          20
+        ],
+        "parameters": [
+          2
+        ]
+      },
+      "jit_compile": true,
+      "observation_dim": 20,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "analytical_score": [
+          -12.175741608717185,
+          -1214.1588537540224
+        ],
+        "analytical_value": -314.47882462913054,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "autodiff_score": [
+          -12.175741608717185,
+          -1214.1588537540222
+        ],
+        "autodiff_value": -314.47882462913054
+      },
+      "parameter_dim": 2,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          0.083121626987122
+        ],
+        "autodiff_qr_score": [
+          0.06615381501615047
+        ]
+      },
+      "state_dim": 20,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 0.083121626987122,
+          "mean_seconds": 0.083121626987122,
+          "median_seconds": 0.083121626987122,
+          "min_seconds": 0.083121626987122
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.06615381501615047,
+          "mean_seconds": 0.06615381501615047,
+          "median_seconds": 0.06615381501615047,
+          "min_seconds": 0.06615381501615047
+        }
+      },
+      "warmup_call_seconds": {
+        "analytical_qr_score": [],
+        "autodiff_qr_score": []
+      }
+    },
+    {
+      "agreement": {
+        "all_finite": true,
+        "parity_passed": true,
+        "score_max_abs_residual": 1.1368683772161603e-12,
+        "score_relative_residual": 6.243778997132552e-16,
+        "value_abs_residual": 0.0
+      },
+      "autodiff_execution": "compiled_full",
+      "autodiff_value_backend": "while_loop",
+      "descriptive_autodiff_over_analytical_median_ratio": 1.6121625782485112,
+      "device_name": "/CPU:0",
+      "first_call_seconds": {
+        "analytical_qr_score": 1.582515120971948,
+        "autodiff_qr_score": 1.401612985006068
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          30
+        ],
+        "parameters": [
+          2
+        ]
+      },
+      "jit_compile": true,
+      "observation_dim": 30,
+      "outputs": {
+        "analytical_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "analytical_score": [
+          -18.311591523449067,
+          -1820.7096765171486
+        ],
+        "analytical_value": -471.8273538006993,
+        "autodiff_devices": [
+          "/job:localhost/replica:0/task:0/device:CPU:0",
+          "/job:localhost/replica:0/task:0/device:CPU:0"
+        ],
+        "autodiff_score": [
+          -18.31159152344908,
+          -1820.7096765171498
+        ],
+        "autodiff_value": -471.8273538006993
+      },
+      "parameter_dim": 2,
+      "repeated_call_seconds": {
+        "analytical_qr_score": [
+          0.11584992700954899
+        ],
+        "autodiff_qr_score": [
+          0.18676891701761633
+        ]
+      },
+      "state_dim": 30,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 0.11584992700954899,
+          "mean_seconds": 0.11584992700954899,
+          "median_seconds": 0.11584992700954899,
+          "min_seconds": 0.11584992700954899
+        },
+        "autodiff_qr_score": {
+          "count": 1,
+          "max_seconds": 0.18676891701761633,
+          "mean_seconds": 0.18676891701761633,
+          "median_seconds": 0.18676891701761633,
+          "min_seconds": 0.18676891701761633
+        }
+      },
+      "warmup_call_seconds": {
+        "analytical_qr_score": [],
+        "autodiff_qr_score": []
+      }
+    }
+  ],
+  "schema": "kalman_qr_analytic_vs_autodiff_score_scaling_v1",
+  "summary": {
+    "all_rows_parity_passed": true,
+    "nonclaims": [
+      "descriptive timing only",
+      "no HMC readiness claim",
+      "no posterior correctness claim",
+      "no production default change",
+      "no statistically supported ranking"
+    ],
+    "run_status": "complete",
+    "wall_time_seconds": 10.66661404602928
+  }
+}

@@ -32,8 +32,11 @@ JITTER = 1e-9
 
 def _model_and_derivatives(
     params: tf.Tensor,
+    *,
+    dtype: tf.DType = tf.float64,
 ) -> tuple[TFLinearGaussianStateSpace, TFLinearGaussianStateSpaceDerivatives]:
-    rho_param, log_measurement_noise = tf.unstack(params)
+    dtype = tf.as_dtype(dtype)
+    rho_param, log_measurement_noise = tf.unstack(tf.convert_to_tensor(params, dtype=dtype))
     rho = 0.75 * tf.math.tanh(rho_param)
     drho = 0.75 * (1.0 - tf.math.tanh(rho_param) ** 2)
     d2rho = -1.5 * tf.math.tanh(rho_param) * (1.0 - tf.math.tanh(rho_param) ** 2)
@@ -42,47 +45,65 @@ def _model_and_derivatives(
     d2_measurement_variance = 4.0 * measurement_variance
 
     model = TFLinearGaussianStateSpace(
-        initial_mean=tf.constant([0.1], dtype=tf.float64),
-        initial_covariance=tf.constant([[0.35]], dtype=tf.float64),
-        transition_offset=tf.constant([0.02], dtype=tf.float64),
+        initial_mean=tf.constant([0.1], dtype=dtype),
+        initial_covariance=tf.constant([[0.35]], dtype=dtype),
+        transition_offset=tf.constant([0.02], dtype=dtype),
         transition_matrix=tf.reshape(rho, [1, 1]),
-        transition_covariance=tf.constant([[0.07]], dtype=tf.float64),
-        observation_offset=tf.constant([0.01], dtype=tf.float64),
-        observation_matrix=tf.constant([[1.2]], dtype=tf.float64),
+        transition_covariance=tf.constant([[0.07]], dtype=dtype),
+        observation_offset=tf.constant([0.01], dtype=dtype),
+        observation_matrix=tf.constant([[1.2]], dtype=dtype),
         observation_covariance=tf.reshape(measurement_variance, [1, 1]),
     )
     derivatives = TFLinearGaussianStateSpaceDerivatives(
-        d_initial_mean=tf.zeros([2, 1], dtype=tf.float64),
-        d_initial_covariance=tf.zeros([2, 1, 1], dtype=tf.float64),
-        d_transition_offset=tf.zeros([2, 1], dtype=tf.float64),
-        d_transition_matrix=tf.reshape(tf.stack([drho, 0.0]), [2, 1, 1]),
-        d_transition_covariance=tf.zeros([2, 1, 1], dtype=tf.float64),
-        d_observation_offset=tf.zeros([2, 1], dtype=tf.float64),
-        d_observation_matrix=tf.zeros([2, 1, 1], dtype=tf.float64),
+        d_initial_mean=tf.zeros([2, 1], dtype=dtype),
+        d_initial_covariance=tf.zeros([2, 1, 1], dtype=dtype),
+        d_transition_offset=tf.zeros([2, 1], dtype=dtype),
+        d_transition_matrix=tf.reshape(tf.stack([drho, tf.constant(0.0, dtype=dtype)]), [2, 1, 1]),
+        d_transition_covariance=tf.zeros([2, 1, 1], dtype=dtype),
+        d_observation_offset=tf.zeros([2, 1], dtype=dtype),
+        d_observation_matrix=tf.zeros([2, 1, 1], dtype=dtype),
         d_observation_covariance=tf.reshape(
-            tf.stack([0.0, d_measurement_variance]),
+            tf.stack([tf.constant(0.0, dtype=dtype), d_measurement_variance]),
             [2, 1, 1],
         ),
-        d2_initial_mean=tf.zeros([2, 2, 1], dtype=tf.float64),
-        d2_initial_covariance=tf.zeros([2, 2, 1, 1], dtype=tf.float64),
-        d2_transition_offset=tf.zeros([2, 2, 1], dtype=tf.float64),
+        d2_initial_mean=tf.zeros([2, 2, 1], dtype=dtype),
+        d2_initial_covariance=tf.zeros([2, 2, 1, 1], dtype=dtype),
+        d2_transition_offset=tf.zeros([2, 2, 1], dtype=dtype),
         d2_transition_matrix=tf.reshape(
-            tf.stack([d2rho, 0.0, 0.0, 0.0]),
+            tf.stack(
+                [
+                    d2rho,
+                    tf.constant(0.0, dtype=dtype),
+                    tf.constant(0.0, dtype=dtype),
+                    tf.constant(0.0, dtype=dtype),
+                ]
+            ),
             [2, 2, 1, 1],
         ),
-        d2_transition_covariance=tf.zeros([2, 2, 1, 1], dtype=tf.float64),
-        d2_observation_offset=tf.zeros([2, 2, 1], dtype=tf.float64),
-        d2_observation_matrix=tf.zeros([2, 2, 1, 1], dtype=tf.float64),
+        d2_transition_covariance=tf.zeros([2, 2, 1, 1], dtype=dtype),
+        d2_observation_offset=tf.zeros([2, 2, 1], dtype=dtype),
+        d2_observation_matrix=tf.zeros([2, 2, 1, 1], dtype=dtype),
         d2_observation_covariance=tf.reshape(
-            tf.stack([0.0, 0.0, 0.0, d2_measurement_variance]),
+            tf.stack(
+                [
+                    tf.constant(0.0, dtype=dtype),
+                    tf.constant(0.0, dtype=dtype),
+                    tf.constant(0.0, dtype=dtype),
+                    d2_measurement_variance,
+                ]
+            ),
             [2, 2, 1, 1],
         ),
     )
     return model, derivatives
 
 
-def _observations() -> tf.Tensor:
-    return tf.constant([[0.18], [0.05], [0.16], [0.11]], dtype=tf.float64)
+def _observations(dtype: tf.DType = tf.float64) -> tf.Tensor:
+    return tf.constant([[0.18], [0.05], [0.16], [0.11]], dtype=dtype)
+
+
+def _jitter(dtype: tf.DType) -> tf.Tensor:
+    return tf.constant(JITTER, dtype=dtype)
 
 
 def _qr_log_likelihood(observations: tf.Tensor, model: TFLinearGaussianStateSpace) -> tf.Tensor:
@@ -96,7 +117,7 @@ def _qr_log_likelihood(observations: tf.Tensor, model: TFLinearGaussianStateSpac
         observation_covariance=model.observation_covariance,
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
-        jitter=tf.constant(JITTER, dtype=tf.float64),
+        jitter=_jitter(model.initial_mean.dtype),
     )
 
 
@@ -116,7 +137,7 @@ def _masked_qr_log_likelihood(
         initial_state_mean=model.initial_mean,
         initial_state_covariance=model.initial_covariance,
         observation_mask=observation_mask,
-        jitter=tf.constant(JITTER, dtype=tf.float64),
+        jitter=_jitter(model.initial_mean.dtype),
     )
 
 
@@ -125,8 +146,8 @@ def _autodiff_reference(params: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Ten
         hessian_tape.watch(params)
         with tf.GradientTape() as gradient_tape:
             gradient_tape.watch(params)
-            model, _ = _model_and_derivatives(params)
-            value = _qr_log_likelihood(_observations(), model)
+            model, _ = _model_and_derivatives(params, dtype=params.dtype)
+            value = _qr_log_likelihood(_observations(params.dtype), model)
         gradient = gradient_tape.gradient(value, params)
     hessian = hessian_tape.jacobian(gradient, params)
     return value, gradient, hessian
@@ -140,8 +161,12 @@ def _autodiff_masked_reference(
         hessian_tape.watch(params)
         with tf.GradientTape() as gradient_tape:
             gradient_tape.watch(params)
-            model, _ = _model_and_derivatives(params)
-            value = _masked_qr_log_likelihood(_observations(), model, observation_mask)
+            model, _ = _model_and_derivatives(params, dtype=params.dtype)
+            value = _masked_qr_log_likelihood(
+                _observations(params.dtype),
+                model,
+                observation_mask,
+            )
         gradient = gradient_tape.gradient(value, params)
     hessian = hessian_tape.jacobian(gradient, params)
     return value, gradient, hessian
@@ -178,7 +203,7 @@ def _dense_derivatives(
         d2_observation_offset=derivatives.d2_observation_offset,
         d2_observation_matrix=derivatives.d2_observation_matrix,
         d2_observation_covariance=derivatives.d2_observation_covariance,
-        jitter=tf.constant(JITTER, dtype=tf.float64),
+        jitter=_jitter(model.initial_mean.dtype),
     )
 
 
@@ -215,8 +240,13 @@ def _masked_derivatives(
         d2_observation_matrix=derivatives.d2_observation_matrix,
         d2_observation_covariance=derivatives.d2_observation_covariance,
         observation_mask=observation_mask,
-        jitter=tf.constant(JITTER, dtype=tf.float64),
+        jitter=_jitter(model.initial_mean.dtype),
     )
+
+
+def _assert_float32_matches_float64(value32: tf.Tensor, value64: tf.Tensor) -> None:
+    assert value32.dtype == tf.float32
+    np.testing.assert_allclose(value32.numpy(), value64.numpy(), rtol=2.0e-4, atol=2.0e-4)
 
 
 def test_qr_score_hessian_matches_value_and_solve_reference() -> None:
@@ -269,6 +299,103 @@ def test_qr_score_hessian_matches_value_and_solve_reference() -> None:
         atol=1e-7,
     )
     np.testing.assert_allclose(qr_hessian.numpy(), qr_hessian.numpy().T, atol=1e-12)
+
+
+def test_qr_score_hessian_preserves_float32_and_matches_autodiff_reference() -> None:
+    params32 = tf.constant([0.25, -1.1], dtype=tf.float32)
+    model32, derivatives32 = _model_and_derivatives(params32, dtype=tf.float32)
+
+    qr_loglik, qr_score, qr_hessian = _dense_derivatives(
+        _observations(tf.float32),
+        model32,
+        derivatives32,
+    )
+    autodiff_loglik, autodiff_score, autodiff_hessian = _autodiff_reference(params32)
+
+    _assert_float32_matches_float64(qr_loglik, tf.cast(autodiff_loglik, tf.float64))
+    _assert_float32_matches_float64(qr_score, tf.cast(autodiff_score, tf.float64))
+    _assert_float32_matches_float64(qr_hessian, tf.cast(autodiff_hessian, tf.float64))
+
+
+def test_public_qr_score_preserves_float32_dtype() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float32)
+    model, derivatives = _model_and_derivatives(params, dtype=tf.float32)
+
+    score_result = tf_qr_linear_gaussian_score(
+        _observations(tf.float32),
+        model,
+        derivatives,
+        jitter=_jitter(tf.float32),
+    )
+    hessian_result = tf_qr_linear_gaussian_score_hessian(
+        _observations(tf.float32),
+        model,
+        derivatives,
+        jitter=_jitter(tf.float32),
+    )
+
+    assert score_result.log_likelihood.dtype == tf.float32
+    assert score_result.score.dtype == tf.float32
+    assert score_result.hessian is None
+    assert score_result.diagnostics.regularization.jitter.dtype == tf.float32
+    assert hessian_result.log_likelihood.dtype == tf.float32
+    assert hessian_result.score.dtype == tf.float32
+    assert hessian_result.hessian is not None and hessian_result.hessian.dtype == tf.float32
+    assert hessian_result.diagnostics.regularization.jitter.dtype == tf.float32
+
+
+@pytest.mark.parametrize("dtype", [tf.float32, tf.float64])
+def test_public_qr_score_cpu_xla_preserves_dtype(dtype: tf.DType) -> None:
+    params = tf.constant([0.25, -1.1], dtype=dtype)
+    model, derivatives = _model_and_derivatives(params, dtype=dtype)
+    observations = _observations(dtype)
+
+    @tf.function(jit_compile=True, reduce_retracing=True)
+    def compiled(obs: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        log_likelihood, score = tf_qr_sqrt_kalman_score(
+            observations=obs,
+            transition_offset=model.transition_offset,
+            transition_matrix=model.transition_matrix,
+            transition_covariance=model.transition_covariance,
+            observation_offset=model.observation_offset,
+            observation_matrix=model.observation_matrix,
+            observation_covariance=model.observation_covariance,
+            initial_state_mean=model.initial_mean,
+            initial_state_covariance=model.initial_covariance,
+            d_initial_state_mean=derivatives.d_initial_mean,
+            d_initial_state_covariance=derivatives.d_initial_covariance,
+            d_transition_offset=derivatives.d_transition_offset,
+            d_transition_matrix=derivatives.d_transition_matrix,
+            d_transition_covariance=derivatives.d_transition_covariance,
+            d_observation_offset=derivatives.d_observation_offset,
+            d_observation_matrix=derivatives.d_observation_matrix,
+            d_observation_covariance=derivatives.d_observation_covariance,
+            jitter=_jitter(dtype),
+        )
+        return log_likelihood, score
+
+    log_likelihood, score = compiled(observations)
+
+    assert log_likelihood.dtype == dtype
+    assert score.dtype == dtype
+    assert len(compiled._list_all_concrete_functions_for_serialization()) == 1
+
+
+def test_masked_qr_score_hessian_preserves_float32_dtype() -> None:
+    params = tf.constant([0.25, -1.1], dtype=tf.float32)
+    model, derivatives = _model_and_derivatives(params, dtype=tf.float32)
+    mask = tf.constant([[True], [False], [True], [False]], dtype=tf.bool)
+
+    masked_loglik, masked_score, masked_hessian = _masked_derivatives(
+        _observations(tf.float32),
+        model,
+        derivatives,
+        mask,
+    )
+
+    assert masked_loglik.dtype == tf.float32
+    assert masked_score.dtype == tf.float32
+    assert masked_hessian.dtype == tf.float32
 
 
 def test_qr_score_hessian_matches_autodiff_on_tiny_model() -> None:

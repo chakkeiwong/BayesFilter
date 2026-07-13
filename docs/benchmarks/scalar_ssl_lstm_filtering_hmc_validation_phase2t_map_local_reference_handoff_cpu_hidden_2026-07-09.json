@@ -1,0 +1,485 @@
+{
+  "artifact_role": "cpu_hidden_scalar_filtering_hmc_phase2t_map_local_reference_handoff",
+  "classification": "extension_or_invention",
+  "created_at_utc": "2026-07-08T22:30:26.418027+00:00",
+  "decision": {
+    "next_justified_action": "draft and review Phase 2U retuned MAP-local fixed-kernel HMC screen subplan",
+    "phase2t_map_local_reference_handoff_passed": true,
+    "vetoes": [],
+    "viable_for_phase2u_retuned_map_local_hmc_screen_subplan": true,
+    "zero_divergence_claim_made": false
+  },
+  "decision_table": {
+    "decision": "Phase 2T MAP-local reference handoff diagnostic",
+    "main_uncertainty": "Matrix consistency and target replay justify only a next retuned HMC screen; they do not establish sampler validity or posterior correctness.",
+    "next_justified_action": "draft and review Phase 2U retuned MAP-local fixed-kernel HMC screen subplan",
+    "primary_criterion_status": "passed",
+    "veto_diagnostic_status": "no vetoes",
+    "what_is_not_being_concluded": "No posterior correctness, HMC readiness, convergence, zero-divergence claim, sampler superiority, GPU/XLA readiness, default readiness, or Zhao-Cui source faithfulness."
+  },
+  "environment": {
+    "cpu_hidden": true,
+    "cuda_visible_devices": "-1",
+    "python": "3.13.13"
+  },
+  "git": {
+    "commit": "f297b103303c64019302ed5d9b9aaf2c8f919b64",
+    "dirty": true,
+    "dirty_line_count": 52,
+    "dirty_preview": [
+      " M bayesfilter/inference/hmc_diagnostics.py",
+      " M bayesfilter/linear/kalman_qr_tf.py",
+      " M tests/test_common_inference_runtime_contracts.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+      "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md",
+      "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json"
+    ]
+  },
+  "inference_status": {
+    "default_readiness": "not assessed",
+    "descriptive_only_differences": "matrix residuals and old-geometry projection diagnostics",
+    "gpu_xla_readiness": "blocked",
+    "hard_veto_screen": "passed",
+    "hmc_readiness": "not assessed",
+    "next_evidence_needed": "draft and review Phase 2U retuned MAP-local fixed-kernel HMC screen subplan",
+    "posterior_correctness": "not assessed",
+    "statistically_supported_ranking": "none; no sampler run and no method comparison",
+    "zero_divergence_claim": "not made"
+  },
+  "map_local_reference": {
+    "diagnostics": {
+      "center_free_parameter_values": [
+        0.5704394246369003,
+        -0.1242247342531544,
+        0.6609123192759063,
+        0.1354211218811133
+      ],
+      "coordinate_formula": "free = center_free_parameter_values + scale * (factor_z @ u_new)",
+      "covariance_theta_eigen_summary": {
+        "condition_number": 45.007315283204306,
+        "eigenvalues": [
+          0.017594888784467865,
+          0.03290977436601861,
+          0.6609075144476984,
+          0.7918987068954606
+        ],
+        "finite": true,
+        "max": 0.7918987068954606,
+        "min": 0.017594888784467865,
+        "positive": true
+      },
+      "covariance_theta_scale_transform_max_abs_error": 4.887283910903761e-10,
+      "covariance_z_eigen_summary": {
+        "condition_number": 45.00731531805385,
+        "eigenvalues": [
+          0.1436317451818566,
+          0.2686512193232786,
+          5.395163386812251,
+          6.464479245082181
+        ],
+        "finite": true,
+        "max": 6.464479245082181,
+        "min": 0.1436317451818566,
+        "positive": true
+      },
+      "factor_z_reconstructs_covariance_z_max_abs_error": 8.881784197001252e-16,
+      "precision_theta_eigen_summary": {
+        "condition_number": 45.0073152832043,
+        "eigenvalues": [
+          1.2627877672895487,
+          1.5130710093917887,
+          30.38610927191768,
+          56.83468717817434
+        ],
+        "finite": true,
+        "max": 56.83468717817434,
+        "min": 1.2627877672895487,
+        "positive": true
+      },
+      "precision_theta_scale_transform_max_abs_error": 1.0000285044498014e-09,
+      "precision_z_covariance_z_identity_max_abs_error": 1.1254733403169899e-15,
+      "precision_z_eigen_summary": {
+        "condition_number": 45.00731531805376,
+        "eigenvalues": [
+          0.15469150137046908,
+          0.1853511985279935,
+          3.722298385687413,
+          6.962249179203848
+        ],
+        "finite": true,
+        "max": 6.962249179203848,
+        "min": 0.15469150137046908,
+        "positive": true
+      },
+      "reference_u_new_covariance": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "reference_u_new_mean": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        0.35,
+        0.35,
+        0.35,
+        0.35
+      ]
+    },
+    "nonclaims": [
+      "local Gaussian reference in u_new only",
+      "not exact posterior covariance",
+      "not HMC readiness evidence"
+    ],
+    "passed": true,
+    "vetoes": []
+  },
+  "metric_roles": {
+    "map_candidate_target_replay": "hard_veto_evidence",
+    "matrix_identity_checks": "hard_veto_evidence",
+    "native_divergence_unavailable": "telemetry_availability_not_zero_divergences",
+    "old_geometry_summary_projection": "explanatory_only_excluded_from_pass_fail",
+    "phase2s_artifact_valid": "hard_veto_evidence",
+    "phase2t_map_local_reference_handoff_passed": "primary_phase2t_pass_fail",
+    "phase2u_next_subplan_contract": "handoff_gate",
+    "theta_z_transform_checks": "hard_veto_evidence"
+  },
+  "nonclaims": [
+    "Phase 2T MAP-local reference handoff diagnostic only",
+    "not an HMC run",
+    "not HMC readiness evidence",
+    "not HMC convergence evidence",
+    "not posterior correctness evidence",
+    "not a zero-divergence claim when native divergence is unavailable",
+    "not sampler superiority evidence",
+    "not statistically supported ranking evidence",
+    "not GPU/XLA production-readiness evidence",
+    "not default-readiness evidence",
+    "not Zhao-Cui source-faithfulness evidence"
+  ],
+  "old_geometry_summary_projection": {
+    "computed": true,
+    "included_in_pass_fail": false,
+    "nonclaims": [
+      "old Phase 1R summary was sampled under the old truth-free geometry",
+      "not evidence that the MAP-local HMC sampler passes"
+    ],
+    "old_geometry_summary": {
+      "free": [
+        2.5211419229209477,
+        0.318346038921132,
+        0.6069520766126955,
+        -0.09189931220153659
+      ],
+      "gate_required": false,
+      "role": "phase1r_pooled_hmc_mean_explanatory",
+      "score": [
+        -0.21816802763513315,
+        -2.2022664848572866,
+        0.4525102056310218,
+        -3.3683313524394936
+      ],
+      "score_norm": 4.05561296780585,
+      "status": "finite",
+      "u": [
+        2.684115678520539,
+        0.6267063734817137,
+        1.5582468030301495,
+        0.5156267037406872
+      ],
+      "value": -38.12895023622733
+    },
+    "promotion_criterion": false,
+    "role": "old_geometry_summary_projected_for_diagnostics_only"
+  },
+  "phase2u_next_subplan_contract": {
+    "acceptance_envelope": {
+      "lower_exclusive": 0.05,
+      "upper_exclusive": 0.99
+    },
+    "all_trajectory_lengths_equal_1p57": true,
+    "candidate_grid": [
+      {
+        "num_leapfrog_steps": 2,
+        "step_size": 0.785,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      {
+        "num_leapfrog_steps": 4,
+        "step_size": 0.3925,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      {
+        "num_leapfrog_steps": 8,
+        "step_size": 0.19625,
+        "trajectory_length_L_times_epsilon": 1.57
+      },
+      {
+        "num_leapfrog_steps": 16,
+        "step_size": 0.098125,
+        "trajectory_length_L_times_epsilon": 1.57
+      }
+    ],
+    "candidate_grid_predeclared": true,
+    "hard_vetoes": [
+      "runtime_error",
+      "nonfinite_samples",
+      "nonfinite_target_log_prob",
+      "nonfinite_log_accept_ratio",
+      "positive_native_divergence_when_available",
+      "artifact_invalid"
+    ],
+    "if_no_candidate_passes": "write blocker/repair result; do not proceed to GPU/XLA",
+    "native_divergence_policy": "positive native divergence is a hard veto when available; unavailable native divergence is recorded as unavailable and is not zero-divergence evidence",
+    "next_subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md",
+    "nonclaims": [
+      "Phase 2U finite/acceptance retuning screen only",
+      "not posterior correctness evidence",
+      "not HMC readiness evidence"
+    ],
+    "selection_policy": "first candidate in listed order that passes hard vetoes and acceptance envelope",
+    "selection_policy_predeclared": true
+  },
+  "plan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+  "precondition": {
+    "map_candidate_role": "locator_position_geometry_covariance_only",
+    "passed": true,
+    "phase2s_decision": {
+      "next_justified_action": "draft and review MAP-local reference-agreement or retuned fixed-kernel HMC screen subplan",
+      "phase2s_geometry_centering_repair_passed": true,
+      "vetoes": [],
+      "viable_for_map_local_reference_subplan": true,
+      "zero_divergence_claim_made": false
+    },
+    "vetoes": []
+  },
+  "result_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 timeout 180 python docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py --json-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json --markdown-path docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md",
+    "conda_env": "tfgpu",
+    "cpu_gpu_status": "CPU-hidden artifact analysis",
+    "data_version": "stateless_simulated_scalar_ssl_lstm_filtering_path_v1",
+    "environment": {
+      "cpu_hidden": true,
+      "cuda_visible_devices": "-1",
+      "python": "3.13.13"
+    },
+    "git": {
+      "commit": "f297b103303c64019302ed5d9b9aaf2c8f919b64",
+      "dirty": true,
+      "dirty_line_count": 52,
+      "dirty_preview": [
+        " M bayesfilter/inference/hmc_diagnostics.py",
+        " M bayesfilter/linear/kalman_qr_tf.py",
+        " M tests/test_common_inference_runtime_contracts.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py",
+        "?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md",
+        "?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json"
+      ]
+    },
+    "jit_compile": false,
+    "output_artifacts": [
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json",
+      "docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md"
+    ],
+    "plan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md",
+    "random_seeds": {
+      "phase1r": [
+        [
+          20260709,
+          6101
+        ],
+        [
+          20260709,
+          6102
+        ],
+        [
+          20260709,
+          6103
+        ]
+      ],
+      "quadratic_geometry": [
+        20260709,
+        6201
+      ]
+    },
+    "result_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md",
+    "subplan_file": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md",
+    "tf32_mode": "disabled_by_cpu_hidden_debug_contract",
+    "wall_time_seconds": 0.07020520098740235
+  },
+  "schema_version": "scalar_ssl_lstm.filtering_hmc_validation_phase2t_map_local_reference_handoff.v1",
+  "script": "docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py",
+  "settings": {
+    "condition_number_cap": 100000.0,
+    "matrix_identity_threshold": 1e-08,
+    "phase2u_acceptance_envelope": [
+      0.05,
+      0.99
+    ],
+    "phase2u_candidate_count": 4,
+    "phase2u_candidate_selection": "first_passing_candidate_in_predeclared_order"
+  },
+  "source_artifacts": {
+    "phase2s_json": "/home/ubuntu/python/BayesFilter/docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json"
+  },
+  "subplan_path": "docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md",
+  "target_replay": {
+    "locator_position": {
+      "free": [
+        0.5704394246369003,
+        -0.1242247342531544,
+        0.6609123192759063,
+        0.1354211218811133
+      ],
+      "gate_required": true,
+      "role": "optimizer_locator_position",
+      "score": [
+        -1.0897220625860626e-12,
+        -1.5913695708413833e-11,
+        -9.711197818118578e-11,
+        -2.5740403732099626e-11
+      ],
+      "score_norm": 1.017238315038726e-10,
+      "status": "finite",
+      "u": null,
+      "value": -37.77528495512359
+    },
+    "map_candidate": {
+      "free": [
+        0.5704394246369003,
+        -0.1242247342531544,
+        0.6609123192759063,
+        0.1354211218811133
+      ],
+      "gate_required": true,
+      "role": "locator_position_geometry_covariance_only",
+      "score": [
+        -1.0897220625860626e-12,
+        -1.5913695708413833e-11,
+        -9.711197818118578e-11,
+        -2.5740403732099626e-11
+      ],
+      "score_norm": 1.017238315038726e-10,
+      "status": "finite",
+      "u": null,
+      "value": -37.77528495512359
+    },
+    "passed": true,
+    "phase2_reference_mean_initial": {
+      "free": [
+        0.3139518402292532,
+        0.022022045649693317,
+        0.6667503339657361,
+        0.05895806576993293
+      ],
+      "gate_required": true,
+      "role": "phase2_reference_mean_initial_position",
+      "score": [
+        0.012467212431252928,
+        -0.5153584283624892,
+        -0.18014179579036765,
+        -0.7542777319260495
+      ],
+      "score_norm": 0.9312012159249712,
+      "status": "finite",
+      "u": [
+        -0.044565226160942085,
+        0.14339340258862682,
+        0.12440293581509161,
+        0.3807781120936724
+      ],
+      "value": -37.786099036348105
+    },
+    "truth_free_center": {
+      "free": [
+        0.35,
+        -0.08,
+        0.65,
+        0.05
+      ],
+      "gate_required": false,
+      "role": "old_truth_free_geometry_center",
+      "score": [
+        0.04136499462054382,
+        1.5569199957141024,
+        0.25645839913165336,
+        2.385670540067278
+      ],
+      "score_norm": 2.860577873798304,
+      "status": "finite",
+      "u": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "value": -37.84742912954012
+    },
+    "vetoes": []
+  },
+  "target_scope": "scalar_ssl_lstm:svd_ukf_filtering_geometry:phase3_mechanics_u",
+  "telemetry_policy": {
+    "log_accept_threshold_used_as_native_divergence": false,
+    "native_divergence_interpretation": "native divergence unavailable for at least one seed; unavailable is not zero divergences",
+    "native_divergence_statuses": [
+      "not_exposed_by_kernel",
+      "not_exposed_by_kernel",
+      "not_exposed_by_kernel"
+    ],
+    "unavailable_native_divergence_is_zero_divergence": false,
+    "zero_divergence_claim_made": false
+  }
+}

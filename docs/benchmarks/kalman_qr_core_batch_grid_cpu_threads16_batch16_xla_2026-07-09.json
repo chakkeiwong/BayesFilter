@@ -1,0 +1,484 @@
+{
+  "manifest": {
+    "autodiff_execution": "compiled_static_batch_row_loop",
+    "autodiff_value_backend": "scalar_while_loop_row_loop",
+    "batch_size": 16,
+    "batched_static_autodiff_gradient_status": "diagnostic_only_not_timed",
+    "benchmark_methods": [
+      "batch_native_analytical_qr_score",
+      "scalar_analytical_row_loop",
+      "autodiff_row_loop_qr_score"
+    ],
+    "command": "/home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 20 30 --parameter-counts 50 150 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --jit-compile --dtype float32 --isolate-each-row --row-subprocess-timeout-seconds 3600 --output-json docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.json --output-md docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.md --cpu-threads 16",
+    "cpu_thread_manifest": {
+      "inter_op_set_status": "set",
+      "intra_op_set_status": "set",
+      "omp_num_threads": "16",
+      "requested_cpu_threads": 16,
+      "tf_inter_op_parallelism_threads": 16,
+      "tf_intra_op_parallelism_threads": 16,
+      "tf_num_interop_threads_env": "16",
+      "tf_num_intraop_threads_env": "16"
+    },
+    "cpu_threads": 16,
+    "cuda_visible_devices": "-1",
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "device_manifest": {
+      "cpu_only_exception": true,
+      "logical_gpus": [],
+      "physical_gpus": [],
+      "requested_device": "cpu",
+      "selected_device": "/CPU:0",
+      "trust_basis": "cpu_debug_or_reference_exception"
+    },
+    "dimensions": [
+      10,
+      20,
+      30
+    ],
+    "git_commit": "52ee244498988e046a6356f926003b581103083b",
+    "git_status_short": "M bayesfilter/inference/hmc_diagnostics.py\n M bayesfilter/inference/hmc_kernel_tuning.py\n M bayesfilter/linear/kalman_qr_derivatives_tf.py\n M bayesfilter/linear/kalman_qr_tf.py\n M bayesfilter/linear/qr_factor_tf.py\n M bayesfilter/linear/types_tf.py\n M bayesfilter/results_tf.py\n M tests/test_common_inference_runtime_contracts.py\n M tests/test_hmc_kernel_tuning_outer_loop.py\n M tests/test_hmc_kernel_tuning_public_api.py\n M tests/test_linear_kalman_qr_derivatives_tf.py\n M tests/test_linear_qr_compact_loglik_tf.py\n?? bayesfilter/linear/dtypes_tf.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase1r_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_2026_07_09.py\n?? docs/benchmarks/benchmark_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_2026_07_09.py\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_analytic_vs_autodiff_score_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_batched_score_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_batched_score_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch16_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads1_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch16_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch16_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch1_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads4_batch4_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_overnight_status_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_cpu_threads1_float32_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_cpu_threads1_float32_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_2026-07-09.md\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.json\n?? docs/benchmarks/kalman_qr_core_batch_grid_preflight_gpu_float32_xla_autotune0_overnight_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float32_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_dtype_smoke_float64_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_cpu_xla_2026-07-09.md\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.json\n?? docs/benchmarks/kalman_qr_parameter_count_scaling_gpu_xla_2026-07-09.md\n?? docs/benchmarks/run_kalman_qr_core_batch_grid_overnight_2026_07_09.py\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase1r_longer_same_kernel_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2_local_quadratic_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization_cpu_hidden_2026-07-09.md\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.json\n?? docs/benchmarks/scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot_cpu_hidden_2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-core-batch-dtype-grid-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-core-batch-dtype-grid-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase0-contract-inventory-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase1-dtype-infrastructure-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase2-qr-value-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase3-analytical-score-dtype-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase4-benchmark-dtype-controls-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase5-batched-score-contract-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase6-batched-score-implementation-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7b-full-ladder-blocker-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7b-full-ladder-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-result-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase8-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-dtype-batched-score-visible-stop-handoff-2026-07-09.md\n?? docs/plans/bayesfilter-kalman-qr-parameter-count-scaling-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-master-program-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase0-telemetry-policy-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1-cpu-short-chain-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase1r-acceptance-envelope-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2aa-reference-branch-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ab-transport-or-sequential-reference-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ac-sequential-resampling-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ad-diversity-preserving-sequential-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2ae-reference-method-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2r-local-reference-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2s-geometry-centering-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2t-map-local-reference-handoff-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2u-retuned-map-local-hmc-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2v-longer-selected-map-local-screen-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2w-importance-reference-agreement-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2x-shifted-mixture-reference-repair-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2y-target-geometry-localization-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-result-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase2z-proposal-strategy-pilot-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase3-gpu-xla-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase4-expansion-decision-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-phase5-closeout-subplan-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-execution-ledger-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-gated-execution-runbook-2026-07-09.md\n?? docs/plans/bayesfilter-scalar-filtering-hmc-validation-visible-stop-handoff-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-kalman-qr-dtype-batched-score-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase0-governance-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2aa-claude-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ab-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ac-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-claude-review-round1-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ad-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2ae-subplan-focused-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-codex-substitute-review-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2y-hypothesis-plan-review-bundle-2026-07-09.md\n?? docs/reviews/bayesfilter-scalar-filtering-hmc-validation-phase2z-subplan-codex-substitute-review-2026-07-09.md\n?? scripts/benchmark_kalman_qr_parameter_count_scaling.py\n?? tests/test_linear_qr_batched_analytical_score_tf.py\n?? tests/test_linear_qr_dtype_contracts.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase1r.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ab_transport_or_sequential_reference.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ac_sequential_resampling_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2ad_diversity_preserving_sequential_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2r_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2s_geometry_centering_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2t_map_local_reference_handoff.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2u_retuned_map_local_hmc_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2v_longer_selected_map_local_screen.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2w_importance_reference_agreement.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2x_shifted_mixture_reference_repair.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2y_target_geometry_localization.py\n?? tests/test_scalar_ssl_lstm_filtering_hmc_validation_phase2z_proposal_strategy_pilot.py",
+    "isolate_each_row": true,
+    "jit_compile": true,
+    "json_path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.json",
+    "markdown_path": "docs/benchmarks/kalman_qr_core_batch_grid_cpu_threads16_batch16_xla_2026-07-09.md",
+    "parameter_counts": [
+      50,
+      150
+    ],
+    "plan_path": "docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "repeats": 1,
+    "requested_dtype": "float32",
+    "row_subprocess_timeout_seconds": 3600.0,
+    "selected_device_for_parent": "/CPU:0",
+    "tensorflow_version": "2.20.0",
+    "tf32_execution_enabled": true,
+    "timestamp_utc": "2026-07-10T02:26:38.604421+00:00",
+    "timesteps": 120,
+    "xla_flags": "UNSET"
+  },
+  "rows": [
+    {
+      "agreement": {
+        "all_finite": true,
+        "batch_vs_autodiff_score_max_abs_residual": 2.086162567138672e-07,
+        "batch_vs_autodiff_value_max_abs_residual": 0.0,
+        "batch_vs_scalar_score_max_abs_residual": 1.341104507446289e-07,
+        "batch_vs_scalar_value_max_abs_residual": 0.0,
+        "parity_passed": true,
+        "score_abs_tolerance": 0.005,
+        "score_relative_residual": 1.4437551666361285e-07,
+        "shape_check_passed": true,
+        "value_abs_tolerance": 0.005
+      },
+      "applicable": true,
+      "batch_size": 16,
+      "compile_first_call_seconds": {
+        "autodiff_row_loop_qr_score": 36.508832563995384,
+        "batch_native_analytical_qr_score": 50.42819820501609,
+        "scalar_analytical_row_loop": 1716.9328896430088
+      },
+      "descriptive_autodiff_row_loop_over_batch_native_analytical_median_ratio": 0.12945736195537355,
+      "descriptive_scalar_row_loop_over_batch_native_analytical_median_ratio": 1.5594958451192513,
+      "device_name": "/CPU:0",
+      "diagnostics": {
+        "batched_static_autodiff_probe": {
+          "all_finite": false,
+          "elapsed_seconds": 1.4003678950248286,
+          "jit_compile": false,
+          "reason_not_timed": "The Phase 7 timed autodiff comparator uses scalar QR value row-loop differentiation because the batch-static value-gradient route is diagnostic-only until it returns finite gradients for this synthetic lower-triangular fixture.",
+          "score_head": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "score_shape": [
+            16,
+            50
+          ],
+          "timed_method": false,
+          "value_shape": [
+            16
+          ]
+        }
+      },
+      "first_minus_warm_start_seconds": {
+        "autodiff_row_loop_qr_score": 35.96359385998221,
+        "batch_native_analytical_qr_score": 46.25150087301154,
+        "scalar_analytical_row_loop": 1710.2409355220152
+      },
+      "input_shapes": {
+        "observations": [
+          120,
+          10
+        ],
+        "parameters": [
+          50
+        ],
+        "parameters_batch": [
+          16,
+          50
+        ]
+      },
+      "jit_compile": true,
+      "matrix_parameterization": {
+        "covariance_inputs": "SPD matrices formed from lower_triangular_factors",
+        "observation_matrix": "lower_triangular",
+        "transition_matrix": "lower_triangular"
+      },
+      "observation_dim": 10,
+      "observed_dtype_check": {
+        "expected": "float32",
+        "passed": true
+      },
+      "observed_score_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "observed_value_dtypes": {
+        "autodiff_row_loop_qr_score": "float32",
+        "batch_native_analytical_qr_score": "float32",
+        "scalar_analytical_row_loop": "float32"
+      },
+      "outputs": {
+        "autodiff_row_loop_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103847444057465,
+            -0.03739507496356964,
+            -0.11781922727823257,
+            -0.1407252997159958,
+            -0.0005728450487367809
+          ],
+          "score_shape": [
+            16,
+            50
+          ],
+          "score_tail": [
+            -0.018213190138339996,
+            -0.03825972229242325,
+            -0.10782522708177567,
+            -0.12860289216041565,
+            -0.0004974127514287829
+          ],
+          "value": [
+            -382.24688720703125,
+            -382.2457580566406,
+            -382.244384765625,
+            -382.2431335449219,
+            -382.2419738769531,
+            -382.24041748046875,
+            -382.2393493652344,
+            -382.2379150390625,
+            -382.2366027832031,
+            -382.23553466796875,
+            -382.23406982421875,
+            -382.23272705078125,
+            -382.2316589355469,
+            -382.2301940917969,
+            -382.2288513183594,
+            -382.22772216796875
+          ],
+          "value_shape": [
+            16
+          ]
+        },
+        "batch_native_analytical_qr_score": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103866070508957,
+            -0.03739505633711815,
+            -0.11781919002532959,
+            -0.1407252699136734,
+            -0.0005728455143980682
+          ],
+          "score_shape": [
+            16,
+            50
+          ],
+          "score_tail": [
+            -0.018213192000985146,
+            -0.038259685039520264,
+            -0.10782525688409805,
+            -0.12860289216041565,
+            -0.0004974128096364439
+          ],
+          "value": [
+            -382.24688720703125,
+            -382.2457580566406,
+            -382.244384765625,
+            -382.2431335449219,
+            -382.2419738769531,
+            -382.24041748046875,
+            -382.2393493652344,
+            -382.2379150390625,
+            -382.2366027832031,
+            -382.23553466796875,
+            -382.23406982421875,
+            -382.23272705078125,
+            -382.2316589355469,
+            -382.2301940917969,
+            -382.2288513183594,
+            -382.22772216796875
+          ],
+          "value_shape": [
+            16
+          ]
+        },
+        "scalar_analytical_row_loop": {
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:CPU:0",
+            "/job:localhost/replica:0/task:0/device:CPU:0"
+          ],
+          "score_head": [
+            -0.019103843718767166,
+            -0.03739505633711815,
+            -0.11781919002532959,
+            -0.1407252550125122,
+            -0.0005728451069444418
+          ],
+          "score_shape": [
+            16,
+            50
+          ],
+          "score_tail": [
+            -0.018213195726275444,
+            -0.03825971856713295,
+            -0.10782521218061447,
+            -0.12860289216041565,
+            -0.0004974127514287829
+          ],
+          "value": [
+            -382.24688720703125,
+            -382.2457580566406,
+            -382.244384765625,
+            -382.2431335449219,
+            -382.2419738769531,
+            -382.24041748046875,
+            -382.2393493652344,
+            -382.2379150390625,
+            -382.2366027832031,
+            -382.23553466796875,
+            -382.23406982421875,
+            -382.23272705078125,
+            -382.2316589355469,
+            -382.2301940917969,
+            -382.2288513183594,
+            -382.22772216796875
+          ],
+          "value_shape": [
+            16
+          ]
+        }
+      },
+      "parameter_capacity": 305,
+      "parameter_count": 50,
+      "repeated_call_seconds": {
+        "autodiff_row_loop_qr_score": [
+          0.5476426379755139
+        ],
+        "batch_native_analytical_qr_score": [
+          4.230293509026524
+        ],
+        "scalar_analytical_row_loop": [
+          6.597125150961801
+        ]
+      },
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 50 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p50.md --cpu-threads 16 --jit-compile",
+        "elapsed_seconds": 1838.0271335340221,
+        "isolated": true,
+        "returncode": 0,
+        "stderr_tail": "w/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 10:26:47.121741: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 10:26:47.167343: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 10:26:47.167476: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 10:26:47.167519: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 10:26:47.167556: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 10:26:47.167592: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 10:26:47.167628: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 10:26:47.167664: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 10:26:47.167700: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 10:26:47.167736: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 10:26:47.167772: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 10:26:47.212594: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 10:26:47.212643: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 10:26:47.212680: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 10:26:47.212717: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 10:26:47.212755: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 10:26:47.212791: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 10:26:47.212827: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 10:26:47.212863: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 10:26:47.212899: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783650446.610066 1612979 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 10:34:26.945592: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_318016__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.576090] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 10:55:58.977484: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 23m32.032041956s\n\n********************************\n[Compiling module a_inference_scalar_row_loop_score_318016__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.576090] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n",
+        "stdout_tail": "{\n  \"all_applicable_rows_parity_passed\": true,\n  \"applicable_row_count\": 1,\n  \"inapplicable_row_count\": 0,\n  \"json\": \"/tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p50.json\",\n  \"markdown\": \"/tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p50.md\",\n  \"wall_time_seconds\": 1828.2357738380088\n}\n"
+      },
+      "slot_allocation": {
+        "initial_covariance_factor": 10,
+        "initial_mean": 0,
+        "observation_covariance_factor": 10,
+        "observation_matrix": 10,
+        "observation_offset": 0,
+        "transition_covariance_factor": 10,
+        "transition_matrix": 10,
+        "transition_offset": 0
+      },
+      "state_dim": 10,
+      "timesteps": 120,
+      "warm_call_summary": {
+        "autodiff_row_loop_qr_score": {
+          "count": 1,
+          "max_seconds": 0.5476426379755139,
+          "mean_seconds": 0.5476426379755139,
+          "median_seconds": 0.5476426379755139,
+          "min_seconds": 0.5476426379755139
+        },
+        "batch_native_analytical_qr_score": {
+          "count": 1,
+          "max_seconds": 4.230293509026524,
+          "mean_seconds": 4.230293509026524,
+          "median_seconds": 4.230293509026524,
+          "min_seconds": 4.230293509026524
+        },
+        "scalar_analytical_row_loop": {
+          "count": 1,
+          "max_seconds": 6.597125150961801,
+          "mean_seconds": 6.597125150961801,
+          "median_seconds": 6.597125150961801,
+          "min_seconds": 6.597125150961801
+        }
+      },
+      "warm_start_call_seconds": {
+        "autodiff_row_loop_qr_score": 0.5452387040131725,
+        "batch_native_analytical_qr_score": 4.176697332004551,
+        "scalar_analytical_row_loop": 6.691954120993614
+      }
+    },
+    {
+      "applicable": true,
+      "batch_size": 16,
+      "device_name": "/CPU:0",
+      "error": {
+        "message": "Command '['/home/ubuntu/anaconda3/envs/tfgpu/bin/python', '/home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py', '--dimensions', '10', '--parameter-counts', '150', '--timesteps', '120', '--repeats', '1', '--batch-size', '16', '--device', 'cpu', '--dtype', 'float32', '--plan-path', 'docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md', '--output-json', '/tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p150.json', '--output-md', '/tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p150.md', '--cpu-threads', '16', '--jit-compile']' timed out after 3600.0 seconds",
+        "type": "TimeoutExpired"
+      },
+      "jit_compile": true,
+      "observation_dim": 10,
+      "parameter_capacity": 305,
+      "parameter_count": 150,
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 10 --parameter-counts 150 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1612908/row_n10_p150.md --cpu-threads 16 --jit-compile",
+        "elapsed_seconds": 3604.4745213629794,
+        "isolated": true,
+        "stderr_tail": "ir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 10:57:34.827946: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 10:57:34.873296: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 10:57:34.874074: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 10:57:34.874831: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 10:57:34.875595: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 10:57:34.876353: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 10:57:34.877088: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 10:57:34.877837: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 10:57:34.878593: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 10:57:34.879350: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 10:57:34.880092: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 10:57:34.925693: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 10:57:34.926475: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 10:57:34.927231: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 10:57:34.928020: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 10:57:34.928777: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 10:57:34.929457: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 10:57:34.930143: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 10:57:34.930893: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 10:57:34.931646: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\n2026-07-10 11:00:06.146257: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_batch_native_score_38962__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.78733] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\n2026-07-10 11:00:07.655671: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m1.509541911s\n\n********************************\n[Compiling module a_inference_batch_native_score_38962__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.78733] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783652407.658675 1613873 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+        "stdout_tail": "",
+        "timeout_seconds": 3600.0
+      },
+      "state_dim": 10,
+      "timesteps": 120
+    },
+    {
+      "applicable": true,
+      "batch_size": 16,
+      "device_name": "/CPU:0",
+      "error": {
+        "message": "child process did not produce a row artifact",
+        "type": "MissingChildRows"
+      },
+      "jit_compile": true,
+      "observation_dim": 20,
+      "parameter_capacity": 1110,
+      "parameter_count": 50,
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 50 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1612908/row_n20_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1612908/row_n20_p50.md --cpu-threads 16 --jit-compile",
+        "elapsed_seconds": 2736.2469843589934,
+        "isolated": true,
+        "returncode": -6,
+        "stderr_tail": "] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 11:57:29.622229: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 11:57:29.667719: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 11:57:29.667853: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 11:57:29.667893: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 11:57:29.667929: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 11:57:29.667965: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 11:57:29.668001: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 11:57:29.668037: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 11:57:29.668073: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 11:57:29.668109: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 11:57:29.668145: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 11:57:29.712979: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 11:57:29.713027: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 11:57:29.713064: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 11:57:29.713102: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 11:57:29.713140: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 11:57:29.713185: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 11:57:29.713222: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 11:57:29.713259: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 11:57:29.713295: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783655937.167314 1615248 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n2026-07-10 12:06:08.992374: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_scalar_row_loop_score_318016__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.576090] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nE0000 00:00:1783658575.113315 1615656 execution_engine.cc:54] LLVM compilation error: Cannot allocate memory\n2026-07-10 12:42:55.117180: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:101] allocateMappedMemory failed with error: Cannot allocate memory\n2026-07-10 12:42:55.117228: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:139] Failed to satisfy suballocation request for 29\nLLVM ERROR: Unable to allocate section memory!\n",
+        "stdout_tail": ""
+      },
+      "state_dim": 20,
+      "timesteps": 120
+    },
+    {
+      "applicable": true,
+      "batch_size": 16,
+      "device_name": "/CPU:0",
+      "error": {
+        "message": "child process did not produce a row artifact",
+        "type": "MissingChildRows"
+      },
+      "jit_compile": true,
+      "observation_dim": 20,
+      "parameter_capacity": 1110,
+      "parameter_count": 150,
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 20 --parameter-counts 150 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1612908/row_n20_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1612908/row_n20_p150.md --cpu-threads 16 --jit-compile",
+        "elapsed_seconds": 272.0144738400122,
+        "isolated": true,
+        "returncode": -6,
+        "stderr_tail": "26-07-10 12:43:15.458934: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 12:43:15.459716: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 12:43:15.460477: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 12:43:15.461234: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 12:43:15.461978: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 12:43:15.462726: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 12:43:15.463469: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 12:43:15.464206: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 12:43:15.464943: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 12:43:15.465689: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 12:43:15.511237: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 12:43:15.512002: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 12:43:15.512740: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 12:43:15.513507: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 12:43:15.514254: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 12:43:15.514919: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 12:43:15.515595: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 12:43:15.516332: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 12:43:15.517061: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\n2026-07-10 12:46:00.676165: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_batch_native_score_38962__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.78733] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nE0000 00:00:1783658847.478498 1616872 execution_engine.cc:54] LLVM compilation error: Cannot allocate memory\n2026-07-10 12:47:27.482332: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:101] allocateMappedMemory failed with error: Cannot allocate memory\n2026-07-10 12:47:27.482383: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:139] Failed to satisfy suballocation request for 600\nLLVM ERROR: Unable to allocate section memory!\n2026-07-10 12:47:27.482651: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:101] allocateMappedMemory failed with error: Cannot allocate memory\n2026-07-10 12:47:27.482704: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:139] Failed to satisfy suballocation request for 369\nLLVM ERROR: Unable to allocate section memory!\n",
+        "stdout_tail": ""
+      },
+      "state_dim": 20,
+      "timesteps": 120
+    },
+    {
+      "applicable": true,
+      "batch_size": 16,
+      "device_name": "/CPU:0",
+      "error": {
+        "message": "child process did not produce a row artifact",
+        "type": "MissingChildRows"
+      },
+      "jit_compile": true,
+      "observation_dim": 30,
+      "parameter_capacity": 2415,
+      "parameter_count": 50,
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 50 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1612908/row_n30_p50.json --output-md /tmp/kalman_qr_parameter_count_rows_1612908/row_n30_p50.md --cpu-threads 16 --jit-compile",
+        "elapsed_seconds": 2730.023529600003,
+        "isolated": true,
+        "returncode": -11,
+        "stderr_tail": "e defunct\nE0000 00:00:1783661577.114050 1617339 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175da01320 became defunct\nE0000 00:00:1783661577.114317 1617342 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1794a183f0 became defunct\nE0000 00:00:1783661577.115383 1617352 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1758993af0 became defunct\nE0000 00:00:1783661577.115966 1617334 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b17aad4e850 became defunct\nE0000 00:00:1783661577.116154 1617357 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b17aad4e850 became defunct\nE0000 00:00:1783661577.116412 1617333 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1758993af0 became defunct\nE0000 00:00:1783661577.116427 1617343 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175da01320 became defunct\nE0000 00:00:1783661577.117727 1617344 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1762dec450 became defunct\nE0000 00:00:1783661577.120123 1617331 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1762dec450 became defunct\nE0000 00:00:1783661577.120494 1617339 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175da01320 became defunct\nE0000 00:00:1783661577.120734 1617329 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175f710490 became defunct\nE0000 00:00:1783661577.121141 1617342 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1794a183f0 became defunct\nE0000 00:00:1783661577.121226 1617337 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175f710490 became defunct\nE0000 00:00:1783661577.124077 1617352 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1758993af0 became defunct\nE0000 00:00:1783661577.124125 1617357 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b17aad4e850 became defunct\nE0000 00:00:1783661577.124519 1617334 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b17aad4e850 became defunct\nE0000 00:00:1783661577.124663 1617333 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1758993af0 became defunct\nE0000 00:00:1783661577.125740 1617343 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175da01320 became defunct\nE0000 00:00:1783661577.127988 1617331 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1762dec450 became defunct\nE0000 00:00:1783661577.128147 1617339 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175da01320 became defunct\nE0000 00:00:1783661577.128333 1617344 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1762dec450 became defunct\nE0000 00:00:1783661577.129784 1617342 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1794a183f0 became defunct\nE0000 00:00:1783661577.130006 1617329 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175f710490 became defunct\nE0000 00:00:1783661577.130142 1617357 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b17aad4e850 became defunct\nE0000 00:00:1783661577.130369 1617352 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1758993af0 became defunct\nE0000 00:00:1783661577.130886 1617337 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175f710490 became defunct\nE0000 00:00:1783661577.130891 1617334 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b17aad4e850 became defunct\nE0000 00:00:1783661577.132459 1617343 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b175da01320 became defunct\nE0000 00:00:1783661577.132692 1617333 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1758993af0 became defunct\nE0000 00:00:1783661577.134042 1617331 execution_engine.cc:54] LLVM compilation error: Resource tracker 0x5b1762dec450 became defunct\n",
+        "stdout_tail": ""
+      },
+      "state_dim": 30,
+      "timesteps": 120
+    },
+    {
+      "applicable": true,
+      "batch_size": 16,
+      "device_name": "/CPU:0",
+      "error": {
+        "message": "child process did not produce a row artifact",
+        "type": "MissingChildRows"
+      },
+      "jit_compile": true,
+      "observation_dim": 30,
+      "parameter_capacity": 2415,
+      "parameter_count": 150,
+      "requested_dtype": "float32",
+      "row_process": {
+        "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python /home/ubuntu/python/BayesFilter/scripts/benchmark_kalman_qr_parameter_count_scaling.py --dimensions 30 --parameter-counts 150 --timesteps 120 --repeats 1 --batch-size 16 --device cpu --dtype float32 --plan-path docs/plans/bayesfilter-kalman-qr-dtype-batched-score-phase7-correctness-benchmark-subplan-2026-07-09.md --output-json /tmp/kalman_qr_parameter_count_rows_1612908/row_n30_p150.json --output-md /tmp/kalman_qr_parameter_count_rows_1612908/row_n30_p150.md --cpu-threads 16 --jit-compile",
+        "elapsed_seconds": 522.2673508099979,
+        "isolated": true,
+        "returncode": -6,
+        "stderr_tail": "service.cc:171]   StreamExecutor device (0): Host, Default Version\n2026-07-10 13:33:17.014369: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-10 13:33:17.382326: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-10 13:33:17.428018: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-10 13:33:17.428813: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-10 13:33:17.429575: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-10 13:33:17.430349: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-10 13:33:17.431100: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-10 13:33:17.431850: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-10 13:33:17.432610: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-10 13:33:17.433370: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-10 13:33:17.434113: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-10 13:33:17.434864: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-10 13:33:17.480610: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-10 13:33:17.481397: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-10 13:33:17.482140: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-10 13:33:17.482897: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-10 13:33:17.483654: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-10 13:33:17.484344: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-10 13:33:17.485027: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-10 13:33:17.485784: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-10 13:33:17.486541: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\n2026-07-10 13:36:17.594698: E external/local_xla/xla/service/slow_operation_alarm.cc:73] \n********************************\n[Compiling module a_inference_batch_native_score_38962__XlaMustCompile_true_config_proto_2575935180140467244_executor_type_11160318154034397263_.78733] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.\n********************************\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nE0000 00:00:1783662099.498538 1623629 execution_engine.cc:54] LLVM compilation error: Cannot allocate memory\n2026-07-10 13:41:39.499734: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:101] allocateMappedMemory failed with error: Cannot allocate memory\n2026-07-10 13:41:39.499783: E external/local_xla/xla/backends/cpu/codegen/contiguous_section_memory_manager.cc:139] Failed to satisfy suballocation request for 923\nLLVM ERROR: Unable to allocate section memory!\n",
+        "stdout_tail": ""
+      },
+      "state_dim": 30,
+      "timesteps": 120
+    }
+  ],
+  "schema": "kalman_qr_parameter_count_scaling_v1",
+  "summary": {
+    "all_applicable_rows_parity_passed": false,
+    "applicable_row_count": 6,
+    "inapplicable_row_count": 0,
+    "nonclaims": [
+      "descriptive timing only",
+      "no HMC readiness claim",
+      "no posterior correctness claim",
+      "no production default change",
+      "no statistically supported ranking"
+    ],
+    "run_status": "complete",
+    "wall_time_seconds": 11703.06645723799
+  }
+}

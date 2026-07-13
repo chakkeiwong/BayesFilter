@@ -8,7 +8,7 @@ import re
 import secrets
 import time
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
@@ -23,6 +23,12 @@ from bayesfilter.inference.hmc_tuning import (
     HMCTuningPolicy,
     normalize_hmc_tuning_policy,
     require_executable_tuning_policy,
+)
+from bayesfilter.inference.hmc_verification import (
+    HMCAcceptancePolicy,
+    _evaluate_retained_target_health,
+    evaluate_hmc_acceptance_evidence,
+    summarize_hmc_tuning_telemetry,
 )
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
 from bayesfilter.inference.posterior_adapter import value_score_capability
@@ -975,13 +981,14 @@ class RetainedSampleHMCArchiveConfig:
 
 @dataclass(frozen=True)
 class SequentialRHatHMCVerificationConfig:
-    """Sequential fixed-kernel HMC verifier with R-hat stopping.
+    """Sequential fixed-kernel HMC verifier with fixed acceptance checkpoints.
 
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
-    Gelman-Rubin R-hat on private retained samples after each checkpoint, and
-    stops once all finite parameter R-hats are below the threshold or the hard
-    retained-sample cap is reached.  It is a tuning-verification gate, not a
-    posterior-convergence certificate.
+    dependence-aware acceptance evidence on private traces after each
+    checkpoint, and stops once that evidence supports a decision or the hard
+    result cap is reached.  The historical unsplit R-hat remains explanatory
+    only.  This is a tuning-verification gate, not a posterior-convergence
+    certificate.
     """
 
     check_interval: int
@@ -992,6 +999,9 @@ class SequentialRHatHMCVerificationConfig:
     seed: tuple[int, int]
     chain_count: int = 4
     rhat_threshold: float = 1.01
+    acceptance_policy: HMCAcceptancePolicy = field(
+        default_factory=HMCAcceptancePolicy
+    )
     use_xla: bool = False
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
@@ -1033,6 +1043,8 @@ class SequentialRHatHMCVerificationConfig:
         if not np.isfinite(threshold) or threshold <= 1.0:
             raise ValueError("rhat_threshold must be finite and greater than 1")
         object.__setattr__(self, "rhat_threshold", threshold)
+        if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
+            raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
         object.__setattr__(self, "use_xla", bool(self.use_xla))
         chain_execution_mode = str(self.chain_execution_mode)
         if chain_execution_mode not in {"tf_function", "eager"}:
@@ -1056,6 +1068,7 @@ class SequentialRHatHMCVerificationConfig:
             "seed": self.seed,
             "chain_count": self.chain_count,
             "rhat_threshold": self.rhat_threshold,
+            "acceptance_policy": self.acceptance_policy.payload(),
             "use_xla": self.use_xla,
             "chain_execution_mode": self.chain_execution_mode,
             "target_scope": self.target_scope,
@@ -4687,7 +4700,7 @@ def build_retained_sample_hmc_archive_runner(
 
 
 class SequentialRHatHMCVerifier:
-    """Sequential fixed-kernel verifier that stops by multi-chain R-hat."""
+    """Sequential fixed-kernel verifier with private acceptance evidence."""
 
     def __init__(
         self,
@@ -4701,16 +4714,25 @@ class SequentialRHatHMCVerifier:
         import tensorflow as tf
 
         base = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
-        if base.shape.rank != 1:
+        if base.shape.rank not in {1, 2}:
             raise ValueError(
-                "sequential R-hat verification initial_state_template must be a "
-                "one-dimensional latent vector"
+                "sequential verification initial_state_template must be a latent "
+                "vector or an explicit chain-by-parameter start bank"
             )
         if any(dim is None for dim in base.shape):
             raise ValueError(
                 "sequential R-hat verification requires a fully static state shape"
             )
-        initial_state = _sequential_rhat_initial_chain_state(base, config.chain_count)
+        if base.shape.rank == 1:
+            initial_state = _sequential_rhat_initial_chain_state(base, config.chain_count)
+            initial_state_policy = "historical_deterministic_dispersed_latent_starts"
+        else:
+            if int(base.shape[0]) != int(config.chain_count):
+                raise ValueError(
+                    "explicit sequential verification start bank must match chain_count"
+                )
+            initial_state = base
+            initial_state_policy = "private_frozen_post_warmup_start_bank"
         initial_chunk_config = FixedSizeHMCChunkConfig(
             max_results=config.check_interval,
             num_burnin_steps=config.num_burnin_steps,
@@ -4718,7 +4740,7 @@ class SequentialRHatHMCVerifier:
             num_leapfrog_steps=config.num_leapfrog_steps,
             seed=config.seed,
             use_xla=config.use_xla,
-            trace_policy="reduced",
+            trace_policy="standard",
             target_status_trace_policy="none",
             target_scope=config.target_scope,
             chain_execution_mode=config.chain_execution_mode,
@@ -4730,7 +4752,7 @@ class SequentialRHatHMCVerifier:
             num_leapfrog_steps=config.num_leapfrog_steps,
             seed=config.seed,
             use_xla=config.use_xla,
-            trace_policy="reduced",
+            trace_policy="standard",
             target_status_trace_policy="none",
             target_scope=config.target_scope,
             chain_execution_mode=config.chain_execution_mode,
@@ -4752,6 +4774,21 @@ class SequentialRHatHMCVerifier:
             )
         )
         self._initial_state = initial_state
+        self._initial_state_policy = initial_state_policy
+        self._retained_target_health_policy: str | None = None
+
+    def _configure_retained_target_health_policy(
+        self,
+        target_status_trace_policy: str,
+    ) -> None:
+        """Enable the private Phase 7 retained value/score/status recheck."""
+
+        policy = str(target_status_trace_policy)
+        if policy not in {"none", "per_chain_step"}:
+            raise ValueError(
+                "target_status_trace_policy must be 'none' or 'per_chain_step'"
+            )
+        self._retained_target_health_policy = policy
 
     def run(
         self,
@@ -4767,13 +4804,28 @@ class SequentialRHatHMCVerifier:
         start = time.perf_counter()
         current_state = self._initial_state
         retained_chunks: list[Any] = []
+        log_accept_chunks: list[np.ndarray] = []
+        is_accepted_chunks: list[np.ndarray] = []
+        target_log_prob_chunks: list[np.ndarray] = []
         chunk_summaries: list[Mapping[str, Any]] = []
         retained_count = 0
         chunk_index = 0
         passed = False
         cap_hit = False
         final_rhat: Mapping[str, Any] = _empty_rhat_summary()
+        acceptance_evidence = None
         hard_vetoes: list[str] = []
+        engineering_invalidity_reasons: list[str] = []
+        candidate_data_invalidity_reasons: list[str] = []
+        target_health_evaluated_draw_count = 0
+        target_value_health_passed = True
+        target_score_health_passed = True
+        target_status_failure_count = (
+            0 if self._retained_target_health_policy == "per_chain_step" else None
+        )
+        target_status_count_available = (
+            self._retained_target_health_policy == "per_chain_step"
+        )
         checkpoint_references: list[Mapping[str, Any]] = []
 
         while retained_count < config.max_results:
@@ -4794,36 +4846,115 @@ class SequentialRHatHMCVerifier:
                 tf.convert_to_tensor(result.samples),
                 tf.convert_to_tensor(result.valid_mask, dtype=tf.bool),
             )
+            actual_valid_count = int(
+                np.sum(_private_tensor_to_numpy(result.valid_mask).astype(bool))
+            )
             retained_chunks.append(valid_samples)
-            retained_count += int(active)
+            retained_count += actual_valid_count
             chunk_summary = _sequential_rhat_chunk_summary(
                 result,
                 chunk_index=chunk_index,
                 retained_count=retained_count,
+                expected_active_results=active,
             )
             chunk_summaries.append(chunk_summary)
             hard_vetoes.extend(chunk_summary.get("hard_vetoes", ()))
-            if hard_vetoes:
-                if checkpoint_writer_config is not None:
-                    checkpoint_reference = _write_sequential_rhat_private_checkpoint(
-                        writer_config=checkpoint_writer_config,
-                        checkpoint_kind="verification_chunk",
-                        adapter=self.adapter,
-                        config=config,
-                        chunk_index=chunk_index,
-                        retained_count=retained_count,
-                        chunk_result=result,
-                        chunk_summary=chunk_summary,
-                        rhat_summary=final_rhat,
-                    )
-                    checkpoint_references.append(checkpoint_reference)
-                    if checkpoint_reference_callback is not None:
-                        checkpoint_reference_callback(checkpoint_reference)
-                break
+            engineering_invalidity_reasons.extend(
+                chunk_summary.get("engineering_invalidity_reasons", ())
+            )
+            if self._retained_target_health_policy is not None:
+                target_health = _evaluate_retained_target_health(
+                    adapter=self.adapter,
+                    samples=_private_tensor_to_numpy(valid_samples),
+                    target_status_trace_policy=self._retained_target_health_policy,
+                )
+                engineering_invalidity_reasons.extend(
+                    target_health["shared_invalidity_reasons"]
+                )
+                candidate_data_invalidity_reasons.extend(
+                    target_health["candidate_data_invalidity_reasons"]
+                )
+                target_health_evaluated_draw_count += int(
+                    target_health["evaluated_draw_count"]
+                )
+                target_value_health_passed = bool(
+                    target_value_health_passed
+                    and target_health["target_value_finite"]
+                )
+                target_score_health_passed = bool(
+                    target_score_health_passed
+                    and target_health["target_score_finite"]
+                )
+                if self._retained_target_health_policy == "per_chain_step":
+                    chunk_status_count = target_health[
+                        "target_status_failure_count"
+                    ]
+                    if chunk_status_count is None:
+                        target_status_count_available = False
+                        target_status_failure_count = None
+                    elif target_status_count_available:
+                        target_status_failure_count = int(
+                            int(target_status_failure_count or 0)
+                            + int(chunk_status_count)
+                        )
             retained = tf.concat(retained_chunks, axis=0)
             final_rhat = _rhat_summary_from_retained_samples(
                 retained,
                 threshold=config.rhat_threshold,
+            )
+            trace = result.trace if isinstance(result.trace, Mapping) else {}
+            required_trace_keys = ("is_accepted", "log_accept_ratio", "target_log_prob")
+            missing_trace_keys = tuple(
+                key for key in required_trace_keys if key not in trace
+            )
+            if missing_trace_keys:
+                shared_invalidity_reasons = (
+                    "required_standard_acceptance_trace_missing",
+                )
+                active_log_accept = np.zeros(
+                    (actual_valid_count, int(config.chain_count)), dtype=float
+                )
+                active_is_accepted = np.zeros_like(active_log_accept, dtype=bool)
+                active_target_log_prob = np.zeros_like(active_log_accept, dtype=float)
+            else:
+                shared_invalidity_reasons = ()
+                mask = _private_tensor_to_numpy(result.valid_mask).astype(bool)
+                active_log_accept = _private_tensor_to_numpy(
+                    result.trace["log_accept_ratio"]
+                )[mask]
+                active_is_accepted = np.asarray(
+                    result.trace["is_accepted"].numpy()
+                    if hasattr(result.trace["is_accepted"], "numpy")
+                    else result.trace["is_accepted"],
+                    dtype=bool,
+                )[mask]
+                active_target_log_prob = _private_tensor_to_numpy(
+                    result.trace["target_log_prob"]
+                )[mask]
+            log_accept_chunks.append(active_log_accept)
+            is_accepted_chunks.append(active_is_accepted)
+            target_log_prob_chunks.append(active_target_log_prob)
+            divergence_status, divergence_count, divergence_consistent = (
+                _aggregate_divergence_provenance(chunk_summaries)
+            )
+            if not divergence_consistent:
+                engineering_invalidity_reasons.append("shared_schema_invalid")
+            acceptance_evidence = evaluate_hmc_acceptance_evidence(
+                samples=_private_tensor_to_numpy(retained),
+                log_accept_ratio=np.concatenate(log_accept_chunks, axis=0),
+                is_accepted=np.concatenate(is_accepted_chunks, axis=0),
+                target_log_prob=np.concatenate(target_log_prob_chunks, axis=0),
+                policy=config.acceptance_policy,
+                native_divergence_status=divergence_status,
+                native_divergence_count=divergence_count,
+                shared_invalidity_reasons=tuple(
+                    dict.fromkeys(
+                        (*shared_invalidity_reasons, *engineering_invalidity_reasons)
+                    )
+                ),
+                candidate_local_health_failures=tuple(
+                    dict.fromkeys(candidate_data_invalidity_reasons)
+                ),
             )
             if checkpoint_writer_config is not None:
                 checkpoint_reference = _write_sequential_rhat_private_checkpoint(
@@ -4840,12 +4971,22 @@ class SequentialRHatHMCVerifier:
                 checkpoint_references.append(checkpoint_reference)
                 if checkpoint_reference_callback is not None:
                     checkpoint_reference_callback(checkpoint_reference)
-            if bool(final_rhat["passed"]):
-                passed = True
+            if (
+                acceptance_evidence.evidence_validity != "valid"
+                or acceptance_evidence.acceptance_decision
+                != "inconclusive_evidence"
+            ):
+                passed = acceptance_evidence.promotion_eligible
                 break
             chunk_index += 1
 
-        if not passed and retained_count >= config.max_results:
+        if (
+            not passed
+            and retained_count >= config.max_results
+            and acceptance_evidence is not None
+            and acceptance_evidence.evidence_validity == "valid"
+            and acceptance_evidence.acceptance_decision == "inconclusive_evidence"
+        ):
             cap_hit = True
         runtime_s = time.perf_counter() - start
         diagnostics = {
@@ -4857,6 +4998,7 @@ class SequentialRHatHMCVerifier:
             "max_results": int(config.max_results),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
+            "rhat_role": "historical_explanatory_only_not_stopping_or_admission",
             "max_finite_rhat": final_rhat["max_finite_rhat"],
             "finite_rhat_count": int(final_rhat["finite_rhat_count"]),
             "nonfinite_rhat_count": int(final_rhat["nonfinite_rhat_count"]),
@@ -4868,16 +5010,70 @@ class SequentialRHatHMCVerifier:
             "target_value_health_passed": not any(
                 "nonfinite_private_target_value" in item.get("hard_vetoes", ())
                 for item in chunk_summaries
+            ) and (
+                True
+                if self._retained_target_health_policy is None
+                else bool(target_value_health_passed)
             ),
+            "target_score_health_passed": (
+                None
+                if self._retained_target_health_policy is None
+                else bool(target_score_health_passed)
+            ),
+            "retained_target_health_policy": (
+                "disabled"
+                if self._retained_target_health_policy is None
+                else self._retained_target_health_policy
+            ),
+            "retained_target_health_evaluated_draw_count": int(
+                target_health_evaluated_draw_count
+            ),
+            "target_status_failure_count": target_status_failure_count,
             "acceptance_log_health_passed": not any(
                 "nonfinite_private_acceptance_log_value" in item.get("hard_vetoes", ())
                 for item in chunk_summaries
             ),
             "runtime_s": float(runtime_s),
             "runtime_finite": bool(np.isfinite(runtime_s)),
-            "acceptance_rate": _aggregate_acceptance_rate(chunk_summaries),
-            "divergence_status": _aggregate_divergence_status(chunk_summaries),
-            "divergence_count": _aggregate_divergence_count(chunk_summaries),
+            "acceptance_rate": (
+                None if acceptance_evidence is None else acceptance_evidence.pooled_mean
+            ),
+            "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+            "binary_acceptance_rate": _aggregate_acceptance_rate(chunk_summaries),
+            "binary_acceptance_role": "explanatory_runtime_provenance_only",
+            "acceptance_evidence": (
+                None if acceptance_evidence is None else acceptance_evidence.payload()
+            ),
+            "acceptance_evidence_validity": (
+                None
+                if acceptance_evidence is None
+                else acceptance_evidence.evidence_validity
+            ),
+            "acceptance_decision": (
+                None
+                if acceptance_evidence is None
+                else acceptance_evidence.acceptance_decision
+            ),
+            "candidate_promotion_vetoes": (
+                ()
+                if acceptance_evidence is None
+                else acceptance_evidence.candidate_promotion_vetoes
+            ),
+            "tuning_repair_triggers": (
+                ()
+                if acceptance_evidence is None
+                else acceptance_evidence.tuning_repair_triggers
+            ),
+            "engineering_invalidity_reasons": (
+                ()
+                if acceptance_evidence is None
+                else acceptance_evidence.engineering_invalidity_reasons
+            ),
+            "divergence_status": _aggregate_divergence_provenance(chunk_summaries)[0],
+            "divergence_count": _aggregate_divergence_provenance(chunk_summaries)[1],
+            "divergence_provenance_consistent": _aggregate_divergence_provenance(
+                chunk_summaries
+            )[2],
             "hard_vetoes": tuple(dict.fromkeys(hard_vetoes)),
             "chunk_summaries": tuple(chunk_summaries),
             "checkpointing_enabled": checkpoint_writer_config is not None,
@@ -4894,7 +5090,8 @@ class SequentialRHatHMCVerifier:
                 "public_summary_contains_checkpoint_hmc_mechanics": False,
             },
             "nonclaims": (
-                "sequential R-hat fixed-kernel tuning verification only",
+                "sequential fixed-checkpoint HMC tuning verification only",
+                "historical unsplit R-hat is explanatory only",
                 "no posterior convergence claim",
                 "no scientific validity claim",
                 "no sampler superiority claim",
@@ -4902,10 +5099,20 @@ class SequentialRHatHMCVerifier:
             ),
         }
         metadata = {
-            "runtime": "sequential_fixed_size_hmc_chunk_rhat_verification",
+            "runtime": "sequential_fixed_size_hmc_chunk_acceptance_verification",
             "uses_sample_chain": False,
             "fixed_size_chunk_runner": True,
             "sequential_rhat_verification": True,
+            "acceptance_evidence_decision": (
+                None
+                if acceptance_evidence is None
+                else acceptance_evidence.acceptance_decision
+            ),
+            "acceptance_evidence_validity": (
+                None
+                if acceptance_evidence is None
+                else acceptance_evidence.evidence_validity
+            ),
             "jit_compile": config.use_xla,
             "use_xla": config.use_xla,
             "chain_execution_mode": config.chain_execution_mode,
@@ -4928,7 +5135,7 @@ class SequentialRHatHMCVerifier:
                 item.get("warm_call_s") for item in chunk_summaries
             ),
             "runtime_s": float(runtime_s),
-            "initial_state_policy": "private_deterministic_dispersed_latent_chain_starts",
+            "initial_state_policy": self._initial_state_policy,
             "kernel_parameters_publicized": False,
             "sample_values_publicized": False,
             "chain_handoff_publicized": False,
@@ -5278,18 +5485,35 @@ def _sequential_rhat_chunk_summary(
     *,
     chunk_index: int,
     retained_count: int,
+    expected_active_results: int,
 ) -> Mapping[str, Any]:
     diagnostics = result.diagnostics
     metadata = result.metadata
     hard_vetoes: list[str] = []
+    engineering_invalidity_reasons: list[str] = []
+    valid_sample_count = _int_or_none_metadata(
+        diagnostics.get("valid_sample_count")
+    )
+    observed_valid_count = int(
+        np.sum(_private_tensor_to_numpy(result.valid_mask).astype(bool))
+    )
+    if (
+        valid_sample_count != int(expected_active_results)
+        or observed_valid_count != int(expected_active_results)
+        or valid_sample_count != observed_valid_count
+    ):
+        hard_vetoes.append("chunk_retained_count_mismatch")
+        engineering_invalidity_reasons.append("shared_schema_invalid")
     nonfinite = _int_or_none_metadata(diagnostics.get("nonfinite_valid_sample_count"))
     if nonfinite is None or nonfinite != 0:
         hard_vetoes.append("nonfinite_retained_samples")
+        engineering_invalidity_reasons.append("nonfinite_retained_samples")
     final_state_finite = bool(
         np.all(np.isfinite(_private_tensor_to_numpy(result.final_state)))
     )
     if not final_state_finite:
         hard_vetoes.append("nonfinite_final_state")
+        engineering_invalidity_reasons.append("nonfinite_final_state")
     log_accept_nonfinite = _int_or_none_metadata(
         diagnostics.get("log_accept_ratio_nonfinite_count")
     )
@@ -5303,10 +5527,10 @@ def _sequential_rhat_chunk_summary(
     return {
         "chunk_index": int(chunk_index),
         "retained_sample_count": int(retained_count),
+        "expected_active_results": int(expected_active_results),
         "burnin_role": "initial" if int(chunk_index) == 0 else "continuation",
-        "valid_sample_count": _int_or_none_metadata(
-            diagnostics.get("valid_sample_count")
-        ),
+        "valid_sample_count": valid_sample_count,
+        "observed_valid_mask_count": observed_valid_count,
         "nonfinite_valid_sample_count": nonfinite,
         "acceptance_rate": _float_or_none_metadata(diagnostics.get("acceptance_rate")),
         "acceptance_decision_count": _int_or_none_metadata(
@@ -5321,6 +5545,14 @@ def _sequential_rhat_chunk_summary(
         "warm_call_s": metadata.get("warm_call_s"),
         "chunk_call_s": metadata.get("chunk_call_s"),
         "hard_vetoes": tuple(hard_vetoes),
+        "engineering_invalidity_reasons": tuple(
+            engineering_invalidity_reasons
+        ),
+        "candidate_data_invalidity_reasons": tuple(
+            reason
+            for reason in hard_vetoes
+            if reason not in engineering_invalidity_reasons
+        ),
     }
 
 
@@ -5337,22 +5569,31 @@ def _aggregate_acceptance_rate(chunks: Sequence[Mapping[str, Any]]) -> float | N
     return None if total <= 0 else float(accepted / total)
 
 
-def _aggregate_divergence_status(chunks: Sequence[Mapping[str, Any]]) -> str:
-    statuses = {str(chunk.get("divergence_status")) for chunk in chunks}
-    if "available" in statuses:
-        return "available"
-    if "not_exposed_by_kernel" in statuses:
-        return "not_exposed_by_kernel"
-    return "not_collected"
+def _aggregate_divergence_provenance(
+    chunks: Sequence[Mapping[str, Any]],
+) -> tuple[str, int | None, bool]:
+    """Aggregate only complete, homogeneous native-divergence coverage."""
 
-
-def _aggregate_divergence_count(chunks: Sequence[Mapping[str, Any]]) -> int | None:
-    values = [
-        int(chunk["divergence_count"])
-        for chunk in chunks
-        if chunk.get("divergence_count") is not None
-    ]
-    return None if not values else int(sum(values))
+    if not chunks:
+        return "not_collected", None, True
+    allowed = {"available", "not_exposed_by_kernel", "not_collected"}
+    statuses = tuple(str(chunk.get("divergence_status")) for chunk in chunks)
+    if any(status not in allowed for status in statuses) or len(set(statuses)) != 1:
+        return "not_collected", None, False
+    status = statuses[0]
+    counts = tuple(chunk.get("divergence_count") for chunk in chunks)
+    if status == "available":
+        if any(
+            isinstance(count, (bool, np.bool_))
+            or not isinstance(count, (int, np.integer))
+            or int(count) < 0
+            for count in counts
+        ):
+            return "not_collected", None, False
+        return status, int(sum(int(count) for count in counts)), True
+    if any(count is not None for count in counts):
+        return "not_collected", None, False
+    return status, None, True
 
 
 def _max_compile_trace_count(chunks: Sequence[Mapping[str, Any]]) -> int | None:
@@ -5394,6 +5635,8 @@ def _int_or_none_metadata(value: Any) -> int | None:
     converted = _tensor_or_plain_to_metadata(value)
     if converted is None:
         return None
+    if isinstance(converted, bool) or not isinstance(converted, (int, np.integer)):
+        return None
     return int(converted)
 
 
@@ -5425,6 +5668,10 @@ def _assert_sequential_rhat_public_safe(payload: Mapping[str, Any]) -> None:
         "public_summary_contains_step_size",
         "public_summary_contains_leapfrog_count",
         "public_summary_contains_mass_matrix",
+        "min_log_accept_ratio",
+        "max_log_accept_ratio",
+        "max_abs_log_accept_energy_proxy",
+        "signed_log_accept_ratio_tails",
     }
 
     def walk(value: Any, path: tuple[str, ...]) -> None:
@@ -5768,6 +6015,8 @@ def static_unroll_chain_value_and_score(
     target_scope: str | None = None,
 ) -> tuple[Any, Any]:
     """Evaluate value/score for a statically sized chain batch."""
+
+    import tensorflow as tf
 
     capability = value_score_capability(adapter)
     if use_xla and not capability.is_accepted_xla_hmc_authority:
@@ -6174,6 +6423,12 @@ def _full_chain_hmc_diagnostics(
         diagnostics["target_status_telemetry"] = _target_status_telemetry_diagnostics(
             trace["target_status_telemetry"]
         )
+    if all(key in trace for key in ("is_accepted", "log_accept_ratio")):
+        diagnostics["tuning_telemetry"] = summarize_hmc_tuning_telemetry(
+            samples=samples,
+            log_accept_ratio=trace["log_accept_ratio"],
+            is_accepted=trace["is_accepted"],
+        )
     if "step_size" in trace:
         step_size = tf.convert_to_tensor(trace["step_size"], dtype=tf.float64)
         diagnostics["final_step_size"] = step_size[-1]
@@ -6313,6 +6568,18 @@ def _fixed_size_hmc_chunk_diagnostics(
         diagnostics["divergence_count"] = None
         diagnostics["divergence_count_by_chain"] = None
         diagnostics["divergence_source"] = None
+    if all(key in trace for key in ("is_accepted", "log_accept_ratio")):
+        diagnostics["tuning_telemetry"] = summarize_hmc_tuning_telemetry(
+            samples=tf.boolean_mask(samples, mask),
+            log_accept_ratio=tf.boolean_mask(
+                tf.convert_to_tensor(trace["log_accept_ratio"], dtype=tf.float64),
+                mask,
+            ),
+            is_accepted=tf.boolean_mask(
+                tf.convert_to_tensor(trace["is_accepted"], dtype=tf.bool),
+                mask,
+            ),
+        )
     return diagnostics
 
 

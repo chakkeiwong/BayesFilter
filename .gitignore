@@ -35,16 +35,38 @@ build/
 .mypy_cache/
 .ruff_cache/
 
-# Generated JSON outputs. Small promotion/verification benchmark artifacts under
-# docs/benchmarks are intentionally tracked when committed with their Markdown
-# summaries and plan/result notes.
+# Generated JSON outputs. Promotion/verification artifacts under
+# docs/benchmarks remain visible when they support a retained result or claim.
 *.json
 !docs/benchmarks/*.json
 !docs/benchmarks/**/*.json
 
+# Local benchmark execution byproducts. Keep authored harnesses, compact result
+# JSON/Markdown, strict manifests, and compressed claim archives trackable.
+docs/benchmarks/**/*.txt
+docs/benchmarks/**/*_authorized_snapshot_*.json
+docs/benchmarks/**/*_invalid_harness_archive_*.json
+docs/benchmarks/**/*_pre_redteam_*.json
+
+# Raw structural payloads are reproducible but unsuitable as Git objects. Their
+# tracked .json.gz archives and result notes preserve the retained evidence.
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_cpu_xla_pilot_2026-07-12.json
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_census_2026-07-12.json
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_structure_localization_2026-07-13.json
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13.json
+
 # Local diagnostic sidecars from benchmark/tuning runs. Public JSON/Markdown
 # summaries under docs/benchmarks stay trackable when they support evidence.
 docs/benchmarks/**/*_public_artifacts_*/private_diagnostics/
+docs/benchmarks/**/private_diagnostics/
+
+# Review packets and iterative transcripts are local process artifacts. Final
+# or standalone reviews that support a retained gate remain trackable.
+docs/reviews/**/*-bundle-*.md
+docs/reviews/**/*review-bundle*.md
+docs/reviews/**/*review-packet*.md
+docs/reviews/**/*-request-*.md
+docs/reviews/**/*round[0-9]*.md
 
 # OS metadata from local/vendored snapshots
 .DS_Store

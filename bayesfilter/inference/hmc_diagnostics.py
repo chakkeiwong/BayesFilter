@@ -160,14 +160,12 @@ def screen_hmc_diagnostics(
         checks["required_arrays_finite"] = False
     else:
         checks["required_arrays_finite"] = bool(required_arrays_finite)
-    if divergences is None and log_accept.divergence_count is None:
+    if divergences is None:
         unavailable.append("zero_divergences")
         checks["zero_divergences"] = False
-    elif divergences is not None:
+    else:
         divergence_array = np.asarray(divergences, dtype=bool)
         checks["zero_divergences"] = int(np.sum(divergence_array)) == 0
-    else:
-        checks["zero_divergences"] = int(log_accept.divergence_count or 0) == 0
     if log_accept.status == "unavailable":
         unavailable.append("log_accept_nonfinite_count_zero")
         checks["log_accept_nonfinite_count_zero"] = False

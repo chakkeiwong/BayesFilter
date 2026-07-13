@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.linear.dtypes_tf import as_float_tensor, common_floating_dtype
+
 
 def symmetrize(matrix: tf.Tensor) -> tf.Tensor:
     """Return the symmetric part of a matrix."""
@@ -14,8 +16,9 @@ def symmetrize(matrix: tf.Tensor) -> tf.Tensor:
 def factor_solve(factor: tf.Tensor, rhs: tf.Tensor) -> tf.Tensor:
     """Solve ``(factor @ factor.T) x = rhs`` with a lower triangular factor."""
 
-    factor = tf.convert_to_tensor(factor, dtype=tf.float64)
-    rhs = tf.convert_to_tensor(rhs, dtype=tf.float64)
+    dtype = common_floating_dtype(factor, rhs, context="factor_solve inputs")
+    factor = as_float_tensor(factor, dtype, name="factor")
+    rhs = as_float_tensor(rhs, dtype, name="rhs")
     if rhs.shape.rank == 1:
         rhs_matrix = rhs[:, tf.newaxis]
         first = tf.linalg.triangular_solve(factor, rhs_matrix, lower=True)
@@ -45,7 +48,8 @@ def right_solve_upper(matrix: tf.Tensor, upper: tf.Tensor) -> tf.Tensor:
 def qr_positive(matrix: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
     """Thin QR with a positive diagonal in the triangular factor."""
 
-    matrix = tf.convert_to_tensor(matrix, dtype=tf.float64)
+    dtype = common_floating_dtype(matrix, context="qr_positive matrix")
+    matrix = as_float_tensor(matrix, dtype, name="matrix")
     q, r = tf.linalg.qr(matrix, full_matrices=False)
     signs = tf.sign(tf.linalg.diag_part(r))
     signs = tf.where(tf.equal(signs, 0.0), tf.ones_like(signs), signs)
@@ -80,7 +84,7 @@ def qr_factor_derivatives(
     a = tf.transpose(q) @ dmatrix_r_inv
     omega = omega_from_a(a)
     dr = (a - omega) @ r
-    identity_rows = tf.eye(tf.shape(q)[0], dtype=tf.float64)
+    identity_rows = tf.eye(tf.shape(q)[0], dtype=q.dtype)
     dq = q @ omega + (identity_rows - q @ tf.transpose(q)) @ dmatrix_r_inv
     return q, r, dq, dr
 
@@ -101,7 +105,7 @@ def qr_factor_second_derivatives(
     c = -tf.transpose(dq_i) @ dq_j - tf.transpose(dq_j) @ dq_i
     gamma = gamma_from_b_and_c(b, c)
     d2r = (b - gamma) @ r
-    identity_rows = tf.eye(tf.shape(q)[0], dtype=tf.float64)
+    identity_rows = tf.eye(tf.shape(q)[0], dtype=q.dtype)
     d2q = q @ gamma + (identity_rows - q @ tf.transpose(q)) @ effective_r_inv
     return q, r, d2q, d2r
 
@@ -194,10 +198,11 @@ def stack_qr_lower_factor_first_derivatives(
 def cholesky_factor(covariance: tf.Tensor, jitter: tf.Tensor | float = 0.0) -> tf.Tensor:
     """Return a lower Cholesky factor of a symmetrized covariance matrix."""
 
-    covariance = symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
-    jitter_tensor = tf.cast(jitter, tf.float64)
+    dtype = common_floating_dtype(covariance, jitter, context="cholesky_factor inputs")
+    covariance = symmetrize(as_float_tensor(covariance, dtype, name="covariance"))
+    jitter_tensor = as_float_tensor(jitter, dtype, name="jitter")
     return tf.linalg.cholesky(
-        covariance + jitter_tensor * tf.eye(tf.shape(covariance)[0], dtype=tf.float64)
+        covariance + jitter_tensor * tf.eye(tf.shape(covariance)[0], dtype=dtype)
     )
 
 
@@ -216,9 +221,16 @@ def cholesky_factor_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Differentiate ``covariance + jitter I = L L.T``."""
 
-    covariance = symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
-    dcovariance = tf.convert_to_tensor(dcovariance, dtype=tf.float64)
-    d2covariance = tf.convert_to_tensor(d2covariance, dtype=tf.float64)
+    dtype = common_floating_dtype(
+        covariance,
+        dcovariance,
+        d2covariance,
+        jitter,
+        context="cholesky_factor_derivatives inputs",
+    )
+    covariance = symmetrize(as_float_tensor(covariance, dtype, name="covariance"))
+    dcovariance = as_float_tensor(dcovariance, dtype, name="dcovariance")
+    d2covariance = as_float_tensor(d2covariance, dtype, name="d2covariance")
     factor = cholesky_factor(covariance, jitter=jitter)
     parameter_dim = int(dcovariance.shape[0])
     dfactor_values = []
@@ -261,8 +273,14 @@ def cholesky_factor_first_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Differentiate ``covariance + jitter I = L L.T`` to first order."""
 
-    covariance = symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
-    dcovariance = tf.convert_to_tensor(dcovariance, dtype=tf.float64)
+    dtype = common_floating_dtype(
+        covariance,
+        dcovariance,
+        jitter,
+        context="cholesky_factor_first_derivatives inputs",
+    )
+    covariance = symmetrize(as_float_tensor(covariance, dtype, name="covariance"))
+    dcovariance = as_float_tensor(dcovariance, dtype, name="dcovariance")
     factor = cholesky_factor(covariance, jitter=jitter)
     parameter_dim = int(dcovariance.shape[0])
     dfactor_values = []
@@ -287,9 +305,15 @@ def factor_covariance_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Convert factor derivatives into covariance derivatives."""
 
-    factor = tf.convert_to_tensor(factor, dtype=tf.float64)
-    dfactor = tf.convert_to_tensor(dfactor, dtype=tf.float64)
-    d2factor = tf.convert_to_tensor(d2factor, dtype=tf.float64)
+    dtype = common_floating_dtype(
+        factor,
+        dfactor,
+        d2factor,
+        context="factor_covariance_derivatives inputs",
+    )
+    factor = as_float_tensor(factor, dtype, name="factor")
+    dfactor = as_float_tensor(dfactor, dtype, name="dfactor")
+    d2factor = as_float_tensor(d2factor, dtype, name="d2factor")
     covariance = factor @ tf.transpose(factor)
     parameter_dim = int(dfactor.shape[0])
     dcovariance_values = []
@@ -318,8 +342,13 @@ def factor_covariance_first_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Convert first factor derivatives into first covariance derivatives."""
 
-    factor = tf.convert_to_tensor(factor, dtype=tf.float64)
-    dfactor = tf.convert_to_tensor(dfactor, dtype=tf.float64)
+    dtype = common_floating_dtype(
+        factor,
+        dfactor,
+        context="factor_covariance_first_derivatives inputs",
+    )
+    factor = as_float_tensor(factor, dtype, name="factor")
+    dfactor = as_float_tensor(dfactor, dtype, name="dfactor")
     covariance = factor @ tf.transpose(factor)
     parameter_dim = int(dfactor.shape[0])
     dcovariance_values = []
@@ -337,9 +366,15 @@ def stack_covariance_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Return derivatives of ``stack @ stack.T`` for reconstruction checks."""
 
-    stack = tf.convert_to_tensor(stack, dtype=tf.float64)
-    dstack = tf.convert_to_tensor(dstack, dtype=tf.float64)
-    d2stack = tf.convert_to_tensor(d2stack, dtype=tf.float64)
+    dtype = common_floating_dtype(
+        stack,
+        dstack,
+        d2stack,
+        context="stack_covariance_derivatives inputs",
+    )
+    stack = as_float_tensor(stack, dtype, name="stack")
+    dstack = as_float_tensor(dstack, dtype, name="dstack")
+    d2stack = as_float_tensor(d2stack, dtype, name="d2stack")
     covariance = stack @ tf.transpose(stack)
     parameter_dim = int(dstack.shape[0])
     dcovariance_values = []
