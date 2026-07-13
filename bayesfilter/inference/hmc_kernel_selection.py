@@ -491,6 +491,23 @@ class FixedTrajectoryCandidateResult:
         return all(item.evidence.promotion_eligible for item in self.replications)
 
     @property
+    def evidence_extension_eligible(self) -> bool:
+        """Whether longer evidence may resolve this candidate at fixed epsilon."""
+
+        evidence = tuple(item.evidence for item in self.replications)
+        decisions = tuple(item.acceptance_decision for item in evidence)
+        return (
+            all(item.evidence_validity == "valid" for item in evidence)
+            and all(not item.candidate_promotion_vetoes for item in evidence)
+            and all(not item.cost_stop_reasons for item in evidence)
+            and all(
+                decision in {"passed", "inconclusive_evidence"}
+                for decision in decisions
+            )
+            and "inconclusive_evidence" in decisions
+        )
+
+    @property
     def candidate_data_invalid(self) -> bool:
         return any(
             validity == "candidate_data_invalid"
@@ -737,6 +754,8 @@ class FixedTrajectorySelection:
             expected_disposition = "inconclusive_resonance"
         elif any(item.trajectory_repair_detected for item in results):
             expected_disposition = "inconclusive_trajectory"
+        elif any(item.evidence_extension_eligible for item in results):
+            expected_disposition = "inconclusive_evidence"
         else:
             directions = {
                 decision
@@ -857,6 +876,8 @@ def select_fixed_trajectory_representative(
         disposition = "inconclusive_resonance"
     elif any(item.trajectory_repair_detected for item in completed):
         disposition = "inconclusive_trajectory"
+    elif any(item.evidence_extension_eligible for item in completed):
+        disposition = "inconclusive_evidence"
     else:
         directions = {
             decision
@@ -1063,18 +1084,24 @@ class FixedTrajectoryEvidenceExtension:
             for replication in source_replications.values()
         ):
             raise ValueError("evidence extension source changed the acceptance policy")
+        eligible_candidates = {
+            result.candidate.signature
+            for result in source.candidate_results
+            if result.evidence_extension_eligible
+        }
         expected_identities = {
             identity
             for identity, replication in source_replications.items()
             if (
-                replication.evidence.evidence_validity == "valid"
+                identity[0] in eligible_candidates
                 and replication.evidence.acceptance_decision
                 == "inconclusive_evidence"
             )
         }
         if set(identities) != expected_identities:
             raise ValueError(
-                "evidence extension must replace every and only inconclusive slot"
+                "evidence extension must replace every and only inconclusive slot "
+                "selected by candidate eligibility"
             )
         domain = f"selection_evidence_extension_{round_index}_{checkpoint}"
         replacements: dict[
@@ -1685,12 +1712,19 @@ class BoundedFixedTrajectorySelectionResult:
                 len(attempts) == maximum
                 and final.selection.disposition == "repair_required"
             )
+            no_extension_candidate = not any(
+                item.evidence_extension_eligible
+                for item in final.selection.candidate_results
+            )
             exhausted_evidence = (
                 final.selection.disposition == "inconclusive_evidence"
-                and tuple(
-                    item.checkpoint for item in final.evidence_extensions
+                and (
+                    tuple(
+                        item.checkpoint for item in final.evidence_extensions
+                    )
+                    == extension_checkpoints
+                    or no_extension_candidate
                 )
-                == extension_checkpoints
             )
             if not unresolved or not (exhausted_repairs or exhausted_evidence):
                 raise ValueError(
@@ -1916,7 +1950,10 @@ def run_bounded_operational_fixed_trajectory_selection(
             target_status_trace_policy=target_status_policy,
         )
         extensions: list[FixedTrajectoryEvidenceExtension] = []
-        if selection.disposition == "inconclusive_evidence":
+        if selection.disposition == "inconclusive_evidence" and any(
+            item.evidence_extension_eligible
+            for item in selection.candidate_results
+        ):
             for extension_index, checkpoint in enumerate(extension_checkpoints):
                 source_selection = selection
                 selection, extension = extension_runner(
@@ -1974,7 +2011,10 @@ def run_bounded_operational_fixed_trajectory_selection(
                     use_xla=use_xla,
                     target_status_trace_policy=target_status_policy,
                 )
-                if selection.disposition != "inconclusive_evidence":
+                if selection.disposition != "inconclusive_evidence" or not any(
+                    item.evidence_extension_eligible
+                    for item in selection.candidate_results
+                ):
                     break
         evidence = tuple(
             replication.evidence
@@ -2310,6 +2350,10 @@ def extend_operational_fixed_trajectory_evidence(
         raise TypeError("selection must be FixedTrajectorySelection")
     if selection.disposition != "inconclusive_evidence":
         raise ValueError("evidence extension requires inconclusive selection evidence")
+    if not any(
+        item.evidence_extension_eligible for item in selection.candidate_results
+    ):
+        raise ValueError("evidence extension found no eligible candidate")
     if not isinstance(acceptance_policy, HMCAcceptancePolicy):
         raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
     checkpoint_count = _strict_integer(
@@ -2350,6 +2394,9 @@ def extend_operational_fixed_trajectory_evidence(
     slots: list[FixedTrajectoryEvidenceExtensionSlot] = []
     updated_results: list[FixedTrajectoryCandidateResult] = []
     for result in selection.candidate_results:
+        if not result.evidence_extension_eligible:
+            updated_results.append(result)
+            continue
         updated_replications: list[FixedTrajectoryReplication] = []
         for replication in result.replications:
             if (

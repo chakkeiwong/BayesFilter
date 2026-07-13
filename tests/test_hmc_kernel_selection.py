@@ -386,6 +386,41 @@ def test_neutral_pass_blocks_global_repair_pending_evidence_extension() -> None:
     assert selection.representative is None
 
 
+def test_complete_inconclusive_candidate_blocks_peer_step_repair_for_extension() -> None:
+    higher = _evidence(0.90)
+    inconclusive = _inconclusive_evidence()
+    directional = _result_from_evidence(5, higher)
+    eligible = _result_from_evidence(10, inconclusive)
+    peer = _result_from_evidence(20, higher)
+
+    selection = select_fixed_trajectory_representative(
+        (peer, eligible, directional), anchor_l=10
+    )
+
+    assert selection.disposition == "inconclusive_evidence"
+    assert eligible.evidence_extension_eligible is True
+    assert directional.evidence_extension_eligible is False
+    assert peer.evidence_extension_eligible is False
+
+
+def test_shared_invalidity_and_trajectory_pathology_precede_extension() -> None:
+    inconclusive = _inconclusive_evidence()
+    eligible = _result_from_evidence(10, inconclusive)
+    shared = _result_from_evidence(5, _shared_invalidity_evidence())
+    sticking = _result_from_evidence(20, _evidence(0.90, stuck=True))
+
+    shared_selection = select_fixed_trajectory_representative(
+        (eligible, shared), anchor_l=10
+    )
+    trajectory_selection = select_fixed_trajectory_representative(
+        (eligible, sticking), anchor_l=10
+    )
+
+    assert eligible.evidence_extension_eligible is True
+    assert shared_selection.disposition == "shared_invalidity"
+    assert trajectory_selection.disposition == "inconclusive_trajectory"
+
+
 def test_candidate_set_exhaustion_requires_every_replication_local_veto() -> None:
     local = _local_veto_evidence()
     selection = select_fixed_trajectory_representative(
@@ -1783,6 +1818,15 @@ def _attempt5_like_selection(**kwargs):
     )
 
 
+def _phase1_mixed_selection(**kwargs):
+    higher = _evidence(0.90, draw_count=256)
+    inconclusive = _inconclusive_evidence(draw_count=256)
+    return _matrix_selection(
+        kwargs,
+        {5: higher, 10: inconclusive, 20: higher},
+    )
+
+
 def _all_mapping_keys(value):
     if isinstance(value, dict):
         keys = set(value)
@@ -1894,6 +1938,200 @@ def test_extension_reruns_exact_inconclusive_slots_then_retunes_exact_l() -> Non
     assert not {"samples", "trace", "start_bank", "raw_start_bank"}.intersection(
         _all_mapping_keys(payload)
     )
+
+
+def test_phase1_mixed_matrix_extends_candidate_before_scalar_repair() -> None:
+    runner, calls = _fake_extension_runner(probability_by_l={10: 0.70})
+    result = run_bounded_operational_fixed_trajectory_selection(
+        **_bounded_extension_kwargs(
+            selector=_phase1_mixed_selection,
+            runner=runner,
+        )
+    )
+
+    assert result.terminal_disposition == "representative_selected"
+    assert len(result.attempts) == 1
+    assert result.repair_direction_history == ()
+    attempt = result.attempts[0]
+    assert attempt.input_step_size == pytest.approx(0.1)
+    assert attempt.repair is None
+    assert len(attempt.evidence_extensions) == 1
+    extension = attempt.evidence_extensions[0]
+    assert extension.frozen_step_size == pytest.approx(0.1)
+    assert tuple(
+        (slot.candidate.num_leapfrog_steps, slot.replication_index)
+        for slot in extension.slots
+    ) == ((10, 0), (10, 1), (10, 2))
+    source_by_l = {
+        item.candidate.num_leapfrog_steps: item
+        for item in extension.source_selection.candidate_results
+    }
+    final_by_l = {
+        item.candidate.num_leapfrog_steps: item
+        for item in result.selection.candidate_results
+    }
+    for leapfrog in (5, 20):
+        assert tuple(rep.signature for rep in final_by_l[leapfrog].replications) == tuple(
+            rep.signature for rep in source_by_l[leapfrog].replications
+        )
+    extension_calls = [
+        config for _bank, config in calls if not config.tuning_policy.uses_dual_averaging
+    ]
+    tune_calls = [
+        config for _bank, config in calls if config.tuning_policy.uses_dual_averaging
+    ]
+    assert len(extension_calls) == 3
+    assert all(config.step_size == pytest.approx(0.1) for config in extension_calls)
+    assert len(tune_calls) == 1
+    assert tune_calls[0].num_leapfrog_steps == 10
+
+
+def test_candidate_extension_eligibility_excludes_vetoed_inconclusive_peer() -> None:
+    healthy = _inconclusive_evidence(draw_count=256)
+    probabilities = np.repeat(
+        np.repeat((0.60, 0.80, 0.60, 0.80), 64)[:, None],
+        4,
+        axis=1,
+    )
+    vetoed = evaluate_hmc_acceptance_evidence(
+        samples=np.arange(256, dtype=float)[:, None, None]
+        + np.arange(4, dtype=float)[None, :, None],
+        log_accept_ratio=np.log(probabilities),
+        is_accepted=np.ones_like(probabilities, dtype=bool),
+        policy=HMCAcceptancePolicy(),
+        native_divergence_status="available",
+        native_divergence_count=1,
+    )
+    assert vetoed.acceptance_decision == "inconclusive_evidence"
+    assert vetoed.candidate_promotion_vetoes == ("native_divergence_positive",)
+
+    def selector(**kwargs):
+        return _matrix_selection(
+            kwargs,
+            {
+                5: _evidence(0.90, draw_count=256),
+                10: healthy,
+                20: vetoed,
+            },
+        )
+
+    runner, calls = _fake_extension_runner(probability_by_l={10: 0.70})
+    result = run_bounded_operational_fixed_trajectory_selection(
+        **_bounded_extension_kwargs(selector=selector, runner=runner)
+    )
+
+    extension = result.attempts[0].evidence_extensions[0]
+    assert result.terminal_disposition == "representative_selected"
+    assert {slot.candidate.num_leapfrog_steps for slot in extension.slots} == {10}
+    assert all(
+        config.num_leapfrog_steps == 10
+        for _bank, config in calls
+    )
+
+
+def test_candidate_extension_eligibility_preserves_cost_stopped_peer() -> None:
+    policy = HMCAcceptancePolicy(
+        allowed_cost_stop_reasons=("persistent_candidate_cost_stop",)
+    )
+    probabilities = np.repeat(
+        np.repeat((0.60, 0.80, 0.60, 0.80), 64)[:, None],
+        4,
+        axis=1,
+    )
+    cost_stopped = evaluate_hmc_acceptance_evidence(
+        samples=np.arange(256, dtype=float)[:, None, None]
+        + np.arange(4, dtype=float)[None, :, None],
+        log_accept_ratio=np.log(probabilities),
+        is_accepted=np.ones_like(probabilities, dtype=bool),
+        policy=policy,
+        cost_stop_reasons=("persistent_candidate_cost_stop",),
+    )
+    assert cost_stopped.acceptance_decision == "inconclusive_evidence"
+    assert cost_stopped.cost_stop_scope == "exact_candidate_replication"
+
+    def selector(**kwargs):
+        return _matrix_selection(
+            kwargs,
+            {
+                5: _evidence(0.90, draw_count=256, policy=policy),
+                10: _inconclusive_evidence(draw_count=256, policy=policy),
+                20: cost_stopped,
+            },
+        )
+
+    runner, calls = _fake_extension_runner(probability_by_l={10: 0.70})
+    kwargs = _bounded_extension_kwargs(selector=selector, runner=runner)
+    kwargs["acceptance_policy"] = policy
+    result = run_bounded_operational_fixed_trajectory_selection(**kwargs)
+
+    extension = result.attempts[0].evidence_extensions[0]
+    assert result.terminal_disposition == "representative_selected"
+    assert {slot.candidate.num_leapfrog_steps for slot in extension.slots} == {10}
+    source_cost_stopped = next(
+        item
+        for item in extension.source_selection.candidate_results
+        if item.candidate.num_leapfrog_steps == 20
+    )
+    final_cost_stopped = next(
+        item
+        for item in result.selection.candidate_results
+        if item.candidate.num_leapfrog_steps == 20
+    )
+    assert source_cost_stopped.evidence_extension_eligible is False
+    assert tuple(rep.signature for rep in final_cost_stopped.replications) == tuple(
+        rep.signature for rep in source_cost_stopped.replications
+    )
+    assert all(config.num_leapfrog_steps == 10 for _bank, config in calls)
+
+
+def test_phase1_extension_policy_is_permutation_invariant() -> None:
+    bank = np.arange(8, dtype=float).reshape(4, 2)
+    kwargs = _bounded_extension_kwargs(
+        selector=_phase1_mixed_selection,
+        runner=None,
+    )
+    selection_kwargs = dict(kwargs)
+    selection_kwargs["frozen_step_size"] = selection_kwargs.pop(
+        "initial_step_size"
+    )
+    selection_kwargs["chain_execution_mode"] = "tf_function"
+    selection_kwargs["use_xla"] = False
+    selection = _phase1_mixed_selection(**selection_kwargs)
+    permuted = select_fixed_trajectory_representative(
+        tuple(reversed(selection.candidate_results)),
+        anchor_l=10,
+    )
+    runner_a, _ = _fake_extension_runner(probability_by_l={10: 0.70})
+    runner_b, _ = _fake_extension_runner(probability_by_l={10: 0.70})
+    common = {
+        "adapter": _FiniteTargetAdapter(),
+        "private_start_bank": bank,
+        "private_start_bank_signature": _bank_signature(bank),
+        "coordinate_signature": "coordinate",
+        "metric_signature": "metric",
+        "frozen_step_size": 0.1,
+        "root_seed": (20260711, 700),
+        "target_scope": "test",
+        "acceptance_policy": HMCAcceptancePolicy(),
+        "checkpoint": 512,
+        "extension_round_index": 0,
+        "screen_num_burnin_steps": 16,
+        "final_tune_adaptation_steps": 64,
+    }
+
+    finalized_a, extension_a = extend_operational_fixed_trajectory_evidence(
+        selection=selection,
+        run_full_chain=runner_a,
+        **common,
+    )
+    finalized_b, extension_b = extend_operational_fixed_trajectory_evidence(
+        selection=permuted,
+        run_full_chain=runner_b,
+        **common,
+    )
+
+    assert finalized_a.signature == finalized_b.signature
+    assert extension_a.payload() == extension_b.payload()
 
 
 def test_extension_can_trigger_directional_repair_then_reserved_attempt() -> None:
