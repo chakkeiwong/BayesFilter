@@ -3,8 +3,10 @@
 from bayesfilter.runtime.device_policy import (
     GPUSelection,
     assert_cpu_only_env,
+    assert_gpu_memory_growth_env,
     build_trusted_gpu_snapshot,
     ensure_cpu_only_env,
+    ensure_gpu_memory_growth_env,
     select_preferred_gpu,
 )
 from bayesfilter.runtime.runner import (
@@ -62,12 +64,14 @@ __all__ = [
     "append_jsonl",
     "append_stage_event",
     "assert_cpu_only_env",
+    "assert_gpu_memory_growth_env",
     "atomic_write_json",
     "build_worker_manifest",
     "build_trusted_gpu_snapshot",
     "canonical_candidate_order",
     "configs_match_exact",
     "ensure_cpu_only_env",
+    "ensure_gpu_memory_growth_env",
     "make_timing_bucket",
     "record_timeout",
     "record_worker_result",

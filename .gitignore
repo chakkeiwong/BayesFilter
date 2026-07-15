@@ -55,9 +55,45 @@ build/
 # Local benchmark execution byproducts. Keep authored harnesses, compact result
 # JSON/Markdown, strict manifests, and compressed claim archives trackable.
 docs/benchmarks/**/*.txt
+docs/benchmarks/**/*.jsonl
+docs/benchmarks/**/logs/
+docs/benchmarks/**/methods/*.md
+docs/benchmarks/**/methods/*.payload.json
 docs/benchmarks/**/*_authorized_snapshot_*.json
 docs/benchmarks/**/*_invalid_harness_archive_*.json
 docs/benchmarks/**/*_pre_redteam_*.json
+
+# Kalman QR superseded, failed, and exploratory run roots. Terminal roots that
+# support retained results remain trackable: CPU throughput r3, formulation r2,
+# CPU lattice r4, GPU lattice gpu0_r2, literal 16-process, and matched 3-arm.
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_2026-07-14/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r1_2026-07-14/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r2_2026-07-14/
+docs/benchmarks/kalman_qr_cpu_xla_formulation_shootout_r1_2026-07-15/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_gpu0_r1_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r2_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r3_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r5_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r6_2026-07-14/
+
+# Terminal Kalman QR supervisors embed the retained phase/block summaries.
+# Nested worker, attempt, HLO, and schedule copies are reproducible sidecars.
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/canary/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/confirm/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/rejected-contamination/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/serial-anchors/
+docs/benchmarks/kalman_qr_cpu_xla_formulation_shootout_r2_2026-07-15/canary/
+docs/benchmarks/kalman_qr_cpu_xla_formulation_shootout_r2_2026-07-15/smoke/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r4_2026-07-14/*/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_gpu0_r2_2026-07-14/*/
+docs/benchmarks/kalman_qr_gpu_memory_growth_canary_2026-07-14/methods/
+docs/benchmarks/kalman_qr_gpu_memory_growth_canary_2026-07-14/progress/
+docs/benchmarks/kalman_qr_gpu_memory_growth_canary_2026-07-14/schedule.json
+docs/benchmarks/kalman_qr_cpu_16_process_b1_d30_p150_t12_2026-07-15/attempt-1/
+docs/benchmarks/kalman_qr_cpu_16_process_b1_d30_p150_t12_2026-07-15/untimed-batch-native-reference/
+docs/benchmarks/kalman_qr_matched_cpu_process_gpu_2026-07-15/block-*/
 
 # Raw structural payloads are reproducible but unsuitable as Git objects. Their
 # tracked .json.gz archives and result notes preserve the retained evidence.

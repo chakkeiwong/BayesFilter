@@ -209,6 +209,27 @@ posterior correctness, HMC readiness, statistical superiority, threshold
 calibration, public API readiness, package readiness, and broad scientific
 validity still require their stated gates and artifacts.
 
+## GPU Memory Growth Policy
+
+Owner directive, 2026-07-14: every BayesFilter-owned TensorFlow GPU process
+must enable GPU memory growth before TensorFlow initializes a logical GPU.
+Set `TF_FORCE_GPU_ALLOW_GROWTH=true` before TensorFlow import and, where the
+process controls TensorFlow initialization, call
+`tf.config.experimental.set_memory_growth(gpu, True)` for every visible
+physical GPU before `tf.config.list_logical_devices("GPU")` or any tensor
+operation initializes the device.
+
+Full-device preallocation is forbidden. A GPU path must fail closed when it
+cannot establish memory growth before initialization; it must not continue by
+reserving almost all visible VRAM. Serious GPU benchmarks and capacity
+diagnostics should record TensorFlow allocator current/peak bytes and must not
+interpret `nvidia-smi` process reservation or TensorFlow's device memory limit
+as live tensor memory.
+
+This is a resource-sharing and allocator policy, not a claim that every
+workload fits concurrently. GPU runs must still respect task-specific
+utilization, ownership, cleanup, and capacity gates.
+
 ## Zhao-Cui Lane Source-Anchor Gate
 
 For all Zhao-Cui high-dimensional filtering work, "faithful" has a binding

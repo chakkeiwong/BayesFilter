@@ -1,0 +1,862 @@
+{
+  "created_utc": "2026-07-14T10:59:20.904045+00:00",
+  "decision": "RECOMMEND_PERSISTENT_SHARDING_FOR_TESTED_CPU_THROUGHPUT",
+  "finished_utc": "2026-07-14T18:19:49.513399+00:00",
+  "nomination": {
+    "all_candidates": [
+      {
+        "architecture": "sharded",
+        "core_budget": 16,
+        "median_seconds": 0.659253288
+      },
+      {
+        "architecture": "sharded",
+        "core_budget": 8,
+        "median_seconds": 1.24397813
+      },
+      {
+        "architecture": "sharded",
+        "core_budget": 4,
+        "median_seconds": 2.464483168
+      },
+      {
+        "architecture": "sharded",
+        "core_budget": 2,
+        "median_seconds": 4.559658922
+      },
+      {
+        "architecture": "sharded",
+        "core_budget": 1,
+        "median_seconds": 9.130992159
+      },
+      {
+        "architecture": "batch_native",
+        "core_budget": 2,
+        "median_seconds": 11.263704722
+      },
+      {
+        "architecture": "batch_native",
+        "core_budget": 4,
+        "median_seconds": 14.651669205
+      },
+      {
+        "architecture": "batch_native",
+        "core_budget": 1,
+        "median_seconds": 18.867221888
+      },
+      {
+        "architecture": "batch_native",
+        "core_budget": 16,
+        "median_seconds": 19.223404071
+      },
+      {
+        "architecture": "batch_native",
+        "core_budget": 8,
+        "median_seconds": 21.058853996
+      }
+    ],
+    "candidate": {
+      "architecture": "sharded",
+      "core_budget": 16,
+      "median_seconds": 0.659253288
+    },
+    "status": "nominated_descriptive_only"
+  },
+  "phases": {
+    "canary": {
+      "block_paths": [
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/canary/d10-p50-t120-k1-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/canary/d10-p50-t120-k16-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/canary/d10-p50-t120-k4-block00/block.json"
+      ],
+      "finished_utc": "2026-07-14T11:04:18.843046+00:00",
+      "result": {
+        "passed_block_count": 3,
+        "summaries": [
+          {
+            "batch_native_median_seconds": 0.727589797,
+            "block_count": 1,
+            "core_budget": 1,
+            "descriptive_sharded_over_batch_ratio": 1.1651817761815042,
+            "dimension": 10,
+            "parameter_count": 50,
+            "sharded_median_seconds": 0.847774372,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 1.36735495,
+            "block_count": 1,
+            "core_budget": 4,
+            "descriptive_sharded_over_batch_ratio": 0.16003061092512957,
+            "dimension": 10,
+            "parameter_count": 50,
+            "sharded_median_seconds": 0.218818648,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 1.940304024,
+            "block_count": 1,
+            "core_budget": 16,
+            "descriptive_sharded_over_batch_ratio": 0.04178474816171386,
+            "dimension": 10,
+            "parameter_count": 50,
+            "sharded_median_seconds": 0.081075115,
+            "timesteps": 120
+          }
+        ],
+        "total_block_count": 3
+      },
+      "status": "complete"
+    },
+    "confirm": {
+      "decision": "RECOMMEND_PERSISTENT_SHARDING_FOR_TESTED_CPU_THROUGHPUT",
+      "decision_checks": [
+        {
+          "nominee_over_comparator_interval": [
+            0.040289274696292496,
+            0.04154419466028028
+          ],
+          "workload": [
+            10,
+            50,
+            120
+          ]
+        },
+        {
+          "nominee_over_comparator_interval": [
+            0.024836943739307112,
+            0.02716774405140605
+          ],
+          "workload": [
+            30,
+            50,
+            120
+          ]
+        },
+        {
+          "nominee_over_comparator_interval": [
+            0.043461697424295925,
+            0.05590349647790432
+          ],
+          "workload": [
+            30,
+            150,
+            120
+          ]
+        }
+      ],
+      "finished_utc": "2026-07-14T18:19:49.512145+00:00",
+      "orders": [
+        [
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ]
+        ],
+        [
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ]
+        ],
+        [
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "sharded",
+            "batch_native"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ],
+          [
+            "batch_native",
+            "sharded"
+          ]
+        ]
+      ],
+      "result": {
+        "passed_block_count": 36,
+        "summaries": [
+          {
+            "batch_native_median_seconds": 1.983339197,
+            "block_count": 12,
+            "core_budget": 16,
+            "descriptive_sharded_over_batch_ratio": 0.0412922966600352,
+            "dimension": 10,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.040289274696292496,
+                0.04154419466028028
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.04097830091496843,
+              "paired_block_count": 12,
+              "ratios": [
+                0.042723993824873685,
+                0.04139963997210952,
+                0.04148501875807846,
+                0.0417669567214967,
+                0.0410847823272741,
+                0.039926975735769143,
+                0.0409660237481089,
+                0.041520615236903015,
+                0.038142450872434924,
+                0.04121581317752784,
+                0.040928674201726425,
+                0.040749256796518245
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.00048828125
+            },
+            "parameter_count": 50,
+            "sharded_median_seconds": 0.0818966305,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 20.970295814,
+            "block_count": 12,
+            "core_budget": 16,
+            "descriptive_sharded_over_batch_ratio": 0.02510609228738274,
+            "dimension": 30,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.024836943739307112,
+                0.02716774405140605
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.025708744487464477,
+              "paired_block_count": 12,
+              "ratios": [
+                0.024962746173390386,
+                0.02509586176242949,
+                0.025286815821750828,
+                0.024582666033959488,
+                0.02531308396664837,
+                0.024568546750923712,
+                0.02452254425095483,
+                0.025196298019718504,
+                0.02646738139392577,
+                0.03391571870744478,
+                0.024347163420821324,
+                0.025489754474653476
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.00048828125
+            },
+            "parameter_count": 50,
+            "sharded_median_seconds": 0.526482182,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 57.619217086,
+            "block_count": 12,
+            "core_budget": 16,
+            "descriptive_sharded_over_batch_ratio": 0.043153597163404535,
+            "dimension": 30,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.043461697424295925,
+                0.05590349647790432
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.04911952263278696,
+              "paired_block_count": 12,
+              "ratios": [
+                0.06360982469865412,
+                0.06470234898239478,
+                0.0633012059843561,
+                0.061138556210198626,
+                0.06630508207071603,
+                0.039555776785193626,
+                0.042443742754189474,
+                0.04112160621613576,
+                0.03969841582212701,
+                0.043671448693371306,
+                0.04055919164530748,
+                0.03847491741878856
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.00048828125
+            },
+            "parameter_count": 150,
+            "sharded_median_seconds": 2.4864764829999997,
+            "timesteps": 120
+          }
+        ],
+        "total_block_count": 36
+      },
+      "status": "complete"
+    },
+    "nominate": {
+      "block_paths": [
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k1-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k1-block01/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k1-block02/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k1-block03/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k1-block04/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k16-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k16-block01/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k16-block02/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k16-block03/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k16-block04/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k2-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k2-block01/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k2-block02/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k2-block03/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k2-block04/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k4-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k4-block01/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k4-block02/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k4-block03/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k4-block04/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k8-block00/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k8-block01/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k8-block02/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k8-block03/block.json",
+        "docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/d20-p150-t120-k8-block04/block.json"
+      ],
+      "finished_utc": "2026-07-14T12:53:12.829547+00:00",
+      "result": {
+        "passed_block_count": 25,
+        "summaries": [
+          {
+            "batch_native_median_seconds": 18.867221888,
+            "block_count": 5,
+            "core_budget": 1,
+            "descriptive_sharded_over_batch_ratio": 0.48396060708903454,
+            "dimension": 20,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.48245518652480185,
+                0.4951404365955155
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.48851246536906406,
+              "paired_block_count": 5,
+              "ratios": [
+                0.48462960691681467,
+                0.48396060708903454,
+                0.4955988200673307,
+                0.4987702790024452,
+                0.47987427036597113
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.0625
+            },
+            "parameter_count": 150,
+            "sharded_median_seconds": 9.130992159,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 11.263704722,
+            "block_count": 5,
+            "core_budget": 2,
+            "descriptive_sharded_over_batch_ratio": 0.40480987690437076,
+            "dimension": 20,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.4026634980011912,
+                0.4059422407268528
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.4043717504705998,
+              "paired_block_count": 5,
+              "ratios": [
+                0.4051095516558799,
+                0.40626933510003665,
+                0.40603206013269283,
+                0.40305126540947844,
+                0.4014180511287602
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.0625
+            },
+            "parameter_count": 150,
+            "sharded_median_seconds": 4.559658922,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 14.651669205,
+            "block_count": 5,
+            "core_budget": 4,
+            "descriptive_sharded_over_batch_ratio": 0.16820494194333677,
+            "dimension": 20,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.16630930108267492,
+                0.16878156290773563
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.16760192891413989,
+              "paired_block_count": 5,
+              "ratios": [
+                0.16565361232407197,
+                0.16952612117071064,
+                0.16830115697289003,
+                0.16825871464637904,
+                0.16630023325501225
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.0625
+            },
+            "parameter_count": 150,
+            "sharded_median_seconds": 2.464483168,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 21.058853996,
+            "block_count": 5,
+            "core_budget": 8,
+            "descriptive_sharded_over_batch_ratio": 0.05907150171781835,
+            "dimension": 20,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.05901430182617789,
+                0.0595074505065789
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.059234601159810225,
+              "paired_block_count": 5,
+              "ratios": [
+                0.05971651845995614,
+                0.059110892694082505,
+                0.058942722626350724,
+                0.059037673143854386,
+                0.05936847866735206
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.0625
+            },
+            "parameter_count": 150,
+            "sharded_median_seconds": 1.24397813,
+            "timesteps": 120
+          },
+          {
+            "batch_native_median_seconds": 19.223404071,
+            "block_count": 5,
+            "core_budget": 16,
+            "descriptive_sharded_over_batch_ratio": 0.03429430529395857,
+            "dimension": 20,
+            "paired_statistics_sharded_over_batch": {
+              "bootstrap_95_interval": [
+                0.03384497673589672,
+                0.034741891326932194
+              ],
+              "bootstrap_resamples": 10000,
+              "geometric_mean_ratio": 0.03430777632646455,
+              "paired_block_count": 5,
+              "ratios": [
+                0.03460982643892706,
+                0.03429430529395857,
+                0.03422037089358121,
+                0.03496184834003728,
+                0.03347050938933611
+              ],
+              "seed": 20260714,
+              "sign_test_two_sided_p": 0.0625
+            },
+            "parameter_count": 150,
+            "sharded_median_seconds": 0.659253288,
+            "timesteps": 120
+          }
+        ],
+        "total_block_count": 25
+      },
+      "status": "complete"
+    }
+  },
+  "plan": "docs/plans/bayesfilter-kalman-qr-cpu-throughput-comparison-plan-2026-07-14.md",
+  "result": "docs/plans/bayesfilter-kalman-qr-cpu-throughput-comparison-result-2026-07-14.md",
+  "schema": "bayesfilter.kalman_qr.cpu_throughput_comparison.v1",
+  "source_manifest": {
+    "files": [
+      {
+        "path": "bayesfilter/linear/kalman_qr_tf.py",
+        "sha256": "ad1fc869ce0be2aaffa18c1762d44b39c86de19ee0752e77cdce1c4d9c9fd06b"
+      },
+      {
+        "path": "bayesfilter/linear/kalman_qr_derivatives_tf.py",
+        "sha256": "d24ae4363d4bf14a08149c81cf018b36fe9a3ca85a3c5cb7d6064ce4915bfb57"
+      },
+      {
+        "path": "bayesfilter/linear/qr_factor_tf.py",
+        "sha256": "bfde07b558e6c900a51f888d83ece817f562c06cf393c0dfdc76959adc087401"
+      },
+      {
+        "path": "scripts/benchmark_kalman_qr_parameter_count_scaling.py",
+        "sha256": "18ba3042c3b9c7261fb6f0fb290eae324e4169e1593b0ab001f01f8c8d03b4e3"
+      },
+      {
+        "path": "scripts/kalman_qr_benchmark_contract.py",
+        "sha256": "f52a20624eb3c8c72c59cc2809f4cd870de4c3c84276fed97f308bc4f0a75e64"
+      },
+      {
+        "path": "docs/benchmarks/run_kalman_qr_cpu_throughput_comparison_2026_07_14.py",
+        "sha256": "c3200b9a499c745a3d9e6bb405bea4f8bdcb01f786fa787c1f6cb3e7b22e77ac"
+      },
+      {
+        "path": "docs/plans/bayesfilter-kalman-qr-cpu-throughput-comparison-plan-2026-07-14.md",
+        "sha256": "8e827a515a60bdedba100613f791be79dd23ac47b37dce6a4308212edfaaae38"
+      }
+    ],
+    "fingerprint": "7d430ce3eec6f22a0b5f17b45e06c50c2943019460b3fffe4c2ba9600ff64b1f"
+  },
+  "status": "complete",
+  "topology": {
+    "excluded_smt_siblings": [
+      {
+        "core": 16,
+        "cpu": 144,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 17,
+        "cpu": 145,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 18,
+        "cpu": 146,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 19,
+        "cpu": 147,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 20,
+        "cpu": 148,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 21,
+        "cpu": 149,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 22,
+        "cpu": 150,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 23,
+        "cpu": 151,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 24,
+        "cpu": 152,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 25,
+        "cpu": 153,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 26,
+        "cpu": 154,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 27,
+        "cpu": 155,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 28,
+        "cpu": 156,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 29,
+        "cpu": 157,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 30,
+        "cpu": 158,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 31,
+        "cpu": 159,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      }
+    ],
+    "returncode": 0,
+    "selected": [
+      {
+        "core": 16,
+        "cpu": 16,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 17,
+        "cpu": 17,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 18,
+        "cpu": 18,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 19,
+        "cpu": 19,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 20,
+        "cpu": 20,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 21,
+        "cpu": 21,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 22,
+        "cpu": 22,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 23,
+        "cpu": 23,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 24,
+        "cpu": 24,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 25,
+        "cpu": 25,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 26,
+        "cpu": 26,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 27,
+        "cpu": 27,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 28,
+        "cpu": 28,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 29,
+        "cpu": 29,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 30,
+        "cpu": 30,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      },
+      {
+        "core": 31,
+        "cpu": 31,
+        "node": 0,
+        "online": true,
+        "socket": 0
+      }
+    ],
+    "valid": true
+  },
+  "updated_utc": "2026-07-14T12:53:12.830576+00:00"
+}

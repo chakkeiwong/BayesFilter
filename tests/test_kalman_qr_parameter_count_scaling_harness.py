@@ -73,6 +73,120 @@ def _args(tmp_path: Path) -> argparse.Namespace:
     )
 
 
+@pytest.mark.parametrize(
+    ("argv", "existing", "action", "effective"),
+    [
+        (
+            ["benchmark.py", "--device", "gpu", "--jit-compile"],
+            None,
+            "benchmark_default_no_triton_applied",
+            "--xla_gpu_enable_triton_gemm=false",
+        ),
+        (
+            ["benchmark.py"],
+            "--xla_gpu_enable_command_buffer=",
+            "benchmark_default_no_triton_applied",
+            "--xla_gpu_enable_command_buffer= --xla_gpu_enable_triton_gemm=false",
+        ),
+        (
+            ["benchmark.py", "--device=/GPU:0"],
+            "--xla_gpu_enable_triton_gemm=true",
+            "caller_triton_choice_preserved",
+            "--xla_gpu_enable_triton_gemm=true",
+        ),
+        (
+            ["benchmark.py", "--device", "gpu"],
+            "--xla_gpu_enable_triton_gemm=false --xla_gpu_autotune_level=0",
+            "caller_triton_choice_preserved",
+            "--xla_gpu_enable_triton_gemm=false --xla_gpu_autotune_level=0",
+        ),
+        (
+            ["benchmark.py", "--device", "cpu", "--jit-compile"],
+            None,
+            "not_applicable",
+            "UNSET",
+        ),
+        (
+            ["benchmark.py", "--device", "gpu", "--no-jit-compile"],
+            None,
+            "not_applicable",
+            "UNSET",
+        ),
+    ],
+)
+def test_gpu_xla_preimport_policy_is_scoped_and_overrideable(
+    argv: list[str],
+    existing: str | None,
+    action: str,
+    effective: str,
+) -> None:
+    benchmark = _load(BENCHMARK_PATH, f"kalman_qr_xla_policy_{action}_{len(argv)}")
+    policy = benchmark.gpu_xla_preimport_policy(argv, existing)
+    assert policy["action"] == action
+    assert policy["effective_xla_flags"] == effective
+    assert policy["evidence_basis"].startswith("TF 2.20 GPU Triton GEMM")
+
+
+def test_direct_invocation_detection_is_path_exact(monkeypatch) -> None:
+    benchmark = _load(BENCHMARK_PATH, "kalman_qr_xla_policy_direct_invocation")
+    monkeypatch.setattr(sys, "argv", [str(BENCHMARK_PATH), "--device", "gpu"])
+    assert benchmark._is_direct_cli_invocation() is True
+    monkeypatch.setattr(sys, "argv", [str(RUNNER_PATH), "--device", "gpu"])
+    assert benchmark._is_direct_cli_invocation() is False
+
+
+def test_gpu_device_selection_requires_memory_growth_before_logical_devices(
+    monkeypatch,
+) -> None:
+    benchmark = _load(BENCHMARK_PATH, "kalman_qr_gpu_memory_growth")
+    physical = type("Device", (), {"name": "/physical_device:GPU:0"})()
+    logical = type("Device", (), {"name": "/device:GPU:0"})()
+    events: list[str] = []
+
+    monkeypatch.setattr(
+        benchmark.tf.config,
+        "list_physical_devices",
+        lambda kind: events.append("physical") or [physical],
+    )
+    monkeypatch.setattr(
+        benchmark.tf.config.experimental,
+        "set_memory_growth",
+        lambda gpu, enabled: events.append(f"growth:{gpu.name}:{enabled}"),
+    )
+    monkeypatch.setattr(
+        benchmark.tf.config.experimental,
+        "get_memory_growth",
+        lambda gpu: True,
+    )
+    monkeypatch.setattr(
+        benchmark.tf.config,
+        "list_logical_devices",
+        lambda kind: events.append("logical") or [logical],
+    )
+
+    selected, manifest = benchmark._select_device("gpu")
+    assert selected == "/GPU:0"
+    assert events == ["physical", "growth:/physical_device:GPU:0:True", "logical"]
+    assert manifest["memory_growth"]["all_visible_gpus_enabled"] is True
+
+
+def test_gpu_device_selection_fails_closed_after_initialization(monkeypatch) -> None:
+    benchmark = _load(BENCHMARK_PATH, "kalman_qr_gpu_memory_growth_failure")
+    physical = type("Device", (), {"name": "/physical_device:GPU:0"})()
+    monkeypatch.setattr(
+        benchmark.tf.config, "list_physical_devices", lambda kind: [physical]
+    )
+
+    def initialized(_gpu, _enabled):
+        raise RuntimeError("Physical devices cannot be modified after initialization")
+
+    monkeypatch.setattr(
+        benchmark.tf.config.experimental, "set_memory_growth", initialized
+    )
+    with pytest.raises(RuntimeError, match="before logical-device initialization"):
+        benchmark._select_device("gpu")
+
+
 def test_child_command_names_exactly_one_method(tmp_path: Path) -> None:
     runner = _load(RUNNER_PATH, "kalman_qr_runner_command")
     args = _args(tmp_path)
@@ -91,6 +205,28 @@ def test_child_command_names_exactly_one_method(tmp_path: Path) -> None:
     assert command.count("--method") == 1
     assert command[command.index("--method") + 1] == identity["method_id"]
     assert all(method not in command for method in set(contract.METHOD_IDS) - {identity["method_id"]})
+
+
+def test_gpu_child_environment_requires_memory_growth(tmp_path: Path) -> None:
+    runner = _load(RUNNER_PATH, "kalman_qr_runner_gpu_growth_env")
+    args = _args(tmp_path)
+    args.device = "gpu"
+    schedule = runner.build_schedule(args)
+    identity = schedule["expected_identities"][0]
+    observed: dict[str, str] = {}
+
+    def fake_run(command, **kwargs):
+        observed.update(kwargs["env"])
+        return subprocess.CompletedProcess(command, 1, "", "expected test failure")
+
+    runner.run_identity(
+        args,
+        identity=identity,
+        schedule_fingerprint=schedule["schedule_fingerprint"],
+        progress_dir=tmp_path / "progress",
+        runner=fake_run,
+    )
+    assert observed["TF_FORCE_GPU_ALLOW_GROWTH"] == "true"
 
 
 @pytest.mark.parametrize(
@@ -505,6 +641,32 @@ def test_gpu_method_failure_produces_nonzero_top_level_exit(tmp_path: Path, monk
     payload, returncode = runner.execute_schedule(args)
     assert payload["status"] == "complete_with_failures"
     assert returncode == 1
+
+
+def test_gpu_aggregate_requires_memory_growth_telemetry(tmp_path: Path) -> None:
+    runner = _load(RUNNER_PATH, "kalman_qr_runner_gpu_growth_aggregate")
+    args = _args(tmp_path)
+    args.device = "gpu"
+    args.methods = [contract.METHOD_IDS[0]]
+    schedule = runner.build_schedule(args)
+    identity = schedule["expected_identities"][0]
+    record = {
+        "schema": contract.SCHEMA,
+        "method_contract_version": contract.METHOD_CONTRACT_VERSION,
+        "case_id": identity["case_id"],
+        "method_id": identity["method_id"],
+        **runner._fingerprints(identity, schedule["schedule_fingerprint"]),
+        "resume_key": contract.resume_key(
+            case_identity=identity["case_id"],
+            method_id=identity["method_id"],
+            fingerprints=runner._fingerprints(identity, schedule["schedule_fingerprint"]),
+        ),
+        "attempt_id": "attempt-gpu-growth",
+        "state": "failed",
+        "invoked_method_ids": [],
+    }
+    checks = runner._aggregate_checks(schedule, [record])
+    assert checks["gpu_memory_growth"] is True
 
 
 def test_record_fingerprint_corruption_is_structural_failure(tmp_path: Path) -> None:

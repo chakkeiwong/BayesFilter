@@ -1,0 +1,401 @@
+{
+  "cell": {
+    "batch_size": 1,
+    "dimension": 10,
+    "dtype": "float32",
+    "parameter_count": 50,
+    "timesteps": 120
+  },
+  "checks": {
+    "all_methods_completed": false,
+    "cross_method_comparison": null,
+    "cross_method_parity": false,
+    "device_and_runtime_provenance": false,
+    "finite_dtype_shape_and_single_trace": false,
+    "first_warm_parity": false,
+    "warm_comparisons": {}
+  },
+  "decision": "run_autodiff_timestep_localization_ladder",
+  "evidence_roles": {
+    "graphdef_structure": "explanatory_only",
+    "method_completion_and_numerical_checks": "continuation_gate",
+    "peak_rss_and_elapsed_seconds": "explanatory_only",
+    "timeout_crash_or_nonfinite": "continuation_or_repair_trigger_by_method"
+  },
+  "nonclaims": [
+    "no full GPU lattice viability conclusion",
+    "no full dimension/parameter/batch lattice readiness",
+    "no speed or memory superiority ranking",
+    "no HMC or posterior correctness",
+    "no production/default readiness or scientific-validity claim"
+  ],
+  "question": "Do the unchanged repaired true-batched analytical and autodiff QR methods compile and execute under GPU/XLA at this target-horizon cell?",
+  "records": [
+    {
+      "child": {
+        "cell": {
+          "batch_size": 1,
+          "dimension": 10,
+          "dtype": "float32",
+          "parameter_count": 50,
+          "timesteps": 120
+        },
+        "child_wall_seconds": 9.77412745100446,
+        "concrete_function_count": 1,
+        "cuda_visible_devices": "1",
+        "device": "/GPU:0",
+        "first_output": {
+          "all_finite": true,
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0",
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score": [
+            [
+              -0.019102580845355988,
+              -0.03740787133574486,
+              -0.11791612952947617,
+              -0.14082884788513184,
+              -0.0005728412070311606,
+              -0.00030586274806410074,
+              -0.0002503334835637361,
+              -0.0008564922609366477,
+              0.0006509971572086215,
+              -7.198048933787504e-06,
+              -0.01881338097155094,
+              -0.037684906274080276,
+              -0.11453457176685333,
+              -0.1362191140651703,
+              -0.0005465995636768639,
+              7.295034265553113e-08,
+              -0.0002564501774031669,
+              -0.000824884045869112,
+              0.0006228471174836159,
+              -1.7011331010508002e-06,
+              -0.00034124977537430823,
+              -0.00024924951139837503,
+              -0.0007539805374108255,
+              0.0006176703609526157,
+              -6.809629212511936e-06,
+              -0.01853216253221035,
+              -0.037959855049848557,
+              -0.11126796901226044,
+              -0.1322924643754959,
+              -0.0005219350568950176,
+              5.1671549954335205e-06,
+              -0.00024305106489919126,
+              -0.0007435167790390551,
+              0.0005978630506433547,
+              -1.5566481579298852e-06,
+              5.752742254117038e-06,
+              -0.0002302240172866732,
+              -0.000690775690600276,
+              0.0005599604919552803,
+              -1.2450583426470985e-06,
+              -0.00034402403980493546,
+              -0.00019005413923878223,
+              -0.0005439736996777356,
+              0.0004690331406891346,
+              -6.155311893962789e-06,
+              -0.018245046958327293,
+              -0.038311876356601715,
+              -0.10796504467725754,
+              -0.12884967029094696,
+              -0.0004973637405782938
+            ]
+          ],
+          "score_dtype": "float32",
+          "score_shape": [
+            1,
+            50
+          ],
+          "value": [
+            -382.1058044433594
+          ],
+          "value_dtype": "float32",
+          "value_shape": [
+            1
+          ]
+        },
+        "first_xla_call_seconds": 3.9043833180330694,
+        "gpu_memory_info_bytes": {
+          "current": 158208,
+          "peak": 534016
+        },
+        "graphdef": {
+          "function_count": 2,
+          "function_node_count": 491,
+          "selected_op_counts": {
+            "EmptyTensorList": 0,
+            "StatelessWhile": 0,
+            "TensorListGetItem": 0,
+            "TensorListPopBack": 0,
+            "TensorListPushBack": 0,
+            "While": 1
+          },
+          "serialized_bytes": 203191,
+          "sha256": "b68fd1a958c1de9c457dc1c2a3cdb0730a53a0b8f7bbcbff5503ee0611aea379",
+          "top_level_node_count": 884,
+          "total_node_count": 1375
+        },
+        "jit_compile": true,
+        "logical_gpu_count": 1,
+        "logical_gpu_names": [
+          "/device:GPU:0"
+        ],
+        "method": "batch_native_analytical_qr_score",
+        "physical_gpu_count": 1,
+        "physical_gpu_names": [
+          "/physical_device:GPU:0"
+        ],
+        "requested_device": "gpu",
+        "stage": "complete",
+        "state": "passed",
+        "tensorflow_version": "2.20.0",
+        "tf32_enabled": true,
+        "trace_seconds": 1.8600268479203805,
+        "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+        "warm_output": {
+          "all_finite": true,
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0",
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score": [
+            [
+              -0.019102580845355988,
+              -0.03740787133574486,
+              -0.11791612952947617,
+              -0.14082884788513184,
+              -0.0005728412070311606,
+              -0.00030586274806410074,
+              -0.0002503334835637361,
+              -0.0008564922609366477,
+              0.0006509971572086215,
+              -7.198048933787504e-06,
+              -0.01881338097155094,
+              -0.037684906274080276,
+              -0.11453457176685333,
+              -0.1362191140651703,
+              -0.0005465995636768639,
+              7.295034265553113e-08,
+              -0.0002564501774031669,
+              -0.000824884045869112,
+              0.0006228471174836159,
+              -1.7011331010508002e-06,
+              -0.00034124977537430823,
+              -0.00024924951139837503,
+              -0.0007539805374108255,
+              0.0006176703609526157,
+              -6.809629212511936e-06,
+              -0.01853216253221035,
+              -0.037959855049848557,
+              -0.11126796901226044,
+              -0.1322924643754959,
+              -0.0005219350568950176,
+              5.1671549954335205e-06,
+              -0.00024305106489919126,
+              -0.0007435167790390551,
+              0.0005978630506433547,
+              -1.5566481579298852e-06,
+              5.752742254117038e-06,
+              -0.0002302240172866732,
+              -0.000690775690600276,
+              0.0005599604919552803,
+              -1.2450583426470985e-06,
+              -0.00034402403980493546,
+              -0.00019005413923878223,
+              -0.0005439736996777356,
+              0.0004690331406891346,
+              -6.155311893962789e-06,
+              -0.018245046958327293,
+              -0.038311876356601715,
+              -0.10796504467725754,
+              -0.12884967029094696,
+              -0.0004973637405782938
+            ]
+          ],
+          "score_dtype": "float32",
+          "score_shape": [
+            1,
+            50
+          ],
+          "value": [
+            -382.1058044433594
+          ],
+          "value_dtype": "float32",
+          "value_shape": [
+            1
+          ]
+        },
+        "warm_xla_call_seconds": 0.06176021206192672
+      },
+      "command": [
+        "/usr/bin/time",
+        "-f",
+        "max_rss_kb=%M\nuser_seconds=%U\nsystem_seconds=%S\nelapsed_seconds=%e\nexit_status=%x",
+        "-o",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_analytical_qr_score.time.txt",
+        "timeout",
+        "--signal=TERM",
+        "--kill-after=10s",
+        "300s",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py",
+        "--child",
+        "--method",
+        "batch_native_analytical_qr_score",
+        "--dimension",
+        "10",
+        "--timesteps",
+        "120",
+        "--parameter-count",
+        "50",
+        "--batch-size",
+        "1",
+        "--device",
+        "gpu",
+        "--cuda-visible-devices",
+        "1",
+        "--child-output",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_analytical_qr_score.json",
+        "--progress",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_analytical_qr_score.progress.json"
+      ],
+      "last_progress": {
+        "elapsed_seconds": 9.774489479023032,
+        "method": "batch_native_analytical_qr_score",
+        "stage": "complete"
+      },
+      "method": "batch_native_analytical_qr_score",
+      "resource_usage": {
+        "elapsed_seconds": 10.63,
+        "exit_status": 0,
+        "max_rss_kb": 1066232,
+        "system_seconds": 2.04,
+        "user_seconds": 10.17
+      },
+      "returncode": 0,
+      "state": "passed",
+      "stderr_sha256": "7d08dde5c7464e0768c09330bd01d433bcd360243a3211230c60db2dae70f6ae",
+      "stderr_tail": "2026-07-13 22:55:16.139877: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783954517.872166 3432617 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-13 22:55:21.677762: I external/local_xla/xla/service/service.cc:163] XLA service 0x55d776b22830 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-13 22:55:21.677801: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-13 22:55:21.735688: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-13 22:55:21.766201: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-13 22:55:21.766257: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-13 22:55:21.766300: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-13 22:55:21.766340: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-13 22:55:21.766466: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-13 22:55:21.766508: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-13 22:55:21.766553: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-13 22:55:21.766593: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-13 22:55:21.766633: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-13 22:55:21.766672: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-13 22:55:21.766723: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-13 22:55:21.766764: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-13 22:55:21.766803: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-13 22:55:21.766846: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-13 22:55:21.766966: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-13 22:55:21.767007: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-13 22:55:21.767045: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-13 22:55:21.767088: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-13 22:55:21.767127: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-13 22:55:21.767166: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\n2026-07-13 22:55:22.034698: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783954525.464440 3432617 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+      "stderr_total_bytes": 4205,
+      "stdout_sha256": "af1dc7e098f84ffa42e7f31f579e8362887befde6d557b6981c8e52f05c7ba08",
+      "stdout_tail": "{\"method\":\"batch_native_analytical_qr_score\",\"state\":\"passed\"}\n",
+      "stdout_total_bytes": 63,
+      "timed_out": false,
+      "wall_seconds": 10.635295575018972
+    },
+    {
+      "child": null,
+      "command": [
+        "/usr/bin/time",
+        "-f",
+        "max_rss_kb=%M\nuser_seconds=%U\nsystem_seconds=%S\nelapsed_seconds=%e\nexit_status=%x",
+        "-o",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_autodiff_qr_score.time.txt",
+        "timeout",
+        "--signal=TERM",
+        "--kill-after=10s",
+        "300s",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py",
+        "--child",
+        "--method",
+        "batch_native_autodiff_qr_score",
+        "--dimension",
+        "10",
+        "--timesteps",
+        "120",
+        "--parameter-count",
+        "50",
+        "--batch-size",
+        "1",
+        "--device",
+        "gpu",
+        "--cuda-visible-devices",
+        "1",
+        "--child-output",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_autodiff_qr_score.json",
+        "--progress",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_autodiff_qr_score.progress.json"
+      ],
+      "last_progress": {
+        "elapsed_seconds": 5.402121698949486,
+        "method": "batch_native_autodiff_qr_score",
+        "stage": "first_xla_call"
+      },
+      "method": "batch_native_autodiff_qr_score",
+      "resource_usage": {
+        "elapsed_seconds": 8.95,
+        "exit_status": 1,
+        "max_rss_kb": 1018940,
+        "system_seconds": 1.92,
+        "user_seconds": 8.55
+      },
+      "returncode": 1,
+      "state": "failed",
+      "stderr_sha256": "368776dab9819e906cab52f38e1a406c783536b22215f7018307fc071d5fd197",
+      "stderr_tail": "2026-07-13 22:55:26.776576: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783954528.511900 3433009 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-13 22:55:31.910306: I external/local_xla/xla/service/service.cc:163] XLA service 0x588836e591c0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-13 22:55:31.910345: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-13 22:55:31.961408: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-13 22:55:32.234429: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\n2026-07-13 22:55:34.641915: W tensorflow/core/framework/op_kernel.cc:1855] OP_REQUIRES failed at xla_ops.cc:590 : FAILED_PRECONDITION: Can not combine dim orders and requirements.\nTraceback (most recent call last):\n  File \"/home/ubuntu/python/BayesFilter/docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py\", line 847, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/home/ubuntu/python/BayesFilter/docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py\", line 842, in main\n    return _child(args)\n  File \"/home/ubuntu/python/BayesFilter/docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py\", line 252, in _child\n    first_value, first_score = concrete(parameters)\n                               ~~~~~~~~^^^^^^^^^^^^\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/concrete_function.py\", line 1170, in __call__\n    return self._call_impl(args, kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/concrete_function.py\", line 1179, in _call_impl\n    return self._call_with_structured_signature(args, kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/concrete_function.py\", line 1263, in _call_with_structured_signature\n    return self._call_flat(\n           ~~~~~~~~~~~~~~~^\n        filtered_flat_args,\n        ^^^^^^^^^^^^^^^^^^^\n        captured_inputs=self.captured_inputs)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/concrete_function.py\", line 1322, in _call_flat\n    return self._inference_function.call_preflattened(args)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/atomic_function.py\", line 216, in call_preflattened\n    flat_outputs = self.call_flat(*args)\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/atomic_function.py\", line 251, in call_flat\n    outputs = self._bound_context.call_function(\n        self.name,\n        list(args),\n        len(self.function_type.flat_outputs),\n    )\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/context.py\", line 1688, in call_function\n    outputs = execute.execute(\n        name.decode(\"utf-8\"),\n    ...<3 lines>...\n        ctx=self,\n    )\n  File \"/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/execute.py\", line 53, in quick_execute\n    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,\n                                        inputs, attrs, num_outputs)\ntensorflow.python.framework.errors_impl.FailedPreconditionError: Can not combine dim orders and requirements. [Op:__inference_batch_native_autodiff_score_4256]\n",
+      "stderr_total_bytes": 4508,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "",
+      "stdout_total_bytes": 0,
+      "timed_out": false,
+      "wall_seconds": 8.959061453933828
+    }
+  ],
+  "run_manifest": {
+    "command": [
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py",
+      "--device",
+      "gpu",
+      "--cuda-visible-devices",
+      "1",
+      "--dimension",
+      "10",
+      "--timesteps",
+      "120",
+      "--parameter-count",
+      "50",
+      "--batch-size",
+      "1",
+      "--method-timeout-seconds",
+      "300",
+      "--output",
+      "docs/benchmarks/kalman_qr_target_xla_viability_gpu_autotune0_d10_t120_p50_b1_2026-07-13.json"
+    ],
+    "data_version": "synthetic nested Kalman QR fixture in benchmark source",
+    "device_status": "managed-session visible GPU/XLA diagnostic",
+    "environment": {
+      "CONDA_DEFAULT_ENV": "tfgpu",
+      "CONDA_PREFIX": "/home/ubuntu/anaconda3/envs/tfgpu",
+      "CUDA_VISIBLE_DEVICES": "1",
+      "OMP_NUM_THREADS": "1",
+      "TF_NUM_INTEROP_THREADS": "1",
+      "TF_NUM_INTRAOP_THREADS": "1",
+      "XLA_FLAGS": "--xla_gpu_autotune_level=0"
+    },
+    "git_commit": "3d353253dc93a102722e00cbca8803a1b3fce7fa",
+    "jit_compile": true,
+    "output_artifact": "docs/benchmarks/kalman_qr_target_xla_viability_gpu_autotune0_d10_t120_p50_b1_2026-07-13.json",
+    "plan_file": "docs/plans/bayesfilter-kalman-qr-target-xla-viability-live-plan-2026-07-13.md",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "random_seeds": "N/A; deterministic fixture and parameter cloud",
+    "requested_cuda_visible_devices": "1",
+    "requested_device": "gpu",
+    "result_file": "docs/plans/bayesfilter-kalman-qr-target-xla-viability-result-2026-07-13.md",
+    "source_sha256": {
+      "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py": "4059f39787cee3c922f3ad7bed4c4099a544922fd4aad40b54bfacf03b502434",
+      "docs/plans/bayesfilter-kalman-qr-target-xla-viability-live-plan-2026-07-13.md": "17efed9a3b93772be55dd5b5575972449fb422ed3ef2fed6aa291fb809cf0782",
+      "scripts/benchmark_kalman_qr_parameter_count_scaling.py": "8fbf19be1a3debcbed963ae50554a602d6e79480bbd3dc2782d786cee403cdd2"
+    },
+    "tf32_status": "enabled and recorded by each child",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 19.60492785810493
+  },
+  "schema": "bayesfilter.kalman_qr.target_xla_viability.v2",
+  "state": "failed"
+}

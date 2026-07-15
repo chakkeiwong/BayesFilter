@@ -577,6 +577,8 @@ def parse_args() -> argparse.Namespace:
         default=list(contract.PRIMARY_METHOD_IDS),
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--plan-path", default=PLAN_PATH)
+    parser.add_argument("--result-path", default=RESULT_PATH)
     parser.add_argument("--harness-contract-test-only", action="store_true")
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--jit-compile", dest="jit_compile", action="store_true")
@@ -3739,8 +3741,8 @@ def _execution_contract(args: argparse.Namespace) -> dict[str, Any]:
         "schedule_path": str(output_dir / "schedule.json"),
         "status_path": str(output_dir / "status.json"),
         "external_log_path": str(output_dir / "smoke.log"),
-        "plan_path": PLAN_PATH,
-        "result_path": RESULT_PATH,
+        "plan_path": getattr(args, "plan_path", PLAN_PATH),
+        "result_path": getattr(args, "result_path", RESULT_PATH),
         "dimensions": list(args.dimensions),
         "parameter_counts": list(args.parameter_counts),
         "timesteps": args.timesteps,
@@ -3868,7 +3870,7 @@ def build_schedule(args: argparse.Namespace) -> dict[str, Any]:
     schedule["runtime_manifest"] = runtime
     schedule["timing_boundary_version"] = TIMING_BOUNDARY_VERSION
     schedule["created_utc"] = datetime.now(timezone.utc).isoformat()
-    schedule["plan_path"] = PLAN_PATH
+    schedule["plan_path"] = getattr(args, "plan_path", PLAN_PATH)
     schedule["nonclaims"] = [
         "method-local viability is not comparison completeness",
         "Phase 4 comparator correctness is not timing evidence",
@@ -3957,7 +3959,7 @@ def _child_command(
         "--resume-key",
         key,
         "--plan-path",
-        PLAN_PATH,
+        getattr(args, "plan_path", PLAN_PATH),
         "--output-json",
         str(output_json),
         "--output-md",
@@ -4058,6 +4060,8 @@ def run_identity(
         env["OMP_NUM_THREADS"] = str(args.cpu_threads)
         env["TF_NUM_INTRAOP_THREADS"] = str(args.cpu_threads)
         env["TF_NUM_INTEROP_THREADS"] = str(args.cpu_threads)
+    else:
+        env["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
     started = time.perf_counter()
     try:
         completed = runner(
@@ -4159,6 +4163,28 @@ def _aggregate_checks(schedule: Mapping[str, Any], records: Sequence[Mapping[str
         "identity_integrity": len(observed) == len(set(observed)) and sorted(observed) == sorted(expected_pairs),
         "record_integrity": all(record_integrity(row) for row in records),
     }
+    schedule_is_gpu = all(
+        _case_field(str(row.get("case_id", "")), "device") == "gpu"
+        for row in expected
+    )
+    if schedule_is_gpu:
+        checks["gpu_memory_growth"] = all(
+            isinstance(row.get("gpu_memory_growth_policy"), Mapping)
+            and row["gpu_memory_growth_policy"].get("policy")
+            == "required_no_full_device_preallocation"
+            and row["gpu_memory_growth_policy"].get("environment_variable")
+            == "TF_FORCE_GPU_ALLOW_GROWTH"
+            and row["gpu_memory_growth_policy"].get("environment_value") == "true"
+            and isinstance(row.get("gpu_allocator_memory"), Mapping)
+            and row["gpu_allocator_memory"].get("device") == "/GPU:0"
+            and type(row["gpu_allocator_memory"].get("current_bytes")) is int
+            and row["gpu_allocator_memory"]["current_bytes"] >= 0
+            and type(row["gpu_allocator_memory"].get("peak_bytes")) is int
+            and row["gpu_allocator_memory"]["peak_bytes"]
+            >= row["gpu_allocator_memory"]["current_bytes"]
+            for row in records
+            if row.get("state") == "passed"
+        )
     if schedule["harness_contract_test_only"]:
         return checks
     checks["finite_output_metadata"] = all(

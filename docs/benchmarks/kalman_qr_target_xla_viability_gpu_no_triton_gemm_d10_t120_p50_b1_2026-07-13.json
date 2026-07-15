@@ -1,0 +1,652 @@
+{
+  "cell": {
+    "batch_size": 1,
+    "dimension": 10,
+    "dtype": "float32",
+    "parameter_count": 50,
+    "timesteps": 120
+  },
+  "checks": {
+    "all_methods_completed": true,
+    "cross_method_comparison": {
+      "score": {
+        "atol": 0.0002,
+        "candidate_count": 50,
+        "max_abs_residual": 1.6391277313232422e-07,
+        "passed": true,
+        "reference_count": 50,
+        "rtol": 0.0002
+      },
+      "value": {
+        "atol": 0.0002,
+        "candidate_count": 1,
+        "max_abs_residual": 0.0,
+        "passed": true,
+        "reference_count": 1,
+        "rtol": 0.0002
+      }
+    },
+    "cross_method_parity": true,
+    "device_and_runtime_provenance": true,
+    "finite_dtype_shape_and_single_trace": true,
+    "first_warm_parity": true,
+    "warm_comparisons": {
+      "batch_native_analytical_qr_score": {
+        "score": {
+          "atol": 0.0002,
+          "candidate_count": 50,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "reference_count": 50,
+          "rtol": 0.0002
+        },
+        "value": {
+          "atol": 0.0002,
+          "candidate_count": 1,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "reference_count": 1,
+          "rtol": 0.0002
+        }
+      },
+      "batch_native_autodiff_qr_score": {
+        "score": {
+          "atol": 0.0002,
+          "candidate_count": 50,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "reference_count": 50,
+          "rtol": 0.0002
+        },
+        "value": {
+          "atol": 0.0002,
+          "candidate_count": 1,
+          "max_abs_residual": 0.0,
+          "passed": true,
+          "reference_count": 1,
+          "rtol": 0.0002
+        }
+      }
+    }
+  },
+  "decision": "gpu_xla_cell_passed",
+  "evidence_roles": {
+    "graphdef_structure": "explanatory_only",
+    "method_completion_and_numerical_checks": "continuation_gate",
+    "peak_rss_and_elapsed_seconds": "explanatory_only",
+    "timeout_crash_or_nonfinite": "continuation_or_repair_trigger_by_method"
+  },
+  "nonclaims": [
+    "no full GPU lattice viability conclusion",
+    "no full dimension/parameter/batch lattice readiness",
+    "no speed or memory superiority ranking",
+    "no HMC or posterior correctness",
+    "no production/default readiness or scientific-validity claim"
+  ],
+  "question": "Do the unchanged repaired true-batched analytical and autodiff QR methods compile and execute under GPU/XLA at this target-horizon cell?",
+  "records": [
+    {
+      "child": {
+        "cell": {
+          "batch_size": 1,
+          "dimension": 10,
+          "dtype": "float32",
+          "parameter_count": 50,
+          "timesteps": 120
+        },
+        "child_wall_seconds": 8.066904644016176,
+        "concrete_function_count": 1,
+        "cuda_visible_devices": "1",
+        "device": "/GPU:0",
+        "first_output": {
+          "all_finite": true,
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0",
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score": [
+            [
+              -0.019103890284895897,
+              -0.03739561513066292,
+              -0.1178196594119072,
+              -0.1407228410243988,
+              -0.0005728474934585392,
+              -0.00030558116850443184,
+              -0.0002504230651538819,
+              -0.0008573305676691234,
+              0.000652006478048861,
+              -7.191905751824379e-06,
+              -0.018800577148795128,
+              -0.037693534046411514,
+              -0.11456208676099777,
+              -0.13624775409698486,
+              -0.0005471705226227641,
+              -3.924878910765983e-08,
+              -0.00025601175730116665,
+              -0.0008241264731623232,
+              0.0006224525277502835,
+              -1.7004615529003786e-06,
+              -0.00034134977613575757,
+              -0.0002489173202775419,
+              -0.0007532138261012733,
+              0.0006175945745781064,
+              -6.809039859945187e-06,
+              -0.01850900799036026,
+              -0.03798387944698334,
+              -0.11129764467477798,
+              -0.13218706846237183,
+              -0.0005222382606007159,
+              4.997210453439038e-06,
+              -0.0002427110739517957,
+              -0.0007430612458847463,
+              0.0005963632138445973,
+              -1.5616964219589136e-06,
+              5.7239385569118895e-06,
+              -0.00022977344633545727,
+              -0.0006905765039846301,
+              0.0005594316171482205,
+              -1.247555360350816e-06,
+              -0.0003435331746004522,
+              -0.0001899205381050706,
+              -0.0005429568700492382,
+              0.00046903645852580667,
+              -6.152939477033215e-06,
+              -0.01820710301399231,
+              -0.03825642541050911,
+              -0.10785585641860962,
+              -0.12868304550647736,
+              -0.0004974561161361635
+            ]
+          ],
+          "score_dtype": "float32",
+          "score_shape": [
+            1,
+            50
+          ],
+          "value": [
+            -382.0926208496094
+          ],
+          "value_dtype": "float32",
+          "value_shape": [
+            1
+          ]
+        },
+        "first_xla_call_seconds": 2.1784917479380965,
+        "gpu_memory_info_bytes": {
+          "current": 158208,
+          "peak": 564992
+        },
+        "graphdef": {
+          "function_count": 2,
+          "function_node_count": 491,
+          "selected_op_counts": {
+            "EmptyTensorList": 0,
+            "StatelessWhile": 0,
+            "TensorListGetItem": 0,
+            "TensorListPopBack": 0,
+            "TensorListPushBack": 0,
+            "While": 1
+          },
+          "serialized_bytes": 203191,
+          "sha256": "b68fd1a958c1de9c457dc1c2a3cdb0730a53a0b8f7bbcbff5503ee0611aea379",
+          "top_level_node_count": 884,
+          "total_node_count": 1375
+        },
+        "jit_compile": true,
+        "logical_gpu_count": 1,
+        "logical_gpu_names": [
+          "/device:GPU:0"
+        ],
+        "method": "batch_native_analytical_qr_score",
+        "physical_gpu_count": 1,
+        "physical_gpu_names": [
+          "/physical_device:GPU:0"
+        ],
+        "requested_device": "gpu",
+        "stage": "complete",
+        "state": "passed",
+        "tensorflow_version": "2.20.0",
+        "tf32_enabled": true,
+        "trace_seconds": 1.8842490380629897,
+        "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+        "warm_output": {
+          "all_finite": true,
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0",
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score": [
+            [
+              -0.019103890284895897,
+              -0.03739561513066292,
+              -0.1178196594119072,
+              -0.1407228410243988,
+              -0.0005728474934585392,
+              -0.00030558116850443184,
+              -0.0002504230651538819,
+              -0.0008573305676691234,
+              0.000652006478048861,
+              -7.191905751824379e-06,
+              -0.018800577148795128,
+              -0.037693534046411514,
+              -0.11456208676099777,
+              -0.13624775409698486,
+              -0.0005471705226227641,
+              -3.924878910765983e-08,
+              -0.00025601175730116665,
+              -0.0008241264731623232,
+              0.0006224525277502835,
+              -1.7004615529003786e-06,
+              -0.00034134977613575757,
+              -0.0002489173202775419,
+              -0.0007532138261012733,
+              0.0006175945745781064,
+              -6.809039859945187e-06,
+              -0.01850900799036026,
+              -0.03798387944698334,
+              -0.11129764467477798,
+              -0.13218706846237183,
+              -0.0005222382606007159,
+              4.997210453439038e-06,
+              -0.0002427110739517957,
+              -0.0007430612458847463,
+              0.0005963632138445973,
+              -1.5616964219589136e-06,
+              5.7239385569118895e-06,
+              -0.00022977344633545727,
+              -0.0006905765039846301,
+              0.0005594316171482205,
+              -1.247555360350816e-06,
+              -0.0003435331746004522,
+              -0.0001899205381050706,
+              -0.0005429568700492382,
+              0.00046903645852580667,
+              -6.152939477033215e-06,
+              -0.01820710301399231,
+              -0.03825642541050911,
+              -0.10785585641860962,
+              -0.12868304550647736,
+              -0.0004974561161361635
+            ]
+          ],
+          "score_dtype": "float32",
+          "score_shape": [
+            1,
+            50
+          ],
+          "value": [
+            -382.0926208496094
+          ],
+          "value_dtype": "float32",
+          "value_shape": [
+            1
+          ]
+        },
+        "warm_xla_call_seconds": 0.0675504159880802
+      },
+      "command": [
+        "/usr/bin/time",
+        "-f",
+        "max_rss_kb=%M\nuser_seconds=%U\nsystem_seconds=%S\nelapsed_seconds=%e\nexit_status=%x",
+        "-o",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_analytical_qr_score.time.txt",
+        "timeout",
+        "--signal=TERM",
+        "--kill-after=10s",
+        "300s",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py",
+        "--child",
+        "--method",
+        "batch_native_analytical_qr_score",
+        "--dimension",
+        "10",
+        "--timesteps",
+        "120",
+        "--parameter-count",
+        "50",
+        "--batch-size",
+        "1",
+        "--device",
+        "gpu",
+        "--cuda-visible-devices",
+        "1",
+        "--child-output",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_analytical_qr_score.json",
+        "--progress",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_analytical_qr_score.progress.json"
+      ],
+      "last_progress": {
+        "elapsed_seconds": 8.067262482014485,
+        "method": "batch_native_analytical_qr_score",
+        "stage": "complete"
+      },
+      "method": "batch_native_analytical_qr_score",
+      "resource_usage": {
+        "elapsed_seconds": 8.87,
+        "exit_status": 0,
+        "max_rss_kb": 1057380,
+        "system_seconds": 1.97,
+        "user_seconds": 8.45
+      },
+      "returncode": 0,
+      "state": "passed",
+      "stderr_sha256": "edc4e8dc0d10c490bf6df19871cd446910894cfa6e6b61ff53e611107817353a",
+      "stderr_tail": "2026-07-13 22:57:05.287451: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783954627.010617 3433586 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-13 22:57:10.841330: I external/local_xla/xla/service/service.cc:163] XLA service 0x5cebb64592b0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-13 22:57:10.841367: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-13 22:57:10.898551: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-13 22:57:10.929027: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/Assert\n2026-07-13 22:57:10.929084: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_3/Assert/Assert\n2026-07-13 22:57:10.929124: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_5/Assert/Assert\n2026-07-13 22:57:10.929166: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_7/Assert/Assert\n2026-07-13 22:57:10.929303: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_9/Assert/Assert\n2026-07-13 22:57:10.929347: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_11/Assert/Assert\n2026-07-13 22:57:10.929385: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_13/Assert/Assert\n2026-07-13 22:57:10.929422: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_15/Assert/Assert\n2026-07-13 22:57:10.929461: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_17/Assert/Assert\n2026-07-13 22:57:10.929501: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_19/Assert/Assert\n2026-07-13 22:57:10.929540: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_21/Assert/Assert\n2026-07-13 22:57:10.929576: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_23/Assert/Assert\n2026-07-13 22:57:10.929616: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_25/Assert/Assert\n2026-07-13 22:57:10.929656: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_27/Assert/Assert\n2026-07-13 22:57:10.929778: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_29/Assert/Assert\n2026-07-13 22:57:10.929820: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_31/Assert/Assert\n2026-07-13 22:57:10.929861: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_33/Assert/Assert\n2026-07-13 22:57:10.929900: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_35/Assert/Assert\n2026-07-13 22:57:10.929937: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_37/Assert/Assert\n2026-07-13 22:57:10.929975: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_39/Assert/Assert\n2026-07-13 22:57:11.199060: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783954632.894699 3433586 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+      "stderr_total_bytes": 4205,
+      "stdout_sha256": "af1dc7e098f84ffa42e7f31f579e8362887befde6d557b6981c8e52f05c7ba08",
+      "stdout_tail": "{\"method\":\"batch_native_analytical_qr_score\",\"state\":\"passed\"}\n",
+      "stdout_total_bytes": 63,
+      "timed_out": false,
+      "wall_seconds": 8.882807553047314
+    },
+    {
+      "child": {
+        "cell": {
+          "batch_size": 1,
+          "dimension": 10,
+          "dtype": "float32",
+          "parameter_count": 50,
+          "timesteps": 120
+        },
+        "child_wall_seconds": 8.122291954001412,
+        "concrete_function_count": 1,
+        "cuda_visible_devices": "1",
+        "device": "/GPU:0",
+        "first_output": {
+          "all_finite": true,
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0",
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score": [
+            [
+              -0.01910388469696045,
+              -0.03739561513066292,
+              -0.11781967431306839,
+              -0.14072267711162567,
+              -0.0005728475516662002,
+              -0.00030558116850443184,
+              -0.0002504232106730342,
+              -0.0008573303348384798,
+              0.0006520064198412001,
+              -7.191904842329677e-06,
+              -0.01880057528614998,
+              -0.037693530321121216,
+              -0.11456209421157837,
+              -0.13624782860279083,
+              -0.0005471706390380859,
+              -3.9303301946347347e-08,
+              -0.0002560115826781839,
+              -0.0008241269970312715,
+              0.0006224525859579444,
+              -1.7004608707793523e-06,
+              -0.00034134992165490985,
+              -0.0002489174949005246,
+              -0.0007532141171395779,
+              0.0006175946327857673,
+              -6.809036676713731e-06,
+              -0.018509013578295708,
+              -0.037983883172273636,
+              -0.11129764467477798,
+              -0.13218706846237183,
+              -0.000522238202393055,
+              4.9971736189036164e-06,
+              -0.00024271108850371093,
+              -0.0007430613623000681,
+              0.0005963628645986319,
+              -1.561696649332589e-06,
+              5.723936283175135e-06,
+              -0.0002297732571605593,
+              -0.0006905762129463255,
+              0.0005594316753558815,
+              -1.2475568382797064e-06,
+              -0.0003435332328081131,
+              -0.00018992050900124013,
+              -0.0005429566954262555,
+              0.00046903625479899347,
+              -6.15294220551732e-06,
+              -0.01820709928870201,
+              -0.03825641795992851,
+              -0.10785580426454544,
+              -0.12868309020996094,
+              -0.0004974562325514853
+            ]
+          ],
+          "score_dtype": "float32",
+          "score_shape": [
+            1,
+            50
+          ],
+          "value": [
+            -382.0926208496094
+          ],
+          "value_dtype": "float32",
+          "value_shape": [
+            1
+          ]
+        },
+        "first_xla_call_seconds": 2.5357501200633124,
+        "gpu_memory_info_bytes": {
+          "current": 158208,
+          "peak": 2064128
+        },
+        "graphdef": {
+          "function_count": 6,
+          "function_node_count": 769,
+          "selected_op_counts": {
+            "EmptyTensorList": 31,
+            "StatelessWhile": 2,
+            "TensorListGetItem": 0,
+            "TensorListPopBack": 31,
+            "TensorListPushBack": 31,
+            "While": 0
+          },
+          "serialized_bytes": 291515,
+          "sha256": "4ef4b2e5b2d05c9ce133e1d794c9f0c4f280f8a0c9fd11437a07a9a1794b20de",
+          "top_level_node_count": 624,
+          "total_node_count": 1393
+        },
+        "jit_compile": true,
+        "logical_gpu_count": 1,
+        "logical_gpu_names": [
+          "/device:GPU:0"
+        ],
+        "method": "batch_native_autodiff_qr_score",
+        "physical_gpu_count": 1,
+        "physical_gpu_names": [
+          "/physical_device:GPU:0"
+        ],
+        "requested_device": "gpu",
+        "stage": "complete",
+        "state": "passed",
+        "tensorflow_version": "2.20.0",
+        "tf32_enabled": true,
+        "trace_seconds": 1.538900488987565,
+        "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+        "warm_output": {
+          "all_finite": true,
+          "devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0",
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score": [
+            [
+              -0.01910388469696045,
+              -0.03739561513066292,
+              -0.11781967431306839,
+              -0.14072267711162567,
+              -0.0005728475516662002,
+              -0.00030558116850443184,
+              -0.0002504232106730342,
+              -0.0008573303348384798,
+              0.0006520064198412001,
+              -7.191904842329677e-06,
+              -0.01880057528614998,
+              -0.037693530321121216,
+              -0.11456209421157837,
+              -0.13624782860279083,
+              -0.0005471706390380859,
+              -3.9303301946347347e-08,
+              -0.0002560115826781839,
+              -0.0008241269970312715,
+              0.0006224525859579444,
+              -1.7004608707793523e-06,
+              -0.00034134992165490985,
+              -0.0002489174949005246,
+              -0.0007532141171395779,
+              0.0006175946327857673,
+              -6.809036676713731e-06,
+              -0.018509013578295708,
+              -0.037983883172273636,
+              -0.11129764467477798,
+              -0.13218706846237183,
+              -0.000522238202393055,
+              4.9971736189036164e-06,
+              -0.00024271108850371093,
+              -0.0007430613623000681,
+              0.0005963628645986319,
+              -1.561696649332589e-06,
+              5.723936283175135e-06,
+              -0.0002297732571605593,
+              -0.0006905762129463255,
+              0.0005594316753558815,
+              -1.2475568382797064e-06,
+              -0.0003435332328081131,
+              -0.00018992050900124013,
+              -0.0005429566954262555,
+              0.00046903625479899347,
+              -6.15294220551732e-06,
+              -0.01820709928870201,
+              -0.03825641795992851,
+              -0.10785580426454544,
+              -0.12868309020996094,
+              -0.0004974562325514853
+            ]
+          ],
+          "score_dtype": "float32",
+          "score_shape": [
+            1,
+            50
+          ],
+          "value": [
+            -382.0926208496094
+          ],
+          "value_dtype": "float32",
+          "value_shape": [
+            1
+          ]
+        },
+        "warm_xla_call_seconds": 0.09928157203830779
+      },
+      "command": [
+        "/usr/bin/time",
+        "-f",
+        "max_rss_kb=%M\nuser_seconds=%U\nsystem_seconds=%S\nelapsed_seconds=%e\nexit_status=%x",
+        "-o",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_autodiff_qr_score.time.txt",
+        "timeout",
+        "--signal=TERM",
+        "--kill-after=10s",
+        "300s",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py",
+        "--child",
+        "--method",
+        "batch_native_autodiff_qr_score",
+        "--dimension",
+        "10",
+        "--timesteps",
+        "120",
+        "--parameter-count",
+        "50",
+        "--batch-size",
+        "1",
+        "--device",
+        "gpu",
+        "--cuda-visible-devices",
+        "1",
+        "--child-output",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_autodiff_qr_score.json",
+        "--progress",
+        "/tmp/kalman_qr_target_xla_viability_2026_07_13/gpu-d10-t120-p50-b1-batch_native_autodiff_qr_score.progress.json"
+      ],
+      "last_progress": {
+        "elapsed_seconds": 8.122679121908732,
+        "method": "batch_native_autodiff_qr_score",
+        "stage": "complete"
+      },
+      "method": "batch_native_autodiff_qr_score",
+      "resource_usage": {
+        "elapsed_seconds": 9.11,
+        "exit_status": 0,
+        "max_rss_kb": 1039664,
+        "system_seconds": 2.1,
+        "user_seconds": 8.58
+      },
+      "returncode": 0,
+      "state": "passed",
+      "stderr_sha256": "4f70b6e127aefe02d3b75aecba19c045861345e68d812e591453abe020bee00d",
+      "stderr_tail": "2026-07-13 22:57:14.191830: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1783954635.924217 3433931 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:81:00.0, compute capability: 8.9\n2026-07-13 22:57:19.392715: I external/local_xla/xla/service/service.cc:163] XLA service 0x5cdd6d9eaee0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:\n2026-07-13 22:57:19.392753: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9\n2026-07-13 22:57:19.443479: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.\n2026-07-13 22:57:19.723308: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700\nI0000 00:00:1783954641.772855 3433931 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.\n",
+      "stderr_total_bytes": 1470,
+      "stdout_sha256": "cb46ac3731b53ea9a8691d49df726c0bad2722cd8817ee19b4be146d14490e0c",
+      "stdout_tail": "{\"method\":\"batch_native_autodiff_qr_score\",\"state\":\"passed\"}\n",
+      "stdout_total_bytes": 61,
+      "timed_out": false,
+      "wall_seconds": 9.12026794499252
+    }
+  ],
+  "run_manifest": {
+    "command": [
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py",
+      "--device",
+      "gpu",
+      "--cuda-visible-devices",
+      "1",
+      "--dimension",
+      "10",
+      "--timesteps",
+      "120",
+      "--parameter-count",
+      "50",
+      "--batch-size",
+      "1",
+      "--method-timeout-seconds",
+      "300",
+      "--output",
+      "docs/benchmarks/kalman_qr_target_xla_viability_gpu_no_triton_gemm_d10_t120_p50_b1_2026-07-13.json"
+    ],
+    "data_version": "synthetic nested Kalman QR fixture in benchmark source",
+    "device_status": "managed-session visible GPU/XLA diagnostic",
+    "environment": {
+      "CONDA_DEFAULT_ENV": "tfgpu",
+      "CONDA_PREFIX": "/home/ubuntu/anaconda3/envs/tfgpu",
+      "CUDA_VISIBLE_DEVICES": "1",
+      "OMP_NUM_THREADS": "1",
+      "TF_NUM_INTEROP_THREADS": "1",
+      "TF_NUM_INTRAOP_THREADS": "1",
+      "XLA_FLAGS": "--xla_gpu_enable_triton_gemm=false"
+    },
+    "git_commit": "3d353253dc93a102722e00cbca8803a1b3fce7fa",
+    "jit_compile": true,
+    "output_artifact": "docs/benchmarks/kalman_qr_target_xla_viability_gpu_no_triton_gemm_d10_t120_p50_b1_2026-07-13.json",
+    "plan_file": "docs/plans/bayesfilter-kalman-qr-target-xla-viability-live-plan-2026-07-13.md",
+    "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.35",
+    "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+    "random_seeds": "N/A; deterministic fixture and parameter cloud",
+    "requested_cuda_visible_devices": "1",
+    "requested_device": "gpu",
+    "result_file": "docs/plans/bayesfilter-kalman-qr-target-xla-viability-result-2026-07-13.md",
+    "source_sha256": {
+      "docs/benchmarks/run_kalman_qr_target_xla_viability_canary_2026_07_13.py": "4059f39787cee3c922f3ad7bed4c4099a544922fd4aad40b54bfacf03b502434",
+      "docs/plans/bayesfilter-kalman-qr-target-xla-viability-live-plan-2026-07-13.md": "17efed9a3b93772be55dd5b5575972449fb422ed3ef2fed6aa291fb809cf0782",
+      "scripts/benchmark_kalman_qr_parameter_count_scaling.py": "8fbf19be1a3debcbed963ae50554a602d6e79480bbd3dc2782d786cee403cdd2"
+    },
+    "tf32_status": "enabled and recorded by each child",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 18.01345643994864
+  },
+  "schema": "bayesfilter.kalman_qr.target_xla_viability.v2",
+  "state": "passed"
+}

@@ -32,6 +32,84 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+
+GPU_XLA_TRITON_GEMM_FLAG = "--xla_gpu_enable_triton_gemm=false"
+
+
+def _raw_cli_option(argv: Sequence[str], name: str, default: str) -> str:
+    prefix = f"{name}="
+    for index, token in enumerate(argv[1:], start=1):
+        if token.startswith(prefix):
+            return token[len(prefix) :]
+        if token == name and index + 1 < len(argv):
+            return argv[index + 1]
+    return default
+
+
+def gpu_xla_preimport_policy(
+    argv: Sequence[str], existing_xla_flags: str | None
+) -> dict[str, Any]:
+    """Select the benchmark-local GPU compiler workaround before TF import."""
+
+    device = _raw_cli_option(argv, "--device", "auto")
+    jit_compile = "--no-jit-compile" not in argv
+    gpu_target = device == "auto" or "gpu" in device.lower()
+    existing = existing_xla_flags or ""
+    triton_choice_present = any(
+        token == "--xla_gpu_enable_triton_gemm"
+        or token.startswith("--xla_gpu_enable_triton_gemm=")
+        for token in existing.split()
+    )
+    if not gpu_target or not jit_compile:
+        action = "not_applicable"
+        effective = existing
+    elif triton_choice_present:
+        action = "caller_triton_choice_preserved"
+        effective = existing
+    else:
+        action = "benchmark_default_no_triton_applied"
+        effective = " ".join(value for value in (existing, GPU_XLA_TRITON_GEMM_FLAG) if value)
+    return {
+        "action": action,
+        "requested_device": device,
+        "jit_compile": jit_compile,
+        "input_xla_flags": existing or "UNSET",
+        "effective_xla_flags": effective or "UNSET",
+        "evidence_basis": (
+            "TF 2.20 GPU Triton GEMM fusion layout failure in true-batched QR autodiff"
+        ),
+    }
+
+
+def _is_direct_cli_invocation() -> bool:
+    try:
+        return Path(sys.argv[0]).resolve(strict=True) == Path(__file__).resolve(strict=True)
+    except OSError:
+        return False
+
+
+KALMAN_QR_GPU_XLA_POLICY = gpu_xla_preimport_policy(
+    sys.argv,
+    os.environ.get("XLA_FLAGS"),
+)
+if (
+    _is_direct_cli_invocation()
+    and KALMAN_QR_GPU_XLA_POLICY["action"]
+    == "benchmark_default_no_triton_applied"
+):
+    os.environ["XLA_FLAGS"] = KALMAN_QR_GPU_XLA_POLICY["effective_xla_flags"]
+
+from bayesfilter.runtime.device_policy import ensure_gpu_memory_growth_env
+
+
+GPU_MEMORY_GROWTH_POLICY = {
+    "policy": "required_no_full_device_preallocation",
+    "environment_variable": "TF_FORCE_GPU_ALLOW_GROWTH",
+    "environment_value": "true",
+}
+if _raw_cli_option(sys.argv, "--device", "auto") != "cpu":
+    ensure_gpu_memory_growth_env()
+
 from scripts import kalman_qr_benchmark_contract as benchmark_contract
 
 
@@ -3553,6 +3631,7 @@ def benchmark_selected_method_case(
     scalar_materialization_count = 0
     synchronization_method: str | None = None
     sentinel_definition: str | None = None
+    allocator_memory: dict[str, Any] | None = None
 
     try:
         current_stage = "fixture"
@@ -3714,6 +3793,14 @@ def benchmark_selected_method_case(
                 "value": materialized["value"],
                 "score": materialized["score"],
             }
+        if device_name.upper().startswith("/GPU"):
+            allocator_device = device_name.removeprefix("/")
+            memory_info = tf.config.experimental.get_memory_info(allocator_device)
+            allocator_memory = {
+                "device": device_name,
+                "current_bytes": int(memory_info["current"]),
+                "peak_bytes": int(memory_info["peak"]),
+            }
 
         payload = {
             "case_id": args.case_id,
@@ -3795,6 +3882,11 @@ def benchmark_selected_method_case(
         "output_metadata": output_metadata,
         "outputs": record_outputs,
         "aggregate_parity_status": "deferred_to_supervisor",
+        "jit_compile": args.jit_compile,
+        "xla_flags": os.environ.get("XLA_FLAGS", "UNSET"),
+        "gpu_xla_triton_gemm_policy": KALMAN_QR_GPU_XLA_POLICY,
+        "gpu_memory_growth_policy": GPU_MEMORY_GROWTH_POLICY,
+        "gpu_allocator_memory": allocator_memory,
         "error": error,
     }
 
@@ -4107,6 +4199,18 @@ def benchmark_case(
 
 def _select_device(requested: str) -> tuple[str, dict[str, Any]]:
     physical_gpus = tf.config.list_physical_devices("GPU")
+    growth_status: list[dict[str, Any]] = []
+    for gpu in physical_gpus:
+        try:
+            tf.config.experimental.set_memory_growth(gpu, True)
+            enabled = tf.config.experimental.get_memory_growth(gpu)
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "GPU memory growth must be configured before logical-device initialization"
+            ) from exc
+        if enabled is not True:
+            raise RuntimeError(f"GPU memory growth was not enabled for {gpu.name}")
+        growth_status.append({"physical_device": gpu.name, "enabled": True})
     logical_gpus = tf.config.list_logical_devices("GPU")
     if requested == "auto":
         selected = "/GPU:0" if logical_gpus else "/CPU:0"
@@ -4123,6 +4227,13 @@ def _select_device(requested: str) -> tuple[str, dict[str, Any]]:
         "selected_device": selected,
         "physical_gpus": [device.name for device in physical_gpus],
         "logical_gpus": [device.name for device in logical_gpus],
+        "memory_growth": {
+            **GPU_MEMORY_GROWTH_POLICY,
+            "configured_devices": growth_status,
+            "all_visible_gpus_enabled": all(
+                row["enabled"] for row in growth_status
+            ),
+        },
         "cpu_only_exception": selected.upper().startswith("/CPU"),
         "trust_basis": (
             "owner_designated_managed_session_visible_gpu_trusted"
@@ -4201,6 +4312,8 @@ def _manifest(
         "tf32_execution_enabled": bool(tf.config.experimental.tensor_float_32_execution_enabled()),
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "UNSET"),
         "xla_flags": os.environ.get("XLA_FLAGS", "UNSET"),
+        "gpu_xla_triton_gemm_policy": KALMAN_QR_GPU_XLA_POLICY,
+        "gpu_memory_growth_policy": device_manifest["memory_growth"],
     }
 
 

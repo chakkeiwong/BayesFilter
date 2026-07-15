@@ -9,6 +9,7 @@ from typing import Any, Iterable
 
 
 _FRAMEWORK_MODULES = ("tensorflow", "tensorflow_probability", "jax", "torch")
+GPU_MEMORY_GROWTH_ENV = "TF_FORCE_GPU_ALLOW_GROWTH"
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,26 @@ def assert_cpu_only_env(env: dict[str, str] | None = None) -> None:
     target_env = os.environ if env is None else env
     if target_env.get("CUDA_VISIBLE_DEVICES") != "-1":
         raise RuntimeError("CUDA_VISIBLE_DEVICES=-1 is required for CPU-only workers")
+
+
+def ensure_gpu_memory_growth_env(env: dict[str, str] | None = None) -> dict[str, str]:
+    """Require TensorFlow GPU memory growth before framework import."""
+
+    target_env = os.environ if env is None else env
+    current_process_env = env is None or target_env is os.environ
+    if current_process_env and _framework_already_imported():
+        if target_env.get(GPU_MEMORY_GROWTH_ENV, "").lower() != "true":
+            raise RuntimeError(
+                "GPU memory growth must be enabled before framework import"
+            )
+    target_env[GPU_MEMORY_GROWTH_ENV] = "true"
+    return target_env
+
+
+def assert_gpu_memory_growth_env(env: dict[str, str] | None = None) -> None:
+    target_env = os.environ if env is None else env
+    if target_env.get(GPU_MEMORY_GROWTH_ENV, "").lower() != "true":
+        raise RuntimeError("TF_FORCE_GPU_ALLOW_GROWTH=true is required for GPU workers")
 
 
 def select_preferred_gpu(

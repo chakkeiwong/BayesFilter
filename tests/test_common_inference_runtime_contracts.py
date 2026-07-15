@@ -45,6 +45,7 @@ from bayesfilter.runtime import (
     build_trusted_gpu_snapshot,
     configs_match_exact,
     ensure_cpu_only_env,
+    ensure_gpu_memory_growth_env,
     select_first_tie_candidate,
     select_preferred_gpu,
     stable_config_hash,
@@ -106,6 +107,17 @@ def test_cpu_only_env_hides_gpu_before_framework_import(monkeypatch):
     monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
     with pytest.raises(RuntimeError, match="before framework import"):
         ensure_cpu_only_env()
+
+
+def test_gpu_memory_growth_env_is_required_before_framework_import(monkeypatch):
+    env = {}
+    ensure_gpu_memory_growth_env(env)
+    assert env["TF_FORCE_GPU_ALLOW_GROWTH"] == "true"
+
+    monkeypatch.setitem(sys.modules, "tensorflow", object())
+    monkeypatch.delenv("TF_FORCE_GPU_ALLOW_GROWTH", raising=False)
+    with pytest.raises(RuntimeError, match="before framework import"):
+        ensure_gpu_memory_growth_env()
 
 
 def test_value_score_authority_fails_closed_for_xla_and_unknown_labels():
