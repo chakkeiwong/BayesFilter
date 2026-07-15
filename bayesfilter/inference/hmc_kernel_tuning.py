@@ -21,7 +21,9 @@ import dataclasses
 import inspect
 import json
 import os
+import threading
 import time
+import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -2189,6 +2191,7 @@ class HMCFixedMassStepStageConfig:
     staged_timeout_global_started_perf_counter_s: float | None = None
     staged_timeout_stage_started_perf_counter_s: float | None = None
     staged_timeout_enlargement_rounds: Mapping[str, int] | None = None
+    incall_progress_heartbeat_s: float | None = None
     source: str = "bayesfilter.inference.hmc_kernel_tuning.fixed_mass_step_stage"
 
     def __post_init__(self) -> None:
@@ -2345,6 +2348,14 @@ class HMCFixedMassStepStageConfig:
                 self.staged_timeout_enlargement_rounds
             ),
         )
+        heartbeat = (
+            None
+            if self.incall_progress_heartbeat_s is None
+            else float(self.incall_progress_heartbeat_s)
+        )
+        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+            raise ValueError("incall_progress_heartbeat_s must be positive and finite")
+        object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
         if not source:
             raise ValueError("source must be non-empty")
@@ -2382,6 +2393,7 @@ class HMCFixedMassStepStageConfig:
             "public_timeout_started_perf_counter_s": (
                 self.public_timeout_started_perf_counter_s
             ),
+            "incall_progress_heartbeat_s": self.incall_progress_heartbeat_s,
             "source": self.source,
         }
 
@@ -4676,6 +4688,7 @@ class HMCTuneVerifyRepairLoopConfig:
     staged_timeout_global_started_perf_counter_s: float | None = None
     staged_timeout_stage_started_perf_counter_s: float | None = None
     staged_timeout_enlargement_rounds: Mapping[str, int] | None = None
+    incall_progress_heartbeat_s: float | None = None
     source: str = "bayesfilter.inference.hmc_kernel_tuning.tune_verify_repair_loop"
 
     def __post_init__(self) -> None:
@@ -4866,6 +4879,14 @@ class HMCTuneVerifyRepairLoopConfig:
                 self.staged_timeout_enlargement_rounds,
             ),
         )
+        heartbeat = (
+            None
+            if self.incall_progress_heartbeat_s is None
+            else float(self.incall_progress_heartbeat_s)
+        )
+        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+            raise ValueError("incall_progress_heartbeat_s must be positive and finite")
+        object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
         if not source:
             raise ValueError("source must be non-empty")
@@ -4918,6 +4939,7 @@ class HMCTuneVerifyRepairLoopConfig:
             "staged_timeout_enlargement_rounds": None
             if self.staged_timeout_enlargement_rounds is None
             else dict(self.staged_timeout_enlargement_rounds),
+            "incall_progress_heartbeat_s": self.incall_progress_heartbeat_s,
             "source": self.source,
         }
 
@@ -5178,6 +5200,7 @@ class HMCKernelTuningConfig:
     staged_timeout_global_started_perf_counter_s: float | None = None
     staged_timeout_stage_started_perf_counter_s: float | None = None
     staged_timeout_enlargement_rounds: Mapping[str, int] | None = None
+    incall_progress_heartbeat_s: float | None = None
     source: str = "bayesfilter.inference.tune_hmc_kernel"
 
     def __post_init__(self) -> None:
@@ -5418,6 +5441,14 @@ class HMCKernelTuningConfig:
                 self.staged_timeout_enlargement_rounds
             ),
         )
+        heartbeat = (
+            None
+            if self.incall_progress_heartbeat_s is None
+            else float(self.incall_progress_heartbeat_s)
+        )
+        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+            raise ValueError("incall_progress_heartbeat_s must be positive and finite")
+        object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
         if not source:
             raise ValueError("source must be non-empty")
@@ -5555,6 +5586,7 @@ class HMCKernelTuningConfig:
             "staged_timeout_enlargement_rounds": None
             if self.staged_timeout_enlargement_rounds is None
             else dict(self.staged_timeout_enlargement_rounds),
+            "incall_progress_heartbeat_s": self.incall_progress_heartbeat_s,
             "source": self.source,
             "preset_role": _public_tuning_preset_role(self.preset),
             "hmc_mechanics_owned_by_bayesfilter": True,
@@ -10130,6 +10162,7 @@ def tune_hmc_kernel(
     final_kernel_payload: Mapping[str, Any] | None = None
     final_kernel_hash: str | None = None
     progress_path = _public_tuning_progress_path(output_dir)
+    progress_lock = threading.RLock()
     private_dir = _private_tuning_diagnostics_dir(output_dir)
     private_events_path = _private_tuning_events_path(private_dir)
     private_progress_state: dict[str, Any] = {
@@ -10288,76 +10321,77 @@ def tune_hmc_kernel(
         artifact_stage: bool = False,
         extra: Mapping[str, Any] | None = None,
     ) -> None:
-        if artifact_stage:
-            if started:
-                progress_state["last_started_artifact_stage"] = stage
-            if completed:
-                progress_state["last_completed_artifact_stage"] = stage
-        else:
-            if started:
-                progress_state["last_started_stage"] = stage
-            if completed:
-                progress_state["last_completed_stage"] = stage
-        if phase7_substage:
-            if started:
-                progress_state["last_started_substage"] = stage
-            if completed:
-                progress_state["last_completed_substage"] = stage
-        progress_extra = None if extra is None else dict(extra)
-        resume_split_summary = phase7_state.get("resume_split_public_summary")
-        if isinstance(resume_split_summary, Mapping):
+        with progress_lock:
+            if artifact_stage:
+                if started:
+                    progress_state["last_started_artifact_stage"] = stage
+                if completed:
+                    progress_state["last_completed_artifact_stage"] = stage
+            else:
+                if started:
+                    progress_state["last_started_stage"] = stage
+                if completed:
+                    progress_state["last_completed_stage"] = stage
+            if phase7_substage:
+                if started:
+                    progress_state["last_started_substage"] = stage
+                if completed:
+                    progress_state["last_completed_substage"] = stage
+            progress_extra = None if extra is None else dict(extra)
+            resume_split_summary = phase7_state.get("resume_split_public_summary")
+            if isinstance(resume_split_summary, Mapping):
+                if progress_extra is None:
+                    progress_extra = {}
+                progress_extra.setdefault(
+                    "phase7_resume_split_public_summary",
+                    dict(resume_split_summary),
+                )
+            last_loop_event = phase7_state.get("last_loop_event")
+            if isinstance(last_loop_event, Mapping):
+                if progress_extra is None:
+                    progress_extra = {}
+                progress_extra.setdefault("phase7_loop_event", dict(last_loop_event))
+            last_progress_contract = phase7_state.get("last_progress_contract")
+            if isinstance(last_progress_contract, Mapping):
+                if progress_extra is None:
+                    progress_extra = {}
+                progress_extra.setdefault(
+                    "phase7_progress_contract",
+                    dict(last_progress_contract),
+                )
+            early_closeout = phase7_state.get("early_closeout_public_summary")
+            if isinstance(early_closeout, Mapping):
+                if progress_extra is None:
+                    progress_extra = {}
+                progress_extra.setdefault(
+                    "phase7_early_closeout_public_summary",
+                    dict(early_closeout),
+                )
+            private_summary = _private_tuning_public_summary(private_progress_state)
             if progress_extra is None:
                 progress_extra = {}
-            progress_extra.setdefault(
-                "phase7_resume_split_public_summary",
-                dict(resume_split_summary),
+            progress_extra.setdefault("private_tuning_diagnostics", private_summary)
+            _write_public_tuning_progress_if_requested(
+                progress_path=progress_path,
+                config=cfg,
+                artifact_path=artifact_path,
+                current_stage=stage,
+                last_started_stage=progress_state["last_started_stage"],
+                last_completed_stage=progress_state["last_completed_stage"],
+                last_started_substage=progress_state["last_started_substage"],
+                last_completed_substage=progress_state["last_completed_substage"],
+                last_started_artifact_stage=progress_state["last_started_artifact_stage"],
+                last_completed_artifact_stage=progress_state["last_completed_artifact_stage"],
+                phase7_last_attempt_index=phase7_state["last_attempt_index"],
+                phase7_last_budget_payload=phase7_state["last_budget_payload"],
+                bootstrap_public_summary=_bootstrap_public_summary(
+                    bootstrap,
+                    xla_requested=cfg.use_xla,
+                ),
+                adapter_signature=adapter_signature,
+                target_dimension=target_dimension,
+                extra=progress_extra,
             )
-        last_loop_event = phase7_state.get("last_loop_event")
-        if isinstance(last_loop_event, Mapping):
-            if progress_extra is None:
-                progress_extra = {}
-            progress_extra.setdefault("phase7_loop_event", dict(last_loop_event))
-        last_progress_contract = phase7_state.get("last_progress_contract")
-        if isinstance(last_progress_contract, Mapping):
-            if progress_extra is None:
-                progress_extra = {}
-            progress_extra.setdefault(
-                "phase7_progress_contract",
-                dict(last_progress_contract),
-            )
-        early_closeout = phase7_state.get("early_closeout_public_summary")
-        if isinstance(early_closeout, Mapping):
-            if progress_extra is None:
-                progress_extra = {}
-            progress_extra.setdefault(
-                "phase7_early_closeout_public_summary",
-                dict(early_closeout),
-            )
-        private_summary = _private_tuning_public_summary(private_progress_state)
-        if progress_extra is None:
-            progress_extra = {}
-        progress_extra.setdefault("private_tuning_diagnostics", private_summary)
-        _write_public_tuning_progress_if_requested(
-            progress_path=progress_path,
-            config=cfg,
-            artifact_path=artifact_path,
-            current_stage=stage,
-            last_started_stage=progress_state["last_started_stage"],
-            last_completed_stage=progress_state["last_completed_stage"],
-            last_started_substage=progress_state["last_started_substage"],
-            last_completed_substage=progress_state["last_completed_substage"],
-            last_started_artifact_stage=progress_state["last_started_artifact_stage"],
-            last_completed_artifact_stage=progress_state["last_completed_artifact_stage"],
-            phase7_last_attempt_index=phase7_state["last_attempt_index"],
-            phase7_last_budget_payload=phase7_state["last_budget_payload"],
-            bootstrap_public_summary=_bootstrap_public_summary(
-                bootstrap,
-                xla_requested=cfg.use_xla,
-            ),
-            adapter_signature=adapter_signature,
-            target_dimension=target_dimension,
-            extra=progress_extra,
-        )
 
     def write_loop_progress(stage: str, payload: Mapping[str, Any]) -> None:
         event_payload = dict(payload)
@@ -11471,6 +11505,9 @@ def _validate_frozen_step_trajectory_stage_inputs(
             public_timeout_started_perf_counter_s=(
                 fixed_mass_step_stage.config.public_timeout_started_perf_counter_s
             ),
+            incall_progress_heartbeat_s=(
+                fixed_mass_step_stage.config.incall_progress_heartbeat_s
+            ),
             source=fixed_mass_step_stage.config.source,
         ),
     )
@@ -11641,6 +11678,7 @@ def _public_loop_config(
             config.staged_timeout_stage_started_perf_counter_s
         ),
         staged_timeout_enlargement_rounds=config.staged_timeout_enlargement_rounds,
+        incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
         source=f"{config.source}.tune_verify_repair_loop",
     )
 
@@ -12184,10 +12222,14 @@ def _write_public_tuning_progress_if_requested(
     }
     if extra is not None:
         payload["extra"] = dict(extra)
-    with progress_path.open("w", encoding="utf-8") as handle:
+    tmp_path = progress_path.with_name(
+        f".{progress_path.name}.{os.getpid()}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp"
+    )
+    with tmp_path.open("x", encoding="utf-8") as handle:
         handle.write(json.dumps(_json_ready(payload), indent=2, sort_keys=True) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
+    os.replace(tmp_path, progress_path)
 
 
 def _write_public_tuning_artifact_if_requested(
@@ -13903,6 +13945,13 @@ def _budget_ladder_progress_extra(payload: Mapping[str, Any]) -> Mapping[str, An
         "started_perf_counter_s",
         "timing_anchor_role",
         "error_type",
+        "incall_work_snapshot",
+        "incall_heartbeat",
+        "incall_heartbeat_index",
+        "incall_heartbeat_sequence_is_not_progress",
+        "incall_monitor_error_count",
+        "incall_monitor_error_types",
+        "incall_monitor_errors_are_explanatory_only",
         "progress_only",
         "hmc_mechanics_exposed",
         "reports_posterior_convergence",
@@ -15743,6 +15792,7 @@ def _phase7_fixed_step_stage_config(
             else time.perf_counter()
         ),
         staged_timeout_enlargement_rounds=config.staged_timeout_enlargement_rounds,
+        incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
         source=config.source,
     )
 
@@ -15953,6 +16003,7 @@ def _fixed_mass_step_stage_ladder_config(
         public_timeout_started_perf_counter_s=(
             config.public_timeout_started_perf_counter_s
         ),
+        incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
         source=config.source,
     )
 

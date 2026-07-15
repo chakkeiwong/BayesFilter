@@ -11,6 +11,7 @@ classification.
 from __future__ import annotations
 
 import time
+import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -136,6 +137,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
     public_timeout_started_perf_counter_s: float | None = None
     public_timeout_closeout_reserve_s: float = _FIXED_MASS_PUBLIC_TIMEOUT_RESERVE_S
     initial_fixed_mass_bracket_state: Mapping[str, Any] | None = None
+    incall_progress_heartbeat_s: float | None = None
     source: str = "bayesfilter.inference.hmc_budget_ladder"
 
     def __post_init__(self) -> None:
@@ -319,6 +321,14 @@ class FixedMassHMCTuningBudgetLadderConfig:
             "initial_fixed_mass_bracket_state",
             _coerce_fixed_mass_bracket_state(self.initial_fixed_mass_bracket_state),
         )
+        heartbeat = (
+            None
+            if self.incall_progress_heartbeat_s is None
+            else float(self.incall_progress_heartbeat_s)
+        )
+        if heartbeat is not None and (not np.isfinite(heartbeat) or heartbeat <= 0.0):
+            raise ValueError("incall_progress_heartbeat_s must be positive and finite")
+        object.__setattr__(self, "incall_progress_heartbeat_s", heartbeat)
         source = str(self.source)
         if not source:
             raise ValueError("source must be non-empty")
@@ -368,6 +378,7 @@ class FixedMassHMCTuningBudgetLadderConfig:
             "initial_fixed_mass_bracket_state_available": (
                 self.initial_fixed_mass_bracket_state is not None
             ),
+            "incall_progress_heartbeat_s": self.incall_progress_heartbeat_s,
             "source": self.source,
         }
 
@@ -871,6 +882,8 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                     round_index=round_index,
                     budget=budget,
                     dynamic_num_leapfrog_steps=_dynamic_num_leapfrog_steps,
+                    progress_callback=progress_callback,
+                    incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
                 )
                 _emit_budget_ladder_boundary_progress(
                     progress_callback,
@@ -1089,6 +1102,8 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 round_index=round_index,
                 budget=budget,
                 dynamic_num_leapfrog_steps=_dynamic_num_leapfrog_steps,
+                progress_callback=progress_callback,
+                incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
             )
             _emit_budget_ladder_boundary_progress(
                 progress_callback,
@@ -1232,6 +1247,8 @@ def run_fixed_mass_hmc_tuning_budget_ladder(
                 round_index=round_index,
                 budget=budget,
                 dynamic_num_leapfrog_steps=_dynamic_num_leapfrog_steps,
+                progress_callback=progress_callback,
+                incall_progress_heartbeat_s=config.incall_progress_heartbeat_s,
             )
             _emit_budget_ladder_boundary_progress(
                 progress_callback,
@@ -1756,6 +1773,8 @@ def _run_full_chain_with_optional_reusable_route(
     round_index: int,
     budget: int,
     dynamic_num_leapfrog_steps: bool = False,
+    progress_callback: ProgressCallback | None = None,
+    incall_progress_heartbeat_s: float | None = None,
 ) -> FullChainHMCRunResult:
     """Run HMC through a scoped reusable runner when the static contract matches.
 
@@ -1778,7 +1797,17 @@ def _run_full_chain_with_optional_reusable_route(
                 "used_single_use_runner": run_full_chain is run_full_chain_tfp_hmc,
             }
         )
-        return run_full_chain(adapter, initial_state, config)
+        return _run_with_incall_progress_monitor(
+            run=lambda: run_full_chain(adapter, initial_state, config),
+            adapter=adapter,
+            progress_callback=progress_callback,
+            heartbeat_s=incall_progress_heartbeat_s,
+            role=role,
+            round_index=round_index,
+            budget=budget,
+            config=config,
+            route_category="single_use_or_injected_runner",
+        )
 
     contract_payload = _reusable_static_contract_payload(
         config,
@@ -1814,8 +1843,16 @@ def _run_full_chain_with_optional_reusable_route(
     }
     if dynamic_num_leapfrog_steps:
         runner_kwargs["num_leapfrog_steps"] = config.num_leapfrog_steps
-    result = runner.run(
-        **runner_kwargs,
+    result = _run_with_incall_progress_monitor(
+        run=lambda: runner.run(**runner_kwargs),
+        adapter=adapter,
+        progress_callback=progress_callback,
+        heartbeat_s=incall_progress_heartbeat_s,
+        role=role,
+        round_index=round_index,
+        budget=budget,
+        config=config,
+        route_category="reusable_runner",
     )
     route_event = {
         "round_index": int(round_index),
@@ -1848,6 +1885,117 @@ def _run_full_chain_with_optional_reusable_route(
             ),
         },
     )
+
+
+def _run_with_incall_progress_monitor(
+    *,
+    run: Callable[[], FullChainHMCRunResult],
+    adapter: Any,
+    progress_callback: ProgressCallback | None,
+    heartbeat_s: float | None,
+    role: str,
+    round_index: int,
+    budget: int,
+    config: FullChainHMCConfig,
+    route_category: str,
+) -> FullChainHMCRunResult:
+    """Emit opt-in aggregate work snapshots without changing the HMC call."""
+
+    if heartbeat_s is None or progress_callback is None:
+        return run()
+
+    interval = float(heartbeat_s)
+    stop_event = threading.Event()
+    monitor_errors: list[str] = []
+
+    def monitor() -> None:
+        heartbeat_index = 0
+        while not stop_event.wait(interval):
+            heartbeat_index += 1
+            try:
+                snapshot = _public_incall_progress_snapshot(adapter)
+                _emit_budget_ladder_boundary_progress(
+                    progress_callback,
+                    stage=f"fixed_mass_ladder_{role}_call_start",
+                    role=role,
+                    round_index=round_index,
+                    budget=budget,
+                    config=config,
+                    route_category=route_category,
+                    started=True,
+                    incall_work_snapshot=snapshot,
+                    heartbeat_index=heartbeat_index,
+                    incall_monitor_error_count=len(monitor_errors),
+                    incall_monitor_error_types=tuple(dict.fromkeys(monitor_errors)),
+                )
+            except Exception as exc:  # noqa: BLE001 - diagnostics cannot change HMC.
+                monitor_errors.append(type(exc).__name__)
+                try:
+                    _emit_budget_ladder_boundary_progress(
+                        progress_callback,
+                        stage=f"fixed_mass_ladder_{role}_call_start",
+                        role=role,
+                        round_index=round_index,
+                        budget=budget,
+                        config=config,
+                        route_category=route_category,
+                        started=True,
+                        heartbeat_index=heartbeat_index,
+                        incall_monitor_error_count=len(monitor_errors),
+                        incall_monitor_error_types=tuple(
+                            dict.fromkeys(monitor_errors)
+                        ),
+                    )
+                except Exception as record_exc:  # noqa: BLE001 - best effort only.
+                    monitor_errors.append(type(record_exc).__name__)
+
+    thread = threading.Thread(
+        target=monitor,
+        name=f"bayesfilter-{role}-progress-monitor",
+        daemon=True,
+    )
+    thread.start()
+    try:
+        return run()
+    finally:
+        stop_event.set()
+        # The monitor owns public writes. It must not outlive the HMC wrapper
+        # and publish a stale call-start event after the main call completes.
+        thread.join()
+
+
+def _public_incall_progress_snapshot(adapter: Any) -> Mapping[str, Any]:
+    """Return a scalar-only adapter snapshot suitable for public progress."""
+
+    current = adapter
+    for _ in range(4):
+        snapshot_fn = getattr(current, "progress_telemetry_snapshot", None)
+        if callable(snapshot_fn):
+            raw = snapshot_fn()
+            if not isinstance(raw, Mapping):
+                raise TypeError("progress_telemetry_snapshot must return a mapping")
+            allowed = {
+                "schema",
+                "target_evaluation_rows",
+                "finite_target_evaluation_rows",
+                "finite_reject_rows",
+                "graph_domain_reject_rows",
+                "nonfinite_target_rows",
+                "covariance_diagnostic_rows",
+                "covariance_failure_counts",
+                "covariance_worst_finite_min_eigenvalue",
+                "covariance_worst_max_asymmetry",
+                "telemetry_semantics",
+            }
+            return {key: _json_ready(raw[key]) for key in allowed if key in raw}
+        current = getattr(current, "base_adapter", None)
+        if current is None:
+            break
+    return {
+        "schema": "bayesfilter.incall_progress_snapshot.unavailable.v1",
+        "target_evaluation_rows": None,
+        "telemetry_semantics": "adapter does not expose aggregate work telemetry",
+    }
 
 
 def _reusable_static_contract_payload(
@@ -1961,6 +2109,10 @@ def _emit_budget_ladder_boundary_progress(
     runner_event: Mapping[str, Any] | None = None,
     error_type: str | None = None,
     timeout_closeout: Mapping[str, Any] | None = None,
+    incall_work_snapshot: Mapping[str, Any] | None = None,
+    heartbeat_index: int | None = None,
+    incall_monitor_error_count: int = 0,
+    incall_monitor_error_types: Sequence[str] = (),
 ) -> None:
     if callback is None:
         return
@@ -1992,6 +2144,17 @@ def _emit_budget_ladder_boundary_progress(
         "reports_gpu_or_xla_readiness": False,
         "nonclaims": BUDGET_LADDER_NONCLAIMS,
     }
+    if incall_work_snapshot is not None:
+        payload["incall_work_snapshot"] = dict(incall_work_snapshot)
+        payload["incall_heartbeat"] = True
+        payload["incall_heartbeat_index"] = int(heartbeat_index or 0)
+        payload["incall_heartbeat_sequence_is_not_progress"] = True
+    if incall_monitor_error_count:
+        payload["incall_monitor_error_count"] = int(incall_monitor_error_count)
+        payload["incall_monitor_error_types"] = tuple(
+            dict.fromkeys(str(item) for item in incall_monitor_error_types)
+        )
+        payload["incall_monitor_errors_are_explanatory_only"] = True
     if started_perf_counter_s is not None:
         payload["started_perf_counter_s"] = float(started_perf_counter_s)
         payload["timing_anchor_role"] = "process_local_monotonic_debug_only"

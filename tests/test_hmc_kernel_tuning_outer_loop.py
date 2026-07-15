@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import threading
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
@@ -479,6 +480,24 @@ def test_tune_verify_repair_config_does_not_expose_hmc_mechanics_or_budgets() ->
         HMCTuneVerifyRepairLoopConfig(verification_chunk_max_results=0)
     with pytest.raises(ValueError, match="verification_min_retained_results_for_pass"):
         HMCTuneVerifyRepairLoopConfig(verification_min_retained_results_for_pass=0)
+
+
+def test_incall_progress_heartbeat_propagates_to_fixed_mass_budget_ladder() -> None:
+    loop_config = HMCTuneVerifyRepairLoopConfig(incall_progress_heartbeat_s=60.0)
+
+    fixed_stage_config = hmc_kernel_tuning._phase7_fixed_step_stage_config(
+        loop_config,
+        attempt_index=0,
+    )
+    ladder_config = hmc_kernel_tuning._fixed_mass_step_stage_ladder_config(
+        fixed_stage_config,
+        initial_step=0.1,
+        num_leapfrog_steps=8,
+        target_scope="test_target",
+    )
+
+    assert fixed_stage_config.incall_progress_heartbeat_s == pytest.approx(60.0)
+    assert ladder_config.incall_progress_heartbeat_s == pytest.approx(60.0)
 
 
 def test_default_budget_policy_matches_reviewed_phase7_mapping() -> None:
@@ -7034,3 +7053,50 @@ def test_outer_loop_public_exports_are_scoped_without_final_tuner() -> None:
     assert bayesfilter.TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS is TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS
     assert hasattr(bayesfilter, "tune_hmc_kernel")
     assert "tune_hmc_kernel" in bayesfilter.__all__
+
+
+def test_public_progress_writes_are_atomic_under_concurrent_reader(
+    tmp_path: Any,
+) -> None:
+    progress_path = tmp_path / "hmc_kernel_tuning_progress.json"
+    config = hmc_kernel_tuning.HMCKernelTuningConfig.smoke()
+    parse_errors: list[Exception] = []
+    stop = threading.Event()
+
+    def writer(writer_index: int) -> None:
+        for sequence in range(40):
+            hmc_kernel_tuning._write_public_tuning_progress_if_requested(
+                progress_path=progress_path,
+                config=config,
+                artifact_path=None,
+                current_stage=f"writer_{writer_index}_{sequence}",
+                last_started_stage="test",
+                last_completed_stage=None,
+                adapter_signature="test-adapter",
+                target_dimension=2,
+            )
+
+    def reader() -> None:
+        while not stop.is_set():
+            try:
+                json.loads(progress_path.read_text(encoding="utf-8"))
+            except FileNotFoundError:
+                continue
+            except Exception as exc:  # noqa: BLE001 - capture torn reader evidence.
+                parse_errors.append(exc)
+                return
+
+    reader_thread = threading.Thread(target=reader)
+    writers = [threading.Thread(target=writer, args=(index,)) for index in range(3)]
+    reader_thread.start()
+    for thread in writers:
+        thread.start()
+    for thread in writers:
+        thread.join()
+    stop.set()
+    reader_thread.join()
+
+    assert parse_errors == []
+    payload = json.loads(progress_path.read_text(encoding="utf-8"))
+    assert payload["schema"] == "bayesfilter.hmc_kernel_tuning_progress.v1"
+    assert not tuple(tmp_path.glob("*.tmp"))

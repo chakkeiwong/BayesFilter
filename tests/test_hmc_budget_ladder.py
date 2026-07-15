@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import threading
+import time
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
@@ -259,6 +261,172 @@ def test_budget_ladder_config_validation_rejects_unbounded_or_missing_diagnostic
     assert timeout_payload["public_timeout_budget_s"] == pytest.approx(10.0)
     assert timeout_payload["public_timeout_started_perf_counter_s"] == pytest.approx(2.0)
     assert timeout_payload["public_timeout_closeout_reserve_s"] == pytest.approx(3.0)
+    assert _config().payload()["incall_progress_heartbeat_s"] is None
+    with pytest.raises(ValueError, match="incall_progress_heartbeat_s"):
+        _config(incall_progress_heartbeat_s=0.0)
+    assert _config(incall_progress_heartbeat_s=1.5).payload()[
+        "incall_progress_heartbeat_s"
+    ] == pytest.approx(1.5)
+
+
+def test_incall_progress_monitor_emits_work_snapshot_without_restarting_call() -> None:
+    class ProgressAdapter:
+        def __init__(self) -> None:
+            self.rows = 0
+
+        def progress_telemetry_snapshot(self) -> Mapping[str, Any]:
+            self.rows += 2
+            return {
+                "schema": "test.progress.v1",
+                "target_evaluation_rows": self.rows,
+                "finite_target_evaluation_rows": self.rows,
+                "private_values": [1.0, 2.0],
+            }
+
+    calls = 0
+    progress: list[tuple[str, Mapping[str, Any]]] = []
+    expected = _fake_result(acceptance=0.70, step_size=None)
+
+    def run() -> _FakeRunResult:
+        nonlocal calls
+        calls += 1
+        time.sleep(0.035)
+        return expected
+
+    result = hmc_budget_ladder._run_with_incall_progress_monitor(
+        run=run,
+        adapter=ProgressAdapter(),
+        progress_callback=lambda stage, payload: progress.append((stage, payload)),
+        heartbeat_s=0.01,
+        role="repair_screen",
+        round_index=4,
+        budget=5000,
+        config=hmc_budget_ladder._screen_config(
+            _config(),
+            seed=(1, 2),
+            step=0.1,
+            target_scope="budget_ladder_toy_gaussian",
+        ),
+        route_category="reusable_runner",
+    )
+
+    assert result is expected
+    assert calls == 1
+    assert len(progress) >= 2
+    rows = [item[1]["incall_work_snapshot"]["target_evaluation_rows"] for item in progress]
+    assert rows == sorted(rows)
+    assert len(set(rows)) == len(rows)
+    assert all(item[0] == "fixed_mass_ladder_repair_screen_call_start" for item in progress)
+    assert all(item[1]["incall_heartbeat_sequence_is_not_progress"] for item in progress)
+    assert all("private_values" not in item[1]["incall_work_snapshot"] for item in progress)
+
+
+def test_incall_progress_monitor_diagnostic_failure_does_not_mask_hmc_result() -> None:
+    class BrokenProgressAdapter:
+        def progress_telemetry_snapshot(self) -> Mapping[str, Any]:
+            raise RuntimeError("diagnostic failure")
+
+    expected = _fake_result(acceptance=0.70, step_size=None)
+    progress: list[tuple[str, Mapping[str, Any]]] = []
+
+    def run() -> _FakeRunResult:
+        time.sleep(0.025)
+        return expected
+
+    result = hmc_budget_ladder._run_with_incall_progress_monitor(
+        run=run,
+        adapter=BrokenProgressAdapter(),
+        progress_callback=lambda stage, payload: progress.append((stage, payload)),
+        heartbeat_s=0.01,
+        role="screen",
+        round_index=0,
+        budget=4,
+        config=hmc_budget_ladder._screen_config(
+            _config(),
+            seed=(1, 2),
+            step=0.1,
+            target_scope="budget_ladder_toy_gaussian",
+        ),
+        route_category="injected_runner",
+    )
+
+    assert result is expected
+    assert progress
+    assert progress[-1][1]["incall_monitor_error_count"] >= 1
+    assert "RuntimeError" in progress[-1][1]["incall_monitor_error_types"]
+    assert progress[-1][1]["incall_monitor_errors_are_explanatory_only"] is True
+
+
+@pytest.mark.parametrize("run_raises", [False, True])
+def test_incall_progress_monitor_joins_before_return_or_error(
+    run_raises: bool,
+) -> None:
+    callback_started = threading.Event()
+    release_callback = threading.Event()
+    run_finished = threading.Event()
+    wrapper_finished = threading.Event()
+    writes: list[int] = []
+    outcome: list[Any] = []
+
+    class ProgressAdapter:
+        def progress_telemetry_snapshot(self) -> Mapping[str, Any]:
+            return {"target_evaluation_rows": 1}
+
+    def callback(_stage: str, _payload: Mapping[str, Any]) -> None:
+        callback_started.set()
+        assert release_callback.wait(timeout=5.0)
+        writes.append(1)
+
+    def run() -> _FakeRunResult:
+        assert callback_started.wait(timeout=5.0)
+        run_finished.set()
+        if run_raises:
+            raise RuntimeError("controlled HMC failure")
+        return _fake_result(acceptance=0.70, step_size=None)
+
+    def invoke() -> None:
+        try:
+            outcome.append(
+                hmc_budget_ladder._run_with_incall_progress_monitor(
+                    run=run,
+                    adapter=ProgressAdapter(),
+                    progress_callback=callback,
+                    heartbeat_s=0.01,
+                    role="screen",
+                    round_index=0,
+                    budget=4,
+                    config=hmc_budget_ladder._screen_config(
+                        _config(),
+                        seed=(1, 2),
+                        step=0.1,
+                        target_scope="budget_ladder_toy_gaussian",
+                    ),
+                    route_category="injected_runner",
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 - assert the controlled outcome.
+            outcome.append(exc)
+        finally:
+            wrapper_finished.set()
+
+    wrapper_thread = threading.Thread(target=invoke)
+    wrapper_thread.start()
+    assert callback_started.wait(timeout=5.0)
+    assert run_finished.wait(timeout=5.0)
+    assert wrapper_finished.wait(timeout=0.05) is False
+    release_callback.set()
+    wrapper_thread.join(timeout=5.0)
+
+    assert wrapper_thread.is_alive() is False
+    assert wrapper_finished.is_set()
+    assert writes == [1]
+    time.sleep(0.03)
+    assert writes == [1]
+    if run_raises:
+        assert isinstance(outcome[0], RuntimeError)
+        assert str(outcome[0]) == "controlled HMC failure"
+    else:
+        assert isinstance(outcome[0], _FakeRunResult)
 
 
 def test_budget_ladder_public_timeout_closeout_before_tune_skips_hmc_call(
