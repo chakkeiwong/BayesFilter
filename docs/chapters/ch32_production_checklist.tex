@@ -62,3 +62,32 @@ Use the narrowest honest label:
     data, hardware, and compilation policy.
 \end{description}
 Anything less should stay in the reset memo as a gap, not disappear into prose.
+
+\section{Fixed-Center Geometry Checklist}
+\label{sec:bf-production-fixed-center-geometry}
+
+Before a fixed-center precision enters HMC:
+\begin{enumerate}[label=(\roman*)]
+  \item use \texttt{diagnostic\_center}, not \texttt{map}, unless a separate
+    MAP gate passed;
+  \item preserve raw dense precision, eigenvalues, inertia, and projection
+    burden before SPD regularization;
+  \item require at least two fit replicates and caller-reviewed pairwise caps;
+  \item keep training, selection holdout, and audit clouds disjoint;
+  \item verify covariance/precision orientation and coordinate scaling;
+  \item reject unidentified two-factor fits and record anchor/rank diagnostics;
+  \item follow the fallback order and never manufacture identity automatically;
+  \item construct a \texttt{PrecomputedMassArtifact} only after every gate;
+  \item run a separate exact Metropolis-corrected HMC mechanics canary;
+  \item exclude adaptation and tuning draws from retained inference.
+\end{enumerate}
+
+For CPU/XLA cloud evaluation, record the explicit route, core-count source,
+worker count or override, $B=1$, XLA flag, child PIDs, deterministic ordering,
+and semantic progress events.  Never convert a GPU failure into automatic CPU
+fallback.  GPU execution must verify incremental memory growth before framework
+initialization.
+
+Passing this checklist only nominates an exact HMC canary.  It does not
+establish posterior convergence or production readiness.  Target-only or
+child-function XLA success does not establish full-chain XLA.

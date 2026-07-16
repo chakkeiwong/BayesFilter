@@ -46,3 +46,29 @@ finite analytic gradients and Hessians, MAP/mass-matrix diagnostics, and short
 HMC plumbing checks.  It is not the right first target for SVD sigma-point HMC
 claims, because its main reusable strength is exact or controlled linear
 Gaussian filtering.
+
+\section{DZ5 Fixed-Center Curvature Evidence}
+\label{sec:bf-dz5-curvature-evidence}
+
+A 2026-07-16 MacroFinance diagnostic shows why score stationarity and curvature
+stability must be separated.  The foreign-binding center had prior-scaled score
+$0.970879$, yet at radius $0.015625$ three independent dense fits had positive
+raw curvature, negligible SPD projection, independent holdout relative error
+below $0.007$, and trace-normalized differences near $0.1\%$.  Small
+$\pm0.01$ prior-standard-deviation center shifts preserved the geometry.  This
+nominates a separate exact HMC mechanics canary; it does not establish a MAP or
+convergence.
+
+The both-binding center had the smaller score $0.094590$ but failed
+reproducibility.  Raw nonpositive counts were $(2,2,1)$, projected generalized-
+eigenvalue spreads were approximately $4.3\times10^{11}$ to
+$1.7\times10^{12}$, and positive-subspace principal-angle disagreement reached
+about $70.6$ degrees.  Its projected dense matrix is blocked for HMC use;
+projection did not repair weak-direction uncertainty.
+
+These are deterministic local diagnostics on one preserved center per regime
+and three fit seeds.  They support the score-versus-curvature correction and
+the structured and consensus repair.  They do not establish posterior validity,
+identification, recovery, HMC behavior, or default readiness.  Applying the new
+BayesFilter fixed-center API to the both-binding target and running exact HMC
+remain separate reviewed experiments.

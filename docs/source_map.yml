@@ -1,5 +1,5 @@
 version: 1
-date: 2026-05-02
+date: 2026-07-16
 
 policy:
   original_sources_read_only: true
@@ -497,6 +497,37 @@ sources:
     root: /home/chakwong/MacroFinance
     status: candidate
     role: Implementation and validation reference for differentiated Kalman filters.
+  - id: bayesfilter_neural_operator_recent_shelf_2026_06_20
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/.localsource/neural_operator2
+    entrypoint: /home/chakwong/BayesFilter/.localsource/neural_operator2
+    status: drafted
+    role: Recent neural OT / conditional OT / operator-learning paper shelf used to expand the OT chapter block with modern recent-work and code-availability visibility.
+  - id: bayesfilter_recent_neural_ot_code_matrix_2026_06_20
+    project: BayesFilter
+    root: /home/chakwong/BayesFilter/docs/plans
+    entrypoint: /home/chakwong/BayesFilter/docs/plans/recent-neural-ot-code-availability-matrix-2026-06-20.md
+    status: drafted
+    role: Code-availability and borrowability matrix for recent neural OT, conditional OT, and operator-learning families referenced by ch32d--ch32f.
+  - id: bayesfilter_fixed_center_curvature_2026_07_16
+    project: BayesFilter
+    root: /home/ubuntu/python/BayesFilter
+    entrypoint: /home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-dz5-structured-curvature-consensus-repair-plan-2026-07-16.md
+    status: audited
+    role: >
+      Reviewed and executed fixed-center score-curvature lane.  Mathematical
+      documentation is in ch04, ch22, ch24, ch25, ch30, and ch32.  Implemented
+      code is bayesfilter/inference/factor_correlation_geometry.py,
+      bayesfilter/inference/sequential_map_covariance.py,
+      bayesfilter/inference/fixed_center_curvature.py, and
+      bayesfilter/inference/cpu_xla_cloud.py, with spawn-safe environment
+      bootstrap in bayesfilter/cpu_xla_worker_bootstrap.py.  Focused tests are
+      tests/test_factor_correlation_geometry.py,
+      tests/test_sequential_map_covariance.py,
+      tests/test_fixed_center_curvature.py, and tests/test_cpu_xla_cloud.py.
+      MacroFinance provenance is the 2026-07-16 DZ5 B3 curvature-stability
+      result and reset memo.  The common algorithms are implemented; the
+      both-binding exact-HMC canary and retained estimation are not claimed.
 
 index_artifacts:
   - command: "PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli index-latex /home/chakwong/python/docs --output /tmp/bayesfilter-dsge-latex-index.json"
@@ -1692,16 +1723,3 @@ phase_gates:
       toy reference backends are implemented, and the focused pytest ladder
       passed on 2026-05-04. Client adapter pilots remain gated by model-specific
       structural maps and derivative/code audits.
-
-  - id: bayesfilter_neural_operator_recent_shelf_2026_06_20
-    project: BayesFilter
-    root: /home/chakwong/BayesFilter/.localsource/neural_operator2
-    entrypoint: /home/chakwong/BayesFilter/.localsource/neural_operator2
-    status: drafted
-    role: Recent neural OT / conditional OT / operator-learning paper shelf used to expand the OT chapter block with modern recent-work and code-availability visibility.
-  - id: bayesfilter_recent_neural_ot_code_matrix_2026_06_20
-    project: BayesFilter
-    root: /home/chakwong/BayesFilter/docs/plans
-    entrypoint: /home/chakwong/BayesFilter/docs/plans/recent-neural-ot-code-availability-matrix-2026-06-20.md
-    status: drafted
-    role: Code-availability and borrowability matrix for recent neural OT, conditional OT, and operator-learning families referenced by ch32d--ch32f.

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import tensorflow as tf
 import bayesfilter.inference.sequential_map_covariance as sequential
+import bayesfilter.inference.factor_correlation_geometry as factor_geometry
 
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
@@ -138,12 +140,52 @@ def test_two_factor_fit_rejects_dimensionally_unidentified_case() -> None:
     assert result.status == "factor_parameterization_dimensionally_unidentified"
 
 
+def test_two_factor_fit_rejects_rank_deficient_prediction_jacobian(monkeypatch) -> None:
+    dimension = 5
+    rng = np.random.default_rng(41)
+    offsets = tf.constant(rng.normal(size=(30, dimension)) * 0.1, tf.float64)
+    precision = tf.eye(dimension, dtype=tf.float64)
+    scores = _score_rows(precision, offsets)
+    monkeypatch.setattr(
+        factor_geometry,
+        "_prediction_jacobian_diagnostics",
+        lambda *_args, **_kwargs: (3 * dimension - 2, 10.0),
+    )
+
+    result = fit_factor_correlation_score_geometry(
+        tf.zeros([dimension], tf.float64),
+        offsets[:20],
+        scores[:20],
+        offsets[20:],
+        scores[20:],
+        config=FactorCorrelationGeometryConfig(factor_count=2),
+    )
+
+    assert result.accepted is False
+    assert result.status == "second_factor_unidentified"
+    assert result.diagnostics["second_factor_identified"] is False
+
+
 def test_dimension_scaled_search_rule_is_even_and_matches_boundaries() -> None:
-    assert dimension_scaled_search_count(9) == 82
+    assert dimension_scaled_search_count(1) == 2
     assert dimension_scaled_search_count(10) == 100
     assert dimension_scaled_search_count(11) == 100
     assert dimension_scaled_search_count(20) == 124
     assert dimension_scaled_search_count(100) == 506
+    with pytest.raises(ValueError, match="dimension"):
+        dimension_scaled_search_count(0)
+
+
+def test_factor_covariance_rejects_loading_row_ball_boundary() -> None:
+    deviations = tf.ones([2], tf.float64)
+    margin = 1.0e-6
+    boundary = np.sqrt(1.0 - margin)
+    with pytest.raises(tf.errors.InvalidArgumentError):
+        factor_correlation_covariance(
+            deviations,
+            tf.constant([[boundary], [0.0]], tf.float64),
+            loading_margin=margin,
+        )
 
 
 def test_factor_covariance_construction_compiles_with_xla() -> None:
@@ -216,6 +258,47 @@ def test_structured_sequential_policy_reuses_search_scores_and_keeps_fresh_termi
     attempts = [row for row in result.diagnostics["history"] if "fit" in row]
     assert attempts
     assert any(row["fit"].get("reused_training_count", 0) > 0 for row in attempts)
+
+
+def test_reuse_filter_includes_radius_boundary_and_rejects_zero_outside_nonfinite() -> None:
+    dimension = 3
+    center = tf.zeros([dimension], tf.float64)
+    scale = tf.ones([dimension], tf.float64)
+    center_score = tf.zeros([dimension], tf.float64)
+    search_theta = tf.constant(
+        [
+            [0.0, 0.0, 0.0],
+            [0.5, 0.0, 0.0],
+            [0.5001, 0.0, 0.0],
+            [float("nan"), 0.0, 0.0],
+        ],
+        tf.float64,
+    )
+    search_scores = -search_theta
+
+    def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        row = tf.convert_to_tensor(theta, tf.float64)
+        return -0.5 * tf.reduce_sum(row**2), -row
+
+    data, evaluations = sequential._structured_factor_fit_data(
+        target,
+        center,
+        center_score,
+        scale,
+        search_theta=search_theta,
+        search_scores=search_scores,
+        dimension=dimension,
+        radius=0.5,
+        fresh_sample_count=4 * dimension,
+        seed=(2026, 724),
+        evaluations=4,
+        batched_value_and_score_fn=None,
+        reuse_search_scores=True,
+    )
+
+    assert data["reused_training_count"] == 1
+    np.testing.assert_allclose(data["training_offsets_z"][-1].numpy(), [0.5, 0.0, 0.0])
+    assert evaluations == 4 + 4 * dimension
 
 
 def test_structured_policy_escalates_from_rejected_one_factor_to_two_factors(

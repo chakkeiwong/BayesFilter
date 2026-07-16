@@ -186,3 +186,40 @@ The boundary is a maintenance device.  It lets MacroFinance reuse analytic
 Kalman derivatives, DSGE reuse structural nonlinear filtering, and future
 large models reuse the same validation ladder without forking the numerical
 core.
+
+\section{Fixed-Center Curvature API}
+\label{sec:bf-api-fixed-center-curvature}
+
+BayesFilter distinguishes two initialization contracts that must not be
+collapsed into one.  The legacy
+\path{estimate_sequential_map_covariance} contract localizes a MAP
+candidate and therefore requires its standardized maximum absolute score to
+pass the configured terminal cap, a fresh terminal dense fit to be usable, and
+its projection burden to pass the configured cap.  Those checks do not certify
+a global MAP, but they are part of that API's stated semantics.
+
+The fixed-center contract instead accepts a reviewed center $c$ and disjoint
+exact-score clouds.  It does not move $c$ or impose a stationarity gate.  Its
+public result records the center and explanatory score; every dense or
+structured replicate; raw precision matrices, eigenvalues, inertia, projection
+burden, and selection-holdout error; pairwise stability metrics; and the final
+audit-cloud error.
+
+Training and selection-holdout rows are separate for every replicate.  The API
+rejects shared-memory aliases and exact copied offset rows across training,
+selection, and audit partitions.  Disjoint generator seeds remain required
+lineage because this array-level check cannot establish stochastic
+independence.  A third fresh audit cloud is evaluated only after family, target,
+and shrinkage weight selection; it can veto but cannot retune the result.  The
+status \path{eligible_for_exact_hmc_canary} requires complete caller-reviewed
+stability caps and a passing audit cloud.  Missing caps produce
+\path{diagnostic_only}; a failed audit produces
+\path{audit_holdout_rejected}; and no admissible branch produces
+\path{geometry_readiness_blocked}.
+
+Only the eligible state can construct a
+\path{PrecomputedMassArtifact}.  Its position role is
+\path{diagnostic_center}, never \path{map}.  The implemented entry points are
+\path{fit_fixed_center_curvature}, \path{compare_precision_geometry}, and
+\path{consensus_shrunk_precision}.  Exact HMC mechanics, retained-chain
+diagnostics, and posterior convergence remain separate gates.
