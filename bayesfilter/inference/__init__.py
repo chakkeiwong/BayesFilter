@@ -217,12 +217,26 @@ from bayesfilter.inference.quadratic_geometry import (
     LowRankSPDQuadraticGeometryResult,
     fit_low_rank_spd_quadratic_geometry,
 )
+from bayesfilter.inference.factor_correlation_geometry import (
+    FACTOR_CORRELATION_GEOMETRY_NONCLAIMS,
+    FactorCorrelationGeometryConfig,
+    FactorCorrelationGeometryResult,
+    factor_correlation_covariance,
+    fit_factor_correlation_score_geometry,
+)
 from bayesfilter.inference.quadratic_map_covariance import (
     QUADRATIC_MAP_COVARIANCE_NONCLAIMS,
     QuadraticMapCovarianceLocatorConfig,
     QuadraticMapCovarianceMassConfig,
     QuadraticMapCovarianceResult,
     estimate_quadratic_map_covariance,
+)
+from bayesfilter.inference.sequential_map_covariance import (
+    SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS,
+    SequentialMapCovarianceConfig,
+    SequentialMapCovarianceResult,
+    dimension_scaled_search_count,
+    estimate_sequential_map_covariance,
 )
 from bayesfilter.inference.posterior_adapter import (
     HessianPosteriorAdapter,
@@ -272,6 +286,9 @@ __all__ = [
     "BatchValueScoreResult",
     "CovariancePositiveDefiniteError",
     "FactorizationFailure",
+    "FACTOR_CORRELATION_GEOMETRY_NONCLAIMS",
+    "FactorCorrelationGeometryConfig",
+    "FactorCorrelationGeometryResult",
     "FixedTrajectoryCandidateResult",
     "FixedTrajectoryTuningConfig",
     "FixedTrajectoryTuningResult",
@@ -376,9 +393,12 @@ __all__ = [
     "PrecomputedMAP",
     "PriorSupportError",
     "QUADRATIC_MAP_COVARIANCE_NONCLAIMS",
+    "SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS",
     "QuadraticMapCovarianceLocatorConfig",
     "QuadraticMapCovarianceMassConfig",
     "QuadraticMapCovarianceResult",
+    "SequentialMapCovarianceConfig",
+    "SequentialMapCovarianceResult",
     "ReusableFullChainHMCRunner",
     "RegularizationConvention",
     "SolveResidualError",
@@ -427,7 +447,11 @@ __all__ = [
     "evaluate_target_with_failure_policy",
     "evaluate_batch_native_value_score",
     "fit_low_rank_spd_quadratic_geometry",
+    "factor_correlation_covariance",
+    "fit_factor_correlation_score_geometry",
+    "dimension_scaled_search_count",
     "estimate_quadratic_map_covariance",
+    "estimate_sequential_map_covariance",
     "initialize_hmc_kernel_geometry",
     "normalize_hmc_tuning_policy",
     "orchestrate_generic_hmc_tuning",
