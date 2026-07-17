@@ -1,0 +1,156 @@
+{
+  "schema": "bayesfilter.structural_ukf_neutra_owner_adjudicated_confirmation.v1",
+  "campaign_id": "structural-ukf-neutra-truth-tail-20260717",
+  "cell_id": "STR-UKF",
+  "completed_from_preserved_archives": true,
+  "passed": true,
+  "decision": "QUALIFIED_NONCENTRAL_ONE_SEED_TRUTH_TAIL_PASS_OWNER_ADJUDICATED",
+  "claim_scope": "one_noncentral_truth_frozen_structural_ukf_fixture",
+  "target_signature": "e8d78a8ee12245fee2e6c4c739d9dc03d672e8dd9a96bfbd492b426a72e1c665",
+  "transport_semantic_hash": "32a19a8d8d02f6a94851ed489d3b64f961f3bc92ba7ac36506f8078a6649c1e0",
+  "kernel": {
+    "step_size": 0.05,
+    "num_leapfrog_steps": 12,
+    "trajectory_length": 0.6,
+    "verification_acceptance_rate": 0.99675,
+    "verification_energy_error_count": 0,
+    "verification_modern_rhat_max": 1.0323965740283165,
+    "verification_rhat_threshold": 1.05
+  },
+  "warmup": {
+    "results_per_chain": 4000,
+    "chain_count": 4,
+    "retained_separately": true,
+    "excluded_from_posterior": true,
+    "check_window_results_per_chain": 1000,
+    "rank_normalized_split_rhat": [
+      1.0239165418183294,
+      1.0071663793431431,
+      1.047424969620898,
+      1.0159017599857967,
+      1.0004824200028448
+    ],
+    "folded_rank_normalized_split_rhat": [
+      1.028024247069547,
+      1.0069558038919884,
+      1.0034167836435954,
+      1.0136428775166106,
+      1.0055521774163516
+    ],
+    "modern_rhat_max": 1.047424969620898,
+    "rhat_threshold": 1.05,
+    "passed": true
+  },
+  "retained": {
+    "results_per_chain": 4000,
+    "chain_count": 4,
+    "draw_count_total": 16000,
+    "rank_normalized_split_rhat": [
+      1.0037225976527964,
+      1.0061402361836103,
+      1.0028772537101474,
+      1.0028444405269021,
+      1.0066787485765782
+    ],
+    "folded_rank_normalized_split_rhat": [
+      1.000393056380543,
+      1.0015596381662129,
+      1.0006152651752036,
+      1.0013673137491867,
+      1.0011449793348282
+    ],
+    "modern_rhat": [
+      1.0037225976527964,
+      1.0061402361836103,
+      1.0028772537101474,
+      1.0028444405269021,
+      1.0066787485765782
+    ],
+    "max_rank_normalized_split_rhat": 1.0066787485765782,
+    "max_folded_rank_normalized_split_rhat": 1.0015596381662129,
+    "max_modern_rhat": 1.0066787485765782,
+    "rhat_threshold": 1.01,
+    "minimum_bulk_ess": 971.0563379551401,
+    "original_bulk_ess_threshold": 1000.0,
+    "owner_revised_bulk_ess_threshold": 900.0,
+    "minimum_tail_ess": 2354.531612100766,
+    "tail_ess_threshold": 400.0,
+    "original_automated_gate_passed": false,
+    "owner_revised_sufficiency_gate_passed": true,
+    "post_result_threshold_change_disclosed": true
+  },
+  "truth_tail": {
+    "schema": "bayesfilter.structural_ukf_truth_tail.v1",
+    "definition": "F=(n_less+0.5*n_equal+0.5)/(N+1); p_truth=2*min(F,1-F)",
+    "interpretation": "posterior-tail diagnostic_not_frequentist_p_value",
+    "pass_threshold": 0.05,
+    "severe_threshold": 0.003,
+    "minimum_p_truth": 0.28441972376726454,
+    "passed": true,
+    "parameter_rows": [
+      {
+        "parameter": "rho",
+        "truth": 0.8,
+        "posterior_mean": 0.7668127513202861,
+        "empirical_95_interval": [0.5440425403635785, 0.928065214401072],
+        "p_truth": 0.8035122804824699,
+        "truth_in_empirical_95_interval": true
+      },
+      {
+        "parameter": "sigma",
+        "truth": 0.5,
+        "posterior_mean": 0.5093071702815626,
+        "empirical_95_interval": [0.3107270056114122, 0.7545165716221409],
+        "p_truth": 0.9986250859321293,
+        "truth_in_empirical_95_interval": true
+      },
+      {
+        "parameter": "phi",
+        "truth": 0.7,
+        "posterior_mean": 0.4655830111762915,
+        "empirical_95_interval": [0.07611870456141076, 0.8132332536848828],
+        "p_truth": 0.28441972376726454,
+        "truth_in_empirical_95_interval": true
+      },
+      {
+        "parameter": "gamma",
+        "truth": 0.4,
+        "posterior_mean": 0.5080265030667256,
+        "empirical_95_interval": [0.13871158054927057, 0.9412981516273798],
+        "p_truth": 0.7160177488906944,
+        "truth_in_empirical_95_interval": true
+      },
+      {
+        "parameter": "R",
+        "truth": 0.25,
+        "posterior_mean": 0.19624768784021543,
+        "empirical_95_interval": [0.03572915918759054, 0.40915247359614004],
+        "p_truth": 0.5505280919942503,
+        "truth_in_empirical_95_interval": true
+      }
+    ]
+  },
+  "artifact_bindings": {
+    "tuning_progress_sha256": "b33bd630d4221615a9cb33165c272ab78171fea107b0d70d644146040b4bc0bd",
+    "retained_chunk_0_physical_sha256": "7e3fac17f20c1c454b4c5b597b433cdc8168f6730bdf39f919a2332ec5043ff4",
+    "retained_chunk_1_physical_sha256": "056a9ac2f57bc15bcdcb6d9acd89c591f9abd8f58aa7e79dea5a0b3e092e758f",
+    "retained_chunk_0_metadata_sha256": "733200477f5e9431b48fdd8e5c9bcd78b77c4252f0e00775136f0717bc67750d",
+    "retained_chunk_1_metadata_sha256": "1ec5435c00790b47e4d8288b49e015a4b0fa4d02dd59dea20c80b108039bc991"
+  },
+  "decision_table": {
+    "primary_status": "qualified_pass_under_owner_revised_bulk_ess_sufficiency",
+    "rhat_veto_status": "clear",
+    "tail_ess_veto_status": "clear",
+    "original_bulk_ess_gate_status": "missed_by_2.9_percent",
+    "truth_tail_veto_status": "clear",
+    "main_uncertainty": "single_noncentral_fixture_and_post_result_ess_threshold_adjudication",
+    "next_justified_action": "document_and_close_bounded_structural_campaign"
+  },
+  "nonclaims": [
+    "no repeated-sampling calibration theorem",
+    "no exact-filter correctness claim",
+    "no universal reliability claim",
+    "no sampler superiority claim",
+    "no production or default readiness claim"
+  ]
+}
