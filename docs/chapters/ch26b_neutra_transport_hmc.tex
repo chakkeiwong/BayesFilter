@@ -1,0 +1,865 @@
+\chapter{Neural Transport Hamiltonian Monte Carlo}
+\label{ch:bf-neutra}
+
+This chapter gives a self-contained account of neural-transport Hamiltonian
+Monte Carlo (NeuTra HMC) and documents the BayesFilter implementation and
+experiments available in July 2026.  The construction was introduced by
+\citet{hoffman2019neutra}; the derivation and implementation below do not
+require the reader to consult that paper.  The HMC and transport mathematics,
+diagnostics, and five common truth-tail targets are derived explicitly.  Eight
+additional historical configurations are reported under their preserved
+protocols.  Four of those are inherited DSGE targets whose complete economic
+model systems belong to their dedicated chapters and repositories; they are
+identified here at the resolution needed to interpret the NeuTra evidence, but
+are not presented as self-contained re-derivations of those economic models.
+
+\section{Motivation: geometry is often the HMC bottleneck}
+
+Let $\vartheta$ denote scientifically meaningful parameters and let $y$ denote
+the observations.  Bayesian computation targets
+\begin{equation}
+ p(\vartheta\mid y)=\frac{p(y\mid\vartheta)p(\vartheta)}{p(y)}.
+\end{equation}
+The evidence $p(y)$ is normally unavailable, but HMC needs only an unnormalized
+log posterior and its gradient.  Constraints are first removed by a model
+chart $\vartheta=C(\theta)$, $\theta\in\R^d$.  Thus the source-coordinate target
+used by computation is
+\begin{align}
+ \widetilde\pi_\Theta(\theta)
+ &=p(y\mid C(\theta))p(C(\theta))
+   \left|\det J_C(\theta)\right|, \\
+ \ell_\Theta(\theta)&=\log\widetilde\pi_\Theta(\theta).
+ \label{eq:bf-neutra-source-target}
+\end{align}
+The tilde emphasizes that normalization is unnecessary.
+
+Euclidean HMC is efficient when typical posterior directions have comparable
+scales and curvature.  It can be inefficient when a single global mass matrix
+cannot accommodate strong correlations, changing curvature, funnels, or
+nonlinear ridges.  A step size small enough for the stiffest region then makes
+movement elsewhere slow.  An affine whitening map repairs constant covariance
+but cannot generally straighten changing geometry.  NeuTra learns an explicit
+nonlinear coordinate map and runs ordinary HMC in the learned coordinates.
+
+Three facts motivate the method and delimit its claims.
+\begin{enumerate}
+ \item The learned variational distribution need not be exact.  Its purpose is
+   to provide useful coordinates, not final posterior draws.
+ \item The Jacobian-corrected HMC target is exact for the declared
+   source-coordinate posterior whenever the frozen map is a bijection and HMC
+   is implemented correctly.
+ \item A poor map can still reduce efficiency or hide a mode from finite runs.
+   Exact invariance is not a finite-time convergence guarantee.
+\end{enumerate}
+
+\section{Hamiltonian Monte Carlo from first principles}
+
+For a target $\widetilde\pi(q)$ on $q\in\R^d$, introduce momentum
+$p\sim\calN(0,M)$ with positive-definite mass $M$.  Define
+\begin{equation}
+ U(q)=-\log\widetilde\pi(q),\qquad
+ K(p)=\tfrac12p^\top M^{-1}p,\qquad H(q,p)=U(q)+K(p).
+\end{equation}
+Hamilton's equations are
+\begin{equation}
+ \dot q=M^{-1}p,\qquad \dot p=\nabla_q\log\widetilde\pi(q).
+\end{equation}
+Along an exact trajectory,
+\begin{align}
+ \frac{dH}{dt}
+ &=\nabla_qH^\top\dot q+\nabla_pH^\top\dot p\\
+ &=\nabla U(q)^\top M^{-1}p
+   +(M^{-1}p)^\top[-\nabla U(q)]=0.
+\end{align}
+The phase-space velocity is
+$v(q,p)=(\nabla_pH,-\nabla_qH)$, whose divergence is
+\begin{equation}
+ \nabla_q\!\cdot\nabla_pH-\nabla_p\!\cdot\nabla_qH=0
+\end{equation}
+because the mixed derivatives cancel.  Liouville's formula therefore gives a
+unit Jacobian determinant for the exact flow, so phase-space volume is
+preserved.  If $(q(t),p(t))$ solves the equations, then
+$(q(-t),-p(-t))$ does also, proving reversibility after a momentum flip.
+
+Numerically, one leapfrog step of size $\epsilon$ is
+\begin{align}
+ p_{n+1/2}&=p_n+\tfrac\epsilon2\nabla\log\widetilde\pi(q_n),\\
+ q_{n+1}&=q_n+\epsilon M^{-1}p_{n+1/2},\\
+ p_{n+1}&=p_{n+1/2}+\tfrac\epsilon2
+   \nabla\log\widetilde\pi(q_{n+1}).
+ \label{eq:bf-neutra-leapfrog}
+\end{align}
+Each substep is a shear: it changes one block while holding the other fixed,
+and therefore has block-triangular Jacobian determinant one.  Their composition
+is volume-preserving.  Replacing $\epsilon$ by $-\epsilon$ and reversing the
+substep order recovers the starting state; because the kick--drift--kick order
+is symmetric, a momentum flip supplies the required proposal reversibility.
+After $L$ steps, the proposal $(q',-p')$ is accepted with probability
+\begin{equation}
+ \alpha=\min\{1,\exp[-H(q',p')+H(q,p)]\}.
+ \label{eq:bf-neutra-accept}
+\end{equation}
+Indeed, for the joint density $\rho(q,p)\propto e^{-H(q,p)}$ and the
+deterministic reversible proposal map $F$, the accepted forward probability
+mass is
+\begin{equation}
+ \rho(x)\min\!\left\{1,\frac{\rho(Fx)}{\rho(x)}\right\}
+ =\min\{\rho(x),\rho(Fx)\}
+ =\rho(Fx)\min\!\left\{1,\frac{\rho(x)}{\rho(Fx)}\right\},
+\end{equation}
+where $x=(q,p)$.  This is detailed balance; the unit Jacobian means no proposal
+volume factor is missing.  The Metropolis correction therefore removes
+leapfrog discretization bias.  A high
+acceptance rate alone is not evidence of good exploration: $\epsilon$ can be so
+small that proposals are nearly unchanged.
+
+\section{Exact neural change of variables}
+\label{sec:bf-neutra-change-of-variables}
+
+Let $z\in\R^d$ be latent HMC coordinates and let
+\begin{equation}
+ \theta=T_\phi(z)
+ \label{eq:bf-neutra-map}
+\end{equation}
+be a differentiable bijection with frozen parameters $\phi$.  For a measurable
+set $A$ in source space,
+\begin{align}
+ \Pr(\Theta\in A)
+ &=\int_A\pi_\Theta(\theta)\,d\theta\\
+ &=\int_{T_\phi^{-1}(A)}
+   \pi_\Theta(T_\phi(z))|\det J_{T_\phi}(z)|\,dz.
+\end{align}
+Therefore the pulled-back target is
+\begin{align}
+ \widetilde\pi_Z(z)
+ &=\widetilde\pi_\Theta(T_\phi(z))
+   |\det J_{T_\phi}(z)|,\\
+ \ell_Z(z)&=\ell_\Theta(T_\phi(z))+\log|\det J_{T_\phi}(z)|.
+ \label{eq:bf-neutra-transported-target}
+\end{align}
+If a Markov kernel leaves $\pi_Z$ invariant, pushing its stationary draws
+through $T_\phi$ produces draws from $\pi_\Theta$.  Hence approximation error
+in training does not change the stationary posterior.  It changes only the
+geometry, initialization, and finite-compute efficiency.
+
+By the chain rule, the latent score is
+\begin{equation}
+ \nabla_z\ell_Z(z)=J_{T_\phi}(z)^\top
+ \nabla_\theta\ell_\Theta(T_\phi(z))+
+ \nabla_z\log|\det J_{T_\phi}(z)|.
+ \label{eq:bf-neutra-score}
+\end{equation}
+Both terms are derivatives of the same scalar target.  Dropping the log
+Jacobian changes the probability measure; dropping its derivative gives the
+wrong force for that measure.  During HMC, $\phi$ is fixed, so no optimizer
+state participates in \eqref{eq:bf-neutra-score}.
+
+Artifacts distinguish latent $z$, unconstrained source $\theta$, and physical
+$\vartheta=C(\theta)$.  HMC integrates $z$; the filter target consumes $\theta$;
+scientific summaries use $\vartheta$.
+
+\section{The BayesFilter dense IAF}
+\label{sec:bf-neutra-iaf}
+
+The tested map is a stack of three MADE-style dense inverse autoregressive flow
+(IAF) stages, reverse-order permutations between stages, and a fixed full
+affine lift.  This section derives that exact implementation.
+
+For one stage, masked dense networks produce vectors $a(z)$ and $b(z)$ such
+that coordinate $i$ depends only on $z_{1:i-1}$.  BayesFilter bounds the log
+scale by
+\begin{equation}
+ s_i(z_{1:i-1})=s_{\max}\tanh\!\left(
+   \frac{a_i(z_{1:i-1})}{s_{\max}}\right),\qquad s_{\max}=1,
+\end{equation}
+and applies
+\begin{equation}
+ u_i=z_i\exp\{s_i(z_{1:i-1})\}+b_i(z_{1:i-1}).
+ \label{eq:bf-neutra-iaf-stage}
+\end{equation}
+Because $s_i$ and $b_i$ do not depend on $z_i$,
+\begin{equation}
+ \frac{\partial u_i}{\partial z_i}=e^{s_i},\qquad
+ \frac{\partial u_i}{\partial z_j}=0\quad(j>i).
+\end{equation}
+The Jacobian is lower triangular, so
+\begin{equation}
+ \det J_f(z)=\prod_{i=1}^d e^{s_i(z_{1:i-1})},\qquad
+ \log|\det J_f(z)|=\sum_{i=1}^d s_i(z_{1:i-1}).
+ \label{eq:bf-neutra-iaf-logdet}
+\end{equation}
+Invertibility follows constructively.  The first coordinate satisfies
+$u_1=e^{s_1}z_1+b_1$, where $s_1,b_1$ are constants, so
+$z_1=e^{-s_1}(u_1-b_1)$.  After $z_{1:i-1}$ have been recovered, evaluate
+$s_i(z_{1:i-1})$ and $b_i(z_{1:i-1})$ and set
+\begin{equation}
+ z_i=e^{-s_i(z_{1:i-1})}
+ \{u_i-b_i(z_{1:i-1})\}.
+\end{equation}
+This recursion gives a unique inverse for every $u\in\R^d$.  The positive
+diagonal derivative agrees with that inverse construction.  The scale bound
+prevents a single stage from creating arbitrarily large or small local volume
+changes.
+
+Let $f_1,\ldots,f_K$ denote the IAF stages and $P$ the reverse permutation.
+For $K=3$, define
+\begin{equation}
+ h_1=f_1(z),\quad h_2=f_2(Ph_1),\quad h_3=f_3(Ph_2),
+ \quad T_\phi(z)=c+Lh_3,
+ \label{eq:bf-neutra-stack}
+\end{equation}
+where $L$ is a fixed nonsingular full matrix.  Since $|\det P|=1$,
+\begin{equation}
+ \log|\det J_T(z)|=\log|\det L|+
+ \sum_{k=1}^K\sum_{i=1}^d s_{k,i}.
+ \label{eq:bf-neutra-stack-logdet}
+\end{equation}
+The affine $(c,L)$ supplies target-specific location and scale; only the neural
+stages are trained.  Output-layer weights are initialized at zero, so the
+residual stack begins as identity.  Hidden weights use small stateless-normal
+initialization, and reverse permutations let later stages model dependencies
+hidden by a single ordering.  These are tested implementation choices, not
+universal optimal defaults.
+
+\section{Reverse-KL training and its gradient}
+\label{sec:bf-neutra-training}
+
+Let $r(z)=\calN(0,I)$ and let $q_\phi$ be the pushforward distribution of
+$\theta=T_\phi(z)$.  Change of variables gives
+\begin{equation}
+ \log q_\phi(T_\phi(z))=\log r(z)-\log|\det J_T(z)|.
+\end{equation}
+The normalized posterior is
+$\pi_\Theta(\theta)=\widetilde\pi_\Theta(\theta)/Z$.  Thus
+\begin{align}
+ \operatorname{KL}(q_\phi\Vert\pi_\Theta)
+ &=\E_{z\sim r}\left[
+ \log r(z)-\log|\det J_T(z)|-\ell_\Theta(T_\phi(z))
+ \right]+\log Z.
+ \label{eq:bf-neutra-reverse-kl-full}
+\end{align}
+Neither $\log r(z)$ nor $\log Z$ depends on $\phi$, so the optimized loss is
+\begin{equation}
+ \mathcal L(\phi)=-\E_{z\sim r}\left[
+ \ell_\Theta(T_\phi(z))+\log|\det J_T(z)|\right].
+ \label{eq:bf-neutra-reverse-kl}
+\end{equation}
+For a batch $z^{(1:B)}$, the unbiased Monte Carlo estimator is the corresponding
+sample mean.  Reparameterization yields
+\begin{equation}
+ \nabla_\phi\mathcal L=-\E_r\left[
+ J_{T,\phi}(z)^\top\nabla_\theta\ell_\Theta(T_\phi(z))+
+ \nabla_\phi\log|\det J_T(z)|\right].
+\end{equation}
+This is differentiated through the same declared target used later by HMC.
+
+Reverse KL penalizes mass placed where the posterior density is low but may
+underrepresent separated modes or tails.  Consequently, heldout loss can
+select a training recipe, and nonfinite loss or gradients can veto training,
+but loss cannot establish posterior convergence.  HMC corrects density error
+only if finite computation actually explores all relevant latent regions.
+
+BayesFilter uses stateless Gaussian batches, one leading-batch target call,
+float64 TensorFlow/TFP, XLA, GPU memory growth, global gradient clipping, and
+Adam with bias correction and linear learning-rate decay.  The full training
+loop is TensorFlow control flow.  No NumPy or Python sample-axis loop belongs
+to the active training/HMC route.  A valid segmented resume restores weights,
+both Adam moments, completed step, seed schedule, and learning-rate schedule.
+
+\section{Geometry induced in source space}
+
+NeuTra may also be understood as a learned position-dependent metric.  With
+identity latent mass, its Hamiltonian is
+\begin{equation}
+ H_Z(z,p)=-\ell_\Theta(T(z))-\log|J(z)|+\tfrac12p^\top p.
+\end{equation}
+Let $J=J_T(z)$ and define source momentum $p_\theta=J^{-\top}p$.  Then
+$p=J^\top p_\theta$ and
+\begin{align}
+ \tfrac12p^\top p&=\tfrac12p_\theta^\top JJ^\top p_\theta,\\
+ -\log|J|&=\tfrac12\log|(JJ^\top)^{-1}|.
+\end{align}
+Hence the same scalar Hamiltonian in $\theta$ has metric
+\begin{equation}
+ G(\theta)=(J(z)J(z)^\top)^{-1},
+\end{equation}
+which explains how a nonlinear map adapts effective scale and orientation with
+position.  Unlike general Riemannian HMC, computation remains an explicit,
+separable Euclidean HMC problem in $z$.  The benefit exists only where the
+learned $J$ approximates useful posterior geometry.
+
+\section{Complete BayesFilter algorithm}
+
+For a valid batched target, the operational algorithm is:
+\begin{enumerate}
+ \item Define the physical model, prior, source chart, likelihood or
+ filter-defined approximate likelihood, scalar log target, score, and target
+ health telemetry.  Verify value/score and batch identity before training.
+ \item Choose a fixed affine lift $(c,L)$ and a small, target-specific candidate
+ set of IAF widths and learning rates.  Train each screen candidate with
+ \eqref{eq:bf-neutra-reverse-kl}; compare on common heldout latent noise.
+ \item Train a fresh final transport from independent initialization using the
+ nominated recipe.  Freeze and serialize its exact component order, weights,
+ biases, masks, affine lift, target signature, and training-state hash.
+ \item Construct \eqref{eq:bf-neutra-transported-target} from the frozen map.
+ Check trainable/frozen parity, finite values, scores, and target telemetry.
+ \item Screen fixed HMC pairs $(\epsilon,L)$ with disjoint seeds.  Acceptance
+ and short-chain ESS nominate candidates; finite states, target health, energy
+ errors, and modern R-hat may veto them.
+ \item Retain warm-up chunks separately until the warm-up gate passes or the
+ cap is reached.  Never pool warm-up into posterior summaries.
+ \item Accumulate fresh retained chunks until the joint R-hat, ESS, and health
+ gates pass or the retained cap is reached.
+ \item Transform retained $z$ draws to source and physical coordinates and
+ apply the predeclared scientific diagnostic.  Archive all three coordinates,
+ seeds, settings, telemetry, hashes, and wall time.
+\end{enumerate}
+
+\section{Convergence and scientific diagnostics}
+\label{sec:bf-neutra-hmc-protocol}
+
+For $M$ chains of length $N$, each chain is split in half, producing $2M$
+sequences of length $n=N/2$.  Pool the draws, replace ranks $r$ by normal
+scores
+\begin{equation}
+ z=\Phi^{-1}\!\left(\frac{r-3/8}{S+1/4}\right),
+\end{equation}
+where $S=MN$.  If $\bar z_m$ and $s_m^2$ are split-chain means and variances,
+\begin{align}
+ W&=\frac1{2M}\sum_m s_m^2,\\
+ B&=\frac{n}{2M-1}\sum_m(\bar z_m-\bar z)^2,\\
+ \widehat V&=\frac{n-1}{n}W+\frac1nB,\qquad
+ \widehat R_{\rm rank}=\sqrt{\widehat V/W}.
+\end{align}
+Folded R-hat repeats the calculation for
+$|x-\operatorname{median}(x)|$, detecting scale discrepancies.  BayesFilter
+reports
+\begin{equation}
+ \widehat R_{\rm modern,j}=\max\{\widehat R_{\rm rank,j},
+ \widehat R_{\rm folded,j}\}.
+ \label{eq:bf-neutra-modern-rhat}
+\end{equation}
+Thus folded R-hat is required, but it is not the sole reported R-hat.
+
+For an estimand with autocorrelations $\rho_t$, the conceptual effective sample
+size is
+\begin{equation}
+ N_{\rm eff}=\frac{MN}{1+2\sum_{t\ge1}\rho_t},
+\end{equation}
+with a stable positive-sequence estimator used in computation.  Bulk ESS uses
+rank-normalized draws; tail ESS evaluates lower and upper tail indicators and
+takes the conservative tail value.  These are finite-run diagnostics, not
+proofs of convergence.
+
+The current serious protocol uses four chains, warm-up modern R-hat at most
+$1.05$, retained modern R-hat at most $1.01$, minimum bulk ESS $1000$, minimum
+tail ESS $400$, and caps of $10{,}000$ warm-up and retained draws per chain.
+The value $1000$ is a conservative convenience rule, not a theorem.  The
+structural result below missed it narrowly and is labeled with the disclosed
+post-result owner adjudication rather than called an automated pass.
+
+TFP's fixed HamiltonianMonteCarlo kernel did not expose native divergence flags
+for these runs.  The preserved hard screen defines an energy failure as a
+nonfinite log acceptance ratio or one below $-1000$.  This narrower telemetry
+is reported honestly and is not renamed as a native divergence diagnostic.
+
+For synthetic data with known truth $\vartheta_j^*$ and $S$ pooled retained
+draws, define
+\begin{equation}
+ \widehat F_j(\vartheta_j^*)=
+ \frac{n_{<,j}+\tfrac12n_{=,j}+\tfrac12}{S+1},\qquad
+ p_{{\rm truth},j}=2\min\{\widehat F_j,1-\widehat F_j\}.
+ \label{eq:bf-neutra-truth-tail}
+\end{equation}
+This posterior-tail diagnostic is not a frequentist p-value.  The cost-bounded
+rule runs one dataset seed first: pass if every value is at least $0.05$;
+repeat one fresh seed for a marginal $[0.003,0.05)$ value; classify and
+investigate immediately below $0.003$.  A sampler veto makes truth recovery
+inconclusive.  Truth at the prior mean is deliberately favorable; noncentral
+fixtures are labeled.
+
+\section{Filter-defined posterior targets used below}
+\label{sec:bf-neutra-filter-targets}
+
+The nonlinear experiments do not use an unspecified ``UKF likelihood'' or
+``SGQF likelihood.''  This section defines the scalar approximation inserted
+into \eqref{eq:bf-neutra-source-target}.
+
+Suppose a filtering rule represents $x_{t-1}\mid y_{1:t-1},\vartheta$ by mean
+$m_{t-1}$ and covariance $P_{t-1}$.  Let standardized points $\xi_r$ and
+weights $w_r^{(m)},w_r^{(c)}$ be fixed.  Given a square-root factor $S$ with
+$SS^\top=P_{t-1}$, place $x_{t-1}^{(r)}=m_{t-1}+S\xi_r$.  For an
+additive-noise transition $f_\vartheta$ and observation $h_\vartheta$, form
+\begin{align}
+ \widetilde x_t^{(r)}&=f_\vartheta(x_{t-1}^{(r)}),\\
+ m_t^-&=\sum_rw_r^{(m)}\widetilde x_t^{(r)},\\
+ P_t^-&=Q_t+\sum_rw_r^{(c)}
+   (\widetilde x_t^{(r)}-m_t^-)(\widetilde x_t^{(r)}-m_t^-)^\top.
+ \label{eq:bf-neutra-filter-predict}
+\end{align}
+When process noise enters nonadditively, the rule is placed on the block
+Gaussian $(x_{t-1},\varepsilon_t)$ and the transition consumes both parts; this
+is the structural-UKF route used for
+\eqref{eq:bf-neutra-structural-model}.  No artificial variance is then added
+to deterministic completion coordinates.
+
+Refactor $P_t^-=S_t^-(S_t^-)^\top$, place
+$\widehat x_t^{(r)}=m_t^-+S_t^-\xi_r$, and set
+\begin{align}
+ y_t^{(r)}&=h_\vartheta(\widehat x_t^{(r)}),\\
+ \mu_t&=\sum_rw_r^{(m)}y_t^{(r)},\\
+ F_t&=R_t+\sum_rw_r^{(c)}(y_t^{(r)}-\mu_t)(y_t^{(r)}-\mu_t)^\top,\\
+ C_t&=\sum_rw_r^{(c)}(\widehat x_t^{(r)}-m_t^-)
+       (y_t^{(r)}-\mu_t)^\top,\\
+ K_t&=C_tF_t^{-1},\qquad m_t=m_t^-+K_t(y_t-\mu_t),\\
+ P_t&=P_t^--K_tF_tK_t^\top.
+ \label{eq:bf-neutra-filter-update}
+\end{align}
+The filter-defined log likelihood is the Gaussian prediction-error scalar
+\begin{equation}
+ \ell_{\rm filt}(\vartheta)=-\frac12\sum_{t=1}^T\left[
+ d_y\log(2\pi)+\log|F_t|+v_t^\top F_t^{-1}v_t\right],
+ \quad v_t=y_t-\mu_t.
+ \label{eq:bf-neutra-filter-likelihood}
+\end{equation}
+For any scalar source coordinate $a$, differentiation of one increment gives
+\begin{equation}
+ \partial_a\ell_t=-\frac12\left[
+ \operatorname{tr}(F_t^{-1}\partial_aF_t)
+ +2(\partial_av_t)^\top F_t^{-1}v_t
+ -v_t^\top F_t^{-1}(\partial_aF_t)F_t^{-1}v_t\right].
+ \label{eq:bf-neutra-filter-score}
+\end{equation}
+Propagating derivatives through
+\eqref{eq:bf-neutra-filter-predict}--\eqref{eq:bf-neutra-filter-update}, including
+the square-root derivative, supplies the score of the same scalar
+\eqref{eq:bf-neutra-filter-likelihood}.  BayesFilter uses this checked manual
+or custom-gradient recursion rather than a different force.
+
+For the principal-square-root UKF, in dimension $d$ the unscented rule is
+\begin{align}
+ \lambda&=\alpha^2(d+\kappa)-d,\\
+ \xi_0&=0,\quad \xi_i=\sqrt{d+\lambda}\,e_i,\quad
+ \xi_{i+d}=-\sqrt{d+\lambda}\,e_i,\\
+ w_0^{(m)}&=\frac{\lambda}{d+\lambda},\quad
+ w_0^{(c)}=w_0^{(m)}+1-\alpha^2+\beta,\\
+ w_i^{(m)}&=w_i^{(c)}=\frac1{2(d+\lambda)}\quad(i>0).
+ \label{eq:bf-neutra-ukf-rule}
+\end{align}
+The tested rule fixes $(\alpha,\beta,\kappa)=(1,2,0)$ and uses the unique
+symmetric positive-definite principal square root.  Here $\lambda=0$, so the
+mean center weight is zero and the covariance center weight is two.
+
+For the fixed level-2 SGQF in dimension $d$, the merged Smolyak/Gauss--Hermite
+cloud has the closed form
+\begin{equation}
+ \xi_0=0,\quad w_0=1-\frac d3,\qquad
+ \xi_{j,\pm}=\pm\sqrt3e_j,\quad w_{j,\pm}=\frac16,\quad j=1,\ldots,d.
+ \label{eq:bf-neutra-sgqf-rule}
+\end{equation}
+The normalization follows from
+\begin{equation}
+ w_0+\sum_{j=1}^d(w_{j,+}+w_{j,-})
+ =1-\frac d3+2d\frac16=1.
+\end{equation}
+Symmetry makes the weighted mean zero.  Off-diagonal second moments vanish,
+and coordinate $j$ has second moment
+\begin{equation}
+ \frac16(\sqrt3)^2+\frac16(-\sqrt3)^2=1,
+\end{equation}
+so the weighted covariance is $I_d$.  Predator--prey has $d=2$, hence five
+points and center weight $1/3$.  SIR has $d=18$, hence 37 points and center
+weight $-5$; that negative weight is part of the declared rule and is retained.
+Both filters use
+\eqref{eq:bf-neutra-filter-predict}--\eqref{eq:bf-neutra-filter-likelihood}; only
+their fixed point clouds and square-root branches differ.
+
+All bounded-uniform physical priors below use the explicit probit chart
+\begin{align}
+ \vartheta_i&=l_i+(u_i-l_i)\Phi(\theta_i),\\
+ \frac{d\vartheta_i}{d\theta_i}&=(u_i-l_i)\phi(\theta_i),\\
+ \log p(\vartheta_i)+\log\left|\frac{d\vartheta_i}{d\theta_i}\right|
+ &=\log\phi(\theta_i),\qquad
+ \partial_{\theta_i}\log\!\left[
+ p(\vartheta_i)\left|\frac{d\vartheta_i}{d\theta_i}\right|\right]
+ =-\theta_i.
+ \label{eq:bf-neutra-probit-chart}
+\end{align}
+The interval width cancels the uniform density exactly.  These chart terms are
+part of the source target before the NeuTra Jacobian is added.
+
+\section{Models in the common truth-tail experiment}
+\label{sec:bf-neutra-common-models}
+
+Five retained archives are comparable under
+\eqref{eq:bf-neutra-truth-tail}.  Each has four chains and $4000$ retained
+draws per chain, hence $16{,}000$ pooled draws.  Warm-up is separate.
+
+\subsection{Four-dimensional exact LGSSM}
+
+The model is
+\begin{equation}
+ x_t=Ax_{t-1}+\eta_t,\quad \eta_t\sim\calN(0,Q),\qquad
+ y_t=x_t+\epsilon_t,\quad \epsilon_t\sim\calN(0,R),
+\end{equation}
+with $T=120$, stationary Gaussian initialization, diagonal $Q,R$, and lower
+triangular
+\begin{equation}
+ A=\begin{pmatrix}.62&0&0&0\\.18&.48&0&0\\-.10&.14&.30&0\\
+ .06&-.08&.11&.16\end{pmatrix}.
+\end{equation}
+The process standard deviations are $(.30,.26,.22,.18)$ and observation
+standard deviations $(.12,.11,.10,.09)$.  The 18 inferred quantities are ten
+free elements of $A$ and eight standard deviations.  The likelihood is the
+exact Kalman prediction-error likelihood.  In raw coordinates, the prior is
+independent Gaussian and centered at the frozen truth, with standard deviation
+$.5$ for the four diagonal transition coordinates, $.6$ for the six strict
+lower-triangular coordinates, and $.35$ for each log process or observation
+standard deviation.  Warm-up/retained counts were
+$2000/4000$ per chain; maximum modern R-hat was $1.00215$, minimum bulk/tail
+ESS $4571.6/3977.0$, and the energy-error count was zero.
+
+\subsection{Predator--prey with UKF and SGQF likelihoods}
+
+For prey $X$ and predator $Y$, the continuous dynamics are
+\begin{align}
+ \dot X&=rX(1-X/K)-s\frac{XY}{a+X},\\
+ \dot Y&=u\frac{XY}{a+X}-vY.
+\end{align}
+They are integrated by RK4 over intervals of length two using step $0.1$.
+The initial state is $\calN((50,5)^\top,I_2)$; process and observation covariance
+are both $4I_2$; both state coordinates are observed; and $T=20$.  Independent
+uniform priors use the box
+\begin{equation}
+ r\in[.1,1.1],\ K\in[110,130],\ a\in[20,30],\ s\in[.1,1.1],\
+ u,v\in[0,1],
+\end{equation}
+implemented by six probit charts with their Jacobians.  The generating vector
+is
+\begin{equation}
+ (r,K,a,s,u,v)=(.6,114,25,.3,.5,.5).
+\end{equation}
+Thus $K$ and $s$ are not at prior means, requiring
+the noncentral label.  The two posterior targets differ only in the declared
+approximate filter likelihood: principal-square-root UKF versus fixed SGQF.
+Both used $2000/4000$ warm-up/retained draws per chain and zero recorded energy
+failures.  UKF had maximum modern R-hat $1.00081$ and minimum bulk/tail ESS
+$27623.6/13394.1$; SGQF had $1.00033$ and $26978.5/12974.7$.
+
+\subsection{Parameterized spatial SIR with SGQF likelihood}
+
+Nine regions have susceptible-infectious pairs $(S_j,I_j)$, giving an
+18-dimensional state.  With graph adjacency $A_{jk}$ and degree $d_j$, the
+continuous dynamics are
+\begin{align}
+ \dot S_j&=-\kappa S_jI_j+\tfrac12\sum_kA_{jk}S_k-\tfrac12d_jS_j,\\
+ \dot I_j&=\kappa S_jI_j-\nu I_j+\tfrac12\sum_kA_{jk}I_k-\tfrac12d_jI_j.
+\end{align}
+All nine infectious coordinates are observed.  The frozen $T=20$ fixture uses
+unit process covariance and base observation covariance $100I_9$.  Three
+source parameters have independent $\calN(0,.5^2)$ priors and scale
+\begin{equation}
+ \kappa=.1e^{\theta_1},\qquad \nu=18e^{\theta_2},\qquad
+ \operatorname{sd}(e)=10e^{\theta_3}.
+\end{equation}
+The truth $(.1,18,10)$ is therefore prior-centered.  The target uses a fixed
+level-2, 37-point SGQF observed-data likelihood.  Warm-up/retained counts were
+$2000/4000$; maximum modern R-hat was $1.00007$, minimum bulk/tail ESS
+$16358.5/14568.5$, and the energy-error count was zero.
+
+\subsection{Structural deterministic dynamics with UKF likelihood}
+
+The structural model is
+\begin{align}
+ m_t&=\rho m_{t-1}+\sigma\varepsilon_t,\quad\varepsilon_t\sim\calN(0,1),\\
+ k_t&=\phi k_{t-1}+\gamma m_t^2,\\
+ y_t&=m_t+k_t+e_t,\quad e_t\sim\calN(0,R).
+ \label{eq:bf-neutra-structural-model}
+\end{align}
+There is no artificial innovation in $k_t$.  The initial state has mean zero
+and covariance $\operatorname{diag}(.04,.09)$.  A principal-square-root
+structural UKF supplies the approximate likelihood for $T=100$.  Independent
+uniform priors, written in the reporting order
+$(\rho,\sigma,\phi,\gamma,R)$, are
+\begin{equation}
+ \rho\in[.05,.98],\quad \sigma\in[.05,1.25],\quad
+ \phi\in[.05,.98],\quad
+ \gamma\in[.02,1],\quad R\in[.02,1],
+\end{equation}
+again represented by probit charts.  The truth
+$(\rho,\sigma,\phi,\gamma,R)=(.8,.5,.7,.4,.25)$ differs from prior mean
+$(.515,.65,.515,.51,.51)$ in the same order, so this is noncentral.
+
+The final transport was a fresh 5000-step, three-stage dense IAF with hidden
+widths $(30,30)$ and learning rate $5\times10^{-3}$, selected from four
+500-step screens.  Heldout reverse KL was $137.734$, versus $195.591$ for the
+identity/source-prior baseline.  This is training evidence only.  The admitted
+fixed HMC kernel used step size $.05$ and 12 leapfrog steps.  Verification had
+zero energy failures and modern R-hat $1.03240$ under the $1.05$ tuning gate.
+Warm-up stopped at $4000$ draws per chain when the last 1000-draw window reached
+$1.04742$.  Retained maximum rank/folded/modern R-hat were
+$1.00668/1.00156/1.00668$; minimum bulk/tail ESS were $971.06/2354.53$.
+The original convenience gate of bulk ESS $1000$ was missed by $2.9\%$.
+After seeing the result, the owner accepted it under an explicitly disclosed
+threshold of $900$.  The result is therefore qualified and owner-adjudicated,
+not an automated pass of the original rule.
+
+\section{Complete common experimental results}
+
+Table~\ref{tab:bf-neutra-common-summary} gives the configuration-level screen.
+All 38 generating values lie inside their empirical 95\% intervals, and no
+truth-tail value is below $.05$, so no second seed was triggered.
+
+\begin{table}[htbp]
+\centering\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{lrrrrl}
+\toprule
+Configuration & $d$ & Max $\widehat R$ & Min bulk ESS & Min $p_{\rm truth}$ & Result\\
+\midrule
+LGSSM exact &18&1.00215&4571.6&.06781&central pass\\
+Predator--prey UKF &6&1.00081&27623.6&.21255&noncentral pass\\
+Predator--prey SGQF&6&1.00033&26978.5&.21505&noncentral pass\\
+SIR SGQF&3&1.00007&16358.5&.37266&central pass\\
+Structural UKF&5&1.00668&971.1&.28442&qualified noncentral pass\\
+\bottomrule
+\end{tabular}
+\caption{Common one-seed truth-tail experiment; 16,000 retained draws per row.}
+\label{tab:bf-neutra-common-summary}
+\end{table}
+
+\begin{table}[htbp]
+\centering\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{llrrrr}
+\toprule
+Model&Parameter&Truth&Mean&95\% interval&$p_{\rm truth}$\\
+\midrule
+LGSSM&$a_{11}$&.62&.5303&[.3252,.7328]&.4062\\
+&$a_{22}$&.48&.5361&[.3420,.7153]&.5373\\
+&$a_{33}$&.30&.2021&[-.0055,.4320]&.3663\\
+&$a_{44}$&.16&.2385&[.0297,.4646]&.4609\\
+&$a_{21}$&.18&.1114&[-.0444,.2768]&.4285\\
+&$a_{31}$&-.10&-.2239&[-.3237,-.0892]&.0686\\
+&$a_{32}$&.14&.2176&[.0665,.3224]&.2603\\
+&$a_{41}$&.06&-.0276&[-.1697,.1188]&.2159\\
+&$a_{42}$&-.08&-.0607&[-.2088,.0906]&.7969\\
+&$a_{43}$&.11&.2200&[.0689,.3251]&.1409\\
+&$q_1$&.30&.2543&[.1822,.3160]&.1657\\
+&$q_2$&.26&.2159&[.1657,.2632]&.0678\\
+&$q_3$&.22&.1985&[.1337,.2465]&.4345\\
+&$q_4$&.18&.1772&[.1260,.2156]&.9688\\
+&$r_1$&.12&.1475&[.0734,.2279]&.5507\\
+&$r_2$&.11&.1089&[.0572,.1662]&.9464\\
+&$r_3$&.10&.1120&[.0540,.1823]&.7870\\
+&$r_4$&.09&.0933&[.0460,.1546]&.9844\\
+\midrule
+PP--UKF&$r$&.6&.5351&[.4424,.6461]&.2185\\
+&$K$&114&115.2047&[113.3208,117.1686]&.2125\\
+&$a$&25&25.0175&[20.2462,29.7582]&.9968\\
+&$s$&.3&.2859&[.1053,.7426]&.7156\\
+&$u$&.5&.4588&[.0228,.9628]&.8756\\
+&$v$&.5&.5010&[.0900,.9378]&.9810\\
+\midrule
+PP--SGQF&$r$&.6&.5352&[.4429,.6464]&.2160\\
+&$K$&114&115.2186&[113.3183,117.1946]&.2150\\
+&$a$&25&25.0450&[20.2774,29.7543]&.9855\\
+&$s$&.3&.2861&[.1057,.7283]&.7183\\
+&$u$&.5&.4568&[.0221,.9595]&.8734\\
+&$v$&.5&.4991&[.0913,.9286]&.9769\\
+\midrule
+SIR--SGQF&$\kappa$&.1&.09976&[.09752,.10202]&.8319\\
+&$\nu$&18&17.8364&[17.4812,18.2052]&.3727\\
+&observation sd&10&10.3291&[9.2950,11.5276]&.5959\\
+\midrule
+Structural&$\rho$&.8&.7668&[.5440,.9281]&.8035\\
+&$\sigma$&.5&.5093&[.3107,.7545]&.9986\\
+&$\phi$&.7&.4656&[.0761,.8132]&.2844\\
+&$\gamma$&.4&.5080&[.1387,.9413]&.7160\\
+&$R$&.25&.1962&[.0357,.4092]&.5505\\
+\bottomrule
+\end{tabular}
+\caption{All parameter-level common truth-tail results in physical coordinates.}
+\label{tab:bf-neutra-all-parameters}
+\end{table}
+
+\section{Additional historical model tests}
+\label{sec:bf-neutra-historical}
+
+The broader ledger counts a family once for shared scientific dynamics and a
+configuration separately when its posterior likelihood or solution/filter
+construction changes.  Seeds, dimensions, transports, and tuning candidates
+do not inflate the count.  Including the five configurations above, learned
+NeuTra reached transformed HMC in ten families and thirteen configurations.
+The following eight configurations used their original protocols and must not
+be interpreted as common truth-tail tests.
+
+The historical terminology is fixed as follows.  ``Second-moment R-hat'' and
+``second-moment ESS'' apply the run's original convergence estimators to the
+coordinate-wise estimands $x_j^2$; they were intended to emphasize scale and
+tail exploration and are not the modern rank/folded diagnostics defined above.
+A ``quality pass'' in the local paper-suite required finite selected chains and
+median-over-seed second-moment R-hat below the threshold declared for that
+run.  The synthetic dimension-100 ladder used two seeds, four chains, 2048
+retained draws per chain, threshold 2.0, and a retained-draw budget ratio
+$0.001$.  The ratio is
+\begin{equation}
+ \frac{(\text{local chains})(\text{local retained draws per chain})}
+ {16384\times500},
+\end{equation}
+because the source paper ran 1000 transitions and discarded the first 500.
+Thus ``paper-scale'' below means the same target family and dimension, not the
+same sampling budget.  A historical configuration is called ``clean/strong''
+only when its own declared finite, sampler, and completion screens passed; it
+is ``qualified/marginal'' when a named budget, convergence, telemetry, or
+parent-artifact condition remained open.
+
+\begin{description}[style=nextline]
+ \item[Neal funnel, dimension 100.] The exact unnormalized density was
+ \begin{equation}
+  \log\widetilde\pi(y,x)=-\tfrac12y^2-\tfrac12e^{-2y}
+  \sum_{j=1}^{99}x_j^2-99y,
+ \end{equation}
+ equivalently $y\sim\calN(0,1)$ and $x_j\mid y\sim\calN(0,e^{2y})$.
+ It was tested with
+ diagonal, triangular-affine, and three-stage dense-IAF transports.  At the
+ preserved local budget, IAF gave acceptance $.838$, second-moment R-hat
+ $1.01867$, and minimum second-moment ESS $376.3$, whereas affine funnel
+ controls had second-moment ESS below 10.  This passed its preserved quality
+ screen; its
+ diagnostics and budget differ from the modern common protocol.
+
+ \item[Ill-conditioned Gaussian, dimension 100.] The target was
+ $\calN(0,\Sigma)$.  A seed-10 Gaussian matrix supplied an orthogonal $Q$;
+ sorted draws $\lambda_i\sim\operatorname{Gamma}(.8,1)$ defined
+\begin{equation}
+ \Sigma=Q\operatorname{diag}(\lambda_i^{-1})Q^\top.
+\end{equation}
+It tested constant and
+ neural geometry.  Triangular affine and IAF were
+ both strong: second-moment R-hat $1.00277/1.00244$ and minimum second-moment ESS
+ $2716.5/2724.5$.  This shows that nonlinear transport was not necessary for a
+ target whose geometry a full affine map could remove.
+
+ \item[German-credit sparse logistic regression, dimension 51.] The dataset
+ had 1000 observations and 25 raw columns; 24 predictors were range-scaled,
+ mapped by $2x-1$, and augmented by an intercept, giving $d=25$.  Binary
+ outcomes obeyed
+\begin{equation}
+ y_n\sim\operatorname{Bernoulli}\!\left(
+ \operatorname{logit}^{-1}(x_n^\top[\tau z\circ\lambda])\right),
+\end{equation}
+with
+ $z_j\sim\calN(0,1)$ and independent Gamma$(.5,.5)$ global $\tau$ and local
+ $\lambda_j$ scales.  Log scales make the unconstrained dimension
+ $2d+1=51$.  A three-stage IAF with
+ step $.05$ and 32 leapfrogs achieved acceptance $.918$, second-moment R-hat
+ $1.01564$, and minimum second-moment ESS $414.7$ across three seeds, six chains,
+ and 768 retained draws per chain.  Its quality threshold was 1.2.  It is
+ qualified because budget ratio $.0005625$ remained below the predeclared
+ $.001$ gate, not because the chain exhibited a hard numerical failure.
+
+ \item[NK-like analytic surrogate.] In local coordinates $x\in\R^9$, let
+\begin{equation}
+ r=\|x\|,\qquad a=.35\tanh(x_1)s(r),\qquad
+ \lambda_s=1+.25(r/3)^2,
+\end{equation}
+and let $\lambda_w$ be the smooth lower-bounded version of
+$.15[1-.6(r/3)^2]$.  If $R(a)$ rotates the first two coordinates and
+ $P_2(x)=R(a)\operatorname{diag}(\lambda_w,\lambda_s)R(a)^\top$, the target is
+ \begin{equation}
+  \log\widetilde\pi(x)=-\tfrac12x_{1:2}^\top P_2(x)x_{1:2}
+  -\tfrac12\sum_{j=3}^9x_j^2.
+ \end{equation}
+ Here $s(r)$ smoothly caps $r/3$ at one and the weak eigenvalue is smoothly
+ floored at $10^{-3}$, with softplus scales $.05$ and $.002$.  This
+ nine-dimensional changing-Hessian target used three IAF stages with $(9,9)$ hidden
+ layers, 5000 reverse-KL steps, batch 4096, and a 49-candidate fixed HMC grid.
+ The selected $.5\times3$ kernel had acceptance $.757$, zero recorded
+ divergences, preserved $x$-coordinate R-hat $1.00158$, and minimum preserved
+ $x$-coordinate ESS $2541.5$.  These preserved diagnostics are not silently
+ promoted to the modern rank/folded definitions.  This is one-seed
+ strong diagnostic evidence, not a method ranking.
+
+ \item[Small/real NK local posterior.] This is a nine-parameter Small-NK
+ state-space posterior: the model solution and observed data define an exact
+ linear-Gaussian Kalman likelihood, combined with the model's declared prior
+ in unconstrained coordinates.  It is a real local posterior, not the analytic
+ surrogate in the preceding item.  It used a
+ 3000-step three-stage IAF and 49 CPU HMC candidates.  All worker results were
+ recovered; the selected $.5\times4$ kernel had acceptance $.918$, zero
+ divergences, preserved $x$-coordinate R-hat $1.00077$, and minimum preserved
+ $x$-coordinate ESS $9011.3$.  These are not asserted to be modern rank/folded
+ diagnostics.  The parent timed out before
+ canonical reduction, so the result is qualified despite strong worker-level
+ diagnostics.  ``Canonical reduction'' means the parent process did not write
+ its normal aggregate JSON after all 49 workers; the selected row was rebuilt
+ by the same deterministic key from hash-checked worker outputs.
+
+ \item[Small/real NK principal-square-root SVD--UKF.] The same economic model
+ was paired with a nonlinear principal-square-root SVD--UKF approximate
+ prediction-error likelihood rather than the linear Kalman likelihood.  A
+ fixed diagonal transport trained with batch 4096 for 5000 steps and an HMC
+ kernel with step $.5$, 16 leapfrogs, four chains, and 1536 retained draws per
+ chain reached acceptance $.703$, preserved per-parameter bulk/tail ESS
+ $550.4/615.8$, but had preserved per-parameter R-hat $1.01774>1.01$ and lacked
+ native divergence telemetry.  The artifact does not establish that this
+ R-hat was the modern rank/folded maximum.  It remains a marginal
+ continuation candidate, not a clean pass.
+
+ \item[Rotemberg NK linear-Kalman posterior.] The linearized 15-parameter
+ economic solution with exact Kalman likelihood completed calibrated
+ learned-NeuTra HMC.  Four chains used 1536 burn-in and 1536 retained draws;
+ the selected step $.65$ and 25-leapfrog kernel had acceptance $.743$, preserved
+ maximum R-hat $1.00250$, minimum preserved per-parameter bulk/tail ESS
+ $3793.4/1484.5$, and finite samples.  The record does not identify that R-hat
+ as the modern rank/folded maximum.
+ It is a clean historical baseline, not a claim about the nonlinear Rotemberg
+ posterior.
+
+ \item[Rotemberg NK second-order SVD posterior.] A four-shock minimal
+ principal-square-root second-order state construction, coupled to an SVD
+ sigma-point approximate likelihood, produced a 15-dimensional HMC state.
+ Training and a 612-candidate fixed grid selected step $.72917$ and two
+ leapfrogs, with acceptance $.732$, zero selected-candidate energy failures,
+ maximum preserved $x$-coordinate R-hat $1.00324$, and minimum preserved
+ $x$-coordinate ESS $2248.3$.  These are not asserted to be modern rank/folded
+ diagnostics.  This is a completed-valid
+ serious baseline; no comparative ranking or economic-model adequacy follows.
+\end{description}
+
+Nine of the thirteen configurations are clean or strong under their preserved
+screens.  Four are qualified or marginal: German budget ratio, real-NK parent
+timeout, NK SVD--UKF convergence/telemetry, and structural post-result ESS
+adjudication.  Exact/KSC stochastic volatility and several Zhao--Cui cells
+stopped before retained learned-NeuTra HMC and are therefore not counted.
+
+\section{Interpretation, failure modes, and nonclaims}
+
+The evidence supports the bounded statement that learned NeuTra has produced
+viable transformed-HMC sampling across a broad set of difficult geometries,
+including exact linear-Gaussian, nonlinear biological, epidemic, structural,
+hierarchical, regression, and DSGE-derived targets.  In the five comparable
+synthetic configurations, all 38 inspected truths were non-extreme and inside
+empirical 95\% intervals for one frozen dataset each.
+
+The strongest alternative explanations are favorable fixture choice, reverse
+KL missing a mode not visited by finite HMC, approximate filter likelihoods
+defining a different posterior from the exact scientific model, and
+heterogeneous historical protocols.  The results therefore do not establish:
+\begin{itemize}
+ \item repeated-sampling calibration or 95\% frequentist coverage;
+ \item exactness of UKF, SGQF, or SVD-filter posteriors relative to the latent
+ data-generating model;
+ \item universal mode or tail recovery by reverse KL;
+ \item statistical superiority over plain HMC, NUTS, RMHMC, or another map;
+ \item convergence merely because R-hat and ESS cross finite thresholds;
+ \item universal architecture, optimizer, HMC, production, or default policy.
+\end{itemize}
+
+The engineering, sampler, and scientific ledgers remain separate.  A correct
+map can train poorly; a low loss can yield bad HMC; valid HMC can place truth
+in an extreme tail; and one-fixture success can fail under repeated datasets.
+That separation is not procedural caution: it is the mathematical distinction
+between implementing the intended density, exploring it adequately, and
+learning something scientifically defensible from the resulting posterior.
