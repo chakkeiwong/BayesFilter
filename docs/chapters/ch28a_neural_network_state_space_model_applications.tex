@@ -254,6 +254,34 @@ BayesFilter should prefer these Rao--Blackwellized moments when the forecast
 recursion and state approximation make them available.  Simulated forecast
 paths are still required for general path-distribution comparisons.
 
+For implementation, let $m_{cnrh}$ and $s^2_{cnrh}$ be the conditional mean
+and variance of $Y_{cnrh}$ after fixing a retained parameter--state draw and
+the terminal/process innovations used by forecast replication $r$.  Define
+\begin{align}
+  \widehat\mu_h
+    &=\frac{1}{CNR}\sum_{c,n,r}m_{cnrh},\\
+  \widehat q_h
+    &=\frac{1}{CNR}\sum_{c,n,r}\{s^2_{cnrh}+m_{cnrh}^2\},\\
+  \widehat v_h
+    &=\widehat q_h-\widehat\mu_h^2.
+  \label{eq:bf-ssl-lstm-rao-blackwell-estimator}
+\end{align}
+The corresponding draw-cluster influence functions are
+\begin{align}
+  \xi^{\mu_h}_{cn}
+    &=R^{-1}\sum_r m_{cnrh}-\widehat\mu_h,\\
+  \xi^{\log v_h}_{cn}
+    &=\frac{R^{-1}\sum_r\{s^2_{cnrh}+
+                   (m_{cnrh}-\widehat\mu_h)^2\}}{\widehat v_h}-1.
+  \label{eq:bf-ssl-lstm-rao-blackwell-influence}
+\end{align}
+Equation~\eqref{eq:bf-ssl-lstm-rao-blackwell-influence} follows by applying
+the delta method to $v_h=q_h-\mu_h^2$ and then to $\log v_h$.  Averaging it
+over $(c,n)$ gives zero exactly for the plug-in moments above.  This
+Rao--Blackwellization integrates observation noise analytically; it does not
+integrate terminal-state, parameter, or process-innovation uncertainty unless
+those variables are also conditioned out by the forecast recursion.
+
 \section[MGFs and Stable Distribution Features]
 {From Moment Generating Functions to Stable Distribution Features}
 \label{sec:bf-ssl-lstm-mgf-cf}
@@ -313,6 +341,17 @@ They must be standardized by a frozen external scale or by a baseline-only
 pilot whose draws are excluded from confirmation.  Scaling is a numerical and
 interpretive operation, not evidence that a discrepancy is small.
 
+Concretely, if $a_h>0$ is the frozen predictive standard-deviation scale, then
+$m^*_{cnrh}=m_{cnrh}/a_h$ and
+$s^{2*}_{cnrh}=s^2_{cnrh}/a_h^2$ must be supplied to
+Equations~\eqref{eq:bf-ssl-lstm-rao-blackwell-estimator}--
+\eqref{eq:bf-ssl-lstm-rao-blackwell-influence}.  The scale must come from an
+independent calibration-only bank, external scientific units, or a model
+quantity fixed before confirmation.  Estimating $a_h$ from the G/H
+confirmation comparison would condition the test on the outcome being judged;
+if no independent scale is available, its uncertainty must instead be carried
+through the covariance calculation.
+
 \paragraph{Statistical precision weights.}
 Let $\widehat\Delta$ collect real and imaginary empirical characteristic
 features, or a fixed vector of standardized moment differences.  If
@@ -336,6 +375,292 @@ Inverse-covariance weighting does not replace scientific equivalence margins.
 A very precisely estimated but scientifically negligible feature should not
 dominate the decision merely because its Monte Carlo variance is small.
 
+\section{Dependence-Aware Estimation of Predictive Features}
+\label{sec:bf-ssl-lstm-dependence-aware-features}
+
+Write the standardized co-primary feature vector for arm $s$ as
+\begin{equation}
+  \beta_s=
+  (\mu_{s,1},\ldots,\mu_{s,H},
+   \log v_{s,1},\ldots,\log v_{s,H})^\top\in\R^{2H},
+  \qquad
+  \delta=\beta_A-\beta_B.
+  \label{eq:bf-ssl-lstm-primary-feature-vector}
+\end{equation}
+Suppose retained draw $n$ in chain $c$ has $R$ forecast replications
+$Y_{cnrh}$.  With $\overline Y_{cn h}=R^{-1}\sum_rY_{cnrh}$ and population
+mean and variance $(\mu_h,v_h)$, the draw-cluster influence functions are
+\begin{align}
+  \xi^{\mu_h}_{cn}
+    &=\overline Y_{cn h}-\mu_h,                                             \\
+  \xi^{\log v_h}_{cn}
+    &=\frac{R^{-1}\sum_r(Y_{cnrh}-\mu_h)^2}{v_h}-1.
+  \label{eq:bf-ssl-lstm-feature-influence}
+\end{align}
+The second expression follows from the delta method: the influence function
+of $v_h=\E(Y_h-\mu_h)^2$ is $(Y_h-\mu_h)^2-v_h$, and the derivative of
+$\log v_h$ is $1/v_h$.  Averaging replications inside a draw cluster preserves
+their common parameter-state dependence.  Replacing population quantities by
+consistent empirical quantities changes the expansion only by $o_p(N^{-1/2})$
+under the conditions below.
+
+For each arm, assume that its $C$ chains are independent copies of a stationary,
+ergodic Markov chain after warmup; the vector influence sequence has finite
+$2+\eta$ moments for some $\eta>0$; its strong-mixing coefficients
+$\alpha(k)$ satisfy
+$\sum_{k\geq1}\alpha(k)^{\eta/(2+\eta)}<\infty$; and the remaining regularity
+conditions for a multivariate Markov-chain central limit theorem hold.  This
+mixing-and-moment condition also implies absolute summability of the relevant
+autocovariances under the usual covariance inequality.  Then, for $N$ retained
+draws per chain,
+\begin{align}
+  \sqrt{CN}(\widehat\beta_s-\beta_s)
+    &\Rightarrow\calN(0,\Omega_s),                                         \\
+  \Omega_s
+    &=\sum_{k=-\infty}^{\infty}\Gamma_s(k),
+  \qquad
+  \Gamma_s(k)=\Cov(\xi_{s,c,0},\xi_{s,c,k}).
+  \label{eq:bf-ssl-lstm-feature-clt}
+\end{align}
+For independent arms,
+$\widehat V=\widehat\Omega_A/(C_A N_A)+
+\widehat\Omega_B/(C_B N_B)$ estimates the covariance of
+$\widehat\delta=\widehat\beta_A-\widehat\beta_B$.
+
+\subsection{Why a fixed batch length is not enough}
+
+The historical Phase~8 implementation used nonoverlapping batches of fixed
+length $b=16$.  Even with infinitely many retained draws, the corresponding
+spectral target is generally
+\begin{equation}
+  \Omega_b
+  =\Gamma(0)+\sum_{0<|k|<b}
+    \left(1-\frac{|k|}{b}\right)\Gamma(k),
+  \label{eq:bf-ssl-lstm-fixed-batch-limit}
+\end{equation}
+not $\Omega$.  This is a nonvanishing truncation and tapering bias.  For a
+unit-variance AR(1) sequence with correlation $\phi=0.6$,
+\begin{equation}
+  \Omega=1+2\sum_{k=1}^{\infty}\phi^k=4,
+  \qquad
+  \Omega_{16}=1+2\sum_{k=1}^{15}
+       \left(1-\frac{k}{16}\right)\phi^k
+       \simeq3.53138.
+  \label{eq:bf-ssl-lstm-fixed-batch-counterexample}
+\end{equation}
+Thus the fixed-$16$ estimator understates long-run variance by about $11.7\%$
+in this elementary case.  More draws do not remove that bias.  Historical
+confidence intervals and sample-size extrapolations based on that estimator
+are useful engineering and feasibility diagnostics, but they are not a
+generally consistent inferential basis.
+
+The prospective replacement is the chain-aware Bartlett/Newey--West estimator
+\citep{neweywest1987,flegal2010batchmeans}
+\begin{equation}
+  \widehat\Omega_N
+  =\widehat\Gamma(0)+\sum_{k=1}^{\ell_N}
+    \left(1-\frac{k}{\ell_N+1}\right)
+    \{\widehat\Gamma(k)+\widehat\Gamma(k)^\top\},
+  \label{eq:bf-ssl-lstm-growing-hac}
+\end{equation}
+where centering occurs separately within each chain and autocovariances are
+then averaged across chains.  A prospective rule
+\begin{equation}
+  \ell_N=\max\{1,\lfloor\kappa_{\rm HAC}N^{1/3}\rfloor\},
+  \qquad 0<\kappa_{\rm HAC}<\infty,
+  \label{eq:bf-ssl-lstm-hac-bandwidth}
+\end{equation}
+satisfies $\ell_N\rightarrow\infty$, $\ell_N/N\rightarrow0$, and the stronger
+$\ell_N^2/N\rightarrow0$.  Under the
+stated moment and dependence conditions, these bandwidth conditions make
+Equation~\eqref{eq:bf-ssl-lstm-growing-hac} consistent for $\Omega$.  The
+constant $\kappa_{\rm HAC}$, any eigenvalue ridge, and the finite-sample
+admission checks must be selected without inspecting confirmation outcomes.
+Consistency of the unregularized covariance applies to
+Equation~\eqref{eq:bf-ssl-lstm-growing-hac}.  A covariance used for confirmation
+must select the zero-ridge candidate, or use a separately proved loading that
+vanishes fast enough not to change the limiting covariance; a fixed positive
+loading cannot inherit the theorem merely because it makes inversion possible.
+This is an asymptotic statement under explicit assumptions, not a claim that a
+particular finite $N$ is adequate.
+
+Finite-sample bias can remain material even when the bandwidth rule is
+consistent.  In the controlled Gaussian law used below, the draw effect has
+weight $0.65$, two forecast replications contribute independent noise with
+total weight $0.35$, and the draw effect has AR coefficient $\phi=0.6$.  The
+mean-influence autocovariances are therefore
+\begin{equation}
+  \gamma_0=0.65+\frac{0.35}{2}=0.825,
+  \qquad \gamma_k=0.65(0.6)^k\quad(k\geq1),
+  \label{eq:bf-ssl-lstm-controlled-autocovariance}
+\end{equation}
+so the exact long-run variance is
+\begin{equation}
+  \Omega=0.825+2(0.65)\frac{0.6}{1-0.6}=2.775.
+  \label{eq:bf-ssl-lstm-controlled-lrv}
+\end{equation}
+At $N=8192$, $\kappa_{\rm HAC}=1$ gives $\ell_N=20$ and the population
+Bartlett target is $2.542862$, an $8.365\%$ underestimate.  This calculation
+does not prove that a larger multiplier is optimal: it proves that the
+finite-sample multiplier must be calibrated prospectively on development
+seeds and then frozen before a fresh audit.
+
+\section{A Proper-Score Definition of Practical Equivalence}
+\label{sec:bf-ssl-lstm-proper-score-equivalence}
+
+Arithmetic midpoints between convenient stress cases do not define scientific
+negligibility.  A more principled contract starts from predictive loss.  For
+the local standardized Gaussian forecasts
+$P=\calN(0,1)$ and $Q=\calN(d,\exp(\ell))$, define symmetric logarithmic-score
+regret as the average of the two directed Kullback--Leibler divergences.  Direct
+expansion gives
+\begin{align}
+  \frac12\{\operatorname{KL}(P\Vert Q)+\operatorname{KL}(Q\Vert P)\}
+  &=\frac14\{e^{-\ell}(1+d^2)-1+\ell
+              +e^\ell+d^2-1-\ell\}                                      \\
+  &=\frac12d^2+\frac14\ell^2
+    +o(d^2+\ell^2).
+  \label{eq:bf-ssl-lstm-local-score-regret}
+\end{align}
+The logarithmic score is strictly proper \citep{gneiting2007proper}; the
+quadratic expression is its local regret, not a global Gaussian approximation
+to an arbitrary predictive law.
+
+For $H$ horizons, choose scientific weights $\lambda_h>0$ with
+$\sum_h\lambda_h=1$ and define
+\begin{equation}
+  L(\delta)
+  =\sum_{h=1}^H\lambda_h
+    \left\{\frac12\delta_{\mu,h}^2
+                 +\frac14\delta_{\log v,h}^2\right\}
+  =\delta^\top W_L\delta,
+  \label{eq:bf-ssl-lstm-scientific-loss}
+\end{equation}
+where
+$W_L=\diag(\lambda_1/2,\ldots,\lambda_H/2,
+           \lambda_1/4,\ldots,\lambda_H/4)$.
+The application must declare an acceptable regret budget $K>0$.  Scientific
+equivalence means $L(\delta)<K$; $K$ cannot be learned from the same sampler
+outcome being judged.  Notice that $W_L$ encodes scientific loss, whereas
+$\widehat V^{-1}$ below encodes Monte Carlo precision.  They answer different
+questions.
+
+An average loss alone can hide a scientifically material discrepancy at one
+horizon.  Define the unweighted horizon regret
+\begin{equation}
+  R_h(\delta)=\frac12\delta_{\mu,h}^2
+                    +\frac14\delta_{\log v,h}^2,
+  \qquad
+  L_{\max}(\delta)=\max_{1\leq h\leq H}R_h(\delta).
+  \label{eq:bf-ssl-lstm-horizon-loss}
+\end{equation}
+For the controlled design with $H=10$, a persistent negligible standardized
+mean shift $0.05$ has equal-weight average loss $0.00125$.  A material variance
+ratio $1.25$ at only one horizon has average loss
+$\log(1.25)^2/40\simeq0.0012448$, which is slightly smaller.  No scalar
+threshold on the average loss can classify the first discrepancy as
+negligible and the second as material.  This is a mathematical incompatibility,
+not a tuning problem.
+
+The prospective repair uses the average and horizonwise losses together.  Let
+the declared negligible anchors be mean shift $0.05$ and variance ratio
+$1.05$, and let the declared material anchors be mean shift $0.20$ and
+variance ratios $1.25$ and $0.80$.  On the local proper-score scale define
+\begin{align}
+  K_N&=\max\left\{\tfrac12(0.05)^2,
+                    \tfrac14\log(1.05)^2\right\}=0.00125,\\
+  K_M&=\min\left\{\tfrac12(0.20)^2,
+                    \tfrac14\log(1.25)^2,
+                    \tfrac14\log(0.80)^2\right\}
+       =\tfrac14\log(1.25)^2\simeq0.0124481,\\
+  K_*&=\frac{K_N+K_M}{2}\simeq0.0068491.
+  \label{eq:bf-ssl-lstm-dual-loss-threshold}
+\end{align}
+The midpoint is taken in scientific loss, not separately in mean and variance
+coordinates.  It maximizes the smaller additive clearance from the nearest
+declared anchor.  Equal-weight practical equivalence now requires both
+\begin{equation}
+  \sup_{d\in\mathcal C_{\rm avg}}L(d)<K_*
+  \quad\text{and}\quad
+  \sup_{z\in\mathcal C_h}R_h(z)<K_*
+  \quad\text{for every }h.
+  \label{eq:bf-ssl-lstm-dual-equivalence}
+\end{equation}
+A material difference is declared if the corresponding lower bound for the
+average loss or at least one horizon loss exceeds $K_*$.  Every extremum uses
+an authenticated covariance projection from the same feature estimator.  The
+regions are not assumed independent; simultaneous control comes from the
+prospective error allocation below.
+
+Let $q=2H$, let $P_h$ select coordinates $(h,H+h)$, and allocate
+\begin{equation}
+  \alpha_{\rm avg}=0.025,
+  \qquad \alpha_h=0.0025\quad(h=1,\ldots,10),
+  \qquad \alpha_{\rm avg}+\sum_{h=1}^{10}\alpha_h=0.05.
+  \label{eq:bf-ssl-lstm-region-alpha-allocation}
+\end{equation}
+Construct one average region and ten horizon-marginal regions:
+\begin{equation}
+  \mathcal C_{\rm avg}=
+  \left\{d:(\widehat\delta-d)^\top\widehat V^{-1}
+                 (\widehat\delta-d)
+                 \leq\chi^2_{2H,1-\alpha_{\rm avg}}\right\},
+  \label{eq:bf-ssl-lstm-average-wald-region}
+\end{equation}
+\begin{equation}
+  \mathcal C_h=
+  \left\{z:(P_h\widehat\delta-z)^\top
+       (P_h\widehat V P_h^\top)^{-1}(P_h\widehat\delta-z)
+       \leq\chi^2_{2,1-\alpha_h}\right\}.
+  \label{eq:bf-ssl-lstm-horizon-wald-region}
+\end{equation}
+Define the three-way decision
+\begin{align}
+  \sup_{d\in\mathcal C}J(d)<K
+    &\quad\Longrightarrow\quad \text{equivalent},                         \\
+  \inf_{d\in\mathcal C}J(d)>K
+    &\quad\Longrightarrow\quad \text{materially different},              \\
+  \text{otherwise}
+    &\quad\Longrightarrow\quad \text{inconclusive}.
+  \label{eq:bf-ssl-lstm-loss-region-decision}
+\end{align}
+Here $(J,\mathcal C)$ is $(L,\mathcal C_{\rm avg})$ for the average decision
+and $(R_h,\mathcal C_h)$ for horizon $h$.  If
+$\widehat V=AA^\top$, substitute
+$d=\widehat\delta+Au$ with
+$\lVert u\rVert_2^2\leq\chi^2_{p,1-\alpha}$, where $p=2H$ for the average
+region and $p=2$ for a horizon region; both extrema are
+standard quadratic trust-region problems and can be solved from an
+eigendecomposition and a one-dimensional secular equation.  The same
+calculation applies to each $2\times2$ marginal covariance.  For $H=10$, the
+old horizon calculation used $\chi^2_{20,0.95}=31.4104$ in every horizon
+direction, which is a $99.9999849\%$ two-dimensional region.  The prospective
+horizon radius is instead $\chi^2_{2,0.9975}=11.9829$; the average region uses
+$\chi^2_{20,0.975}=34.1696$.
+
+The familywise error-control argument is short.  Let $E_{\rm avg}$ be the
+event $\delta\in\mathcal C_{\rm avg}$ and let
+$E_h$ be $P_h\delta\in\mathcal C_h$.  On
+$E_{\rm avg}\cap\bigcap_hE_h$, a true loss at or above $K$ belongs to its
+corresponding region, so its supremum cannot be below $K$; likewise a true
+loss at or below $K$ prevents its corresponding infimum from exceeding $K$.
+Consequently either type of false decisive result implies at least one
+noncoverage event, and
+\begin{equation}
+  \Pr(\text{false decisive result})
+  \leq \Pr(E_{\rm avg}^{c})+\sum_{h=1}^{H}\Pr(E_h^{c})
+  \leq \alpha_{\rm avg}+\sum_{h=1}^{H}\alpha_h+o(1)=0.05+o(1).
+  \label{eq:bf-ssl-lstm-split-region-union-bound}
+\end{equation}
+No independence between regions is used.  If $\widehat\delta\to_p\delta$,
+$\widehat V\to_p0$ at the correct rate, and the average and every relevant
+horizon loss are separated from $K$ by positive amounts, all regions shrink
+to their truths and the correct decision has probability tending to one.
+These conclusions require the central limit theorem and consistent HAC
+estimator above.  At an exact boundary, either decisive result is boundary
+leakage; the correct three-way outcome is inconclusive.  Without a
+scientifically chosen $K$, no consistent binary conclusion is claimed.
+
 \section{An Equivalence Gate, Not a Failure-to-Reject Gate}
 \label{sec:bf-ssl-lstm-predictive-equivalence-gate}
 
@@ -353,10 +678,13 @@ primary interpretable gate requires
   \qquad h=1,\ldots,H.
   \label{eq:bf-ssl-lstm-component-equivalence}
 \end{align}
-The omnibus gate additionally requires an uncertainty upper bound for
-$D_w$ or MMD to lie below a predeclared practical tolerance.  Merely failing to
-reject equality is insufficient: short chains and noisy high-order moments can
-make a materially different pair of predictive laws look statistically
+The historical design additionally required an uncertainty upper bound for
+$D_w$ or MMD to lie below a predeclared practical tolerance.  Prospectively,
+MMD remains an omnibus shape diagnostic until both its tolerance and its own
+growing-bandwidth uncertainty estimator pass calibration; only then may a
+reviewed design add it as a co-primary gate.  Merely failing to reject equality
+is insufficient: short chains and noisy high-order moments can make a
+materially different pair of predictive laws look statistically
 indistinguishable.
 
 Mean and log variance are the initial co-primary interpretable features.
@@ -364,6 +692,19 @@ Third and fourth central moments, quantiles, and cross-horizon covariance begin
 as explanatory diagnostics.  They can become promotion criteria only after a
 reviewed calibration shows adequate finite-sample power and stable uncertainty
 estimation.
+
+Componentwise TOST remains a useful interpretable sensitivity analysis.  With
+simultaneous $(1-\alpha)$ intervals, declaring equivalence only when every
+interval lies inside its margin is an intersection--union test: under any
+non-equivalent coordinate null, a false pass requires rejection of that true
+coordinate null and is controlled at the interval family's declared level.
+Conversely, declaring a material difference when any Bonferroni interval lies
+entirely outside its margin controls the familywise false-difference rate.
+These statements are conditional on valid simultaneous intervals; they do not
+rescue the historical fixed-$16$ covariance estimator.  The joint
+proper-score rule in Equation~\eqref{eq:bf-ssl-lstm-loss-region-decision} is the
+prospective primary decision because it connects the margins across horizons
+to one declared forecast-loss budget.
 
 \section{Ordinary HMC and Exact-Corrected NeuTra-HMC}
 \label{sec:bf-ssl-lstm-neutra-comparison}
@@ -395,6 +736,158 @@ with both arms passed through the same forecast operator in
 Equation~\eqref{eq:bf-ssl-lstm-joint-predictive-law}.  Each arm must be tuned
 in its own geometry.  Reusing the ordinary-HMC step size or trajectory length
 for NeuTra-HMC is not a fair comparison.
+
+\section{What the NeuTra Experiments Established}
+\label{sec:bf-ssl-lstm-neutra-experiment-history}
+
+The experiment sequence is important because several failures were failures of
+procedure, capacity, optimization, or statistical design rather than evidence
+against neural transport.
+
+\paragraph{Procedure transfer and capacity.}
+The first one-stage \code{tanh} dense IAF and affine-control experiments did
+not reproduce the established local Rotemberg/SGU training procedure.  The
+corrected local-source transfer used three dense IAF stages, ELU conditioners,
+reverse-coordinate mixing, a fixed reference translation, standard-normal
+base draws, reverse KL, batch size $480$, at most $5{,}000$ steps, the inherited
+piecewise learning-rate schedule, and per-variable gradient clipping.  Direct
+forward-map, log-Jacobian, gradient, and one-step Adam comparisons tied out to
+the local source.  The inherited $(4,4)$ conditioners were then found too small
+for the SSL-LSTM geometry.  Expanding to $(32,32)$ while retaining learning
+rate $0.01$ saturated the scale outputs at the first 100-step check, showing
+that width and optimization could not be repaired independently.
+
+\paragraph{Tuning and adaptive training.}
+A bounded Optuna search varied the initial learning rate, initialization scale,
+and clipping norm for the $(32,32)$ architecture.  Training validation occurred
+every 100 steps.  After 500 steps without a meaningful support-eligible
+improvement, the learning rate was halved; after two such patience periods,
+training stopped, subject to the 5,000-step cap and learning-rate floor.  A
+candidate that passed on one fresh seed but saturated on the second was
+rejected.  The predeclared trial-0 alternative was then trained on untouched
+streams G and H.  Both passed their transport screens: G selected step 1,000
+and stopped at 2,000; H selected step 900 and stopped at 1,900; each used one
+learning-rate repair.  This supports viability under two streams, not optimizer
+superiority or complete mode coverage.
+
+\paragraph{Exact target and retained sampling.}
+The frozen G/H transports passed value, analytic score, finite-difference,
+round-trip, serialization, scalar/batch, and trusted GPU/XLA checks for
+Equation~\eqref{eq:bf-ssl-lstm-exact-neutra-target}.  Separate HMC tuning froze
+identity momentum covariance, step size $0.8$, and four leapfrog steps for both
+transports.  Four chains per transport were admitted at 512 retained draws per
+chain.  Mean acceptance was $0.6689$ for G and $0.7036$ for H; maximum reported
+R-hat was about $1.04$, and the predeclared ESS and MCSE screens passed.  The
+kernel did not expose native divergence telemetry, so ``zero divergences'' was
+not established.  G and H are independent peer replications, not posterior
+oracles.
+
+\paragraph{Predictive-design failure and its interpretation.}
+Formal designs using 448 and then 1,984 draws per chain failed prospective
+power screens before any G/H confirmation forecast was opened.  A later
+sample-size preflight found no feasible design at 1,984 draws and only
+descriptive feasibility signals at 4,096 or 8,192 draws.  Those calculations
+used the fixed-$16$ uncertainty estimator and margins partly motivated by
+stress-case midpoints.  Equations~\eqref{eq:bf-ssl-lstm-fixed-batch-limit}--
+\eqref{eq:bf-ssl-lstm-loss-region-decision} explain why neither element is a
+sufficient confirmatory foundation.  The experiments established working
+forecast and sampler machinery and identified a statistical-design defect;
+they did not establish G/H predictive equivalence, material difference,
+posterior correctness, or failure of NeuTra.
+
+\paragraph{Direct dual-loss controlled calibration.}
+The repaired procedure was then evaluated end to end on internally generated
+controlled laws without reading retained HMC samples or G/H confirmation
+forecasts.  Each replication generated two independent four-chain forecast
+banks, estimated the full 20-feature mean/log-variance vector, fit the
+per-chain-centred growing Bartlett HAC estimator with
+$\kappa_{\rm HAC}=1$ and zero ridge, formed one 95\% joint Wald ellipsoid, and
+computed exact extrema for the average loss and all ten horizon losses.  The
+prospective ladder used 256 replications per family at 4,096 and 8,192 draws
+per chain, with independent seed domains and sequential stopping.
+
+The implementation evidence was clean: both rungs had zero invalid numerical
+replications and zero false decisive results, finite condition numbers, and
+finite KKT residuals.  The current sample ladder nevertheless failed the
+required-decision gate.  At 8,192 draws, the persistent negligible mean family
+was declared equivalent in only $5/256=1.95\%$ of replications.  The local
+variance-ratio-$1.25$ family was declared materially different in only
+$76/256=29.69\%$.  The local mean families reached $224/256=87.5\%$ and
+$209/256=81.64\%$ material decisions, but their simultaneous one-sided lower
+bounds remained below the prospective 80\% target.  Persistent material mean
+and variance families reached 100\% material decisions at 8,192, while the
+IID and dependent nulls reached 100\% equivalence decisions.
+
+The Monte Carlo coverage gate itself was underpowered.  It used one-sided
+Clopper--Pearson bounds with Bonferroni tail probability $0.05/88$ for eleven
+families, four operating claims, and two looks.  With only 256 replications, a
+procedure having exactly 95\% coverage has only about 26\% probability of
+certifying a lower bound of at least 90\%.  Pooled across the eleven required
+families, observed coverage was $90.84\%$ at 4,096 and $92.54\%$ at 8,192;
+these pooled descriptive rates do not replace family-specific certification.
+Thus the run supports a sample-size/power failure for the current candidate,
+not a conclusion that the HAC implementation or predictive-validation idea is
+invalid.  A prospective repair must increase controlled replication count and
+repair the region geometry and finite-sample HAC calibration before considering
+more retained draws, without changing $K_*$ or tuning the HAC multiplier on
+this locked result.
+
+\paragraph{Prospective directional-region remedy.}
+The next controlled program replaces the over-conservative horizon geometry
+with Equations~\eqref{eq:bf-ssl-lstm-average-wald-region}--
+\eqref{eq:bf-ssl-lstm-horizon-wald-region}, while preserving $K_*$, equal
+horizon weights, and zero-ridge inference.  HAC multipliers
+$\{1,1.5,2,3\}$ are compared only on development seeds, with validity and
+coverage considered before decision power; one candidate is then frozen for a
+fresh-seed audit.  The audit contains exact-boundary families, for which any
+decisive result is leakage, and just-inside/outside guard families, for which
+only a decision in the wrong direction is an error.  High power is not
+required arbitrarily close to the boundary.
+
+The same program compares simulated-path moments with
+Equation~\eqref{eq:bf-ssl-lstm-rao-blackwell-influence}.  In the controlled
+laws the predictive scale is known to be one.  Target confirmation instead
+requires scales frozen from an independent calibration-only bank, and remains
+closed until that provenance and the controlled audit both pass.  With no more
+than 120 simultaneous operating claims, the locked audit uses 1,536
+replications per family: at one-sided tail probability $0.05/120$, a true
+event rate of $2.5\%$ has about $96.1\%$ probability of certifying an upper
+bound of $5\%$.  This is an evidence-capacity calculation, not a guarantee that
+the candidate will pass.
+
+\paragraph{Controlled remedy result.}
+The development comparison confirmed that the July~17 failure was primarily a
+region-geometry and forecast-noise problem, not evidence against predictive
+validation.  At 8,192 draws, the historical full-region/path candidate again
+declared the persistent negligible mean equivalent in only $1/96$ runs and the
+local variance-ratio-$1.25$ family material in $19/96$.  Every split-region
+candidate repaired those failures descriptively.  The development-only rule
+nominated the split region, Rao--Blackwellized features, and
+$\kappa_{\rm HAC}=3$; this nomination does not establish that those settings
+are statistically superior to the other viable split candidates.
+
+The first capacity screen mistakenly required every one of 22 family coverage
+rates, each estimated from only 96 replications, to exceed $93\%$.  Under
+independent exact $95\%$ coverage, that rule falsely blocks with probability
+about $99.35\%$.  Post-run review therefore removed the minimum-across-families
+screen, preserved the immutable failed receipt, and used pooled coverage only
+as a development diagnostic.  The 12,288-draw rung then nominated the fixed
+audit size because it had $95.12\%$ pooled gated-family coverage, at least
+$98.96\%$ required decisions in every primary family, at most $1.04\%$
+wrong-direction or boundary decisions, and zero invalid procedures.
+
+The single fresh-seed audit used 1,536 replications for each family and passed
+all 77 prospective operating claims.  All eleven primary families certified
+coverage above $90\%$, required-decision probability above $80\%$, false
+decision probability below $5\%$, and invalid probability below $5\%$.  The
+weakest simultaneous coverage lower bound was $91.07\%$ for the persistent
+negligible mean family; its required-decision lower bound was $97.93\%$.
+Every invalid count was zero.  The largest simultaneous upper bound for exact
+boundary leakage was $1.106\%$.  This validates the controlled finite-sample
+procedure for the declared laws.  It does not validate retained HMC samples,
+G/H predictive equivalence, posterior correctness, or model adequacy; target
+confirmation remains closed pending independently frozen scales and target
+forecast conditional-variance wiring.
 
 \section{Three Evidence Ledgers}
 \label{sec:bf-ssl-lstm-three-ledgers}
@@ -459,8 +952,9 @@ and declared feature/tolerance design.  It does not by itself establish:
   \item Zhao--Cui source faithfulness.
 \end{itemize}
 
-The implementation and confirmatory test program for this chapter is specified
-in the predictive-equivalence master plan under \code{docs/plans}.  Until its
-forecast, sampler, calibration, and independent-confirmation gates pass, this
-chapter defines a research design rather than reporting a completed empirical
-result.
+The repaired implementation and finite-sample validation program for this
+chapter is specified in the live predictive-test repair plan under
+\code{docs/plans}.  Until its HAC, trust-region, controlled-coverage, forecast,
+and independent-confirmation gates pass, this chapter defines a research design
+and reports bounded engineering history rather than a completed predictive
+equivalence result.

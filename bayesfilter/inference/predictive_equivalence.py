@@ -150,6 +150,270 @@ class PredictiveDecision:
     explanatory_diagnostics: dict[str, tf.Tensor]
 
 
+@dataclass(frozen=True)
+class LongRunCovarianceResult:
+    spectral_covariance: tf.Tensor
+    pooled_mean_covariance: tf.Tensor
+    regularized_covariance: tf.Tensor
+    precision: tf.Tensor
+    ridge_ladder: tf.Tensor
+    selected_ridge_index: tf.Tensor
+    selected_ridge_multiplier: tf.Tensor
+    selected_diagonal_loading: tf.Tensor
+    eigenvalues: tf.Tensor
+    condition_number: tf.Tensor
+    block_length: int
+    batch_count: int
+    chain_count: int
+    draw_count: int
+    inference_admissible: bool
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class BartlettLongRunCovarianceResult:
+    spectral_covariance: tf.Tensor
+    pooled_mean_covariance: tf.Tensor
+    regularized_covariance: tf.Tensor
+    precision: tf.Tensor
+    ridge_ladder: tf.Tensor
+    selected_ridge_index: tf.Tensor
+    selected_ridge_multiplier: tf.Tensor
+    selected_diagonal_loading: tf.Tensor
+    eigenvalues: tf.Tensor
+    condition_number: tf.Tensor
+    bandwidth: int
+    bandwidth_multiplier: float
+    chain_count: int
+    draw_count: int
+    numerically_admissible: bool
+    inference_admissible: bool
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class BatchedBartlettLongRunCovarianceResult:
+    spectral_covariance: tf.Tensor
+    pooled_mean_covariance: tf.Tensor
+    regularized_covariance: tf.Tensor
+    precision: tf.Tensor
+    ridge_ladder: tf.Tensor
+    selected_ridge_index: tf.Tensor
+    selected_ridge_multiplier: tf.Tensor
+    selected_diagonal_loading: tf.Tensor
+    eigenvalues: tf.Tensor
+    condition_number: tf.Tensor
+    bandwidth: int
+    bandwidth_multiplier: float
+    batch_size: int
+    chain_count: int
+    draw_count: int
+    numerically_admissible: tf.Tensor
+    inference_admissible: tf.Tensor
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class ProperScoreLoss:
+    horizon_weights: tf.Tensor
+    loss_matrix: tf.Tensor
+    horizon_count: int
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class QuadraticLossBounds:
+    estimate: tf.Tensor
+    covariance: tf.Tensor
+    confidence_radius_squared: tf.Tensor
+    point_loss: tf.Tensor
+    lower_bound: tf.Tensor
+    upper_bound: tf.Tensor
+    lower_optimizer: tf.Tensor
+    upper_optimizer: tf.Tensor
+    lower_kkt_residual: tf.Tensor
+    upper_kkt_residual: tf.Tensor
+    covariance_eigenvalues: tf.Tensor
+    inference_admissible: bool
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class BatchedQuadraticLossBounds:
+    estimate: tf.Tensor
+    covariance: tf.Tensor
+    loss_matrices: tf.Tensor
+    confidence_radius_squared: tf.Tensor
+    point_loss: tf.Tensor
+    lower_bound: tf.Tensor
+    upper_bound: tf.Tensor
+    lower_kkt_residual: tf.Tensor
+    upper_kkt_residual: tf.Tensor
+    covariance_eigenvalues: tf.Tensor
+    inference_admissible: tf.Tensor
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class ProperScoreDecision:
+    status: DecisionStatus
+    loss_lower_bound: tf.Tensor
+    loss_upper_bound: tf.Tensor
+    acceptable_loss: tf.Tensor
+    hard_veto_codes: tuple[str, ...]
+    explanatory_diagnostics: dict[str, tf.Tensor]
+
+
+@dataclass(frozen=True)
+class DualProperScoreDecision:
+    status: DecisionStatus
+    average_loss_lower_bound: tf.Tensor
+    average_loss_upper_bound: tf.Tensor
+    horizon_loss_lower_bounds: tf.Tensor
+    horizon_loss_upper_bounds: tf.Tensor
+    acceptable_average_loss: tf.Tensor
+    acceptable_horizon_loss: tf.Tensor
+    hard_veto_codes: tuple[str, ...]
+    explanatory_diagnostics: dict[str, tf.Tensor]
+
+
+@dataclass(frozen=True)
+class MeanLogVarianceInfluenceResult:
+    feature_estimate: tf.Tensor
+    standardized_means: tf.Tensor
+    log_variances: tf.Tensor
+    influence_values: tf.Tensor
+    chain_count: int
+    draw_count: int
+    forecast_replication_count: int
+    path_count: int
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class ConditionalMeanLogVarianceInfluenceResult:
+    feature_estimate: tf.Tensor
+    standardized_means: tf.Tensor
+    log_variances: tf.Tensor
+    influence_values: tf.Tensor
+    conditional_second_moments: tf.Tensor
+    chain_count: int
+    draw_count: int
+    forecast_replication_count: int
+    cluster_count: int
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class SplitQuadraticLossBounds:
+    estimate: tf.Tensor
+    covariance: tf.Tensor
+    average_point_loss: tf.Tensor
+    average_lower_bound: tf.Tensor
+    average_upper_bound: tf.Tensor
+    horizon_point_losses: tf.Tensor
+    horizon_lower_bounds: tf.Tensor
+    horizon_upper_bounds: tf.Tensor
+    average_confidence_radius_squared: tf.Tensor
+    horizon_confidence_radii_squared: tf.Tensor
+    average_lower_kkt_residual: tf.Tensor
+    average_upper_kkt_residual: tf.Tensor
+    horizon_lower_kkt_residuals: tf.Tensor
+    horizon_upper_kkt_residuals: tf.Tensor
+    average_alpha: tf.Tensor
+    horizon_alphas: tf.Tensor
+    allocated_familywise_alpha: tf.Tensor
+    inference_admissible: bool
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class BatchedSplitQuadraticLossBounds:
+    estimate: tf.Tensor
+    covariance: tf.Tensor
+    average_point_loss: tf.Tensor
+    average_lower_bound: tf.Tensor
+    average_upper_bound: tf.Tensor
+    horizon_point_losses: tf.Tensor
+    horizon_lower_bounds: tf.Tensor
+    horizon_upper_bounds: tf.Tensor
+    average_confidence_radius_squared: tf.Tensor
+    horizon_confidence_radius_squared: tf.Tensor
+    average_lower_kkt_residual: tf.Tensor
+    average_upper_kkt_residual: tf.Tensor
+    horizon_lower_kkt_residuals: tf.Tensor
+    horizon_upper_kkt_residuals: tf.Tensor
+    average_alpha: tf.Tensor
+    horizon_alpha: tf.Tensor
+    allocated_familywise_alpha: tf.Tensor
+    inference_admissible: tf.Tensor
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
+@dataclass(frozen=True)
+class PairwiseDistanceScaleResult:
+    median_distance: tf.Tensor
+    positive_pair_count: tf.Tensor
+    total_pair_count: tf.Tensor
+    path_count: int
+    status: tf.Tensor
+    construction_signature: tf.Tensor = field(
+        default_factory=lambda: tf.constant("", tf.string),
+        repr=False,
+        compare=False,
+    )
+
+
 _VALID = "VALID"
 _INVALID = "INVALID_HARD_VETO"
 _CONSTRUCTION_REGISTRY: dict[
@@ -427,6 +691,293 @@ def summarize_forecast_paths(
         cross_horizon_covariance=covariance,
         path_count=tf.constant(path_count, tf.int64),
         status=tf.constant(_VALID),
+    )
+
+
+def _mean_log_variance_influence_kernel(
+    standardized_paths: tf.Tensor,
+) -> tuple[tf.Tensor, ...]:
+    chain_count = standardized_paths.shape[0]
+    draw_count = standardized_paths.shape[1]
+    replication_count = standardized_paths.shape[2]
+    path_count = chain_count * draw_count * replication_count
+    means = tf.reduce_mean(standardized_paths, axis=[0, 1, 2])
+    centered = standardized_paths - means
+    mean_influence = tf.reduce_mean(centered, axis=2)
+    second_moment = tf.reduce_mean(tf.square(centered), axis=[0, 1, 2])
+    variances = second_moment * tf.cast(path_count, tf.float64) / tf.cast(
+        path_count - 1, tf.float64
+    )
+    log_variance_influence = (
+        tf.reduce_mean(tf.square(centered), axis=2) / second_moment - 1.0
+    )
+    influence = tf.concat((mean_influence, log_variance_influence), axis=-1)
+    return means, tf.math.log(variances), influence
+
+
+_mean_log_variance_influence_xla = tf.function(
+    _mean_log_variance_influence_kernel, autograph=False, jit_compile=True
+)
+_mean_log_variance_influence_eager = tf.function(
+    _mean_log_variance_influence_kernel, autograph=False, jit_compile=False
+)
+
+
+def mean_log_variance_influence(
+    standardized_paths: tf.Tensor,
+    *,
+    jit_compile: bool = True,
+) -> MeanLogVarianceInfluenceResult:
+    """Build co-primary estimates and draw-cluster influence sequences.
+
+    Input paths must already be standardized with calibration-only horizon
+    scales. Forecast replications are averaged inside each retained-draw
+    cluster, while the draw axis remains available for chain-aware long-run
+    covariance estimation. The log-variance influence is unchanged by the
+    finite-sample correction applied to the reported sample variance.
+    """
+
+    _require_bool(jit_compile, "jit_compile")
+    paths = _require_tensor(standardized_paths, "standardized_paths", rank=4)
+    chain_count, draw_count, replication_count, horizon = paths.shape
+    if chain_count < 2 or draw_count < 2 or replication_count < 1 or horizon != 10:
+        raise PredictiveContractError(
+            "standardized_paths must have static shape [chain>=2, draw>=2, replication>=1, 10]"
+        )
+    path_count = chain_count * draw_count * replication_count
+    kernel = (
+        _mean_log_variance_influence_xla
+        if jit_compile
+        else _mean_log_variance_influence_eager
+    )
+    means, log_variances, influence = kernel(paths)
+    try:
+        for value in (means, log_variances, influence):
+            tf.debugging.assert_all_finite(value, "feature influence output must be finite")
+        tf.debugging.assert_near(
+            tf.reduce_mean(influence, axis=[0, 1]),
+            tf.zeros([20], tf.float64),
+            atol=tf.constant(4096.0 * 2.220446049250313e-16, tf.float64),
+            rtol=tf.constant(0.0, tf.float64),
+            message="empirical influence values must be centered",
+        )
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError(
+            "feature influence produced zero variance, nonfinite output, or lost centering"
+        ) from exc
+    result = MeanLogVarianceInfluenceResult(
+        feature_estimate=tf.concat((means, log_variances), axis=0),
+        standardized_means=means,
+        log_variances=log_variances,
+        influence_values=influence,
+        chain_count=chain_count,
+        draw_count=draw_count,
+        forecast_replication_count=replication_count,
+        path_count=path_count,
+        status=tf.constant(_VALID),
+    )
+    return _seal_result(
+        result,
+        kind="mean_log_variance_influence",
+        provenance=(("standardized_paths", paths), ("jit_compile", jit_compile)),
+    )
+
+
+def _conditional_mean_log_variance_influence_kernel(
+    conditional_means: tf.Tensor,
+    conditional_variances: tf.Tensor,
+) -> tuple[tf.Tensor, ...]:
+    means = tf.reduce_mean(conditional_means, axis=[0, 1, 2])
+    conditional_second = conditional_variances + tf.square(conditional_means)
+    second_moments = tf.reduce_mean(conditional_second, axis=[0, 1, 2])
+    variances = second_moments - tf.square(means)
+    mean_influence = tf.reduce_mean(conditional_means - means, axis=2)
+    variance_contribution = conditional_variances + tf.square(
+        conditional_means - means
+    )
+    log_variance_influence = (
+        tf.reduce_mean(variance_contribution, axis=2) / variances - 1.0
+    )
+    influence = tf.concat((mean_influence, log_variance_influence), axis=-1)
+    return means, tf.math.log(variances), influence, second_moments
+
+
+_conditional_mean_log_variance_influence_xla = tf.function(
+    _conditional_mean_log_variance_influence_kernel,
+    autograph=False,
+    jit_compile=True,
+)
+_conditional_mean_log_variance_influence_eager = tf.function(
+    _conditional_mean_log_variance_influence_kernel,
+    autograph=False,
+    jit_compile=False,
+)
+
+
+def conditional_mean_log_variance_influence(
+    standardized_conditional_means: tf.Tensor,
+    standardized_conditional_variances: tf.Tensor,
+    *,
+    jit_compile: bool = True,
+) -> ConditionalMeanLogVarianceInfluenceResult:
+    """Integrate conditional observation noise in mean/log-variance features.
+
+    Inputs use shape ``[chain, draw, forecast replication, horizon]`` and must
+    already use a scale frozen independently of confirmation. Conditional
+    variances integrate only the noise represented by that conditional law.
+    """
+
+    _require_bool(jit_compile, "jit_compile")
+    means = _require_tensor(
+        standardized_conditional_means,
+        "standardized_conditional_means",
+        rank=4,
+    )
+    variances = _require_tensor(
+        standardized_conditional_variances,
+        "standardized_conditional_variances",
+        rank=4,
+    )
+    if means.shape != variances.shape:
+        raise PredictiveContractError(
+            "conditional means and variances must have identical static shape"
+        )
+    chain_count, draw_count, replication_count, horizon = means.shape
+    if chain_count < 2 or draw_count < 2 or replication_count < 1 or horizon != 10:
+        raise PredictiveContractError(
+            "conditional moments must have static shape "
+            "[chain>=2, draw>=2, replication>=1, 10]"
+        )
+    if bool(tf.reduce_any(variances < 0.0)):
+        raise PredictiveContractError("conditional variances must be nonnegative")
+    kernel = (
+        _conditional_mean_log_variance_influence_xla
+        if jit_compile
+        else _conditional_mean_log_variance_influence_eager
+    )
+    estimated_means, log_variances, influence, second_moments = kernel(
+        means, variances
+    )
+    try:
+        for value in (estimated_means, log_variances, influence, second_moments):
+            tf.debugging.assert_all_finite(
+                value, "conditional-moment influence output must be finite"
+            )
+        tf.debugging.assert_near(
+            tf.reduce_mean(influence, axis=[0, 1]),
+            tf.zeros([20], tf.float64),
+            atol=tf.constant(4096.0 * 2.220446049250313e-16, tf.float64),
+            rtol=tf.constant(0.0, tf.float64),
+            message="conditional-moment influences must be centered",
+        )
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError(
+            "conditional-moment influence produced nonpositive variance, "
+            "nonfinite output, or lost centering"
+        ) from exc
+    result = ConditionalMeanLogVarianceInfluenceResult(
+        feature_estimate=tf.concat((estimated_means, log_variances), axis=0),
+        standardized_means=estimated_means,
+        log_variances=log_variances,
+        influence_values=influence,
+        conditional_second_moments=second_moments,
+        chain_count=chain_count,
+        draw_count=draw_count,
+        forecast_replication_count=replication_count,
+        cluster_count=chain_count * draw_count,
+        status=tf.constant(_VALID),
+    )
+    return _seal_result(
+        result,
+        kind="conditional_mean_log_variance_influence",
+        provenance=(
+            ("standardized_conditional_means", means),
+            ("standardized_conditional_variances", variances),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def _pairwise_distance_scale_kernel(paths: tf.Tensor) -> tuple[tf.Tensor, ...]:
+    flat = tf.reshape(paths, [-1, 10])
+    count = flat.shape[0]
+    if count is None:
+        raise PredictiveContractError("pairwise distance paths require a static path count")
+    squared_norm = tf.reduce_sum(tf.square(flat), axis=1)
+    squared_distance = (
+        squared_norm[:, tf.newaxis]
+        + squared_norm[tf.newaxis, :]
+        - 2.0 * tf.matmul(flat, flat, transpose_b=True)
+    )
+    squared_distance = tf.maximum(squared_distance, tf.zeros_like(squared_distance))
+    distances = tf.sqrt(squared_distance)
+    upper = tf.range(count)[:, tf.newaxis] < tf.range(count)[tf.newaxis, :]
+    positive = tf.logical_and(upper, distances > 0.0)
+    positive_count = tf.reduce_sum(tf.cast(positive, tf.int32))
+    fixed_candidates = tf.where(
+        positive,
+        distances,
+        tf.fill(tf.shape(distances), tf.constant(float("inf"), tf.float64)),
+    )
+    sorted_values = tf.sort(tf.reshape(fixed_candidates, [count * count]))
+    midpoint = tf.cast(tf.maximum(positive_count - 1, 0), tf.float64) / 2.0
+    lower = tf.cast(tf.floor(midpoint), tf.int32)
+    upper_index = tf.cast(tf.math.ceil(midpoint), tf.int32)
+    median = 0.5 * (
+        tf.gather(sorted_values, lower) + tf.gather(sorted_values, upper_index)
+    )
+    valid_count = positive_count > 0
+    median = tf.where(valid_count, median, tf.constant(float("nan"), tf.float64))
+    return median, positive_count, tf.constant(count * (count - 1) // 2, tf.int32)
+
+
+_pairwise_distance_scale_xla = tf.function(
+    _pairwise_distance_scale_kernel, autograph=False, jit_compile=True
+)
+_pairwise_distance_scale_eager = tf.function(
+    _pairwise_distance_scale_kernel, autograph=False, jit_compile=False
+)
+
+
+def pooled_pairwise_distance_scale(
+    paths: tf.Tensor,
+    *,
+    jit_compile: bool = True,
+) -> PairwiseDistanceScaleResult:
+    """Return the median positive Euclidean distance between complete paths."""
+
+    _require_bool(jit_compile, "jit_compile")
+    tensor = _require_tensor(paths, "paths", rank=4)
+    if tensor.shape[-1] != 10:
+        raise PredictiveContractError("paths must have horizon 10")
+    path_count = int(tensor.shape[0] * tensor.shape[1] * tensor.shape[2])
+    if path_count < 2:
+        raise PredictiveContractError("at least two complete paths are required")
+    kernel = _pairwise_distance_scale_xla if jit_compile else _pairwise_distance_scale_eager
+    median, positive_count, total_count = kernel(tensor)
+    try:
+        tf.debugging.assert_positive(median, "median pairwise distance must be positive")
+        tf.debugging.assert_all_finite(median, "median pairwise distance must be finite")
+        tf.debugging.assert_equal(
+            total_count,
+            path_count * (path_count - 1) // 2,
+            "pairwise distance count is inconsistent",
+        )
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError(
+            "pairwise distance cloud is duplicate-degenerate or nonfinite"
+        ) from exc
+    result = PairwiseDistanceScaleResult(
+        median_distance=median,
+        positive_pair_count=positive_count,
+        total_pair_count=total_count,
+        path_count=path_count,
+        status=tf.constant(_VALID),
+    )
+    return _seal_result(
+        result,
+        kind="pairwise_distance_scale",
+        provenance=(("paths", tensor), ("jit_compile", jit_compile)),
     )
 
 
@@ -831,6 +1382,580 @@ def chain_batch_means(
     _batch_geometry(values, block_length)
     kernel = _batch_means_xla if jit_compile else _batch_means_eager
     return kernel(values, block_length)
+
+
+def _long_run_covariance_kernel(
+    values: tf.Tensor,
+    block_length: int,
+    ridge_ladder: tf.Tensor,
+    condition_number_max: tf.Tensor,
+) -> tuple[tf.Tensor, ...]:
+    chain_count = values.shape[0]
+    draw_count = values.shape[1]
+    feature_count = values.shape[2]
+    batch_count = draw_count // block_length
+    batches = tf.reduce_mean(
+        tf.reshape(
+            values,
+            [chain_count, batch_count, block_length, feature_count],
+        ),
+        axis=2,
+    )
+    centered = batches - tf.reduce_mean(batches, axis=1, keepdims=True)
+    per_chain = tf.einsum("cbf,cbg->cfg", centered, centered) / tf.cast(
+        batch_count - 1, tf.float64
+    )
+    spectral = tf.cast(block_length, tf.float64) * tf.reduce_mean(per_chain, axis=0)
+    spectral = 0.5 * (spectral + tf.transpose(spectral))
+    pooled_mean = spectral / tf.cast(chain_count * draw_count, tf.float64)
+    scale = tf.maximum(
+        tf.reduce_mean(tf.linalg.diag_part(pooled_mean)),
+        tf.constant(1.0, tf.float64),
+    )
+    identity = tf.eye(feature_count, dtype=tf.float64)
+    candidates = (
+        pooled_mean[tf.newaxis, :, :]
+        + ridge_ladder[:, tf.newaxis, tf.newaxis] * scale * identity
+    )
+    eigenvalues = tf.linalg.eigvalsh(candidates)
+    minimum = eigenvalues[:, 0]
+    maximum = eigenvalues[:, -1]
+    condition = tf.where(
+        minimum > 0.0,
+        maximum / minimum,
+        tf.fill(tf.shape(minimum), tf.constant(float("inf"), tf.float64)),
+    )
+    eligible = tf.logical_and(
+        tf.reduce_all(tf.math.is_finite(eigenvalues), axis=1),
+        tf.logical_and(minimum > 0.0, condition <= condition_number_max),
+    )
+    any_eligible = tf.reduce_any(eligible)
+    first = tf.argmax(tf.cast(eligible, tf.int32), output_type=tf.int32)
+    selected_index = tf.where(any_eligible, first, tf.constant(-1, tf.int32))
+    fallback_index = tf.shape(ridge_ladder, out_type=tf.int32)[0] - 1
+    gather_index = tf.where(any_eligible, first, fallback_index)
+    regularized = candidates[gather_index]
+    selected_eigenvalues = eigenvalues[gather_index]
+    selected_condition = condition[gather_index]
+    selected_multiplier = tf.where(
+        any_eligible,
+        ridge_ladder[first],
+        tf.constant(float("nan"), tf.float64),
+    )
+    selected_loading = tf.where(
+        any_eligible,
+        ridge_ladder[first] * scale,
+        tf.constant(float("nan"), tf.float64),
+    )
+    precision = tf.cond(
+        any_eligible,
+        lambda: tf.linalg.inv(regularized),
+        lambda: tf.fill(tf.shape(regularized), tf.constant(float("nan"), tf.float64)),
+    )
+    return (
+        spectral,
+        pooled_mean,
+        regularized,
+        precision,
+        selected_index,
+        selected_multiplier,
+        selected_loading,
+        selected_eigenvalues,
+        selected_condition,
+        any_eligible,
+    )
+
+
+_long_run_covariance_xla = tf.function(
+    _long_run_covariance_kernel, autograph=False, jit_compile=True
+)
+_long_run_covariance_eager = tf.function(
+    _long_run_covariance_kernel, autograph=False, jit_compile=False
+)
+
+
+def chain_batch_long_run_covariance(
+    values: tf.Tensor,
+    *,
+    block_length: int,
+    ridge_ladder: tuple[float, ...] = (0.0, 1.0e-12, 1.0e-10, 1.0e-8, 1.0e-6),
+    condition_number_max: float = 1.0e8,
+    jit_compile: bool = True,
+) -> LongRunCovarianceResult:
+    """Estimate pooled-mean long-run covariance and regularize it fail-closed.
+
+    Contiguous within-chain batch means estimate the spectral covariance as
+    ``block_length * mean(chain_sample_covariance(batch_means))``. Assuming
+    independent chains, division by ``chain_count * draw_count`` gives the
+    covariance of the pooled mean. The first ridge candidate with positive
+    finite eigenvalues and condition number below the declared ceiling is
+    selected; exhaustion returns an inadmissible result with no precision.
+    """
+
+    _require_bool(jit_compile, "jit_compile")
+    tensor = _require_tensor(values, "values", rank=3)
+    draw_count, batch_count = _batch_geometry(tensor, block_length)
+    chain_count = int(tensor.shape[0])
+    feature_count = int(tensor.shape[2])
+    if chain_count < 2:
+        raise PredictiveContractError("long-run covariance requires at least two chains")
+    if feature_count < 1:
+        raise PredictiveContractError("long-run covariance requires at least one feature")
+    if type(ridge_ladder) is not tuple or not ridge_ladder:
+        raise PredictiveContractError("ridge_ladder must be a nonempty tuple")
+    if any(type(value) is not float or not math.isfinite(value) or value < 0.0 for value in ridge_ladder):
+        raise PredictiveContractError("ridge_ladder must contain finite nonnegative floats")
+    if tuple(sorted(set(ridge_ladder))) != ridge_ladder:
+        raise PredictiveContractError("ridge_ladder must be unique and increasing")
+    if type(condition_number_max) is not float or not math.isfinite(condition_number_max):
+        raise PredictiveContractError("condition_number_max must be a finite float")
+    if condition_number_max <= 1.0:
+        raise PredictiveContractError("condition_number_max must exceed one")
+    ladder = tf.constant(ridge_ladder, tf.float64)
+    condition_limit = tf.constant(condition_number_max, tf.float64)
+    kernel = _long_run_covariance_xla if jit_compile else _long_run_covariance_eager
+    (
+        spectral,
+        pooled_mean,
+        regularized,
+        precision,
+        selected_index,
+        selected_multiplier,
+        selected_loading,
+        eigenvalues,
+        condition_number,
+        admissible,
+    ) = kernel(tensor, block_length, ladder, condition_limit)
+    admissible_value = bool(admissible.numpy())
+    result = LongRunCovarianceResult(
+        spectral_covariance=spectral,
+        pooled_mean_covariance=pooled_mean,
+        regularized_covariance=regularized,
+        precision=precision,
+        ridge_ladder=ladder,
+        selected_ridge_index=selected_index,
+        selected_ridge_multiplier=selected_multiplier,
+        selected_diagonal_loading=selected_loading,
+        eigenvalues=eigenvalues,
+        condition_number=condition_number,
+        block_length=block_length,
+        batch_count=batch_count,
+        chain_count=chain_count,
+        draw_count=draw_count,
+        inference_admissible=admissible_value,
+        status=tf.constant(_VALID if admissible_value else _INVALID),
+    )
+    return _seal_result(
+        result,
+        kind="long_run_covariance",
+        provenance=(
+            ("values", tensor),
+            ("block_length", block_length),
+            ("ridge_ladder", ridge_ladder),
+            ("condition_number_max", condition_number_max),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def growing_hac_bandwidth(draw_count: int, *, multiplier: float = 1.0) -> int:
+    """Return the prospective ``floor(multiplier * N**(1/3))`` bandwidth."""
+
+    if type(draw_count) is not int or draw_count < 2:
+        raise PredictiveContractError("draw_count must be an integer at least two")
+    if type(multiplier) is not float or not math.isfinite(multiplier) or multiplier <= 0.0:
+        raise PredictiveContractError("bandwidth multiplier must be a finite positive float")
+    bandwidth = max(1, int(math.floor(multiplier * math.cbrt(draw_count))))
+    if bandwidth >= draw_count:
+        raise PredictiveContractError("growing HAC bandwidth must be smaller than draw_count")
+    return bandwidth
+
+
+def _bartlett_long_run_covariance_kernel(
+    values: tf.Tensor,
+    bandwidth: int,
+    ridge_ladder: tf.Tensor,
+    condition_number_max: tf.Tensor,
+) -> tuple[tf.Tensor, ...]:
+    chain_count = values.shape[0]
+    draw_count = values.shape[1]
+    feature_count = values.shape[2]
+    centered = values - tf.reduce_mean(values, axis=1, keepdims=True)
+    denominator = tf.cast(draw_count, tf.float64)
+    spectral = tf.reduce_mean(
+        tf.einsum("cnf,cng->cfg", centered, centered) / denominator,
+        axis=0,
+    )
+    for lag in range(1, bandwidth + 1):
+        gamma = tf.reduce_mean(
+            tf.einsum(
+                "cnf,cng->cfg",
+                centered[:, lag:, :],
+                centered[:, : draw_count - lag, :],
+            )
+            / denominator,
+            axis=0,
+        )
+        weight = tf.constant(1.0 - lag / (bandwidth + 1.0), tf.float64)
+        spectral = spectral + weight * (gamma + tf.transpose(gamma))
+    spectral = 0.5 * (spectral + tf.transpose(spectral))
+    pooled_mean = spectral / tf.cast(chain_count * draw_count, tf.float64)
+    scale = tf.maximum(
+        tf.reduce_mean(tf.abs(tf.linalg.diag_part(pooled_mean))),
+        tf.constant(1.0, tf.float64),
+    )
+    identity = tf.eye(feature_count, dtype=tf.float64)
+    candidates = (
+        pooled_mean[tf.newaxis, :, :]
+        + ridge_ladder[:, tf.newaxis, tf.newaxis] * scale * identity
+    )
+    eigenvalues = tf.linalg.eigvalsh(candidates)
+    minimum = eigenvalues[:, 0]
+    maximum = eigenvalues[:, -1]
+    condition = tf.where(
+        minimum > 0.0,
+        maximum / minimum,
+        tf.fill(tf.shape(minimum), tf.constant(float("inf"), tf.float64)),
+    )
+    eligible = tf.logical_and(
+        tf.reduce_all(tf.math.is_finite(eigenvalues), axis=1),
+        tf.logical_and(minimum > 0.0, condition <= condition_number_max),
+    )
+    any_eligible = tf.reduce_any(eligible)
+    first = tf.argmax(tf.cast(eligible, tf.int32), output_type=tf.int32)
+    selected_index = tf.where(any_eligible, first, tf.constant(-1, tf.int32))
+    fallback_index = tf.shape(ridge_ladder, out_type=tf.int32)[0] - 1
+    gather_index = tf.where(any_eligible, first, fallback_index)
+    regularized = candidates[gather_index]
+    selected_eigenvalues = eigenvalues[gather_index]
+    selected_condition = condition[gather_index]
+    selected_multiplier = tf.where(
+        any_eligible,
+        ridge_ladder[first],
+        tf.constant(float("nan"), tf.float64),
+    )
+    selected_loading = tf.where(
+        any_eligible,
+        ridge_ladder[first] * scale,
+        tf.constant(float("nan"), tf.float64),
+    )
+    precision = tf.cond(
+        any_eligible,
+        lambda: tf.linalg.inv(regularized),
+        lambda: tf.fill(tf.shape(regularized), tf.constant(float("nan"), tf.float64)),
+    )
+    return (
+        spectral,
+        pooled_mean,
+        regularized,
+        precision,
+        selected_index,
+        selected_multiplier,
+        selected_loading,
+        selected_eigenvalues,
+        selected_condition,
+        any_eligible,
+    )
+
+
+_bartlett_long_run_covariance_xla = tf.function(
+    _bartlett_long_run_covariance_kernel, autograph=False, jit_compile=True
+)
+_bartlett_long_run_covariance_eager = tf.function(
+    _bartlett_long_run_covariance_kernel, autograph=False, jit_compile=False
+)
+
+
+def _batched_bartlett_long_run_covariance_kernel(
+    values: tf.Tensor,
+    bandwidth: int,
+    ridge_ladder: tf.Tensor,
+    condition_number_max: tf.Tensor,
+) -> tuple[tf.Tensor, ...]:
+    batch_size = values.shape[0]
+    chain_count = values.shape[1]
+    draw_count = values.shape[2]
+    feature_count = values.shape[3]
+    centered = values - tf.reduce_mean(values, axis=2, keepdims=True)
+    denominator = tf.cast(draw_count, tf.float64)
+    spectral = tf.reduce_mean(
+        tf.einsum("bcnf,bcng->bcfg", centered, centered) / denominator,
+        axis=1,
+    )
+    for lag in range(1, bandwidth + 1):
+        gamma = tf.reduce_mean(
+            tf.einsum(
+                "bcnf,bcng->bcfg",
+                centered[:, :, lag:, :],
+                centered[:, :, : draw_count - lag, :],
+            )
+            / denominator,
+            axis=1,
+        )
+        weight = tf.constant(1.0 - lag / (bandwidth + 1.0), tf.float64)
+        spectral = spectral + weight * (gamma + tf.transpose(gamma, [0, 2, 1]))
+    spectral = 0.5 * (spectral + tf.transpose(spectral, [0, 2, 1]))
+    pooled_mean = spectral / tf.cast(chain_count * draw_count, tf.float64)
+    scale = tf.maximum(
+        tf.reduce_mean(tf.abs(tf.linalg.diag_part(pooled_mean)), axis=1),
+        tf.constant(1.0, tf.float64),
+    )
+    identity = tf.eye(feature_count, dtype=tf.float64)
+    candidates = (
+        pooled_mean[:, tf.newaxis, :, :]
+        + ridge_ladder[tf.newaxis, :, tf.newaxis, tf.newaxis]
+        * scale[:, tf.newaxis, tf.newaxis, tf.newaxis]
+        * identity[tf.newaxis, tf.newaxis, :, :]
+    )
+    eigenvalues = tf.linalg.eigvalsh(candidates)
+    minimum = eigenvalues[:, :, 0]
+    maximum = eigenvalues[:, :, -1]
+    condition = tf.where(
+        minimum > 0.0,
+        maximum / minimum,
+        tf.fill(tf.shape(minimum), tf.constant(float("inf"), tf.float64)),
+    )
+    eligible = tf.logical_and(
+        tf.reduce_all(tf.math.is_finite(eigenvalues), axis=2),
+        tf.logical_and(minimum > 0.0, condition <= condition_number_max),
+    )
+    any_eligible = tf.reduce_any(eligible, axis=1)
+    first = tf.argmax(tf.cast(eligible, tf.int32), axis=1, output_type=tf.int32)
+    selected_index = tf.where(any_eligible, first, tf.fill([batch_size], -1))
+    fallback_index = tf.shape(ridge_ladder, out_type=tf.int32)[0] - 1
+    gather_index = tf.where(any_eligible, first, tf.fill([batch_size], fallback_index))
+    gather_rows = tf.stack((tf.range(batch_size, dtype=tf.int32), gather_index), axis=1)
+    regularized = tf.gather_nd(candidates, gather_rows)
+    selected_eigenvalues = tf.gather_nd(eigenvalues, gather_rows)
+    selected_condition = tf.gather_nd(condition, gather_rows)
+    selected_multiplier = tf.where(
+        any_eligible,
+        tf.gather(ridge_ladder, first),
+        tf.fill([batch_size], tf.constant(float("nan"), tf.float64)),
+    )
+    selected_loading = tf.where(
+        any_eligible,
+        selected_multiplier * scale,
+        tf.fill([batch_size], tf.constant(float("nan"), tf.float64)),
+    )
+    inverse = tf.linalg.inv(
+        tf.where(
+            any_eligible[:, tf.newaxis, tf.newaxis],
+            regularized,
+            tf.eye(feature_count, batch_shape=[batch_size], dtype=tf.float64),
+        )
+    )
+    precision = tf.where(
+        any_eligible[:, tf.newaxis, tf.newaxis],
+        inverse,
+        tf.fill(tf.shape(inverse), tf.constant(float("nan"), tf.float64)),
+    )
+    return (
+        spectral,
+        pooled_mean,
+        regularized,
+        precision,
+        selected_index,
+        selected_multiplier,
+        selected_loading,
+        selected_eigenvalues,
+        selected_condition,
+        any_eligible,
+    )
+
+
+_batched_bartlett_long_run_covariance_xla = tf.function(
+    _batched_bartlett_long_run_covariance_kernel, autograph=False, jit_compile=True
+)
+_batched_bartlett_long_run_covariance_eager = tf.function(
+    _batched_bartlett_long_run_covariance_kernel, autograph=False, jit_compile=False
+)
+
+
+def chain_bartlett_long_run_covariance(
+    values: tf.Tensor,
+    *,
+    bandwidth_multiplier: float = 1.0,
+    ridge_ladder: tuple[float, ...] = (0.0, 1.0e-12, 1.0e-10, 1.0e-8, 1.0e-6),
+    condition_number_max: float = 1.0e8,
+    jit_compile: bool = True,
+) -> BartlettLongRunCovarianceResult:
+    """Estimate pooled-mean covariance with a growing Bartlett HAC bandwidth."""
+
+    _require_bool(jit_compile, "jit_compile")
+    tensor = _require_tensor(values, "values", rank=3)
+    chain_count, draw_count, feature_count = tensor.shape
+    if chain_count < 2:
+        raise PredictiveContractError("Bartlett HAC requires at least two chains")
+    if feature_count < 1:
+        raise PredictiveContractError("Bartlett HAC requires at least one feature")
+    bandwidth = growing_hac_bandwidth(draw_count, multiplier=bandwidth_multiplier)
+    if type(ridge_ladder) is not tuple or not ridge_ladder:
+        raise PredictiveContractError("ridge_ladder must be a nonempty tuple")
+    if any(
+        type(value) is not float or not math.isfinite(value) or value < 0.0
+        for value in ridge_ladder
+    ):
+        raise PredictiveContractError("ridge_ladder must contain finite nonnegative floats")
+    if tuple(sorted(set(ridge_ladder))) != ridge_ladder:
+        raise PredictiveContractError("ridge_ladder must be unique and increasing")
+    if ridge_ladder[0] != 0.0:
+        raise PredictiveContractError("Bartlett HAC ridge_ladder must begin at zero")
+    if type(condition_number_max) is not float or not math.isfinite(condition_number_max):
+        raise PredictiveContractError("condition_number_max must be a finite float")
+    if condition_number_max <= 1.0:
+        raise PredictiveContractError("condition_number_max must exceed one")
+    ladder = tf.constant(ridge_ladder, tf.float64)
+    condition_limit = tf.constant(condition_number_max, tf.float64)
+    kernel = (
+        _bartlett_long_run_covariance_xla
+        if jit_compile
+        else _bartlett_long_run_covariance_eager
+    )
+    (
+        spectral,
+        pooled_mean,
+        regularized,
+        precision,
+        selected_index,
+        selected_multiplier,
+        selected_loading,
+        eigenvalues,
+        condition_number,
+        admissible,
+    ) = kernel(tensor, bandwidth, ladder, condition_limit)
+    numerically_admissible = bool(admissible.numpy())
+    selected_index_value = int(selected_index.numpy())
+    inference_admissible = (
+        numerically_admissible
+        and selected_index_value == 0
+        and float(selected_multiplier.numpy()) == 0.0
+    )
+    result = BartlettLongRunCovarianceResult(
+        spectral_covariance=spectral,
+        pooled_mean_covariance=pooled_mean,
+        regularized_covariance=regularized,
+        precision=precision,
+        ridge_ladder=ladder,
+        selected_ridge_index=selected_index,
+        selected_ridge_multiplier=selected_multiplier,
+        selected_diagonal_loading=selected_loading,
+        eigenvalues=eigenvalues,
+        condition_number=condition_number,
+        bandwidth=bandwidth,
+        bandwidth_multiplier=bandwidth_multiplier,
+        chain_count=chain_count,
+        draw_count=draw_count,
+        numerically_admissible=numerically_admissible,
+        inference_admissible=inference_admissible,
+        status=tf.constant(_VALID if inference_admissible else _INVALID),
+    )
+    return _seal_result(
+        result,
+        kind="bartlett_long_run_covariance",
+        provenance=(
+            ("values", tensor),
+            ("bandwidth", bandwidth),
+            ("bandwidth_multiplier", bandwidth_multiplier),
+            ("ridge_ladder", ridge_ladder),
+            ("condition_number_max", condition_number_max),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def batched_chain_bartlett_long_run_covariance(
+    values: tf.Tensor,
+    *,
+    bandwidth_multiplier: float = 1.0,
+    ridge_ladder: tuple[float, ...] = (0.0,),
+    condition_number_max: float = 1.0e8,
+    jit_compile: bool = True,
+) -> BatchedBartlettLongRunCovarianceResult:
+    """Vectorized growing Bartlett HAC for independent experiment replications."""
+
+    _require_bool(jit_compile, "jit_compile")
+    tensor = _require_tensor(values, "values", rank=4)
+    batch_size, chain_count, draw_count, feature_count = tensor.shape
+    if batch_size < 1 or chain_count < 2 or feature_count < 1:
+        raise PredictiveContractError(
+            "batched Bartlett HAC requires batch>=1, chain>=2, and feature>=1"
+        )
+    bandwidth = growing_hac_bandwidth(draw_count, multiplier=bandwidth_multiplier)
+    if type(ridge_ladder) is not tuple or not ridge_ladder:
+        raise PredictiveContractError("ridge_ladder must be a nonempty tuple")
+    if any(
+        type(value) is not float or not math.isfinite(value) or value < 0.0
+        for value in ridge_ladder
+    ):
+        raise PredictiveContractError("ridge_ladder must contain finite nonnegative floats")
+    if tuple(sorted(set(ridge_ladder))) != ridge_ladder or ridge_ladder[0] != 0.0:
+        raise PredictiveContractError("ridge_ladder must be unique, increasing, and begin at zero")
+    if type(condition_number_max) is not float or not math.isfinite(condition_number_max):
+        raise PredictiveContractError("condition_number_max must be a finite float")
+    if condition_number_max <= 1.0:
+        raise PredictiveContractError("condition_number_max must exceed one")
+    ladder = tf.constant(ridge_ladder, tf.float64)
+    kernel = (
+        _batched_bartlett_long_run_covariance_xla
+        if jit_compile
+        else _batched_bartlett_long_run_covariance_eager
+    )
+    (
+        spectral,
+        pooled_mean,
+        regularized,
+        precision,
+        selected_index,
+        selected_multiplier,
+        selected_loading,
+        eigenvalues,
+        condition_number,
+        numerical,
+    ) = kernel(
+        tensor,
+        bandwidth,
+        ladder,
+        tf.constant(condition_number_max, tf.float64),
+    )
+    inference = tf.logical_and(numerical, selected_index == 0)
+    status = tf.where(
+        inference,
+        tf.fill([batch_size], tf.constant(_VALID)),
+        tf.fill([batch_size], tf.constant(_INVALID)),
+    )
+    result = BatchedBartlettLongRunCovarianceResult(
+        spectral_covariance=spectral,
+        pooled_mean_covariance=pooled_mean,
+        regularized_covariance=regularized,
+        precision=precision,
+        ridge_ladder=ladder,
+        selected_ridge_index=selected_index,
+        selected_ridge_multiplier=selected_multiplier,
+        selected_diagonal_loading=selected_loading,
+        eigenvalues=eigenvalues,
+        condition_number=condition_number,
+        bandwidth=bandwidth,
+        bandwidth_multiplier=bandwidth_multiplier,
+        batch_size=batch_size,
+        chain_count=chain_count,
+        draw_count=draw_count,
+        numerically_admissible=numerical,
+        inference_admissible=inference,
+        status=status,
+    )
+    return _seal_result(
+        result,
+        kind="batched_bartlett_long_run_covariance",
+        provenance=(
+            ("input_shape", tuple(tensor.shape.as_list())),
+            ("bandwidth", bandwidth),
+            ("bandwidth_multiplier", bandwidth_multiplier),
+            ("ridge_ladder", ridge_ladder),
+            ("condition_number_max", condition_number_max),
+            ("jit_compile", jit_compile),
+        ),
+    )
 
 
 def _bootstrap_index_kernel(
@@ -1528,24 +2653,1351 @@ def classify_predictive_evidence(
     )
 
 
+def proper_score_loss(
+    horizon_weights: tf.Tensor,
+) -> ProperScoreLoss:
+    """Build the local symmetric-log-score loss in mean/log-variance order."""
+
+    weights = _require_tensor(horizon_weights, "horizon_weights", rank=1)
+    horizon_count = int(weights.shape[0])
+    if horizon_count < 1:
+        raise PredictiveContractError("at least one horizon weight is required")
+    try:
+        tf.debugging.assert_positive(weights, "horizon weights must be positive")
+        tf.debugging.assert_near(
+            tf.reduce_sum(weights),
+            tf.constant(1.0, tf.float64),
+            atol=tf.constant(2048.0 * 2.220446049250313e-16, tf.float64),
+            rtol=tf.constant(0.0, tf.float64),
+            message="horizon weights must sum to one",
+        )
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError(
+            "horizon weights must be positive and sum to one"
+        ) from exc
+    diagonal = tf.concat((0.5 * weights, 0.25 * weights), axis=0)
+    result = ProperScoreLoss(
+        horizon_weights=weights,
+        loss_matrix=tf.linalg.diag(diagonal),
+        horizon_count=horizon_count,
+        status=tf.constant(_VALID),
+    )
+    return _seal_result(
+        result,
+        kind="proper_score_loss",
+        provenance=(("horizon_weights", weights),),
+    )
+
+
+def horizon_proper_score_loss(
+    horizon_count: int,
+    horizon_index: int,
+) -> ProperScoreLoss:
+    """Build one horizon's regret inside the full joint feature space."""
+
+    if type(horizon_count) is not int or horizon_count < 1:
+        raise PredictiveContractError("horizon_count must be a positive integer")
+    if (
+        type(horizon_index) is not int
+        or horizon_index < 0
+        or horizon_index >= horizon_count
+    ):
+        raise PredictiveContractError("horizon_index is outside the horizon range")
+    weights = tf.one_hot(horizon_index, horizon_count, dtype=tf.float64)
+    diagonal = tf.concat((0.5 * weights, 0.25 * weights), axis=0)
+    result = ProperScoreLoss(
+        horizon_weights=weights,
+        loss_matrix=tf.linalg.diag(diagonal),
+        horizon_count=horizon_count,
+        status=tf.constant(_VALID),
+    )
+    return _seal_result(
+        result,
+        kind="proper_score_loss",
+        provenance=(
+            ("horizon_count", horizon_count),
+            ("horizon_index", horizon_index),
+            ("horizon_weights", weights),
+        ),
+    )
+
+
+def _quadratic_loss_bounds_kernel(
+    estimate: tf.Tensor,
+    covariance: tf.Tensor,
+    loss_matrix: tf.Tensor,
+    radius_squared: tf.Tensor,
+    bisection_iterations: int,
+) -> tuple[tf.Tensor, ...]:
+    radius = tf.sqrt(radius_squared)
+    factor = tf.linalg.cholesky(covariance)
+    transformed_matrix = tf.matmul(
+        factor,
+        tf.matmul(loss_matrix, factor),
+        transpose_a=True,
+    )
+    transformed_matrix = 0.5 * (
+        transformed_matrix + tf.transpose(transformed_matrix)
+    )
+    transformed_gradient = tf.linalg.matvec(
+        factor, tf.linalg.matvec(loss_matrix, estimate), transpose_a=True
+    )
+    eigenvalues, eigenvectors = tf.linalg.eigh(transformed_matrix)
+    gradient_coordinates = tf.linalg.matvec(
+        eigenvectors, transformed_gradient, transpose_a=True
+    )
+    dimension = estimate.shape[0]
+
+    eigen_scale_minimum = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.reduce_max(tf.abs(eigenvalues))
+    )
+    null_tolerance = (
+        tf.constant(4096.0 * 2.220446049250313e-16, tf.float64)
+        * eigen_scale_minimum
+    )
+    positive_eigenvalue = eigenvalues > null_tolerance
+    unconstrained_minimum = tf.where(
+        positive_eigenvalue,
+        -tf.math.divide_no_nan(gradient_coordinates, eigenvalues),
+        tf.zeros_like(gradient_coordinates),
+    )
+    null_gradient_norm = tf.linalg.norm(
+        tf.where(positive_eigenvalue, tf.zeros_like(gradient_coordinates), gradient_coordinates)
+    )
+    gradient_scale_minimum = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.linalg.norm(gradient_coordinates)
+    )
+    null_gradient_tolerance = (
+        tf.constant(4096.0 * 2.220446049250313e-16, tf.float64)
+        * gradient_scale_minimum
+    )
+    unconstrained_inside = tf.logical_and(
+        null_gradient_norm <= null_gradient_tolerance,
+        tf.linalg.norm(unconstrained_minimum) <= radius,
+    )
+
+    minimum_low = tf.constant(0.0, tf.float64)
+    minimum_high = tf.maximum(
+        tf.constant(1.0, tf.float64),
+        tf.linalg.norm(gradient_coordinates) / radius,
+    )
+    for _ in range(64):
+        norm_at_high = tf.linalg.norm(
+            gradient_coordinates / (eigenvalues + minimum_high)
+        )
+        minimum_high = tf.where(
+            norm_at_high > radius, 2.0 * minimum_high, minimum_high
+        )
+    for _ in range(bisection_iterations):
+        midpoint = 0.5 * (minimum_low + minimum_high)
+        norm_at_midpoint = tf.linalg.norm(
+            gradient_coordinates / (eigenvalues + midpoint)
+        )
+        minimum_low = tf.where(norm_at_midpoint > radius, midpoint, minimum_low)
+        minimum_high = tf.where(norm_at_midpoint > radius, minimum_high, midpoint)
+    minimum_multiplier = tf.where(
+        unconstrained_inside, tf.constant(0.0, tf.float64), minimum_high
+    )
+    minimum_coordinates = tf.where(
+        unconstrained_inside,
+        unconstrained_minimum,
+        -gradient_coordinates / (eigenvalues + minimum_multiplier),
+    )
+
+    largest_eigenvalue = eigenvalues[-1]
+    eigen_scale = tf.maximum(tf.constant(1.0, tf.float64), tf.abs(largest_eigenvalue))
+    top_tolerance = tf.constant(4096.0 * 2.220446049250313e-16, tf.float64) * eigen_scale
+    top_mask = largest_eigenvalue - eigenvalues <= top_tolerance
+    top_gradient_norm = tf.linalg.norm(tf.where(top_mask, gradient_coordinates, 0.0))
+    gradient_scale = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.linalg.norm(gradient_coordinates)
+    )
+    hard_tolerance = (
+        tf.constant(4096.0 * 2.220446049250313e-16, tf.float64) * gradient_scale
+    )
+    denominator_at_top = largest_eigenvalue - eigenvalues
+    particular_at_top = tf.where(
+        top_mask,
+        tf.zeros_like(gradient_coordinates),
+        tf.math.divide_no_nan(gradient_coordinates, denominator_at_top),
+    )
+    particular_norm_squared = tf.reduce_sum(tf.square(particular_at_top))
+    hard_case = tf.logical_and(
+        top_gradient_norm <= hard_tolerance,
+        particular_norm_squared <= radius_squared,
+    )
+
+    generic_gap = tf.maximum(
+        top_gradient_norm / (2.0 * radius),
+        tf.constant(16.0 * 2.220446049250313e-16, tf.float64) * eigen_scale,
+    )
+    maximum_low = tf.where(
+        top_gradient_norm > hard_tolerance,
+        largest_eigenvalue + generic_gap,
+        largest_eigenvalue,
+    )
+    maximum_high = largest_eigenvalue + tf.maximum(
+        tf.constant(1.0, tf.float64),
+        tf.linalg.norm(gradient_coordinates) / radius,
+    )
+
+    def maximum_coordinates(multiplier: tf.Tensor) -> tf.Tensor:
+        denominator = multiplier - eigenvalues
+        return tf.where(
+            tf.logical_and(top_mask, denominator <= top_tolerance),
+            tf.zeros_like(gradient_coordinates),
+            tf.math.divide_no_nan(gradient_coordinates, denominator),
+        )
+
+    for _ in range(64):
+        norm_at_high = tf.linalg.norm(maximum_coordinates(maximum_high))
+        maximum_high = tf.where(
+            norm_at_high > radius,
+            largest_eigenvalue + 2.0 * (maximum_high - largest_eigenvalue),
+            maximum_high,
+        )
+    for _ in range(bisection_iterations):
+        midpoint = 0.5 * (maximum_low + maximum_high)
+        norm_at_midpoint = tf.linalg.norm(maximum_coordinates(midpoint))
+        maximum_low = tf.where(norm_at_midpoint > radius, midpoint, maximum_low)
+        maximum_high = tf.where(norm_at_midpoint > radius, maximum_high, midpoint)
+    generic_maximum = maximum_coordinates(maximum_high)
+
+    remaining_radius = tf.sqrt(tf.maximum(radius_squared - particular_norm_squared, 0.0))
+    first_top_index = tf.argmax(tf.cast(top_mask, tf.int32), output_type=tf.int32)
+    hard_direction = tf.one_hot(first_top_index, dimension, dtype=tf.float64)
+    hard_maximum = particular_at_top + remaining_radius * hard_direction
+    maximum_coordinates_result = tf.where(hard_case, hard_maximum, generic_maximum)
+    maximum_multiplier = tf.where(hard_case, largest_eigenvalue, maximum_high)
+
+    minimum_u = tf.linalg.matvec(eigenvectors, minimum_coordinates)
+    maximum_u = tf.linalg.matvec(eigenvectors, maximum_coordinates_result)
+    minimum_optimizer = estimate + tf.linalg.matvec(factor, minimum_u)
+    maximum_optimizer = estimate + tf.linalg.matvec(factor, maximum_u)
+    point_loss = tf.tensordot(estimate, tf.linalg.matvec(loss_matrix, estimate), 1)
+    lower_bound = tf.tensordot(
+        minimum_optimizer, tf.linalg.matvec(loss_matrix, minimum_optimizer), 1
+    )
+    upper_bound = tf.tensordot(
+        maximum_optimizer, tf.linalg.matvec(loss_matrix, maximum_optimizer), 1
+    )
+    minimum_stationarity = tf.linalg.matvec(
+        transformed_matrix, minimum_u
+    ) + transformed_gradient + minimum_multiplier * minimum_u
+    maximum_stationarity = tf.linalg.matvec(
+        transformed_matrix, maximum_u
+    ) + transformed_gradient - maximum_multiplier * maximum_u
+    minimum_constraint_residual = tf.where(
+        unconstrained_inside,
+        tf.maximum(tf.linalg.norm(minimum_u) - radius, 0.0),
+        tf.abs(tf.linalg.norm(minimum_u) - radius),
+    )
+    maximum_constraint_residual = tf.abs(tf.linalg.norm(maximum_u) - radius)
+    lower_kkt = tf.maximum(
+        tf.linalg.norm(minimum_stationarity), minimum_constraint_residual
+    )
+    upper_kkt = tf.maximum(
+        tf.linalg.norm(maximum_stationarity), maximum_constraint_residual
+    )
+    return (
+        point_loss,
+        lower_bound,
+        upper_bound,
+        minimum_optimizer,
+        maximum_optimizer,
+        lower_kkt,
+        upper_kkt,
+        tf.linalg.eigvalsh(covariance),
+    )
+
+
+_quadratic_loss_bounds_xla = tf.function(
+    _quadratic_loss_bounds_kernel, autograph=False, jit_compile=True
+)
+_quadratic_loss_bounds_eager = tf.function(
+    _quadratic_loss_bounds_kernel, autograph=False, jit_compile=False
+)
+
+
+def _batched_quadratic_loss_bounds_kernel(
+    estimate: tf.Tensor,
+    covariance: tf.Tensor,
+    loss_matrices: tf.Tensor,
+    radius_squared: tf.Tensor,
+    bisection_iterations: int,
+) -> tuple[tf.Tensor, ...]:
+    batch_size = estimate.shape[0]
+    loss_count = loss_matrices.shape[0]
+    dimension = estimate.shape[1]
+    radius = tf.sqrt(radius_squared)
+    factor = tf.linalg.cholesky(covariance)
+    transformed = tf.einsum("bji,ljk,bkm->blim", factor, loss_matrices, factor)
+    transformed = 0.5 * (transformed + tf.transpose(transformed, [0, 1, 3, 2]))
+    loss_gradient = tf.einsum("lij,bj->bli", loss_matrices, estimate)
+    gradient = tf.einsum("bji,blj->bli", factor, loss_gradient)
+    eigenvalues, eigenvectors = tf.linalg.eigh(transformed)
+    coordinates = tf.einsum("blji,blj->bli", eigenvectors, gradient)
+
+    eigen_scale_minimum = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.reduce_max(tf.abs(eigenvalues), axis=2)
+    )
+    null_tolerance = (
+        tf.constant(4096.0 * 2.220446049250313e-16, tf.float64)
+        * eigen_scale_minimum
+    )
+    positive = eigenvalues > null_tolerance[:, :, tf.newaxis]
+    unconstrained = tf.where(
+        positive,
+        -tf.math.divide_no_nan(coordinates, eigenvalues),
+        tf.zeros_like(coordinates),
+    )
+    null_gradient_norm = tf.linalg.norm(
+        tf.where(positive, tf.zeros_like(coordinates), coordinates), axis=2
+    )
+    gradient_scale = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.linalg.norm(coordinates, axis=2)
+    )
+    unconstrained_inside = tf.logical_and(
+        null_gradient_norm
+        <= tf.constant(4096.0 * 2.220446049250313e-16, tf.float64) * gradient_scale,
+        tf.linalg.norm(unconstrained, axis=2) <= radius,
+    )
+    minimum_low = tf.zeros([batch_size, loss_count], tf.float64)
+    minimum_high = tf.maximum(
+        tf.ones([batch_size, loss_count], tf.float64),
+        tf.linalg.norm(coordinates, axis=2) / radius,
+    )
+
+    def expand_minimum(
+        iteration: tf.Tensor, high: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        norm_at_high = tf.linalg.norm(
+            coordinates / (eigenvalues + high[:, :, tf.newaxis]), axis=2
+        )
+        return iteration + 1, tf.where(
+            norm_at_high > radius, 2.0 * high, high
+        )
+
+    _, minimum_high = tf.while_loop(
+        lambda iteration, high: iteration < 64,
+        expand_minimum,
+        (tf.constant(0), minimum_high),
+        maximum_iterations=64,
+    )
+
+    def bisect_minimum(
+        iteration: tf.Tensor, low: tf.Tensor, high: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        midpoint = 0.5 * (low + high)
+        norm_at_midpoint = tf.linalg.norm(
+            coordinates / (eigenvalues + midpoint[:, :, tf.newaxis]), axis=2
+        )
+        return (
+            iteration + 1,
+            tf.where(norm_at_midpoint > radius, midpoint, low),
+            tf.where(norm_at_midpoint > radius, high, midpoint),
+        )
+
+    _, minimum_low, minimum_high = tf.while_loop(
+        lambda iteration, low, high: iteration < bisection_iterations,
+        bisect_minimum,
+        (tf.constant(0), minimum_low, minimum_high),
+        maximum_iterations=bisection_iterations,
+    )
+    minimum_multiplier = tf.where(
+        unconstrained_inside, tf.constant(0.0, tf.float64), minimum_high
+    )
+    minimum_coordinates = tf.where(
+        unconstrained_inside[:, :, tf.newaxis],
+        unconstrained,
+        -coordinates / (eigenvalues + minimum_multiplier[:, :, tf.newaxis]),
+    )
+
+    largest = eigenvalues[:, :, -1]
+    eigen_scale = tf.maximum(tf.constant(1.0, tf.float64), tf.abs(largest))
+    top_tolerance = (
+        tf.constant(4096.0 * 2.220446049250313e-16, tf.float64) * eigen_scale
+    )
+    top_mask = largest[:, :, tf.newaxis] - eigenvalues <= top_tolerance[:, :, tf.newaxis]
+    top_gradient_norm = tf.linalg.norm(
+        tf.where(top_mask, coordinates, tf.zeros_like(coordinates)), axis=2
+    )
+    gradient_scale = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.linalg.norm(coordinates, axis=2)
+    )
+    hard_tolerance = (
+        tf.constant(4096.0 * 2.220446049250313e-16, tf.float64) * gradient_scale
+    )
+    denominator_at_top = largest[:, :, tf.newaxis] - eigenvalues
+    particular = tf.where(
+        top_mask,
+        tf.zeros_like(coordinates),
+        tf.math.divide_no_nan(coordinates, denominator_at_top),
+    )
+    particular_norm_squared = tf.reduce_sum(tf.square(particular), axis=2)
+    hard_case = tf.logical_and(
+        top_gradient_norm <= hard_tolerance,
+        particular_norm_squared <= radius_squared,
+    )
+    generic_gap = tf.maximum(
+        top_gradient_norm / (2.0 * radius),
+        tf.constant(16.0 * 2.220446049250313e-16, tf.float64) * eigen_scale,
+    )
+    maximum_low = tf.where(
+        top_gradient_norm > hard_tolerance, largest + generic_gap, largest
+    )
+    maximum_high = largest + tf.maximum(
+        tf.constant(1.0, tf.float64), tf.linalg.norm(coordinates, axis=2) / radius
+    )
+
+    def maximum_coordinates(multiplier: tf.Tensor) -> tf.Tensor:
+        denominator = multiplier[:, :, tf.newaxis] - eigenvalues
+        return tf.where(
+            tf.logical_and(top_mask, denominator <= top_tolerance[:, :, tf.newaxis]),
+            tf.zeros_like(coordinates),
+            tf.math.divide_no_nan(coordinates, denominator),
+        )
+
+    def expand_maximum(
+        iteration: tf.Tensor, high: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        norm_at_high = tf.linalg.norm(maximum_coordinates(high), axis=2)
+        return iteration + 1, tf.where(
+            norm_at_high > radius,
+            largest + 2.0 * (high - largest),
+            high,
+        )
+
+    _, maximum_high = tf.while_loop(
+        lambda iteration, high: iteration < 64,
+        expand_maximum,
+        (tf.constant(0), maximum_high),
+        maximum_iterations=64,
+    )
+
+    def bisect_maximum(
+        iteration: tf.Tensor, low: tf.Tensor, high: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        midpoint = 0.5 * (low + high)
+        norm_at_midpoint = tf.linalg.norm(maximum_coordinates(midpoint), axis=2)
+        return (
+            iteration + 1,
+            tf.where(norm_at_midpoint > radius, midpoint, low),
+            tf.where(norm_at_midpoint > radius, high, midpoint),
+        )
+
+    _, maximum_low, maximum_high = tf.while_loop(
+        lambda iteration, low, high: iteration < bisection_iterations,
+        bisect_maximum,
+        (tf.constant(0), maximum_low, maximum_high),
+        maximum_iterations=bisection_iterations,
+    )
+    generic_maximum = maximum_coordinates(maximum_high)
+    remaining = tf.sqrt(tf.maximum(radius_squared - particular_norm_squared, 0.0))
+    first_top = tf.argmax(tf.cast(top_mask, tf.int32), axis=2, output_type=tf.int32)
+    hard_direction = tf.one_hot(first_top, dimension, dtype=tf.float64)
+    maximum_coordinates_result = tf.where(
+        hard_case[:, :, tf.newaxis],
+        particular + remaining[:, :, tf.newaxis] * hard_direction,
+        generic_maximum,
+    )
+    maximum_multiplier = tf.where(hard_case, largest, maximum_high)
+
+    minimum_u = tf.einsum("blij,blj->bli", eigenvectors, minimum_coordinates)
+    maximum_u = tf.einsum("blij,blj->bli", eigenvectors, maximum_coordinates_result)
+    minimum_optimizer = estimate[:, tf.newaxis, :] + tf.einsum(
+        "bij,blj->bli", factor, minimum_u
+    )
+    maximum_optimizer = estimate[:, tf.newaxis, :] + tf.einsum(
+        "bij,blj->bli", factor, maximum_u
+    )
+    point_loss = tf.einsum("bi,lij,bj->bl", estimate, loss_matrices, estimate)
+    lower_bound = tf.einsum(
+        "bli,lij,blj->bl", minimum_optimizer, loss_matrices, minimum_optimizer
+    )
+    upper_bound = tf.einsum(
+        "bli,lij,blj->bl", maximum_optimizer, loss_matrices, maximum_optimizer
+    )
+    minimum_stationarity = (
+        tf.einsum("blij,blj->bli", transformed, minimum_u)
+        + gradient
+        + minimum_multiplier[:, :, tf.newaxis] * minimum_u
+    )
+    maximum_stationarity = (
+        tf.einsum("blij,blj->bli", transformed, maximum_u)
+        + gradient
+        - maximum_multiplier[:, :, tf.newaxis] * maximum_u
+    )
+    minimum_constraint = tf.where(
+        unconstrained_inside,
+        tf.maximum(tf.linalg.norm(minimum_u, axis=2) - radius, 0.0),
+        tf.abs(tf.linalg.norm(minimum_u, axis=2) - radius),
+    )
+    maximum_constraint = tf.abs(tf.linalg.norm(maximum_u, axis=2) - radius)
+    lower_kkt = tf.maximum(
+        tf.linalg.norm(minimum_stationarity, axis=2), minimum_constraint
+    )
+    upper_kkt = tf.maximum(
+        tf.linalg.norm(maximum_stationarity, axis=2), maximum_constraint
+    )
+    return (
+        point_loss,
+        lower_bound,
+        upper_bound,
+        lower_kkt,
+        upper_kkt,
+        tf.linalg.eigvalsh(covariance),
+    )
+
+
+_batched_quadratic_loss_bounds_xla = tf.function(
+    _batched_quadratic_loss_bounds_kernel, autograph=False, jit_compile=True
+)
+_batched_quadratic_loss_bounds_eager = tf.function(
+    _batched_quadratic_loss_bounds_kernel, autograph=False, jit_compile=False
+)
+
+
+def quadratic_loss_confidence_bounds(
+    estimate: tf.Tensor,
+    covariance: tf.Tensor,
+    loss: ProperScoreLoss,
+    *,
+    alpha: tf.Tensor | float = 0.05,
+    bisection_iterations: int = 96,
+    kkt_tolerance: float = 1.0e-8,
+    jit_compile: bool = True,
+) -> QuadraticLossBounds:
+    """Return exact quadratic-loss extrema over a joint Wald ellipsoid."""
+
+    estimate = _require_tensor(estimate, "estimate", rank=1)
+    covariance = _require_tensor(covariance, "covariance", rank=2)
+    _require_bool(jit_compile, "jit_compile")
+    if type(loss) is not ProperScoreLoss or not _authenticated_result(
+        loss, kind="proper_score_loss"
+    ):
+        raise PredictiveContractError("loss lacks authenticated proper-score construction")
+    if covariance.shape != (estimate.shape[0], estimate.shape[0]):
+        raise PredictiveContractError("covariance and estimate dimensions disagree")
+    if estimate.shape[0] != 2 * loss.horizon_count:
+        raise PredictiveContractError("estimate dimension disagrees with proper-score loss")
+    if type(bisection_iterations) is not int or bisection_iterations < 32:
+        raise PredictiveContractError("bisection_iterations must be an integer at least 32")
+    if type(kkt_tolerance) is not float or not math.isfinite(kkt_tolerance):
+        raise PredictiveContractError("kkt_tolerance must be a finite float")
+    if kkt_tolerance <= 0.0:
+        raise PredictiveContractError("kkt_tolerance must be positive")
+    alpha_tensor = _require_probability(alpha, "alpha")
+    if not _scale_aware_equal(covariance, tf.transpose(covariance)):
+        raise PredictiveContractError("covariance must be symmetric")
+    covariance_eigenvalues = tf.linalg.eigvalsh(covariance)
+    positive_definite = bool(tf.reduce_all(covariance_eigenvalues > 0.0))
+    radius_squared = tfp.distributions.Chi2(
+        df=tf.cast(estimate.shape[0], tf.float64)
+    ).quantile(1.0 - alpha_tensor)
+    if not positive_definite:
+        nan = tf.constant(float("nan"), tf.float64)
+        result = QuadraticLossBounds(
+            estimate=estimate,
+            covariance=covariance,
+            confidence_radius_squared=radius_squared,
+            point_loss=nan,
+            lower_bound=nan,
+            upper_bound=nan,
+            lower_optimizer=tf.fill(tf.shape(estimate), nan),
+            upper_optimizer=tf.fill(tf.shape(estimate), nan),
+            lower_kkt_residual=nan,
+            upper_kkt_residual=nan,
+            covariance_eigenvalues=covariance_eigenvalues,
+            inference_admissible=False,
+            status=tf.constant(_INVALID),
+        )
+        return _seal_result(
+            result,
+            kind="quadratic_loss_bounds",
+            provenance=(
+                ("estimate", estimate),
+                ("covariance", covariance),
+                ("loss_signature", loss.construction_signature),
+                ("alpha", alpha_tensor),
+                ("bisection_iterations", bisection_iterations),
+                ("kkt_tolerance", kkt_tolerance),
+                ("jit_compile", jit_compile),
+                ("invalid_reason", "covariance_not_positive_definite"),
+            ),
+        )
+    kernel = _quadratic_loss_bounds_xla if jit_compile else _quadratic_loss_bounds_eager
+    (
+        point_loss,
+        lower_bound,
+        upper_bound,
+        lower_optimizer,
+        upper_optimizer,
+        lower_kkt,
+        upper_kkt,
+        covariance_eigenvalues,
+    ) = kernel(
+        estimate,
+        covariance,
+        loss.loss_matrix,
+        radius_squared,
+        bisection_iterations,
+    )
+    numerical_scale = tf.maximum(
+        tf.constant(1.0, tf.float64),
+        tf.maximum(tf.abs(lower_bound), tf.abs(upper_bound)),
+    )
+    admissible = bool(
+        tf.reduce_all(
+            tf.stack(
+                (
+                    tf.math.is_finite(point_loss),
+                    tf.math.is_finite(lower_bound),
+                    tf.math.is_finite(upper_bound),
+                    lower_bound >= 0.0,
+                    lower_bound <= point_loss,
+                    point_loss <= upper_bound,
+                    lower_kkt <= kkt_tolerance * numerical_scale,
+                    upper_kkt <= kkt_tolerance * numerical_scale,
+                )
+            )
+        )
+    )
+    result = QuadraticLossBounds(
+        estimate=estimate,
+        covariance=covariance,
+        confidence_radius_squared=radius_squared,
+        point_loss=point_loss,
+        lower_bound=lower_bound,
+        upper_bound=upper_bound,
+        lower_optimizer=lower_optimizer,
+        upper_optimizer=upper_optimizer,
+        lower_kkt_residual=lower_kkt,
+        upper_kkt_residual=upper_kkt,
+        covariance_eigenvalues=covariance_eigenvalues,
+        inference_admissible=admissible,
+        status=tf.constant(_VALID if admissible else _INVALID),
+    )
+    return _seal_result(
+        result,
+        kind="quadratic_loss_bounds",
+        provenance=(
+            ("estimate", estimate),
+            ("covariance", covariance),
+            ("loss_signature", loss.construction_signature),
+            ("loss_fingerprint", _result_fingerprint("proper_score_loss", loss)),
+            ("alpha", alpha_tensor),
+            ("bisection_iterations", bisection_iterations),
+            ("kkt_tolerance", kkt_tolerance),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def batched_quadratic_loss_confidence_bounds(
+    estimate: tf.Tensor,
+    covariance: tf.Tensor,
+    loss_matrices: tf.Tensor,
+    *,
+    alpha: tf.Tensor | float = 0.05,
+    bisection_iterations: int = 96,
+    kkt_tolerance: float = 1.0e-8,
+    jit_compile: bool = True,
+) -> BatchedQuadraticLossBounds:
+    """Vectorize exact loss extrema over experiment replications and losses."""
+
+    estimate = _require_tensor(estimate, "estimate", rank=2)
+    covariance = _require_tensor(covariance, "covariance", rank=3)
+    loss_matrices = _require_tensor(loss_matrices, "loss_matrices", rank=3)
+    _require_bool(jit_compile, "jit_compile")
+    batch_size, dimension = estimate.shape
+    if covariance.shape != (batch_size, dimension, dimension):
+        raise PredictiveContractError("batched covariance and estimate dimensions disagree")
+    covariance_scale = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.reduce_max(tf.abs(covariance))
+    )
+    if not bool(
+        tf.reduce_all(
+            tf.abs(covariance - tf.transpose(covariance, [0, 2, 1]))
+            <= tf.constant(512.0 * 2.220446049250313e-16, tf.float64)
+            * covariance_scale
+        )
+    ):
+        raise PredictiveContractError("batched covariance must be symmetric")
+    if loss_matrices.shape[1:] != (dimension, dimension) or loss_matrices.shape[0] < 1:
+        raise PredictiveContractError("loss matrices must have shape [loss, feature, feature]")
+    if not bool(
+        tf.reduce_all(
+            tf.abs(loss_matrices - tf.transpose(loss_matrices, [0, 2, 1]))
+            <= tf.constant(512.0 * 2.220446049250313e-16, tf.float64)
+        )
+    ):
+        raise PredictiveContractError("loss matrices must be symmetric")
+    if bool(tf.reduce_any(tf.linalg.eigvalsh(loss_matrices) < -1.0e-14)):
+        raise PredictiveContractError("loss matrices must be positive semidefinite")
+    if type(bisection_iterations) is not int or bisection_iterations < 32:
+        raise PredictiveContractError("bisection_iterations must be an integer at least 32")
+    if type(kkt_tolerance) is not float or not math.isfinite(kkt_tolerance) or kkt_tolerance <= 0.0:
+        raise PredictiveContractError("kkt_tolerance must be a finite positive float")
+    alpha_tensor = _require_probability(alpha, "alpha")
+    covariance_eigenvalues = tf.linalg.eigvalsh(covariance)
+    covariance_valid = tf.reduce_all(covariance_eigenvalues > 0.0, axis=1)
+    safe_covariance = tf.where(
+        covariance_valid[:, tf.newaxis, tf.newaxis],
+        covariance,
+        tf.eye(dimension, batch_shape=[batch_size], dtype=tf.float64),
+    )
+    radius_squared = tfp.distributions.Chi2(df=tf.cast(dimension, tf.float64)).quantile(
+        1.0 - alpha_tensor
+    )
+    kernel = (
+        _batched_quadratic_loss_bounds_xla
+        if jit_compile
+        else _batched_quadratic_loss_bounds_eager
+    )
+    point, lower, upper, lower_kkt, upper_kkt, safe_eigenvalues = kernel(
+        estimate,
+        safe_covariance,
+        loss_matrices,
+        radius_squared,
+        bisection_iterations,
+    )
+    numerical_scale = tf.maximum(
+        tf.constant(1.0, tf.float64), tf.maximum(tf.abs(lower), tf.abs(upper))
+    )
+    loss_valid = tf.reduce_all(
+        tf.stack(
+            (
+                tf.math.is_finite(point),
+                tf.math.is_finite(lower),
+                tf.math.is_finite(upper),
+                lower >= -1.0e-12,
+                lower <= point + 1.0e-12,
+                point <= upper + 1.0e-12,
+                lower_kkt <= kkt_tolerance * numerical_scale,
+                upper_kkt <= kkt_tolerance * numerical_scale,
+            ),
+            axis=0,
+        ),
+        axis=0,
+    )
+    admissible = tf.logical_and(covariance_valid, tf.reduce_all(loss_valid, axis=1))
+    status = tf.where(
+        admissible,
+        tf.fill([batch_size], tf.constant(_VALID)),
+        tf.fill([batch_size], tf.constant(_INVALID)),
+    )
+    result = BatchedQuadraticLossBounds(
+        estimate=estimate,
+        covariance=covariance,
+        loss_matrices=loss_matrices,
+        confidence_radius_squared=radius_squared,
+        point_loss=point,
+        lower_bound=lower,
+        upper_bound=upper,
+        lower_kkt_residual=lower_kkt,
+        upper_kkt_residual=upper_kkt,
+        covariance_eigenvalues=tf.where(
+            covariance_valid[:, tf.newaxis], covariance_eigenvalues, safe_eigenvalues
+        ),
+        inference_admissible=admissible,
+        status=status,
+    )
+    return _seal_result(
+        result,
+        kind="batched_quadratic_loss_bounds",
+        provenance=(
+            ("estimate", estimate),
+            ("covariance", covariance),
+            ("loss_matrices", loss_matrices),
+            ("alpha", alpha_tensor),
+            ("bisection_iterations", bisection_iterations),
+            ("kkt_tolerance", kkt_tolerance),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def _validate_split_alpha_allocation(
+    *,
+    average_alpha: tf.Tensor | float,
+    horizon_alpha: tf.Tensor | float,
+    horizon_count: int,
+    familywise_alpha: tf.Tensor | float,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    average = _require_probability(average_alpha, "average_alpha")
+    horizon = _require_probability(horizon_alpha, "horizon_alpha")
+    familywise = _require_probability(familywise_alpha, "familywise_alpha")
+    allocated = average + tf.cast(horizon_count, tf.float64) * horizon
+    if bool(allocated > familywise):
+        raise PredictiveContractError(
+            "split-region alpha allocation exceeds familywise_alpha"
+        )
+    return average, horizon, allocated
+
+
+def split_quadratic_loss_confidence_bounds(
+    estimate: tf.Tensor,
+    covariance: tf.Tensor,
+    average_loss: ProperScoreLoss,
+    *,
+    average_alpha: tf.Tensor | float = 0.025,
+    horizon_alpha: tf.Tensor | float = 0.0025,
+    familywise_alpha: tf.Tensor | float = 0.05,
+    bisection_iterations: int = 96,
+    kkt_tolerance: float = 1.0e-8,
+    jit_compile: bool = True,
+) -> SplitQuadraticLossBounds:
+    """Bound average loss in 2H dimensions and each horizon in 2 dimensions."""
+
+    estimate = _require_tensor(estimate, "estimate", rank=1)
+    covariance = _require_tensor(covariance, "covariance", rank=2)
+    if type(average_loss) is not ProperScoreLoss or not _authenticated_result(
+        average_loss, kind="proper_score_loss"
+    ):
+        raise PredictiveContractError(
+            "average_loss lacks authenticated proper-score construction"
+        )
+    horizon_count = average_loss.horizon_count
+    if estimate.shape != (2 * horizon_count,) or covariance.shape != (
+        2 * horizon_count,
+        2 * horizon_count,
+    ):
+        raise PredictiveContractError(
+            "estimate and covariance dimensions disagree with average_loss"
+        )
+    average_alpha_tensor, horizon_alpha_tensor, allocated = (
+        _validate_split_alpha_allocation(
+            average_alpha=average_alpha,
+            horizon_alpha=horizon_alpha,
+            horizon_count=horizon_count,
+            familywise_alpha=familywise_alpha,
+        )
+    )
+    average = quadratic_loss_confidence_bounds(
+        estimate,
+        covariance,
+        average_loss,
+        alpha=average_alpha_tensor,
+        bisection_iterations=bisection_iterations,
+        kkt_tolerance=kkt_tolerance,
+        jit_compile=jit_compile,
+    )
+    local_loss = proper_score_loss(tf.ones([1], tf.float64))
+    horizons: list[QuadraticLossBounds] = []
+    for horizon in range(horizon_count):
+        indices = tf.constant([horizon, horizon_count + horizon], tf.int32)
+        local_estimate = tf.gather(estimate, indices)
+        local_covariance = tf.gather(
+            tf.gather(covariance, indices, axis=0), indices, axis=1
+        )
+        horizons.append(
+            quadratic_loss_confidence_bounds(
+                local_estimate,
+                local_covariance,
+                local_loss,
+                alpha=horizon_alpha_tensor,
+                bisection_iterations=bisection_iterations,
+                kkt_tolerance=kkt_tolerance,
+                jit_compile=jit_compile,
+            )
+        )
+    admissible = average.inference_admissible and all(
+        bounds.inference_admissible for bounds in horizons
+    )
+    result = SplitQuadraticLossBounds(
+        estimate=estimate,
+        covariance=covariance,
+        average_point_loss=average.point_loss,
+        average_lower_bound=average.lower_bound,
+        average_upper_bound=average.upper_bound,
+        horizon_point_losses=tf.stack([bounds.point_loss for bounds in horizons]),
+        horizon_lower_bounds=tf.stack([bounds.lower_bound for bounds in horizons]),
+        horizon_upper_bounds=tf.stack([bounds.upper_bound for bounds in horizons]),
+        average_confidence_radius_squared=average.confidence_radius_squared,
+        horizon_confidence_radii_squared=tf.stack(
+            [bounds.confidence_radius_squared for bounds in horizons]
+        ),
+        average_lower_kkt_residual=average.lower_kkt_residual,
+        average_upper_kkt_residual=average.upper_kkt_residual,
+        horizon_lower_kkt_residuals=tf.stack(
+            [bounds.lower_kkt_residual for bounds in horizons]
+        ),
+        horizon_upper_kkt_residuals=tf.stack(
+            [bounds.upper_kkt_residual for bounds in horizons]
+        ),
+        average_alpha=average_alpha_tensor,
+        horizon_alphas=tf.fill([horizon_count], horizon_alpha_tensor),
+        allocated_familywise_alpha=allocated,
+        inference_admissible=admissible,
+        status=tf.constant(_VALID if admissible else _INVALID),
+    )
+    return _seal_result(
+        result,
+        kind="split_quadratic_loss_bounds",
+        provenance=(
+            ("estimate", estimate),
+            ("covariance", covariance),
+            ("average_loss_signature", average_loss.construction_signature),
+            ("average_alpha", average_alpha_tensor),
+            ("horizon_alpha", horizon_alpha_tensor),
+            ("familywise_alpha", _require_probability(familywise_alpha, "familywise_alpha")),
+            ("bisection_iterations", bisection_iterations),
+            ("kkt_tolerance", kkt_tolerance),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def batched_split_quadratic_loss_confidence_bounds(
+    estimate: tf.Tensor,
+    covariance: tf.Tensor,
+    average_loss: ProperScoreLoss,
+    *,
+    average_alpha: tf.Tensor | float = 0.025,
+    horizon_alpha: tf.Tensor | float = 0.0025,
+    familywise_alpha: tf.Tensor | float = 0.05,
+    bisection_iterations: int = 96,
+    kkt_tolerance: float = 1.0e-8,
+    jit_compile: bool = True,
+) -> BatchedSplitQuadraticLossBounds:
+    """Batched split-region bounds with authenticated horizon projections."""
+
+    estimate = _require_tensor(estimate, "estimate", rank=2)
+    covariance = _require_tensor(covariance, "covariance", rank=3)
+    if type(average_loss) is not ProperScoreLoss or not _authenticated_result(
+        average_loss, kind="proper_score_loss"
+    ):
+        raise PredictiveContractError(
+            "average_loss lacks authenticated proper-score construction"
+        )
+    batch_size, dimension = estimate.shape
+    horizon_count = average_loss.horizon_count
+    if dimension != 2 * horizon_count or covariance.shape != (
+        batch_size,
+        dimension,
+        dimension,
+    ):
+        raise PredictiveContractError(
+            "batched estimate and covariance dimensions disagree with average_loss"
+        )
+    average_alpha_tensor, horizon_alpha_tensor, allocated = (
+        _validate_split_alpha_allocation(
+            average_alpha=average_alpha,
+            horizon_alpha=horizon_alpha,
+            horizon_count=horizon_count,
+            familywise_alpha=familywise_alpha,
+        )
+    )
+    average = batched_quadratic_loss_confidence_bounds(
+        estimate,
+        covariance,
+        average_loss.loss_matrix[tf.newaxis, :, :],
+        alpha=average_alpha_tensor,
+        bisection_iterations=bisection_iterations,
+        kkt_tolerance=kkt_tolerance,
+        jit_compile=jit_compile,
+    )
+    horizon_indices = tf.stack(
+        (
+            tf.range(horizon_count, dtype=tf.int32),
+            tf.range(horizon_count, dtype=tf.int32) + horizon_count,
+        ),
+        axis=1,
+    )
+    local_estimates = tf.gather(estimate, horizon_indices, axis=1)
+    selectors = tf.one_hot(horizon_indices, dimension, dtype=tf.float64)
+    local_covariances = tf.einsum(
+        "hki,bij,hlj->bhkl", selectors, covariance, selectors
+    )
+    flat_estimates = tf.reshape(local_estimates, [batch_size * horizon_count, 2])
+    flat_covariances = tf.reshape(
+        local_covariances, [batch_size * horizon_count, 2, 2]
+    )
+    local_loss_matrix = tf.linalg.diag(tf.constant([0.5, 0.25], tf.float64))
+    horizons = batched_quadratic_loss_confidence_bounds(
+        flat_estimates,
+        flat_covariances,
+        local_loss_matrix[tf.newaxis, :, :],
+        alpha=horizon_alpha_tensor,
+        bisection_iterations=bisection_iterations,
+        kkt_tolerance=kkt_tolerance,
+        jit_compile=jit_compile,
+    )
+    horizon_admissible = tf.reshape(
+        horizons.inference_admissible, [batch_size, horizon_count]
+    )
+    admissible = tf.logical_and(
+        average.inference_admissible,
+        tf.reduce_all(horizon_admissible, axis=1),
+    )
+
+    def horizon_values(value: tf.Tensor) -> tf.Tensor:
+        return tf.reshape(value[:, 0], [batch_size, horizon_count])
+
+    result = BatchedSplitQuadraticLossBounds(
+        estimate=estimate,
+        covariance=covariance,
+        average_point_loss=average.point_loss[:, 0],
+        average_lower_bound=average.lower_bound[:, 0],
+        average_upper_bound=average.upper_bound[:, 0],
+        horizon_point_losses=horizon_values(horizons.point_loss),
+        horizon_lower_bounds=horizon_values(horizons.lower_bound),
+        horizon_upper_bounds=horizon_values(horizons.upper_bound),
+        average_confidence_radius_squared=average.confidence_radius_squared,
+        horizon_confidence_radius_squared=horizons.confidence_radius_squared,
+        average_lower_kkt_residual=average.lower_kkt_residual[:, 0],
+        average_upper_kkt_residual=average.upper_kkt_residual[:, 0],
+        horizon_lower_kkt_residuals=horizon_values(horizons.lower_kkt_residual),
+        horizon_upper_kkt_residuals=horizon_values(horizons.upper_kkt_residual),
+        average_alpha=average_alpha_tensor,
+        horizon_alpha=horizon_alpha_tensor,
+        allocated_familywise_alpha=allocated,
+        inference_admissible=admissible,
+        status=tf.where(
+            admissible,
+            tf.fill([batch_size], tf.constant(_VALID)),
+            tf.fill([batch_size], tf.constant(_INVALID)),
+        ),
+    )
+    return _seal_result(
+        result,
+        kind="batched_split_quadratic_loss_bounds",
+        provenance=(
+            ("estimate", estimate),
+            ("covariance", covariance),
+            ("average_loss_signature", average_loss.construction_signature),
+            ("average_alpha", average_alpha_tensor),
+            ("horizon_alpha", horizon_alpha_tensor),
+            ("familywise_alpha", _require_probability(familywise_alpha, "familywise_alpha")),
+            ("bisection_iterations", bisection_iterations),
+            ("kkt_tolerance", kkt_tolerance),
+            ("jit_compile", jit_compile),
+        ),
+    )
+
+
+def classify_split_proper_score_equivalence(
+    bounds: SplitQuadraticLossBounds,
+    *,
+    acceptable_average_loss: tf.Tensor,
+    acceptable_horizon_loss: tf.Tensor,
+    mechanics_only: bool = False,
+) -> DualProperScoreDecision:
+    """Classify one average region and its simultaneous horizon marginals."""
+
+    average_tolerance = _require_tensor(
+        acceptable_average_loss, "acceptable_average_loss", rank=0
+    )
+    horizon_tolerance = _require_tensor(
+        acceptable_horizon_loss, "acceptable_horizon_loss", rank=0
+    )
+    _require_bool(mechanics_only, "mechanics_only")
+    try:
+        tf.debugging.assert_positive(average_tolerance)
+        tf.debugging.assert_positive(horizon_tolerance)
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError("dual acceptable losses must be positive") from exc
+    hard_vetoes: list[str] = []
+    if type(bounds) is not SplitQuadraticLossBounds or not _authenticated_result(
+        bounds, kind="split_quadratic_loss_bounds"
+    ):
+        hard_vetoes.append("SPLIT_LOSS_BOUNDS_UNAUTHENTICATED")
+    elif not bounds.inference_admissible or not _has_exact_status(bounds.status, _VALID):
+        hard_vetoes.append("SPLIT_LOSS_BOUNDS_NOT_ADMISSIBLE")
+    if mechanics_only:
+        hard_vetoes.append("MECHANICS_ONLY_CANNOT_PASS")
+    if hard_vetoes:
+        nan = tf.constant(float("nan"), tf.float64)
+        horizon_count = (
+            int(bounds.horizon_lower_bounds.shape[0])
+            if type(bounds) is SplitQuadraticLossBounds
+            else 0
+        )
+        return DualProperScoreDecision(
+            status="INVALID_HARD_VETO",
+            average_loss_lower_bound=(
+                bounds.average_lower_bound
+                if type(bounds) is SplitQuadraticLossBounds
+                else nan
+            ),
+            average_loss_upper_bound=(
+                bounds.average_upper_bound
+                if type(bounds) is SplitQuadraticLossBounds
+                else nan
+            ),
+            horizon_loss_lower_bounds=(
+                bounds.horizon_lower_bounds
+                if type(bounds) is SplitQuadraticLossBounds
+                else tf.fill([horizon_count], nan)
+            ),
+            horizon_loss_upper_bounds=(
+                bounds.horizon_upper_bounds
+                if type(bounds) is SplitQuadraticLossBounds
+                else tf.fill([horizon_count], nan)
+            ),
+            acceptable_average_loss=average_tolerance,
+            acceptable_horizon_loss=horizon_tolerance,
+            hard_veto_codes=tuple(hard_vetoes),
+            explanatory_diagnostics={},
+        )
+    if bool(
+        tf.logical_and(
+            bounds.average_upper_bound < average_tolerance,
+            tf.reduce_all(bounds.horizon_upper_bounds < horizon_tolerance),
+        )
+    ):
+        status: DecisionStatus = "PASS"
+    elif bool(
+        tf.logical_or(
+            bounds.average_lower_bound > average_tolerance,
+            tf.reduce_any(bounds.horizon_lower_bounds > horizon_tolerance),
+        )
+    ):
+        status = "MATERIAL_DIFFERENCE"
+    else:
+        status = "INCONCLUSIVE_UNDERPOWERED"
+    return DualProperScoreDecision(
+        status=status,
+        average_loss_lower_bound=bounds.average_lower_bound,
+        average_loss_upper_bound=bounds.average_upper_bound,
+        horizon_loss_lower_bounds=bounds.horizon_lower_bounds,
+        horizon_loss_upper_bounds=bounds.horizon_upper_bounds,
+        acceptable_average_loss=average_tolerance,
+        acceptable_horizon_loss=horizon_tolerance,
+        hard_veto_codes=(),
+        explanatory_diagnostics={
+            "average_point_loss": bounds.average_point_loss,
+            "horizon_point_losses": bounds.horizon_point_losses,
+            "average_confidence_radius_squared": (
+                bounds.average_confidence_radius_squared
+            ),
+            "horizon_confidence_radii_squared": (
+                bounds.horizon_confidence_radii_squared
+            ),
+            "allocated_familywise_alpha": bounds.allocated_familywise_alpha,
+        },
+    )
+
+
+def classify_proper_score_equivalence(
+    bounds: QuadraticLossBounds,
+    *,
+    acceptable_loss: tf.Tensor,
+    mechanics_only: bool = False,
+) -> ProperScoreDecision:
+    """Classify a proper-score confidence region without an MMD promotion gate."""
+
+    tolerance = _require_tensor(acceptable_loss, "acceptable_loss", rank=0)
+    _require_bool(mechanics_only, "mechanics_only")
+    try:
+        tf.debugging.assert_positive(tolerance, "acceptable_loss must be positive")
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError("acceptable_loss must be positive") from exc
+    hard_vetoes: list[str] = []
+    if type(bounds) is not QuadraticLossBounds or not _authenticated_result(
+        bounds, kind="quadratic_loss_bounds"
+    ):
+        hard_vetoes.append("LOSS_BOUNDS_UNAUTHENTICATED")
+    elif not bounds.inference_admissible or not _has_exact_status(bounds.status, _VALID):
+        hard_vetoes.append("LOSS_BOUNDS_NOT_ADMISSIBLE")
+    if mechanics_only:
+        hard_vetoes.append("MECHANICS_ONLY_CANNOT_PASS")
+    if hard_vetoes:
+        nan = tf.constant(float("nan"), tf.float64)
+        lower = bounds.lower_bound if type(bounds) is QuadraticLossBounds else nan
+        upper = bounds.upper_bound if type(bounds) is QuadraticLossBounds else nan
+        return ProperScoreDecision(
+            status="INVALID_HARD_VETO",
+            loss_lower_bound=lower,
+            loss_upper_bound=upper,
+            acceptable_loss=tolerance,
+            hard_veto_codes=tuple(hard_vetoes),
+            explanatory_diagnostics={},
+        )
+    if bool(bounds.upper_bound < tolerance):
+        status: DecisionStatus = "PASS"
+    elif bool(bounds.lower_bound > tolerance):
+        status = "MATERIAL_DIFFERENCE"
+    else:
+        status = "INCONCLUSIVE_UNDERPOWERED"
+    return ProperScoreDecision(
+        status=status,
+        loss_lower_bound=bounds.lower_bound,
+        loss_upper_bound=bounds.upper_bound,
+        acceptable_loss=tolerance,
+        hard_veto_codes=(),
+        explanatory_diagnostics={
+            "point_loss": bounds.point_loss,
+            "confidence_radius_squared": bounds.confidence_radius_squared,
+            "lower_kkt_residual": bounds.lower_kkt_residual,
+            "upper_kkt_residual": bounds.upper_kkt_residual,
+        },
+    )
+
+
+def classify_dual_proper_score_equivalence(
+    average_bounds: QuadraticLossBounds,
+    horizon_bounds: tuple[QuadraticLossBounds, ...],
+    *,
+    acceptable_average_loss: tf.Tensor,
+    acceptable_horizon_loss: tf.Tensor,
+    mechanics_only: bool = False,
+) -> DualProperScoreDecision:
+    """Combine average and horizonwise losses over one joint confidence region."""
+
+    average_tolerance = _require_tensor(
+        acceptable_average_loss, "acceptable_average_loss", rank=0
+    )
+    horizon_tolerance = _require_tensor(
+        acceptable_horizon_loss, "acceptable_horizon_loss", rank=0
+    )
+    _require_bool(mechanics_only, "mechanics_only")
+    try:
+        tf.debugging.assert_positive(
+            average_tolerance, "acceptable_average_loss must be positive"
+        )
+        tf.debugging.assert_positive(
+            horizon_tolerance, "acceptable_horizon_loss must be positive"
+        )
+    except tf.errors.InvalidArgumentError as exc:
+        raise PredictiveContractError("dual acceptable losses must be positive") from exc
+    if type(horizon_bounds) is not tuple or not horizon_bounds:
+        raise PredictiveContractError("horizon_bounds must be a nonempty tuple")
+
+    all_bounds = (average_bounds, *horizon_bounds)
+    hard_vetoes: list[str] = []
+    if any(
+        type(bounds) is not QuadraticLossBounds
+        or not _authenticated_result(bounds, kind="quadratic_loss_bounds")
+        for bounds in all_bounds
+    ):
+        hard_vetoes.append("LOSS_BOUNDS_UNAUTHENTICATED")
+    elif any(
+        not bounds.inference_admissible or not _has_exact_status(bounds.status, _VALID)
+        for bounds in all_bounds
+    ):
+        hard_vetoes.append("LOSS_BOUNDS_NOT_ADMISSIBLE")
+    else:
+        expected_dimension = int(average_bounds.estimate.shape[0])
+        if len(horizon_bounds) * 2 != expected_dimension:
+            hard_vetoes.append("HORIZON_BOUND_COUNT_MISMATCH")
+        if any(
+            bounds.estimate.shape != average_bounds.estimate.shape
+            or bounds.covariance.shape != average_bounds.covariance.shape
+            or not _scale_aware_equal(bounds.estimate, average_bounds.estimate)
+            or not _scale_aware_equal(bounds.covariance, average_bounds.covariance)
+            or not _scale_aware_equal(
+                bounds.confidence_radius_squared,
+                average_bounds.confidence_radius_squared,
+            )
+            for bounds in horizon_bounds
+        ):
+            hard_vetoes.append("LOSS_BOUNDS_NOT_ONE_JOINT_REGION")
+    if mechanics_only:
+        hard_vetoes.append("MECHANICS_ONLY_CANNOT_PASS")
+
+    if type(average_bounds) is QuadraticLossBounds:
+        average_lower = average_bounds.lower_bound
+        average_upper = average_bounds.upper_bound
+    else:
+        average_lower = tf.constant(float("nan"), tf.float64)
+        average_upper = tf.constant(float("nan"), tf.float64)
+    if all(type(bounds) is QuadraticLossBounds for bounds in horizon_bounds):
+        horizon_lowers = tf.stack([bounds.lower_bound for bounds in horizon_bounds])
+        horizon_uppers = tf.stack([bounds.upper_bound for bounds in horizon_bounds])
+    else:
+        horizon_lowers = tf.fill([len(horizon_bounds)], tf.constant(float("nan"), tf.float64))
+        horizon_uppers = tf.fill([len(horizon_bounds)], tf.constant(float("nan"), tf.float64))
+
+    if hard_vetoes:
+        status: DecisionStatus = "INVALID_HARD_VETO"
+    elif bool(
+        tf.logical_and(
+            average_upper < average_tolerance,
+            tf.reduce_all(horizon_uppers < horizon_tolerance),
+        )
+    ):
+        status = "PASS"
+    elif bool(
+        tf.logical_or(
+            average_lower > average_tolerance,
+            tf.reduce_any(horizon_lowers > horizon_tolerance),
+        )
+    ):
+        status = "MATERIAL_DIFFERENCE"
+    else:
+        status = "INCONCLUSIVE_UNDERPOWERED"
+
+    diagnostics: dict[str, tf.Tensor] = {}
+    if not hard_vetoes:
+        diagnostics = {
+            "average_point_loss": average_bounds.point_loss,
+            "horizon_point_losses": tf.stack(
+                [bounds.point_loss for bounds in horizon_bounds]
+            ),
+            "confidence_radius_squared": average_bounds.confidence_radius_squared,
+        }
+    return DualProperScoreDecision(
+        status=status,
+        average_loss_lower_bound=average_lower,
+        average_loss_upper_bound=average_upper,
+        horizon_loss_lower_bounds=horizon_lowers,
+        horizon_loss_upper_bounds=horizon_uppers,
+        acceptable_average_loss=average_tolerance,
+        acceptable_horizon_loss=horizon_tolerance,
+        hard_veto_codes=tuple(hard_vetoes),
+        explanatory_diagnostics=diagnostics,
+    )
+
+
 __all__ = [
+    "BatchedBartlettLongRunCovarianceResult",
+    "BatchedQuadraticLossBounds",
+    "BatchedSplitQuadraticLossBounds",
+    "BartlettLongRunCovarianceResult",
+    "ConditionalMeanLogVarianceInfluenceResult",
     "CrossChainLinearMMD",
     "DecisionStatus",
+    "DualProperScoreDecision",
     "HierarchicalBootstrapIndices",
+    "LongRunCovarianceResult",
+    "MeanLogVarianceInfluenceResult",
+    "PairwiseDistanceScaleResult",
     "MMDInterval",
     "MMDStatistics",
     "PredictiveContractError",
     "PredictiveDecision",
     "PredictiveStatisticsConfig",
     "PredictiveSummary",
+    "ProperScoreDecision",
+    "ProperScoreLoss",
+    "QuadraticLossBounds",
     "SimultaneousIntervals",
+    "SplitQuadraticLossBounds",
     "adapt_ssl_lstm_observations",
+    "batched_chain_bartlett_long_run_covariance",
+    "batched_quadratic_loss_confidence_bounds",
+    "batched_split_quadratic_loss_confidence_bounds",
     "chain_batch_means",
+    "chain_batch_long_run_covariance",
+    "chain_bartlett_long_run_covariance",
+    "classify_dual_proper_score_equivalence",
+    "classify_proper_score_equivalence",
+    "classify_split_proper_score_equivalence",
     "classify_predictive_evidence",
     "cross_chain_linear_mmd",
     "cross_chain_mmd_upper_interval",
+    "conditional_mean_log_variance_influence",
     "fixed_rbf_mmd",
+    "growing_hac_bandwidth",
     "hierarchical_resample_indices",
+    "horizon_proper_score_loss",
+    "mean_log_variance_influence",
+    "pooled_pairwise_distance_scale",
+    "proper_score_loss",
+    "quadratic_loss_confidence_bounds",
+    "split_quadratic_loss_confidence_bounds",
     "simultaneous_feature_intervals",
     "standardize_forecast_paths",
     "summarize_forecast_paths",
