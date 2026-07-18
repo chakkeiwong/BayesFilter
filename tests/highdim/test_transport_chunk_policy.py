@@ -22,6 +22,7 @@ ACTIVE_CONTRACT_E_DRIVERS = (
     "docs/benchmarks/emit_contract_e_canonical_lgssm_phase8_target_prefix_smoke.py",
     "docs/benchmarks/run_canonical_lgssm_fused_balance_selection.py",
     "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py",
+    "docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py",
     "docs/benchmarks/run_canonical_lgssm_balance_schedule_selection.py",
     "docs/benchmarks/run_canonical_lgssm_kalman_certification_arm.py",
     "docs/benchmarks/run_canonical_lgssm_particle_diagnostic_arm.py",

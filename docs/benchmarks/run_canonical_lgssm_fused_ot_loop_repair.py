@@ -277,7 +277,8 @@ def _execute(
         "device": device,
         "git_commit": _git_commit(),
         "source_sha256": {path: _sha256(ROOT / path) for path in source_paths},
-        "plan_path": PLAN_PATH,
+        "campaign_id": getattr(args, "campaign_id", CAMPAIGN_ID),
+        "plan_path": getattr(args, "plan_path", PLAN_PATH),
         "arm": args.arm,
         "time_steps": args.time_steps,
         "num_particles": args.num_particles,
@@ -337,6 +338,8 @@ def main() -> None:
     parser.add_argument("--arm", choices=ALLOWED_ARMS, required=True)
     parser.add_argument("--balance-steps", type=int, required=True)
     parser.add_argument("--dtype", choices=("float32", "float64"), required=True)
+    parser.add_argument("--campaign-id", default=CAMPAIGN_ID)
+    parser.add_argument("--plan-path", default=PLAN_PATH)
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists():
@@ -344,7 +347,7 @@ def main() -> None:
     started = time.perf_counter()
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
-        "campaign_id": CAMPAIGN_ID,
+        "campaign_id": args.campaign_id,
         "attempt_id": args.attempt_id,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "command": sys.argv,

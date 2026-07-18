@@ -305,12 +305,28 @@ def _balanced_transport_forward_jvp_state_core(
     )
     transport = tf.exp(log_transport)
     transport_tangent = transport[:, :, :, None] * log_transport_tangent
-    augmented_numerator = tf.einsum("bij,bjd->bid", transport, payload)
-    augmented_tangent = (
-        tf.einsum("bijp,bjd->bidp", transport_tangent, payload)
-        + tf.einsum("bij,bjdp->bidp", transport, payload_tangent)
+    # Preserve probability mass with an explicit float32 reduction. Routing
+    # the all-ones payload channel through a TF32-eligible GEMM introduces an
+    # O(1e-3) row-mass floor at N=1024 even after the potentials converge.
+    payload_numerator = tf.einsum(
+        "bij,bjd->bid", transport, payload[:, :, :-1]
     )
-    row_mass = augmented_numerator[:, :, -1]
+    payload_tangent_value = (
+        tf.einsum(
+            "bijp,bjd->bidp", transport_tangent, payload[:, :, :-1]
+        )
+        + tf.einsum(
+            "bij,bjdp->bidp", transport, payload_tangent[:, :, :-1, :]
+        )
+    )
+    row_mass = tf.reduce_sum(transport, axis=2)
+    row_mass_tangent = tf.reduce_sum(transport_tangent, axis=2)
+    augmented_numerator = tf.concat(
+        [payload_numerator, row_mass[:, :, None]], axis=2
+    )
+    augmented_tangent = tf.concat(
+        [payload_tangent_value, row_mass_tangent[:, :, None, :]], axis=2
+    )
     column_mass = tf.reduce_sum(transport, axis=1)
     post_quotient_column_mass = tf.reduce_sum(
         transport / row_mass[:, :, None], axis=1

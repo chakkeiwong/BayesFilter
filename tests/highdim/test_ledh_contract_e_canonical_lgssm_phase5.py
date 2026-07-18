@@ -15,6 +15,27 @@ import tensorflow as tf
 import pytest
 
 from bayesfilter.highdim import ledh_contract_e_canonical_lgssm_tf as canonical
+from bayesfilter.highdim import ledh_contract_e_lgssm_preparation_tf as preparation
+from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
+
+
+def test_preparation_accepts_existing_float32_observation_tensor() -> None:
+    chunks = select_transport_chunks(8)
+    result = preparation.prepare_contract_e_lgssm_inputs(
+        observations=tf.zeros([2, 3], tf.float32),
+        estimator_seeds=(81600,),
+        num_particles=8,
+        fixed_reset_mask=[[True, True]],
+        prepared_ridge=[[1.0e-6, 1.0e-6]],
+        epsilon=0.5,
+        scaling=0.9,
+        sinkhorn_steps=2,
+        balance_steps=2,
+        row_chunk_size=chunks.row_chunk_size,
+        col_chunk_size=chunks.col_chunk_size,
+        dtype=tf.float32,
+    )
+    assert result["prepared"]["observations"].dtype == tf.float32
 
 
 ROOT = Path(__file__).resolve().parents[2]

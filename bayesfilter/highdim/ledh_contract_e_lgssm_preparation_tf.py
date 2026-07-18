@@ -108,7 +108,7 @@ def prepare_contract_e_lgssm_inputs(
     if balance_steps < 0:
         raise ValueError("balance_steps must be non-negative")
 
-    observations64 = tf.convert_to_tensor(observations, RAW_DRAW_DTYPE)
+    observations64 = tf.cast(tf.convert_to_tensor(observations), RAW_DRAW_DTYPE)
     if observations64.shape.rank != 2 or observations64.shape[1] != STATE_DIMENSION:
         raise ValueError("observations must have shape [T, 3]")
     time_steps = observations64.shape[0]

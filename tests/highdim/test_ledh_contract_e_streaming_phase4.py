@@ -743,6 +743,13 @@ def test_fused_contract_e_reuses_one_ot_state_and_matches_separated_route() -> N
     assert int(fused["work"]["diagnostic_solver_reconstructions"]) == 0
 
 
+def test_fused_state_reduces_probability_mass_outside_payload_gemm() -> None:
+    source = inspect.getsource(streaming._balanced_transport_forward_jvp_state_core)
+    assert "row_mass = tf.reduce_sum(transport, axis=2)" in source
+    assert "row_mass_tangent = tf.reduce_sum(transport_tangent, axis=2)" in source
+    assert 'tf.einsum("bij,bjd->bid", transport, payload)' not in source
+
+
 def test_contract_e_composed_jvp_vjp_and_weight_coordinates_match_autodiff() -> None:
     scaled, particles, logw, weights, residual, ridge, epsilon, epsilon0, scaling = _inputs()
     d_scaled, d_particles, d_logw, d_weights, d_residual, d_ridge, d_epsilon0 = _directions()
