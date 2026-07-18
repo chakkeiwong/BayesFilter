@@ -1,0 +1,35 @@
+{
+  "attempt_id": "continuation-diagnostic-02",
+  "balance_steps": 2,
+  "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+  "command": [
+    "docs/benchmarks/diagnose_canonical_lgssm_tf32_marginal_floor.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_tf32_balance_horizon_continuation_20260718/tf32_marginal_floor_direct_distance_diagnostic02.json",
+    "--attempt-id",
+    "continuation-diagnostic-02"
+  ],
+  "exception": {
+    "message": "Virtual devices cannot be modified after being initialized",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_canonical_lgssm_tf32_marginal_floor.py\", line 79, in main\n    payload[\"device\"] = runner._configure_gpu(tf.float32)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py\", line 75, in _configure_gpu\n    tf.config.set_logical_device_configuration(\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/config.py\", line 912, in set_logical_device_configuration\n    context.context().set_logical_device_configuration(device, logical_devices)\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/context.py\", line 2052, in set_logical_device_configuration\n    raise RuntimeError(\nRuntimeError: Virtual devices cannot be modified after being initialized\n",
+    "type": "RuntimeError"
+  },
+  "forbidden_use": "must not select a new count or relax a gate",
+  "git_commit": "4256480d2995cff00c6d0d2fd866648c2e3d2eb6",
+  "mechanism": "replace TF32-eligible dot-product squared distances with direct float32 coordinate differences for this process only",
+  "role": "explanatory_diagnostic_only",
+  "schema_version": "bayesfilter.canonical_lgssm_tf32_marginal_floor_diagnostic.v1",
+  "seeds": [
+    81600,
+    81601,
+    81602,
+    81603,
+    81604,
+    81605,
+    81606,
+    81607
+  ],
+  "status": "diagnostic_failed",
+  "timestamp_utc": "2026-07-18T11:15:19.928682+00:00",
+  "wall_time_seconds": 0.00220207596430555
+}

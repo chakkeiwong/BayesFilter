@@ -1,0 +1,404 @@
+{
+  "attempt_id": "continuation-selection-03",
+  "audit_seeds": [
+    81620,
+    81621,
+    81622,
+    81623,
+    81624,
+    81625,
+    81626,
+    81627
+  ],
+  "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+  "candidates": [
+    2,
+    3,
+    5,
+    8
+  ],
+  "command": [
+    "docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_tf32_balance_horizon_continuation_20260718/tf32_balance_selection_attempt03.json",
+    "--attempt-id",
+    "continuation-selection-03"
+  ],
+  "design": [
+    {
+      "all_marginals_valid": false,
+      "all_resets_valid": false,
+      "balance_steps": 2,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 22.623546964023262,
+      "finite": true,
+      "maximum_row_error": 0.0008909106254577637,
+      "maximum_tv_column_error": 0.00017771437705960125,
+      "pass": false,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 2,
+        "col_chunk_size": 1024,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float32",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 1024,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81600,
+          81601,
+          81602,
+          81603,
+          81604,
+          81605,
+          81606,
+          81607
+        ],
+        "row_chunk_size": 1024,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "ea691b9c5346b2cd41ec7b198fc5b167a3d8839f2d8c39ff2139c05fcc113f0c",
+          "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+          "prepared_ridge": "d7c4edf7092e961d9443bbd5bb32a46896dde0e24b910f4b227c33725c7de1a7",
+          "residual_design": "96d57ce0955a057ef83613a6175bbaa5c2f9060ce79ec8577d182700aa687d00",
+          "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+          "transition_noise": "b4de696d42138beb0a834d176e157759b9761f7b57f40537569c2d2c3f02fb03"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81600,
+        81601,
+        81602,
+        81603,
+        81604,
+        81605,
+        81606,
+        81607
+      ],
+      "warm_execution_seconds": 0.5149126049946062,
+      "work": {
+        "diagnostic_solver_reconstructions": 0,
+        "marginal_tile_sweeps": 0,
+        "sinkhorn_state_constructions": 2,
+        "terminal_balance_state_constructions": 2,
+        "transport_tile_sweeps": 2
+      },
+      "work_valid": true
+    },
+    {
+      "all_marginals_valid": false,
+      "all_resets_valid": false,
+      "balance_steps": 3,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 15.831194125988986,
+      "finite": true,
+      "maximum_row_error": 0.000613093376159668,
+      "maximum_tv_column_error": 0.0001777864235918969,
+      "pass": false,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 3,
+        "col_chunk_size": 1024,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float32",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 1024,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81600,
+          81601,
+          81602,
+          81603,
+          81604,
+          81605,
+          81606,
+          81607
+        ],
+        "row_chunk_size": 1024,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "ea691b9c5346b2cd41ec7b198fc5b167a3d8839f2d8c39ff2139c05fcc113f0c",
+          "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+          "prepared_ridge": "d7c4edf7092e961d9443bbd5bb32a46896dde0e24b910f4b227c33725c7de1a7",
+          "residual_design": "96d57ce0955a057ef83613a6175bbaa5c2f9060ce79ec8577d182700aa687d00",
+          "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+          "transition_noise": "b4de696d42138beb0a834d176e157759b9761f7b57f40537569c2d2c3f02fb03"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81600,
+        81601,
+        81602,
+        81603,
+        81604,
+        81605,
+        81606,
+        81607
+      ],
+      "warm_execution_seconds": 0.5380804489832371,
+      "work": {
+        "diagnostic_solver_reconstructions": 0,
+        "marginal_tile_sweeps": 0,
+        "sinkhorn_state_constructions": 2,
+        "terminal_balance_state_constructions": 2,
+        "transport_tile_sweeps": 2
+      },
+      "work_valid": true
+    },
+    {
+      "all_marginals_valid": false,
+      "all_resets_valid": false,
+      "balance_steps": 5,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 14.89579236600548,
+      "finite": true,
+      "maximum_row_error": 0.0006130337715148926,
+      "maximum_tv_column_error": 0.00017787126125767827,
+      "pass": false,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 5,
+        "col_chunk_size": 1024,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float32",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 1024,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81600,
+          81601,
+          81602,
+          81603,
+          81604,
+          81605,
+          81606,
+          81607
+        ],
+        "row_chunk_size": 1024,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "ea691b9c5346b2cd41ec7b198fc5b167a3d8839f2d8c39ff2139c05fcc113f0c",
+          "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+          "prepared_ridge": "d7c4edf7092e961d9443bbd5bb32a46896dde0e24b910f4b227c33725c7de1a7",
+          "residual_design": "96d57ce0955a057ef83613a6175bbaa5c2f9060ce79ec8577d182700aa687d00",
+          "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+          "transition_noise": "b4de696d42138beb0a834d176e157759b9761f7b57f40537569c2d2c3f02fb03"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81600,
+        81601,
+        81602,
+        81603,
+        81604,
+        81605,
+        81606,
+        81607
+      ],
+      "warm_execution_seconds": 0.5705338650150225,
+      "work": {
+        "diagnostic_solver_reconstructions": 0,
+        "marginal_tile_sweeps": 0,
+        "sinkhorn_state_constructions": 2,
+        "terminal_balance_state_constructions": 2,
+        "transport_tile_sweeps": 2
+      },
+      "work_valid": true
+    },
+    {
+      "all_marginals_valid": false,
+      "all_resets_valid": false,
+      "balance_steps": 8,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 15.636236214020755,
+      "finite": true,
+      "maximum_row_error": 0.0006130337715148926,
+      "maximum_tv_column_error": 0.00017785601085051894,
+      "pass": false,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 8,
+        "col_chunk_size": 1024,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float32",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 1024,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81600,
+          81601,
+          81602,
+          81603,
+          81604,
+          81605,
+          81606,
+          81607
+        ],
+        "row_chunk_size": 1024,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "ea691b9c5346b2cd41ec7b198fc5b167a3d8839f2d8c39ff2139c05fcc113f0c",
+          "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+          "prepared_ridge": "d7c4edf7092e961d9443bbd5bb32a46896dde0e24b910f4b227c33725c7de1a7",
+          "residual_design": "96d57ce0955a057ef83613a6175bbaa5c2f9060ce79ec8577d182700aa687d00",
+          "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+          "transition_noise": "b4de696d42138beb0a834d176e157759b9761f7b57f40537569c2d2c3f02fb03"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81600,
+        81601,
+        81602,
+        81603,
+        81604,
+        81605,
+        81606,
+        81607
+      ],
+      "warm_execution_seconds": 0.5801854029996321,
+      "work": {
+        "diagnostic_solver_reconstructions": 0,
+        "marginal_tile_sweeps": 0,
+        "sinkhorn_state_constructions": 2,
+        "terminal_balance_state_constructions": 2,
+        "transport_tile_sweeps": 2
+      },
+      "work_valid": true
+    }
+  ],
+  "design_seeds": [
+    81600,
+    81601,
+    81602,
+    81603,
+    81604,
+    81605,
+    81606,
+    81607
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "dtype": "float32",
+  "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+  "git_commit": "4256480d2995cff00c6d0d2fd866648c2e3d2eb6",
+  "maximum_row_error_tolerance": 0.01,
+  "num_particles": 1024,
+  "plan_path": "docs/plans/bayesfilter-canonical-lgssm-tf32-balance-and-horizon-continuation-plan-2026-07-18.md",
+  "schema_version": "bayesfilter.canonical_lgssm_tf32_balance_selection.v1",
+  "selected_balance_steps": null,
+  "selection_uses_only_marginals": true,
+  "status": "selection_failed_no_candidate",
+  "tf32_enabled": true,
+  "time_steps": 2,
+  "timestamp_utc": "2026-07-18T11:00:08.756830+00:00",
+  "tv_column_tolerance": 0.0001,
+  "wall_time_seconds": 74.51957129902439
+}

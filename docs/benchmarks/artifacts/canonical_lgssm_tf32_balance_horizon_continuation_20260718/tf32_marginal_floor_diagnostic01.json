@@ -1,0 +1,48 @@
+{
+  "attempt_id": "continuation-diagnostic-01",
+  "balance_steps": 8,
+  "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+  "command": [
+    "docs/benchmarks/diagnose_canonical_lgssm_tf32_marginal_floor.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_tf32_balance_horizon_continuation_20260718/tf32_marginal_floor_diagnostic01.json",
+    "--attempt-id",
+    "continuation-diagnostic-01"
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "exception": {
+    "message": "'quotient_column_residual_history'",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_canonical_lgssm_tf32_marginal_floor.py\", line 53, in main\n    payload[\"result\"] = selection._evaluate(\n                        ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py\", line 81, in _evaluate\n    first[\"quotient_column_residual_history\"], active\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nKeyError: 'quotient_column_residual_history'\n",
+    "type": "KeyError"
+  },
+  "forbidden_use": "must not select a new count or relax a gate",
+  "git_commit": "4256480d2995cff00c6d0d2fd866648c2e3d2eb6",
+  "role": "explanatory_diagnostic_only",
+  "schema_version": "bayesfilter.canonical_lgssm_tf32_marginal_floor_diagnostic.v1",
+  "seeds": [
+    81600,
+    81601,
+    81602,
+    81603,
+    81604,
+    81605,
+    81606,
+    81607
+  ],
+  "status": "diagnostic_failed",
+  "timestamp_utc": "2026-07-18T11:10:18.830845+00:00",
+  "wall_time_seconds": 27.033542082994245
+}

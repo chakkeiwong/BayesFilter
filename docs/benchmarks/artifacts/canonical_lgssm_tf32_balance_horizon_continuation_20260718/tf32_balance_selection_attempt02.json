@@ -1,0 +1,70 @@
+{
+  "attempt_id": "continuation-selection-02",
+  "audit_seeds": [
+    81620,
+    81621,
+    81622,
+    81623,
+    81624,
+    81625,
+    81626,
+    81627
+  ],
+  "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+  "candidates": [
+    2,
+    3,
+    5,
+    8
+  ],
+  "command": [
+    "docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_tf32_balance_horizon_continuation_20260718/tf32_balance_selection_attempt02.json",
+    "--attempt-id",
+    "continuation-selection-02"
+  ],
+  "design_seeds": [
+    81600,
+    81601,
+    81602,
+    81603,
+    81604,
+    81605,
+    81606,
+    81607
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "dtype": "float32",
+  "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+  "exception": {
+    "message": "Tensor conversion requested dtype float64 for Tensor with dtype float32: <tf.Tensor: shape=(2, 3), dtype=float32, numpy=\narray([[-1.5869635 ,  0.14831193, -1.0824602 ],\n       [-0.820639  , -0.74937564,  0.17226227]], dtype=float32)>",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py\", line 165, in main\n    record = _evaluate(DESIGN_SEEDS, candidate)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py\", line 46, in _evaluate\n    prepared_result = preparation.prepare_contract_e_lgssm_inputs(\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py\", line 111, in prepare_contract_e_lgssm_inputs\n    observations64 = tf.convert_to_tensor(observations, RAW_DRAW_DTYPE)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/tensor.py\", line 761, in __tf_tensor__\n    raise ValueError(\nValueError: Tensor conversion requested dtype float64 for Tensor with dtype float32: <tf.Tensor: shape=(2, 3), dtype=float32, numpy=\narray([[-1.5869635 ,  0.14831193, -1.0824602 ],\n       [-0.820639  , -0.74937564,  0.17226227]], dtype=float32)>\n",
+    "type": "ValueError"
+  },
+  "git_commit": "4256480d2995cff00c6d0d2fd866648c2e3d2eb6",
+  "maximum_row_error_tolerance": 0.01,
+  "num_particles": 1024,
+  "plan_path": "docs/plans/bayesfilter-canonical-lgssm-tf32-balance-and-horizon-continuation-plan-2026-07-18.md",
+  "schema_version": "bayesfilter.canonical_lgssm_tf32_balance_selection.v1",
+  "selection_uses_only_marginals": true,
+  "status": "selection_execution_failed",
+  "tf32_enabled": true,
+  "time_steps": 2,
+  "timestamp_utc": "2026-07-18T10:55:23.096060+00:00",
+  "tv_column_tolerance": 0.0001,
+  "wall_time_seconds": 1.5655565339839086
+}
