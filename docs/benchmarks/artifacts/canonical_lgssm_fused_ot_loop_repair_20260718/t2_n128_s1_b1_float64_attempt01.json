@@ -1,0 +1,183 @@
+{
+  "attempt_id": "attempt01-t2-n128-s1-b1-float64",
+  "campaign_id": "canonical-lgssm-fused-ot-loop-repair-20260718",
+  "command": [
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_fused_ot_loop_repair_20260718/t2_n128_s1_b1_float64_attempt01.json",
+    "--attempt-id",
+    "attempt01-t2-n128-s1-b1-float64",
+    "--time-steps",
+    "2",
+    "--num-particles",
+    "128",
+    "--seeds",
+    "81300",
+    "--arm",
+    "all_active_contract_e",
+    "--balance-steps",
+    "1",
+    "--dtype",
+    "float64"
+  ],
+  "result": {
+    "aggregate_physical_score": [
+      4.17470308782964,
+      -0.27357778281918704,
+      0.05965244221074595,
+      4.477023060390698,
+      10.07616848730581
+    ],
+    "aggregate_value": -8.653381299319811,
+    "arm": "all_active_contract_e",
+    "balance_steps": 1,
+    "bitwise_replay": true,
+    "chart_valid": false,
+    "device": {
+      "dtype": "float64",
+      "jit_compile": true,
+      "logical_devices": [
+        "/device:GPU:0"
+      ],
+      "memory_growth": false,
+      "memory_limit_mib": 8192,
+      "physical_devices": [
+        "/physical_device:GPU:0"
+      ],
+      "tf32_enabled": false,
+      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+    },
+    "estimator_seeds": [
+      81300
+    ],
+    "finite": true,
+    "git_commit": "fbc3b6e9aaf882b8275bfb94aaa2ff43cc4c5a98",
+    "gpu_allocator_bytes": {
+      "current": 95488,
+      "peak": 2044160
+    },
+    "graph": {
+      "operation_count": 470,
+      "python_horizon_unroll": false,
+      "serialized_bytes": 1382666,
+      "while_operation_types": [
+        "StatelessWhile"
+      ]
+    },
+    "hard_valid": false,
+    "kalman_physical_score": [
+      3.828013699954737,
+      -0.3841810550659298,
+      -0.08308722315713771,
+      4.417211557338937,
+      11.13813400253652
+    ],
+    "kalman_value": -8.862150494354598,
+    "marginal_valid": false,
+    "maximum_row_error": 0.010047701049819002,
+    "maximum_tv_column_error": 0.00011784569534175582,
+    "num_particles": 128,
+    "per_seed_physical_score": [
+      [
+        4.17470308782964,
+        -0.27357778281918704,
+        0.05965244221074595,
+        4.477023060390698,
+        10.07616848730581
+      ]
+    ],
+    "per_seed_value": [
+      -8.653381299319811
+    ],
+    "physical_score_difference_to_kalman": [
+      0.34668938787490244,
+      0.11060327224674277,
+      0.14273966536788366,
+      0.05981150305176097,
+      -1.0619655152307086
+    ],
+    "plan_path": "docs/plans/bayesfilter-canonical-lgssm-fused-ot-loop-performance-repair-plan-2026-07-18.md",
+    "preparation_identity": {
+      "axis_convention": {
+        "initial_noise": "[batch, particle, state]",
+        "residual_design": "[batch, time, particle, state]",
+        "transition_noise": "[batch, time, particle, state]"
+      },
+      "balance_steps": 1,
+      "col_chunk_size": 128,
+      "domain_tags": {
+        "initial": 101,
+        "residual": "2000 + zero_based_time",
+        "transition": "1000 + zero_based_time"
+      },
+      "final_dtype": "float64",
+      "key_dtype": "int32",
+      "key_encoding": "[root_seed, domain_tag]",
+      "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+      "maximum_row_error_tolerance": 0.01,
+      "num_particles": 128,
+      "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+      "raw_draw_dtype": "float64",
+      "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+      "rng_algorithm": "philox",
+      "root_seeds_in_order": [
+        81300
+      ],
+      "row_chunk_size": 128,
+      "sinkhorn_steps": 20,
+      "tensor_sha256": {
+        "epsilon": "9533b9bd068373e575058d79238e608ea637773a63ae07c10985a167bab7c7ca",
+        "fixed_reset_mask": "8c1dd4d406daf4b2eb96e0c3d6ac7064b92fb466880170534817694fa25a1de6",
+        "initial_noise": "5c08059f653646959f15a514e17322af272bcc09077ad6add0f5d3cdbe36c762",
+        "observations": "a1d5ec09997c061f9e5b230188b611563bb0ae241e3e308ac469aced54466c7e",
+        "prepared_ridge": "fd5f9bdfa65107294b053eb0de1aa23ec7f257e9de6e3668737e63925e7c948a",
+        "residual_design": "3f2b31a8db9445bb9b3488a6f30d5bbd414b6e69b82517fef3aa77532be36e06",
+        "scaling": "3c6de6dcd9b347abdfac34b1d28ec9eb29a7a8e5e1ef43a4dd11eced6ec518b0",
+        "transition_noise": "7f4b5a233b812907d0048ec018227ae411d29595902049722d16d6ff02fd0685"
+      },
+      "tensorflow_version": "2.19.1",
+      "time_steps": 2,
+      "transport_block_grid": [
+        1,
+        1
+      ],
+      "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "tv_column_tolerance": 0.0001
+    },
+    "reset_valid": false,
+    "source_sha256": {
+      "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "1f10544339052d48768fedb54718b28803c0999ccead7e0d1eee910070a8625b",
+      "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "02fbbffcfc03b397964714794733805bf5404fe849606fab6b5cad1cf0488fda",
+      "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+      "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "cf259203e2949ff05445fdb06fbe581fde5396b0a5462c5c8d3ac5f414f9b5b9",
+      "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "dd5f6230c14c51166da3252f5838221716a5d25809474c34cd696f42501993a9"
+    },
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "time_steps": 2,
+    "timing_seconds": {
+      "compile_plus_first_execution": 8.778481682995334,
+      "trace": 7.223994363041129,
+      "warm_execution": 0.18649389198981225
+    },
+    "value_difference_to_kalman": 0.20876919503478675,
+    "work": {
+      "active_reset_rows": 2,
+      "diagnostic_solver_reconstructions": 0,
+      "marginal_tile_sweeps": 0,
+      "sinkhorn_state_constructions": 2,
+      "terminal_balance_state_constructions": 2,
+      "transport_tile_sweeps": 2
+    },
+    "work_valid": true
+  },
+  "schema_version": "bayesfilter.canonical_lgssm_fused_ot_loop_repair.v1",
+  "status": "node_complete",
+  "timestamp_utc": "2026-07-18T08:02:28.228371+00:00",
+  "wall_time_seconds": 20.47462043800624
+}
