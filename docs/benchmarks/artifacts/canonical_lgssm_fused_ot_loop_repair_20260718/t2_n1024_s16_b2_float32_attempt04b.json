@@ -1,0 +1,32 @@
+{
+  "attempt_id": "attempt04b-t2-n1024-s16-b2-float32-tf32",
+  "campaign_id": "canonical-lgssm-fused-ot-loop-repair-20260718",
+  "command": [
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_fused_ot_loop_repair_20260718/t2_n1024_s16_b2_float32_attempt04b.json",
+    "--attempt-id",
+    "attempt04b-t2-n1024-s16-b2-float32-tf32",
+    "--time-steps",
+    "2",
+    "--num-particles",
+    "1024",
+    "--seeds",
+    "81500,81501,81502,81503,81504,81505,81506,81507,81508,81509,81510,81511,81512,81513,81514,81515",
+    "--arm",
+    "all_active_contract_e",
+    "--balance-steps",
+    "2",
+    "--dtype",
+    "float32"
+  ],
+  "exception": {
+    "message": "Tensor conversion requested dtype float64 for Tensor with dtype float32: <tf.Tensor: shape=(2, 3), dtype=float32, numpy=\narray([[-1.5869635 ,  0.14831193, -1.0824602 ],\n       [-0.820639  , -0.74937564,  0.17226227]], dtype=float32)>",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py\", line 352, in main\n    payload[\"result\"] = _execute(args)\n                        ^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py\", line 181, in _execute\n    prepared_result = preparation.prepare_contract_e_lgssm_inputs(\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py\", line 111, in prepare_contract_e_lgssm_inputs\n    observations64 = tf.convert_to_tensor(observations, RAW_DRAW_DTYPE)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/tensor.py\", line 761, in __tf_tensor__\n    raise ValueError(\nValueError: Tensor conversion requested dtype float64 for Tensor with dtype float32: <tf.Tensor: shape=(2, 3), dtype=float32, numpy=\narray([[-1.5869635 ,  0.14831193, -1.0824602 ],\n       [-0.820639  , -0.74937564,  0.17226227]], dtype=float32)>\n",
+    "type": "ValueError"
+  },
+  "schema_version": "bayesfilter.canonical_lgssm_fused_ot_loop_repair.v1",
+  "status": "node_failed",
+  "timestamp_utc": "2026-07-18T08:43:22.599871+00:00",
+  "wall_time_seconds": 1.5965665520052426
+}

@@ -1,0 +1,354 @@
+{
+  "attempt_id": "attempt02-balance-design-audit",
+  "audit": {
+    "all_marginals_valid": true,
+    "all_resets_valid": true,
+    "balance_steps": 2,
+    "bitwise_replay": true,
+    "compile_plus_first_execution_seconds": 14.122251626977231,
+    "maximum_row_error": 0.0006899709565120205,
+    "maximum_tv_column_error": 3.663474399457254e-05,
+    "pass": true,
+    "preparation_identity": {
+      "axis_convention": {
+        "initial_noise": "[batch, particle, state]",
+        "residual_design": "[batch, time, particle, state]",
+        "transition_noise": "[batch, time, particle, state]"
+      },
+      "balance_steps": 2,
+      "col_chunk_size": 128,
+      "domain_tags": {
+        "initial": 101,
+        "residual": "2000 + zero_based_time",
+        "transition": "1000 + zero_based_time"
+      },
+      "final_dtype": "float64",
+      "key_dtype": "int32",
+      "key_encoding": "[root_seed, domain_tag]",
+      "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+      "maximum_row_error_tolerance": 0.01,
+      "num_particles": 128,
+      "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+      "raw_draw_dtype": "float64",
+      "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+      "rng_algorithm": "philox",
+      "root_seeds_in_order": [
+        81320,
+        81321,
+        81322,
+        81323,
+        81324,
+        81325,
+        81326,
+        81327
+      ],
+      "row_chunk_size": 128,
+      "sinkhorn_steps": 20,
+      "tensor_sha256": {
+        "epsilon": "9533b9bd068373e575058d79238e608ea637773a63ae07c10985a167bab7c7ca",
+        "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+        "initial_noise": "9d05a2d298f79f17df63c443c51af643f1224bd8f5d4b7d06b0bc978be05e785",
+        "observations": "a1d5ec09997c061f9e5b230188b611563bb0ae241e3e308ac469aced54466c7e",
+        "prepared_ridge": "2daee793fad0947c6565f4bb5ac6400185e30976b8dcaf2b011405bd1ea0745c",
+        "residual_design": "6552ecd16c05479c1fb3e5604577d0d6f0740bbae9ee870c069a6c8f0b1fd1b5",
+        "scaling": "3c6de6dcd9b347abdfac34b1d28ec9eb29a7a8e5e1ef43a4dd11eced6ec518b0",
+        "transition_noise": "9c092806e7520b47039d8aaea7e48d33d4c262762c79759807d425aaf52f1675"
+      },
+      "tensorflow_version": "2.19.1",
+      "time_steps": 2,
+      "transport_block_grid": [
+        1,
+        1
+      ],
+      "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "tv_column_tolerance": 0.0001
+    },
+    "seeds": [
+      81320,
+      81321,
+      81322,
+      81323,
+      81324,
+      81325,
+      81326,
+      81327
+    ],
+    "warm_execution_seconds": 0.1362808120320551
+  },
+  "audit_seeds": [
+    81320,
+    81321,
+    81322,
+    81323,
+    81324,
+    81325,
+    81326,
+    81327
+  ],
+  "campaign_id": "canonical-lgssm-fused-ot-loop-repair-20260718",
+  "candidates": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    8
+  ],
+  "design": [
+    {
+      "all_marginals_valid": false,
+      "all_resets_valid": false,
+      "balance_steps": 0,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 15.681443715002388,
+      "maximum_row_error": 0.023722828640635685,
+      "maximum_tv_column_error": 0.0003631148285500464,
+      "pass": false,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 0,
+        "col_chunk_size": 128,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float64",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 128,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81300,
+          81301,
+          81302,
+          81303,
+          81304,
+          81305,
+          81306,
+          81307
+        ],
+        "row_chunk_size": 128,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "9533b9bd068373e575058d79238e608ea637773a63ae07c10985a167bab7c7ca",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "5c668dc2f2851b6ea49dd0ce0e62b4e41f9eafd0105a9285991bbe74e416b729",
+          "observations": "a1d5ec09997c061f9e5b230188b611563bb0ae241e3e308ac469aced54466c7e",
+          "prepared_ridge": "2daee793fad0947c6565f4bb5ac6400185e30976b8dcaf2b011405bd1ea0745c",
+          "residual_design": "a505c77651e16ec134e1096577c4f9cb70d16b2f0706fc15ea4c06b8d15c5b23",
+          "scaling": "3c6de6dcd9b347abdfac34b1d28ec9eb29a7a8e5e1ef43a4dd11eced6ec518b0",
+          "transition_noise": "7407be736163b2cb3e59710db0ebc1a08de4b9d8260e2db5ffe4cfe9c70a8262"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81300,
+        81301,
+        81302,
+        81303,
+        81304,
+        81305,
+        81306,
+        81307
+      ],
+      "warm_execution_seconds": 0.13284170598490164
+    },
+    {
+      "all_marginals_valid": false,
+      "all_resets_valid": false,
+      "balance_steps": 1,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 12.07592246402055,
+      "maximum_row_error": 0.010047701049819002,
+      "maximum_tv_column_error": 0.00011784569534193371,
+      "pass": false,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 1,
+        "col_chunk_size": 128,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float64",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 128,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81300,
+          81301,
+          81302,
+          81303,
+          81304,
+          81305,
+          81306,
+          81307
+        ],
+        "row_chunk_size": 128,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "9533b9bd068373e575058d79238e608ea637773a63ae07c10985a167bab7c7ca",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "5c668dc2f2851b6ea49dd0ce0e62b4e41f9eafd0105a9285991bbe74e416b729",
+          "observations": "a1d5ec09997c061f9e5b230188b611563bb0ae241e3e308ac469aced54466c7e",
+          "prepared_ridge": "2daee793fad0947c6565f4bb5ac6400185e30976b8dcaf2b011405bd1ea0745c",
+          "residual_design": "a505c77651e16ec134e1096577c4f9cb70d16b2f0706fc15ea4c06b8d15c5b23",
+          "scaling": "3c6de6dcd9b347abdfac34b1d28ec9eb29a7a8e5e1ef43a4dd11eced6ec518b0",
+          "transition_noise": "7407be736163b2cb3e59710db0ebc1a08de4b9d8260e2db5ffe4cfe9c70a8262"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81300,
+        81301,
+        81302,
+        81303,
+        81304,
+        81305,
+        81306,
+        81307
+      ],
+      "warm_execution_seconds": 0.12834796699462458
+    },
+    {
+      "all_marginals_valid": true,
+      "all_resets_valid": true,
+      "balance_steps": 2,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 11.921149539004546,
+      "maximum_row_error": 0.0056450467196843546,
+      "maximum_tv_column_error": 5.5155616940109984e-05,
+      "pass": true,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 2,
+        "col_chunk_size": 128,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float64",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 128,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81300,
+          81301,
+          81302,
+          81303,
+          81304,
+          81305,
+          81306,
+          81307
+        ],
+        "row_chunk_size": 128,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "9533b9bd068373e575058d79238e608ea637773a63ae07c10985a167bab7c7ca",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "5c668dc2f2851b6ea49dd0ce0e62b4e41f9eafd0105a9285991bbe74e416b729",
+          "observations": "a1d5ec09997c061f9e5b230188b611563bb0ae241e3e308ac469aced54466c7e",
+          "prepared_ridge": "2daee793fad0947c6565f4bb5ac6400185e30976b8dcaf2b011405bd1ea0745c",
+          "residual_design": "a505c77651e16ec134e1096577c4f9cb70d16b2f0706fc15ea4c06b8d15c5b23",
+          "scaling": "3c6de6dcd9b347abdfac34b1d28ec9eb29a7a8e5e1ef43a4dd11eced6ec518b0",
+          "transition_noise": "7407be736163b2cb3e59710db0ebc1a08de4b9d8260e2db5ffe4cfe9c70a8262"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81300,
+        81301,
+        81302,
+        81303,
+        81304,
+        81305,
+        81306,
+        81307
+      ],
+      "warm_execution_seconds": 0.1295209460076876
+    }
+  ],
+  "design_seeds": [
+    81300,
+    81301,
+    81302,
+    81303,
+    81304,
+    81305,
+    81306,
+    81307
+  ],
+  "device": {
+    "dtype": "float64",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "schema_version": "bayesfilter.canonical_lgssm_fused_balance_selection.v1",
+  "selected_balance_steps": 2,
+  "selection_uses_only_marginals": true,
+  "status": "selection_complete",
+  "timestamp_utc": "2026-07-18T08:21:42.347771+00:00",
+  "wall_time_seconds": 57.51834751502611
+}

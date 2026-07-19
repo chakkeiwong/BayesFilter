@@ -1,0 +1,374 @@
+{
+  "attempt_id": "continuation-selection-04",
+  "audit": {
+    "all_marginals_valid": true,
+    "all_resets_valid": true,
+    "balance_steps": 2,
+    "bitwise_replay": true,
+    "compile_plus_first_execution_seconds": 14.79569633898791,
+    "finite": true,
+    "maximum_post_quotient_column_absolute_error": 0.0022068023681640625,
+    "maximum_row_error": 0.00047844648361206055,
+    "maximum_row_error_by_seed_time": [
+      [
+        6.29425048828125e-05,
+        5.352497100830078e-05
+      ],
+      [
+        0.0002275705337524414,
+        6.651878356933594e-05
+      ],
+      [
+        0.00037801265716552734,
+        4.3451786041259766e-05
+      ],
+      [
+        0.00047844648361206055,
+        3.4809112548828125e-05
+      ],
+      [
+        0.00015115737915039062,
+        4.929304122924805e-05
+      ],
+      [
+        0.00016498565673828125,
+        0.0002790689468383789
+      ],
+      [
+        0.0002962350845336914,
+        0.0002967715263366699
+      ],
+      [
+        0.00011682510375976562,
+        3.445148468017578e-05
+      ]
+    ],
+    "maximum_tv_column_error": 2.6070934836752713e-05,
+    "pass": true,
+    "preparation_identity": {
+      "axis_convention": {
+        "initial_noise": "[batch, particle, state]",
+        "residual_design": "[batch, time, particle, state]",
+        "transition_noise": "[batch, time, particle, state]"
+      },
+      "balance_steps": 2,
+      "col_chunk_size": 1024,
+      "domain_tags": {
+        "initial": 101,
+        "residual": "2000 + zero_based_time",
+        "transition": "1000 + zero_based_time"
+      },
+      "final_dtype": "float32",
+      "key_dtype": "int32",
+      "key_encoding": "[root_seed, domain_tag]",
+      "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+      "maximum_row_error_tolerance": 0.01,
+      "num_particles": 1024,
+      "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+      "raw_draw_dtype": "float64",
+      "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+      "rng_algorithm": "philox",
+      "root_seeds_in_order": [
+        81620,
+        81621,
+        81622,
+        81623,
+        81624,
+        81625,
+        81626,
+        81627
+      ],
+      "row_chunk_size": 1024,
+      "sinkhorn_steps": 20,
+      "tensor_sha256": {
+        "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+        "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+        "initial_noise": "72b4ebef89cab0be4ed16e71589535e5460d759c85f643036d38bc4113fd06d8",
+        "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+        "prepared_ridge": "d7c4edf7092e961d9443bbd5bb32a46896dde0e24b910f4b227c33725c7de1a7",
+        "residual_design": "7320f3d75b5496de7c1b9a41e2145dfc851161381161f247f7f6e30f2443165a",
+        "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+        "transition_noise": "0ef59070f683a192cbef9fa0844bf147671d3d58ccf0c9ed1016995c49dc5537"
+      },
+      "tensorflow_version": "2.19.1",
+      "time_steps": 2,
+      "transport_block_grid": [
+        1,
+        1
+      ],
+      "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "tv_column_tolerance": 0.0001
+    },
+    "seeds": [
+      81620,
+      81621,
+      81622,
+      81623,
+      81624,
+      81625,
+      81626,
+      81627
+    ],
+    "tv_column_error_by_seed_time": [
+      [
+        3.4849547319026897e-06,
+        1.1556476238183677e-06
+      ],
+      [
+        6.807973022660008e-06,
+        1.1504380381666124e-06
+      ],
+      [
+        2.6070934836752713e-05,
+        2.525164745748043e-06
+      ],
+      [
+        1.9047849491471425e-05,
+        8.698771125636995e-07
+      ],
+      [
+        1.0328878488508053e-05,
+        1.6371413948945701e-06
+      ],
+      [
+        9.938112270901911e-06,
+        1.247564796358347e-06
+      ],
+      [
+        1.0931562428595498e-05,
+        2.9578804969787598e-06
+      ],
+      [
+        4.291650839149952e-06,
+        1.0361109161749482e-06
+      ]
+    ],
+    "warm_execution_seconds": 0.5245456480188295,
+    "work": {
+      "diagnostic_solver_reconstructions": 0,
+      "marginal_tile_sweeps": 0,
+      "sinkhorn_state_constructions": 2,
+      "terminal_balance_state_constructions": 2,
+      "transport_tile_sweeps": 2
+    },
+    "work_valid": true
+  },
+  "audit_seeds": [
+    81620,
+    81621,
+    81622,
+    81623,
+    81624,
+    81625,
+    81626,
+    81627
+  ],
+  "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+  "candidates": [
+    2,
+    3,
+    5,
+    8
+  ],
+  "command": [
+    "docs/benchmarks/run_canonical_lgssm_tf32_balance_selection.py",
+    "--output",
+    "docs/benchmarks/artifacts/canonical_lgssm_tf32_balance_horizon_continuation_20260718/tf32_balance_selection_attempt04_mass_reduction_repair.json",
+    "--attempt-id",
+    "continuation-selection-04"
+  ],
+  "design": [
+    {
+      "all_marginals_valid": true,
+      "all_resets_valid": true,
+      "balance_steps": 2,
+      "bitwise_replay": true,
+      "compile_plus_first_execution_seconds": 22.16250818403205,
+      "finite": true,
+      "maximum_post_quotient_column_absolute_error": 0.0008296966552734375,
+      "maximum_row_error": 0.0006239414215087891,
+      "maximum_row_error_by_seed_time": [
+        [
+          0.00011849403381347656,
+          0.0006239414215087891
+        ],
+        [
+          8.624792098999023e-05,
+          7.176399230957031e-05
+        ],
+        [
+          0.0003083944320678711,
+          0.00012534856796264648
+        ],
+        [
+          0.00016224384307861328,
+          0.0001652836799621582
+        ],
+        [
+          6.657838821411133e-05,
+          9.775161743164062e-05
+        ],
+        [
+          0.00018334388732910156,
+          5.167722702026367e-05
+        ],
+        [
+          4.971027374267578e-05,
+          0.0001087188720703125
+        ],
+        [
+          0.00019997358322143555,
+          0.00015372037887573242
+        ]
+      ],
+      "maximum_tv_column_error": 1.6097699699457735e-05,
+      "pass": true,
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 2,
+        "col_chunk_size": 1024,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float32",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 1024,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          81600,
+          81601,
+          81602,
+          81603,
+          81604,
+          81605,
+          81606,
+          81607
+        ],
+        "row_chunk_size": 1024,
+        "sinkhorn_steps": 20,
+        "tensor_sha256": {
+          "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+          "fixed_reset_mask": "98015d3989532179420a8820cba4aa944bd572f786cca1b6b2ac1cd33bb830a9",
+          "initial_noise": "ea691b9c5346b2cd41ec7b198fc5b167a3d8839f2d8c39ff2139c05fcc113f0c",
+          "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+          "prepared_ridge": "d7c4edf7092e961d9443bbd5bb32a46896dde0e24b910f4b227c33725c7de1a7",
+          "residual_design": "96d57ce0955a057ef83613a6175bbaa5c2f9060ce79ec8577d182700aa687d00",
+          "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+          "transition_noise": "b4de696d42138beb0a834d176e157759b9761f7b57f40537569c2d2c3f02fb03"
+        },
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "seeds": [
+        81600,
+        81601,
+        81602,
+        81603,
+        81604,
+        81605,
+        81606,
+        81607
+      ],
+      "tv_column_error_by_seed_time": [
+        [
+          8.28541124064941e-06,
+          3.218628989998251e-06
+        ],
+        [
+          5.469569259730633e-06,
+          2.0041188690811396e-06
+        ],
+        [
+          1.6097699699457735e-05,
+          1.5080295270308852e-06
+        ],
+        [
+          9.220630090567283e-06,
+          8.509297913406044e-06
+        ],
+        [
+          1.4196034499036614e-06,
+          5.841713573317975e-06
+        ],
+        [
+          1.0967793059535325e-05,
+          1.2082891771569848e-06
+        ],
+        [
+          2.6830628030438675e-06,
+          2.5024419301189482e-06
+        ],
+        [
+          1.1264415661571547e-05,
+          1.0167132131755352e-06
+        ]
+      ],
+      "warm_execution_seconds": 0.5077815479598939,
+      "work": {
+        "diagnostic_solver_reconstructions": 0,
+        "marginal_tile_sweeps": 0,
+        "sinkhorn_state_constructions": 2,
+        "terminal_balance_state_constructions": 2,
+        "transport_tile_sweeps": 2
+      },
+      "work_valid": true
+    }
+  ],
+  "design_seeds": [
+    81600,
+    81601,
+    81602,
+    81603,
+    81604,
+    81605,
+    81606,
+    81607
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "dtype": "float32",
+  "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+  "git_commit": "4256480d2995cff00c6d0d2fd866648c2e3d2eb6",
+  "maximum_row_error_tolerance": 0.01,
+  "num_particles": 1024,
+  "plan_path": "docs/plans/bayesfilter-canonical-lgssm-tf32-balance-and-horizon-continuation-plan-2026-07-18.md",
+  "schema_version": "bayesfilter.canonical_lgssm_tf32_balance_selection.v1",
+  "selected_balance_steps": 2,
+  "selection_uses_only_marginals": true,
+  "status": "selection_complete",
+  "tf32_enabled": true,
+  "time_steps": 2,
+  "timestamp_utc": "2026-07-18T11:21:08.882645+00:00",
+  "tv_column_tolerance": 0.0001,
+  "wall_time_seconds": 40.53155591402901
+}

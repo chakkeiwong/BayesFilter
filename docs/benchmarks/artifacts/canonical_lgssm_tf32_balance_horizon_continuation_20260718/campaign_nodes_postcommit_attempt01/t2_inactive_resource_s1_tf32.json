@@ -1,0 +1,166 @@
+{
+  "attempt_id": "continuation-postcommit-01-t2_inactive_resource_s1_tf32",
+  "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+  "result": {
+    "aggregate_physical_score": [
+      3.876085042953491,
+      -0.40826284885406494,
+      -0.15107734501361847,
+      4.432267665863037,
+      11.306509017944336
+    ],
+    "aggregate_value": -8.885167121887207,
+    "arm": "no_reset_weighted",
+    "balance_steps": 2,
+    "bitwise_replay": true,
+    "campaign_id": "canonical-lgssm-tf32-balance-horizon-continuation-20260718",
+    "chart_valid": true,
+    "device": {
+      "dtype": "float32",
+      "jit_compile": true,
+      "logical_devices": [
+        "/device:GPU:0"
+      ],
+      "memory_growth": false,
+      "memory_limit_mib": 8192,
+      "physical_devices": [
+        "/physical_device:GPU:0"
+      ],
+      "tf32_enabled": true,
+      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+    },
+    "estimator_seeds": [
+      81500
+    ],
+    "finite": true,
+    "git_commit": "1164c881b63dad6b0a0400045eda5d5202700ab3",
+    "gpu_allocator_bytes": {
+      "current": 336640,
+      "peak": 67196672
+    },
+    "graph": {
+      "operation_count": 471,
+      "python_horizon_unroll": false,
+      "serialized_bytes": 430789,
+      "while_operation_types": [
+        "StatelessWhile"
+      ]
+    },
+    "hard_valid": true,
+    "kalman_physical_score": [
+      3.8280144459793797,
+      -0.3841810832497856,
+      -0.08308720127298079,
+      4.417212506225628,
+      11.138135721879838
+    ],
+    "kalman_value": -8.86215086932728,
+    "marginal_valid": true,
+    "maximum_row_error": 0.0,
+    "maximum_tv_column_error": 0.0,
+    "num_particles": 1024,
+    "per_seed_physical_score": [
+      [
+        3.876085042953491,
+        -0.40826284885406494,
+        -0.15107734501361847,
+        4.432267665863037,
+        11.306509017944336
+      ]
+    ],
+    "per_seed_value": [
+      -8.885167121887207
+    ],
+    "physical_score_difference_to_kalman": [
+      0.048070596974111535,
+      -0.024081765604279326,
+      -0.06799014374063768,
+      0.015055159637409332,
+      0.16837329606449813
+    ],
+    "plan_path": "docs/plans/bayesfilter-canonical-lgssm-tf32-balance-and-horizon-continuation-plan-2026-07-18.md",
+    "preparation_identity": {
+      "axis_convention": {
+        "initial_noise": "[batch, particle, state]",
+        "residual_design": "[batch, time, particle, state]",
+        "transition_noise": "[batch, time, particle, state]"
+      },
+      "balance_steps": 2,
+      "col_chunk_size": 1024,
+      "domain_tags": {
+        "initial": 101,
+        "residual": "2000 + zero_based_time",
+        "transition": "1000 + zero_based_time"
+      },
+      "final_dtype": "float32",
+      "key_dtype": "int32",
+      "key_encoding": "[root_seed, domain_tag]",
+      "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+      "maximum_row_error_tolerance": 0.01,
+      "num_particles": 1024,
+      "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+      "raw_draw_dtype": "float64",
+      "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+      "rng_algorithm": "philox",
+      "root_seeds_in_order": [
+        81500
+      ],
+      "row_chunk_size": 1024,
+      "sinkhorn_steps": 20,
+      "tensor_sha256": {
+        "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+        "fixed_reset_mask": "0e6184851f36f653b52759616fbeb72904c6ecae10a65d198cbc6a345e7441fa",
+        "initial_noise": "24ff403676277132c8ce74f832d692b3de8810636bd07bb1a6e613721ffa2df1",
+        "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+        "prepared_ridge": "b5780f3636d60ddf9c1b5d92c08cd19e6c80af1a3a287abbc441d5b9ea1526b7",
+        "residual_design": "5e3ee340a616bf4d81f53811fcde772520e3bb18a11815252b60f4c24a43ebea",
+        "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+        "transition_noise": "b49df222797f8f62367f0e507e951b071985625937cbab0a09500a472a7ced3a"
+      },
+      "tensorflow_version": "2.19.1",
+      "time_steps": 2,
+      "transport_block_grid": [
+        1,
+        1
+      ],
+      "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "tv_column_tolerance": 0.0001
+    },
+    "reset_valid": true,
+    "source_sha256": {
+      "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "1f10544339052d48768fedb54718b28803c0999ccead7e0d1eee910070a8625b",
+      "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+      "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+      "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "60362d85954090ba84f192b2e3e44f58c070326b1634cff630b914cb0cec973d",
+      "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "dd5f6230c14c51166da3252f5838221716a5d25809474c34cd696f42501993a9"
+    },
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "time_steps": 2,
+    "timing_seconds": {
+      "compile_plus_first_execution": 3.802153077966068,
+      "trace": 0.7608141309465282,
+      "warm_execution": 0.009354245034046471
+    },
+    "value_difference_to_kalman": -0.023016252559926897,
+    "work": {
+      "active_reset_rows": 0,
+      "diagnostic_solver_reconstructions": 0,
+      "marginal_tile_sweeps": 0,
+      "sinkhorn_state_constructions": 0,
+      "terminal_balance_state_constructions": 0,
+      "transport_tile_sweeps": 0
+    },
+    "work_valid": true
+  },
+  "schema_version": "bayesfilter.canonical_lgssm_fused_ot_loop_repair.v1",
+  "status": "node_complete",
+  "timestamp_utc": "2026-07-18T11:34:32.087079+00:00",
+  "wall_time_seconds": 4.877016538986936,
+  "within_node_cap": true
+}
