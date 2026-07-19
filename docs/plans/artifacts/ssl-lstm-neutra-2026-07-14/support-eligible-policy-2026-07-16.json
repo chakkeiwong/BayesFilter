@@ -1,0 +1,62 @@
+{
+  "schema": "bayesfilter.ssl_lstm_neutra.support_eligible_policy.v2",
+  "created_at_utc": "2026-07-15T21:20:00+00:00",
+  "repair_role": "prospective_checkpoint_selection_repair",
+  "parent_policy_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/frozen-tuning-policy.json",
+  "parent_policy_sha256": "a73cfd1750f1cac369a76e5573decb3b4791c9120f0384dc1447ecec2d5e0195",
+  "study_summary_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/study-summary.json",
+  "study_summary_sha256": "186f32bd54f97575ce236d89ebefe07d1c1af7063f0055adc05209f0c5c0475f",
+  "support_audit_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/plateau-confirmation-2026-07-16/fresh-c-support-audit.json",
+  "support_audit_sha256": "7cc0a4a7fd3e29d29f42597601a8c2db96e411eb7436519126e2e13de1411998",
+  "selected_hyperparameters": {
+    "learning_rate": 0.0018996814203826532,
+    "initialization_scale": 0.01,
+    "gradient_clip_norm": 5.0
+  },
+  "plateau_policy": {
+    "validation_check_every": 100,
+    "patience_steps": 500,
+    "patience_checks": 5,
+    "max_steps": 5000,
+    "learning_rate_factor": 0.5,
+    "minimum_learning_rate_fraction": 0.0625,
+    "absolute_min_delta": 0.0,
+    "one_sided_critical_value": 1.6694022215079607,
+    "saturation_max": 0.05,
+    "roundtrip_max_abs": 1e-09,
+    "moderate_shell_max_inverse_radius": 4.3,
+    "checkpoint_eligibility": "finite_and_saturation_and_roundtrip_and_moderate_shell",
+    "patience_anchor": "first_eligible_then_meaningful_loss_improvements_among_eligible_checkpoints",
+    "two_period_interpretation": "reduce_at_n_stop_at_2n_since_last_meaningful_eligible_improvement"
+  },
+  "fresh_streams": [
+    {
+      "label": "fresh-e",
+      "initialization_seed": [20260716, 7103],
+      "training_seed": [20260716, 8103],
+      "validation_seed": [20260716, 8203]
+    },
+    {
+      "label": "fresh-f",
+      "initialization_seed": [20260716, 7104],
+      "training_seed": [20260716, 8104],
+      "validation_seed": [20260716, 8204]
+    }
+  ],
+  "viable_alternatives": [
+    {
+      "trial": 0,
+      "learning_rate": 0.0011219623709077644,
+      "initialization_scale": 0.02,
+      "gradient_clip_norm": 5.0,
+      "objective": 41.39404496266031,
+      "role": "predeclared_alternative_only_if_trial_2_repair_is_unstable"
+    }
+  ],
+  "nonclaims": [
+    "Fresh C and D are repair-design evidence and are not reused for confirmation",
+    "no posterior-correctness or support-completeness claim",
+    "no HMC-readiness or predictive-validity claim",
+    "no superiority or default-readiness claim"
+  ]
+}

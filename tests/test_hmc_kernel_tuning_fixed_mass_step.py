@@ -16,6 +16,7 @@ import tensorflow as tf
 import bayesfilter
 import bayesfilter.inference.hmc_budget_ladder as hmc_budget_ladder
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+from bayesfilter.hmc_route_contract import LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
 from bayesfilter.inference import (
     FixedMassHMCTuningBudgetCallbackResult,
     HMCBootstrapScreenResult,
@@ -235,6 +236,7 @@ def _stage_config(**overrides: Any) -> HMCFixedMassStepStageConfig:
 
 def _windowed_config(**overrides: Any) -> HMCWindowedMassStageConfig:
     payload = {
+        "algorithm_id": LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
         "target_accept_prob": 0.70,
         "seed": (20260621, 40),
         "chain_execution_mode": "eager",

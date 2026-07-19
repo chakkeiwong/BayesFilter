@@ -532,15 +532,48 @@ def test_frozen_step_trajectory_default_tf_function_route_uses_reusable_runner(
     assert route["single_use_build_count"] == 0
     assert route["reusable_runner_build_count"] == 1
     assert route["distinct_static_runner_contract_count"] == 1
+    assert route["stage_runner_build_count"] == 1
+    assert route["stage_runner_reuse_count"] == 0
+    assert route["stage_new_distinct_contract_count"] == 1
+    assert route["final_distinct_contract_count"] == 1
+    assert route["contract_count_invariant_satisfied"] is True
     assert not any(event["runner_reused"] is True for event in route["round_route_events"])
     assert route["fallback_status"] == "none"
-    assert "uniform route telemetry" in route["route_nonclaims"][1]
+    assert route["fallback_to_single_use_runner"] is False
+    assert route["runner_cache_handoff_source"] == "none"
+    assert route["initial_handoff_contract_count"] == 0
     assert result.candidate_results[0]["runner_route_event"]["route"] == (
         "frozen_step_trajectory_scoped_reusable_runner"
     )
     assert result.candidate_results[0]["diagnostics"]["runtime_metadata"][
         "kernel_stage_route"
     ] == "frozen_step_trajectory_scoped_reusable_runner"
+
+
+def test_runner_route_summary_does_not_count_inherited_contract_as_stage_build() -> None:
+    summary = hmc_kernel_tuning._kernel_stage_runner_route_summary(
+        active_route="frozen_step_trajectory_scoped_reusable_runner",
+        events=(
+            {
+                "route": "frozen_step_trajectory_scoped_reusable_runner",
+                "runner_reused": True,
+                "used_single_use_runner": False,
+            },
+        ),
+        contract_payloads={"inherited-contract": {"static": "payload"}},
+        semantic_source="test_inherited_contract_arithmetic",
+        reuse_nonclaim="engineering telemetry only",
+        handoff_source="fixed_mass_step",
+        initial_handoff_contract_count=1,
+    )
+
+    assert summary["initial_handoff_contract_count"] == 1
+    assert summary["stage_runner_build_count"] == 0
+    assert summary["stage_runner_reuse_count"] == 1
+    assert summary["stage_new_distinct_contract_count"] == 0
+    assert summary["final_distinct_contract_count"] == 1
+    assert summary["reusable_runner_build_count"] == 0
+    assert summary["contract_count_invariant_satisfied"] is True
 
 
 def test_frozen_step_trajectory_stage_returns_repair_without_selected_l_when_no_candidate_passes() -> None:

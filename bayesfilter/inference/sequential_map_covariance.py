@@ -75,6 +75,9 @@ class SequentialMapCovarianceConfig:
     require_proposal_score_reduction: bool = True
     stop_on_stalled_attempts: bool = True
     seed: tuple[int, int] = (2026, 715)
+    proposal_score_acceptance_policy: str = "fractional"
+    record_refinement_movement_diagnostics: bool = False
+    pair_disjoint_score_holdout: bool = False
 
     def __post_init__(self) -> None:
         positive_floats = (
@@ -155,6 +158,15 @@ class SequentialMapCovarianceConfig:
                 "'factor_correlation'"
             )
         object.__setattr__(self, "refinement_geometry_policy", geometry_policy)
+        score_policy = str(self.proposal_score_acceptance_policy)
+        if score_policy not in {"fractional", "resolvable_decrease"}:
+            raise ValueError(
+                "proposal_score_acceptance_policy must be 'fractional' or "
+                "'resolvable_decrease'"
+            )
+        object.__setattr__(
+            self, "proposal_score_acceptance_policy", score_policy
+        )
         if self.structured_max_factors not in (1, 2):
             raise ValueError("structured_max_factors must be one or two")
         for name in (
@@ -163,8 +175,18 @@ class SequentialMapCovarianceConfig:
             "reuse_search_scores",
             "require_proposal_score_reduction",
             "stop_on_stalled_attempts",
+            "record_refinement_movement_diagnostics",
+            "pair_disjoint_score_holdout",
         ):
             object.__setattr__(self, name, bool(getattr(self, name)))
+        if self.pair_disjoint_score_holdout and (
+            self.regression_sample_count % 2
+            or self.terminal_sample_count % 2
+        ):
+            raise ValueError(
+                "pair-disjoint score holdout requires even regression and "
+                "terminal sample counts"
+            )
         if self.minimum_radius > self.initial_radius or self.initial_radius > self.maximum_radius:
             raise ValueError("radii must satisfy minimum <= initial <= maximum")
         if not 0.0 < self.holdout_fraction < 1.0:
@@ -466,6 +488,16 @@ def estimate_sequential_map_covariance(
         )
     finite_candidates.sort(key=lambda row: row[0], reverse=True)
     center_value, center, center_score = finite_candidates[0]
+    refinement_origin = center if cfg.record_refinement_movement_diagnostics else None
+    refinement_movement_initial = (
+        {
+            "position_z": np.zeros(dimension, dtype=np.float64),
+            "value": center_value,
+            "score_norm": float(tf.linalg.norm(scale_tf * center_score).numpy()),
+        }
+        if cfg.record_refinement_movement_diagnostics
+        else None
+    )
     _emit_progress(
         progress_callback,
         "candidate_selected",
@@ -482,6 +514,9 @@ def estimate_sequential_map_covariance(
     terminal_fit_attempts = 0
 
     for attempt in range(cfg.max_attempts):
+        pre_value = center_value
+        pre_center = center
+        pre_score = center_score
         scaled_score = scale_tf * center_score
         max_score = float(tf.reduce_max(tf.abs(scaled_score)).numpy())
         if max_score <= cfg.terminal_score_max_abs:
@@ -501,7 +536,14 @@ def estimate_sequential_map_covariance(
                     locator_rows,
                     cfg,
                     map_candidate=center.numpy(),
-                    extra={"history": history},
+                    extra={
+                        "history": history,
+                        **(
+                            {"refinement_movement_initial": refinement_movement_initial}
+                            if refinement_movement_initial is not None
+                            else {}
+                        ),
+                    },
                 )
             _emit_progress(
                 progress_callback,
@@ -544,7 +586,16 @@ def estimate_sequential_map_covariance(
             if terminal_fit["projection_relative_frobenius"] > cfg.terminal_projection_relative_frobenius_cap:
                 return _rejected(
                     "terminal_projection_exceeds_cap", evaluations, locator_rows, cfg,
-                    map_candidate=center.numpy(), extra={"history": history, "terminal_fit": terminal_fit},
+                    map_candidate=center.numpy(),
+                    extra={
+                        "history": history,
+                        "terminal_fit": terminal_fit,
+                        **(
+                            {"refinement_movement_initial": refinement_movement_initial}
+                            if refinement_movement_initial is not None
+                            else {}
+                        ),
+                    },
                 )
             break
 
@@ -568,7 +619,15 @@ def estimate_sequential_map_covariance(
         if evaluations + required > cfg.max_exact_evaluations:
             return _rejected(
                 "maximum_exact_evaluations", evaluations, locator_rows, cfg,
-                map_candidate=center.numpy(), extra={"history": history},
+                map_candidate=center.numpy(),
+                extra={
+                    "history": history,
+                    **(
+                        {"refinement_movement_initial": refinement_movement_initial}
+                        if refinement_movement_initial is not None
+                        else {}
+                    ),
+                },
             )
         cloud_builder = (
             _orthogonal_antithetic_cloud
@@ -638,7 +697,39 @@ def estimate_sequential_map_covariance(
         ):
             radius *= cfg.shrink_factor
             stalled += 1
-            history.append({**row_diag, "action": "fit_rejected_contract"})
+            movement = None
+            if cfg.record_refinement_movement_diagnostics:
+                movement = _refinement_movement_payload(
+                    refinement_origin=refinement_origin,
+                    scale=scale_tf,
+                    pre_center=pre_center,
+                    pre_value=pre_value,
+                    pre_score=pre_score,
+                    search_center=center,
+                    search_value=center_value,
+                    search_score=center_score,
+                    evaluated_proposal=None,
+                    evaluated_proposal_value=None,
+                    evaluated_proposal_score=None,
+                    terminal_center=center,
+                    terminal_value=center_value,
+                    terminal_score=center_score,
+                    radius_before=float(row_diag["radius_before"]),
+                    radius_after=radius,
+                    search_recentered=recentered,
+                    proposal_accepted=False,
+                )
+            history.append(
+                {
+                    **row_diag,
+                    "action": "fit_rejected_contract",
+                    **(
+                        {"refinement_movement": movement}
+                        if movement is not None
+                        else {}
+                    ),
+                }
+            )
             if radius < cfg.minimum_radius or (
                 cfg.stop_on_stalled_attempts and stalled >= cfg.max_stalled_attempts
             ):
@@ -647,6 +738,9 @@ def estimate_sequential_map_covariance(
 
         proposal_rows: list[Mapping[str, Any]] = []
         accepted = False
+        evaluated_proposal: tf.Tensor | None = None
+        evaluated_proposal_value: float | None = None
+        evaluated_proposal_score: tf.Tensor | None = None
         selected_fit = fit
         actual = float("-inf")
         predicted = float("-inf")
@@ -654,6 +748,11 @@ def estimate_sequential_map_covariance(
         old_norm = float(tf.linalg.norm(scale_tf * center_score).numpy())
         new_norm = old_norm
         step_info: Mapping[str, Any] = {"boundary_active": False}
+        proposal_score_gate: Mapping[str, Any] = {
+            "policy": cfg.proposal_score_acceptance_policy,
+            "active": cfg.require_proposal_score_reduction,
+            "passed": not cfg.require_proposal_score_reduction,
+        }
         factor_candidates = [1]
         if (
             cfg.refinement_geometry_policy == "factor_correlation"
@@ -697,6 +796,9 @@ def estimate_sequential_map_covariance(
             )
             evaluations += 1
             proposal_value = float(proposal_value_tf.numpy())
+            evaluated_proposal = proposal
+            evaluated_proposal_value = proposal_value
+            evaluated_proposal_score = proposal_score
             actual = proposal_value - center_value
             predicted = float(step_info["predicted_improvement"])
             rho = actual / predicted if predicted > 0.0 else float("-inf")
@@ -705,18 +807,21 @@ def estimate_sequential_map_covariance(
             finite = bool(
                 (tf.math.is_finite(proposal_value_tf) & tf.reduce_all(tf.math.is_finite(proposal_score))).numpy()
             )
-            score_reduction_passed = bool(
-                new_norm <= cfg.score_reduction_factor * old_norm
+            proposal_score_gate = _proposal_score_gate(
+                old_norm,
+                new_norm,
+                policy=cfg.proposal_score_acceptance_policy,
+                fractional_factor=cfg.score_reduction_factor,
+                active=cfg.require_proposal_score_reduction,
             )
-            accepted = bool(
-                finite
-                and actual > 0.0
-                and predicted > 0.0
-                and rho >= cfg.acceptance_ratio
-                and (
-                    score_reduction_passed
-                    or not cfg.require_proposal_score_reduction
-                )
+            score_reduction_passed = bool(proposal_score_gate["passed"])
+            accepted = _proposal_is_accepted(
+                finite,
+                actual=actual,
+                predicted=predicted,
+                rho=rho,
+                acceptance_ratio=cfg.acceptance_ratio,
+                score_gate_passed=score_reduction_passed,
             )
             proposal_rows.append(
                 {
@@ -733,6 +838,7 @@ def estimate_sequential_map_covariance(
                     "score_norm_before": old_norm,
                     "score_norm_after": new_norm,
                     "score_reduction_passed": score_reduction_passed,
+                    "proposal_score_gate": proposal_score_gate,
                     "accepted": accepted,
                 }
             )
@@ -757,9 +863,36 @@ def estimate_sequential_map_covariance(
             "action": "proposal_accepted" if accepted else "proposal_rejected",
             "actual_improvement": actual, "predicted_improvement": predicted,
             "rho": rho, "score_norm_before": old_norm, "score_norm_after": new_norm,
+            "proposal_score_gate": proposal_score_gate,
             "boundary_active": bool(step_info["boundary_active"]),
             "radius_action": radius_action, "radius_after": radius,
             "proposal_attempts": proposal_rows,
+            **(
+                {
+                    "refinement_movement": _refinement_movement_payload(
+                        refinement_origin=refinement_origin,
+                        scale=scale_tf,
+                        pre_center=pre_center,
+                        pre_value=pre_value,
+                        pre_score=pre_score,
+                        search_center=selected_center,
+                        search_value=selected_value,
+                        search_score=selected_score,
+                        evaluated_proposal=evaluated_proposal,
+                        evaluated_proposal_value=evaluated_proposal_value,
+                        evaluated_proposal_score=evaluated_proposal_score,
+                        terminal_center=center,
+                        terminal_value=center_value,
+                        terminal_score=center_score,
+                        radius_before=float(row_diag["radius_before"]),
+                        radius_after=radius,
+                        search_recentered=recentered,
+                        proposal_accepted=accepted,
+                    )
+                }
+                if cfg.record_refinement_movement_diagnostics
+                else {}
+            ),
         })
         _emit_progress(
             progress_callback,
@@ -806,7 +939,15 @@ def estimate_sequential_map_covariance(
         return _rejected(
             "sequential_refinement_without_terminal_geometry", evaluations,
             locator_rows, cfg, map_candidate=center.numpy(),
-            extra={"terminal_max_abs_scaled_score": max_score, "history": history},
+            extra={
+                "terminal_max_abs_scaled_score": max_score,
+                "history": history,
+                **(
+                    {"refinement_movement_initial": refinement_movement_initial}
+                    if refinement_movement_initial is not None
+                    else {}
+                ),
+            },
         )
     if terminal_fit["projection_relative_frobenius"] > cfg.terminal_projection_relative_frobenius_cap:
         return _rejected(
@@ -815,7 +956,15 @@ def estimate_sequential_map_covariance(
             locator_rows,
             cfg,
             map_candidate=center.numpy(),
-            extra={"history": history, "terminal_fit": terminal_fit},
+            extra={
+                "history": history,
+                "terminal_fit": terminal_fit,
+                **(
+                    {"refinement_movement_initial": refinement_movement_initial}
+                    if refinement_movement_initial is not None
+                    else {}
+                ),
+            },
         )
 
     precision_z = tf.convert_to_tensor(terminal_fit["projected_precision_z"], tf.float64)
@@ -855,8 +1004,74 @@ def estimate_sequential_map_covariance(
             "locator": locator_rows,
             "history": history,
             "terminal_fit": terminal_fit,
+            "proposal_score_acceptance_policy": cfg.proposal_score_acceptance_policy,
+            "proposal_score_gate_active": cfg.require_proposal_score_reduction,
+            **(
+                {"refinement_movement_initial": refinement_movement_initial}
+                if refinement_movement_initial is not None
+                else {}
+            ),
         },
     )
+
+
+def _refinement_movement_payload(
+    *,
+    refinement_origin: tf.Tensor,
+    scale: tf.Tensor,
+    pre_center: tf.Tensor,
+    pre_value: float,
+    pre_score: tf.Tensor,
+    search_center: tf.Tensor,
+    search_value: float,
+    search_score: tf.Tensor,
+    evaluated_proposal: tf.Tensor | None,
+    evaluated_proposal_value: float | None,
+    evaluated_proposal_score: tf.Tensor | None,
+    terminal_center: tf.Tensor,
+    terminal_value: float,
+    terminal_score: tf.Tensor,
+    radius_before: float,
+    radius_after: float,
+    search_recentered: bool,
+    proposal_accepted: bool,
+) -> Mapping[str, Any]:
+    """Record exact refinement states without changing the transition logic."""
+
+    def position_z(value: tf.Tensor) -> np.ndarray:
+        return ((value - refinement_origin) / scale).numpy()
+
+    def score_norm(value: tf.Tensor) -> float:
+        return float(tf.linalg.norm(scale * value).numpy())
+
+    return {
+        "pre_position_z": position_z(pre_center),
+        "search_position_z": position_z(search_center),
+        "evaluated_proposal_position_z": (
+            None if evaluated_proposal is None else position_z(evaluated_proposal)
+        ),
+        "terminal_position_z": position_z(terminal_center),
+        "pre_value": float(pre_value),
+        "search_value": float(search_value),
+        "evaluated_proposal_value": (
+            None
+            if evaluated_proposal_value is None
+            else float(evaluated_proposal_value)
+        ),
+        "terminal_value": float(terminal_value),
+        "pre_score_norm": score_norm(pre_score),
+        "search_score_norm": score_norm(search_score),
+        "evaluated_proposal_score_norm": (
+            None
+            if evaluated_proposal_score is None
+            else score_norm(evaluated_proposal_score)
+        ),
+        "terminal_score_norm": score_norm(terminal_score),
+        "radius_before": float(radius_before),
+        "radius_after": float(radius_after),
+        "search_recentered": bool(search_recentered),
+        "proposal_accepted": bool(proposal_accepted),
+    }
 
 
 def _antithetic_cloud(
@@ -1083,7 +1298,18 @@ def _fit_score_curvature(
     | None,
 ) -> tuple[Mapping[str, Any], int]:
     coefficient_count = dimension * (dimension + 1) // 2
-    if sample_count * dimension < coefficient_count + dimension:
+    if config.pair_disjoint_score_holdout:
+        train_indices, holdout_indices = _score_fit_partition_indices(
+            sample_count,
+            config.holdout_fraction,
+            pair_disjoint=True,
+        )
+        support_count = len(train_indices) // 2
+    else:
+        holdout_count = max(1, int(round(sample_count * config.holdout_fraction)))
+        train_count = sample_count - holdout_count
+        support_count = sample_count
+    if support_count * dimension < coefficient_count + dimension:
         return {"status": "insufficient_symmetric_support", "seed": list(seed)}, evaluations
     z = _antithetic_cloud(sample_count, dimension, radius, seed)
     _, scores = _evaluate_cloud(
@@ -1095,10 +1321,18 @@ def _fit_score_curvature(
     evaluations += sample_count
     response = scale[None, :] * center_score[None, :] - scale[None, :] * scores
     design = _symmetric_score_design(z, dimension)
-    holdout_count = max(1, int(round(sample_count * config.holdout_fraction)))
-    train_count = sample_count - holdout_count
-    train_design = tf.reshape(design[:train_count], [-1, coefficient_count])
-    train_response = tf.reshape(response[:train_count], [-1, 1])
+    if config.pair_disjoint_score_holdout:
+        train_design_rows = tf.gather(design, train_indices)
+        train_response_rows = tf.gather(response, train_indices)
+        holdout_design_rows = tf.gather(design, holdout_indices)
+        holdout_response_rows = tf.gather(response, holdout_indices)
+    else:
+        train_design_rows = design[:train_count]
+        train_response_rows = response[:train_count]
+        holdout_design_rows = design[train_count:]
+        holdout_response_rows = response[train_count:]
+    train_design = tf.reshape(train_design_rows, [-1, coefficient_count])
+    train_response = tf.reshape(train_response_rows, [-1, 1])
     singular_values = tf.linalg.svd(train_design, compute_uv=False)
     tolerance = tf.reduce_max(singular_values) * tf.cast(tf.shape(train_design)[0], tf.float64) * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
     rank = int(tf.reduce_sum(tf.cast(singular_values > tolerance, tf.int32)).numpy())
@@ -1111,11 +1345,17 @@ def _fit_score_curvature(
         fast=False,
     )[:, 0]
     precision = _unpack_symmetric(beta, dimension)
-    train_prediction = tf.einsum("nrc,c->nr", design[:train_count], beta)
-    holdout_prediction = tf.einsum("nrc,c->nr", design[train_count:], beta)
-    train_rmse = float(tf.sqrt(tf.reduce_mean((train_prediction - response[:train_count]) ** 2)).numpy())
-    holdout_error = tf.sqrt(tf.reduce_mean((holdout_prediction - response[train_count:]) ** 2))
-    holdout_scale = tf.maximum(tf.sqrt(tf.reduce_mean(response[train_count:] ** 2)), 1.0e-15)
+    train_prediction = tf.einsum("nrc,c->nr", train_design_rows, beta)
+    holdout_prediction = tf.einsum("nrc,c->nr", holdout_design_rows, beta)
+    train_rmse = float(
+        tf.sqrt(tf.reduce_mean((train_prediction - train_response_rows) ** 2)).numpy()
+    )
+    holdout_error = tf.sqrt(
+        tf.reduce_mean((holdout_prediction - holdout_response_rows) ** 2)
+    )
+    holdout_scale = tf.maximum(
+        tf.sqrt(tf.reduce_mean(holdout_response_rows**2)), 1.0e-15
+    )
     holdout_relative = float((holdout_error / holdout_scale).numpy())
     raw_eigenvalues, eigenvectors = tf.linalg.eigh(precision)
     floor = tf.maximum(
@@ -1136,7 +1376,47 @@ def _fit_score_curvature(
         "projected_eigenvalues": projected_eigenvalues.numpy(),
         "projection_relative_frobenius": projection_relative,
         "projected_precision_z": projected.numpy(),
+        **(
+            {
+                "pair_disjoint_score_holdout": True,
+                "training_sample_count": len(train_indices),
+                "holdout_sample_count": len(holdout_indices),
+            }
+            if config.pair_disjoint_score_holdout
+            else {}
+        ),
     }, evaluations
+
+
+def _score_fit_partition_indices(
+    sample_count: int,
+    holdout_fraction: float,
+    *,
+    pair_disjoint: bool,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Partition score rows while optionally keeping antithetic pairs together."""
+
+    count = int(sample_count)
+    fraction = float(holdout_fraction)
+    if count <= 1 or not 0.0 < fraction < 1.0:
+        raise ValueError("score-fit partition requires count > 1 and 0 < fraction < 1")
+    if not pair_disjoint:
+        holdout_count = max(1, int(round(count * fraction)))
+        train_count = count - holdout_count
+        return np.arange(train_count), np.arange(train_count, count)
+    if count % 2:
+        raise ValueError("pair-disjoint score holdout requires an even sample count")
+    pair_count = count // 2
+    holdout_pair_count = max(1, int(round(pair_count * fraction)))
+    if holdout_pair_count >= pair_count:
+        raise ValueError("pair-disjoint score holdout requires at least one training pair")
+    train_pair_count = pair_count - holdout_pair_count
+    train_positive = np.arange(train_pair_count)
+    holdout_positive = np.arange(train_pair_count, pair_count)
+    return (
+        np.concatenate((train_positive, train_positive + pair_count)),
+        np.concatenate((holdout_positive, holdout_positive + pair_count)),
+    )
 
 
 def _evaluate_cloud(
@@ -1224,6 +1504,76 @@ def _solve_trust_region_tf(precision: tf.Tensor, linear: tf.Tensor, radius: floa
     return {"step": step.numpy(), "boundary_active": boundary, "predicted_improvement": float(predicted.numpy())}
 
 
+def _proposal_score_gate(
+    old_norm: float,
+    new_norm: float,
+    *,
+    policy: str,
+    fractional_factor: float,
+    active: bool,
+) -> Mapping[str, Any]:
+    """Evaluate the exact standardized-score safeguard for one proposal."""
+
+    old = float(old_norm)
+    new = float(new_norm)
+    factor = float(fractional_factor)
+    finite = bool(np.isfinite(old) and np.isfinite(new))
+    legacy_threshold = factor * old if finite else float("nan")
+    legacy_passed = bool(finite and new <= legacy_threshold)
+    if not active:
+        return {
+            "policy": str(policy),
+            "active": False,
+            "passed": True,
+            "legacy_fractional_passed": legacy_passed,
+            "numerical_resolution_floor": None,
+            "required_score_norm_max": None,
+        }
+    if policy == "fractional":
+        return {
+            "policy": policy,
+            "active": True,
+            "passed": legacy_passed,
+            "legacy_fractional_passed": legacy_passed,
+            "numerical_resolution_floor": None,
+            "required_score_norm_max": legacy_threshold,
+        }
+    if policy != "resolvable_decrease":
+        raise ValueError(f"unknown proposal score acceptance policy {policy!r}")
+    resolution_floor = float(
+        np.sqrt(np.finfo(np.float64).eps) * max(1.0, abs(old))
+    )
+    required_max = old - resolution_floor
+    return {
+        "policy": policy,
+        "active": True,
+        "passed": bool(finite and old - new > resolution_floor),
+        "legacy_fractional_passed": legacy_passed,
+        "numerical_resolution_floor": resolution_floor,
+        "required_score_norm_max": required_max,
+    }
+
+
+def _proposal_is_accepted(
+    finite: bool,
+    *,
+    actual: float,
+    predicted: float,
+    rho: float,
+    acceptance_ratio: float,
+    score_gate_passed: bool,
+) -> bool:
+    """Preserve the exact trust-region acceptance conjunction."""
+
+    return bool(
+        finite
+        and actual > 0.0
+        and predicted > 0.0
+        and rho >= acceptance_ratio
+        and score_gate_passed
+    )
+
+
 def _scalar_value_score(
     function: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     theta: tf.Tensor,
@@ -1255,6 +1605,12 @@ def _rejected(
         diagnostics={
             "exact_evaluations": evaluations,
             "max_exact_evaluations": config.max_exact_evaluations,
+            "proposal_score_acceptance_policy": (
+                config.proposal_score_acceptance_policy
+            ),
+            "proposal_score_gate_active": (
+                config.require_proposal_score_reduction
+            ),
             "locator": locator_rows,
             **({} if extra is None else dict(extra)),
         },

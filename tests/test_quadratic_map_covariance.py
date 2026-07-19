@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.inference import (
+    ITERATIVE_QUADRATIC_MAP_COVARIANCE_NONCLAIMS,
     QUADRATIC_MAP_COVARIANCE_NONCLAIMS,
+    IterativeQuadraticMapCovarianceConfig,
     LowRankSPDQuadraticGeometryConfig,
     QuadraticMapCovarianceLocatorConfig,
     QuadraticMapCovarianceMassConfig,
+    estimate_iterative_quadratic_map_covariance,
     estimate_quadratic_map_covariance,
 )
 
@@ -34,6 +38,28 @@ def _quadratic_target(
             axes=1,
         )
         score = -tf.linalg.matvec(precision_tf, delta)
+        return value, score
+
+    return value_and_score
+
+
+def _batched_quadratic_target(
+    precision: np.ndarray,
+    *,
+    mode: np.ndarray | None = None,
+):
+    precision_tf = tf.constant(precision, dtype=tf.float64)
+    mode_tf = (
+        tf.zeros([precision.shape[0]], dtype=tf.float64)
+        if mode is None
+        else tf.constant(mode, dtype=tf.float64)
+    )
+
+    def value_and_score(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        theta = tf.convert_to_tensor(theta, dtype=tf.float64)
+        delta = theta - mode_tf[tf.newaxis, :]
+        score = -tf.einsum("ij,bj->bi", precision_tf, delta)
+        value = 0.5 * tf.reduce_sum(delta * score, axis=1)
         return value, score
 
     return value_and_score
@@ -142,6 +168,163 @@ def test_scaled_quadratic_initializer_returns_original_coordinate_mass() -> None
     assert payload["diagnostics"]["mass_precision_coordinate_system"] == "theta"
     assert payload["diagnostics"]["mass_covariance_coordinate_system"] == "theta"
     assert payload["diagnostics"]["scale_all_ones"] is False
+
+
+def test_initializer_forwards_batched_design_callback_without_changing_result() -> None:
+    precision = np.diag([2.0, 4.0])
+    mode = np.array([0.18, -0.12])
+    kwargs = {
+        "initial_position": np.zeros(2),
+        "locator_config": QuadraticMapCovarianceLocatorConfig(enabled=False),
+        "quadratic_config": _geometry_config(
+            rank=1,
+            sample_count=220,
+            pilot_direction_count=256,
+            holdout_rmse_abs_tolerance=7.0e-2,
+            seed=(17, 18),
+        ),
+        "mass_config": QuadraticMapCovarianceMassConfig(
+            jitter=0.0,
+            eigenvalue_floor=0.1,
+            max_condition_number=100.0,
+        ),
+    }
+    scalar = estimate_quadratic_map_covariance(
+        _quadratic_target(precision, mode=mode),
+        **kwargs,
+    )
+    batched = estimate_quadratic_map_covariance(
+        _quadratic_target(precision, mode=mode),
+        batched_value_and_score_fn=_batched_quadratic_target(
+            precision, mode=mode
+        ),
+        **kwargs,
+    )
+
+    assert scalar.accepted is True
+    assert batched.accepted is True
+    np.testing.assert_allclose(batched.map_candidate, scalar.map_candidate, atol=1.0e-12)
+    np.testing.assert_allclose(batched.precision, scalar.precision, atol=1.0e-12)
+    np.testing.assert_allclose(batched.covariance, scalar.covariance, atol=1.0e-12)
+    assert batched.geometry is not None
+    assert batched.geometry.diagnostics["design_evaluation_route"] == (
+        "batched_value_and_score"
+    )
+
+
+def test_iterative_initializer_reaches_terminal_center_with_bounded_steps() -> None:
+    precision = np.diag([2.0, 4.0])
+    mode = np.array([0.32, -0.24])
+    callbacks = []
+    fit_starts = []
+
+    result = estimate_iterative_quadratic_map_covariance(
+        _quadratic_target(precision, mode=mode),
+        np.zeros(2),
+        locator_config=QuadraticMapCovarianceLocatorConfig(enabled=False),
+        quadratic_config=_geometry_config(
+            rank=1,
+            sample_count=220,
+            pilot_direction_count=512,
+            trust_radius=0.1,
+            pilot_radius=0.05,
+            holdout_rmse_abs_tolerance=7.0e-2,
+            constrain_center_refinement_to_trust_region=True,
+            seed=(19, 20),
+        ),
+        mass_config=QuadraticMapCovarianceMassConfig(
+            jitter=0.0,
+            eigenvalue_floor=0.1,
+            max_condition_number=100.0,
+        ),
+        iterative_config=IterativeQuadraticMapCovarianceConfig(
+            max_refinement_steps=8,
+            terminal_score_max_abs=1.0e-8,
+        ),
+        fit_start_callback=lambda index, center: fit_starts.append(
+            (index, center.copy())
+        ),
+        iteration_callback=callbacks.append,
+    )
+
+    assert result.accepted is True
+    assert result.status == "usable"
+    assert result.map_candidate_role == "iterative_terminal_exact_score_center"
+    assert result.map_candidate is not None
+    np.testing.assert_allclose(result.map_candidate, mode, atol=1.0e-8)
+    np.testing.assert_allclose(result.precision, precision, atol=0.08, rtol=0.05)
+    np.testing.assert_allclose(
+        result.covariance,
+        np.linalg.inv(precision),
+        atol=0.04,
+        rtol=0.06,
+    )
+    assert len(callbacks) == len(result.iterations)
+    assert len(fit_starts) == len(result.iterations)
+    for expected_index, ((fit_index, fit_center), row) in enumerate(
+        zip(fit_starts, result.iterations, strict=True)
+    ):
+        assert fit_index == expected_index
+        np.testing.assert_array_equal(fit_center, row["center"])
+    assert len(result.iterations) >= 3
+    assert result.iterations[-1]["terminal_before_fit"] is True
+    accepted_moves = result.iterations[:-1]
+    assert all(row["center_refinement"]["accepted"] for row in accepted_moves)
+    assert all(
+        row["center_refinement"]["actual_improvement"] > 0.0
+        for row in accepted_moves
+    )
+    assert all(
+        row["center_refinement"]["refined_score_norm"]
+        < row["center_refinement"]["center_score_norm"]
+        for row in accepted_moves
+    )
+    assert result.diagnostics["covariance_authority"] == "covariance_from_precision"
+    assert tuple(result.payload()["nonclaims"]) == (
+        ITERATIVE_QUADRATIC_MAP_COVARIANCE_NONCLAIMS
+    )
+
+
+def test_iterative_initializer_requires_constrained_refinement() -> None:
+    with pytest.raises(ValueError, match="requires constrained center refinement"):
+        estimate_iterative_quadratic_map_covariance(
+            _quadratic_target(np.eye(2)),
+            np.zeros(2),
+            locator_config=QuadraticMapCovarianceLocatorConfig(enabled=False),
+            quadratic_config=_geometry_config(
+                rank=1,
+                sample_count=80,
+                constrain_center_refinement_to_trust_region=False,
+            ),
+        )
+
+
+def test_iterative_initializer_fails_closed_at_refinement_budget() -> None:
+    result = estimate_iterative_quadratic_map_covariance(
+        _quadratic_target(np.eye(2), mode=np.array([0.2, -0.2])),
+        np.zeros(2),
+        locator_config=QuadraticMapCovarianceLocatorConfig(enabled=False),
+        quadratic_config=_geometry_config(
+            rank=1,
+            sample_count=120,
+            pilot_direction_count=256,
+            trust_radius=0.05,
+            pilot_radius=0.02,
+            holdout_rmse_abs_tolerance=7.0e-2,
+            constrain_center_refinement_to_trust_region=True,
+            seed=(21, 22),
+        ),
+        iterative_config=IterativeQuadraticMapCovarianceConfig(
+            max_refinement_steps=1,
+            terminal_score_max_abs=1.0e-8,
+        ),
+    )
+
+    assert result.accepted is False
+    assert result.status == "maximum_refinement_steps_without_terminal_score"
+    assert len(result.iterations) == 2
+    assert result.precision is None
+    assert result.covariance is None
 
 
 def test_enabled_locator_is_finite_locator_only_not_covariance_authority() -> None:

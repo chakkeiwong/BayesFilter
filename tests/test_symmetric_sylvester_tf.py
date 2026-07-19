@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import os
+from pathlib import Path
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
@@ -164,6 +165,19 @@ def test_symmetric_sylvester_source_has_no_tensorflow_solve_fallbacks() -> None:
     )
     for pattern in forbidden:
         assert pattern not in source
+
+
+def test_xla_custom_calls_pin_c_row_major_operand_and_result_layouts() -> None:
+    source = (
+        Path(symmetric_sylvester_tf.__file__)
+        .with_name("symmetric_sylvester_op.cc")
+        .read_text(encoding="utf-8")
+    )
+
+    assert source.count("xla::CustomCallWithLayout(") == 2
+    assert "{batch, parameters, n, n}, {3, 2, 1, 0}" in source
+    assert source.count("{batch, n, n}, {2, 1, 0}") >= 3
+    assert "const std::vector<xla::Shape> operand_layouts" in source
 
 
 def test_symmetric_sylvester_cpu_only_hides_gpu() -> None:

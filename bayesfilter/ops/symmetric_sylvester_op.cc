@@ -488,15 +488,23 @@ class SymmetricSylvesterXlaOp : public XlaOpKernel {
                 errors::InvalidArgument(
                     "rhs must have shape [batch,p,n,n] matching s"));
 
-    const xla::Shape out_shape =
-        xla::ShapeUtil::MakeShape(xla::F64, {batch, parameters, n, n});
+    // The host/CUDA callbacks index raw buffers in C row-major order. Pin all
+    // leaf layouts so XLA cannot choose a different physical layout inside a
+    // larger while-loop computation. Batch size one can mask this mismatch.
+    const xla::Shape s_layout = xla::ShapeUtil::MakeShapeWithDenseLayout(
+        xla::F64, {batch, n, n}, {2, 1, 0});
+    const xla::Shape rhs_layout = xla::ShapeUtil::MakeShapeWithDenseLayout(
+        xla::F64, {batch, parameters, n, n}, {3, 2, 1, 0});
+    const xla::Shape out_shape = xla::ShapeUtil::MakeShapeWithDenseLayout(
+        xla::F64, {batch, parameters, n, n}, {3, 2, 1, 0});
     const xla::Shape tuple_shape = xla::ShapeUtil::MakeTupleShape({out_shape});
+    const std::vector<xla::Shape> operand_layouts = {s_layout, rhs_layout};
     const std::string opaque = std::to_string(batch) + "," +
                                std::to_string(parameters) + "," +
                                std::to_string(n);
-    const xla::XlaOp result = xla::CustomCall(
+    const xla::XlaOp result = xla::CustomCallWithLayout(
         ctx->builder(), "SymmetricSylvesterXlaImpl",
-        {ctx->Input(0), ctx->Input(1)}, tuple_shape, opaque,
+        {ctx->Input(0), ctx->Input(1)}, tuple_shape, operand_layouts, opaque,
         /*has_side_effect=*/false,
         /*output_operand_aliasing=*/{},
         /*literal=*/nullptr,
@@ -523,14 +531,18 @@ class SymmetricPrincipalSqrtXlaOp : public XlaOpKernel {
                 errors::InvalidArgument(
                     "covariance must have shape [batch,n,n]"));
 
-    const xla::Shape out_shape =
-        xla::ShapeUtil::MakeShape(xla::F64, {batch, n, n});
+    const xla::Shape covariance_layout =
+        xla::ShapeUtil::MakeShapeWithDenseLayout(
+            xla::F64, {batch, n, n}, {2, 1, 0});
+    const xla::Shape out_shape = xla::ShapeUtil::MakeShapeWithDenseLayout(
+        xla::F64, {batch, n, n}, {2, 1, 0});
     const xla::Shape tuple_shape = xla::ShapeUtil::MakeTupleShape({out_shape});
+    const std::vector<xla::Shape> operand_layouts = {covariance_layout};
     const std::string opaque =
         std::to_string(batch) + "," + std::to_string(n);
-    const xla::XlaOp result = xla::CustomCall(
+    const xla::XlaOp result = xla::CustomCallWithLayout(
         ctx->builder(), "SymmetricPrincipalSqrtXlaImpl", {ctx->Input(0)},
-        tuple_shape, opaque,
+        tuple_shape, operand_layouts, opaque,
         /*has_side_effect=*/false,
         /*output_operand_aliasing=*/{},
         /*literal=*/nullptr,

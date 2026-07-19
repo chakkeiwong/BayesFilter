@@ -60,9 +60,20 @@ def _value_and_score(
     *,
     backend: str,
 ) -> tuple[tf.Tensor, tf.Tensor]:
+    return _value_and_score_with_observations(
+        tensors["observations"], tensors, backend=backend
+    )
+
+
+def _value_and_score_with_observations(
+    observations: tf.Tensor,
+    tensors: dict[str, tf.Tensor],
+    *,
+    backend: str,
+) -> tuple[tf.Tensor, tf.Tensor]:
     model, derivatives = _batched_model_and_derivatives(tensors)
     value, score, _diagnostics = tf_batched_svd_sigma_point_value_and_score(
-        tensors["observations"],
+        observations,
         model,
         derivatives,
         backend=backend,
@@ -74,6 +85,20 @@ def _value_and_score(
         jitter=tf.constant(0.0, dtype=tf.float64),
     )
     return value, score
+
+
+def _model_row(
+    tensors: dict[str, tf.Tensor], row: int
+) -> dict[str, tf.Tensor]:
+    batch_size = int(tensors["initial_mean"].shape[0])
+    return {
+        name: (
+            tensor[row : row + 1]
+            if tensor.shape.rank and tensor.shape[0] == batch_size
+            else tensor
+        )
+        for name, tensor in tensors.items()
+    }
 
 
 def _value_score_diagnostics(
@@ -497,6 +522,96 @@ def test_experimental_batched_svd_graph_and_cpu_xla_parity(backend: str) -> None
     )
 
 
+def test_row_aligned_observations_match_independent_model_rows() -> None:
+    tensors = _fixture(batch_size=3, time_steps=4)
+    shared = tensors["observations"]
+    row_aligned = tf.stack(
+        [shared + tf.cast(row, tf.float64) * 0.025 for row in range(3)], axis=0
+    )
+
+    value, score = _value_and_score_with_observations(
+        row_aligned, tensors, backend="tf_principal_sqrt_ukf"
+    )
+    expected = [
+        _value_and_score_with_observations(
+            row_aligned[row],
+            _model_row(tensors, row),
+            backend="tf_principal_sqrt_ukf",
+        )
+        for row in range(3)
+    ]
+
+    np.testing.assert_array_equal(
+        value.numpy(), np.asarray([row_value.numpy()[0] for row_value, _ in expected])
+    )
+    np.testing.assert_array_equal(
+        score.numpy(), np.stack([row_score.numpy()[0] for _, row_score in expected])
+    )
+
+
+def test_shared_observations_match_explicit_row_repetition_bitwise() -> None:
+    tensors = _fixture(batch_size=3, time_steps=4)
+    shared = tensors["observations"]
+    repeated = tf.repeat(shared[tf.newaxis, :, :], repeats=3, axis=0)
+
+    shared_value, shared_score = _value_and_score_with_observations(
+        shared, tensors, backend="tf_principal_sqrt_ukf"
+    )
+    repeated_value, repeated_score = _value_and_score_with_observations(
+        repeated, tensors, backend="tf_principal_sqrt_ukf"
+    )
+
+    np.testing.assert_array_equal(shared_value.numpy(), repeated_value.numpy())
+    np.testing.assert_array_equal(shared_score.numpy(), repeated_score.numpy())
+
+
+def test_row_aligned_observation_shapes_fail_closed() -> None:
+    tensors = _fixture(batch_size=3, time_steps=4)
+    shared = tensors["observations"]
+
+    with pytest.raises(ValueError, match="model batch, time, observation"):
+        _value_and_score_with_observations(
+            tf.repeat(shared[tf.newaxis, :, :], repeats=2, axis=0),
+            tensors,
+            backend="tf_principal_sqrt_ukf",
+        )
+    with pytest.raises(ValueError, match="observation dimension"):
+        _value_and_score_with_observations(
+            tf.zeros([3, 4, 3], tf.float64),
+            tensors,
+            backend="tf_principal_sqrt_ukf",
+        )
+    with pytest.raises(ValueError, match="rank 1, 2, or 3"):
+        _value_and_score_with_observations(
+            tf.zeros([1, 3, 4, 2], tf.float64),
+            tensors,
+            backend="tf_principal_sqrt_ukf",
+        )
+
+
+def test_row_aligned_observations_cpu_xla_parity() -> None:
+    tensors = _fixture(batch_size=2, time_steps=3)
+    observations = tf.stack(
+        (tensors["observations"], tensors["observations"] + 0.025), axis=0
+    )
+    eager_value, eager_score = _value_and_score_with_observations(
+        observations, tensors, backend="tf_principal_sqrt_ukf"
+    )
+
+    @tf.function(jit_compile=True, reduce_retracing=True)
+    def xla_call(y: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        return _value_and_score_with_observations(
+            y, tensors, backend="tf_principal_sqrt_ukf"
+        )
+
+    xla_value, xla_score = xla_call(observations)
+
+    np.testing.assert_allclose(xla_value.numpy(), eager_value.numpy(), atol=1.0e-8)
+    np.testing.assert_allclose(
+        xla_score.numpy(), eager_score.numpy(), rtol=1.0e-7, atol=1.0e-7
+    )
+
+
 def test_experimental_batched_svd_shape_mismatch_fails_closed() -> None:
     tensors = _fixture()
     bad_tensors = dict(tensors)
@@ -756,7 +871,7 @@ def test_principal_sqrt_helper_repairs_low_margin_strict_rows_cpu_xla() -> None:
 
     np.testing.assert_allclose(
         np.diag(implemented.numpy()[0]),
-        np.asarray([1.0 + 1.0e-14, 2.0e-14], dtype=np.float64),
+        np.asarray([1.0 + 1.0e-14, 2.01e-14], dtype=np.float64),
         atol=1.0e-18,
     )
     np.testing.assert_allclose(
@@ -981,8 +1096,18 @@ def test_principal_sqrt_helper_uses_compiled_factor_and_sylvester_derivative() -
     )
     tree = ast.parse(textwrap.dedent(source))
 
-    assert "symmetric_principal_sqrt" in source
-    assert "symmetric_sylvester_solve" in source
+    called_names = {
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+    assert "_principal_sqrt_factor" in called_names
+    assert "_symmetric_sylvester_factor_solve" in called_names
+    assert "symmetric_principal_sqrt" in inspect.getsource(module._principal_sqrt_factor)
+    assert "symmetric_sylvester_solve" in inspect.getsource(
+        module._symmetric_sylvester_factor_solve
+    )
     assert "roundoff_repair_count" in source
     assert "classified_invalid_count" in source
     assert "assert_equal" not in source

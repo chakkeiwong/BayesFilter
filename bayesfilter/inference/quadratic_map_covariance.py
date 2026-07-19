@@ -41,6 +41,19 @@ QUADRATIC_MAP_COVARIANCE_NONCLAIMS = (
     "not source-faithful Zhao-Cui evidence",
 )
 
+ITERATIVE_QUADRATIC_MAP_COVARIANCE_NONCLAIMS = (
+    "iterative quadratic trust-region diagnostic only",
+    "each accepted move requires exact target improvement checks",
+    "optimizer output is a locator only",
+    "not a certified global MAP",
+    "not posterior covariance correctness evidence",
+    "not HMC convergence evidence",
+    "not HMC readiness evidence",
+    "not sampler superiority evidence",
+    "not default-readiness evidence",
+    "not source-faithful Zhao-Cui evidence",
+)
+
 
 @dataclass(frozen=True)
 class QuadraticMapCovarianceLocatorConfig:
@@ -107,6 +120,30 @@ class QuadraticMapCovarianceMassConfig:
             "eigenvalue_floor": self.eigenvalue_floor,
             "max_condition_number": self.max_condition_number,
             "dense": self.dense,
+        }
+
+
+@dataclass(frozen=True)
+class IterativeQuadraticMapCovarianceConfig:
+    """Configuration for bounded local quadratic recentering."""
+
+    max_refinement_steps: int = 8
+    terminal_score_max_abs: float = 1.0e-1
+
+    def __post_init__(self) -> None:
+        steps = int(self.max_refinement_steps)
+        if steps <= 0:
+            raise ValueError("max_refinement_steps must be positive")
+        terminal = float(self.terminal_score_max_abs)
+        if not np.isfinite(terminal) or terminal <= 0.0:
+            raise ValueError("terminal_score_max_abs must be positive finite")
+        object.__setattr__(self, "max_refinement_steps", steps)
+        object.__setattr__(self, "terminal_score_max_abs", terminal)
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "max_refinement_steps": self.max_refinement_steps,
+            "terminal_score_max_abs": self.terminal_score_max_abs,
         }
 
 
@@ -186,10 +223,105 @@ class QuadraticMapCovarianceResult:
         return _json_ready(payload)
 
 
+@dataclass(frozen=True)
+class IterativeQuadraticMapCovarianceResult:
+    """Structured result for bounded iterative quadratic recentering."""
+
+    accepted: bool
+    status: str
+    dimension: int
+    initial_position: np.ndarray
+    locator_position: np.ndarray
+    map_candidate: np.ndarray | None
+    map_candidate_role: str
+    precision: np.ndarray | None
+    covariance: np.ndarray | None
+    covariance_source: str | None
+    locator_diagnostics: Mapping[str, Any]
+    iterations: tuple[Mapping[str, Any], ...]
+    terminal_geometry: LowRankSPDQuadraticGeometryResult | None
+    mass_matrix: MassMatrixResult | None
+    diagnostics: Mapping[str, Any]
+    nonclaims: tuple[str, ...] = ITERATIVE_QUADRATIC_MAP_COVARIANCE_NONCLAIMS
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "accepted", bool(self.accepted))
+        object.__setattr__(self, "status", str(self.status))
+        object.__setattr__(self, "dimension", int(self.dimension))
+        for name in ("initial_position", "locator_position"):
+            array = np.asarray(getattr(self, name), dtype=float).reshape([-1]).copy()
+            array.setflags(write=False)
+            object.__setattr__(self, name, array)
+        for name in ("map_candidate", "precision", "covariance"):
+            value = getattr(self, name)
+            if value is not None:
+                array = np.asarray(value, dtype=float).copy()
+                array.setflags(write=False)
+                object.__setattr__(self, name, array)
+        object.__setattr__(self, "map_candidate_role", str(self.map_candidate_role))
+        if self.covariance_source is not None:
+            object.__setattr__(self, "covariance_source", str(self.covariance_source))
+        object.__setattr__(
+            self,
+            "locator_diagnostics",
+            _json_ready(dict(self.locator_diagnostics)),
+        )
+        object.__setattr__(
+            self,
+            "iterations",
+            tuple(_json_ready(dict(item)) for item in self.iterations),
+        )
+        object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
+        object.__setattr__(self, "nonclaims", tuple(str(item) for item in self.nonclaims))
+
+    def payload(self, *, include_arrays: bool = False) -> Mapping[str, Any]:
+        payload: dict[str, Any] = {
+            "schema": "bayesfilter.iterative_quadratic_map_covariance.v1",
+            "accepted": self.accepted,
+            "status": self.status,
+            "dimension": self.dimension,
+            "map_candidate_role": self.map_candidate_role,
+            "covariance_source": self.covariance_source,
+            "locator_diagnostics": self.locator_diagnostics,
+            "iterations": self.iterations,
+            "terminal_geometry": (
+                None
+                if self.terminal_geometry is None
+                else self.terminal_geometry.payload(include_arrays=include_arrays)
+            ),
+            "mass_matrix": (
+                None
+                if self.mass_matrix is None
+                else _mass_matrix_payload(self.mass_matrix, include_arrays=include_arrays)
+            ),
+            "diagnostics": self.diagnostics,
+            "nonclaims": self.nonclaims,
+        }
+        if self.precision is not None:
+            payload["precision_eigen_summary"] = _eigen_summary(self.precision)
+        if self.covariance is not None:
+            payload["covariance_eigen_summary"] = _eigen_summary(self.covariance)
+        if include_arrays:
+            payload.update(
+                {
+                    "initial_position": self.initial_position,
+                    "locator_position": self.locator_position,
+                    "map_candidate": self.map_candidate,
+                    "precision": self.precision,
+                    "covariance": self.covariance,
+                }
+            )
+        return _json_ready(payload)
+
+
 def estimate_quadratic_map_covariance(
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     initial_position: Any,
     *,
+    batched_value_and_score_fn: Callable[
+        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
+    ]
+    | None = None,
     scale: Any | None = None,
     locator_config: QuadraticMapCovarianceLocatorConfig | None = None,
     quadratic_config: LowRankSPDQuadraticGeometryConfig | None = None,
@@ -199,7 +331,9 @@ def estimate_quadratic_map_covariance(
 
     ``value_and_score_fn`` must accept a one-dimensional TensorFlow tensor and
     return scalar log probability and gradient in the same coordinates as
-    ``initial_position``.  L-BFGS is used only to choose the geometry center.
+    ``initial_position``. When supplied, ``batched_value_and_score_fn`` accepts
+    ``[batch, dimension]`` positions and returns batched values and scores for
+    the quadratic pilot/design clouds. L-BFGS is used only to choose the geometry center.
     Accepted covariance is rebuilt from the fitted SPD precision via
     :func:`covariance_from_precision`.  When ``scale`` is supplied, the
     quadratic fit is performed in whitened ``z`` coordinates, but the returned
@@ -257,6 +391,7 @@ def estimate_quadratic_map_covariance(
     geometry = fit_low_rank_spd_quadratic_geometry(
         value_and_score_fn,
         locator_position,
+        batched_value_and_score_fn=batched_value_and_score_fn,
         scale=scale,
         config=geometry_cfg,
     )
@@ -373,6 +508,282 @@ def estimate_quadratic_map_covariance(
             "reports_default_readiness": False,
         },
     )
+
+
+def estimate_iterative_quadratic_map_covariance(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    initial_position: Any,
+    *,
+    batched_value_and_score_fn: Callable[
+        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
+    ]
+    | None = None,
+    scale: Any | None = None,
+    locator_config: QuadraticMapCovarianceLocatorConfig | None = None,
+    quadratic_config: LowRankSPDQuadraticGeometryConfig | None = None,
+    mass_config: QuadraticMapCovarianceMassConfig | None = None,
+    iterative_config: IterativeQuadraticMapCovarianceConfig | None = None,
+    fit_start_callback: Callable[[int, np.ndarray], None] | None = None,
+    iteration_callback: Callable[[Mapping[str, Any]], None] | None = None,
+) -> IterativeQuadraticMapCovarianceResult:
+    """Iterate accepted local quadratic trust-region steps, then build mass.
+
+    The exact target accepts every recentering move. A terminal covariance is
+    built only from a fresh geometry fit centered at a point whose maximum
+    absolute score in scaled coordinates passes ``terminal_score_max_abs``.
+    Existing one-shot behavior remains in :func:`estimate_quadratic_map_covariance`.
+    """
+
+    locator_cfg = (
+        QuadraticMapCovarianceLocatorConfig()
+        if locator_config is None
+        else locator_config
+    )
+    geometry_cfg = (
+        LowRankSPDQuadraticGeometryConfig()
+        if quadratic_config is None
+        else quadratic_config
+    )
+    mass_cfg = QuadraticMapCovarianceMassConfig() if mass_config is None else mass_config
+    iterative_cfg = (
+        IterativeQuadraticMapCovarianceConfig()
+        if iterative_config is None
+        else iterative_config
+    )
+    if not geometry_cfg.constrain_center_refinement_to_trust_region:
+        raise ValueError(
+            "iterative quadratic recentering requires constrained center refinement"
+        )
+
+    initial_np = _vector(initial_position, "initial_position")
+    dim = int(initial_np.size)
+    scale_np = _scale_vector(scale, dim)
+    initial_value, initial_score, initial_status = _evaluate_value_score(
+        value_and_score_fn,
+        initial_np,
+        dim,
+    )
+    if initial_status != "finite":
+        return _iterative_rejected_result(
+            status="initial_value_or_score_nonfinite",
+            initial_position=initial_np,
+            locator_position=initial_np,
+            locator_diagnostics={
+                "status": "not_run_initial_nonfinite",
+                "initial_log_prob": initial_value,
+                "initial_evaluation_status": initial_status,
+            },
+            iterations=(),
+            terminal_geometry=None,
+            diagnostics={
+                "classification": "iterative_diagnostic_initializer_rejected",
+                "reports_map_quality": False,
+                "reports_hmc_convergence": False,
+                "reports_default_readiness": False,
+            },
+        )
+
+    locator_position, locator_diagnostics = _run_locator(
+        value_and_score_fn=value_and_score_fn,
+        initial_position=initial_np,
+        initial_value=initial_value,
+        initial_score=initial_score,
+        config=locator_cfg,
+    )
+    current = locator_position.copy()
+    iteration_records: list[Mapping[str, Any]] = []
+    terminal_geometry: LowRankSPDQuadraticGeometryResult | None = None
+
+    for fit_index in range(iterative_cfg.max_refinement_steps + 1):
+        center_value, center_score, center_status = _evaluate_value_score(
+            value_and_score_fn,
+            current,
+            dim,
+        )
+        if center_status != "finite":
+            return _iterative_rejected_result(
+                status=f"iteration_{fit_index}_center_value_or_score_nonfinite",
+                initial_position=initial_np,
+                locator_position=locator_position,
+                locator_diagnostics=locator_diagnostics,
+                iterations=tuple(iteration_records),
+                terminal_geometry=terminal_geometry,
+                diagnostics=_iterative_diagnostics(
+                    iterative_cfg,
+                    geometry_cfg,
+                    mass_cfg,
+                    scale_np,
+                ),
+            )
+        score_z = center_score * scale_np
+        center_score_norm = float(np.linalg.norm(score_z))
+        center_score_max_abs = float(np.max(np.abs(score_z)))
+        terminal_before_fit = bool(
+            center_score_max_abs <= iterative_cfg.terminal_score_max_abs
+        )
+
+        if fit_start_callback is not None:
+            fit_start_callback(fit_index, current.copy())
+        geometry = fit_low_rank_spd_quadratic_geometry(
+            value_and_score_fn,
+            current,
+            batched_value_and_score_fn=batched_value_and_score_fn,
+            scale=scale_np,
+            config=geometry_cfg,
+        )
+        terminal_geometry = geometry
+        refinement = dict(geometry.diagnostics.get("center_refinement", {}))
+        record = {
+            "fit_index": fit_index,
+            "center": current,
+            "center_log_prob": center_value,
+            "center_score_norm": center_score_norm,
+            "center_score_max_abs": center_score_max_abs,
+            "terminal_score_gate": iterative_cfg.terminal_score_max_abs,
+            "terminal_before_fit": terminal_before_fit,
+            "geometry_accepted": geometry.accepted,
+            "geometry_status": geometry.status,
+            "center_refinement": refinement,
+            "geometry_diagnostics": geometry.diagnostics,
+        }
+        iteration_records.append(record)
+        if iteration_callback is not None:
+            iteration_callback(_json_ready(record))
+
+        if not geometry.accepted or geometry.precision is None:
+            return _iterative_rejected_result(
+                status=f"iteration_{fit_index}_geometry_{geometry.status}",
+                initial_position=initial_np,
+                locator_position=locator_position,
+                locator_diagnostics=locator_diagnostics,
+                iterations=tuple(iteration_records),
+                terminal_geometry=geometry,
+                diagnostics=_iterative_diagnostics(
+                    iterative_cfg,
+                    geometry_cfg,
+                    mass_cfg,
+                    scale_np,
+                ),
+            )
+
+        if terminal_before_fit:
+            theta_precision = _precision_from_geometry_to_theta(geometry)
+            try:
+                mass = covariance_from_precision(
+                    theta_precision,
+                    source=(
+                        "iterative_low_rank_spd_quadratic_geometry_"
+                        "precision_theta_coordinates"
+                    ),
+                    jitter=mass_cfg.jitter,
+                    eigenvalue_floor=mass_cfg.eigenvalue_floor,
+                    max_condition_number=mass_cfg.max_condition_number,
+                    dense=mass_cfg.dense,
+                )
+            except Exception as exc:  # noqa: BLE001 - fail-closed diagnostic path.
+                return _iterative_rejected_result(
+                    status="mass_matrix_regularization_failed",
+                    initial_position=initial_np,
+                    locator_position=locator_position,
+                    locator_diagnostics=locator_diagnostics,
+                    iterations=tuple(iteration_records),
+                    terminal_geometry=geometry,
+                    diagnostics={
+                        **_iterative_diagnostics(
+                            iterative_cfg,
+                            geometry_cfg,
+                            mass_cfg,
+                            scale_np,
+                        ),
+                        "mass_matrix_exception_type": type(exc).__name__,
+                        "mass_matrix_exception": str(exc),
+                    },
+                )
+            precision = mass.regularized_precision
+            if precision is None:
+                return _iterative_rejected_result(
+                    status="mass_matrix_precision_missing",
+                    initial_position=initial_np,
+                    locator_position=locator_position,
+                    locator_diagnostics=locator_diagnostics,
+                    iterations=tuple(iteration_records),
+                    terminal_geometry=geometry,
+                    diagnostics=_iterative_diagnostics(
+                        iterative_cfg,
+                        geometry_cfg,
+                        mass_cfg,
+                        scale_np,
+                    ),
+                    mass_matrix=mass,
+                )
+            return IterativeQuadraticMapCovarianceResult(
+                accepted=True,
+                status="usable",
+                dimension=dim,
+                initial_position=initial_np,
+                locator_position=locator_position,
+                map_candidate=current,
+                map_candidate_role="iterative_terminal_exact_score_center",
+                precision=precision,
+                covariance=mass.covariance,
+                covariance_source=mass.source,
+                locator_diagnostics=locator_diagnostics,
+                iterations=tuple(iteration_records),
+                terminal_geometry=geometry,
+                mass_matrix=mass,
+                diagnostics={
+                    **_iterative_diagnostics(
+                        iterative_cfg,
+                        geometry_cfg,
+                        mass_cfg,
+                        scale_np,
+                    ),
+                    **_coordinate_transform_diagnostics(geometry),
+                    "classification": "iterative_diagnostic_initializer_accepted",
+                    "terminal_fit_index": fit_index,
+                    "accepted_refinement_step_count": fit_index,
+                    "terminal_score_max_abs": center_score_max_abs,
+                    "precision_authority": (
+                        "terminal_low_rank_spd_quadratic_geometry_"
+                        "precision_transformed_to_theta"
+                    ),
+                    "covariance_authority": "covariance_from_precision",
+                },
+            )
+
+        if fit_index >= iterative_cfg.max_refinement_steps:
+            return _iterative_rejected_result(
+                status="maximum_refinement_steps_without_terminal_score",
+                initial_position=initial_np,
+                locator_position=locator_position,
+                locator_diagnostics=locator_diagnostics,
+                iterations=tuple(iteration_records),
+                terminal_geometry=geometry,
+                diagnostics=_iterative_diagnostics(
+                    iterative_cfg,
+                    geometry_cfg,
+                    mass_cfg,
+                    scale_np,
+                ),
+            )
+        if not geometry.center_refinement_accepted or geometry.refined_center is None:
+            return _iterative_rejected_result(
+                status=f"iteration_{fit_index}_center_refinement_rejected",
+                initial_position=initial_np,
+                locator_position=locator_position,
+                locator_diagnostics=locator_diagnostics,
+                iterations=tuple(iteration_records),
+                terminal_geometry=geometry,
+                diagnostics=_iterative_diagnostics(
+                    iterative_cfg,
+                    geometry_cfg,
+                    mass_cfg,
+                    scale_np,
+                ),
+            )
+        current = np.asarray(geometry.refined_center, dtype=float).copy()
+
+    raise RuntimeError("unreachable iterative quadratic initializer state")
 
 
 def _run_locator(
@@ -501,6 +912,62 @@ def _rejected_result(
     )
 
 
+def _iterative_rejected_result(
+    *,
+    status: str,
+    initial_position: np.ndarray,
+    locator_position: np.ndarray,
+    locator_diagnostics: Mapping[str, Any],
+    iterations: tuple[Mapping[str, Any], ...],
+    terminal_geometry: LowRankSPDQuadraticGeometryResult | None,
+    diagnostics: Mapping[str, Any],
+    mass_matrix: MassMatrixResult | None = None,
+) -> IterativeQuadraticMapCovarianceResult:
+    return IterativeQuadraticMapCovarianceResult(
+        accepted=False,
+        status=status,
+        dimension=int(np.asarray(initial_position).size),
+        initial_position=initial_position,
+        locator_position=locator_position,
+        map_candidate=None,
+        map_candidate_role="none_rejected",
+        precision=None,
+        covariance=None,
+        covariance_source=None,
+        locator_diagnostics=locator_diagnostics,
+        iterations=iterations,
+        terminal_geometry=terminal_geometry,
+        mass_matrix=mass_matrix,
+        diagnostics={
+            **dict(diagnostics),
+            "classification": "iterative_diagnostic_initializer_rejected",
+            "rejection_status": status,
+            "reports_map_quality": False,
+            "reports_hmc_convergence": False,
+            "reports_default_readiness": False,
+        },
+    )
+
+
+def _iterative_diagnostics(
+    iterative_config: IterativeQuadraticMapCovarianceConfig,
+    quadratic_config: LowRankSPDQuadraticGeometryConfig,
+    mass_config: QuadraticMapCovarianceMassConfig,
+    scale: np.ndarray,
+) -> Mapping[str, Any]:
+    return {
+        "iterative_config": iterative_config.payload(),
+        "quadratic_config": quadratic_config.payload(),
+        "mass_config": mass_config.payload(),
+        "score_coordinate_system": "scale_times_theta_score",
+        "scale": scale,
+        "optimizer_authority": "locator_only",
+        "reports_map_quality": False,
+        "reports_hmc_convergence": False,
+        "reports_default_readiness": False,
+    }
+
+
 def _evaluate_value_score(
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     theta: np.ndarray,
@@ -532,6 +999,20 @@ def _vector(value: Any, name: str) -> np.ndarray:
     if not np.all(np.isfinite(vector)):
         raise ValueError(f"{name} must be finite")
     return vector
+
+
+def _scale_vector(value: Any | None, dim: int) -> np.ndarray:
+    if value is None:
+        scale = np.ones(int(dim), dtype=float)
+    else:
+        scale = np.asarray(value, dtype=float).reshape([-1])
+        if scale.size == 1:
+            scale = np.full(int(dim), float(scale[0]), dtype=float)
+    if scale.shape != (int(dim),):
+        raise ValueError("scale must be scalar or match initial position dimension")
+    if not np.all(np.isfinite(scale)) or np.any(scale <= 0.0):
+        raise ValueError("scale must be positive finite")
+    return scale
 
 
 def _precision_from_geometry_to_theta(

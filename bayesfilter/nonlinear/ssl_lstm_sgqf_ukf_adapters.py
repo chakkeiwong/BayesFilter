@@ -173,6 +173,7 @@ def unpack_ssl_lstm_parameters(
     config: SSLLSTMStaticConfig,
     *,
     std_floor: float = 1.0e-4,
+    derivative_parameter_indices: tuple[int, ...] | None = None,
 ) -> SSLLSTMConstrainedParameters:
     """Map an unconstrained vector to SSL-LSTM blocks and covariance scores."""
 
@@ -210,46 +211,81 @@ def unpack_ssl_lstm_parameters(
     d_process_variance = 2.0 * process_std * tf.math.sigmoid(raw_process_std)
     d_observation_variance = 2.0 * observation_std * tf.math.sigmoid(raw_observation_std)
 
-    parameter_dim = int(config.parameter_dim)
+    full_parameter_dim = int(config.parameter_dim)
+    selected = (
+        tuple(range(full_parameter_dim))
+        if derivative_parameter_indices is None
+        else tuple(int(index) for index in derivative_parameter_indices)
+    )
+    if len(set(selected)) != len(selected) or any(
+        index < 0 or index >= full_parameter_dim for index in selected
+    ):
+        raise ValueError("derivative_parameter_indices must be unique full-chart indices")
+    parameter_dim = len(selected)
+    local_index = {index: row for row, index in enumerate(selected)}
     d_initial_mean = _scatter_rank2(
         [parameter_dim, n],
         [
-            (slices.initial_mean_start + row, row)
+            (local_index[slices.initial_mean_start + row], row)
             for row in range(n)
+            if slices.initial_mean_start + row in local_index
         ],
-        tf.ones([n], dtype=tf.float64),
+        tf.ones(
+            [sum(slices.initial_mean_start + row in local_index for row in range(n))],
+            dtype=tf.float64,
+        ),
     )
     d_initial_covariance = _scatter_rank3(
         [parameter_dim, n, n],
         [
-            (slices.initial_std_start + row, row, row)
+            (local_index[slices.initial_std_start + row], row, row)
             for row in range(n)
+            if slices.initial_std_start + row in local_index
         ],
-        d_initial_variance,
+        tf.stack(
+            [d_initial_variance[row] for row in range(n) if slices.initial_std_start + row in local_index]
+        )
+        if any(slices.initial_std_start + row in local_index for row in range(n))
+        else tf.zeros([0], dtype=tf.float64),
     )
     d_sgqf_process_covariance = _scatter_rank3(
         [parameter_dim, n, n],
         [
-            (slices.process_std_start + row, row, row)
+            (local_index[slices.process_std_start + row], row, row)
             for row in range(k)
+            if slices.process_std_start + row in local_index
         ],
-        d_process_variance,
+        tf.stack(
+            [d_process_variance[row] for row in range(k) if slices.process_std_start + row in local_index]
+        )
+        if any(slices.process_std_start + row in local_index for row in range(k))
+        else tf.zeros([0], dtype=tf.float64),
     )
     d_ukf_innovation_covariance = _scatter_rank3(
         [parameter_dim, k, k],
         [
-            (slices.process_std_start + row, row, row)
+            (local_index[slices.process_std_start + row], row, row)
             for row in range(k)
+            if slices.process_std_start + row in local_index
         ],
-        d_process_variance,
+        tf.stack(
+            [d_process_variance[row] for row in range(k) if slices.process_std_start + row in local_index]
+        )
+        if any(slices.process_std_start + row in local_index for row in range(k))
+        else tf.zeros([0], dtype=tf.float64),
     )
     d_observation_covariance = _scatter_rank3(
         [parameter_dim, d, d],
         [
-            (slices.observation_std_start + row, row, row)
+            (local_index[slices.observation_std_start + row], row, row)
             for row in range(d)
+            if slices.observation_std_start + row in local_index
         ],
-        d_observation_variance,
+        tf.stack(
+            [d_observation_variance[row] for row in range(d) if slices.observation_std_start + row in local_index]
+        )
+        if any(slices.observation_std_start + row in local_index for row in range(d))
+        else tf.zeros([0], dtype=tf.float64),
     )
     sgqf_process_variance = tf.concat(
         [
@@ -347,10 +383,33 @@ def make_ssl_lstm_svd_ukf_components(
     *,
     evidence_path: str,
     std_floor: float = 1.0e-4,
+    derivative_parameter_indices: tuple[int, ...] | None = None,
 ) -> SSLLSTMUKFAdapterComponents:
     """Build structural SVD-UKF SSL-LSTM components with analytic derivatives."""
 
-    params = unpack_ssl_lstm_parameters(theta, config, std_floor=std_floor)
+    if derivative_parameter_indices is not None:
+        slices = ssl_lstm_parameter_slices(config)
+        supported = frozenset(
+            (
+                slices.latent_weight_start,
+                slices.latent_bias_start,
+                slices.observation_weight_start,
+                slices.observation_bias_start,
+            )
+        )
+        unsupported = sorted(set(derivative_parameter_indices) - supported)
+        if unsupported:
+            raise ValueError(
+                "selected SSL-LSTM score currently supports only the four "
+                "state-complexity target coordinates; unsupported indices: "
+                + ", ".join(str(index) for index in unsupported)
+            )
+    params = unpack_ssl_lstm_parameters(
+        theta,
+        config,
+        std_floor=std_floor,
+        derivative_parameter_indices=derivative_parameter_indices,
+    )
     k = int(config.latent_dim)
     h = int(config.hidden_dim)
     n = int(config.augmented_state_dim)
@@ -409,6 +468,24 @@ def make_ssl_lstm_svd_ukf_components(
         matrix = tf.concat([top, bottom], axis=0)
         return tf.broadcast_to(matrix[tf.newaxis, :, :], [point_count, n, k])
 
+    d_transition_fn = (
+        (lambda previous, innovation: ssl_lstm_transition_parameter_derivative(params, previous))
+        if derivative_parameter_indices is None
+        else (
+            lambda previous, innovation: ssl_lstm_transition_parameter_derivative_selected(
+                params, previous, derivative_parameter_indices
+            )
+        )
+    )
+    d_observation_fn = (
+        ssl_lstm_observation_parameter_derivative
+        if derivative_parameter_indices is None
+        else (
+            lambda selected_params, points: ssl_lstm_observation_parameter_derivative_selected(
+                selected_params, points, derivative_parameter_indices
+            )
+        )
+    )
     derivatives = TFStructuralFirstDerivatives(
         d_initial_mean=params.d_initial_mean,
         d_initial_covariance=params.d_initial_covariance,
@@ -416,9 +493,9 @@ def make_ssl_lstm_svd_ukf_components(
         d_observation_covariance=params.d_observation_covariance,
         transition_state_jacobian_fn=lambda previous, innovation: ssl_lstm_transition_state_jacobian(params, previous),
         transition_innovation_jacobian_fn=transition_innovation_jacobian,
-        d_transition_fn=lambda previous, innovation: ssl_lstm_transition_parameter_derivative(params, previous),
+        d_transition_fn=d_transition_fn,
         observation_state_jacobian_fn=lambda points: ssl_lstm_observation_state_jacobian(params, points),
-        d_observation_fn=lambda points: ssl_lstm_observation_parameter_derivative(params, points),
+        d_observation_fn=lambda points: d_observation_fn(params, points),
         name="ssl_lstm_svd_ukf_hand_derivatives",
     )
     protocol = build_expected_ssl_lstm_adapter_protocol(
@@ -480,6 +557,7 @@ def tf_ssl_lstm_svd_ukf_score(
     beta: float = 2.0,
     kappa: float = 0.0,
     spectral_gap_tolerance: tf.Tensor | float = 1.0e-8,
+    derivative_parameter_indices: tuple[int, ...] | None = None,
 ) -> tuple[TFFilterDerivativeResult, SSLLSTMUKFAdapterComponents]:
     """Evaluate the SSL-LSTM SVD-UKF analytic score."""
 
@@ -488,6 +566,7 @@ def tf_ssl_lstm_svd_ukf_score(
         config,
         evidence_path=evidence_path,
         std_floor=std_floor,
+        derivative_parameter_indices=derivative_parameter_indices,
     )
     result = tf_svd_ukf_score(
         observations,
@@ -666,6 +745,47 @@ def ssl_lstm_transition_parameter_derivative(
     return stacked
 
 
+def ssl_lstm_transition_parameter_derivative_selected(
+    params: SSLLSTMConstrainedParameters,
+    points: tf.Tensor,
+    parameter_indices: tuple[int, ...],
+) -> tf.Tensor:
+    """Return direct transition derivatives for a selected parameter subset.
+
+    This avoids materialising the full ``parameter_dim`` derivative tensor for
+    targets that deliberately estimate only a small free-coordinate block.
+    The selected indices retain the source chart's order.
+    """
+
+    values = _as_points(points)
+    z_prev, _a_prev, _c_prev = _split_state(params, values)
+    transition = ssl_lstm_transition(params, values)
+    k = int(params.config.latent_dim)
+    h = int(params.config.hidden_dim)
+    n = int(params.config.augmented_state_dim)
+    slices = params.slices
+    zeros = tf.zeros([tf.shape(values)[0], n], dtype=tf.float64)
+    one_k = tf.eye(k, dtype=tf.float64)
+    rows: list[tf.Tensor] = []
+    for index in parameter_indices:
+        index = int(index)
+        if slices.latent_weight_start <= index < slices.latent_weight_start + k * h:
+            row, col = divmod(index - slices.latent_weight_start, h)
+            derivative = transition[:, k + col, tf.newaxis] * one_k[row][tf.newaxis, :]
+            rows.append(tf.concat([derivative, tf.zeros([tf.shape(values)[0], 2 * h], tf.float64)], axis=1))
+        elif slices.latent_bias_start <= index < slices.latent_bias_start + k:
+            row = index - slices.latent_bias_start
+            derivative = tf.broadcast_to(one_k[row][tf.newaxis, :], [tf.shape(values)[0], k])
+            rows.append(tf.concat([derivative, tf.zeros([tf.shape(values)[0], 2 * h], tf.float64)], axis=1))
+        else:
+            rows.append(zeros)
+    if not rows:
+        return tf.zeros([0, tf.shape(values)[0], n], dtype=tf.float64)
+    result = tf.stack(rows, axis=0)
+    result.set_shape([len(parameter_indices), None, n])
+    return result
+
+
 def ssl_lstm_observation_state_jacobian(
     params: SSLLSTMConstrainedParameters,
     points: tf.Tensor,
@@ -727,6 +847,38 @@ def ssl_lstm_observation_parameter_derivative(
     stacked = tf.stack(pieces, axis=0)
     stacked.set_shape([params.config.parameter_dim, None, d])
     return stacked
+
+
+def ssl_lstm_observation_parameter_derivative_selected(
+    params: SSLLSTMConstrainedParameters,
+    points: tf.Tensor,
+    parameter_indices: tuple[int, ...],
+) -> tf.Tensor:
+    """Return observation derivatives for a selected parameter subset only."""
+
+    values = _as_points(points)
+    z = values[:, : params.config.latent_dim]
+    d = int(params.config.observation_dim)
+    k = int(params.config.latent_dim)
+    slices = params.slices
+    zeros = tf.zeros([tf.shape(values)[0], d], dtype=tf.float64)
+    one_d = tf.eye(d, dtype=tf.float64)
+    rows: list[tf.Tensor] = []
+    for index in parameter_indices:
+        index = int(index)
+        if slices.observation_weight_start <= index < slices.observation_weight_start + d * k:
+            row, col = divmod(index - slices.observation_weight_start, k)
+            rows.append(z[:, col, tf.newaxis] * one_d[row][tf.newaxis, :])
+        elif slices.observation_bias_start <= index < slices.observation_bias_start + d:
+            row = index - slices.observation_bias_start
+            rows.append(tf.ones([tf.shape(values)[0], 1], tf.float64) * one_d[row][tf.newaxis, :])
+        else:
+            rows.append(zeros)
+    if not rows:
+        return tf.zeros([0, tf.shape(values)[0], d], dtype=tf.float64)
+    result = tf.stack(rows, axis=0)
+    result.set_shape([len(parameter_indices), None, d])
+    return result
 
 
 def build_ssl_lstm_debug_value_score_artifact(

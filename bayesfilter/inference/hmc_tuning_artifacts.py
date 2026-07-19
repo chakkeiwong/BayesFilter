@@ -20,6 +20,10 @@ from numbers import Integral, Real
 from pathlib import Path
 from typing import Any
 
+from bayesfilter.hmc_route_contract import (
+    HMC_ROUTE_CONTRACT_VERSION,
+    OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+)
 from bayesfilter.inference.hmc_coordinates import WarmupTrajectoryPolicy
 from bayesfilter.inference.hmc_tuning import (
     WindowedMassAdaptationConfig,
@@ -261,6 +265,8 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
     expected_fields = {
         "schema",
         "status",
+        "algorithm_id",
+        "route_contract_version",
         "config",
         "initial_coordinate_signature",
         "final_coordinate_signature",
@@ -281,6 +287,11 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
     }
     if set(warmup) != expected_fields or warmup.get("status") != "passed":
         raise ValueError("invalid operational warmup field set or status")
+    if (
+        warmup.get("algorithm_id") != OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+        or warmup.get("route_contract_version") != HMC_ROUTE_CONTRACT_VERSION
+    ):
+        raise ValueError("operational warmup algorithm route identity is invalid")
     for field in (
         "initial_coordinate_signature",
         "final_coordinate_signature",
@@ -663,6 +674,8 @@ def build_hmc_tuning_engineering_artifact(
         raise ValueError("repair-loop validation requires at least two attempt slots")
     core = {
         "schema": _ARTIFACT_SCHEMA,
+        "algorithm_id": warmup_payload.get("algorithm_id"),
+        "route_contract_version": warmup_payload.get("route_contract_version"),
         "evidence_purpose": purpose,
         "configured_attempt_slots": slots,
         "warmup": dict(warmup_payload),
@@ -701,6 +714,8 @@ def validate_hmc_tuning_engineering_artifact(
         raise ValueError("invalid HMC tuning artifact schema")
     expected_fields = {
         "schema",
+        "algorithm_id",
+        "route_contract_version",
         "evidence_purpose",
         "configured_attempt_slots",
         "warmup",
@@ -750,6 +765,12 @@ def validate_hmc_tuning_engineering_artifact(
     ):
         raise ValueError("invalid operational warmup payload")
     _validate_operational_warmup_payload(warmup)
+    if (
+        payload.get("algorithm_id") != warmup.get("algorithm_id")
+        or payload.get("route_contract_version")
+        != warmup.get("route_contract_version")
+    ):
+        raise ValueError("artifact/warmup algorithm route lineage mismatch")
 
     kernel = payload.get("kernel_state")
     if not isinstance(kernel, Mapping) or kernel.get("schema") != _KERNEL_SCHEMA:
@@ -1085,7 +1106,7 @@ def _legacy_hmc_tuning_artifact_migration_view(
         "historical_envelope_integrity": "hash_and_evidence_contract_valid",
         "evidence_migration_views": migration_views,
         "operational_authority": False,
-        "repair_loop_validated_under_v3": False,
+        "repair_loop_validated_under_v4": False,
         "source_payload_mutated": False,
     }
 

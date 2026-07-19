@@ -232,6 +232,30 @@ def test_v2_artifact_replay_is_deterministic_and_preserves_v1_attachment(tmp_pat
     assert first["old_v1_compatibility_present"] is True
 
 
+@pytest.mark.parametrize("field", ["algorithm_id", "route_contract_version"])
+def test_runtime_artifact_rejects_algorithm_route_corruption(field: str) -> None:
+    payload = json.loads(json.dumps(_artifact()))
+    payload[field] = "corrupt-route-value"
+    from bayesfilter.inference.hmc_tuning_artifacts import canonical_sha256
+
+    core = {key: value for key, value in payload.items() if key != "artifact_sha256"}
+    payload["artifact_sha256"] = canonical_sha256(core)
+    with pytest.raises(ValueError, match="algorithm route lineage"):
+        validate_hmc_tuning_engineering_artifact(payload)
+
+
+@pytest.mark.parametrize("field", ["algorithm_id", "route_contract_version"])
+def test_runtime_warmup_rejects_algorithm_route_corruption(field: str) -> None:
+    payload = json.loads(json.dumps(_artifact()))
+    payload["warmup"][field] = "corrupt-route-value"
+    from bayesfilter.inference.hmc_tuning_artifacts import canonical_sha256
+
+    core = {key: value for key, value in payload.items() if key != "artifact_sha256"}
+    payload["artifact_sha256"] = canonical_sha256(core)
+    with pytest.raises(ValueError, match="algorithm route identity"):
+        validate_hmc_tuning_engineering_artifact(payload)
+
+
 def test_legacy_v2_artifact_replays_only_as_non_authoritative_migration_view(
     tmp_path: Path,
 ) -> None:
@@ -281,7 +305,7 @@ def test_legacy_v2_artifact_replays_only_as_non_authoritative_migration_view(
     view = load_and_replay_hmc_tuning_artifact(path)
 
     assert view["operational_authority"] is False
-    assert view["repair_loop_validated_under_v3"] is False
+    assert view["repair_loop_validated_under_v4"] is False
     assert view["evidence_migration_views"][0][
         "repair_direction_under_v3"
     ] == "unavailable"

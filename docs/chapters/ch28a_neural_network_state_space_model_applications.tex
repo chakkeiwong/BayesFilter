@@ -958,3 +958,222 @@ chapter is specified in the live predictive-test repair plan under
 and independent-confirmation gates pass, this chapter defines a research design
 and reports bounded engineering history rather than a completed predictive
 equivalence result.
+
+\section{Direct Visual Validation and the Complexity Ladder}
+\label{sec:bf-ssl-lstm-direct-visual-ladder-results}
+
+The formal predictive design is deliberately conservative, but it is also
+useful to inspect the trained result directly.  A bounded July~18 experiment
+therefore produced launch trajectories, predictive fan charts, and
+horizon-by-horizon moment differences.  The data boundary matters.  Each of
+the G and H arms contained four admitted chains with 512 retained draws, but
+the visualization read only draws 0--63 of segment~0.  This is the prefix that
+the earlier pilot had already opened and permanently excluded from any later
+confirmation.  Segment~1 and the confirmation suffix were authenticated by
+hash without deserializing their tensor values.  Thus the graphs did not spend
+or contaminate a future confirmation sample.
+
+Figure~\ref{fig:bf-ssl-lstm-launch-traces-z} shows all four launch chains in
+the transformed NeuTra coordinates.  Figure~\ref{fig:bf-ssl-lstm-launch-traces-theta}
+maps the same draws through each frozen invertible transport and shows the
+four free physical coordinates.  The observation weight has a visibly smaller
+range than the other coordinates, so its common-axis trace appears nearly
+flat; this is a scale effect rather than a claim that it was fixed.  The
+interwoven launch colors are useful evidence against gross initialization
+memory in this prefix.  They are not proof of stationarity, mode coverage, or
+posterior correctness.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\textwidth]{plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/direct-visual-validation/ssl-lstm-launch-traces-z.pdf}
+  \caption{Four-launch trajectories in transformed coordinates for the first
+  64 retained, confirmation-excluded pilot draws of each G and H chain.
+  Colors identify launches.  Overlap is an initialization-robustness
+  diagnostic only; neither arm is a posterior oracle.}
+  \label{fig:bf-ssl-lstm-launch-traces-z}
+\end{figure}
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\textwidth]{plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/direct-visual-validation/ssl-lstm-launch-traces-theta.pdf}
+  \caption{The same retained pilot draws mapped to the four free SSL--LSTM
+  parameters: latent mean weight, latent mean bias, observation weight, and
+  observation bias.  The common vertical scale makes the narrower
+  observation-weight trace appear nearly flat.}
+  \label{fig:bf-ssl-lstm-launch-traces-theta}
+\end{figure}
+
+Each arm then used an independent, disjoint innovation bank and the frozen
+ten-step TensorFlow/TFP SVD--UKF forecast.  Four chains, 64 parameter draws,
+and two forecast replications produced 512 complete paths per arm.
+Figure~\ref{fig:bf-ssl-lstm-predictive-fans} displays the pooled 5--95 percent
+path band, median, and launch-specific forecast means.  The bands and means
+overlap substantially by eye.  The exact numerical summaries are reported in
+Table~\ref{tab:bf-ssl-lstm-direct-forecast-summary} so the conclusion does not
+depend on a graphical scale.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\textwidth]{plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/direct-visual-validation/ssl-lstm-predictive-fans.pdf}
+  \caption{Ten-step posterior-predictive fan charts for G and H, using 512
+  forecast paths per arm.  The shaded region is the empirical 5--95 percent
+  path band, and colored lines are launch-specific means.  This is a
+  descriptive visualization of a short excluded prefix, not a formal
+  predictive-equivalence region or a model-adequacy test.}
+  \label{fig:bf-ssl-lstm-predictive-fans}
+\end{figure}
+
+\begin{table}[p]
+  \centering
+  \caption{Direct pilot-prefix predictive summaries by horizon.}
+  \label{tab:bf-ssl-lstm-direct-forecast-summary}
+  \begin{tabular}{rrrrr}
+    \toprule
+    Horizon & G mean & H mean & G variance & H variance \\
+    \midrule
+    1  &  0.03075 &  0.03019 & 0.72734 & 0.79356 \\
+    2  & -0.00693 &  0.03452 & 0.74389 & 0.73390 \\
+    3  &  0.14740 &  0.07245 & 0.82605 & 0.75009 \\
+    4  &  0.02890 & -0.03841 & 0.74680 & 0.78278 \\
+    5  & -0.00039 &  0.00548 & 0.70704 & 0.92982 \\
+    6  &  0.04054 &  0.01020 & 0.77710 & 0.81790 \\
+    7  &  0.07624 & -0.00873 & 0.77616 & 0.87938 \\
+    8  &  0.08654 &  0.03440 & 0.82297 & 0.78793 \\
+    9  &  0.05153 &  0.00773 & 0.80703 & 0.77792 \\
+    10 & -0.00501 &  0.02347 & 0.71073 & 0.70391 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+For an interpretable difference plot, the program formed draw-level mean and
+log-variance influence values, preserved each chain, averaged consecutive
+blocks of length 16, and estimated a standard error from the 16 block means per
+arm.  It then applied a Bonferroni Gaussian multiplier over the 20 plotted
+coordinates.  These are deliberately labeled approximate explanatory bands:
+the small number of blocks, absence of a practical-loss margin, and use of the
+excluded pilot prefix prevent them from emitting an equivalence or material-
+difference decision.  The largest absolute mean difference was 0.08497 at
+horizon~7.  The largest absolute log-variance difference was 0.27390 at
+horizon~5.  Only the latter approximate band excluded zero.  This localized
+descriptive difference is precisely why visual overlap cannot replace the
+prospective directional-region test.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\textwidth]{plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/direct-visual-validation/ssl-lstm-moment-differences.pdf}
+  \caption{G-minus-H predictive mean and log-variance differences with
+  approximate 95 percent Bonferroni block-normal bands.  The plot is an
+  explanatory pilot diagnostic and emits no equivalence or material-
+  difference decision.}
+  \label{fig:bf-ssl-lstm-moment-differences}
+\end{figure}
+
+The strongest direct procedure-level evidence still comes from laws whose
+truth is known by construction.  The locked synthetic audit used 1,536
+replications per family.  Among the 22 displayed gated and boundary/guard
+families, minimum empirical coverage was 0.93359, the minimum required-
+decision rate among equivalence/material families was 0.99023, the maximum
+false or boundary-decision rate was 0.00326, and the invalid-procedure rate was
+zero.  All prospective family gates passed.  Figure~\ref{fig:bf-ssl-lstm-controlled-calibration}
+shows those operating characteristics.  This validates the declared testing
+procedure on the controlled laws; it does not validate retained chains or
+the empirical SSL--LSTM model.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\textwidth]{plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/direct-visual-validation/ssl-lstm-controlled-calibration.pdf}
+  \caption{Operating characteristics from the locked synthetic-law audit.
+  Blue and green bars are empirical coverage and required-decision rates;
+  orange and gold bars are false/boundary and invalid rates.  Family numbers
+  follow the immutable audit receipt.  This figure concerns controlled-law
+  calibration, not the G/H retained posterior.}
+  \label{fig:bf-ssl-lstm-controlled-calibration}
+\end{figure}
+
+\subsection{Successive state and memory complexity}
+\label{subsec:bf-ssl-lstm-complexity-ladder}
+
+A separate ladder tested the general structural adapter without reusing the
+scalar retained posterior.  Its rung variable $q$ was defined prospectively by
+\begin{equation}
+  k=h=q,\qquad d_y=1,\qquad \dim(x_t)=3q.
+  \label{eq:bf-ssl-lstm-complexity-rung}
+\end{equation}
+From the parameter blocks in Equations~\eqref{eq:bf-ssl-lstm-gates}--
+\eqref{eq:bf-ssl-lstm-initial-law}, the number of unconstrained parameters is
+\begin{align}
+  p(q)
+  &=4q^2+4q^2+4q+q^2+q+q+1+3q+3q+q+1 \\
+  &=9q^2+13q+2.
+  \label{eq:bf-ssl-lstm-parameter-count}
+\end{align}
+The observation dimension and three-step deterministic fixture were held fixed
+so the ladder isolated latent/memory and filter scaling.  Each rung checked
+source-derived parameter layout, transition and observation derivatives against
+central finite differences, repeated compiled SVD--UKF likelihood and score,
+selected score finite differences, and finite positive-semidefinite filtered
+covariances.  Table~\ref{tab:bf-ssl-lstm-complexity-ladder} gives the complete
+outcome.
+
+\begin{table}[p]
+  \centering
+  \caption{Trusted GPU/XLA SSL--LSTM structural-adapter complexity ladder.}
+  \label{tab:bf-ssl-lstm-complexity-ladder}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    $q$ & State & Parameters & Points & Status & Wall (s) & Peak RSS \\
+    \midrule
+    1  & 3  & 24    & 9   & passed        & 18.45   & 1.39 GB \\
+    2  & 6  & 64    & 17  & passed        & 23.18   & 1.91 GB \\
+    5  & 15 & 292   & 41  & passed        & 63.40   & 3.01 GB \\
+    10 & 30 & 1,032 & 81  & passed        & 236.81  & 8.88 GB \\
+    20 & 60 & 3,862 & 161 & resource veto & 1,291.90 & 36.17 GB \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Rungs 1, 2, 5, and 10 passed every declared engineering and numerical check.
+Across all attempted rungs, the largest transition-state Jacobian residual was
+$3.62\times10^{-11}$, the largest selected transition-parameter residual was
+$9.33\times10^{-12}$, and the largest selected analytic-score finite-difference
+residual was $2.68\times10^{-7}$.  The $q=20$ outputs were finite, repeatable,
+positive semidefinite within tolerance, and within the repaired derivative
+tolerances.  Nevertheless, $q=20$ is not admitted: its 1,291.90-second rung
+drove the run beyond the 600-second program cap and its reported 36.17-GB peak
+process RSS exceeded the 2-GB warning threshold.  This is a resource/capacity
+veto, not evidence that the equations or the neural-state-space idea are wrong.
+The supervisor was subsequently changed so future rungs run in killable
+subprocesses with the remaining wall budget; $q=20$ was not rerun or
+retroactively promoted.
+
+\subsection{Execution and test evidence}
+\label{subsec:bf-ssl-lstm-direct-test-evidence}
+
+The direct visual package ran on an NVIDIA RTX~4080~SUPER with TensorFlow
+2.20.0, TensorFlow Probability 0.25.0, float64 tensors, and XLA enabled.  It
+completed in 290.00 seconds under a 900-second cap.  Its focused orientation,
+seed-separation, moment, and target-adapter tests reported ten passes, including
+five passes from the existing target-adapter suite.  Every generated PNG and
+PDF was opened and visually inspected.
+
+The ladder's q=1 full reference contract and dimension/fixture suite reported
+12 passes.  After adding the killable-subprocess supervisor, the focused
+dimension and timeout suite reported 12 passes with one expensive q=1 test
+deselected.  A combined intermediate suite reported 22 passes and exposed one
+temporary-directory path-reporting defect in the new timeout test; that defect
+was repaired and the focused suite passed.  Python compilation and
+\code{git diff --check} passed for both runners after their repairs.
+TensorFlow AutoGraph emitted Python-3.13 deprecation warnings, and XLA emitted
+register-spill performance warnings at the larger rungs; neither warning was
+treated as numerical-validity or correctness evidence.
+
+The machine-readable receipts, source hashes, exact commands, seeds, device
+settings, figure hashes, failed first ladder, repaired ladder, and nonclaims
+are preserved below the SSL--LSTM NeuTra artifact root under
+\path{docs/plans/artifacts}.  In prose, the direct package passed while
+confirmation remained closed; the ladder admitted q=1,2,5,10 and applied a
+resource veto at q=20.  The exact machine status strings remain in the JSON
+receipts and result notes.  Neither status is a posterior-correctness,
+HMC-readiness, NeuTra-superiority, or model-adequacy claim.
+
+\FloatBarrier

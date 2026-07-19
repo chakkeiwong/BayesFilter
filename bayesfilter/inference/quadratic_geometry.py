@@ -47,6 +47,7 @@ class LowRankSPDQuadraticGeometryConfig:
     holdout_rmse_rel_tolerance: float = 1.0e-1
     center_score_improvement_factor: float = 0.95
     center_log_prob_tolerance: float = 1.0e-8
+    constrain_center_refinement_to_trust_region: bool = False
     seed: int | Sequence[int] = 20260708
 
     def __post_init__(self) -> None:
@@ -88,6 +89,11 @@ class LowRankSPDQuadraticGeometryConfig:
             raise ValueError("max_condition_number must be greater than 1")
         if float(self.center_score_improvement_factor) >= 1.0:
             raise ValueError("center_score_improvement_factor must be less than 1")
+        object.__setattr__(
+            self,
+            "constrain_center_refinement_to_trust_region",
+            bool(self.constrain_center_refinement_to_trust_region),
+        )
         object.__setattr__(self, "seed", _normalize_seed(self.seed))
 
     def payload(self) -> Mapping[str, Any]:
@@ -107,6 +113,9 @@ class LowRankSPDQuadraticGeometryConfig:
             "holdout_rmse_rel_tolerance": self.holdout_rmse_rel_tolerance,
             "center_score_improvement_factor": self.center_score_improvement_factor,
             "center_log_prob_tolerance": self.center_log_prob_tolerance,
+            "constrain_center_refinement_to_trust_region": (
+                self.constrain_center_refinement_to_trust_region
+            ),
             "seed": self.seed,
         }
 
@@ -194,6 +203,10 @@ def fit_low_rank_spd_quadratic_geometry(
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     center: Any,
     *,
+    batched_value_and_score_fn: Callable[
+        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
+    ]
+    | None = None,
     scale: Any | None = None,
     config: LowRankSPDQuadraticGeometryConfig | None = None,
 ) -> LowRankSPDQuadraticGeometryResult:
@@ -201,6 +214,10 @@ def fit_low_rank_spd_quadratic_geometry(
 
     ``value_and_score_fn`` must accept a one-dimensional TensorFlow tensor and
     return scalar log probability and gradient in the original coordinates.
+    When supplied, ``batched_value_and_score_fn`` accepts ``[batch, dimension]``
+    and returns ``[batch]`` values plus ``[batch, dimension]`` scores. It is
+    used only for the pilot and design clouds; center and refinement checks
+    remain on the scalar callback.
     The fitted quadratic is in whitened coordinates ``theta = center + scale*z``.
     """
 
@@ -248,6 +265,7 @@ def fit_low_rank_spd_quadratic_geometry(
 
     q_basis, pilot_diagnostics = _pilot_q_basis(
         value_and_score_fn,
+        batched_value_and_score_fn=batched_value_and_score_fn,
         center=center_np,
         scale=scale_np,
         rank=rank,
@@ -263,7 +281,11 @@ def fit_low_rank_spd_quadratic_geometry(
         rng=rng,
     )
     theta_samples = center_np[np.newaxis, :] + z_samples * scale_np[np.newaxis, :]
-    values, scores = _evaluate_values_scores(value_and_score_fn, theta_samples)
+    values, scores = _evaluate_values_scores(
+        value_and_score_fn,
+        theta_samples,
+        batched_value_and_score_fn=batched_value_and_score_fn,
+    )
     finite_mask = np.isfinite(values) & np.all(np.isfinite(scores), axis=1)
     finite_sample_count = int(np.sum(finite_mask))
     diagnostics = _base_diagnostics(
@@ -281,6 +303,11 @@ def fit_low_rank_spd_quadratic_geometry(
             "finite_sample_count": finite_sample_count,
             "nonfinite_sample_count": int(sample_count - finite_sample_count),
             "pilot": pilot_diagnostics,
+            "design_evaluation_route": (
+                "batched_value_and_score"
+                if batched_value_and_score_fn is not None
+                else "scalar_value_and_score_loop"
+            ),
         }
     )
     if finite_sample_count < required_finite_samples:
@@ -611,6 +638,10 @@ def _design_condition_number(singular_values: np.ndarray) -> float | None:
 def _pilot_q_basis(
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     *,
+    batched_value_and_score_fn: Callable[
+        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
+    ]
+    | None,
     center: np.ndarray,
     scale: np.ndarray,
     rank: int,
@@ -633,11 +664,63 @@ def _pilot_q_basis(
     sketch = np.zeros([dim, dim], dtype=float)
     curvatures: list[float] = []
     h = float(cfg.pilot_radius)
-    for direction in directions:
-        plus = center + (h * direction) * scale
-        minus = center - (h * direction) * scale
-        value_plus, score_plus, status_plus = _evaluate_value_score(value_and_score_fn, plus)
-        value_minus, score_minus, status_minus = _evaluate_value_score(value_and_score_fn, minus)
+    if batched_value_and_score_fn is None:
+        pilot_rows = []
+        for direction in directions:
+            plus = center + (h * direction) * scale
+            minus = center - (h * direction) * scale
+            value_plus, score_plus, status_plus = _evaluate_value_score(
+                value_and_score_fn, plus
+            )
+            value_minus, score_minus, status_minus = _evaluate_value_score(
+                value_and_score_fn, minus
+            )
+            pilot_rows.append(
+                (value_plus, score_plus, status_plus, value_minus, score_minus, status_minus)
+            )
+        evaluation_route = "scalar_value_and_score_loop"
+        evaluation_batch_size = 1
+    else:
+        plus_points = center[np.newaxis, :] + h * directions * scale[np.newaxis, :]
+        minus_points = center[np.newaxis, :] - h * directions * scale[np.newaxis, :]
+        pilot_points = np.concatenate((plus_points, minus_points), axis=0)
+        pilot_values, pilot_scores = _evaluate_values_scores(
+            value_and_score_fn,
+            pilot_points,
+            batched_value_and_score_fn=batched_value_and_score_fn,
+        )
+        split = int(directions.shape[0])
+        pilot_rows = []
+        for index in range(split):
+            value_plus = float(pilot_values[index])
+            score_plus = pilot_scores[index]
+            value_minus = float(pilot_values[split + index])
+            score_minus = pilot_scores[split + index]
+            status_plus = (
+                "finite"
+                if np.isfinite(value_plus) and np.all(np.isfinite(score_plus))
+                else "nonfinite"
+            )
+            status_minus = (
+                "finite"
+                if np.isfinite(value_minus) and np.all(np.isfinite(score_minus))
+                else "nonfinite"
+            )
+            pilot_rows.append(
+                (value_plus, score_plus, status_plus, value_minus, score_minus, status_minus)
+            )
+        evaluation_route = "batched_value_and_score"
+        evaluation_batch_size = int(pilot_points.shape[0])
+
+    for direction, pilot_row in zip(directions, pilot_rows, strict=True):
+        (
+            _value_plus,
+            score_plus,
+            status_plus,
+            _value_minus,
+            score_minus,
+            status_minus,
+        ) = pilot_row
         if status_plus != "finite" or status_minus != "finite":
             continue
         score_plus_z = score_plus * scale
@@ -668,6 +751,8 @@ def _pilot_q_basis(
         "basis_source": (
             "directional_curvature_sketch" if curvatures else "identity_fallback"
         ),
+        "evaluation_route": evaluation_route,
+        "evaluation_batch_size": evaluation_batch_size,
     }
 
 
@@ -682,10 +767,37 @@ def _evaluate_center_refinement(
     center_value: float,
     center_score_norm: float,
 ) -> Mapping[str, Any]:
-    try:
-        z_star = np.linalg.solve(precision, linear)
-    except np.linalg.LinAlgError:
-        return {"accepted": False, "reason": "precision_solve_failed"}
+    constrained = bool(cfg.constrain_center_refinement_to_trust_region)
+    if constrained:
+        step = _solve_spd_quadratic_trust_region(
+            precision,
+            linear,
+            radius=float(cfg.trust_radius),
+        )
+        if step["status"] != "usable":
+            return {
+                "accepted": False,
+                "reason": str(step["status"]),
+                "step_method": "exact_spd_quadratic_trust_region",
+                "trust_region_constrained": True,
+            }
+        z_star = np.asarray(step["step"], dtype=float)
+    else:
+        try:
+            z_star = np.linalg.solve(precision, linear)
+        except np.linalg.LinAlgError:
+            return {"accepted": False, "reason": "precision_solve_failed"}
+        step = {
+            "status": "usable",
+            "step": z_star,
+            "step_method": "unconstrained_spd_quadratic_solve",
+            "boundary_active": False,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": float(
+                np.dot(linear, z_star)
+                - 0.5 * np.dot(z_star, precision @ z_star)
+            ),
+        }
     z_norm = float(np.linalg.norm(z_star))
     refined = center + z_star * scale
     value, score, status = _evaluate_value_score(value_and_score_fn, refined)
@@ -695,12 +807,30 @@ def _evaluate_center_refinement(
             "reason": "refined_value_or_score_nonfinite",
             "z_norm": z_norm,
             "refined_center": refined,
+            "step_method": step["step_method"],
+            "trust_region_constrained": constrained,
+            "boundary_active": bool(step["boundary_active"]),
+            "lagrange_multiplier": float(step["lagrange_multiplier"]),
+            "predicted_improvement": float(step["predicted_improvement"]),
         }
     score_norm = float(np.linalg.norm(score * scale))
+    actual_improvement = float(value - center_value)
+    predicted_improvement = float(step["predicted_improvement"])
+    improvement_ratio = (
+        actual_improvement / predicted_improvement
+        if predicted_improvement > 0.0
+        else None
+    )
     accepted = bool(
         z_norm <= float(cfg.trust_radius)
         and value >= center_value - float(cfg.center_log_prob_tolerance)
         and score_norm <= float(cfg.center_score_improvement_factor) * center_score_norm
+        and (not constrained or actual_improvement > 0.0)
+        and (not constrained or predicted_improvement > 0.0)
+        and (
+            not constrained
+            or (improvement_ratio is not None and np.isfinite(improvement_ratio))
+        )
     )
     reasons = []
     if z_norm > float(cfg.trust_radius):
@@ -709,10 +839,25 @@ def _evaluate_center_refinement(
         reasons.append("log_prob_decreased")
     if score_norm > float(cfg.center_score_improvement_factor) * center_score_norm:
         reasons.append("score_norm_not_improved_enough")
+    if constrained and actual_improvement <= 0.0:
+        reasons.append("actual_improvement_not_positive")
+    if constrained and predicted_improvement <= 0.0:
+        reasons.append("predicted_improvement_not_positive")
+    if constrained and (
+        improvement_ratio is None or not np.isfinite(improvement_ratio)
+    ):
+        reasons.append("improvement_ratio_nonfinite")
     return {
         "accepted": accepted,
         "reason": "accepted" if accepted else ";".join(reasons),
         "z_norm": z_norm,
+        "step_method": step["step_method"],
+        "trust_region_constrained": constrained,
+        "boundary_active": bool(step["boundary_active"]),
+        "lagrange_multiplier": float(step["lagrange_multiplier"]),
+        "predicted_improvement": predicted_improvement,
+        "actual_improvement": actual_improvement,
+        "actual_to_predicted_improvement_ratio": improvement_ratio,
         "center_log_prob": float(center_value),
         "refined_log_prob": float(value),
         "center_score_norm": float(center_score_norm),
@@ -721,13 +866,138 @@ def _evaluate_center_refinement(
     }
 
 
+def _solve_spd_quadratic_trust_region(
+    precision: np.ndarray,
+    linear: np.ndarray,
+    *,
+    radius: float,
+) -> Mapping[str, Any]:
+    """Solve ``max b'z - 0.5 z'Kz`` over an Euclidean trust ball.
+
+    For positive-definite ``K``, the constrained solution satisfies
+    ``(K + lambda I) z = b``. The unconstrained solution is used when it lies
+    inside the ball; otherwise a deterministic bisection solves
+    ``||z(lambda)||_2 = radius``.
+    """
+
+    matrix = np.asarray(precision, dtype=float)
+    vector = np.asarray(linear, dtype=float).reshape([-1])
+    radius_value = float(radius)
+    if (
+        matrix.ndim != 2
+        or matrix.shape != (vector.size, vector.size)
+        or not np.all(np.isfinite(matrix))
+        or not np.all(np.isfinite(vector))
+        or not np.isfinite(radius_value)
+        or radius_value <= 0.0
+    ):
+        return {"status": "trust_region_invalid_input"}
+    symmetric = 0.5 * (matrix + matrix.T)
+    try:
+        eigenvalues, eigenvectors = np.linalg.eigh(symmetric)
+    except np.linalg.LinAlgError:
+        return {"status": "trust_region_eigendecomposition_failed"}
+    if not np.all(np.isfinite(eigenvalues)) or float(np.min(eigenvalues)) <= 0.0:
+        return {"status": "trust_region_precision_not_spd"}
+
+    projected = eigenvectors.T @ vector
+
+    def solution(lagrange_multiplier: float) -> np.ndarray:
+        return eigenvectors @ (projected / (eigenvalues + lagrange_multiplier))
+
+    unconstrained = solution(0.0)
+    unconstrained_norm = float(np.linalg.norm(unconstrained))
+    if unconstrained_norm <= radius_value * (1.0 + 1.0e-12):
+        step = unconstrained
+        lagrange_multiplier = 0.0
+        boundary_active = False
+        iterations = 0
+    else:
+        lower = 0.0
+        upper = 1.0
+        while float(np.linalg.norm(solution(upper))) > radius_value:
+            upper *= 2.0
+            if not np.isfinite(upper):
+                return {"status": "trust_region_bracket_failed"}
+        iterations = 0
+        for iterations in range(1, 101):
+            midpoint = 0.5 * (lower + upper)
+            midpoint_norm = float(np.linalg.norm(solution(midpoint)))
+            if midpoint_norm > radius_value:
+                lower = midpoint
+            else:
+                upper = midpoint
+            if upper - lower <= 1.0e-12 * max(1.0, upper):
+                break
+        lagrange_multiplier = upper
+        step = solution(lagrange_multiplier)
+        boundary_active = True
+
+    step_norm = float(np.linalg.norm(step))
+    predicted_improvement = float(
+        np.dot(vector, step) - 0.5 * np.dot(step, symmetric @ step)
+    )
+    if (
+        not np.all(np.isfinite(step))
+        or not np.isfinite(predicted_improvement)
+        or step_norm > radius_value * (1.0 + 1.0e-10)
+    ):
+        return {"status": "trust_region_solution_invalid"}
+    return {
+        "status": "usable",
+        "step": step,
+        "step_method": "exact_spd_quadratic_trust_region",
+        "boundary_active": boundary_active,
+        "lagrange_multiplier": float(lagrange_multiplier),
+        "bisection_iterations": int(iterations),
+        "unconstrained_step_norm": unconstrained_norm,
+        "step_norm": step_norm,
+        "predicted_improvement": predicted_improvement,
+    }
+
+
 def _evaluate_values_scores(
     value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     theta_samples: np.ndarray,
+    *,
+    batched_value_and_score_fn: Callable[
+        [tf.Tensor], tuple[tf.Tensor, tf.Tensor]
+    ]
+    | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
+    samples = np.asarray(theta_samples, dtype=float)
+    if samples.ndim != 2:
+        raise ValueError("theta_samples must have shape [batch, dimension]")
+    if batched_value_and_score_fn is not None:
+        try:
+            values, scores = batched_value_and_score_fn(
+                tf.constant(samples, dtype=tf.float64)
+            )
+            values_np = np.asarray(
+                tf.convert_to_tensor(values, dtype=tf.float64).numpy(), dtype=float
+            )
+            scores_np = np.asarray(
+                tf.convert_to_tensor(scores, dtype=tf.float64).numpy(), dtype=float
+            )
+        except Exception:  # noqa: BLE001 - fail-closed diagnostic path.
+            return (
+                np.full(samples.shape[0], np.nan, dtype=float),
+                np.full(samples.shape, np.nan, dtype=float),
+            )
+        if values_np.shape != (samples.shape[0],) or scores_np.shape != samples.shape:
+            return (
+                np.full(samples.shape[0], np.nan, dtype=float),
+                np.full(samples.shape, np.nan, dtype=float),
+            )
+        finite = np.isfinite(values_np) & np.all(np.isfinite(scores_np), axis=1)
+        return (
+            np.where(finite, values_np, np.nan),
+            np.where(finite[:, np.newaxis], scores_np, np.nan),
+        )
+
     values = []
     scores = []
-    for theta in theta_samples:
+    for theta in samples:
         value, score, status = _evaluate_value_score(value_and_score_fn, theta)
         values.append(value if status == "finite" else np.nan)
         scores.append(score if status == "finite" else np.full_like(theta, np.nan, dtype=float))

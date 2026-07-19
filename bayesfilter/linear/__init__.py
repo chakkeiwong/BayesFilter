@@ -35,7 +35,15 @@ __all__ = [
     "tf_qr_sqrt_masked_kalman_score_hessian",
     "tf_kalman_filter",
     "tf_kalman_log_likelihood",
+    "tf_correlated_kalman_filter",
+    "tf_correlated_kalman_log_likelihood",
+    "tf_correlated_kalman_filter_batched_time_varying",
+    "tf_correlated_kalman_log_likelihood_batched_time_varying",
     "tf_linear_gaussian_log_likelihood",
+    "tf_masked_correlated_kalman_filter",
+    "tf_masked_correlated_kalman_log_likelihood",
+    "tf_masked_correlated_kalman_filter_batched_time_varying",
+    "tf_masked_correlated_kalman_log_likelihood_batched_time_varying",
     "tf_masked_kalman_filter",
     "tf_masked_kalman_log_likelihood",
     "tf_svd_kalman_log_likelihood",
@@ -130,7 +138,29 @@ _EXPORT_MODULES = {
     ),
     "tf_kalman_filter": "bayesfilter.linear.kalman_tf",
     "tf_kalman_log_likelihood": "bayesfilter.linear.kalman_tf",
+    "tf_correlated_kalman_filter": "bayesfilter.linear.correlated_kalman_tf",
+    "tf_correlated_kalman_log_likelihood": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
+    "tf_correlated_kalman_filter_batched_time_varying": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
+    "tf_correlated_kalman_log_likelihood_batched_time_varying": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
     "tf_linear_gaussian_log_likelihood": "bayesfilter.linear.kalman_tf",
+    "tf_masked_correlated_kalman_filter": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
+    "tf_masked_correlated_kalman_log_likelihood": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
+    "tf_masked_correlated_kalman_filter_batched_time_varying": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
+    "tf_masked_correlated_kalman_log_likelihood_batched_time_varying": (
+        "bayesfilter.linear.correlated_kalman_tf"
+    ),
     "tf_masked_kalman_filter": "bayesfilter.linear.kalman_tf",
     "tf_masked_kalman_log_likelihood": "bayesfilter.linear.kalman_tf",
     "tf_svd_kalman_log_likelihood": "bayesfilter.linear.kalman_svd_tf",

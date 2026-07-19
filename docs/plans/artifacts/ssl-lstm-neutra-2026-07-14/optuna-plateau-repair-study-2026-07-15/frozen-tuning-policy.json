@@ -1,0 +1,68 @@
+{
+  "schema": "bayesfilter.ssl_lstm_neutra.tuning_policy.v1",
+  "created_at_utc": "2026-07-15T18:11:00+00:00",
+  "selection_role": "representative_optuna_nomination_proxy_only",
+  "selected_trial": 2,
+  "selected_trial_record_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/trials/trial-0002/result.json",
+  "selected_trial_record_sha256": "130eb62f7679fc7943dcfd6fc2d24510fbfa3ba554d35e82e95d3774b219c39a",
+  "study_summary_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/study-summary.json",
+  "study_summary_sha256": "186f32bd54f97575ce236d89ebefe07d1c1af7063f0055adc05209f0c5c0475f",
+  "selected_hyperparameters": {
+    "learning_rate": 0.0018996814203826532,
+    "initialization_scale": 0.01,
+    "gradient_clip_norm": 5.0
+  },
+  "plateau_policy": {
+    "validation_check_every": 100,
+    "patience_steps": 500,
+    "patience_checks": 5,
+    "max_steps": 5000,
+    "learning_rate_factor": 0.5,
+    "minimum_learning_rate_fraction": 0.0625,
+    "absolute_min_delta": 0.0,
+    "one_sided_critical_value": 1.6694022215079607,
+    "saturation_max": 0.05,
+    "two_period_interpretation": "reduce_at_n_stop_at_2n_since_last_meaningful_improvement"
+  },
+  "patience_calibration": {
+    "data_role": "historical_tuning_streams_only",
+    "trials_used": [0, 2],
+    "streams_used": ["seed-a", "seed-b"],
+    "observed_meaningful_improvement_gap_steps": [50, 50, 100, 200, 50, 50, 100, 200, 50, 50, 100, 200, 50, 50, 100, 200],
+    "all_observed_rungs_meaningfully_improved": true,
+    "calibrated_patience_steps": 500,
+    "calibration_rule": "bounded lower limit because observed p90 gap is below prospective 500-step minimum",
+    "absolute_min_delta_reason": "paired fixed-batch intervals were stable and negative at every survivor rung; retain zero rather than add a retrospective threshold"
+  },
+  "fresh_streams": [
+    {
+      "label": "fresh-c",
+      "initialization_seed": [20260715, 7101],
+      "training_seed": [20260715, 8101],
+      "validation_seed": [20260715, 8201]
+    },
+    {
+      "label": "fresh-d",
+      "initialization_seed": [20260715, 7102],
+      "training_seed": [20260715, 8102],
+      "validation_seed": [20260715, 8202]
+    }
+  ],
+  "viable_alternatives": [
+    {
+      "trial": 0,
+      "learning_rate": 0.0011219623709077644,
+      "initialization_scale": 0.02,
+      "gradient_clip_norm": 5.0,
+      "objective": 41.39404496266031,
+      "record_sha256": "7a1022841220e3743d5af27efc0733c65506e10f2189fe3609d43f07ebc7dd63"
+    }
+  ],
+  "ranking_status": "no_statistically_supported_ranking",
+  "nonclaims": [
+    "Optuna objective is a nomination proxy only",
+    "no posterior-correctness or support-completeness claim",
+    "no HMC-readiness or predictive-validity claim",
+    "no superiority or default-readiness claim"
+  ]
+}

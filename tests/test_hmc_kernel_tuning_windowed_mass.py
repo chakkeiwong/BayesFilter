@@ -14,6 +14,11 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+from bayesfilter.hmc_route_contract import (
+    LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
+    OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+    UnsupportedHMCAlgorithmRoute,
+)
 from bayesfilter.inference import (
     HMCBootstrapScreenResult,
     HMCGeometryInitializationConfig,
@@ -109,6 +114,7 @@ def _bootstrap() -> HMCBootstrapScreenResult:
 
 def _stage_config(**overrides: Any) -> HMCWindowedMassStageConfig:
     payload = {
+        "algorithm_id": LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
         "target_accept_prob": 0.70,
         "seed": (20260621, 40),
         "chain_execution_mode": "eager",
@@ -389,6 +395,11 @@ def test_windowed_mass_stage_private_progress_callback_is_allowlisted() -> None:
         assert payload["progress_only"] is True
         assert payload["hmc_mechanics_exposed"] is False
         assert payload["route_category"] == "injected_runner"
+        assert payload["algorithm_id"] == LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
+        assert payload["route_contract_version"] == (
+            "bayesfilter.hmc_algorithm_route.v1"
+        )
+        assert payload["algorithm_route"]["algorithm_id"] == payload["algorithm_id"]
         assert payload["reports_posterior_convergence"] is False
         assert payload["reports_sampler_superiority"] is False
         assert payload["reports_default_readiness"] is False
@@ -528,6 +539,8 @@ def test_windowed_mass_public_timeout_uses_segmented_chunk_runner(
     for _stage, payload in segment_events:
         assert payload["hmc_mechanics_exposed"] is False
         assert payload["route_category"] == "segmented_windowed_mass_runner"
+        assert payload["algorithm_id"] == LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
+        assert payload["algorithm_route"]["operational_authority"] is False
         assert payload["segment_count"] == 3
 
 
@@ -592,8 +605,12 @@ def test_windowed_mass_segmented_timeout_between_chunks_returns_closeout(
 
     assert calls["count"] == 1
     assert result.passed is False
-    assert result.final_status == "hard_veto"
-    assert result.hard_vetoes == ("windowed_mass_public_timeout_soft_deadline",)
+    assert result.final_status == "budget_exhausted"
+    assert result.diagnostic_role == "windowed_mass_resource_timeout_non_promoting"
+    assert result.hard_vetoes == ()
+    assert result.repair_triggers == (
+        "windowed_mass_public_timeout_closeout_before_hmc_call",
+    )
     closeout = result.diagnostics["public_timeout_closeout"]
     assert closeout["completed_segment_count"] == 1
     assert closeout["planned_segment_count"] == 3
@@ -775,8 +792,12 @@ def test_windowed_mass_segmented_soft_deadline_skips_first_chunk(
 
     assert calls["count"] == 0
     assert result.passed is False
-    assert result.final_status == "hard_veto"
-    assert result.hard_vetoes == ("windowed_mass_public_timeout_soft_deadline",)
+    assert result.final_status == "budget_exhausted"
+    assert result.diagnostic_role == "windowed_mass_resource_timeout_non_promoting"
+    assert result.hard_vetoes == ()
+    assert result.repair_triggers == (
+        "windowed_mass_public_timeout_closeout_before_hmc_call",
+    )
     closeout = result.diagnostics["public_timeout_closeout"]
     assert closeout["remaining_s"] == pytest.approx(70.0)
     assert closeout["reserve_s"] == pytest.approx(50.0)
@@ -866,108 +887,40 @@ def test_windowed_mass_injected_tf_function_run_does_not_build_reusable_runner(
     assert result.diagnostics["runtime_metadata"]["sample_chain_invocation_count"] == 1
 
 
-def test_windowed_mass_default_tf_function_route_uses_reusable_runner(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[dict[str, Any]] = []
+def test_runner_identity_cannot_select_a_different_windowed_algorithm(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
 
-    class _FakeReusableRunner:
-        def __init__(self, diagnostic_config: Any) -> None:
-            self.diagnostic_config = diagnostic_config
-
-        def run(self, *, current_state: Any, seed: Any, step_size: Any) -> _FakeRunResult:
-            calls.append(
-                {
-                    "run_called": True,
-                    "seed": tuple(int(item) for item in seed),
-                    "step_size": float(step_size),
-                    "initial_state": np.asarray(current_state, dtype=float),
-                }
-            )
-            return _fake_result(
-                warmup_steps=int(self.diagnostic_config.num_results),
-                metadata_overrides={
-                    "runtime": "tfp.mcmc.sample_chain",
-                    "sample_chain_invocation_count": 1,
-                    "fixture_or_synthetic": False,
-                    "reusable_runner": True,
-                    "sample_chain_timing_scope": (
-                        "reusable_tf_function_first_call_trace_compile_plus_execute_then_warm_execute"
-                    ),
-                    "nonclaims": (
-                        "deterministic reusable hmc contract plumbing result",
-                        "no sampler convergence claim",
-                        "no posterior validity claim",
-                    ),
-                },
-            )
-
-    def fake_builder(adapter: Any, initial_state_template: Any, config: Any) -> _FakeReusableRunner:
-        calls.append(
-            {
-                "builder_called": True,
-                "adapter_signature": adapter.adapter_signature(),
-                "initial_state_template": np.asarray(initial_state_template, dtype=float),
-                "chain_execution_mode": config.chain_execution_mode,
-                "use_xla": bool(config.use_xla),
-            }
-        )
-        return _FakeReusableRunner(config)
+    def fake_builder(*_args: Any, **_kwargs: Any) -> Any:
+        calls.append("builder_called")
+        raise AssertionError("blocked route must not construct a runner")
 
     monkeypatch.setattr(
         hmc_kernel_tuning,
         "build_reusable_full_chain_tfp_hmc_runner",
         fake_builder,
     )
-    bootstrap = _bootstrap()
 
-    result = run_hmc_windowed_mass_stage(
-        adapter=_ToyGaussianAdapter(),
-        geometry=_geometry(),
-        bootstrap=bootstrap,
-        config=_stage_config(chain_execution_mode="tf_function", use_xla=False),
-    )
+    with pytest.raises(UnsupportedHMCAlgorithmRoute) as caught:
+        run_hmc_windowed_mass_stage(
+            adapter=_ToyGaussianAdapter(),
+            geometry=_geometry(),
+            bootstrap=_bootstrap(),
+            config=_stage_config(
+                algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+                chain_execution_mode="tf_function",
+                use_xla=False,
+            ),
+        )
 
-    assert result.passed is True
-    assert [sorted(call) for call in calls] == [
-        sorted(
-            {
-                "builder_called": True,
-                "adapter_signature": "",
-                "initial_state_template": np.array([]),
-                "chain_execution_mode": "",
-                "use_xla": False,
-            }
-        ),
-        sorted(
-            {
-                "run_called": True,
-                "seed": (),
-                "step_size": 0.0,
-                "initial_state": np.array([]),
-            }
-        ),
-    ]
-    assert calls[0]["adapter_signature"] == bootstrap.hmc_adapter_signature
-    np.testing.assert_allclose(calls[0]["initial_state_template"], np.zeros(2))
-    assert calls[0]["chain_execution_mode"] == "tf_function"
-    assert calls[0]["use_xla"] is False
-    np.testing.assert_allclose(calls[1]["initial_state"], np.zeros(2))
-    assert calls[1]["step_size"] == pytest.approx(bootstrap.selected_round.step_size)
-    assert result.diagnostics["runtime_metadata"]["reusable_runner"] is True
-    assert result.diagnostics["runtime_metadata"]["sample_chain_timing_scope"].startswith(
-        "reusable_tf_function"
+    assert caught.value.decision.algorithm_id == (
+        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     )
-    assert result.diagnostics["runtime_metadata"]["windowed_stage_route_category"] == (
-        "reusable_runner"
+    assert caught.value.decision.blocker_code == (
+        "operational_windowed_warmup_requires_default_runner"
     )
-    assert result.diagnostics["runtime_metadata"]["windowed_stage_runner_build_s"] >= 0.0
-    assert result.diagnostics["runtime_metadata"]["windowed_stage_runner_execute_s"] >= 0.0
-    assert result.diagnostics["runtime_metadata"]["windowed_stage_capture_s"] >= 0.0
-    assert (
-        result.diagnostics["runtime_metadata"]["timing_buckets"][
-            "windowed_stage_capture_s"
-        ]
-        == "explanatory_only_windowed_stage_public_safe_capture"
-    )
+    assert calls == []
 
 
 def test_windowed_mass_stage_hard_vetoes_fixture_runtime_evidence() -> None:
@@ -1410,7 +1363,10 @@ def test_real_default_route_emits_operational_v2_and_exact_compatibility() -> No
         adapter=adapter,
         geometry=geometry,
         bootstrap=bootstrap,
-        config=_stage_config(chain_execution_mode="tf_function"),
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+        ),
         _attempt_budget_policy=_operational_budget(),
     )
 
@@ -1451,6 +1407,54 @@ def test_real_default_route_emits_operational_v2_and_exact_compatibility() -> No
     assert "private_start_bank_theta" not in public_text
 
 
+def test_real_operational_route_with_generous_timeout_never_uses_legacy() -> None:
+    adapter, geometry, bootstrap = _operational_inputs()
+    events: list[tuple[str, Mapping[str, Any]]] = []
+
+    result = run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+            public_timeout_budget_s=3600.0,
+        ),
+        _attempt_budget_policy=_operational_budget(),
+        _progress_callback=lambda stage, payload: events.append((stage, payload)),
+    )
+
+    assert result.passed is True
+    assert result.operational_warmup_result is not None
+    assert result.operational_warmup_closeout is None
+    assert result.config.algorithm_id == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+    assert result.diagnostics["algorithm_id"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+    assert result.diagnostics["algorithm_route"]["execution_control_capabilities"][
+        "timeout"
+    ] == "window_boundary_closeout"
+    assert result.operational_warmup_result.algorithm_id == (
+        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+    )
+    stages = [stage for stage, _payload in events]
+    assert stages[0] == "windowed_mass_operational_warmup_start"
+    assert stages[-1] == "windowed_mass_operational_warmup_complete"
+    completed = [
+        payload["operational_progress"]["completed_transition_count"]
+        for stage, payload in events
+        if stage == "windowed_mass_operational_segment_complete"
+    ]
+    assert completed
+    assert completed == sorted(set(completed))
+    assert completed[-1] == result.operational_warmup_result.config.warmup_steps
+    assert all(
+        payload["algorithm_id"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+        and payload["route_contract_version"]
+        == "bayesfilter.hmc_algorithm_route.v1"
+        and payload["route_category"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+        for _stage, payload in events
+    )
+
+
 def test_operational_retry_consumes_carried_transform_endpoint_step_and_l(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1459,7 +1463,10 @@ def test_operational_retry_consumes_carried_transform_endpoint_step_and_l(
         adapter=adapter,
         geometry=geometry,
         bootstrap=bootstrap,
-        config=_stage_config(chain_execution_mode="tf_function"),
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+        ),
         _attempt_budget_policy=_operational_budget(),
     )
     assert first.passed and first.operational_warmup_result is not None
@@ -1492,7 +1499,10 @@ def test_operational_retry_consumes_carried_transform_endpoint_step_and_l(
         adapter=adapter,
         geometry=geometry,
         bootstrap=bootstrap,
-        config=_stage_config(chain_execution_mode="tf_function"),
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+        ),
         _attempt_budget_policy=_operational_budget(attempt_index=1),
         _attempt_state=retry_state,
     )
@@ -1535,7 +1545,10 @@ def test_operational_route_runtime_error_is_fail_closed(
         adapter=_ToyGaussianAdapter(),
         geometry=_geometry(),
         bootstrap=_bootstrap(),
-        config=_stage_config(chain_execution_mode="tf_function"),
+        config=_stage_config(
+            algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+            chain_execution_mode="tf_function",
+        ),
     )
 
     assert result.passed is False

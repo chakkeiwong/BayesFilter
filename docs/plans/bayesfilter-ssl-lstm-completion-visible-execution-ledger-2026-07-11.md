@@ -2,7 +2,19 @@
 
 Date: 2026-07-11
 
-Program status: `PHASE_A3_TRACE_REPAIR_REVIEW_AGREED_SIGNED_CHAIN_REFRESH_ACTIVE`
+Program status: `HISTORICAL_SUPERSEDED_BY_ACADEMIC_RISK_TIER_WORKFLOW`
+
+## 2026-07-13 - Proportional-Governance Reset
+
+This ledger preserves historical execution and review evidence. It is no
+longer an active gate. The owner-approved academic risk-tier policy in
+`AGENTS.md` supersedes its frozen hashes, signed backlinks, syscall traces,
+finite write sets, closure chain, and repeated review convergence.
+
+Active SSL-LSTM predictive-validation work now follows
+`docs/plans/bayesfilter-ssl-lstm-predictive-validation-live-plan-2026-07-13.md`.
+Scientific evidence rules, GPU provenance, uncertainty discipline, and
+unrelated-worktree protection remain active.
 
 ## 2026-07-13 - Phase A3 - PASSING TRACE PARSER REPAIR REVIEWED
 

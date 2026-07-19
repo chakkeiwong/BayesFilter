@@ -1,0 +1,258 @@
+{
+  "continuation_veto": "ComplexityLadderError: value/score likelihood parity mismatch: max_abs=3.80909304098509e-10",
+  "decision": "COMPLEXITY_LADDER_STOPPED_HARD_VETO",
+  "inference_status": {
+    "default_readiness": "not established",
+    "descriptive_only_differences": "runtime, memory, score norms, and scaling ratios",
+    "hard_veto_screen": "see each rung",
+    "next_evidence_needed": "separate q>1 training, sampler, and predictive-validation programs",
+    "statistically_supported_ranking": "none"
+  },
+  "nonclaims": [
+    "no q>1 posterior samples, NeuTra transport, or HMC run",
+    "no high-dimensional posterior correctness or model-adequacy claim",
+    "single deterministic fixture does not rank dimensions or algorithms"
+  ],
+  "run_manifest": {
+    "command": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_ssl_lstm_complexity_ladder_2026_07_18.py --output-dir docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/complexity-ladder --wall-cap-seconds 600",
+    "completed_at_utc": "2026-07-18T11:47:48.854048+00:00",
+    "conda_env": "tfgpu",
+    "cuda_visible_devices": "1",
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "git_commit": "c5a9ad4cc77dba0bd27c1253c84ab98981d69d3f",
+    "git_dirty": true,
+    "jit_compile": true,
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "python": "3.13.13",
+    "random_seeds": "none; deterministic trigonometric fixture",
+    "started_at_utc": "2026-07-18T11:46:02.550834+00:00",
+    "tensorflow": "2.20.0",
+    "tensorflow_probability": "0.25.0",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_cap_seconds": 600.0,
+    "wall_time_seconds": 106.24823831999674
+  },
+  "rung_semantics": {
+    "augmented_state_dim": "3q",
+    "hidden_dim": "q",
+    "latent_dim": "q",
+    "observation_dim": 1,
+    "parameter_dim": "9q^2+13q+2",
+    "q_values": [
+      1,
+      2,
+      5,
+      10,
+      20
+    ]
+  },
+  "rungs": [
+    {
+      "augmented_state_dim": 3,
+      "compiled_trace_counts": {
+        "score": 1,
+        "value": 1
+      },
+      "finite_difference_parameter_indices": [
+        0,
+        4,
+        8,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19,
+        22,
+        23
+      ],
+      "gpu_memory_bytes": {
+        "current": 28928,
+        "peak": 2097152
+      },
+      "hard_vetoes": [],
+      "hidden_dim": 1,
+      "latent_dim": 1,
+      "log_likelihood": -1.2564756697579393,
+      "maximum_errors": {
+        "analytic_score_finite_difference": 1.5943615316871274e-09,
+        "observation_parameter_derivative": 1.000088900582341e-12,
+        "observation_state_jacobian": 8.229389392155895e-13,
+        "repeated_score": 0.0,
+        "repeated_value": 0.0,
+        "terminal_covariance_path_difference_explanatory": 9.4754837489156e-07,
+        "transition_parameter_derivative": 8.823061205254223e-12,
+        "transition_state_jacobian": 6.661782236960789e-12,
+        "value_score_parity": 3.9535041906901824e-12
+      },
+      "memory_soft_warning": false,
+      "minimum_filtered_covariance_eigenvalue": 1.6985953286897837e-08,
+      "nonclaims": [
+        "engineering and numerical adapter evidence only",
+        "no posterior, HMC, NeuTra training, or model-adequacy claim"
+      ],
+      "observation_dim": 1,
+      "parameter_dim": 24,
+      "parameter_formula_dim": 24,
+      "process_peak_rss_bytes": 1390559232,
+      "q": 1,
+      "score_l2_norm": 2.2845803512522997,
+      "shapes": {
+        "initial_covariance": [
+          3,
+          3
+        ],
+        "innovation_covariance": [
+          1,
+          1
+        ],
+        "latent_weight": [
+          1,
+          1
+        ],
+        "lstm_bias": [
+          4,
+          1
+        ],
+        "lstm_input": [
+          4,
+          1,
+          1
+        ],
+        "lstm_recurrent": [
+          4,
+          1,
+          1
+        ],
+        "observation_weight": [
+          1,
+          1
+        ]
+      },
+      "sigma_point_count": 9,
+      "status": "PASSED",
+      "wall_time_seconds": 19.048438637983054
+    },
+    {
+      "augmented_state_dim": 6,
+      "compiled_trace_counts": {
+        "score": 1,
+        "value": 1
+      },
+      "finite_difference_parameter_indices": [
+        0,
+        16,
+        32,
+        40,
+        44,
+        46,
+        48,
+        49,
+        55,
+        61,
+        63
+      ],
+      "gpu_memory_bytes": {
+        "current": 83200,
+        "peak": 2097152
+      },
+      "hard_vetoes": [],
+      "hidden_dim": 2,
+      "latent_dim": 2,
+      "log_likelihood": -1.2624947387936074,
+      "maximum_errors": {
+        "analytic_score_finite_difference": 1.925577381762687e-09,
+        "observation_parameter_derivative": 1.000088900582341e-12,
+        "observation_state_jacobian": 7.868081186579445e-13,
+        "repeated_score": 0.0,
+        "repeated_value": 0.0,
+        "terminal_covariance_path_difference_explanatory": 1.3975739484634498e-06,
+        "transition_parameter_derivative": 9.330632783337983e-12,
+        "transition_state_jacobian": 1.884370437466032e-11,
+        "value_score_parity": 3.442690577060148e-11
+      },
+      "memory_soft_warning": false,
+      "minimum_filtered_covariance_eigenvalue": 6.828524070857361e-09,
+      "nonclaims": [
+        "engineering and numerical adapter evidence only",
+        "no posterior, HMC, NeuTra training, or model-adequacy claim"
+      ],
+      "observation_dim": 1,
+      "parameter_dim": 64,
+      "parameter_formula_dim": 64,
+      "process_peak_rss_bytes": 1909043200,
+      "q": 2,
+      "score_l2_norm": 2.296854782994298,
+      "shapes": {
+        "initial_covariance": [
+          6,
+          6
+        ],
+        "innovation_covariance": [
+          2,
+          2
+        ],
+        "latent_weight": [
+          2,
+          2
+        ],
+        "lstm_bias": [
+          4,
+          2
+        ],
+        "lstm_input": [
+          4,
+          2,
+          2
+        ],
+        "lstm_recurrent": [
+          4,
+          2,
+          2
+        ],
+        "observation_weight": [
+          1,
+          2
+        ]
+      },
+      "sigma_point_count": 17,
+      "status": "PASSED",
+      "wall_time_seconds": 23.490404930198565
+    },
+    {
+      "failure_classification": "engineering_or_numerical_rung_failure_not_research_direction_rejection",
+      "hard_vetoes": [
+        "ComplexityLadderError: value/score likelihood parity mismatch: max_abs=3.80909304098509e-10"
+      ],
+      "q": 5,
+      "status": "FAILED",
+      "wall_time_seconds": 63.55525896209292
+    }
+  ],
+  "schema": "bayesfilter.ssl_lstm.complexity_ladder.v1",
+  "source_bindings": {
+    "adapter": {
+      "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+      "sha256": "9aae9d545ebf72712f5d6be3b95e9ea47efa6761714255f2094f5145e0bf9870"
+    },
+    "plan": {
+      "path": "docs/plans/bayesfilter-ssl-lstm-complexity-ladder-plan-2026-07-18.md",
+      "sha256": "9ff3c83c571fe08f34883cab23bcc24ba5bac4a255434db282fd34a1f79cbf39"
+    },
+    "protocol": {
+      "path": "bayesfilter/nonlinear/ssl_lstm_protocol.py",
+      "sha256": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be"
+    },
+    "runner": {
+      "path": "docs/benchmarks/run_ssl_lstm_complexity_ladder_2026_07_18.py",
+      "sha256": "c7110c6bc3dc608b29cf5e78d5f2fe829d52fc9deecbd099179a1efefde5ca77"
+    }
+  },
+  "status": "STOPPED"
+}

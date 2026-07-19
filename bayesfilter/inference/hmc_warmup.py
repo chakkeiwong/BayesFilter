@@ -13,10 +13,14 @@ import hashlib
 import json
 import time
 from dataclasses import dataclass, replace
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 
+from bayesfilter.hmc_route_contract import (
+    HMC_ROUTE_CONTRACT_VERSION,
+    OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+)
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
 from bayesfilter.inference.hmc_coordinates import (
     AffineCoordinateTransform,
@@ -133,6 +137,7 @@ class MetricAdequacyDecision:
             "dense_update",
             "diagonal_fallback",
             "no_update_insufficient_metric_evidence",
+            "candidate_metric_rejected",
         }
         if outcome not in allowed:
             raise ValueError("unsupported metric adequacy outcome")
@@ -144,7 +149,10 @@ class MetricAdequacyDecision:
             if not np.all(np.isfinite(covariance)):
                 raise ValueError("adequate covariance must be finite")
             covariance.setflags(write=False)
-        if outcome == "no_update_insufficient_metric_evidence":
+        if outcome in {
+            "no_update_insufficient_metric_evidence",
+            "candidate_metric_rejected",
+        }:
             if covariance is not None or self.estimator_family is not None:
                 raise ValueError("no-update decision cannot carry an estimator")
         elif covariance is None or not self.estimator_family:
@@ -160,7 +168,7 @@ class MetricAdequacyDecision:
 
     @property
     def update_applied(self) -> bool:
-        return self.outcome != "no_update_insufficient_metric_evidence"
+        return self.outcome in {"dense_update", "diagonal_fallback"}
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -180,11 +188,20 @@ def assess_metric_covariance(
 ) -> MetricAdequacyDecision:
     """Apply the R0 dense-information and diagonal-fallback gates."""
 
-    states = np.asarray(latent_states, dtype=float)
-    if states.ndim != 2 or states.shape[0] < 2 or states.shape[1] <= 0:
-        raise ValueError("latent_states must be rank 2 with at least two rows")
-    if not np.all(np.isfinite(states)):
+    temporal = np.asarray(latent_states, dtype=float)
+    if (
+        temporal.ndim not in {2, 3}
+        or temporal.shape[0] < 2
+        or temporal.shape[-1] <= 0
+    ):
+        raise ValueError(
+            "latent_states must be draw/dimension or draw/chain/dimension"
+        )
+    if not np.all(np.isfinite(temporal)):
         raise ValueError("latent_states must be finite")
+    explicit_chains = temporal.ndim == 3
+    chain_states = temporal[:, None, :] if not explicit_chains else temporal
+    states = chain_states.reshape((-1, chain_states.shape[-1]))
     n, dimension = (int(states.shape[0]), int(states.shape[1]))
     dense_required = (
         max(64, 4 * dimension)
@@ -210,6 +227,26 @@ def assess_metric_covariance(
     if not np.isfinite(weight) or not 0.0 <= weight <= 1.0:
         raise ValueError("shrinkage must be finite and in [0, 1]")
 
+    ess_by_coordinate = _summed_chain_ess(chain_states)
+    min_ess = float(np.min(ess_by_coordinate))
+    dense_min_ess = max(8, dimension + 1)
+    diagonal_min_ess = max(4, int(np.ceil(np.log2(dimension + 1))))
+    split_rhat = _split_rhat_by_coordinate(chain_states)
+    split_rhat_finite = bool(
+        split_rhat is not None and np.all(np.isfinite(split_rhat))
+    )
+    max_split_rhat = (
+        float(np.max(split_rhat)) if split_rhat_finite else None
+    )
+    dense_chain_compatible = bool(
+        not explicit_chains
+        or (np.all(np.isfinite(split_rhat)) and max_split_rhat <= 1.10)
+    ) if split_rhat is not None else not explicit_chains
+    diagonal_chain_compatible = bool(
+        not explicit_chains
+        or (np.all(np.isfinite(split_rhat)) and max_split_rhat <= 1.25)
+    ) if split_rhat is not None else not explicit_chains
+
     welford = welford_covariance(states)
     empirical = np.asarray(welford.covariance, dtype=float)
     raw_rank = int(np.linalg.matrix_rank(empirical))
@@ -228,6 +265,8 @@ def assess_metric_covariance(
     )
     dense_checks = {
         "state_count_sufficient": n >= dense_required,
+        "effective_information_sufficient": min_ess >= dense_min_ess,
+        "cross_chain_location_compatible": dense_chain_compatible,
         "full_raw_rank": raw_rank == dimension,
         "raw_condition_acceptable": raw_condition <= 1.0e8,
         "regularization_discrepancy_acceptable": dense_discrepancy <= 0.50,
@@ -237,6 +276,31 @@ def assess_metric_covariance(
         "dimension": dimension,
         "dense_min_states": dense_required,
         "diagonal_min_states": diagonal_required,
+        "ess_method": "geyer_initial_positive_sequence_fft_autocorrelation",
+        "effective_sample_size_by_coordinate": tuple(
+            float(item) for item in ess_by_coordinate
+        ),
+        "minimum_effective_sample_size": min_ess,
+        "dense_min_effective_sample_size": dense_min_ess,
+        "diagonal_min_effective_sample_size": diagonal_min_ess,
+        "cross_chain_compatibility_method": (
+            "not_applicable_single_chain"
+            if not explicit_chains
+            else "split_rhat_adaptation_adequacy_only"
+        ),
+        "cross_chain_compatibility_status": (
+            "not_applicable"
+            if not explicit_chains
+            else "available" if split_rhat_finite else "undefined_fail_closed"
+        ),
+        "split_rhat_by_coordinate": (
+            None
+            if split_rhat is None
+            else tuple(
+                float(item) if np.isfinite(item) else None for item in split_rhat
+            )
+        ),
+        "maximum_split_rhat": max_split_rhat,
         "raw_numerical_rank": raw_rank,
         "raw_condition_number": raw_condition,
         "shrinkage": weight,
@@ -272,6 +336,8 @@ def assess_metric_covariance(
     )
     diagonal_checks = {
         "state_count_sufficient": n >= diagonal_required,
+        "effective_information_sufficient": min_ess >= diagonal_min_ess,
+        "cross_chain_location_compatible": diagonal_chain_compatible,
         "raw_variances_finite_positive": diagonal_finite_positive,
         "regularization_discrepancy_acceptable": diagonal_discrepancy <= 0.75,
     }
@@ -306,6 +372,103 @@ def assess_metric_covariance(
             "shrinkage_spd_not_treated_as_adequacy": True,
         },
     )
+
+
+def _rejected_metric_candidate(
+    decision: MetricAdequacyDecision,
+    *,
+    stage: str,
+    error: Exception,
+) -> MetricAdequacyDecision:
+    """Convert a qualified but unusable proposal into a rollback decision.
+
+    The completed HMC window and its adequacy evidence remain valid. Only the
+    proposed coordinate boundary is rejected, so the incumbent transform and
+    dual-averaging state may continue without exposing exception text.
+    """
+
+    if not decision.update_applied:
+        raise ValueError("only an adequate metric proposal can be rejected")
+    rejection_stage = str(stage)
+    if rejection_stage not in {
+        "transform_construction",
+        "affine_target_parity",
+        "reasonable_epsilon",
+    }:
+        raise ValueError("unsupported metric candidate rejection stage")
+    return MetricAdequacyDecision(
+        outcome="candidate_metric_rejected",
+        covariance=None,
+        estimator_family=None,
+        report={
+            **dict(decision.report),
+            "candidate_metric_evidence_passed": True,
+            "candidate_original_outcome": decision.outcome,
+            "candidate_estimator_family": decision.estimator_family,
+            "candidate_rejection_stage": rejection_stage,
+            "candidate_rejection_error_type": type(error).__name__,
+            "candidate_rejection_reason": (
+                f"candidate_boundary_{rejection_stage}_failed"
+            ),
+            "incumbent_metric_retained": True,
+        },
+    )
+
+
+def _summed_chain_ess(chain_states: np.ndarray) -> np.ndarray:
+    """Conservative per-coordinate ESS with time kept within each chain."""
+
+    draw_count, chain_count, dimension = chain_states.shape
+    total = np.zeros(dimension, dtype=float)
+    fft_size = 1 << int(np.ceil(np.log2(max(2, 2 * draw_count))))
+    for chain_index in range(chain_count):
+        centered = chain_states[:, chain_index, :] - np.mean(
+            chain_states[:, chain_index, :], axis=0, keepdims=True
+        )
+        spectrum = np.fft.rfft(centered, n=fft_size, axis=0)
+        autocovariance = np.fft.irfft(
+            spectrum * np.conjugate(spectrum), n=fft_size, axis=0
+        )[:draw_count]
+        variance = autocovariance[0]
+        valid = variance > np.finfo(float).eps
+        rho = np.zeros_like(autocovariance, dtype=float)
+        rho[:, valid] = autocovariance[:, valid] / variance[valid]
+        pair_sum = np.zeros(dimension, dtype=float)
+        active = valid.copy()
+        previous = np.full(dimension, np.inf, dtype=float)
+        for lag in range(1, draw_count - 1, 2):
+            pair = rho[lag] + rho[lag + 1]
+            pair = np.minimum(pair, previous)
+            positive = active & np.isfinite(pair) & (pair > 0.0)
+            pair_sum[positive] += pair[positive]
+            active &= positive
+            previous[positive] = pair[positive]
+            if not np.any(active):
+                break
+        tau = np.maximum(1.0, 1.0 + 2.0 * pair_sum)
+        chain_ess = np.zeros(dimension, dtype=float)
+        chain_ess[valid] = np.clip(draw_count / tau[valid], 1.0, draw_count)
+        total += chain_ess
+    return total
+
+
+def _split_rhat_by_coordinate(chain_states: np.ndarray) -> np.ndarray | None:
+    """Return split R-hat only when multiple explicit chains are available."""
+
+    draw_count, chain_count, _dimension = chain_states.shape
+    if chain_count < 2 or draw_count < 4:
+        return None
+    half = draw_count // 2
+    split = np.concatenate(
+        (chain_states[:half], chain_states[draw_count - half :]),
+        axis=1,
+    )
+    split_means = np.mean(split, axis=0)
+    within = np.mean(np.var(split, axis=0, ddof=1), axis=0)
+    between = half * np.var(split_means, axis=0, ddof=1)
+    variance = ((half - 1.0) / half) * within + between / half
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.sqrt(variance / within)
 
 
 def normalize_operational_warmup_config(
@@ -355,6 +518,16 @@ class _AffineWarmupAdapter:
         self.target_scope = str(target_scope)
         if not self.target_scope:
             raise ValueError("target_scope must be non-empty")
+        self.supports_retained_draw_batch = bool(
+            getattr(base_adapter, "supports_retained_draw_batch", False)
+        )
+        self.supports_retained_flat_batch = bool(
+            getattr(base_adapter, "supports_retained_flat_batch", False)
+        )
+        if self.supports_retained_draw_batch and self.supports_retained_flat_batch:
+            raise ValueError(
+                "base adapter cannot declare two retained batching contracts"
+            )
         self.runtime_backend = "bayesfilter.inference.hmc_warmup._AffineWarmupAdapter"
 
     def adapter_signature(self) -> str:
@@ -1017,6 +1190,8 @@ class OperationalWindowedWarmupResult:
     target_status_trace_policy: str
     elapsed_s: float
     status: str = "passed"
+    algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+    route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION
 
     def __post_init__(self) -> None:
         if not isinstance(self.config, WindowedMassAdaptationConfig):
@@ -1118,8 +1293,15 @@ class OperationalWindowedWarmupResult:
         target_scope = str(self.target_scope)
         target_status_policy = _target_status_policy(self.target_status_trace_policy)
         elapsed = float(self.elapsed_s)
+        algorithm_id = str(self.algorithm_id)
+        route_contract_version = str(self.route_contract_version)
         if not target_scope:
             raise ValueError("target_scope must be non-empty")
+        if (
+            algorithm_id != OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+            or route_contract_version != HMC_ROUTE_CONTRACT_VERSION
+        ):
+            raise ValueError("operational warmup route identity is invalid")
         if not np.isfinite(elapsed) or elapsed < 0.0:
             raise ValueError("elapsed_s must be finite and nonnegative")
         bank.setflags(write=False)
@@ -1131,6 +1313,8 @@ class OperationalWindowedWarmupResult:
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
         object.__setattr__(self, "elapsed_s", elapsed)
         object.__setattr__(self, "status", "passed")
+        object.__setattr__(self, "algorithm_id", algorithm_id)
+        object.__setattr__(self, "route_contract_version", route_contract_version)
         if not self.every_update_used_by_later_transition:
             raise ValueError("metric update was not used by the next real transition")
 
@@ -1172,6 +1356,8 @@ class OperationalWindowedWarmupResult:
         return {
             "schema": "bayesfilter.hmc_operational_windowed_warmup.v2",
             "status": self.status,
+            "algorithm_id": self.algorithm_id,
+            "route_contract_version": self.route_contract_version,
             "config": self.config.payload(),
             "initial_coordinate_signature": self.initial_coordinate_signature,
             "final_coordinate_signature": self.final_kernel_state.transform.signature,
@@ -1198,6 +1384,119 @@ class OperationalWindowedWarmupResult:
         }
 
 
+@dataclass(frozen=True)
+class OperationalWindowedWarmupCloseout:
+    """Public-only snapshot taken before an unstarted warmup window."""
+
+    algorithm_id: str
+    route_contract_version: str
+    boundary: str
+    completed_windows: tuple[Mapping[str, Any], ...]
+    planned_window_count: int
+    completed_transition_count: int
+    planned_transition_count: int
+    completed_segment_count: int
+    planned_segment_count: int
+    boundary_payload: Mapping[str, Any]
+    elapsed_s: float
+    status: str = "partial_timeout_closeout"
+
+    def __post_init__(self) -> None:
+        algorithm_id = str(self.algorithm_id)
+        version = str(self.route_contract_version)
+        boundary = str(self.boundary)
+        completed = tuple(dict(item) for item in self.completed_windows)
+        planned_count = int(self.planned_window_count)
+        transition_count = int(self.completed_transition_count)
+        planned_transition_count = int(self.planned_transition_count)
+        completed_segment_count = int(self.completed_segment_count)
+        planned_segment_count = int(self.planned_segment_count)
+        elapsed = float(self.elapsed_s)
+        if (
+            algorithm_id != OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+            or version != HMC_ROUTE_CONTRACT_VERSION
+            or not boundary
+        ):
+            raise ValueError("operational closeout route identity is invalid")
+        if planned_count <= 0 or len(completed) >= planned_count:
+            raise ValueError("operational closeout must be partial")
+        if (
+            transition_count < 0
+            or planned_transition_count <= 0
+            or transition_count > planned_transition_count
+            or completed_segment_count < 0
+            or planned_segment_count <= 0
+            or completed_segment_count >= planned_segment_count
+            or not np.isfinite(elapsed)
+            or elapsed < 0.0
+        ):
+            raise ValueError("operational closeout counters must be nonnegative")
+        if any(item.get("raw_states_exposed") is not False for item in completed):
+            raise ValueError("operational closeout window ledgers must be public-only")
+        object.__setattr__(self, "algorithm_id", algorithm_id)
+        object.__setattr__(self, "route_contract_version", version)
+        object.__setattr__(self, "boundary", boundary)
+        object.__setattr__(self, "completed_windows", completed)
+        object.__setattr__(self, "planned_window_count", planned_count)
+        object.__setattr__(self, "completed_transition_count", transition_count)
+        object.__setattr__(self, "planned_transition_count", planned_transition_count)
+        object.__setattr__(self, "completed_segment_count", completed_segment_count)
+        object.__setattr__(self, "planned_segment_count", planned_segment_count)
+        object.__setattr__(self, "boundary_payload", dict(self.boundary_payload))
+        object.__setattr__(self, "elapsed_s", elapsed)
+        object.__setattr__(self, "status", "partial_timeout_closeout")
+
+    def public_payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "bayesfilter.hmc_operational_windowed_warmup_closeout.v1",
+            "status": self.status,
+            "algorithm_id": self.algorithm_id,
+            "route_contract_version": self.route_contract_version,
+            "boundary": self.boundary,
+            "completed_windows": self.completed_windows,
+            "completed_window_count": len(self.completed_windows),
+            "planned_window_count": self.planned_window_count,
+            "completed_transition_count": self.completed_transition_count,
+            "planned_transition_count": self.planned_transition_count,
+            "remaining_transition_count": (
+                self.planned_transition_count - self.completed_transition_count
+            ),
+            "completed_segment_count": self.completed_segment_count,
+            "planned_segment_count": self.planned_segment_count,
+            "observed_transitions_per_second": (
+                None
+                if self.completed_transition_count == 0 or self.elapsed_s <= 0.0
+                else self.completed_transition_count / self.elapsed_s
+            ),
+            "stop_source": self.boundary_payload.get("stop_source"),
+            "stop_reason": self.boundary_payload.get("stop_reason"),
+            "supervision_counter_baseline": self.boundary_payload.get(
+                "supervision_counter_baseline"
+            ),
+            "boundary_payload": self.boundary_payload,
+            "elapsed_s": self.elapsed_s,
+            "completed_warmup_result": False,
+            "private_start_bank_exposed": False,
+            "candidate_selection_authorized": False,
+            "retuning_authorized": False,
+            "verification_authorized": False,
+            "promotion_authorized": False,
+            "legacy_fallback_used": False,
+            "reports_posterior_convergence": False,
+            "reports_sampler_superiority": False,
+            "nonclaims": OPERATIONAL_WARMUP_NONCLAIMS,
+        }
+
+
+OperationalWarmupBoundaryCallback = Callable[
+    [str, tuple[Mapping[str, Any], ...]], Mapping[str, Any] | None
+]
+OperationalWarmupSegmentCallback = Callable[
+    [str, Mapping[str, Any]], Mapping[str, Any] | None
+]
+OperationalWarmupStageCallback = Callable[[str, Mapping[str, Any]], None]
+
+
 def run_operational_windowed_warmup(
     *,
     adapter: Any,
@@ -1211,7 +1510,13 @@ def run_operational_windowed_warmup(
     target_scope: str,
     chain_execution_mode: str = "tf_function",
     target_status_trace_policy: str = "none",
-) -> OperationalWindowedWarmupResult:
+    algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+    route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION,
+    boundary_callback: OperationalWarmupBoundaryCallback | None = None,
+    execution_segment_size: int | None = None,
+    segment_callback: OperationalWarmupSegmentCallback | None = None,
+    stage_callback: OperationalWarmupStageCallback | None = None,
+) -> OperationalWindowedWarmupResult | OperationalWindowedWarmupCloseout:
     """Run real interleaved TF/TFP HMC warmup with operational metric rebuilds."""
 
     import tensorflow as tf
@@ -1267,6 +1572,19 @@ def run_operational_windowed_warmup(
         raise ValueError("operational warmup reasonable epsilon search was inconclusive")
     epsilon = float(reasonable.selected_step_size)
     windows = build_windowed_warmup_schedule(config)
+    segmented_execution = execution_segment_size is not None
+    segment_size = (
+        max(window.length for window in windows)
+        if execution_segment_size is None
+        else _strict_integer(
+            execution_segment_size,
+            name="execution_segment_size",
+            minimum=1,
+        )
+    )
+    planned_segment_count = sum(
+        (window.length + segment_size - 1) // segment_size for window in windows
+    )
     results: list[OperationalWarmupWindowResult] = []
     canonical_history: list[np.ndarray] = []
     transition_count = 0
@@ -1276,7 +1594,89 @@ def run_operational_windowed_warmup(
     previous_kernel_results: Any | None = None
     runner_generation = -1
 
+    def emit_stage(
+        event: str,
+        *,
+        stage: str,
+        window: WindowedWarmupWindow,
+        stage_started: float | None = None,
+    ) -> None:
+        if stage_callback is None:
+            return
+        payload: dict[str, Any] = {
+            "stage": str(stage),
+            "window_index": int(window.index),
+            "window_kind": str(window.kind),
+            "logical_draw_count": int(window.length),
+            "supports_retained_draw_batch": bool(
+                getattr(adapter, "supports_retained_draw_batch", False)
+            ),
+            "supports_retained_flat_batch": bool(
+                getattr(adapter, "supports_retained_flat_batch", False)
+            ),
+            "progress_only": True,
+            "states_exposed": False,
+            "scores_exposed": False,
+            "metric_exposed": False,
+            "epsilon_exposed": False,
+        }
+        if stage_started is not None:
+            payload["stage_elapsed_s"] = time.perf_counter() - stage_started
+        callback_result = stage_callback(str(event), payload)
+        if callback_result is not None:
+            raise ValueError("operational warmup stage callback must return None")
+
+    def build_closeout(
+        boundary: str,
+        payload: Mapping[str, Any] | None,
+        *,
+        completed_transitions: int,
+        completed_segments: int,
+    ) -> OperationalWindowedWarmupCloseout | None:
+        if payload is None:
+            return None
+        public_windows = tuple(item.public_payload() for item in results)
+        return OperationalWindowedWarmupCloseout(
+            algorithm_id=algorithm_id,
+            route_contract_version=route_contract_version,
+            boundary=str(boundary),
+            completed_windows=public_windows,
+            planned_window_count=len(windows),
+            completed_transition_count=completed_transitions,
+            planned_transition_count=config.warmup_steps,
+            completed_segment_count=completed_segments,
+            planned_segment_count=planned_segment_count,
+            boundary_payload=dict(payload),
+            elapsed_s=time.perf_counter() - start,
+        )
+
+    closeout = build_closeout(
+        "before_first_window",
+        None
+        if boundary_callback is None
+        else boundary_callback("before_first_window", ()),
+        completed_transitions=0,
+        completed_segments=0,
+    )
+    if closeout is not None:
+        return closeout
+
     for window in windows:
+        if results:
+            public_windows = tuple(item.public_payload() for item in results)
+            closeout = build_closeout(
+                "before_next_window",
+                None
+                if boundary_callback is None
+                else boundary_callback("before_next_window", public_windows),
+                completed_transitions=transition_count,
+                completed_segments=sum(
+                    (item.window.length + segment_size - 1) // segment_size
+                    for item in results
+                ),
+            )
+            if closeout is not None:
+                return closeout
         active_transform = kernel_state.transform
         active_metric = kernel_state.momentum_metric
         active_adapter = _AffineWarmupAdapter(
@@ -1343,15 +1743,89 @@ def run_operational_windowed_warmup(
                 else tf.function(run_window, reduce_retracing=True)
             )
         window_start = time.perf_counter()
-        checkpoint = active_runner(
-            current_latent,
-            previous_kernel_results,
-            tf.constant(window.length, dtype=tf.int32),
-            tf.constant(_seed(normalized_seed, window.index, lane=2), dtype=tf.int32),
+        segment_states: list[Any] = []
+        segment_traces: list[Mapping[str, Any]] = []
+        completed_in_window = 0
+        completed_before_window = sum(
+            (item.window.length + segment_size - 1) // segment_size for item in results
         )
-        latent_draws_tensor = checkpoint.all_states
-        trace = checkpoint.trace
-        final_kernel_results = checkpoint.final_kernel_results
+        segment_count = (window.length + segment_size - 1) // segment_size
+        final_kernel_results = previous_kernel_results
+        while completed_in_window < window.length:
+            segment_index = completed_in_window // segment_size
+            active_results = min(segment_size, window.length - completed_in_window)
+            completed_transitions = transition_count + completed_in_window
+            completed_segments = completed_before_window + segment_index
+            public_segment = {
+                "window_index": int(window.index),
+                "window_kind": str(window.kind),
+                "window_segment_index": int(segment_index),
+                "window_segment_count": int(segment_count),
+                "completed_transition_count": int(completed_transitions),
+                "planned_transition_count": int(config.warmup_steps),
+                "completed_segment_count": int(completed_segments),
+                "planned_segment_count": int(planned_segment_count),
+                "segment_transition_count": int(active_results),
+                "progress_only": True,
+                "hmc_mechanics_exposed": False,
+            }
+            closeout_payload = (
+                None
+                if segment_callback is None
+                else segment_callback("segment_start", public_segment)
+            )
+            closeout = build_closeout(
+                "before_next_segment",
+                closeout_payload,
+                completed_transitions=completed_transitions,
+                completed_segments=completed_segments,
+            )
+            if closeout is not None:
+                return closeout
+            segment_started = time.perf_counter()
+            checkpoint = active_runner(
+                current_latent,
+                final_kernel_results,
+                tf.constant(active_results, dtype=tf.int32),
+                tf.constant(
+                    _seed(
+                        normalized_seed,
+                        window.index
+                        if not segmented_execution
+                        else window.index * 100_000 + segment_index,
+                        lane=2,
+                    ),
+                    dtype=tf.int32,
+                ),
+            )
+            segment_states.append(checkpoint.all_states)
+            segment_traces.append(checkpoint.trace)
+            final_kernel_results = checkpoint.final_kernel_results
+            current_latent = checkpoint.all_states[-1]
+            completed_in_window += active_results
+            if segment_callback is not None:
+                segment_callback(
+                    "segment_complete",
+                    {
+                        **public_segment,
+                        "completed_transition_count": int(
+                            transition_count + completed_in_window
+                        ),
+                        "completed_segment_count": int(completed_segments + 1),
+                        "segment_elapsed_s": time.perf_counter() - segment_started,
+                    },
+                )
+        stage_started = time.perf_counter()
+        emit_stage(
+            "stage_start",
+            stage="post_window_conversion",
+            window=window,
+        )
+        latent_draws_tensor = tf.concat(segment_states, axis=0)
+        trace = tf.nest.map_structure(
+            lambda *parts: tf.concat(parts, axis=0),
+            *segment_traces,
+        )
         runtime_s = time.perf_counter() - window_start
         latent_draws = np.asarray(latent_draws_tensor.numpy(), dtype=float)
         if not np.all(np.isfinite(latent_draws)):
@@ -1359,6 +1833,18 @@ def run_operational_windowed_warmup(
         canonical_draws = np.asarray(active_transform.latent_to_theta(latent_draws).numpy())
         if not np.all(np.isfinite(canonical_draws)):
             raise ValueError("operational warmup produced nonfinite canonical states")
+        emit_stage(
+            "stage_complete",
+            stage="post_window_conversion",
+            window=window,
+            stage_started=stage_started,
+        )
+        stage_started = time.perf_counter()
+        emit_stage(
+            "stage_start",
+            stage="retained_target_health",
+            window=window,
+        )
         target_health = _evaluate_retained_target_health(
             adapter=active_adapter,
             samples=latent_draws,
@@ -1368,6 +1854,12 @@ def run_operational_windowed_warmup(
             raise ValueError("operational warmup retained target authority is invalid")
         if target_health["candidate_data_invalidity_reasons"]:
             raise ValueError("operational warmup retained target value/score is nonvalid")
+        emit_stage(
+            "stage_complete",
+            stage="retained_target_health",
+            window=window,
+            stage_started=stage_started,
+        )
         log_accept = np.asarray(trace["log_accept_ratio"].numpy(), dtype=float)
         if not np.all(np.isfinite(log_accept)):
             raise ValueError("operational warmup produced nonfinite log acceptance")
@@ -1441,11 +1933,29 @@ def run_operational_windowed_warmup(
         target_value_map_residual = None
         target_score_map_residual = None
         if window.update_mass:
+            stage_started = time.perf_counter()
+            emit_stage(
+                "stage_start",
+                stage="metric_assessment",
+                window=window,
+            )
             metric_decision = assess_metric_covariance(
                 latent_draws.reshape((-1, active_transform.dimension)),
                 shrinkage=config.mass_shrinkage,
             )
+            emit_stage(
+                "stage_complete",
+                stage="metric_assessment",
+                window=window,
+                stage_started=stage_started,
+            )
             if metric_decision.update_applied:
+                stage_started = time.perf_counter()
+                emit_stage(
+                    "stage_start",
+                    stage="metric_candidate_construction",
+                    window=window,
+                )
                 latent_covariance = np.asarray(metric_decision.covariance, dtype=float)
                 canonical_covariance = (
                     active_transform.factor
@@ -1456,94 +1966,204 @@ def run_operational_windowed_warmup(
                     canonical_draws.reshape((-1, active_transform.dimension)),
                     axis=0,
                 )
-                estimate = PositionCovarianceEstimate(
-                    center=canonical_mean,
-                    covariance=canonical_covariance,
-                    source_coordinate_signature=active_transform.signature,
-                    estimator_family=str(metric_decision.estimator_family),
-                    state_count=int(latent_draws.reshape((-1, active_transform.dimension)).shape[0]),
-                    effective_rank=int(np.linalg.matrix_rank(latent_covariance)),
-                    regularization_report=metric_decision.report,
-                    adequacy_report={
-                        "outcome": metric_decision.outcome,
-                        "passed": True,
-                    },
+                try:
+                    estimate = PositionCovarianceEstimate(
+                        center=canonical_mean,
+                        covariance=canonical_covariance,
+                        source_coordinate_signature=active_transform.signature,
+                        estimator_family=str(metric_decision.estimator_family),
+                        state_count=int(
+                            latent_draws.reshape(
+                                (-1, active_transform.dimension)
+                            ).shape[0]
+                        ),
+                        effective_rank=int(np.linalg.matrix_rank(latent_covariance)),
+                        regularization_report=metric_decision.report,
+                        adequacy_report={
+                            "outcome": metric_decision.outcome,
+                            "passed": True,
+                        },
+                    )
+                    candidate_transform = (
+                        AffineCoordinateTransform.from_covariance_estimate(estimate)
+                    )
+                    candidate_metric = MomentumMetric.identity_for(
+                        candidate_transform
+                    )
+                    if candidate_transform.signature == active_transform.signature:
+                        raise ValueError(
+                            "metric update did not produce a new coordinate signature"
+                        )
+                except (TypeError, ValueError, np.linalg.LinAlgError) as exc:
+                    metric_decision = _rejected_metric_candidate(
+                        metric_decision,
+                        stage="transform_construction",
+                        error=exc,
+                    )
+                emit_stage(
+                    "stage_complete",
+                    stage="metric_candidate_construction",
+                    window=window,
+                    stage_started=stage_started,
                 )
-                next_transform = AffineCoordinateTransform.from_covariance_estimate(estimate)
-                next_metric = MomentumMetric.identity_for(next_transform)
+
+            if metric_decision.update_applied:
+                stage_started = time.perf_counter()
+                emit_stage(
+                    "stage_start",
+                    stage="metric_candidate_affine_parity",
+                    window=window,
+                )
+                averaged_log_step = np.asarray(
+                    final_kernel_results.log_averaging_step[0], dtype=float
+                )
+                candidate_epsilon_start = float(
+                    np.exp(np.reshape(averaged_log_step, [-1])[-1])
+                )
+                try:
+                    mapped_latent = np.asarray(
+                        candidate_transform.theta_to_latent(final_theta).numpy(),
+                        dtype=float,
+                    )
+                    candidate_adapter = _AffineWarmupAdapter(
+                        base_adapter=adapter,
+                        transform=candidate_transform,
+                        target_scope=target_scope,
+                    )
+                    base_value, base_score = adapter.log_prob_and_grad(
+                        tf.convert_to_tensor(final_theta, dtype=tf.float64)
+                    )
+                    old_value, old_score = active_adapter.log_prob_and_grad(
+                        tf.convert_to_tensor(final_latent, dtype=tf.float64)
+                    )
+                    new_value, new_score = candidate_adapter.log_prob_and_grad(
+                        tf.convert_to_tensor(mapped_latent, dtype=tf.float64)
+                    )
+                    base_value_array = np.asarray(base_value.numpy(), dtype=float)
+                    candidate_value_residual = float(
+                        max(
+                            np.max(
+                                np.abs(
+                                    np.asarray(old_value.numpy()) - base_value_array
+                                )
+                            ),
+                            np.max(
+                                np.abs(
+                                    np.asarray(new_value.numpy()) - base_value_array
+                                )
+                            ),
+                        )
+                    )
+                    expected_old_score = np.asarray(
+                        active_transform.theta_score_to_latent_score(
+                            base_score
+                        ).numpy(),
+                        dtype=float,
+                    )
+                    expected_new_score = np.asarray(
+                        candidate_transform.theta_score_to_latent_score(
+                            base_score
+                        ).numpy(),
+                        dtype=float,
+                    )
+                    candidate_score_residual = float(
+                        max(
+                            np.max(
+                                np.abs(
+                                    np.asarray(old_score.numpy())
+                                    - expected_old_score
+                                )
+                            ),
+                            np.max(
+                                np.abs(
+                                    np.asarray(new_score.numpy())
+                                    - expected_new_score
+                                )
+                            ),
+                        )
+                    )
+                    if (
+                        candidate_value_residual > 1.0e-10
+                        or candidate_score_residual > 1.0e-10
+                    ):
+                        raise ValueError(
+                            "target value/score changed across the metric boundary"
+                        )
+                except (
+                    TypeError,
+                    ValueError,
+                    np.linalg.LinAlgError,
+                    tf.errors.InvalidArgumentError,
+                ) as exc:
+                    metric_decision = _rejected_metric_candidate(
+                        metric_decision,
+                        stage="affine_target_parity",
+                        error=exc,
+                    )
+                emit_stage(
+                    "stage_complete",
+                    stage="metric_candidate_affine_parity",
+                    window=window,
+                    stage_started=stage_started,
+                )
+
+            if metric_decision.update_applied:
+                stage_started = time.perf_counter()
+                emit_stage(
+                    "stage_start",
+                    stage="metric_boundary_reasonable_epsilon",
+                    window=window,
+                )
+                try:
+                    candidate_reasonable = find_reasonable_epsilon(
+                        adapter=candidate_adapter,
+                        current_state=mapped_latent,
+                        initial_step_size=candidate_epsilon_start,
+                        seed=_seed(normalized_seed, window.index, lane=3),
+                        target_status_trace_policy=target_status_policy,
+                    )
+                    if (
+                        not candidate_reasonable.passed
+                        or candidate_reasonable.selected_step_size is None
+                    ):
+                        raise ValueError(
+                            "metric-boundary reasonable epsilon search was inconclusive"
+                        )
+                except (
+                    TypeError,
+                    ValueError,
+                    RuntimeError,
+                    tf.errors.InvalidArgumentError,
+                ) as exc:
+                    metric_decision = _rejected_metric_candidate(
+                        metric_decision,
+                        stage="reasonable_epsilon",
+                        error=exc,
+                    )
+                emit_stage(
+                    "stage_complete",
+                    stage="metric_boundary_reasonable_epsilon",
+                    window=window,
+                    stage_started=stage_started,
+                )
+
+            if metric_decision.update_applied:
+                next_transform = candidate_transform
+                next_metric = candidate_metric
                 next_coordinate_signature = next_transform.signature
                 next_metric_signature = next_metric.signature
+                target_value_map_residual = candidate_value_residual
+                target_score_map_residual = candidate_score_residual
+                next_reasonable_epsilon = candidate_reasonable
+                epsilon_end = float(candidate_reasonable.selected_step_size)
+                active_adaptive_kernel = None
+                active_runner = None
+                previous_kernel_results = None
 
         metric_update_applied = (
             metric_decision is not None and metric_decision.update_applied
         )
-        transform_changed = next_transform.signature != active_transform.signature
-        if metric_update_applied:
-            if not transform_changed:
-                raise ValueError("metric update did not produce a new coordinate signature")
-            averaged_log_step = np.asarray(
-                final_kernel_results.log_averaging_step[0], dtype=float
-            )
-            epsilon_end = float(np.exp(np.reshape(averaged_log_step, [-1])[-1]))
-            mapped_latent = np.asarray(
-                next_transform.theta_to_latent(final_theta).numpy(), dtype=float
-            )
-            next_adapter = _AffineWarmupAdapter(
-                base_adapter=adapter,
-                transform=next_transform,
-                target_scope=target_scope,
-            )
-            base_value, base_score = adapter.log_prob_and_grad(
-                tf.convert_to_tensor(final_theta, dtype=tf.float64)
-            )
-            old_value, old_score = active_adapter.log_prob_and_grad(
-                tf.convert_to_tensor(final_latent, dtype=tf.float64)
-            )
-            new_value, new_score = next_adapter.log_prob_and_grad(
-                tf.convert_to_tensor(mapped_latent, dtype=tf.float64)
-            )
-            base_value_array = np.asarray(base_value.numpy(), dtype=float)
-            target_value_map_residual = float(
-                max(
-                    np.max(np.abs(np.asarray(old_value.numpy()) - base_value_array)),
-                    np.max(np.abs(np.asarray(new_value.numpy()) - base_value_array)),
-                )
-            )
-            expected_old_score = np.asarray(
-                active_transform.theta_score_to_latent_score(base_score).numpy(),
-                dtype=float,
-            )
-            expected_new_score = np.asarray(
-                next_transform.theta_score_to_latent_score(base_score).numpy(),
-                dtype=float,
-            )
-            target_score_map_residual = float(
-                max(
-                    np.max(np.abs(np.asarray(old_score.numpy()) - expected_old_score)),
-                    np.max(np.abs(np.asarray(new_score.numpy()) - expected_new_score)),
-                )
-            )
-            if target_value_map_residual > 1.0e-10 or target_score_map_residual > 1.0e-10:
-                raise ValueError("target value/score changed across the metric boundary")
-            next_reasonable_epsilon = find_reasonable_epsilon(
-                adapter=next_adapter,
-                current_state=mapped_latent,
-                initial_step_size=epsilon_end,
-                seed=_seed(normalized_seed, window.index, lane=3),
-                target_status_trace_policy=target_status_policy,
-            )
-            if (
-                not next_reasonable_epsilon.passed
-                or next_reasonable_epsilon.selected_step_size is None
-            ):
-                raise ValueError(
-                    "metric-boundary reasonable epsilon search was inconclusive"
-                )
-            epsilon_end = float(next_reasonable_epsilon.selected_step_size)
-            active_adaptive_kernel = None
-            active_runner = None
-            previous_kernel_results = None
-        else:
+        if not metric_update_applied:
             previous_kernel_results = final_kernel_results
 
         mapped_latent = np.asarray(
@@ -1630,7 +2250,10 @@ def run_operational_windowed_warmup(
     history = np.asarray(results[-1].adaptation_canonical_states, dtype=float).reshape(
         (-1, initial_transform.dimension)
     )
-    bank = build_private_start_bank(history)
+    bank = build_private_start_bank(
+        history,
+        reference_transform=kernel_state.transform,
+    )
     result = OperationalWindowedWarmupResult(
         config=config,
         initial_coordinate_signature=initial_transform.signature,
@@ -1642,30 +2265,59 @@ def run_operational_windowed_warmup(
         target_scope=str(target_scope),
         target_status_trace_policy=target_status_policy,
         elapsed_s=time.perf_counter() - start,
+        algorithm_id=algorithm_id,
+        route_contract_version=route_contract_version,
     )
     return result
 
 
-def build_private_start_bank(canonical_states: Any) -> np.ndarray:
-    """Select four approximately spaced distinct states, including the endpoint."""
+def build_private_start_bank(
+    canonical_states: Any,
+    *,
+    reference_transform: AffineCoordinateTransform | None = None,
+    minimum_relative_separation: float = 1.0e-4,
+) -> np.ndarray:
+    """Select canonical starts with material separation in reference geometry."""
 
     states = np.asarray(canonical_states, dtype=float)
     if states.ndim != 2 or states.shape[0] < 4 or not np.all(np.isfinite(states)):
         raise ValueError("start bank source must contain at least four finite states")
-    scale = max(float(np.linalg.norm(np.std(states, axis=0))), 1.0)
-    tolerance = 1.0e-10 * scale
-    endpoint = states[-1]
-    eligible: list[np.ndarray] = []
-    for row in states[:-1]:
-        if np.linalg.norm(row - endpoint) <= tolerance:
+    if reference_transform is not None and not isinstance(
+        reference_transform, AffineCoordinateTransform
+    ):
+        raise TypeError("reference_transform must be an AffineCoordinateTransform")
+    separation = float(minimum_relative_separation)
+    if not np.isfinite(separation) or separation <= 0.0:
+        raise ValueError("minimum_relative_separation must be finite and positive")
+    reference = (
+        states
+        if reference_transform is None
+        else np.asarray(reference_transform.theta_to_latent(states).numpy(), dtype=float)
+    )
+    reference_scale = max(
+        float(np.sqrt(states.shape[1])),
+        float(np.linalg.norm(np.std(reference, axis=0))),
+    )
+    tolerance = separation * reference_scale
+    endpoint_index = states.shape[0] - 1
+    eligible_indices: list[int] = []
+    for index in range(endpoint_index):
+        if np.linalg.norm(reference[index] - reference[endpoint_index]) <= tolerance:
             continue
-        if all(np.linalg.norm(row - existing) > tolerance for existing in eligible):
-            eligible.append(row)
-    if len(eligible) < 3:
+        if all(
+            np.linalg.norm(reference[index] - reference[existing]) > tolerance
+            for existing in eligible_indices
+        ):
+            eligible_indices.append(index)
+    if len(eligible_indices) < 3:
         raise ValueError("operational warmup start bank is not sufficiently dispersed")
-    indices = np.linspace(0, len(eligible) - 1, 3, dtype=int)
-    bank = np.vstack([eligible[index] for index in indices] + [endpoint]).astype(float)
-    pairwise = np.linalg.norm(bank[:, None, :] - bank[None, :, :], axis=-1)
+    selected = np.linspace(0, len(eligible_indices) - 1, 3, dtype=int)
+    bank_indices = [eligible_indices[index] for index in selected] + [endpoint_index]
+    bank = states[bank_indices].astype(float, copy=True)
+    reference_bank = reference[bank_indices]
+    pairwise = np.linalg.norm(
+        reference_bank[:, None, :] - reference_bank[None, :, :], axis=-1
+    )
     if np.any(pairwise[np.triu_indices(4, k=1)] <= tolerance):
         raise ValueError("operational warmup start bank is not sufficiently dispersed")
     bank.setflags(write=False)

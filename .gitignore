@@ -52,6 +52,50 @@ build/
 !docs/plans/ledh-phase7-ksc-sv-forward-scalar-artifact-2026-07-07.json
 !docs/plans/ledh-phase7-ksc-sv-forward-scalar-tiny-smoke-artifact-2026-07-07.json
 
+# SSL-LSTM public receipts substantiate the tracked phase results. Keep those
+# JSON artifacts visible while excluding mutable restart state and raw/private
+# payloads that the receipts and private manifests identify by hash.
+!docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/*.json
+!docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/*.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/failed-attempt-*/
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/failed-attempt-*/
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/checkpoint-*.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/checkpoint-*.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/progress.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/progress.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/terminal-state.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/terminal-state.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/best-state.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/best-state.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/final-state.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/final-state.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/resource-stop-checkpoint.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/resource-stop-checkpoint.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/*private*/**/*.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/*private*/**/*.json
+!docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/*_private_manifest.json
+!docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/*_private_manifest.json
+
+# Historical bulk references and superseded tuning attempts are reproducible
+# inputs/intermediates. Compact verification, terminal result, policy, and
+# summary receipts remain visible above.
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a1/pre-run-outside-write-set-inventory.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a2/
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a3/oracle-cpu-reference.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a3/oracle-gpu-xla-canary.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/trials/
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-timing-smoke-gpu1-2026-07-15/
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-2/dense-iaf-gpu-xla-canary.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-3/trainer-gpu-xla-canary.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-3/trainer-gpu-xla-canary-r2.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-5-trial0-gh/cpu-reference.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-5-trial0-gh/gpu-xla.json
+
+# Raw sampler states and local tuning databases are reproducible execution
+# state, not compact promotion or claim evidence.
+*.tftensor
+*.sqlite3
+
 # Local benchmark execution byproducts. Keep authored harnesses, compact result
 # JSON/Markdown, strict manifests, and compressed claim archives trackable.
 docs/benchmarks/**/*.txt

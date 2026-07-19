@@ -35,6 +35,8 @@ _PATH_RETURN_LAGS = tuple(range(2, 17))
 _PATH_RETURN_MAX_FRACTION = 0.95
 _PATH_RETURN_ATOL = 1.0e-12
 _PATH_RETURN_RTOL = 1.0e-10
+_TARGET_HEALTH_BATCH_DRAWS = 16
+_CHAIN_MEAN_UNCERTAINTY_METHOD = "two_sided_hoeffding_independent_chains"
 
 _SHARED_INVALIDITY_REASON_CODES = frozenset(
     {
@@ -130,12 +132,13 @@ def _evaluate_retained_target_health(
     samples: Any,
     target_status_trace_policy: str = "none",
 ) -> Mapping[str, Any]:
-    """Recheck retained values/scores in bounded per-draw target batches.
+    """Recheck retained values/scores in bounded draw batches.
 
     TFP's standard trace exposes accepted target values but not accepted scores.
-    Operational tuning calls this only after a bounded run has returned.  Each
-    evaluation retains the run's existing chain batch shape, avoiding a new
-    draw-by-chain batch contract or a large temporary target graph.
+    Operational tuning calls this only after a bounded run has returned. Each
+    evaluation retains the run's draw/chain axes. A non-finite chunk is
+    refined only to locate its first invalid logical draw; refinement calls do
+    not inflate ``evaluated_draw_count``.
     """
 
     policy = str(target_status_trace_policy)
@@ -192,35 +195,98 @@ def _evaluate_retained_target_health(
     status_failure_count = 0
     evaluated = 0
     shared: list[str] = []
-    for draw in array:
-        expected_value_shape = tuple(int(item) for item in draw.shape[:-1])
+
+    def evaluate_value_score(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        value, score = evaluator(tf.convert_to_tensor(values, dtype=tf.float64))
+        return (
+            np.asarray(value.numpy() if hasattr(value, "numpy") else value, dtype=float),
+            np.asarray(score.numpy() if hasattr(score, "numpy") else score, dtype=float),
+        )
+
+    supports_draw_batch = bool(
+        getattr(adapter, "supports_retained_draw_batch", False)
+    )
+    supports_flat_batch = bool(
+        getattr(adapter, "supports_retained_flat_batch", False)
+    )
+    if supports_draw_batch and supports_flat_batch:
+        raise ValueError("adapter cannot declare two retained batching contracts")
+    batch_draws = (
+        _TARGET_HEALTH_BATCH_DRAWS
+        if supports_draw_batch or supports_flat_batch
+        else 1
+    )
+    for start in range(0, int(array.shape[0]), batch_draws):
+        chunk = array[start : start + batch_draws]
+        callback_values = (
+            chunk
+            if supports_draw_batch
+            else (
+                chunk.reshape((-1, chunk.shape[-1]))
+                if supports_flat_batch
+                else chunk[0]
+            )
+        )
+        expected_value_shape = tuple(int(item) for item in chunk.shape[:-1])
+        callback_value_shape = (
+            expected_value_shape
+            if supports_draw_batch
+            else tuple(int(item) for item in callback_values.shape[:-1])
+        )
         try:
-            value, score = evaluator(tf.convert_to_tensor(draw, dtype=tf.float64))
-            value_array = np.asarray(
-                value.numpy() if hasattr(value, "numpy") else value,
-                dtype=float,
-            )
-            score_array = np.asarray(
-                score.numpy() if hasattr(score, "numpy") else score,
-                dtype=float,
-            )
+            value_array, score_array = evaluate_value_score(callback_values)
         except Exception:  # noqa: BLE001 - target callback authority is broken.
             value_finite = False
             score_finite = False
             shared.append("shared_callback_invalid")
             break
-        if value_array.shape != expected_value_shape or score_array.shape != draw.shape:
+        if (
+            value_array.shape != callback_value_shape
+            or score_array.shape != callback_values.shape
+        ):
             shared.append("target_value_score_shape_invalid")
             break
-        value_finite = value_finite and bool(np.all(np.isfinite(value_array)))
-        score_finite = score_finite and bool(np.all(np.isfinite(score_array)))
-        if not value_finite or not score_finite:
-            evaluated += 1
+        if supports_flat_batch:
+            value_array = value_array.reshape(expected_value_shape)
+            score_array = score_array.reshape(chunk.shape)
+        chunk_value_finite = bool(np.all(np.isfinite(value_array)))
+        chunk_score_finite = bool(np.all(np.isfinite(score_array)))
+        if not chunk_value_finite or not chunk_score_finite:
+            # Refine only the first failing chunk. Count unique logical draws,
+            # not the diagnostic callback invocations used for localization.
+            for offset, draw in enumerate(chunk):
+                draw_expected_shape = tuple(int(item) for item in draw.shape[:-1])
+                try:
+                    draw_value, draw_score = evaluate_value_score(draw)
+                except Exception:  # noqa: BLE001 - callback authority is broken.
+                    evaluated += offset
+                    value_finite = False
+                    score_finite = False
+                    shared.append("shared_callback_invalid")
+                    break
+                if (
+                    draw_value.shape != draw_expected_shape
+                    or draw_score.shape != draw.shape
+                ):
+                    evaluated += offset
+                    shared.append("target_value_score_shape_invalid")
+                    break
+                draw_value_finite = bool(np.all(np.isfinite(draw_value)))
+                draw_score_finite = bool(np.all(np.isfinite(draw_score)))
+                if not draw_value_finite or not draw_score_finite:
+                    evaluated += offset + 1
+                    value_finite = draw_value_finite
+                    score_finite = draw_score_finite
+                    break
+            else:
+                # A failure that exists only in the batched callback cannot be
+                # assigned to a logical draw under the declared contract.
+                shared.append("shared_schema_invalid")
             break
         if policy == "per_chain_step":
             try:
                 status_payload = telemetry(
-                    tf.convert_to_tensor(draw, dtype=tf.float64)
+                    tf.convert_to_tensor(callback_values, dtype=tf.float64)
                 )
             except Exception:  # noqa: BLE001 - target callback authority is broken.
                 shared.append("shared_callback_invalid")
@@ -234,18 +300,64 @@ def _evaluate_retained_target_health(
                 }
                 if target_status_telemetry_has_failure(
                     status_arrays,
-                    expected_shape=expected_value_shape,
+                    expected_shape=callback_value_shape,
                 ):
-                    status = status_arrays["status_code"]
-                    valid = status_arrays["valid_pre_regularized_score"].astype(
-                        bool,
-                        copy=False,
-                    )
-                    status_failure_count += int(np.sum((status != 0) | (~valid)))
+                    if batch_draws == 1:
+                        status = status_arrays["status_code"]
+                        valid = status_arrays[
+                            "valid_pre_regularized_score"
+                        ].astype(bool, copy=False)
+                        status_failure_count += int(
+                            np.sum((status != 0) | (~valid))
+                        )
+                        evaluated += 1
+                        break
+                    for offset, draw in enumerate(chunk):
+                        draw_expected_shape = tuple(
+                            int(item) for item in draw.shape[:-1]
+                        )
+                        try:
+                            draw_payload = telemetry(
+                                tf.convert_to_tensor(draw, dtype=tf.float64)
+                            )
+                        except Exception:  # noqa: BLE001 - callback authority is broken.
+                            evaluated += offset
+                            shared.append("shared_callback_invalid")
+                            break
+                        try:
+                            draw_arrays = {
+                                key: np.asarray(
+                                    item.numpy() if hasattr(item, "numpy") else item
+                                )
+                                for key, item in draw_payload.items()
+                            }
+                            draw_failed = target_status_telemetry_has_failure(
+                                draw_arrays,
+                                expected_shape=draw_expected_shape,
+                            )
+                        except (AttributeError, TypeError, ValueError):
+                            evaluated += offset
+                            shared.append("shared_schema_invalid")
+                            break
+                        if draw_failed:
+                            status = draw_arrays["status_code"]
+                            valid = draw_arrays[
+                                "valid_pre_regularized_score"
+                            ].astype(bool, copy=False)
+                            status_failure_count += int(
+                                np.sum((status != 0) | (~valid))
+                            )
+                            evaluated += offset + 1
+                            break
+                    else:
+                        # A batched-only failure that cannot be reproduced per
+                        # logical draw violates the declared adapter contract.
+                        shared.append("shared_schema_invalid")
+                    break
             except (AttributeError, TypeError, ValueError):
                 shared.append("shared_schema_invalid")
                 break
-        evaluated += 1
+        evaluated += int(chunk.shape[0])
 
     candidate: list[str] = []
     if not shared:
@@ -353,11 +465,13 @@ class HMCAcceptancePolicy:
 
     @property
     def student_critical_value(self) -> float:
+        """Deprecated v3 compatibility value; not used by v4 evidence."""
+
         return 2.3533634348
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_acceptance_policy.v3",
+            "schema": "bayesfilter.hmc_acceptance_policy.v4",
             "target": self.target,
             "practical_region": self.practical_region,
             "repair_region": self.repair_region,
@@ -366,7 +480,6 @@ class HMCAcceptancePolicy:
             "min_block_size": self.min_block_size,
             "min_decisions_per_chain": self.min_decisions_per_chain,
             "confidence_level": self.confidence_level,
-            "student_critical_value": self.student_critical_value,
             "min_movement_rate": self.min_movement_rate,
             "max_repeated_state_fraction": self.max_repeated_state_fraction,
             "min_normalized_return_displacement": (
@@ -385,7 +498,9 @@ class HMCAcceptancePolicy:
                 self.max_abs_log_accept_energy_proxy
             ),
             "allowed_cost_stop_reasons": self.allowed_cost_stop_reasons,
-            "dependence_unit": "contiguous_chain_block_mean",
+            "dependence_unit": "independently_seeded_chain_mean",
+            "uncertainty_method": _CHAIN_MEAN_UNCERTAINTY_METHOD,
+            "tuning_decision_role": "bounded_adaptation_heuristic_not_confidence_test",
             "diagnostic_roles": {
                 "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
                 "movement": "promotion_veto_and_trajectory_repair_trigger",
@@ -406,8 +521,9 @@ class HMCAcceptanceEvidence:
     evidence_validity: str
     acceptance_decision: str
     pooled_mean: float | None
-    interval: tuple[float, float] | None
-    standard_error: float | None
+    chain_mean_uncertainty_interval: tuple[float, float] | None
+    chain_mean_uncertainty_method: str | None
+    chain_mean_uncertainty_level: float | None
     chain_means: tuple[float, ...]
     block_means_by_chain: tuple[tuple[float, ...], ...]
     realized_acceptance_rate: float | None
@@ -487,7 +603,7 @@ class HMCAcceptanceEvidence:
         if validity != "valid" and decision != "unavailable":
             raise ValueError("invalid evidence must mark acceptance unavailable")
         if validity == "valid" and decision == "unavailable":
-            raise ValueError("finite valid v3 evidence cannot mark acceptance unavailable")
+            raise ValueError("finite valid v4 evidence cannot mark acceptance unavailable")
         allowed_invalidity = (
             _SHARED_INVALIDITY_REASON_CODES
             if validity == "shared_execution_invalid"
@@ -497,25 +613,33 @@ class HMCAcceptanceEvidence:
             raise ValueError("engineering invalidity contains an unsupported reason code")
 
         interval = None
-        if self.interval is not None:
-            interval = tuple(float(item) for item in self.interval)
+        if self.chain_mean_uncertainty_interval is not None:
+            interval = tuple(float(item) for item in self.chain_mean_uncertainty_interval)
             if len(interval) != 2 or not np.all(np.isfinite(interval)):
-                raise ValueError("interval must contain two finite values")
-            if interval[0] > interval[1]:
-                raise ValueError("interval must be ordered")
-        object.__setattr__(self, "interval", interval)
-        for name in ("pooled_mean", "standard_error"):
-            value = getattr(self, name)
-            if value is not None:
-                value = float(value)
-                if not np.isfinite(value):
-                    raise ValueError(f"{name} must be finite when provided")
-                object.__setattr__(self, name, value)
+                raise ValueError("uncertainty interval must contain two finite values")
+            if interval[0] > interval[1] or interval[0] < 0.0 or interval[1] > 1.0:
+                raise ValueError("uncertainty interval must be ordered inside [0, 1]")
+        object.__setattr__(self, "chain_mean_uncertainty_interval", interval)
+        method = self.chain_mean_uncertainty_method
+        level = self.chain_mean_uncertainty_level
+        if interval is None:
+            if method is not None or level is not None:
+                raise ValueError("missing uncertainty interval cannot carry its metadata")
+        else:
+            if method != _CHAIN_MEAN_UNCERTAINTY_METHOD:
+                raise ValueError("unsupported chain-mean uncertainty method")
+            level = float(level) if level is not None else float("nan")
+            if not np.isfinite(level) or not 0.0 < level < 1.0:
+                raise ValueError("uncertainty level must be inside (0, 1)")
+        object.__setattr__(self, "chain_mean_uncertainty_method", method)
+        object.__setattr__(self, "chain_mean_uncertainty_level", level)
+        if self.pooled_mean is not None:
+            pooled_mean = float(self.pooled_mean)
+            if not np.isfinite(pooled_mean):
+                raise ValueError("pooled_mean must be finite when provided")
+            object.__setattr__(self, "pooled_mean", pooled_mean)
         if self.pooled_mean is not None and not 0.0 <= self.pooled_mean <= 1.0:
             raise ValueError("pooled_mean must lie inside [0, 1]")
-        if self.standard_error is not None and self.standard_error < 0.0:
-            raise ValueError("standard_error must be nonnegative")
-
         for name in (
             "chain_means",
             "realized_acceptance_rate_by_chain",
@@ -574,7 +698,6 @@ class HMCAcceptanceEvidence:
                 (
                     self.pooled_mean is not None,
                     interval is not None,
-                    self.standard_error is not None,
                     bool(self.chain_means),
                     bool(block_means),
                     self.realized_acceptance_rate is not None,
@@ -605,7 +728,7 @@ class HMCAcceptanceEvidence:
                 raise ValueError("invalid evidence cannot carry candidate action roles")
         else:
             _validate_valid_acceptance_summary(self, block_means)
-            _validate_v3_roles(self)
+            _validate_v4_roles(self)
         object.__setattr__(self, "evidence_validity", validity)
         object.__setattr__(self, "acceptance_decision", decision)
 
@@ -614,6 +737,18 @@ class HMCAcceptanceEvidence:
         """Deprecated acceptance-only alias; never encodes validity or promotion."""
 
         return self.acceptance_decision
+
+    @property
+    def interval(self) -> tuple[float, float] | None:
+        """Deprecated alias for the explanatory v4 chain-mean interval."""
+
+        return self.chain_mean_uncertainty_interval
+
+    @property
+    def standard_error(self) -> None:
+        """The v3 pseudo-standard-error has no v4 statistical meaning."""
+
+        return None
 
     @property
     def hard_health_failures(self) -> tuple[str, ...]:
@@ -636,7 +771,7 @@ class HMCAcceptanceEvidence:
 
     @property
     def passed(self) -> bool:
-        """Compatibility flag with safe v3 promotion semantics."""
+        """Compatibility flag with safe v4 promotion semantics."""
 
         return self.promotion_eligible
 
@@ -652,7 +787,7 @@ class HMCAcceptanceEvidence:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_acceptance_evidence.v3",
+            "schema": "bayesfilter.hmc_acceptance_evidence.v4",
             "evidence_validity": self.evidence_validity,
             "acceptance_decision": self.acceptance_decision,
             "decision": self.acceptance_decision,
@@ -660,8 +795,9 @@ class HMCAcceptanceEvidence:
             "promotion_eligible": self.promotion_eligible,
             "repair_direction": self.repair_direction,
             "pooled_mean": self.pooled_mean,
-            "interval": self.interval,
-            "standard_error": self.standard_error,
+            "chain_mean_uncertainty_interval": self.chain_mean_uncertainty_interval,
+            "chain_mean_uncertainty_method": self.chain_mean_uncertainty_method,
+            "chain_mean_uncertainty_level": self.chain_mean_uncertainty_level,
             "chain_means": self.chain_means,
             "block_means_by_chain": self.block_means_by_chain,
             "realized_acceptance_rate": self.realized_acceptance_rate,
@@ -699,11 +835,11 @@ class HMCAcceptanceEvidence:
 def hmc_acceptance_evidence_from_payload(
     payload: Mapping[str, Any],
 ) -> HMCAcceptanceEvidence:
-    """Reconstruct and fully validate one v3 acceptance-evidence payload."""
+    """Reconstruct and fully validate one live v4 acceptance-evidence payload."""
 
     if not isinstance(payload, Mapping):
         raise TypeError("acceptance evidence payload must be a mapping")
-    if payload.get("schema") != "bayesfilter.hmc_acceptance_evidence.v3":
+    if payload.get("schema") != "bayesfilter.hmc_acceptance_evidence.v4":
         raise ValueError("acceptance evidence schema mismatch")
     expected_keys = {
         "schema",
@@ -714,8 +850,9 @@ def hmc_acceptance_evidence_from_payload(
         "promotion_eligible",
         "repair_direction",
         "pooled_mean",
-        "interval",
-        "standard_error",
+        "chain_mean_uncertainty_interval",
+        "chain_mean_uncertainty_method",
+        "chain_mean_uncertainty_level",
         "chain_means",
         "block_means_by_chain",
         "realized_acceptance_rate",
@@ -755,8 +892,15 @@ def hmc_acceptance_evidence_from_payload(
         evidence_validity=str(payload.get("evidence_validity", "")),
         acceptance_decision=str(payload.get("acceptance_decision", "")),
         pooled_mean=payload.get("pooled_mean"),
-        interval=None if payload.get("interval") is None else tuple(payload["interval"]),
-        standard_error=payload.get("standard_error"),
+        chain_mean_uncertainty_interval=(
+            None
+            if payload.get("chain_mean_uncertainty_interval") is None
+            else tuple(payload["chain_mean_uncertainty_interval"])
+        ),
+        chain_mean_uncertainty_method=payload.get(
+            "chain_mean_uncertainty_method"
+        ),
+        chain_mean_uncertainty_level=payload.get("chain_mean_uncertainty_level"),
         chain_means=tuple(payload.get("chain_means", ())),
         block_means_by_chain=tuple(tuple(row) for row in payload.get("block_means_by_chain", ())),
         realized_acceptance_rate=payload.get("realized_acceptance_rate"),
@@ -802,6 +946,38 @@ def hmc_acceptance_evidence_from_payload(
     if payload.get("compatibility_aliases_non_authoritative") is not True:
         raise ValueError("acceptance evidence compatibility marker is inconsistent")
     return evidence
+
+
+def hmc_acceptance_evidence_v3_migration_view(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Expose historical v3 evidence without granting v4 promotion authority."""
+
+    if not isinstance(payload, Mapping):
+        raise TypeError("legacy v3 acceptance evidence must be a mapping")
+    if payload.get("schema") != "bayesfilter.hmc_acceptance_evidence.v3":
+        raise ValueError("legacy v3 acceptance evidence schema mismatch")
+    required = {
+        "acceptance_decision",
+        "promotion_eligible",
+        "interval",
+        "standard_error",
+    }
+    if not required.issubset(payload):
+        raise ValueError("legacy v3 acceptance evidence is incomplete")
+    return {
+        "schema": "bayesfilter.hmc_acceptance_evidence_v3_migration_view.v1",
+        "source_schema": "bayesfilter.hmc_acceptance_evidence.v3",
+        "acceptance_decision": "recompute_required",
+        "promotion_eligible": False,
+        "promotion_eligible_under_v4": False,
+        "historical_v3_acceptance_decision": payload["acceptance_decision"],
+        "historical_v3_promotion_eligible": payload["promotion_eligible"],
+        "historical_v3_interval": payload["interval"],
+        "historical_v3_standard_error": payload["standard_error"],
+        "fresh_raw_trace_required": True,
+        "source_payload_mutated": False,
+    }
 
 
 def hmc_acceptance_evidence_v2_migration_view(
@@ -1011,8 +1187,9 @@ def evaluate_hmc_acceptance_evidence(
             evidence_validity="valid",
             acceptance_decision="inconclusive_evidence",
             pooled_mean=float(np.mean(acceptance_probability)),
-            interval=None,
-            standard_error=None,
+            chain_mean_uncertainty_interval=None,
+            chain_mean_uncertainty_method=None,
+            chain_mean_uncertainty_level=None,
             chain_means=tuple(float(item) for item in np.mean(acceptance_probability, axis=0)),
             block_means_by_chain=(),
             realized_acceptance_rate=realized_acceptance_rate,
@@ -1057,21 +1234,16 @@ def evaluate_hmc_acceptance_evidence(
     )
     chain_means = np.mean(block_means, axis=1)
     pooled = float(np.mean(chain_means))
-    between = float(np.var(chain_means, ddof=1))
-    within_by_chain = np.var(block_means, axis=1, ddof=1)
-    standard_error = float(
-        np.sqrt(
-            between / policy.chain_count
-            + float(np.mean(within_by_chain))
-            / (policy.chain_count * policy.block_count)
-        )
+    alpha = 1.0 - policy.confidence_level
+    half_width = float(
+        np.sqrt(np.log(2.0 / alpha) / (2.0 * policy.chain_count))
     )
-    half_width = policy.student_critical_value * standard_error
-    interval = (pooled - half_width, pooled + half_width)
+    interval = (max(0.0, pooled - half_width), min(1.0, pooled + half_width))
     decision = _acceptance_decision_from_summary(
         policy=policy,
-        interval=interval,
+        pooled_mean=pooled,
         chain_means=chain_means,
+        block_means=block_means,
         movement=movement,
         repeated=repeated,
         normalized_return=normalized_return,
@@ -1085,8 +1257,9 @@ def evaluate_hmc_acceptance_evidence(
         evidence_validity="valid",
         acceptance_decision=decision,
         pooled_mean=pooled,
-        interval=interval,
-        standard_error=standard_error,
+        chain_mean_uncertainty_interval=interval,
+        chain_mean_uncertainty_method=_CHAIN_MEAN_UNCERTAINTY_METHOD,
+        chain_mean_uncertainty_level=policy.confidence_level,
         chain_means=tuple(float(item) for item in chain_means),
         block_means_by_chain=tuple(
             tuple(float(item) for item in row) for row in block_means
@@ -1123,11 +1296,15 @@ def _movement_summaries(
         missing = np.empty(0, dtype=float)
         return missing, missing, missing, missing
     displacement = samples[1:] - samples[:-1]
-    l2 = np.linalg.norm(displacement, axis=-1)
-    scale = np.linalg.norm(np.std(samples, axis=0), axis=-1)
-    threshold = np.maximum(1.0e-12, 1.0e-10 * scale)
-    movement = np.mean(l2 > threshold[None, :], axis=0)
+    scale_by_coordinate = np.std(samples, axis=0)
+    threshold = np.maximum(1.0e-12, 1.0e-10 * scale_by_coordinate)
+    movement_by_coordinate = np.mean(
+        np.abs(displacement) > threshold[None, :, :],
+        axis=0,
+    )
+    movement = np.min(movement_by_coordinate, axis=-1)
     repeated = 1.0 - movement
+    scale = np.linalg.norm(scale_by_coordinate, axis=-1)
     normalized_return = np.linalg.norm(samples[-1] - samples[0], axis=-1) / np.maximum(
         scale, 1.0e-12
     )
@@ -1171,8 +1348,9 @@ def _empty_acceptance_evidence(
         evidence_validity=evidence_validity,
         acceptance_decision="unavailable",
         pooled_mean=None,
-        interval=None,
-        standard_error=None,
+        chain_mean_uncertainty_interval=None,
+        chain_mean_uncertainty_method=None,
+        chain_mean_uncertainty_level=None,
         chain_means=(),
         block_means_by_chain=(),
         realized_acceptance_rate=None,
@@ -1362,18 +1540,17 @@ def _validate_valid_acceptance_summary(
         )
     ):
         raise ValueError("realized acceptance summary is incomplete or inconsistent")
-    has_interval = evidence.interval is not None
+    has_interval = evidence.chain_mean_uncertainty_interval is not None
     if not has_interval:
         if decision != "inconclusive_evidence":
-            raise ValueError("acceptance decision requires interval evidence")
+            raise ValueError("acceptance decision requires complete evidence")
         if evidence.pooled_mean is None or not evidence.chain_means:
             raise ValueError("valid incomplete evidence requires descriptive means")
-        if evidence.standard_error is not None or block_means:
-            raise ValueError("incomplete evidence cannot carry interval components")
+        if block_means:
+            raise ValueError("incomplete evidence cannot carry block components")
         return
     if (
         evidence.pooled_mean is None
-        or evidence.standard_error is None
         or len(evidence.chain_means) != evidence.policy.chain_count
         or len(block_means) != evidence.policy.chain_count
         or any(len(row) != evidence.policy.block_count for row in block_means)
@@ -1388,31 +1565,35 @@ def _validate_valid_acceptance_summary(
         raise ValueError("acceptance decision requires four-chain four-block evidence")
     expected_chain_means = np.mean(np.asarray(block_means), axis=1)
     expected_pooled = float(np.mean(expected_chain_means))
-    expected_between = float(np.var(expected_chain_means, ddof=1))
-    expected_within = np.var(np.asarray(block_means), axis=1, ddof=1)
-    expected_se = float(
-        np.sqrt(
-            expected_between / evidence.policy.chain_count
-            + float(np.mean(expected_within))
-            / (evidence.policy.chain_count * evidence.policy.block_count)
-        )
+    alpha = 1.0 - evidence.policy.confidence_level
+    half_width = float(
+        np.sqrt(np.log(2.0 / alpha) / (2.0 * evidence.policy.chain_count))
     )
     expected_interval = (
-        expected_pooled - evidence.policy.student_critical_value * expected_se,
-        expected_pooled + evidence.policy.student_critical_value * expected_se,
+        max(0.0, expected_pooled - half_width),
+        min(1.0, expected_pooled + half_width),
     )
     if not np.allclose(evidence.chain_means, expected_chain_means, rtol=1e-12, atol=1e-12):
         raise ValueError("chain_means do not match block means")
     if not np.isclose(evidence.pooled_mean, expected_pooled, rtol=1e-12, atol=1e-12):
         raise ValueError("pooled_mean does not match chain means")
-    if not np.isclose(evidence.standard_error, expected_se, rtol=1e-12, atol=1e-12):
-        raise ValueError("standard_error does not match block means")
-    if not np.allclose(evidence.interval, expected_interval, rtol=1e-12, atol=1e-12):
-        raise ValueError("interval does not match pooled mean and standard error")
+    if not np.allclose(
+        evidence.chain_mean_uncertainty_interval,
+        expected_interval,
+        rtol=1e-12,
+        atol=1e-12,
+    ):
+        raise ValueError("chain-mean uncertainty interval is inconsistent")
+    if (
+        evidence.chain_mean_uncertainty_method != _CHAIN_MEAN_UNCERTAINTY_METHOD
+        or evidence.chain_mean_uncertainty_level != evidence.policy.confidence_level
+    ):
+        raise ValueError("chain-mean uncertainty metadata is inconsistent")
     expected_decision = _acceptance_decision_from_summary(
         policy=evidence.policy,
-        interval=expected_interval,
+        pooled_mean=expected_pooled,
         chain_means=expected_chain_means,
+        block_means=np.asarray(block_means),
         movement=np.asarray(evidence.movement_rate_by_chain),
         repeated=np.asarray(evidence.repeated_state_fraction_by_chain),
         normalized_return=np.asarray(evidence.normalized_return_displacement_by_chain),
@@ -1422,7 +1603,7 @@ def _validate_valid_acceptance_summary(
         raise ValueError("decision is inconsistent with acceptance policy")
 
 
-def _validate_v3_roles(evidence: HMCAcceptanceEvidence) -> None:
+def _validate_v4_roles(evidence: HMCAcceptanceEvidence) -> None:
     expected_vetoes = []
     if (
         evidence.native_divergence_status == "available"
@@ -1557,16 +1738,22 @@ def summarize_hmc_tuning_telemetry(
     def movement_with_pairs() -> tuple[Any, Any, Any, Any]:
         displacement = sample_tensor[1:] - sample_tensor[:-1]
         l2 = tf.linalg.norm(displacement, axis=-1)
-        scale = tf.math.reduce_std(sample_tensor, axis=0)
-        scale_norm = tf.linalg.norm(scale, axis=-1)
+        scale_by_coordinate = tf.math.reduce_std(sample_tensor, axis=0)
         movement_threshold = tf.maximum(
             tf.constant(1.0e-12, tf.float64),
-            tf.constant(1.0e-10, tf.float64) * scale_norm,
+            tf.constant(1.0e-10, tf.float64) * scale_by_coordinate,
         )
-        moved = l2 > movement_threshold[tf.newaxis, :]
-        movement_rate = tf.reduce_mean(tf.cast(moved, tf.float64), axis=0)
+        movement_by_coordinate = tf.reduce_mean(
+            tf.cast(
+                tf.abs(displacement) > movement_threshold[tf.newaxis, :, :],
+                tf.float64,
+            ),
+            axis=0,
+        )
+        movement_rate = tf.reduce_min(movement_by_coordinate, axis=-1)
         repeated_fraction = tf.constant(1.0, tf.float64) - movement_rate
         mean_l2 = tf.reduce_mean(l2, axis=0)
+        scale_norm = tf.linalg.norm(scale_by_coordinate, axis=-1)
         return_displacement = tf.linalg.norm(sample_tensor[-1] - sample_tensor[0], axis=-1)
         normalized_return = return_displacement / tf.maximum(
             scale_norm,
@@ -1652,7 +1839,7 @@ def summarize_hmc_tuning_telemetry(
     )
     draw_count_float = tf.cast(draw_count, tf.float64)
     return {
-        "schema": "bayesfilter.hmc_tuning_telemetry.v3",
+        "schema": "bayesfilter.hmc_tuning_telemetry.v4",
         "mean_acceptance_probability": tf.reduce_mean(acceptance_probability),
         "mean_acceptance_probability_by_chain": mean_acceptance_by_chain,
         "binary_acceptance_rate": tf.reduce_mean(tf.cast(accepted, tf.float64)),
@@ -1705,8 +1892,9 @@ def summarize_hmc_tuning_telemetry(
 def _acceptance_decision_from_summary(
     *,
     policy: HMCAcceptancePolicy,
-    interval: tuple[float, float],
+    pooled_mean: float,
     chain_means: np.ndarray,
+    block_means: np.ndarray,
     movement: np.ndarray,
     repeated: np.ndarray,
     normalized_return: np.ndarray,
@@ -1714,9 +1902,15 @@ def _acceptance_decision_from_summary(
 ) -> str:
     low, high = policy.practical_region
     repair_low, repair_high = policy.repair_region
-    low_supported = interval[1] < low and bool(np.all(chain_means < policy.target))
-    high_supported = interval[0] > high and bool(np.all(chain_means > policy.target))
+    low_supported = pooled_mean < low and bool(np.all(chain_means < policy.target))
+    high_supported = pooled_mean > high and bool(np.all(chain_means > policy.target))
     chain_conflict = bool(np.any(chain_means < low) and np.any(chain_means > high))
+    temporal_block_conflict = bool(
+        np.any(
+            (np.min(block_means, axis=1) < low)
+            & (np.max(block_means, axis=1) > high)
+        )
+    )
     movement_failed, path_return_failed = _trajectory_pathology_flags(
         policy=policy,
         movement=movement,
@@ -1732,13 +1926,14 @@ def _acceptance_decision_from_summary(
         return "repair_step_lower"
     if chain_conflict:
         return "inconclusive_conflict"
+    if temporal_block_conflict:
+        return "inconclusive_evidence"
     if trajectory_pathology:
         return "repair_trajectory"
     if high_supported:
         return "repair_step_higher"
     if (
-        interval[0] >= low
-        and interval[1] <= high
+        low <= pooled_mean <= high
         and bool(np.all((chain_means >= repair_low) & (chain_means <= repair_high)))
     ):
         return "passed"
@@ -1777,7 +1972,7 @@ def _trajectory_pathology_flags(
 def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
     if not isinstance(payload, Mapping):
         raise TypeError("acceptance policy payload must be a mapping")
-    if payload.get("schema") != "bayesfilter.hmc_acceptance_policy.v3":
+    if payload.get("schema") != "bayesfilter.hmc_acceptance_policy.v4":
         raise ValueError("acceptance policy schema mismatch")
     expected_keys = set(HMCAcceptancePolicy().payload())
     if set(payload) != expected_keys:

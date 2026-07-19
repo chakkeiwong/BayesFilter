@@ -1,0 +1,431 @@
+{
+  "a0_source": {
+    "file_sha256": "1f7fccbeafbaa344a80e77c73b4356f44258b78a65ea2499e8ebd194b79a4383",
+    "path": "docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a0/target-lock.json"
+  },
+  "canonicalization": {
+    "allow_nan": false,
+    "encoding": "UTF-8",
+    "ensure_ascii": true,
+    "separators": [
+      ",",
+      ":"
+    ],
+    "sort_keys": true
+  },
+  "masked_posterior_contract": {
+    "payload": {
+      "a0_bindings": {
+        "dependency_manifest_file_sha256": "2a1e3dcd89c0c5e24f892d14a29ef44329ef3e50c4af40093428082de6806517",
+        "immutable_aggregate_sha256": "6bac37213729c06dfbf6953f60637ffe7f6c0da11cb60a62eba5786b1e44801f",
+        "signature_aggregate_sha256": "af75eda2abb9a4e0260e7dc0921ee43ddd7b0c37c61bafabba8683d70ad155cc",
+        "target_lock_file_sha256": "1f7fccbeafbaa344a80e77c73b4356f44258b78a65ea2499e8ebd194b79a4383",
+        "target_semantic_sha256": "549efdf2aa5d9534226cb29c3678489d92766f92e6140901355eac33618f719e"
+      },
+      "adapter_contract": {
+        "adapter_signature_role": "masked_posterior_contract_sha256",
+        "manifest_parameter_dim": 4,
+        "manifest_parameter_names": [
+          "latent_mean_weight.0.0",
+          "latent_mean_bias.0",
+          "observation_weight.0.0",
+          "observation_bias.0"
+        ],
+        "target_signature_role": "a0_target_semantic_sha256",
+        "value_score_capability": {
+          "evidence_path": "docs/plans/bayesfilter-ssl-lstm-completion-phase-a1-masked-posterior-target-result-2026-07-11.md",
+          "full_chain_xla_diagnostic_ready": false,
+          "nonclaims": [
+            "target extraction and frozen-point engineering canary only",
+            "not posterior correctness evidence",
+            "not HMC or NeuTra readiness evidence",
+            "not predictive equivalence or calibration evidence",
+            "not target-wide GPU/XLA or performance evidence",
+            "not public API, default, product, or release readiness evidence",
+            "not a sampler ranking or scientific claim"
+          ],
+          "runtime_backend": "bayesfilter.nonlinear.ssl_lstm_posterior_tf",
+          "target_scope": "ssl_lstm_completion:a1:masked_svd_ukf_four_parameter",
+          "value_score_authority": "graph_native",
+          "xla_hmc_ready": false
+        }
+      },
+      "callable_contract": {
+        "alias_equalities": [
+          "value==log_prob==value_and_score[0]==log_prob_and_grad[0]",
+          "score==value_and_score[1]==log_prob_and_grad[1]"
+        ],
+        "invalid_dtype": "loud_error",
+        "invalid_rank_or_shape": "loud_error",
+        "parameter_dim": 4,
+        "parameter_names": [
+          "latent_mean_weight.0.0",
+          "latent_mean_bias.0",
+          "observation_weight.0.0",
+          "observation_bias.0"
+        ],
+        "surfaces": [
+          {
+            "default_execution": "xla",
+            "input_shape": [
+              4
+            ],
+            "name": "value_and_score",
+            "score_shape": [
+              4
+            ],
+            "value_shape": []
+          },
+          {
+            "default_execution": "xla",
+            "input_shape": [
+              4
+            ],
+            "name": "log_prob_and_grad",
+            "score_shape": [
+              4
+            ],
+            "value_shape": []
+          },
+          {
+            "default_execution": "xla",
+            "input_shape": [
+              4
+            ],
+            "name": "value",
+            "output_shape": []
+          },
+          {
+            "default_execution": "xla",
+            "input_shape": [
+              4
+            ],
+            "name": "score",
+            "output_shape": [
+              4
+            ]
+          },
+          {
+            "default_execution": "xla_custom_gradient",
+            "input_shape": [
+              4
+            ],
+            "name": "log_prob",
+            "output_shape": []
+          },
+          {
+            "default_execution": "xla_cached_per_static_B",
+            "input_shape": [
+              "B",
+              4
+            ],
+            "name": "batch_value_and_score",
+            "score_shape": [
+              "B",
+              4
+            ],
+            "value_shape": [
+              "B"
+            ]
+          },
+          {
+            "default_execution": "eager_debug_only",
+            "input_shape": [
+              4
+            ],
+            "name": "eager_debug_value_and_score",
+            "score_shape": [
+              4
+            ],
+            "value_shape": []
+          },
+          {
+            "default_execution": "same_target_branch",
+            "input_shape": "scalar_or_supported_static_batch",
+            "name": "diagnostic_value_and_score",
+            "score_shape": "[4]_or_[B,4]",
+            "status_shape": "[]_or_[B]",
+            "value_shape": "scalar_or_batch"
+          }
+        ]
+      },
+      "classification": "extension_or_invention_preserving_a0_historical_estimand",
+      "execution": {
+        "backend": "tensorflow",
+        "batch_static_sizes_tested": [
+          1,
+          4,
+          10
+        ],
+        "batching_route": "static_tensorflow_unroll_or_reviewed_batch_native_no_python_loop",
+        "default_compile_mode": "xla",
+        "default_jit_compile": true,
+        "dtype": "float64",
+        "dynamic_batch_allowed": false,
+        "eager_debug_available": true,
+        "filter_autodiff_forbidden": true,
+        "scalar_input_signature": "float64[4]",
+        "seed_policy": "not_used"
+      },
+      "filter": {
+        "allow_fixed_null_support": false,
+        "alpha_hex": "0x1.0000000000000p+0",
+        "beta_hex": "0x1.0000000000000p+1",
+        "finite_filter_failure": "loud_error",
+        "fixed_null_tolerance_hex": "0x1.b7cdfd9d7bdbbp-34",
+        "innovation_floor_hex": "0x1.19799812dea11p-40",
+        "jitter_hex": "0x0.0p+0",
+        "kappa_hex": "0x0.0p+0",
+        "name": "svd_ukf_filtering_log_likelihood",
+        "placement_floor_hex": "0x0.0p+0",
+        "rank_tolerance_hex": "0x1.19799812dea11p-40",
+        "return_filtered": false,
+        "score_authority": "analytic_eigenderivative",
+        "score_helper": "tf_ssl_lstm_svd_ukf_score",
+        "spectral_gap_tolerance_hex": "0x1.b7cdfd9d7bdbbp-34",
+        "std_floor_hex": "0x1.a36e2eb1c432dp-14"
+      },
+      "full_fixture": {
+        "dtype": "float64",
+        "raw_sha256": "33b0814b86c5875e6746150762b8ae3b655e5bbcaa0bfd8df51488783bcb601f",
+        "shape": [
+          24
+        ]
+      },
+      "nonclaims": [
+        "target extraction and frozen-point engineering canary only",
+        "not posterior correctness evidence",
+        "not HMC or NeuTra readiness evidence",
+        "not predictive equivalence or calibration evidence",
+        "not target-wide GPU/XLA or performance evidence",
+        "not public API, default, product, or release readiness evidence",
+        "not a sampler ranking or scientific claim"
+      ],
+      "nonfinite_input_reject": {
+        "fallback_log_prob_hex": "-0x1.249ad2594c37dp+332",
+        "fallback_score_hex": "0x0.0p+0",
+        "finite_filter_failure": "loud_error",
+        "schema_version": "bayesfilter.ssl_lstm_completion.nonfinite_input_reject.v1",
+        "scope": "nonfinite_input_only",
+        "status_codes": {
+          "nonfinite_input_reject": 1,
+          "valid_finite": 0
+        }
+      },
+      "observations": {
+        "dtype": "float64",
+        "mask_convention": "none",
+        "missingness_convention": "none",
+        "raw_sha256": "aeb9a5e4b8cfe1ce374f66d5e145f8e5fb46e8d4a6586e62d573ebba3dc10f98",
+        "shape": [
+          30,
+          1
+        ]
+      },
+      "parameter_mask_sha256": "9dc25c878760b2fec5b5ad223662912272c2bda1b0d31590e3f60ec11ef79043",
+      "parameter_transform": {
+        "inverse_orientation": "identity",
+        "log_det_jacobian_convention": "not_included",
+        "orientation": "identity",
+        "transform_source": "a0_locked_free_coordinates"
+      },
+      "prior": {
+        "center_hex": [
+          "0x1.6666666666666p-2",
+          "-0x1.47ae147ae147bp-4",
+          "0x1.4cccccccccccdp-1",
+          "0x1.999999999999ap-5"
+        ],
+        "center_raw_sha256": "e46fb6877d89473071047938f170cef5c3d02b2c87ce7f9834d92c4040e16c2f",
+        "family": "unnormalized_isotropic_gaussian_log_kernel",
+        "log_kernel_formula": "-0.5 * sum((free - truth_free)^2 / 4.0^2)",
+        "normalized": false,
+        "standard_deviation_hex": "0x1.0000000000000p+2"
+      },
+      "schema_version": "bayesfilter.ssl_lstm_completion.masked_posterior_contract.v1",
+      "static_config": {
+        "augmented_state_dim": 3,
+        "covariance_mode": "diagonal",
+        "full_parameter_dim": 24,
+        "hidden_dim": 1,
+        "horizon": 30,
+        "latent_dim": 1,
+        "observation_dim": 1
+      },
+      "target_scope": "ssl_lstm_completion:a1:masked_svd_ukf_four_parameter",
+      "testing_only_injection": {
+        "adapter_signature_behavior": "raise_runtime_error",
+        "artifact_generation": "forbidden",
+        "constructor_flag": "testing_only",
+        "finite_branch_argument": "finite_branch_callable",
+        "production_default": "real_filter",
+        "target_signature_behavior": "raise_runtime_error",
+        "value_score_capability": {
+          "evidence_path": "tests/test_ssl_lstm_posterior_tf.py",
+          "full_chain_xla_diagnostic_ready": false,
+          "nonclaims": [
+            "testing seam only",
+            "production signatures unavailable",
+            "artifact generation forbidden"
+          ],
+          "runtime_backend": "tensorflow_testing_only_injected_finite_branch",
+          "target_scope": "ssl_lstm_completion:a1:testing_only_injected_branch",
+          "value_score_authority": "debug_only",
+          "xla_hmc_ready": false
+        }
+      }
+    },
+    "sha256": "004f86b5668939febb629c563ca02625998c878d1e74d88c463f93b029a5d556"
+  },
+  "parameter_mask": {
+    "payload": {
+      "dtype": "float64",
+      "fixed_parameters": [
+        {
+          "index": 0,
+          "name": "lstm_input.input.0.0",
+          "value_hex": "0x1.70a3d70a3d70ap-4"
+        },
+        {
+          "index": 1,
+          "name": "lstm_input.forget.0.0",
+          "value_hex": "-0x1.1eb851eb851ecp-4"
+        },
+        {
+          "index": 2,
+          "name": "lstm_input.output.0.0",
+          "value_hex": "0x1.999999999999ap-5"
+        },
+        {
+          "index": 3,
+          "name": "lstm_input.candidate.0.0",
+          "value_hex": "0x1.47ae147ae147bp-5"
+        },
+        {
+          "index": 4,
+          "name": "lstm_recurrent.input.0.0",
+          "value_hex": "0x1.eb851eb851eb8p-6"
+        },
+        {
+          "index": 5,
+          "name": "lstm_recurrent.forget.0.0",
+          "value_hex": "-0x1.47ae147ae147bp-6"
+        },
+        {
+          "index": 6,
+          "name": "lstm_recurrent.output.0.0",
+          "value_hex": "0x1.eb851eb851eb8p-5"
+        },
+        {
+          "index": 7,
+          "name": "lstm_recurrent.candidate.0.0",
+          "value_hex": "-0x1.999999999999ap-5"
+        },
+        {
+          "index": 8,
+          "name": "lstm_bias.input.0",
+          "value_hex": "0x1.47ae147ae147bp-7"
+        },
+        {
+          "index": 9,
+          "name": "lstm_bias.forget.0",
+          "value_hex": "0x1.47ae147ae147bp-5"
+        },
+        {
+          "index": 10,
+          "name": "lstm_bias.output.0",
+          "value_hex": "-0x1.eb851eb851eb8p-6"
+        },
+        {
+          "index": 11,
+          "name": "lstm_bias.candidate.0",
+          "value_hex": "0x1.47ae147ae147bp-6"
+        },
+        {
+          "index": 16,
+          "name": "initial_mean.0",
+          "value_hex": "0x1.3333333333333p-3"
+        },
+        {
+          "index": 17,
+          "name": "initial_mean.1",
+          "value_hex": "-0x1.999999999999ap-4"
+        },
+        {
+          "index": 18,
+          "name": "initial_mean.2",
+          "value_hex": "0x1.999999999999ap-3"
+        },
+        {
+          "index": 19,
+          "name": "initial_std_unconstrained.0",
+          "value_hex": "-0x1.6666666666666p-2"
+        },
+        {
+          "index": 20,
+          "name": "initial_std_unconstrained.1",
+          "value_hex": "0x1.3333333333333p-3"
+        },
+        {
+          "index": 21,
+          "name": "initial_std_unconstrained.2",
+          "value_hex": "0x1.199999999999ap-1"
+        },
+        {
+          "index": 22,
+          "name": "process_std_unconstrained.0",
+          "value_hex": "0x1.6666666666666p-2"
+        },
+        {
+          "index": 23,
+          "name": "observation_std_unconstrained.0",
+          "value_hex": "-0x1.3333333333333p-3"
+        }
+      ],
+      "free_dimension": 4,
+      "free_indices": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "free_parameter_names": [
+        "latent_mean_weight.0.0",
+        "latent_mean_bias.0",
+        "observation_weight.0.0",
+        "observation_bias.0"
+      ],
+      "full_dimension": 24,
+      "full_fixture_raw_sha256": "33b0814b86c5875e6746150762b8ae3b655e5bbcaa0bfd8df51488783bcb601f",
+      "full_parameter_names": [
+        "lstm_input.input.0.0",
+        "lstm_input.forget.0.0",
+        "lstm_input.output.0.0",
+        "lstm_input.candidate.0.0",
+        "lstm_recurrent.input.0.0",
+        "lstm_recurrent.forget.0.0",
+        "lstm_recurrent.output.0.0",
+        "lstm_recurrent.candidate.0.0",
+        "lstm_bias.input.0",
+        "lstm_bias.forget.0",
+        "lstm_bias.output.0",
+        "lstm_bias.candidate.0",
+        "latent_mean_weight.0.0",
+        "latent_mean_bias.0",
+        "observation_weight.0.0",
+        "observation_bias.0",
+        "initial_mean.0",
+        "initial_mean.1",
+        "initial_mean.2",
+        "initial_std_unconstrained.0",
+        "initial_std_unconstrained.1",
+        "initial_std_unconstrained.2",
+        "process_std_unconstrained.0",
+        "observation_std_unconstrained.0"
+      ],
+      "schema_version": "bayesfilter.ssl_lstm_completion.parameter_mask.v1"
+    },
+    "sha256": "9dc25c878760b2fec5b5ad223662912272c2bda1b0d31590e3f60ec11ef79043"
+  },
+  "schema_version": "bayesfilter.ssl_lstm_completion.phase_a1_golden_signatures.v1"
+}

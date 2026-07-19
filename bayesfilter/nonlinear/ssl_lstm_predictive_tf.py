@@ -316,6 +316,7 @@ class SSLLSTMForecastProvenance:
     innovation_replay_authority: str
     innovation_seed_qualification: str
     draw_count: int
+    draw_chunk_size: int
     replication_count: int
     forecast_horizon: int
     filter_backend: str
@@ -615,6 +616,84 @@ def _audit_terminal_covariance(
     )
 
 
+def _audit_terminal_covariance_batch_core(
+    raw_covariances: tf.Tensor,
+) -> tuple[tf.Tensor, ...]:
+    """Audit terminal covariances with one batched eigensolver invocation."""
+
+    raw = tf.convert_to_tensor(raw_covariances, tf.float64)
+    finite = tf.reduce_all(tf.math.is_finite(raw), axis=[1, 2])
+    safe_raw = tf.where(tf.math.is_finite(raw), raw, tf.zeros_like(raw))
+    transposed = tf.transpose(safe_raw, [0, 2, 1])
+    sym = 0.5 * (safe_raw + transposed)
+    symmetry_residual = tf.reduce_max(tf.abs(safe_raw - transposed), axis=[1, 2])
+    frobenius_norm = tf.sqrt(tf.reduce_sum(tf.square(sym), axis=[1, 2]))
+    tau = tf.constant(
+        COVARIANCE_ROUNDOFF_MULTIPLIER * FLOAT64_EPSILON,
+        tf.float64,
+    ) * tf.maximum(tf.ones_like(frobenius_norm), frobenius_norm)
+    eigenvalues, eigenvectors = tf.linalg.eigh(sym)
+    clipped = tf.maximum(eigenvalues, tf.zeros_like(eigenvalues))
+    transpose_eigenvectors = tf.transpose(eigenvectors, [0, 2, 1])
+    implemented = eigenvectors @ tf.linalg.diag(clipped) @ transpose_eigenvectors
+    factor = (
+        eigenvectors
+        @ tf.linalg.diag(tf.sqrt(clipped))
+        @ transpose_eigenvectors
+    )
+    projection_residual = tf.sqrt(
+        tf.reduce_sum(tf.square(implemented - sym), axis=[1, 2])
+    )
+    reconstruction_residual = tf.sqrt(
+        tf.reduce_sum(
+            tf.square(factor @ tf.transpose(factor, [0, 2, 1]) - implemented),
+            axis=[1, 2],
+        )
+    )
+    status = tf.zeros(tf.shape(tau), tf.int32)
+    status = tf.where(finite, status, tf.bitwise.bitwise_or(status, STATUS_NONFINITE))
+    status = tf.where(
+        symmetry_residual <= tau,
+        status,
+        tf.bitwise.bitwise_or(status, STATUS_ASYMMETRIC),
+    )
+    status = tf.where(
+        tf.reduce_min(eigenvalues, axis=1) >= -tau,
+        status,
+        tf.bitwise.bitwise_or(status, STATUS_MATERIALLY_INDEFINITE),
+    )
+    status = tf.where(
+        tf.logical_and(
+            tf.math.is_finite(projection_residual),
+            projection_residual <= 8.0 * tau,
+        ),
+        status,
+        tf.bitwise.bitwise_or(status, STATUS_PROJECTION),
+    )
+    status = tf.where(
+        tf.logical_and(
+            tf.math.is_finite(reconstruction_residual),
+            reconstruction_residual <= 16.0 * tau,
+        ),
+        status,
+        tf.bitwise.bitwise_or(status, STATUS_FACTOR_RECONSTRUCTION),
+    )
+    return (
+        raw,
+        sym,
+        implemented,
+        factor,
+        eigenvalues,
+        clipped,
+        tf.reduce_min(eigenvalues, axis=1),
+        tau,
+        symmetry_residual,
+        projection_residual,
+        reconstruction_residual,
+        status,
+    )
+
+
 def _terminal_single_core(
     free: tf.Tensor,
     config: SSLLSTMForecastConfig,
@@ -776,6 +855,10 @@ _TERMINAL_PROGRAM_CACHE: dict[
     tuple[str, int],
     Callable[[tf.Tensor], tuple[tf.Tensor, ...]],
 ] = {}
+_TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE: dict[
+    int,
+    Callable[[tf.Tensor], tuple[tf.Tensor, ...]],
+] = {}
 _FORECAST_PROGRAM_CACHE: dict[
     tuple[str, int],
     Callable[..., tuple[tf.Tensor, ...]],
@@ -809,6 +892,45 @@ def ssl_lstm_terminal_compiled_program(
         )
         _TERMINAL_PROGRAM_CACHE[key] = compiled
     return compiled
+
+
+def ssl_lstm_terminal_covariance_audit_compiled_program(
+    draw_count: int,
+) -> Callable[[tf.Tensor], tuple[tf.Tensor, ...]]:
+    """Return the staged batched XLA covariance audit for one draw shape."""
+
+    count = _require_static_positive_int(draw_count, name="draw_count")
+    compiled = _TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE.get(count)
+    if compiled is None:
+        compiled = tf.function(
+            _audit_terminal_covariance_batch_core,
+            input_signature=[tf.TensorSpec([count, STATE_DIM, STATE_DIM], tf.float64)],
+            autograph=False,
+            jit_compile=True,
+            reduce_retracing=True,
+        )
+        _TERMINAL_COVARIANCE_AUDIT_PROGRAM_CACHE[count] = compiled
+    return compiled
+
+
+def _replace_terminal_covariance_audit(
+    tensors: tuple[tf.Tensor, ...],
+    covariance_audit: tuple[tf.Tensor, ...],
+) -> tuple[tf.Tensor, ...]:
+    preserved_status = tf.bitwise.bitwise_and(
+        tensors[21],
+        tf.constant(
+            STATUS_NONFINITE | STATUS_FILTER_PARITY | STATUS_TOTAL_PARITY,
+            tf.int32,
+        ),
+    )
+    status = tf.bitwise.bitwise_or(preserved_status, covariance_audit[11])
+    return (
+        tensors[0],
+        *covariance_audit[:11],
+        *tensors[12:21],
+        status,
+    )
 
 
 def _terminal_from_tensors(tensors: tuple[tf.Tensor, ...]) -> SSLLSTMTerminalState:
@@ -913,10 +1035,18 @@ def extract_ssl_lstm_terminal_states(
     if resolved.jit_compile:
         compiled = ssl_lstm_terminal_compiled_program(resolved, draw_count)
         tensors = compiled(values)
+        covariance_program = ssl_lstm_terminal_covariance_audit_compiled_program(
+            draw_count
+        )
+        covariance_audit = covariance_program(tensors[1])
     else:
         target = SSLLSTMPosteriorTarget(resolved.posterior_config)
         tensors = _terminal_batch_core(values, resolved, target)
-    terminal = _terminal_from_tensors(tuple(tensors))
+        covariance_audit = _audit_terminal_covariance_batch_core(tensors[1])
+    tensors = _replace_terminal_covariance_audit(
+        tuple(tensors), tuple(covariance_audit)
+    )
+    terminal = _terminal_from_tensors(tensors)
     _require_valid_terminal(terminal)
     return terminal
 
@@ -1133,6 +1263,7 @@ def forecast_ssl_lstm_paths(
     innovation_bank: SSLLSTMInnovationBank,
     config: SSLLSTMForecastConfig | None = None,
     *,
+    draw_chunk_size: int | None = None,
     runtime_execution_role: str | None = None,
     trust_basis: str | None = None,
 ) -> SSLLSTMForecastPaths:
@@ -1149,6 +1280,13 @@ def forecast_ssl_lstm_paths(
     draw_count = int(values.shape[0])
     if draw_count <= 0:
         raise ValueError("draw dimension must be positive")
+    chunk_size = (
+        draw_count
+        if draw_chunk_size is None
+        else _require_static_positive_int(draw_chunk_size, name="draw_chunk_size")
+    )
+    if chunk_size > draw_count:
+        raise ValueError("draw_chunk_size cannot exceed the draw dimension")
     _require_all_finite(values, name="free_draws")
     _validate_innovation_bank(innovation_bank, draw_count=draw_count, config=resolved)
     terminal = extract_ssl_lstm_terminal_states(values, resolved)
@@ -1161,9 +1299,17 @@ def forecast_ssl_lstm_paths(
         innovation_bank.observation_standard_normal,
     )
     if resolved.jit_compile:
-        compiled = ssl_lstm_forecast_compiled_program(resolved, draw_count)
-        tensors = compiled(*inputs)
+        chunk_rows: list[list[tf.Tensor]] = [[] for _ in _FORECAST_OUTPUT_NAMES]
+        for start in range(0, draw_count, chunk_size):
+            stop = min(start + chunk_size, draw_count)
+            compiled = ssl_lstm_forecast_compiled_program(resolved, stop - start)
+            chunk = compiled(*(tensor[start:stop] for tensor in inputs))
+            for rows, tensor in zip(chunk_rows, chunk, strict=True):
+                rows.append(tensor)
+        tensors = tuple(tf.concat(rows, axis=0) for rows in chunk_rows)
     else:
+        if chunk_size != draw_count:
+            raise ValueError("draw_chunk_size is supported only for compiled forecasts")
         tensors = _forecast_batch_core(*inputs, resolved)
     tensors = tuple(tensors)
     _require_finite_forecast_outputs(tensors)
@@ -1209,6 +1355,7 @@ def forecast_ssl_lstm_paths(
             "generation_metadata_not_cross_backend_bitwise_regeneration_evidence"
         ),
         draw_count=draw_count,
+        draw_chunk_size=chunk_size,
         replication_count=resolved.replication_count,
         forecast_horizon=FORECAST_HORIZON,
         filter_backend="tf_svd_ukf",

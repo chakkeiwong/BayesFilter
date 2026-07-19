@@ -49,11 +49,44 @@ elaborate source-provenance investigation. The next useful evidence is a small
 counterfactual on the real TensorFlow path followed by correctness and bounded
 XLA memory/runtime measurement.
 
+## SSL-LSTM Predictive-Validation Lane Reset
+
+The historical SSL-LSTM completion master program, per-phase subplans, visible
+execution ledger, runbook, stop handoff, signed harness anchor, boundary and
+fixture backlink chain, syscall traces, and closure/checkpoint ledgers are
+evidence records only. They are not active execution gates.
+
+The completed A3 evidence is:
+
+- the scalar-LGSSM oracle and predictive-statistics implementation is present;
+- the focused CPU-hidden suite passed `65/65`;
+- the final CPU-hidden artifact passed 21/21 checks and independent numerical
+  replay;
+- the final trusted GPU/XLA artifact passed 21/21 checks, independent replay,
+  and persisted-input CPU/GPU parity; and
+- the actual identical-law fixture and three controlled alternatives were
+  underpowered, so A3 passes as engineering machinery for A4 design rather than
+  as predictive-equivalence or calibration evidence.
+
+The next useful step is to refresh and execute the design-only A4 calibration
+plan after scientific material-effect labels, exact commands, resource budget,
+replication counts, and the source of calibration-only ordinary-HMC draws are
+resolved. A4 must estimate family-specific interval coverage, true-equivalence
+power, null false-material-difference, false-equivalence, and
+material-difference power on separate nomination and validation seeds. It may
+not treat A3 fixture settings as frozen calibration choices.
+
 ## Active Artifacts
 
 - Policy: `AGENTS.md`, section `Academic Risk-Tier Workflow`.
 - Current lane plan:
   `docs/plans/bayesfilter-kalman-qr-batched-xla-lean-repair-plan-2026-07-13.md`.
+- SSL-LSTM live plan:
+  `docs/plans/bayesfilter-ssl-lstm-predictive-validation-live-plan-2026-07-13.md`.
+- SSL-LSTM A3 result:
+  `docs/plans/bayesfilter-ssl-lstm-completion-phase-a3-forecast-oracle-statistics-result-2026-07-11.md`.
+- SSL-LSTM A4 design-only plan:
+  `docs/plans/bayesfilter-ssl-lstm-completion-phase-a4-calibration-design-freeze-subplan-2026-07-11.md`.
 - Historical reset baseline:
   `docs/plans/bayesfilter-kalman-qr-batched-xla-reset-memo-2026-07-10.md`.
 - Latest structural result:

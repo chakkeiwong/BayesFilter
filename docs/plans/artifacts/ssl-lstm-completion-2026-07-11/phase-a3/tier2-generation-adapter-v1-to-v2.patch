@@ -1,0 +1,63 @@
+--- a/docs/benchmarks/run_ssl_lstm_predictive_validation_a3_2026_07_13.py
++++ b/docs/benchmarks/run_ssl_lstm_predictive_validation_a3_2026_07_13.py
+@@ -302,6 +302,41 @@ def _load_compatibility_inputs(fixture_path: Path) -> tuple[dict[str, Any], dict
+     return boundary, fixture
+ 
+ 
++def _materialized_indices_from_cpu_reference(
++    core: ModuleType,
++    cpu_payload: dict[str, Any],
++    section: str,
++    *,
++    constants: dict[str, Any],
++    statistics: Any,
++    tf: Any,
++) -> Any:
++    rows = core._section_rows(cpu_payload, section)
++    expected = {
++        "chain_indices",
++        "draw_indices",
++        "forecast_replication_indices",
++        "seed",
++    }
++    if set(rows) != expected:
++        raise RunnerError(f"persisted index section {section!r} differs")
++    seed = core._decode_tensor_row(rows["seed"], tf)
++    if tuple(seed.shape) != (2,):
++        raise RunnerError(f"persisted index seed shape differs: {section}")
++    return statistics.HierarchicalBootstrapIndices(
++        chain_indices=core._decode_tensor_row(rows["chain_indices"], tf),
++        draw_indices=core._decode_tensor_row(rows["draw_indices"], tf),
++        forecast_replication_indices=core._decode_tensor_row(
++            rows["forecast_replication_indices"], tf
++        ),
++        block_length=int(constants["block_length"]),
++        block_mode="moving",
++        chain_mode="stratified_fixed_chains",
++        seed=seed,
++        status=tf.constant("VALID"),
++    )
++
++
+ def _compact_payload(
+     *,
+     mode: str,
+@@ -340,6 +375,18 @@ def _compact_payload(
+     core._manifest = _manifest
+     core._source_rows = _source_rows
+     core._check_row = tier2_check_row
++    core._indices_from_cpu_reference = (
++        lambda cpu_payload, section, *, constants, statistics, tf: (
++            _materialized_indices_from_cpu_reference(
++                core,
++                cpu_payload,
++                section,
++                constants=constants,
++                statistics=statistics,
++                tf=tf,
++            )
++        )
++    )
+ 
+     legacy_mode = "cpu-reference" if mode == "cpu-reference" else "gpu-xla-canary"
+     payload = core._artifact_payload(

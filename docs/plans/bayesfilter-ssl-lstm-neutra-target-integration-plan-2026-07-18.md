@@ -2,7 +2,7 @@
 
 Date: 2026-07-18
 
-Status: `PROPOSED_TARGET_ADAPTER_WORK_GH_CONFIRMATION_CLOSED`
+Status: `PHASES_1_TO_5_COMPLETE_PHASE_6_GH_CONFIRMATION_CLOSED`
 
 ## Scope and Boundary
 
@@ -45,6 +45,16 @@ For draw `d`, forecast replication `r`, and horizon `h`, the existing forecast
 API returns an observation mean `m[d,r,h]` and an observation innovation
 `e[d,r,h] * sigma_y[d]`, where `e` is standard normal and `sigma_y` is the
 positive observation standard deviation from the embedded parameter draw.
+The adapter obtains `sigma_y` from the already authenticated
+`paths.terminal.full_parameters[d]` by applying
+`unpack_ssl_lstm_parameters(..., std_floor=1e-4)`; it must not infer a scale
+from the realized innovation. This is anchored in
+`bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py:171-208`, where the
+parameter chart locates `observation_std_start`, applies the softplus map and
+floor, and constructs `observation_covariance` at lines 274-284. The forecast
+recursion that multiplies the standard-normal observation bank by this
+`observation_std` is at
+`bayesfilter/nonlinear/ssl_lstm_predictive_tf.py:1105-1126`.
 Therefore the conditional observation variance for the Rao-Blackwell adapter
 is
 
@@ -59,9 +69,20 @@ the exact feature projection, rather than silently taking a scalar norm.
 
 The feature order is frozen as
 `(mean_1,...,mean_H, log_variance_1,...,log_variance_H)` and must be passed to
-`conditional_mean_log_variance_influence` without reordering.  Horizon scales
-are estimated only from an independent calibration-only innovation/draw bank,
-then frozen and hashed before any confirmation-shaped evaluation.  The fixed
+`conditional_mean_log_variance_influence` without reordering.  Horizon
+standardization is defined prospectively, not by the MMD pairwise-distance
+helper.  From a calibration-only bank of complete observation paths, for each
+horizon `h` compute the pooled mean `a^0_h` and unbiased standard deviation
+`a_h`; require every `a_h` to be finite and strictly positive, then freeze and
+hash the vectors before evaluating the independent evaluation bank.  The same
+`a^0_h` and `a_h` transform path observations, conditional means, and
+conditional variances (`s2/a_h**2`).  The calibration bank uses four chain
+roots `(20260718, 4101)` through `(20260718, 4104)`; the independent evaluation
+bank uses `(20260718, 4201)` through `(20260718, 4204)`.  No seed or materialized
+innovation tensor may appear in both domains.  A robustness-only independent
+bank uses `(20260718, 4301)` through `(20260718, 4304)` and is also disjoint
+from both prior domains.  Each bank has four chains, ten
+fixed A2 parameter draws, and two forecast replications per draw.  The fixed
 predictive boundary remains `K_avg=K_max=0.0068491`; the split alpha allocation
 remains `0.025 + 10*0.0025 = 0.05`; the HAC multiplier remains `3.0`; ridge
 remains zero.
@@ -99,12 +120,14 @@ the declared ordering and status.
 
 ### Phase 3: Independent scale calibration
 
-Generate a calibration-only bank from fresh seeds and a declared target-shaped
-fixture.  The bank must be independent of any future confirmation bank and
-must record seed, draw/replication counts, forecast configuration signature,
-innovation hashes, worker count, and output hash.  Estimate one scale per
-horizon/feature using the existing scale API or a documented equivalent, then
-freeze it before evaluating confirmation-shaped data.
+Generate a calibration-only bank from fresh seeds and the fixed ten-row A2
+parameter fixture.  The bank must be independent of any future evaluation or
+confirmation bank and must record seed, draw/replication counts, forecast
+configuration signature, innovation hashes, worker count, and output hash.
+Estimate the per-horizon center and unbiased standard deviation directly from
+the complete observation paths, then freeze them before evaluating the
+independent evaluation bank.  This is a scale contract, not a claim that the
+calibration bank estimates the posterior predictive law.
 
 Required gates: no overlap between calibration and evaluation seeds; finite,
 positive scales; reproducible replay; no scale derived from a G/H decision or
@@ -118,25 +141,40 @@ Use independent target-shaped fixtures with the same ten-horizon dimensions,
 parameter chart, terminal covariance conventions, and innovation roles as the
 frozen forecast API.  Compare path and conditional-moment estimates with
 shared innovations for a paired precision diagnostic and independent
-innovations for a robustness diagnostic.  Predeclare Monte Carlo tolerances
-from the calibration-bank effective sample size; do not rank estimators from a
-single descriptive run.
+innovations for a robustness diagnostic.  For the shared-bank paired
+diagnostic, compare the actual 20-feature path and conditional-moment estimates.
+Estimate their paired Monte Carlo standard errors from the per-(chain, draw)
+difference of their influence sequences over the 40 draw clusters, divided by
+`sqrt(40)`, and require every finite feature-estimate difference to lie within
+six such standard errors, with an absolute floor of `1e-12`.  Centered
+influences must not themselves be averaged as the feature difference because
+that would make the check tautological.  This is an
+explanatory integration gate for the declared fixture, not a statistical
+ranking or target equivalence claim.  Independent-bank estimates are reported
+descriptively only.  No estimator is ranked from this run.
 
 Required gates: exact conditional-variance algebra on a hand-computable
-fixture; paired and independent estimates finite; expected path/Rao difference
-shrinks with bank size; no process uncertainty loss; feature projection and
-scale invariance tests pass.
+fixture; paired and independent estimates finite; the six-MCSE paired bound;
+no process uncertainty loss; feature projection and scale invariance tests
+pass; and calibration/evaluation seed domains are disjoint.
 
 Handoff: target adapter result note states whether the candidate is viable,
 what failed if not, and keeps G/H confirmation closed in either case.
 
 ### Phase 5: Covariance and resource preflight
 
-Construct the locked split-region covariance from the target-shaped influence
-clusters using Bartlett HAC multiplier `3.0` and zero ridge.  Check symmetry,
+Construct the locked split-region covariance from the evaluation-bank
+target-shaped influence clusters using Bartlett HAC multiplier `3.0` and zero
+ridge.  Check symmetry,
 positive definiteness, eigenvalue floor, condition number, KKT residuals,
 alpha allocation, and exact bound authentication.  Measure the declared
 resource envelope without starting confirmation; stop before the cap.
+
+The fixed ten-row A2 fixture is not a stationary posterior chain.  Its HAC row
+order is therefore an engineering shape/conditioning check only.  Even if it
+is numerically admissible, it cannot establish target long-run covariance or
+authorize a G/H confirmation.  Actual retained-chain covariance remains a
+separate gate in the later confirmation plan.
 
 Handoff: a preflight receipt has all hard checks, source/config hashes, device
 and JIT provenance, resource estimate, and an explicit `GH_CONFIRMATION_CLOSED`
@@ -174,9 +212,36 @@ authorized by this plan.
 
 Audit decision: `PASS_FOR_TARGET_ADAPTER_PREFLIGHT_ONLY`.
 
+## Amendment Record
+
+The initial review found three material ambiguities and repaired them before
+execution: (1) the conditional variance now cites the exact parameter-unpack
+and forecast-recursion sources and forbids estimating it from realized noise;
+(2) horizon scaling now uses per-horizon calibration-path mean and unbiased
+standard deviation, with fixed seed domains and a six-MCSE paired check; and
+(3) HAC on the fixed A2 row fixture is classified as engineering-only because
+those rows are not a stationary posterior chain. The existing pooled
+pairwise-distance routine is explicitly not used for moment standardization.
+These amendments preserve the evidence contract and do not open G/H
+confirmation.
+
 ## Close Record Requirements
 
 At the end of each executed phase, record the exact command, environment,
 seeds, wall time, artifact paths/hashes, hard-veto status, descriptive
 diagnostics, decision, next handoff, and nonclaims in a result note.  Do not
 rewrite immutable calibration or confirmation receipts after evaluation.
+
+## Execution Close
+
+Phases 1--5 completed with authoritative receipt
+`target-integration-preflight-repair-04.json` and result note
+`bayesfilter-ssl-lstm-neutra-target-integration-result-2026-07-18.md`.
+All declared adapter/preflight hard checks passed.  Phase 6 was not executed;
+G/H confirmation, HMC/NeuTra execution, retained-sample access, posterior
+claims, and sampler ranking remain closed.
+
+The authoritative receipt binds SHA-256
+`6900692a99a02b8057b0cd26ea902e6d8430396d59d9b4211c669202077fe251`
+of the pre-close plan.  This status/close section was added afterward and did
+not change the executed algorithm, seeds, thresholds, source files, or receipt.

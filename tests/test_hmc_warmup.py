@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
+import bayesfilter.inference.hmc_warmup as hmc_warmup
 from bayesfilter.inference.hmc_coordinates import (
     AffineCoordinateTransform,
     PositionCovarianceEstimate,
@@ -19,7 +20,9 @@ from bayesfilter.inference.hmc_coordinates import (
 from bayesfilter.inference.hmc_tuning import WindowedMassAdaptationConfig
 from bayesfilter.inference.hmc_warmup import (
     _AffineWarmupAdapter,
+    OperationalWindowedWarmupCloseout,
     ReasonableEpsilonAttempt,
+    ReasonableEpsilonResult,
     assess_metric_covariance,
     build_private_start_bank,
     compose_operational_transform_in_base_coordinates,
@@ -79,6 +82,31 @@ class _TargetStatusGaussianAdapter(_GaussianAdapter):
         }
 
 
+class _BatchCapabilityGaussianAdapter(_TargetStatusGaussianAdapter):
+    def __init__(
+        self,
+        covariance: np.ndarray,
+        *,
+        draw_batch: bool = False,
+        flat_batch: bool = False,
+    ) -> None:
+        super().__init__(covariance)
+        self.supports_retained_draw_batch = bool(draw_batch)
+        self.supports_retained_flat_batch = bool(flat_batch)
+        self.value_score_shapes: list[tuple[int, ...]] = []
+        self.telemetry_shapes: list[tuple[int, ...]] = []
+
+    def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        self.value_score_shapes.append(tuple(int(item) for item in value.shape))
+        return super().log_prob_and_grad(value)
+
+    def target_status_telemetry(self, theta: tf.Tensor) -> dict[str, tf.Tensor]:
+        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        self.telemetry_shapes.append(tuple(int(item) for item in value.shape))
+        return super().target_status_telemetry(value)
+
+
 class _TargetStatusOutsideRadiusAdapter(_GaussianAdapter):
     def target_status_telemetry(self, theta: tf.Tensor) -> dict[str, tf.Tensor]:
         nonvalid = tf.reduce_any(tf.abs(theta) > tf.constant(0.5, tf.float64), axis=-1)
@@ -125,6 +153,173 @@ def _transform(covariance: np.ndarray, center: np.ndarray | None = None):
     return AffineCoordinateTransform.from_covariance_estimate(estimate)
 
 
+@pytest.mark.parametrize(
+    ("draw_batch", "flat_batch", "expected_shapes"),
+    (
+        (True, False, [(16, 4, 2), (4, 4, 2)]),
+        (False, True, [(64, 2), (16, 2)]),
+    ),
+)
+def test_affine_warmup_adapter_preserves_retained_batch_contract_and_semantics(
+    draw_batch: bool,
+    flat_batch: bool,
+    expected_shapes: list[tuple[int, ...]],
+) -> None:
+    transform = _transform(
+        np.array([[4.0, 1.0], [1.0, 2.0]]),
+        center=np.array([0.3, -0.2]),
+    )
+    base = _BatchCapabilityGaussianAdapter(
+        np.array([[1.5, 0.2], [0.2, 0.8]]),
+        draw_batch=draw_batch,
+        flat_batch=flat_batch,
+    )
+    wrapped = _AffineWarmupAdapter(
+        base_adapter=base,
+        transform=transform,
+        target_scope="affine_batch_contract",
+    )
+    latent = np.arange(160, dtype=float).reshape(20, 4, 2) / 100.0
+    flat = latent.reshape((-1, 2))
+
+    wrapped_value, wrapped_score = wrapped.log_prob_and_grad(flat)
+    theta = transform.latent_to_theta(flat)
+    base_value, base_score = _GaussianAdapter.log_prob_and_grad(base, theta)
+    np.testing.assert_allclose(wrapped_value.numpy(), base_value.numpy())
+    np.testing.assert_allclose(
+        wrapped_score.numpy(),
+        transform.theta_score_to_latent_score(base_score).numpy(),
+    )
+    wrapped_status = wrapped.target_status_telemetry(flat)
+    base_status = _TargetStatusGaussianAdapter.target_status_telemetry(base, theta)
+    for key in wrapped_status:
+        np.testing.assert_array_equal(wrapped_status[key].numpy(), base_status[key].numpy())
+
+    base.value_score_shapes.clear()
+    base.telemetry_shapes.clear()
+    health = hmc_warmup._evaluate_retained_target_health(
+        adapter=wrapped,
+        samples=latent,
+        target_status_trace_policy="per_chain_step",
+    )
+
+    assert wrapped.supports_retained_draw_batch is draw_batch
+    assert wrapped.supports_retained_flat_batch is flat_batch
+    assert health["shared_invalidity_reasons"] == ()
+    assert health["candidate_data_invalidity_reasons"] == ()
+    assert health["target_status_failure_count"] == 0
+    assert health["evaluated_draw_count"] == 20
+    assert base.value_score_shapes == expected_shapes
+    assert base.telemetry_shapes == expected_shapes
+
+
+def test_affine_warmup_adapter_rejects_dual_batch_contract_and_preserves_none() -> None:
+    transform = _transform(np.eye(2))
+    plain = _AffineWarmupAdapter(
+        base_adapter=_GaussianAdapter(np.eye(2)),
+        transform=transform,
+        target_scope="affine_no_batch_contract",
+    )
+    assert plain.supports_retained_draw_batch is False
+    assert plain.supports_retained_flat_batch is False
+
+    with pytest.raises(ValueError, match="two retained batching contracts"):
+        _AffineWarmupAdapter(
+            base_adapter=_BatchCapabilityGaussianAdapter(
+                np.eye(2), draw_batch=True, flat_batch=True
+            ),
+            transform=transform,
+            target_scope="affine_invalid_batch_contract",
+        )
+
+
+@pytest.mark.parametrize(("draw_batch", "flat_batch"), ((True, False), (False, True)))
+def test_affine_warmup_batch_refinement_preserves_invalid_draw_accounting(
+    draw_batch: bool,
+    flat_batch: bool,
+) -> None:
+    class InvalidAdapter(_BatchCapabilityGaussianAdapter):
+        def log_prob_and_grad(self, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+            value = tf.convert_to_tensor(theta, dtype=tf.float64)
+            self.value_score_shapes.append(tuple(int(item) for item in value.shape))
+            log_prob, score = _GaussianAdapter.log_prob_and_grad(self, value)
+            invalid = tf.equal(value[..., 0], tf.constant(10.0, tf.float64))
+            return tf.where(invalid, tf.constant(float("nan"), tf.float64), log_prob), score
+
+    transform = _transform(np.array([[4.0, 1.0], [1.0, 2.0]]))
+    base = InvalidAdapter(
+        np.eye(2), draw_batch=draw_batch, flat_batch=flat_batch
+    )
+    wrapped = _AffineWarmupAdapter(
+        base_adapter=base,
+        transform=transform,
+        target_scope="affine_invalid_draw_accounting",
+    )
+    samples = np.zeros((20, 4, 2), dtype=float)
+    samples[:, :, 0] = np.arange(20, dtype=float)[:, None]
+    samples[:, :, 1] = np.arange(4, dtype=float)[None, :]
+
+    health = hmc_warmup._evaluate_retained_target_health(
+        adapter=wrapped,
+        samples=samples,
+    )
+
+    assert health["shared_invalidity_reasons"] == ()
+    assert health["candidate_data_invalidity_reasons"] == (
+        "nonfinite_target_log_prob",
+    )
+    assert health["evaluated_draw_count"] == 6
+    assert len(base.value_score_shapes) == 7
+
+
+@pytest.mark.parametrize(("draw_batch", "flat_batch"), ((True, False), (False, True)))
+def test_affine_warmup_batch_telemetry_preserves_invalid_chain_count(
+    draw_batch: bool,
+    flat_batch: bool,
+) -> None:
+    class InvalidTelemetryAdapter(_BatchCapabilityGaussianAdapter):
+        def target_status_telemetry(self, theta: tf.Tensor) -> dict[str, tf.Tensor]:
+            value = tf.convert_to_tensor(theta, dtype=tf.float64)
+            self.telemetry_shapes.append(tuple(int(item) for item in value.shape))
+            leading_shape = tf.shape(value)[:-1]
+            invalid_draw = tf.equal(value[..., 0], tf.constant(10.0, tf.float64))
+            invalid_chain = value[..., 1] < tf.constant(2.0, tf.float64)
+            invalid = tf.logical_and(invalid_draw, invalid_chain)
+            return {
+                "status_code": tf.cast(invalid, tf.int32),
+                "valid_pre_regularized_score": tf.logical_not(invalid),
+                "floor_count_value": tf.zeros(leading_shape, tf.int32),
+                "min_innovation_eigenvalue": tf.ones(leading_shape, tf.float64),
+                "innovation_condition_estimate": tf.ones(leading_shape, tf.float64),
+            }
+
+    transform = _transform(np.array([[4.0, 0.0], [0.0, 1.0]]))
+    base = InvalidTelemetryAdapter(
+        np.eye(2), draw_batch=draw_batch, flat_batch=flat_batch
+    )
+    wrapped = _AffineWarmupAdapter(
+        base_adapter=base,
+        transform=transform,
+        target_scope="affine_invalid_telemetry_accounting",
+    )
+    samples = np.zeros((20, 4, 2), dtype=float)
+    samples[:, :, 0] = np.arange(20, dtype=float)[:, None]
+    samples[:, :, 1] = np.arange(4, dtype=float)[None, :]
+
+    health = hmc_warmup._evaluate_retained_target_health(
+        adapter=wrapped,
+        samples=samples,
+        target_status_trace_policy="per_chain_step",
+    )
+
+    assert health["shared_invalidity_reasons"] == ()
+    assert health["candidate_data_invalidity_reasons"] == (
+        "target_status_telemetry_failure",
+    )
+    assert health["target_status_failure_count"] == 2
+    assert health["evaluated_draw_count"] == 6
+
+
 def test_dense_metric_gate_requires_sample_adequacy() -> None:
     rng = np.random.default_rng(11)
     too_small = rng.normal(size=(20, 4))
@@ -137,6 +332,47 @@ def test_dense_metric_gate_requires_sample_adequacy() -> None:
     assert rejected.report["shrinkage_spd_not_treated_as_adequacy"] is True
     assert accepted.outcome == "dense_update"
     assert accepted.report["dense_information_gate_passed"] is True
+    assert accepted.report["minimum_effective_sample_size"] >= 8
+    assert accepted.report["cross_chain_compatibility_method"] == (
+        "not_applicable_single_chain"
+    )
+
+
+def test_dense_metric_gate_rejects_shifted_explicit_chains() -> None:
+    rng = np.random.default_rng(20260716)
+    states = rng.normal(size=(160, 4, 3))
+    states[:, :, 0] += np.array([-4.0, -1.0, 1.0, 4.0])[None, :]
+
+    decision = assess_metric_covariance(states)
+
+    assert decision.outcome != "dense_update"
+    assert decision.report["dense_checks"]["cross_chain_location_compatible"] is False
+    assert decision.report["maximum_split_rhat"] > 1.10
+
+
+def test_metric_gate_rejects_undefined_explicit_chain_compatibility() -> None:
+    states = np.array(
+        [
+            [[-1.0], [0.0], [1.0], [2.0]],
+            [[-0.5], [0.5], [1.5], [2.5]],
+        ]
+    )
+
+    decision = assess_metric_covariance(
+        states,
+        dense_min_states=2,
+        diagonal_min_states=2,
+    )
+
+    assert decision.outcome == "no_update_insufficient_metric_evidence"
+    assert decision.report["maximum_split_rhat"] is None
+    assert decision.report["cross_chain_compatibility_status"] == (
+        "undefined_fail_closed"
+    )
+    assert decision.report["dense_checks"]["cross_chain_location_compatible"] is False
+    assert decision.report["diagonal_checks"][
+        "cross_chain_location_compatible"
+    ] is False
 
 
 def test_metric_gate_uses_diagonal_fallback_when_dense_rank_is_inadequate() -> None:
@@ -514,6 +750,127 @@ def test_real_operational_warmup_uses_updated_metric_in_later_transition() -> No
     assert "private_start_bank_theta" not in str(payload)
 
 
+def test_latent_metric_refinement_preserves_qualified_initial_correlations() -> None:
+    initial_covariance = np.array([[2.0, 0.9], [0.9, 1.0]])
+    initial_transform = _transform(initial_covariance)
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.array([[1.4, -0.3], [-0.3, 0.5]])),
+        initial_transform=initial_transform,
+        initial_canonical_theta=np.array([0.4, -0.3]),
+        initial_step_size=0.35,
+        trajectory_policy=WarmupTrajectoryPolicy(3, 16),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=112,
+            initial_buffer=16,
+            final_buffer=32,
+            first_window_size=64,
+            min_window_samples=32,
+            mass_shrinkage=0.25,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260717, 10),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="eager",
+    )
+
+    update = next(
+        window
+        for window in result.windows
+        if window.metric_decision is not None
+        and window.metric_decision.update_applied
+    )
+    latent_covariance = np.asarray(update.metric_decision.covariance, dtype=float)
+    expected_canonical = (
+        initial_transform.factor
+        @ latent_covariance
+        @ initial_transform.factor.T
+    )
+    np.testing.assert_allclose(
+        result.final_kernel_state.transform.covariance,
+        expected_canonical,
+        rtol=1.0e-12,
+        atol=1.0e-12,
+    )
+    assert abs(expected_canonical[0, 1]) > 1.0e-6
+
+
+def test_metric_boundary_epsilon_failure_rolls_back_to_qualified_initializer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    initial_transform = _transform(np.array([[1.8, 0.7], [0.7, 1.0]]))
+    original_find = hmc_warmup.find_reasonable_epsilon
+    calls = 0
+
+    def reject_only_metric_boundary(**kwargs: object) -> ReasonableEpsilonResult:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return original_find(**kwargs)
+        return ReasonableEpsilonResult(
+            "inconclusive_bracket",
+            None,
+            (
+                ReasonableEpsilonAttempt(
+                    step_size=0.1,
+                    mean_acceptance_probability=None,
+                    finite=False,
+                    seed=(20260717, 12),
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(
+        hmc_warmup,
+        "find_reasonable_epsilon",
+        reject_only_metric_boundary,
+    )
+
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.array([[1.2, -0.25], [-0.25, 0.45]])),
+        initial_transform=initial_transform,
+        initial_canonical_theta=np.array([0.4, -0.3]),
+        initial_step_size=0.35,
+        trajectory_policy=WarmupTrajectoryPolicy(3, 16),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=112,
+            initial_buffer=16,
+            final_buffer=32,
+            first_window_size=64,
+            min_window_samples=32,
+            mass_shrinkage=0.25,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260717, 11),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="eager",
+    )
+
+    rejected = next(
+        window
+        for window in result.windows
+        if window.metric_decision is not None
+        and window.metric_decision.outcome == "candidate_metric_rejected"
+    )
+    assert calls == 2
+    assert rejected.metric_decision.update_applied is False
+    assert rejected.metric_decision.report["candidate_metric_evidence_passed"] is True
+    assert rejected.metric_decision.report["candidate_rejection_stage"] == (
+        "reasonable_epsilon"
+    )
+    assert rejected.next_coordinate_signature is None
+    assert rejected.next_metric_signature is None
+    assert rejected.next_reasonable_epsilon is None
+    assert result.operational_metric_update_count == 0
+    assert result.final_kernel_state.adaptation_generation == 0
+    assert result.final_kernel_state.transform.signature == initial_transform.signature
+    np.testing.assert_allclose(
+        result.final_kernel_state.transform.covariance,
+        initial_transform.covariance,
+        rtol=0.0,
+        atol=0.0,
+    )
+
+
 def test_operational_warmup_collects_and_vetoes_requested_target_status() -> None:
     config = WindowedMassAdaptationConfig(
         warmup_steps=20,
@@ -584,6 +941,190 @@ def test_tiny_operational_warmup_does_not_claim_dense_metric() -> None:
     assert decisions
     assert all(decision.outcome == "no_update_insufficient_metric_evidence" for decision in decisions)
     assert result.operational_metric_update_count == 0
+
+
+def test_operational_stage_callback_is_additive_public_safe_and_observation_only() -> None:
+    events: list[tuple[str, dict[str, object]]] = []
+
+    def observe_stage(event: str, payload: Mapping[str, object]) -> None:
+        events.append((event, dict(payload)))
+        return None
+
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.eye(2)),
+        initial_transform=_transform(np.eye(2)),
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=0.5,
+        trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=20,
+            initial_buffer=2,
+            final_buffer=8,
+            first_window_size=10,
+            min_window_samples=2,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260718, 701),
+        target_scope="hmc_warmup_stage_callback",
+        chain_execution_mode="eager",
+        stage_callback=observe_stage,
+    )
+
+    assert result.status == "passed"
+    assert events
+    assert {event for event, _payload in events} == {"stage_start", "stage_complete"}
+    stages = [payload["stage"] for _event, payload in events]
+    assert stages.count("post_window_conversion") == 6
+    assert stages.count("retained_target_health") == 6
+    assert stages.count("metric_assessment") == 2
+    for event, payload in events:
+        assert payload["progress_only"] is True
+        assert payload["states_exposed"] is False
+        assert payload["scores_exposed"] is False
+        assert payload["metric_exposed"] is False
+        assert payload["epsilon_exposed"] is False
+        assert payload["logical_draw_count"] > 0
+        assert "stage_elapsed_s" in payload if event == "stage_complete" else True
+        assert not any(
+            forbidden in str(payload).lower()
+            for forbidden in ("canonical_theta", "latent_state", "covariance", "step_size")
+        )
+
+
+def test_operational_stage_callback_cannot_return_a_closeout_payload() -> None:
+    def invalid_stage_callback(
+        _event: str, _payload: Mapping[str, object]
+    ) -> dict[str, object]:
+        return {"stop": True}
+
+    with pytest.raises(ValueError, match="stage callback must return None"):
+        run_operational_windowed_warmup(
+            adapter=_GaussianAdapter(np.eye(2)),
+            initial_transform=_transform(np.eye(2)),
+            initial_canonical_theta=np.array([0.2, -0.1]),
+            initial_step_size=0.5,
+            trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+            config=WindowedMassAdaptationConfig(
+                warmup_steps=20,
+                initial_buffer=2,
+                final_buffer=8,
+                first_window_size=10,
+                min_window_samples=2,
+            ),
+            target_accept_prob=0.70,
+            seed=(20260718, 702),
+            target_scope="hmc_warmup_invalid_stage_callback",
+            chain_execution_mode="eager",
+            stage_callback=invalid_stage_callback,
+        )
+
+
+def test_operational_timeout_closeout_occurs_after_completed_window_commit() -> None:
+    observed: list[tuple[str, tuple[dict[str, object], ...]]] = []
+
+    def close_after_one_window(
+        boundary: str,
+        completed_windows: tuple[dict[str, object], ...],
+    ) -> dict[str, object] | None:
+        observed.append((boundary, completed_windows))
+        if boundary == "before_next_window":
+            return {
+                "remaining_s": 10.0,
+                "reserve_s": 10.0,
+                "within_closeout_window": True,
+            }
+        return None
+
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.eye(2)),
+        initial_transform=_transform(np.eye(2)),
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=0.5,
+        trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=20,
+            initial_buffer=2,
+            final_buffer=8,
+            first_window_size=10,
+            min_window_samples=2,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260711, 501),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="eager",
+        boundary_callback=close_after_one_window,
+    )
+
+    assert isinstance(result, OperationalWindowedWarmupCloseout)
+    assert observed[0] == ("before_first_window", ())
+    assert observed[1][0] == "before_next_window"
+    assert len(observed[1][1]) == 1
+    first_window = observed[1][1][0]
+    assert first_window["transition_count_after_window"] == result.completed_transition_count
+    assert first_window["raw_states_exposed"] is False
+    public = result.public_payload()
+    assert public["completed_window_count"] == 1
+    assert public["completed_warmup_result"] is False
+    assert public["private_start_bank_exposed"] is False
+    assert public["candidate_selection_authorized"] is False
+    assert public["legacy_fallback_used"] is False
+    assert public["boundary_payload"]["remaining_s"] == public["boundary_payload"][
+        "reserve_s"
+    ]
+
+
+def test_operational_segment_closeout_preserves_partial_transition_counts() -> None:
+    completed_counts: list[int] = []
+
+    def close_after_one_segment(
+        event: str,
+        segment: Mapping[str, object],
+    ) -> dict[str, object] | None:
+        if event == "segment_complete":
+            completed_counts.append(int(segment["completed_transition_count"]))
+            return None
+        if int(segment["completed_transition_count"]) == 4:
+            return {
+                "stop_source": "bayesfilter_public_timeout_budget",
+                "stop_reason": "test_resource_closeout",
+                "supervision_counter_baseline": 4,
+            }
+        return None
+
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.eye(2)),
+        initial_transform=_transform(np.eye(2)),
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=0.5,
+        trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=20,
+            initial_buffer=8,
+            final_buffer=4,
+            first_window_size=8,
+            min_window_samples=2,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260711, 502),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="eager",
+        execution_segment_size=4,
+        segment_callback=close_after_one_segment,
+    )
+
+    assert isinstance(result, OperationalWindowedWarmupCloseout)
+    assert completed_counts == [4]
+    assert result.completed_windows == ()
+    assert result.completed_transition_count == 4
+    assert result.planned_transition_count == 20
+    assert result.completed_segment_count == 1
+    assert result.completed_segment_count < result.planned_segment_count
+    public = result.public_payload()
+    assert public["remaining_transition_count"] == 16
+    assert public["stop_source"] == "bayesfilter_public_timeout_budget"
+    assert public["stop_reason"] == "test_resource_closeout"
+    assert public["supervision_counter_baseline"] == 4
+    assert public["candidate_selection_authorized"] is False
 
 
 def test_operational_warmup_live_result_rejects_corrupt_window_ledger() -> None:

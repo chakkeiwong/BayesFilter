@@ -313,15 +313,46 @@ def _symmetrize(matrix: tf.Tensor) -> tf.Tensor:
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
 
 
-def _as_observation_matrix(observations: tf.Tensor) -> tf.Tensor:
+def _as_observation_tensor(
+    observations: tf.Tensor,
+    *,
+    batch_dim: int,
+    observation_dim: int,
+) -> tf.Tensor:
+    """Normalize shared or row-aligned observations without changing values.
+
+    Rank-1 and rank-2 inputs retain the historical shared-series contract.
+    Rank-3 inputs use ``[batch, time, observation]`` so each model/parameter
+    row is evaluated against its corresponding observation panel.
+    """
+
     y = tf.convert_to_tensor(observations, dtype=tf.float64)
     if y.shape.rank == 1:
         y = y[:, tf.newaxis]
-    if y.shape.rank != 2:
-        raise ValueError("observations must be one- or two-dimensional")
-    if y.shape[0] is None:
+    if y.shape.rank not in (2, 3):
+        raise ValueError("observations must have rank 1, 2, or 3")
+    if y.shape.rank == 3 and y.shape[0] != batch_dim:
+        raise ValueError(
+            "row-aligned observations must have shape "
+            "[model batch, time, observation]"
+        )
+    if y.shape[-1] != observation_dim:
+        raise ValueError("observation dimension does not match the model")
+    time_axis = 0 if y.shape.rank == 2 else 1
+    if y.shape[time_axis] is None:
         raise ValueError("experimental sigma-point filters require static observation length")
     return y
+
+
+def _observation_count(y: tf.Tensor) -> int:
+    time_axis = 0 if y.shape.rank == 2 else 1
+    return int(y.shape[time_axis])
+
+
+def _observation_at_time(y: tf.Tensor, time_index: tf.Tensor) -> tf.Tensor:
+    if y.shape.rank == 2:
+        return y[time_index][tf.newaxis, :]
+    return y[:, time_index, :]
 
 
 def _principal_sqrt_frechet_derivative_from_eigh(
@@ -1086,8 +1117,6 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     if model.has_lagged_observation_contract():
         raise ValueError("output-cotangent API does not yet support lagged observations")
 
-    y = _as_observation_matrix(observations)
-    n_timesteps = int(y.shape[0])
     batch_dim = model.batch_dim
     state_dim = model.state_dim
     innovation_dim = model.innovation_dim
@@ -1098,6 +1127,12 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
     state_dim = int(state_dim)
     innovation_dim = int(innovation_dim)
     observation_dim = int(observation_dim)
+    y = _as_observation_tensor(
+        observations,
+        batch_dim=batch_dim,
+        observation_dim=observation_dim,
+    )
+    n_timesteps = _observation_count(y)
     aug_dim = state_dim + innovation_dim
     if sigma_rule is None:
         sigma_rule, backend_name = _rule_for_backend(backend, aug_dim)
@@ -1261,7 +1296,7 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             sigma_rule.covariance_weights,
             centered_y,
         )
-        innovation = y[t][tf.newaxis, :] - observation_mean
+        innovation = _observation_at_time(y, t) - observation_mean
         innovation_cholesky = tf.linalg.cholesky(implemented_innovation_covariance)
         solve_innovation = _batched_cholesky_solve(innovation_cholesky, innovation)
         innovation_precision = _batched_cholesky_solve(
@@ -1403,7 +1438,7 @@ def tf_batched_svd_sigma_point_value_and_output_cotangents(
             sigma_rule.covariance_weights,
             centered_y,
         )
-        innovation = y[t][tf.newaxis, :] - observation_mean
+        innovation = _observation_at_time(y, t) - observation_mean
         innovation_cholesky = tf.linalg.cholesky(implemented_innovation_covariance)
         solve_innovation = _batched_cholesky_solve(innovation_cholesky, innovation)
         innovation_precision = _batched_cholesky_solve(
@@ -1729,11 +1764,15 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
     """Return batched nonlinear SVD sigma-point likelihood and analytic score."""
 
-    y = _as_observation_matrix(observations)
-    n_timesteps = int(y.shape[0])
     batch_dim, parameter_dim, state_dim, innovation_dim, observation_dim = (
         _check_model_derivative_shapes(model, derivatives)
     )
+    y = _as_observation_tensor(
+        observations,
+        batch_dim=batch_dim,
+        observation_dim=observation_dim,
+    )
+    n_timesteps = _observation_count(y)
     aug_dim = state_dim + innovation_dim
     if sigma_rule.dim != aug_dim:
         raise ValueError("sigma_rule dimension must equal state_dim + innovation_dim")
@@ -2155,7 +2194,7 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
                 d_centered_y,
             )
         )
-        innovation = y[t][tf.newaxis, :] - observation_mean
+        innovation = _observation_at_time(y, t) - observation_mean
         d_innovation = -d_observation_mean
         if backend_name == "tf_principal_sqrt_ukf":
             innovation_cholesky = tf.linalg.cholesky(

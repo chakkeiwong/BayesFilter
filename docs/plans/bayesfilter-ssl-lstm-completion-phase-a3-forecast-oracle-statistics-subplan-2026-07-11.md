@@ -2,7 +2,21 @@
 
 Date: 2026-07-11
 
-Status: `REVIEWED_AGREED_A2_CLOSURE_REQUIRED_NO_A3_IMPLEMENTATION_AUTHORIZED`
+Status: `HISTORICAL_SUPERSEDED_BY_ACADEMIC_TIER2_LIVE_PLAN`
+
+## 2026-07-13 Proportional-Governance Reset
+
+The owner-approved academic risk-tier policy in `AGENTS.md` supersedes this
+document's frozen-`HEAD`, signed hash-chain, syscall-trace, finite-write-set,
+phase-closure, and repeated-review requirements. Those records remain useful
+historical evidence, but they are not active execution gates.
+
+The mathematical definitions, statistical roles, failure modes, and nonclaims
+below remain reference material. Active A3 execution is governed by
+`docs/plans/bayesfilter-ssl-lstm-predictive-validation-live-plan-2026-07-13.md`.
+
+Do not reactivate this document's historical governance machinery unless the
+owner explicitly requests it after the 2026-07-13 policy reset.
 
 ## Phase Objective
 

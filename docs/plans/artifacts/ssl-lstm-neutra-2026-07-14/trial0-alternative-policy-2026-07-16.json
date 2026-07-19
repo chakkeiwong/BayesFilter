@@ -1,0 +1,57 @@
+{
+  "schema": "bayesfilter.ssl_lstm_neutra.trial0_alternative_policy.v1",
+  "created_at_utc": "2026-07-16T00:35:00+00:00",
+  "selection_role": "predeclared_historically_viable_alternative_after_trial2_instability",
+  "support_policy_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/support-eligible-policy-2026-07-16.json",
+  "support_policy_sha256": "9f05aff2a333bdc5179408e397645b44b65c5dee5f6d8ad941cd4dbdde74285d",
+  "selected_trial_record_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/trials/trial-0000/result.json",
+  "selected_trial_record_sha256": "7a1022841220e3743d5af27efc0733c65506e10f2189fe3609d43f07ebc7dd63",
+  "study_summary_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/study-summary.json",
+  "study_summary_sha256": "186f32bd54f97575ce236d89ebefe07d1c1af7063f0055adc05209f0c5c0475f",
+  "support_audit_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/plateau-confirmation-2026-07-16/fresh-c-support-audit.json",
+  "support_audit_sha256": "7cc0a4a7fd3e29d29f42597601a8c2db96e411eb7436519126e2e13de1411998",
+  "trial2_confirmation_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/support-eligible-confirmation-2026-07-16/confirmation-summary.json",
+  "trial2_confirmation_sha256": "358bd1117e775a622b26df26d0c459058633af70d7cd94b3ee2f99b7b328d24f",
+  "selected_hyperparameters": {
+    "learning_rate": 0.0011219623709077644,
+    "initialization_scale": 0.02,
+    "gradient_clip_norm": 5.0
+  },
+  "plateau_policy": {
+    "validation_check_every": 100,
+    "patience_steps": 500,
+    "patience_checks": 5,
+    "max_steps": 5000,
+    "learning_rate_factor": 0.5,
+    "minimum_learning_rate_fraction": 0.0625,
+    "absolute_min_delta": 0.0,
+    "one_sided_critical_value": 1.6694022215079607,
+    "saturation_max": 0.05,
+    "roundtrip_max_abs": 1e-09,
+    "moderate_shell_max_inverse_radius": 4.3,
+    "checkpoint_eligibility": "finite_and_saturation_and_roundtrip_and_moderate_shell",
+    "patience_anchor": "first_eligible_then_meaningful_loss_improvements_among_eligible_checkpoints",
+    "two_period_interpretation": "reduce_at_n_stop_at_2n_since_last_meaningful_eligible_improvement"
+  },
+  "fresh_streams": [
+    {
+      "label": "fresh-g",
+      "initialization_seed": [20260716, 7105],
+      "training_seed": [20260716, 8105],
+      "validation_seed": [20260716, 8205]
+    },
+    {
+      "label": "fresh-h",
+      "initialization_seed": [20260716, 7106],
+      "training_seed": [20260716, 8106],
+      "validation_seed": [20260716, 8206]
+    }
+  ],
+  "causal_interpretation": "configuration_viability_only_because_learning_rate_and_initialization_scale_both_change",
+  "nonclaims": [
+    "trial 0 was predeclared as viable but was not statistically ranked above trial 2",
+    "Fresh E and F are result evidence and are not reused for trial-0 confirmation",
+    "no pure learning-rate effect is identified",
+    "no posterior-correctness, HMC-readiness, superiority, or default-readiness claim"
+  ]
+}

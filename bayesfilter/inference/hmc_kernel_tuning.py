@@ -32,6 +32,27 @@ from typing import Any, Mapping
 
 import numpy as np
 
+from bayesfilter.hmc_route_contract import (
+    HMC_TOP_LEVEL_SELECTION_STAGE,
+    HMC_WINDOWED_MASS_STAGE,
+    LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
+    OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+    OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+    HMCAlgorithmRouteDecision,
+    require_hmc_algorithm_route,
+    windowed_algorithm_for_selection_algorithm,
+)
+from bayesfilter.hmc_budget_contract import (
+    HMCOperationalStatisticalWorkPolicy,
+    OPERATIONAL_HMC_BUDGET_POLICY_ID,
+    build_private_resolved_hmc_work_manifest,
+    build_public_hmc_work_manifest,
+    reconcile_executed_hmc_work,
+    validate_executed_hmc_work_reconciliation,
+    validate_private_resolved_hmc_work_manifest,
+    validate_public_hmc_work_manifest,
+)
 from bayesfilter.inference.hmc import (
     FixedSizeHMCChunkConfig,
     FixedSizeHMCChunkRunResult,
@@ -70,6 +91,7 @@ from bayesfilter.inference.hmc_coordinates import (
     transform_from_precomputed_mass_artifact,
 )
 from bayesfilter.inference.hmc_warmup import (
+    OperationalWindowedWarmupCloseout,
     OperationalWindowedWarmupResult,
     compose_base_transform_with_nested_artifact,
     compose_operational_transform_in_base_coordinates,
@@ -179,7 +201,7 @@ _PHASE7_OPERATIONAL_REPAIR_SEED_POLICY = (
 _PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY = (
     "bayesfilter.phase7_operational_evidence_extension_seed.v2"
 )
-_PHASE5_JOINT_L_EPSILON_ALGORITHM = "joint_l_epsilon_grid_fixed_mass_hmc"
+_PHASE5_JOINT_L_EPSILON_ALGORITHM = LEGACY_JOINT_L_EPSILON_ALGORITHM_ID
 _PHASE7_DIRECT_QUEUE_MAX_STARTS = 2
 
 FROZEN_STEP_TRAJECTORY_STAGE_NONCLAIMS = (
@@ -873,6 +895,47 @@ def _attempt_budget_policy_from_payload(
     public_max_attempts: int | None = None,
     public_diagnostic_preset: str | None = None,
 ) -> "_HMCAttemptBudgetPolicy":
+    operational_keys = {
+        "operational_screen_num_results",
+        "operational_screen_num_burnin_steps",
+        "operational_evidence_extension_checkpoints",
+        "operational_exact_l_tune_adaptation_steps",
+        "operational_verification_num_results",
+        "operational_verification_num_burnin_steps",
+        "operational_budget_policy_id",
+        "operational_budget_policy_hash",
+    }
+    present_operational_keys = operational_keys.intersection(payload)
+    if present_operational_keys and present_operational_keys != operational_keys:
+        missing = ", ".join(sorted(operational_keys - present_operational_keys))
+        raise ValueError(f"serialized operational budget policy is incomplete: {missing}")
+    if present_operational_keys:
+        operational = HMCOperationalStatisticalWorkPolicy(
+            initial_candidate_results=int(payload["operational_screen_num_results"]),
+            candidate_burnin_steps=int(
+                payload["operational_screen_num_burnin_steps"]
+            ),
+            evidence_extension_checkpoints=tuple(
+                int(item)
+                for item in payload["operational_evidence_extension_checkpoints"]
+            ),
+            exact_l_tune_adaptation_steps=int(
+                payload["operational_exact_l_tune_adaptation_steps"]
+            ),
+            fresh_verification_results=int(
+                payload["operational_verification_num_results"]
+            ),
+            fresh_verification_burnin_steps=int(
+                payload["operational_verification_num_burnin_steps"]
+            ),
+            policy_id=str(payload["operational_budget_policy_id"]),
+        )
+        if str(payload["operational_budget_policy_hash"]) != operational.policy_hash:
+            raise ValueError("serialized operational budget policy hash mismatch")
+    else:
+        # Compatibility for artifacts written before operational budgets were
+        # serialized separately from the legacy geometry-scaled fields.
+        operational = HMCOperationalStatisticalWorkPolicy()
     return _HMCAttemptBudgetPolicy(
         target_dimension=int(payload["target_dimension"]),
         attempt_index=int(payload["attempt_index"]),
@@ -885,6 +948,22 @@ def _attempt_budget_policy_from_payload(
         phase6_screen_burnin_steps=int(payload["phase6_screen_burnin_steps"]),
         verification_num_results=int(payload["verification_num_results"]),
         verification_num_burnin_steps=int(payload["verification_num_burnin_steps"]),
+        operational_screen_num_results=operational.initial_candidate_results,
+        operational_screen_num_burnin_steps=operational.candidate_burnin_steps,
+        operational_evidence_extension_checkpoints=(
+            operational.evidence_extension_checkpoints
+        ),
+        operational_exact_l_tune_adaptation_steps=(
+            operational.exact_l_tune_adaptation_steps
+        ),
+        operational_verification_num_results=(
+            operational.fresh_verification_results
+        ),
+        operational_verification_num_burnin_steps=(
+            operational.fresh_verification_burnin_steps
+        ),
+        operational_budget_policy_id=operational.policy_id,
+        operational_budget_policy_hash=operational.policy_hash,
         serious_policy=serious_policy,
         public_budget_class=public_budget_class,
         public_budget_cap=public_budget_cap,
@@ -930,7 +1009,10 @@ _FROZEN_STEP_TRAJECTORY_ORDER_LOW_ACCEPTANCE_REPAIR = (
 )
 _FROZEN_STEP_TRAJECTORY_SOFT_DEADLINE_RESERVE_S = 60.0
 _WINDOWED_MASS_PUBLIC_TIMEOUT_RESERVE_S = 60.0
-_WINDOWED_MASS_PUBLIC_TIMEOUT_HARD_VETO = "windowed_mass_public_timeout_soft_deadline"
+_WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_STATUS = "budget_exhausted"
+_WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_ROLE = (
+    "windowed_mass_resource_timeout_non_promoting"
+)
 _PHASE7_PUBLIC_TIMEOUT_BEFORE_WINDOWED_MASS_HARD_VETO = (
     "phase7_public_timeout_before_windowed_mass"
 )
@@ -959,6 +1041,7 @@ _FIXED_MASS_STEP_PUBLIC_TIMEOUT_BUDGET_INCOMPLETE_REPAIR_TRIGGER = (
     "fixed_mass_step_budget_incomplete_after_selected_pair_progress"
 )
 _WINDOWED_MASS_SEGMENT_SIZE = 4
+_OPERATIONAL_WARMUP_SEGMENT_SIZE = 64
 _WINDOWED_MASS_SEGMENT_SOFT_DEADLINE_SAFETY_MULTIPLIER = 1.25
 _WINDOWED_MASS_SEGMENT_SOFT_DEADLINE_RECENT_WINDOW = 3
 _FROZEN_STEP_TRAJECTORY_SOFT_DEADLINE_SAFETY_MULTIPLIER = 1.25
@@ -1883,6 +1966,7 @@ class HMCWindowedMassStageConfig:
     result artifact.
     """
 
+    algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     target_accept_prob: float = 0.70
     seed: tuple[int, int] = (20260621, 4)
     chain_execution_mode: str = "tf_function"
@@ -1898,6 +1982,10 @@ class HMCWindowedMassStageConfig:
     source: str = "bayesfilter.inference.hmc_kernel_tuning.windowed_mass_stage"
 
     def __post_init__(self) -> None:
+        algorithm_id = str(self.algorithm_id)
+        if not algorithm_id:
+            raise ValueError("algorithm_id must be non-empty")
+        object.__setattr__(self, "algorithm_id", algorithm_id)
         target = float(self.target_accept_prob)
         if not np.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
@@ -1981,6 +2069,7 @@ class HMCWindowedMassStageConfig:
 
     def payload(self) -> Mapping[str, Any]:
         return {
+            "algorithm_id": self.algorithm_id,
             "target_accept_prob": self.target_accept_prob,
             "seed": self.seed,
             "chain_execution_mode": self.chain_execution_mode,
@@ -2031,7 +2120,13 @@ class HMCWindowedMassStageResult:
     windowed_mass_result: WindowedMassAdaptationResult | None
     seed_report: Mapping[str, Any]
     diagnostic_roles: Mapping[str, str]
+    repair_triggers: tuple[str, ...] = ()
     operational_warmup_result: OperationalWindowedWarmupResult | None = None
+    operational_warmup_closeout: OperationalWindowedWarmupCloseout | None = None
+    operational_mass_artifact: PrecomputedMassArtifact | None = dataclasses.field(
+        default=None,
+        repr=False,
+    )
     nonclaims: tuple[str, ...] = WINDOWED_MASS_STAGE_NONCLAIMS
 
     def __post_init__(self) -> None:
@@ -2055,6 +2150,8 @@ class HMCWindowedMassStageResult:
         object.__setattr__(self, "target_dimension", dimension)
         hard_vetoes = _string_tuple(self.hard_vetoes)
         object.__setattr__(self, "hard_vetoes", hard_vetoes)
+        repair_triggers = _string_tuple(self.repair_triggers)
+        object.__setattr__(self, "repair_triggers", repair_triggers)
         object.__setattr__(self, "diagnostics", dict(self.diagnostics))
         object.__setattr__(self, "draw_capture_policy", dict(self.draw_capture_policy))
         object.__setattr__(
@@ -2081,6 +2178,22 @@ class HMCWindowedMassStageResult:
             raise TypeError(
                 "operational_warmup_result must be OperationalWindowedWarmupResult"
             )
+        if self.operational_warmup_closeout is not None and not isinstance(
+            self.operational_warmup_closeout,
+            OperationalWindowedWarmupCloseout,
+        ):
+            raise TypeError(
+                "operational_warmup_closeout must be OperationalWindowedWarmupCloseout"
+            )
+        if (
+            self.operational_warmup_result is not None
+            and self.operational_warmup_closeout is not None
+        ):
+            raise ValueError("completed operational warmup cannot also be a closeout")
+        if self.operational_mass_artifact is not None and not isinstance(
+            self.operational_mass_artifact, PrecomputedMassArtifact
+        ):
+            raise TypeError("operational_mass_artifact must be PrecomputedMassArtifact")
         object.__setattr__(self, "seed_report", dict(self.seed_report))
         object.__setattr__(self, "diagnostic_roles", dict(self.diagnostic_roles))
         nonclaims = tuple(str(item) for item in self.nonclaims)
@@ -2090,8 +2203,16 @@ class HMCWindowedMassStageResult:
         if self.final_status == "passed":
             if hard_vetoes:
                 raise ValueError("passed windowed mass stage cannot have hard vetoes")
-            if self.windowed_mass_result is None or not self.windowed_mass_result.passed:
-                raise ValueError("passed windowed mass stage requires passed windowed result")
+            operational_pass = (
+                self.operational_warmup_result is not None
+                and self.operational_mass_artifact is not None
+            )
+            compatibility_pass = (
+                self.windowed_mass_result is not None
+                and self.windowed_mass_result.passed
+            )
+            if not operational_pass and not compatibility_pass:
+                raise ValueError("passed windowed mass stage requires authoritative mass")
 
     @property
     def passed(self) -> bool:
@@ -2099,18 +2220,24 @@ class HMCWindowedMassStageResult:
 
     @property
     def adapted_mass_artifact_payload(self) -> Mapping[str, Any] | None:
+        if self.operational_mass_artifact is not None:
+            return self.operational_mass_artifact.signature_payload()
         if self.windowed_mass_result is None:
             return None
         return self.windowed_mass_result.final_mass_artifact_payload
 
     @property
     def adapted_mass_artifact_signature(self) -> str | None:
+        if self.operational_mass_artifact is not None:
+            return _mass_artifact_signature(self.operational_mass_artifact)
         if self.windowed_mass_result is None:
             return None
         return self.windowed_mass_result.final_mass_artifact_signature
 
     @property
     def candidate_step_size(self) -> float | None:
+        if self.operational_warmup_result is not None:
+            return float(self.operational_warmup_result.final_kernel_state.epsilon)
         if self.windowed_mass_result is None:
             return None
         return self.windowed_mass_result.final_step_size
@@ -2133,6 +2260,7 @@ class HMCWindowedMassStageResult:
             "final_status": self.final_status,
             "diagnostic_role": self.diagnostic_role,
             "hard_vetoes": self.hard_vetoes,
+            "repair_triggers": self.repair_triggers,
             "diagnostics": self.diagnostics,
             "draw_capture_policy": self.draw_capture_policy,
             "warmup_draw_provenance": self.warmup_draw_provenance,
@@ -2145,6 +2273,12 @@ class HMCWindowedMassStageResult:
             "operational_warmup_result": None
             if self.operational_warmup_result is None
             else self.operational_warmup_result.public_payload(),
+            "operational_warmup_closeout": None
+            if self.operational_warmup_closeout is None
+            else self.operational_warmup_closeout.public_payload(),
+            "operational_mass_artifact_available": (
+                self.operational_mass_artifact is not None
+            ),
             "adapted_mass_artifact_payload": self.adapted_mass_artifact_payload,
             "adapted_mass_artifact_signature": self.adapted_mass_artifact_signature,
             "candidate_step_size": self.candidate_step_size,
@@ -3583,6 +3717,16 @@ class HMCFixedMassStepStageResult:
     _operational_selection_loop: BoundedFixedTrajectorySelectionResult | None = (
         dataclasses.field(default=None, repr=False, compare=False)
     )
+    _operational_private_work_manifest: Mapping[str, Any] | None = dataclasses.field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
+    _operational_public_work_manifest: Mapping[str, Any] | None = dataclasses.field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
     private_runner_cache_handoff: Mapping[str, Any] = field(
         default_factory=dict,
         repr=False,
@@ -3680,6 +3824,55 @@ class HMCFixedMassStepStageResult:
             and operational_loop.selection.signature != operational_selection.signature
         ):
             raise ValueError("operational selection loop terminal lineage mismatch")
+        private_work_manifest = (
+            None
+            if self._operational_private_work_manifest is None
+            else dict(self._operational_private_work_manifest)
+        )
+        public_work_manifest = (
+            None
+            if self._operational_public_work_manifest is None
+            else dict(
+                validate_public_hmc_work_manifest(
+                    self._operational_public_work_manifest
+                )
+            )
+        )
+        if (private_work_manifest is None) != (public_work_manifest is None):
+            raise ValueError("operational public/private work manifests must be paired")
+        if private_work_manifest is not None:
+            if operational_loop is None:
+                raise ValueError("operational private work manifest lost its selection")
+            public_manifest_hash = str(
+                self.diagnostics.get("public_work_manifest_hash", "")
+            )
+            if public_work_manifest["manifest_hash"] != public_manifest_hash:
+                raise ValueError("operational public work manifest hash changed")
+            private_work_manifest = dict(
+                validate_private_resolved_hmc_work_manifest(
+                    private_work_manifest,
+                    expected_public_manifest_hash=public_manifest_hash,
+                )
+            )
+            reconciliation = validate_executed_hmc_work_reconciliation(
+                self.diagnostics.get("executed_work_reconciliation", {}),
+                expected_public_manifest_hash=public_manifest_hash,
+                public_manifest=public_work_manifest,
+            )
+            if reconciliation["reconciliation_hash"] != self.diagnostics.get(
+                "executed_work_reconciliation", {}
+            ).get("reconciliation_hash"):
+                raise ValueError("operational work reconciliation changed")
+        object.__setattr__(
+            self,
+            "_operational_private_work_manifest",
+            private_work_manifest,
+        )
+        object.__setattr__(
+            self,
+            "_operational_public_work_manifest",
+            public_work_manifest,
+        )
         if self.final_status == "passed":
             if self.hard_vetoes:
                 raise ValueError("passed fixed-mass step stage cannot have hard vetoes")
@@ -3812,6 +4005,28 @@ class HMCFixedMassStepStageResult:
                 "raw_step_history_exposed": False,
                 "raw_start_bank_exposed": False,
                 "raw_samples_exposed": False,
+            },
+            "operational_work_manifest_summary": None
+            if self._operational_private_work_manifest is None
+            else {
+                "policy_id": self.diagnostics.get("operational_budget_policy_id"),
+                "policy_hash": self.diagnostics.get("operational_budget_policy_hash"),
+                "public_manifest_hash": self._operational_private_work_manifest.get(
+                    "public_manifest_hash"
+                ),
+                "private_manifest_hash": self._operational_private_work_manifest.get(
+                    "private_manifest_hash"
+                ),
+                "resolved_candidate_count": self._operational_private_work_manifest.get(
+                    "resolved_candidate_count"
+                ),
+                "executed_work_reconciliation": self.diagnostics.get(
+                    "executed_work_reconciliation"
+                ),
+                "accounting_scope": "through_fixed_mass_selection",
+                "fresh_verification_accounted": False,
+                "private_hmc_mechanics_exposed": False,
+                "aggregate_counts_public_safe": True,
             },
             "frozen_mass_invariant": self.frozen_mass_invariant,
             "seed_report": self.seed_report,
@@ -4661,6 +4876,8 @@ class HMCTuneVerifyRepairLoopConfig:
     derived from target dimension by BayesFilter-owned policy.
     """
 
+    algorithm_id: str = OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    operational_budget_policy_id: str = OPERATIONAL_HMC_BUDGET_POLICY_ID
     target_accept_prob: float = 0.70
     acceptance_band: tuple[float, float] = (0.65, 0.75)
     repair_band: tuple[float, float] = (0.55, 0.85)
@@ -4692,6 +4909,18 @@ class HMCTuneVerifyRepairLoopConfig:
     source: str = "bayesfilter.inference.hmc_kernel_tuning.tune_verify_repair_loop"
 
     def __post_init__(self) -> None:
+        algorithm_id = str(self.algorithm_id)
+        if not algorithm_id:
+            raise ValueError("algorithm_id must be non-empty")
+        object.__setattr__(self, "algorithm_id", algorithm_id)
+        budget_policy_id = str(self.operational_budget_policy_id)
+        if budget_policy_id != OPERATIONAL_HMC_BUDGET_POLICY_ID:
+            raise ValueError("operational_budget_policy_id is fixed by BayesFilter")
+        object.__setattr__(
+            self,
+            "operational_budget_policy_id",
+            budget_policy_id,
+        )
         target = float(self.target_accept_prob)
         if not np.isfinite(target) or not 0.0 < target < 1.0:
             raise ValueError("target_accept_prob must be finite and in (0, 1)")
@@ -4894,6 +5123,8 @@ class HMCTuneVerifyRepairLoopConfig:
 
     def payload(self) -> Mapping[str, Any]:
         return {
+            "algorithm_id": self.algorithm_id,
+            "operational_budget_policy_id": self.operational_budget_policy_id,
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
             "repair_band": self.repair_band,
@@ -5162,6 +5393,8 @@ class HMCKernelTuningConfig:
     warmup budgets, draw counts, or budget schedules.
     """
 
+    algorithm_id: str = OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    operational_budget_policy_id: str = OPERATIONAL_HMC_BUDGET_POLICY_ID
     preset: str = "standard"
     target_accept_prob: float = 0.70
     acceptance_band: tuple[float, float] = (0.65, 0.75)
@@ -5204,6 +5437,18 @@ class HMCKernelTuningConfig:
     source: str = "bayesfilter.inference.tune_hmc_kernel"
 
     def __post_init__(self) -> None:
+        algorithm_id = str(self.algorithm_id)
+        if not algorithm_id:
+            raise ValueError("algorithm_id must be non-empty")
+        object.__setattr__(self, "algorithm_id", algorithm_id)
+        budget_policy_id = str(self.operational_budget_policy_id)
+        if budget_policy_id != OPERATIONAL_HMC_BUDGET_POLICY_ID:
+            raise ValueError("operational_budget_policy_id is fixed by BayesFilter")
+        object.__setattr__(
+            self,
+            "operational_budget_policy_id",
+            budget_policy_id,
+        )
         preset = str(self.preset)
         if preset not in {"smoke", "diagnostic", "diagnostic_plus", "standard", "serious"}:
             raise ValueError(
@@ -5517,6 +5762,8 @@ class HMCKernelTuningConfig:
     def payload(self) -> Mapping[str, Any]:
         return {
             "schema": "bayesfilter.hmc_kernel_tuning_config.v1",
+            "algorithm_id": self.algorithm_id,
+            "operational_budget_policy_id": self.operational_budget_policy_id,
             "preset": self.preset,
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
@@ -6719,7 +6966,16 @@ def _operational_windowed_mass_capture(
     stage_seed: tuple[int, int],
     target_scope: str,
     attempt_state: "_HMCPhaseAttemptState | None",
-) -> tuple[OperationalWindowedWarmupResult, WindowedMassAdaptationResult, Mapping[str, Any]]:
+    route_decision: HMCAlgorithmRouteDecision,
+    progress_callback: LoopProgressCallback | None,
+    attempt_index: int | None,
+) -> tuple[
+    OperationalWindowedWarmupResult | None,
+    WindowedMassAdaptationResult | None,
+    Mapping[str, Any],
+    OperationalWindowedWarmupCloseout | None,
+    PrecomputedMassArtifact | None,
+]:
     """Run R3 and build a deliberately non-operational v1 compatibility view."""
 
     _base_estimate, base_transform = transform_from_precomputed_mass_artifact(
@@ -6741,7 +6997,81 @@ def _operational_windowed_mass_capture(
         int(mass_window_seed_kernel["num_leapfrog_steps"]),
         _GEOMETRY_MAX_LEAPFROG,
     )
-    operational_result = run_operational_windowed_warmup(
+    def boundary_callback(
+        boundary: str,
+        _completed_windows: tuple[Mapping[str, Any], ...],
+    ) -> Mapping[str, Any] | None:
+        timeout = _windowed_mass_public_timeout_preflight(
+            config,
+            stage=f"operational_{boundary}",
+            attempt_index=attempt_index,
+        )
+        if timeout is None:
+            return None
+        return {
+            **dict(timeout),
+            "stop_source": "bayesfilter_public_timeout_budget",
+            "stop_reason": "public_timeout_budget_exhausted_at_window_boundary",
+            "supervision_counter_baseline": sum(
+                int(item.get("transition_count_after_window", 0))
+                for item in _completed_windows[-1:]
+            ),
+        }
+
+    def segment_callback(
+        event: str,
+        segment: Mapping[str, Any],
+    ) -> Mapping[str, Any] | None:
+        completed = int(segment["completed_transition_count"])
+        if event == "segment_start":
+            timeout = _windowed_mass_public_timeout_preflight(
+                config,
+                stage="operational_segment_start",
+                attempt_index=attempt_index,
+            )
+            _emit_windowed_mass_progress(
+                progress_callback,
+                "windowed_mass_operational_segment_start",
+                attempt_index=attempt_index,
+                route_category=route_decision.algorithm_id,
+                route_decision=route_decision,
+                started=True,
+                elapsed_s=0.0,
+                started_perf_counter_s=time.perf_counter(),
+                operational_progress=segment,
+            )
+            if timeout is None:
+                return None
+            return {
+                **dict(timeout),
+                "stop_source": "bayesfilter_public_timeout_budget",
+                "stop_reason": "public_timeout_budget_exhausted_before_next_segment",
+                "supervision_counter_baseline": completed,
+            }
+        _emit_windowed_mass_progress(
+            progress_callback,
+            "windowed_mass_operational_segment_complete",
+            attempt_index=attempt_index,
+            route_category=route_decision.algorithm_id,
+            route_decision=route_decision,
+            completed=True,
+            elapsed_s=float(segment.get("segment_elapsed_s", 0.0)),
+            operational_progress=segment,
+        )
+        return None
+
+    _emit_windowed_mass_progress(
+        progress_callback,
+        "windowed_mass_operational_warmup_start",
+        attempt_index=attempt_index,
+        route_category=route_decision.algorithm_id,
+        route_decision=route_decision,
+        started=True,
+        elapsed_s=0.0,
+        started_perf_counter_s=time.perf_counter(),
+    )
+    operational_start = time.perf_counter()
+    operational_outcome = run_operational_windowed_warmup(
         adapter=adapter,
         initial_transform=active_transform,
         initial_canonical_theta=initial_theta,
@@ -6753,6 +7083,46 @@ def _operational_windowed_mass_capture(
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
         target_status_trace_policy=config.target_status_trace_policy,
+        algorithm_id=route_decision.algorithm_id,
+        route_contract_version=route_decision.route_contract_version,
+        boundary_callback=boundary_callback,
+        execution_segment_size=_OPERATIONAL_WARMUP_SEGMENT_SIZE,
+        segment_callback=segment_callback,
+    )
+    if isinstance(operational_outcome, OperationalWindowedWarmupCloseout):
+        closeout_payload = operational_outcome.public_payload()
+        _emit_windowed_mass_progress(
+            progress_callback,
+            "windowed_mass_public_timeout_closeout",
+            attempt_index=attempt_index,
+            route_category=route_decision.algorithm_id,
+            route_decision=route_decision,
+            completed=True,
+            elapsed_s=operational_outcome.elapsed_s,
+            timeout_closeout=closeout_payload,
+        )
+        capture = dict(_windowed_stage_public_timeout_capture(closeout_payload))
+        capture["runtime_metadata"] = {
+            "windowed_stage_route_category": route_decision.algorithm_id,
+            "operational_windowed_warmup_partial_closeout": True,
+            "completed_window_count": len(operational_outcome.completed_windows),
+            "planned_window_count": operational_outcome.planned_window_count,
+            "completed_transition_count": operational_outcome.completed_transition_count,
+            "planned_transition_count": operational_outcome.planned_transition_count,
+            "completed_segment_count": operational_outcome.completed_segment_count,
+            "planned_segment_count": operational_outcome.planned_segment_count,
+            "algorithm_route": route_decision.payload(),
+        }
+        return None, None, capture, operational_outcome, None
+    operational_result = operational_outcome
+    _emit_windowed_mass_progress(
+        progress_callback,
+        "windowed_mass_operational_warmup_complete",
+        attempt_index=attempt_index,
+        route_category=route_decision.algorithm_id,
+        route_decision=route_decision,
+        completed=True,
+        elapsed_s=time.perf_counter() - operational_start,
     )
     effective_config = operational_result.config
     compatibility_mass = compose_operational_transform_in_base_coordinates(
@@ -6787,45 +7157,63 @@ def _operational_windowed_mass_capture(
         target_accept_prob=config.target_accept_prob,
         source=config.source,
     )
-    legacy_result = run_windowed_mass_adaptation_diagnostic(
-        policy,
-        config=effective_config,
-        initial_mass_artifact=stage_mass_artifact,
-        warmup_draws=original_latent_draws,
-        initial_step_size=float(operational_result.reasonable_epsilon.selected_step_size),
-        acceptance_trace=acceptance_probability,
-        expected_adapter_signature=hmc_adapter_signature,
-        target_failure_classification={
-            "classification": "tuning_diagnostic_passed_not_convergence",
-            "diagnostic_role": "diagnostic_only",
-            "projection_role": "legacy_v1_compatibility_only",
-            "operational_metric_evidence": False,
-            "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
-        },
-    )
-    projected_updates = tuple(
-        dataclasses.replace(
-            update,
-            reset_event={
-                **dict(update.reset_event),
-                "diagnostic_role": "legacy_v1_nonoperational_projection",
+    compatibility_status: Mapping[str, Any]
+    try:
+        legacy_result = run_windowed_mass_adaptation_diagnostic(
+            policy,
+            config=effective_config,
+            initial_mass_artifact=stage_mass_artifact,
+            warmup_draws=original_latent_draws,
+            initial_step_size=float(
+                operational_result.reasonable_epsilon.selected_step_size
+            ),
+            acceptance_trace=acceptance_probability,
+            expected_adapter_signature=hmc_adapter_signature,
+            target_failure_classification={
+                "classification": "tuning_diagnostic_passed_not_convergence",
+                "diagnostic_role": "diagnostic_only",
+                "projection_role": "legacy_v1_compatibility_only",
                 "operational_metric_evidence": False,
-                "replay_as_operational_update_forbidden": True,
+                "nonclaims": WINDOWED_MASS_STAGE_NONCLAIMS,
             },
         )
-        for update in legacy_result.mass_updates
-    )
-    windowed_result = dataclasses.replace(
-        legacy_result,
-        mass_updates=projected_updates,
-        final_mass_artifact_payload=compatibility_mass.signature_payload(),
-        final_mass_artifact_signature=_mass_artifact_signature(compatibility_mass),
-        step_size_trace=tuple(
-            float(operational_result.final_kernel_state.epsilon)
-            for _ in legacy_result.step_size_trace
-        ),
-        final_mass_artifact=compatibility_mass,
-    )
+        projected_updates = tuple(
+            dataclasses.replace(
+                update,
+                reset_event={
+                    **dict(update.reset_event),
+                    "diagnostic_role": "legacy_v1_nonoperational_projection",
+                    "operational_metric_evidence": False,
+                    "replay_as_operational_update_forbidden": True,
+                },
+            )
+            for update in legacy_result.mass_updates
+        )
+        windowed_result = dataclasses.replace(
+            legacy_result,
+            mass_updates=projected_updates,
+            final_mass_artifact_payload=compatibility_mass.signature_payload(),
+            final_mass_artifact_signature=_mass_artifact_signature(compatibility_mass),
+            step_size_trace=tuple(
+                float(operational_result.final_kernel_state.epsilon)
+                for _ in legacy_result.step_size_trace
+            ),
+            final_mass_artifact=compatibility_mass,
+        )
+        compatibility_status = {
+            "status": "available",
+            "authoritative": False,
+            "error_type": None,
+            "error_message": None,
+        }
+    except Exception as exc:  # noqa: BLE001 - compatibility is non-authoritative.
+        windowed_result = None
+        compatibility_status = {
+            "status": "unavailable_error",
+            "authoritative": False,
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+        }
     binary_trace = binary_acceptance.astype(float, copy=False)
     capture = {
         "warmup_draws": original_latent_draws,
@@ -6873,6 +7261,7 @@ def _operational_windowed_mass_capture(
             "operational_warmup": True,
             "windowed_stage_route_category": "operational_windowed_warmup",
             "legacy_v1_mass_updates_operational": False,
+            "legacy_v1_compatibility_projection": compatibility_status,
             "target_status_trace_policy": operational_result.target_status_trace_policy,
         },
         "runtime_evidence": "tfp_hmc_runtime",
@@ -6894,7 +7283,7 @@ def _operational_windowed_mass_capture(
             "trace_unavailability": {},
         },
     }
-    return operational_result, windowed_result, capture
+    return operational_result, windowed_result, capture, None, compatibility_mass
 
 
 def run_hmc_windowed_mass_stage(
@@ -6920,6 +7309,23 @@ def run_hmc_windowed_mass_stage(
     cfg = HMCWindowedMassStageConfig() if config is None else config
     if not isinstance(cfg, HMCWindowedMassStageConfig):
         raise TypeError("config must be HMCWindowedMassStageConfig")
+    runner_identity = (
+        "default"
+        if run_full_chain is run_full_chain_tfp_hmc
+        and build_reusable_full_chain_tfp_hmc_runner
+        is _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER
+        else "injected"
+    )
+    route_decision = require_hmc_algorithm_route(
+        algorithm_id=cfg.algorithm_id,
+        stage=HMC_WINDOWED_MASS_STAGE,
+        runtime_backend="tensorflow",
+        chain_execution_mode=cfg.chain_execution_mode,
+        use_xla=cfg.use_xla,
+        timeout_enabled=cfg.public_timeout_budget_s is not None,
+        checkpointing_enabled=_checkpoint_writer_config is not None,
+        runner_identity=runner_identity,
+    )
     if not isinstance(geometry, HMCGeometryInitializationResult):
         raise TypeError("geometry must be HMCGeometryInitializationResult")
     if not isinstance(bootstrap, HMCBootstrapScreenResult):
@@ -6976,8 +7382,8 @@ def run_hmc_windowed_mass_stage(
         run_full_chain is run_full_chain_tfp_hmc
         and cfg.chain_execution_mode == "tf_function"
     )
-    use_segmented_runner = (
-        cfg.public_timeout_budget_s is not None
+    use_segmented_runner = bool(
+        route_decision.algorithm_id == LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
         and run_full_chain is run_full_chain_tfp_hmc
     )
     route_category = (
@@ -6991,12 +7397,10 @@ def run_hmc_windowed_mass_stage(
     diagnostic_run_config_payload: Mapping[str, Any] | None = diagnostic_config.signature_payload()
     windowed_result: WindowedMassAdaptationResult | None = None
     operational_warmup_result: OperationalWindowedWarmupResult | None = None
-    use_operational_warmup = (
-        run_full_chain is run_full_chain_tfp_hmc
-        and build_reusable_full_chain_tfp_hmc_runner
-        is _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER
-        and cfg.public_timeout_budget_s is None
-        and not cfg.use_xla
+    operational_warmup_closeout: OperationalWindowedWarmupCloseout | None = None
+    operational_mass_artifact: PrecomputedMassArtifact | None = None
+    use_operational_warmup = bool(
+        route_decision.algorithm_id == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     )
     timeout_closeout = _windowed_mass_public_timeout_preflight(
         cfg,
@@ -7009,6 +7413,7 @@ def run_hmc_windowed_mass_stage(
             "windowed_mass_public_timeout_closeout",
             attempt_index=progress_attempt_index,
             route_category=route_category,
+            route_decision=route_decision,
             completed=True,
             elapsed_s=0.0,
             timeout_closeout=timeout_closeout,
@@ -7021,6 +7426,8 @@ def run_hmc_windowed_mass_stage(
                     operational_warmup_result,
                     windowed_result,
                     capture,
+                    operational_warmup_closeout,
+                    operational_mass_artifact,
                 ) = _operational_windowed_mass_capture(
                     adapter=adapter,
                     geometry=geometry,
@@ -7032,14 +7439,18 @@ def run_hmc_windowed_mass_stage(
                     stage_seed=stage_seed,
                     target_scope=target_scope,
                     attempt_state=_attempt_state,
+                    route_decision=route_decision,
+                    progress_callback=_progress_callback,
+                    attempt_index=progress_attempt_index,
                 )
-                route_category = "operational_windowed_warmup"
+                route_category = route_decision.algorithm_id
             else:
                 _emit_windowed_mass_progress(
                     _progress_callback,
                     "windowed_mass_runner_build_start",
                     attempt_index=progress_attempt_index,
                     route_category=route_category,
+                    route_decision=route_decision,
                     started=True,
                     elapsed_s=0.0,
                     started_perf_counter_s=time.perf_counter(),
@@ -7089,6 +7500,7 @@ def run_hmc_windowed_mass_stage(
                     "windowed_mass_runner_build_complete",
                     attempt_index=progress_attempt_index,
                     route_category=route_category,
+                    route_decision=route_decision,
                     completed=True,
                     elapsed_s=runner_build_s,
                 )
@@ -7103,6 +7515,7 @@ def run_hmc_windowed_mass_stage(
                         "windowed_mass_public_timeout_closeout",
                         attempt_index=progress_attempt_index,
                         route_category=route_category,
+                        route_decision=route_decision,
                         completed=True,
                         elapsed_s=0.0,
                         timeout_closeout=timeout_closeout,
@@ -7172,6 +7585,7 @@ def run_hmc_windowed_mass_stage(
                         "windowed_mass_runner_execute_start",
                         attempt_index=progress_attempt_index,
                         route_category=route_category,
+                        route_decision=route_decision,
                         started=True,
                         elapsed_s=0.0,
                         started_perf_counter_s=time.perf_counter(),
@@ -7192,6 +7606,7 @@ def run_hmc_windowed_mass_stage(
                             progress_callback=_progress_callback,
                             attempt_index=progress_attempt_index,
                             route_category=route_category,
+                            route_decision=route_decision,
                         )
                         segmented_timeout_closeout = (
                             capture.get("public_timeout_closeout") is not None
@@ -7224,6 +7639,7 @@ def run_hmc_windowed_mass_stage(
                             "windowed_mass_runner_execute_complete",
                             attempt_index=progress_attempt_index,
                             route_category=route_category,
+                            route_decision=route_decision,
                             completed=True,
                             elapsed_s=runner_execute_s,
                         )
@@ -7232,6 +7648,7 @@ def run_hmc_windowed_mass_stage(
                             "windowed_mass_capture_start",
                             attempt_index=progress_attempt_index,
                             route_category=route_category,
+                            route_decision=route_decision,
                             started=True,
                             elapsed_s=0.0,
                             started_perf_counter_s=time.perf_counter(),
@@ -7256,6 +7673,7 @@ def run_hmc_windowed_mass_stage(
                             "windowed_mass_capture_complete",
                             attempt_index=progress_attempt_index,
                             route_category=route_category,
+                            route_decision=route_decision,
                             completed=True,
                             elapsed_s=capture_s,
                         )
@@ -7268,12 +7686,17 @@ def run_hmc_windowed_mass_stage(
             run_error=run_error,
         )
     )
-    if not hard_vetoes and not use_operational_warmup:
+    if (
+        not hard_vetoes
+        and capture.get("public_timeout_closeout") is None
+        and not use_operational_warmup
+    ):
         _emit_windowed_mass_progress(
             _progress_callback,
             "windowed_mass_semantic_diagnostic_start",
             attempt_index=progress_attempt_index,
             route_category=route_category,
+            route_decision=route_decision,
             started=True,
             elapsed_s=0.0,
             started_perf_counter_s=time.perf_counter(),
@@ -7313,20 +7736,115 @@ def run_hmc_windowed_mass_stage(
             "windowed_mass_semantic_diagnostic_complete",
             attempt_index=progress_attempt_index,
             route_category=route_category,
+            route_decision=route_decision,
             completed=True,
             elapsed_s=time.perf_counter() - semantic_diagnostic_start,
         )
-    final_status = "passed" if not hard_vetoes else "hard_veto"
-    diagnostic_role = (
-        "windowed_mass_stage_handoff_only" if final_status == "passed" else "hard_veto"
-    )
-    diagnostics = _windowed_stage_diagnostics(
+    resource_closeout = capture.get("public_timeout_closeout")
+    repair_triggers: tuple[str, ...] = ()
+    if hard_vetoes:
+        final_status = "hard_veto"
+        diagnostic_role = "hard_veto"
+    elif isinstance(resource_closeout, Mapping):
+        final_status = _WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_STATUS
+        diagnostic_role = _WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_ROLE
+        repair_triggers = (_WINDOWED_MASS_PUBLIC_TIMEOUT_REPAIR_TRIGGER,)
+    else:
+        final_status = "passed"
+        diagnostic_role = "windowed_mass_stage_handoff_only"
+    diagnostics = dict(_windowed_stage_diagnostics(
         capture,
         windowed_result=windowed_result,
         hard_vetoes=tuple(hard_vetoes),
         mass_window_seed_kernel=mass_window_seed_kernel,
         bootstrap_kernel=selected_bootstrap,
+    ))
+    diagnostics.update(
+        {
+            "algorithm_id": route_decision.algorithm_id,
+            "route_contract_version": route_decision.route_contract_version,
+            "algorithm_route": route_decision.payload(),
+            "evidence_role": route_decision.evidence_role,
+            "promotion_role": route_decision.promotion_role,
+            "stopping_rule_role": route_decision.stopping_rule_role,
+            "reports_posterior_convergence": False,
+            "reports_sampler_superiority": False,
+        }
     )
+    operational_work_manifest_summary = None
+    if use_operational_warmup and _attempt_budget_policy is not None:
+        operational_policy = HMCOperationalStatisticalWorkPolicy(
+            initial_candidate_results=int(
+                _attempt_budget_policy.operational_screen_num_results
+            ),
+            candidate_burnin_steps=int(
+                _attempt_budget_policy.operational_screen_num_burnin_steps
+            ),
+            evidence_extension_checkpoints=tuple(
+                int(item)
+                for item in _attempt_budget_policy.operational_evidence_extension_checkpoints
+            ),
+            exact_l_tune_adaptation_steps=int(
+                _attempt_budget_policy.operational_exact_l_tune_adaptation_steps
+            ),
+            fresh_verification_results=int(
+                _attempt_budget_policy.operational_verification_num_results
+            ),
+            fresh_verification_burnin_steps=int(
+                _attempt_budget_policy.operational_verification_num_burnin_steps
+            ),
+            policy_id=str(_attempt_budget_policy.operational_budget_policy_id),
+        )
+        public_manifest = build_public_hmc_work_manifest(
+            target_dimension=geometry.target_dimension,
+            metric_adaptation_steps=(int(_attempt_budget_policy.phase4_warmup_steps),),
+            selection_attempts_per_outer_attempt=(1,),
+            max_leapfrog_steps=_GEOMETRY_MAX_LEAPFROG,
+            policy=operational_policy,
+            algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            run_class="serious",
+        )
+        completed_metric_transitions = (
+            0
+            if operational_warmup_closeout is None
+            else int(operational_warmup_closeout.completed_transition_count)
+        )
+        executed_work = {
+            "metric_adaptation_batched_transitions": completed_metric_transitions,
+            "initial_candidate_batched_transitions": 0,
+            "extension_candidate_batched_transitions": 0,
+            "exact_l_tune_batched_transitions": 0,
+            "fresh_verification_batched_transitions": 0,
+            "total_batched_transitions": completed_metric_transitions,
+        }
+        reconciliation = reconcile_executed_hmc_work(
+            public_manifest=public_manifest,
+            executed_work=executed_work,
+        )
+        operational_work_manifest_summary = {
+            "schema": "bayesfilter.hmc_operational_partial_work_summary.v1",
+            "policy_id": operational_policy.policy_id,
+            "policy_hash": operational_policy.policy_hash,
+            "public_manifest_hash": public_manifest["manifest_hash"],
+            "executed_work_reconciliation": reconciliation,
+            "accounting_scope": "partial_metric_adaptation_before_selection",
+            "fresh_verification_accounted": False,
+            "partial_resource_closeout": isinstance(resource_closeout, Mapping),
+            "stop_source": None
+            if not isinstance(resource_closeout, Mapping)
+            else resource_closeout.get("stop_source"),
+            "stop_reason": None
+            if not isinstance(resource_closeout, Mapping)
+            else resource_closeout.get("stop_reason"),
+            "supervision_counter_baseline": None
+            if not isinstance(resource_closeout, Mapping)
+            else resource_closeout.get("supervision_counter_baseline"),
+            "private_hmc_mechanics_exposed": False,
+            "aggregate_counts_public_safe": True,
+        }
+        diagnostics["operational_work_manifest_summary"] = (
+            operational_work_manifest_summary
+        )
     if (
         _private_diagnostic_callback is not None
         and windowed_result is not None
@@ -7366,6 +7884,7 @@ def run_hmc_windowed_mass_stage(
         final_status=final_status,
         diagnostic_role=diagnostic_role,
         hard_vetoes=tuple(hard_vetoes),
+        repair_triggers=repair_triggers,
         diagnostics=diagnostics,
         draw_capture_policy=draw_capture_policy,
         warmup_draw_provenance=_warmup_draw_provenance(capture, draw_capture_policy),
@@ -7378,6 +7897,8 @@ def run_hmc_windowed_mass_stage(
         ),
         windowed_mass_result=windowed_result,
         operational_warmup_result=operational_warmup_result,
+        operational_warmup_closeout=operational_warmup_closeout,
+        operational_mass_artifact=operational_mass_artifact,
         seed_report={
             "geometry_root_seed": geometry.seed_report.get("root_seed"),
             "bootstrap_root_seed": bootstrap.seed_report.get("bootstrap_root_seed"),
@@ -7450,11 +7971,17 @@ def run_hmc_fixed_mass_step_stage(
         windowed_stage,
         attempt_state=_attempt_state,
     )
+    target_trajectory = float(geometry.target_trajectory_length)
+    use_final_geometry_anchor = windowed_stage.operational_warmup_result is not None
     anchor_l = _joint_l_epsilon_anchor_l(
         selected_kernel=selected_kernel,
         attempt_state=_attempt_state,
+        final_step_size=initial_step if use_final_geometry_anchor else None,
+        target_trajectory_length=(
+            target_trajectory if use_final_geometry_anchor else None
+        ),
+        max_leapfrog_steps=max_leapfrog_steps,
     )
-    target_trajectory = float(geometry.target_trajectory_length)
     ladder_result: FixedMassHMCTuningBudgetLadderResult | None = None
     hard_vetoes: list[str] = []
     before_signature = _mass_artifact_signature(adapted_mass)
@@ -7470,7 +7997,7 @@ def run_hmc_fixed_mass_step_stage(
         windowed_stage=windowed_stage,
         target_scope=target_scope,
     )
-    if windowed_stage.operational_warmup_result is not None:
+    if use_final_geometry_anchor:
         return _run_operational_fixed_mass_step_stage(
             adapter=adapter,
             geometry=geometry,
@@ -7955,17 +8482,22 @@ def _run_operational_fixed_mass_step_stage(
     screen_results = (
         64
         if attempt_budget_policy is None
-        else max(64, int(attempt_budget_policy.phase5_screen_num_results))
+        else int(attempt_budget_policy.operational_screen_num_results)
     )
     screen_burnin = (
         16
         if attempt_budget_policy is None
-        else max(16, int(attempt_budget_policy.phase5_screen_burnin_steps))
+        else int(attempt_budget_policy.operational_screen_num_burnin_steps)
     )
     final_adaptation = (
         64
         if attempt_budget_policy is None
-        else max(64, int(attempt_budget_policy.phase5_tune_budgets[-1]))
+        else int(attempt_budget_policy.operational_exact_l_tune_adaptation_steps)
+    )
+    extension_checkpoints = (
+        ()
+        if attempt_budget_policy is None
+        else attempt_budget_policy.operational_evidence_extension_checkpoints
     )
     selection_attempts = int(selection_max_attempts)
     if selection_attempts <= 0 or selection_attempts > 5:
@@ -7993,6 +8525,7 @@ def _run_operational_fixed_mass_step_stage(
         screen_num_results=screen_results,
         screen_num_burnin_steps=screen_burnin,
         final_tune_adaptation_steps=final_adaptation,
+        evidence_extension_checkpoints=extension_checkpoints,
         chain_execution_mode=config.chain_execution_mode,
         use_xla=config.use_xla,
         target_status_trace_policy=config.target_status_trace_policy,
@@ -8058,6 +8591,81 @@ def _run_operational_fixed_mass_step_stage(
         if representative is None
         else representative.candidate.num_leapfrog_steps
     )
+    operational_policy = HMCOperationalStatisticalWorkPolicy(
+        initial_candidate_results=screen_results,
+        candidate_burnin_steps=screen_burnin,
+        evidence_extension_checkpoints=extension_checkpoints,
+        exact_l_tune_adaptation_steps=final_adaptation,
+        fresh_verification_results=(
+            64
+            if attempt_budget_policy is None
+            else int(attempt_budget_policy.operational_verification_num_results)
+        ),
+        fresh_verification_burnin_steps=(
+            16
+            if attempt_budget_policy is None
+            else int(
+                attempt_budget_policy.operational_verification_num_burnin_steps
+            )
+        ),
+        policy_id=(
+            OPERATIONAL_HMC_BUDGET_POLICY_ID
+            if attempt_budget_policy is None
+            else str(attempt_budget_policy.operational_budget_policy_id)
+        ),
+    )
+    public_work_manifest = build_public_hmc_work_manifest(
+        target_dimension=geometry.target_dimension,
+        metric_adaptation_steps=(
+            int(
+                operational.config.warmup_steps
+                if attempt_budget_policy is None
+                else attempt_budget_policy.phase4_warmup_steps
+            ),
+        ),
+        selection_attempts_per_outer_attempt=(selection_attempts,),
+        max_leapfrog_steps=max_leapfrog_steps,
+        policy=operational_policy,
+        algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        run_class="runtime_resolved_attempt",
+    )
+    resolved_candidates = tuple(
+        {
+            "selection_attempt_index": attempt.attempt_index,
+            "candidate": candidate.candidate.payload(),
+        }
+        for attempt in selection_loop.attempts
+        for candidate in attempt.selection.candidate_results
+    )
+    private_work_manifest = build_private_resolved_hmc_work_manifest(
+        public_manifest=public_work_manifest,
+        resolved_candidates=resolved_candidates,
+    )
+    initial_candidate_transitions = sum(
+        len(attempt.initial_replication_seeds)
+        * (screen_results + screen_burnin)
+        for attempt in selection_loop.attempts
+    )
+    extension_candidate_transitions = sum(
+        len(extension.slots) * (extension.checkpoint + screen_burnin)
+        for attempt in selection_loop.attempts
+        for extension in attempt.evidence_extensions
+    )
+    exact_l_tune_transitions = sum(
+        len(attempt.exact_l_retune_seeds)
+        * (final_adaptation + operational_policy.exact_l_tune_result_steps)
+        for attempt in selection_loop.attempts
+    )
+    executed_work_reconciliation = reconcile_executed_hmc_work(
+        public_manifest=public_work_manifest,
+        executed_work={
+            "initial_candidate_batched_transitions": initial_candidate_transitions,
+            "extension_candidate_batched_transitions": (
+                extension_candidate_transitions
+            ),
+            "exact_l_tune_batched_transitions": exact_l_tune_transitions,
+        },
+    )
     diagnostics = {
         "passed": final_status == "passed",
         "algorithm": "operational_paired_fixed_trajectory_selection_v3",
@@ -8069,6 +8677,25 @@ def _run_operational_fixed_mass_step_stage(
         "selection_loop_signature": selection_loop.signature,
         "selection_attempt_count": len(selection_loop.attempts),
         "selection_attempt_budget": selection_loop.max_attempts,
+        "operational_budget_policy_id": (
+            OPERATIONAL_HMC_BUDGET_POLICY_ID
+            if attempt_budget_policy is None
+            else attempt_budget_policy.operational_budget_policy_id
+        ),
+        "operational_budget_policy_hash": (
+            HMCOperationalStatisticalWorkPolicy().policy_hash
+            if attempt_budget_policy is None
+            else attempt_budget_policy.operational_budget_policy_hash
+        ),
+        "selection_initial_results": screen_results,
+        "selection_burnin_steps": screen_burnin,
+        "selection_evidence_extension_checkpoints": extension_checkpoints,
+        "exact_l_tune_adaptation_steps": final_adaptation,
+        "public_work_manifest_hash": public_work_manifest["manifest_hash"],
+        "private_work_manifest_hash": private_work_manifest[
+            "private_manifest_hash"
+        ],
+        "executed_work_reconciliation": executed_work_reconciliation,
         "selection_terminal_disposition": selection_loop.terminal_disposition,
         "selection_retune_failure_scope": selection.retune_failure_scope,
         "selection_retune_failure_reasons": selection.retune_failure_reasons,
@@ -8154,6 +8781,8 @@ def _run_operational_fixed_mass_step_stage(
         },
         _operational_selection=selection,
         _operational_selection_loop=selection_loop,
+        _operational_private_work_manifest=private_work_manifest,
+        _operational_public_work_manifest=public_work_manifest,
     )
 
 
@@ -8860,6 +9489,19 @@ def run_hmc_tune_verify_repair_loop(
     cfg = HMCTuneVerifyRepairLoopConfig() if config is None else config
     if not isinstance(cfg, HMCTuneVerifyRepairLoopConfig):
         raise TypeError("config must be HMCTuneVerifyRepairLoopConfig")
+    require_hmc_algorithm_route(
+        algorithm_id=cfg.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        runtime_backend="tensorflow",
+        chain_execution_mode=cfg.chain_execution_mode,
+        use_xla=cfg.use_xla,
+        timeout_enabled=cfg.public_timeout_budget_s is not None,
+        heartbeat_enabled=cfg.incall_progress_heartbeat_s is not None,
+        checkpointing_enabled=verification_checkpoint_writer_config is not None,
+        runner_identity=(
+            "default" if run_full_chain is run_full_chain_tfp_hmc else "injected"
+        ),
+    )
     if not isinstance(geometry, HMCGeometryInitializationResult):
         raise TypeError("geometry must be HMCGeometryInitializationResult")
     if not isinstance(bootstrap, HMCBootstrapScreenResult):
@@ -8869,6 +9511,7 @@ def run_hmc_tune_verify_repair_loop(
     if target_scope != _resolve_windowed_stage_target_scope(
         adapter,
         HMCWindowedMassStageConfig(
+            algorithm_id=windowed_algorithm_for_selection_algorithm(cfg.algorithm_id),
             target_accept_prob=cfg.target_accept_prob,
             seed=_derive_seed(cfg.seed, stage_index=10),
             chain_execution_mode=cfg.chain_execution_mode,
@@ -9390,6 +10033,13 @@ def run_hmc_tune_verify_repair_loop(
                     _checkpoint_writer_config=verification_checkpoint_writer_config,
                     _private_diagnostic_callback=_private_diagnostic_callback,
                 )
+                expected_windowed_algorithm_id = (
+                    windowed_algorithm_for_selection_algorithm(cfg.algorithm_id)
+                )
+                if windowed_stage.config.algorithm_id != expected_windowed_algorithm_id:
+                    raise ValueError(
+                        "Phase 7 windowed-stage algorithm route lineage mismatch"
+                    )
                 _emit_phase7_progress(
                     _progress_callback,
                     "windowed_mass_complete",
@@ -9406,6 +10056,16 @@ def run_hmc_tune_verify_repair_loop(
                     attempt_hard_vetoes.extend(windowed_stage.hard_vetoes)
                     attempt_status = "hard_veto"
                     attempt_role = "hard_veto"
+                elif windowed_stage.final_status == "budget_exhausted":
+                    attempt_repair_triggers.extend(windowed_stage.repair_triggers)
+                    attempt_status = "budget_exhausted"
+                    attempt_role = windowed_stage.diagnostic_role
+                    verification_diagnostics = {
+                        "attempt_index": attempt_index,
+                        "not_run": True,
+                        "reason": "windowed_mass_resource_closeout",
+                        "reports_posterior_convergence": False,
+                    }
                 elif not windowed_stage.passed:
                     attempt_repair_triggers.append(
                         f"phase4_windowed_mass_status:{windowed_stage.final_status}"
@@ -9872,6 +10532,17 @@ def run_hmc_tune_verify_repair_loop(
         attempt_repair_triggers = list(
             dict.fromkeys(str(item) for item in attempt_repair_triggers)
         )
+        operational_work_reconciliation = _phase7_operational_work_reconciliation(
+            prior_attempts=attempts,
+            fixed_mass_step_stage=fixed_stage,
+            verification_config_payload=verification_config_payload,
+            verification_diagnostics=verification_diagnostics,
+        )
+        if operational_work_reconciliation is not None:
+            verification_diagnostics = {
+                **dict(verification_diagnostics),
+                "operational_work_reconciliation": operational_work_reconciliation,
+            }
         attempt = HMCTuneVerifyRepairAttempt(
             attempt_index=attempt_index,
             budget_policy_payload={
@@ -10126,6 +10797,17 @@ def tune_hmc_kernel(
     cfg = HMCKernelTuningConfig.standard() if config is None else config
     if not isinstance(cfg, HMCKernelTuningConfig):
         raise TypeError("config must be HMCKernelTuningConfig")
+    require_hmc_algorithm_route(
+        algorithm_id=cfg.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        runtime_backend="tensorflow",
+        chain_execution_mode=cfg.chain_execution_mode,
+        use_xla=cfg.use_xla,
+        timeout_enabled=cfg.public_timeout_budget_s is not None,
+        heartbeat_enabled=cfg.incall_progress_heartbeat_s is not None,
+        output_path_enabled=output_dir is not None,
+        checkpointing_enabled=verification_checkpoint_writer_config is not None,
+    )
     public_timeout_started_perf_counter_s = (
         time.perf_counter() if cfg.public_timeout_budget_s is not None else None
     )
@@ -11128,6 +11810,12 @@ class _BootstrapFixedMassLatentValueScoreAdapter:
         if not hasattr(base_adapter, "log_prob_and_grad"):
             raise TypeError("base_adapter must expose log_prob_and_grad")
         self.base_adapter = base_adapter
+        self.supports_retained_draw_batch = bool(
+            getattr(base_adapter, "supports_retained_draw_batch", False)
+        )
+        self.supports_retained_flat_batch = bool(
+            getattr(base_adapter, "supports_retained_flat_batch", False)
+        )
         self.transform = transform
         self.parameter_dim = int(transform.dimension)
         self.target_scope = str(target_scope)
@@ -11637,6 +12325,8 @@ def _public_loop_config(
     public_timeout_started_perf_counter_s: float | None = None,
 ) -> HMCTuneVerifyRepairLoopConfig:
     return HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=config.algorithm_id,
+        operational_budget_policy_id=config.operational_budget_policy_id,
         target_accept_prob=config.target_accept_prob,
         acceptance_band=config.acceptance_band,
         repair_band=config.repair_band,
@@ -11689,17 +12379,23 @@ def _public_budget_policy_factory(
 ) -> Callable[[int, int], _HMCAttemptBudgetPolicy] | None:
     if config.preset == "serious":
         central = _geometry_scaled_budget_timing_policy()
+        operational = HMCOperationalStatisticalWorkPolicy(
+            policy_id=config.operational_budget_policy_id,
+        )
 
         def serious_factory(
             target_dimension: int,
             attempt_index: int,
         ) -> _HMCAttemptBudgetPolicy:
-            return _default_attempt_budget_policy(
+            policy = _default_attempt_budget_policy(
                 target_dimension,
                 attempt_index,
                 mass_artifact=None if geometry is None else geometry.mass_artifact,
                 policy=central,
             )
+            if policy.operational_budget_policy_hash != operational.policy_hash:
+                raise ValueError("serious operational budget policy hash mismatch")
+            return policy
 
         return serious_factory
 
@@ -11776,6 +12472,7 @@ def _public_budget_policy_factory(
                 burnin_floor,
                 _ceil_div(verification_results, 4),
             ),
+            operational_budget_policy_id=config.operational_budget_policy_id,
             serious_policy=False,
             public_budget_class=budget_class,
             public_budget_cap=budget_cap,
@@ -12040,6 +12737,42 @@ def _utc_now_isoformat() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _selection_route_public_payload(
+    config: HMCKernelTuningConfig | HMCTuneVerifyRepairLoopConfig,
+    *,
+    output_path_enabled: bool | None = None,
+    checkpointing_enabled: bool | None = None,
+    runner_identity: str = "not_retained_in_public_result",
+) -> Mapping[str, Any]:
+    decision = require_hmc_algorithm_route(
+        algorithm_id=config.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        runtime_backend="tensorflow",
+        chain_execution_mode=config.chain_execution_mode,
+        use_xla=config.use_xla,
+        timeout_enabled=config.public_timeout_budget_s is not None,
+        heartbeat_enabled=config.incall_progress_heartbeat_s is not None,
+        output_path_enabled=bool(output_path_enabled),
+        checkpointing_enabled=bool(checkpointing_enabled),
+        runner_identity=runner_identity,
+    )
+    return {
+        **decision.payload(),
+        "windowed_mass_algorithm_id": windowed_algorithm_for_selection_algorithm(
+            config.algorithm_id
+        ),
+        "execution_control_configuration": {
+            "chain_execution_mode": config.chain_execution_mode,
+            "use_xla": config.use_xla,
+            "timeout_enabled": config.public_timeout_budget_s is not None,
+            "heartbeat_enabled": config.incall_progress_heartbeat_s is not None,
+            "output_path_enabled": output_path_enabled,
+            "checkpointing_enabled": checkpointing_enabled,
+            "runner_identity": runner_identity,
+        },
+    }
+
+
 def _mass_matrix_private_summary(
     mass_artifact: PrecomputedMassArtifact,
     *,
@@ -12189,6 +12922,16 @@ def _write_public_tuning_progress_if_requested(
     payload = {
         "schema": "bayesfilter.hmc_kernel_tuning_progress.v1",
         "preset": config.preset,
+        "algorithm_id": config.algorithm_id,
+        "operational_budget_policy_id": config.operational_budget_policy_id,
+        "route_contract_version": _selection_route_public_payload(
+            config,
+            output_path_enabled=True,
+        )["route_contract_version"],
+        "algorithm_route": _selection_route_public_payload(
+            config,
+            output_path_enabled=True,
+        ),
         "current_stage": str(current_stage),
         "last_started_stage": last_started_stage,
         "last_completed_stage": last_completed_stage,
@@ -12255,6 +12998,18 @@ def _public_tuning_artifact_payload(
     phase7_early_closeout = _phase7_early_closeout_public_summary(result)
     return {
         "schema": "bayesfilter.hmc_kernel_tuning_public_artifact.v1",
+        "algorithm_id": result.config.algorithm_id,
+        "operational_budget_policy_id": (
+            result.config.operational_budget_policy_id
+        ),
+        "route_contract_version": _selection_route_public_payload(
+            result.config,
+            output_path_enabled=True,
+        )["route_contract_version"],
+        "algorithm_route": _selection_route_public_payload(
+            result.config,
+            output_path_enabled=True,
+        ),
         "result_hash": result.artifact_hash,
         "config": result.config.payload(),
         "adapter_signature": result.adapter_signature,
@@ -12368,6 +13123,14 @@ def _phase7_public_summary(
     )
     return {
         "schema": "bayesfilter.hmc_tune_verify_repair_public_summary.v1",
+        "algorithm_id": loop.config.algorithm_id,
+        "operational_budget_policy_id": (
+            loop.config.operational_budget_policy_id
+        ),
+        "route_contract_version": _selection_route_public_payload(loop.config)[
+            "route_contract_version"
+        ],
+        "algorithm_route": _selection_route_public_payload(loop.config),
         "final_status": loop.final_status,
         "diagnostic_role": loop.diagnostic_role,
         "attempt_count": len(loop.attempts),
@@ -12482,6 +13245,26 @@ def _phase7_attempt_public_summary(
 ) -> Mapping[str, Any]:
     """Summarize a Phase 7 attempt without exposing HMC mechanics."""
 
+    operational_work_summary = (
+        attempt.fixed_mass_step_stage.payload().get(
+            "operational_work_manifest_summary"
+        )
+        if attempt.fixed_mass_step_stage is not None
+        else (
+            None
+            if attempt.windowed_stage is None
+            else attempt.windowed_stage.diagnostics.get(
+                "operational_work_manifest_summary"
+            )
+        )
+    )
+    if operational_work_summary is not None and attempt.fixed_mass_step_stage is not None:
+        operational_work_summary = {
+            **dict(operational_work_summary),
+            "phase7_cumulative_work_summary": attempt.verification_diagnostics.get(
+                "operational_work_reconciliation"
+            ),
+        }
     return {
         "schema": "bayesfilter.hmc_tune_verify_repair_attempt_public_summary.v1",
         "attempt_index": attempt.attempt_index,
@@ -12492,6 +13275,7 @@ def _phase7_attempt_public_summary(
         "budget_public_summary": _phase7_attempt_budget_public_summary(
             attempt.budget_policy_payload
         ),
+        "operational_work_manifest_summary": operational_work_summary,
         "stage_statuses": {
             "windowed_mass": _stage_status_public_summary(attempt.windowed_stage),
             "fixed_mass_step": _stage_status_public_summary(attempt.fixed_mass_step_stage),
@@ -12768,9 +13552,18 @@ def _phase7_attempt_budget_public_summary(
         "terminal_phase6_repair_extra_attempts_consumed",
         "diagnostic_role",
         "internal_policy_only",
+        "operational_budget_policy_id",
+        "operational_budget_policy_hash",
+        "operational_screen_num_results",
+        "operational_screen_num_burnin_steps",
+        "operational_evidence_extension_checkpoints",
+        "operational_exact_l_tune_adaptation_steps",
+        "operational_verification_num_results",
+        "operational_verification_num_burnin_steps",
     }
     summary = {key: budget_payload[key] for key in allowed_keys if key in budget_payload}
     summary["substage_budget_details_exposed"] = False
+    summary["operational_aggregate_counts_public_safe"] = True
     summary["hmc_mechanics_exposed"] = False
     summary["reports_posterior_convergence"] = False
     return summary
@@ -13222,6 +14015,14 @@ class _HMCAttemptBudgetPolicy:
     phase6_screen_burnin_steps: int
     verification_num_results: int
     verification_num_burnin_steps: int
+    operational_screen_num_results: int | None = None
+    operational_screen_num_burnin_steps: int | None = None
+    operational_evidence_extension_checkpoints: tuple[int, ...] = ()
+    operational_exact_l_tune_adaptation_steps: int | None = None
+    operational_verification_num_results: int | None = None
+    operational_verification_num_burnin_steps: int | None = None
+    operational_budget_policy_id: str | None = None
+    operational_budget_policy_hash: str | None = None
     serious_policy: bool = True
     public_budget_class: str | None = None
     public_budget_cap: int | None = None
@@ -13258,6 +14059,74 @@ class _HMCAttemptBudgetPolicy:
         if len(budgets) != 3 or any(item <= 0 for item in budgets):
             raise ValueError("phase5_tune_budgets must contain three positive values")
         object.__setattr__(self, "phase5_tune_budgets", budgets)
+        operational_fields = {
+            "operational_screen_num_results": self.phase5_screen_num_results,
+            "operational_screen_num_burnin_steps": self.phase5_screen_burnin_steps,
+            "operational_exact_l_tune_adaptation_steps": budgets[-1],
+            "operational_verification_num_results": self.verification_num_results,
+            "operational_verification_num_burnin_steps": (
+                self.verification_num_burnin_steps
+            ),
+        }
+        for name, fallback in operational_fields.items():
+            raw_value = getattr(self, name)
+            value = int(fallback if raw_value is None else raw_value)
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+            object.__setattr__(self, name, value)
+        checkpoints = tuple(
+            int(item) for item in self.operational_evidence_extension_checkpoints
+        )
+        if any(item <= self.operational_screen_num_results for item in checkpoints):
+            raise ValueError(
+                "operational evidence extension checkpoints must exceed the screen"
+            )
+        if any(left >= right for left, right in zip(checkpoints, checkpoints[1:])):
+            raise ValueError(
+                "operational evidence extension checkpoints must strictly increase"
+            )
+        if len(checkpoints) > 2:
+            raise ValueError("operational evidence extensions are capped at two")
+        object.__setattr__(
+            self,
+            "operational_evidence_extension_checkpoints",
+            checkpoints,
+        )
+        policy_id = (
+            OPERATIONAL_HMC_BUDGET_POLICY_ID
+            if self.operational_budget_policy_id is None
+            else str(self.operational_budget_policy_id)
+        )
+        if not policy_id:
+            raise ValueError("operational_budget_policy_id must be non-empty")
+        object.__setattr__(self, "operational_budget_policy_id", policy_id)
+        expected_policy_hash = HMCOperationalStatisticalWorkPolicy(
+            initial_candidate_results=self.operational_screen_num_results,
+            candidate_burnin_steps=self.operational_screen_num_burnin_steps,
+            evidence_extension_checkpoints=checkpoints,
+            exact_l_tune_adaptation_steps=(
+                self.operational_exact_l_tune_adaptation_steps
+            ),
+            fresh_verification_results=(
+                self.operational_verification_num_results
+            ),
+            fresh_verification_burnin_steps=(
+                self.operational_verification_num_burnin_steps
+            ),
+            policy_id=policy_id,
+        ).policy_hash
+        supplied_policy_hash = (
+            None
+            if self.operational_budget_policy_hash is None
+            else str(self.operational_budget_policy_hash)
+        )
+        if supplied_policy_hash is not None and supplied_policy_hash != expected_policy_hash:
+            raise ValueError("operational_budget_policy_hash does not match its fields")
+        object.__setattr__(
+            self,
+            "operational_budget_policy_hash",
+            expected_policy_hash,
+        )
         object.__setattr__(self, "serious_policy", bool(self.serious_policy))
         budget_class = (
             None
@@ -13358,6 +14227,26 @@ class _HMCAttemptBudgetPolicy:
             "phase6_screen_burnin_steps": self.phase6_screen_burnin_steps,
             "verification_num_results": self.verification_num_results,
             "verification_num_burnin_steps": self.verification_num_burnin_steps,
+            "operational_screen_num_results": (
+                self.operational_screen_num_results
+            ),
+            "operational_screen_num_burnin_steps": (
+                self.operational_screen_num_burnin_steps
+            ),
+            "operational_evidence_extension_checkpoints": (
+                self.operational_evidence_extension_checkpoints
+            ),
+            "operational_exact_l_tune_adaptation_steps": (
+                self.operational_exact_l_tune_adaptation_steps
+            ),
+            "operational_verification_num_results": (
+                self.operational_verification_num_results
+            ),
+            "operational_verification_num_burnin_steps": (
+                self.operational_verification_num_burnin_steps
+            ),
+            "operational_budget_policy_id": self.operational_budget_policy_id,
+            "operational_budget_policy_hash": self.operational_budget_policy_hash,
             "budget_formula": self.budget_formula,
             "budget_formula_parameters": dict(self.budget_formula_parameters),
             "geometry_budget_summary": dict(self.geometry_budget_summary),
@@ -13370,6 +14259,9 @@ class _HMCAttemptBudgetPolicy:
                 "phase5_screen": "results=max(32, ceil(budget_k/4)); burnin=max(8, ceil(results/4))",
                 "phase6_screen": "results=max(32, ceil(budget_k/4)); burnin=max(8, ceil(results/4))",
                 "verification": "results=max(64, ceil(budget_k/2)); burnin=max(16, ceil(results/4))",
+                "operational": (
+                    "independent named policy; no field is derived from budget_k"
+                ),
             },
             "serious_policy": self.serious_policy,
             "public_budget_class": self.public_budget_class,
@@ -13430,6 +14322,7 @@ def _emit_windowed_mass_progress(
     *,
     attempt_index: int | None,
     route_category: str,
+    route_decision: HMCAlgorithmRouteDecision,
     started: bool = False,
     completed: bool = False,
     elapsed_s: float | None = None,
@@ -13440,6 +14333,7 @@ def _emit_windowed_mass_progress(
     segment_index: int | None = None,
     segment_count: int | None = None,
     segment_active_results: int | None = None,
+    operational_progress: Mapping[str, Any] | None = None,
 ) -> None:
     if callback is None:
         return
@@ -13450,6 +14344,9 @@ def _emit_windowed_mass_progress(
         "progress_only": True,
         "hmc_mechanics_exposed": False,
         "route_category": str(route_category),
+        "algorithm_id": route_decision.algorithm_id,
+        "route_contract_version": route_decision.route_contract_version,
+        "algorithm_route": route_decision.payload(),
         "reports_posterior_convergence": False,
         "reports_sampler_superiority": False,
         "reports_default_readiness": False,
@@ -13476,6 +14373,8 @@ def _emit_windowed_mass_progress(
         payload["segment_count"] = int(segment_count)
     if segment_active_results is not None:
         payload["segment_active_results"] = int(segment_active_results)
+    if operational_progress is not None:
+        payload["operational_progress"] = dict(operational_progress)
     callback(str(stage), payload)
 
 
@@ -13488,6 +14387,9 @@ def _windowed_mass_progress_extra(payload: Mapping[str, Any]) -> Mapping[str, An
         "progress_only",
         "hmc_mechanics_exposed",
         "route_category",
+        "algorithm_id",
+        "route_contract_version",
+        "algorithm_route",
         "elapsed_s",
         "started_perf_counter_s",
         "timing_anchor_role",
@@ -13497,6 +14399,7 @@ def _windowed_mass_progress_extra(payload: Mapping[str, Any]) -> Mapping[str, An
         "segment_index",
         "segment_count",
         "segment_active_results",
+        "operational_progress",
         "reports_posterior_convergence",
         "reports_sampler_superiority",
         "reports_default_readiness",
@@ -13793,8 +14696,12 @@ def _windowed_mass_public_timeout_preflight(
         "schema": "bayesfilter.windowed_mass_public_timeout_closeout.v1",
         "stage": str(stage),
         "closeout_required_before_hmc_call": True,
-        "diagnostic_role": "public_timeout_closeout_hard_veto",
-        "hard_veto": _WINDOWED_MASS_PUBLIC_TIMEOUT_HARD_VETO,
+        "stop_source": "bayesfilter_public_timeout_budget",
+        "stop_reason": "public_timeout_budget_exhausted_before_hmc_call",
+        "supervision_counter_baseline": 0,
+        "final_status": _WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_STATUS,
+        "diagnostic_role": _WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_ROLE,
+        "hard_veto": None,
         "repair_trigger": _WINDOWED_MASS_PUBLIC_TIMEOUT_REPAIR_TRIGGER,
         "progress_only": True,
         "public_closeout_artifact_expected": True,
@@ -13870,8 +14777,12 @@ def _windowed_mass_next_segment_soft_deadline_preflight(
         "completed_segment_elapsed_recent_window": recent_window_count,
         "closeout_required_before_hmc_call": True,
         "closeout_required_before_next_segment": True,
-        "diagnostic_role": "public_timeout_closeout_hard_veto",
-        "hard_veto": _WINDOWED_MASS_PUBLIC_TIMEOUT_HARD_VETO,
+        "stop_source": "bayesfilter_public_timeout_budget",
+        "stop_reason": "public_timeout_budget_exhausted_before_next_segment",
+        "supervision_counter_baseline": 0,
+        "final_status": _WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_STATUS,
+        "diagnostic_role": _WINDOWED_MASS_PUBLIC_TIMEOUT_RESOURCE_ROLE,
+        "hard_veto": None,
         "repair_trigger": _WINDOWED_MASS_PUBLIC_TIMEOUT_REPAIR_TRIGGER,
         "progress_only": True,
         "public_closeout_artifact_expected": True,
@@ -14364,7 +15275,7 @@ def _phase7_verify_only_budget_saturation_blocker(
     if attempt_state.verification_budget_results is None:
         return None
     previous_budget = int(attempt_state.verification_budget_results)
-    next_budget = int(next_attempt_policy.verification_num_results)
+    next_budget = _phase7_verification_num_results(config, next_attempt_policy)
     attempts_after_next = int(config.max_attempts) - int(next_attempt_policy.attempt_index) - 1
     if next_budget > previous_budget or attempts_after_next > 0:
         return None
@@ -14420,7 +15331,7 @@ def _phase7_extended_attempt_stall_blocker(
     elif (
         _phase7_should_retry_verification_only(attempt_state)
         and attempt_state.verification_budget_results is not None
-        and int(next_attempt_policy.verification_num_results)
+        and _phase7_verification_num_results(config, next_attempt_policy)
         > int(attempt_state.verification_budget_results)
     ):
         return None
@@ -14462,8 +15373,9 @@ def _phase7_extended_attempt_stall_blocker(
         "previous_verification_budget_results": None
         if attempt_state is None
         else attempt_state.verification_budget_results,
-        "next_attempt_verification_budget_results": int(
-            next_attempt_policy.verification_num_results
+        "next_attempt_verification_budget_results": _phase7_verification_num_results(
+            config,
+            next_attempt_policy,
         ),
         "stalled_reason": reason,
         "closeout_required_before_extended_attempt": True,
@@ -15526,9 +16438,115 @@ def _phase7_direct_candidate_queue_plan(
         candidate_identities=tuple(identities),
         candidate_record_hashes=tuple(record_hashes),
         verification_seeds=tuple(seeds),
-        verification_num_results=budget_policy.verification_num_results,
-        verification_num_burnin_steps=budget_policy.verification_num_burnin_steps,
+        verification_num_results=_phase7_verification_num_results(
+            config,
+            budget_policy,
+        ),
+        verification_num_burnin_steps=_phase7_verification_num_burnin_steps(
+            config,
+            budget_policy,
+        ),
     )
+
+
+def _phase7_uses_operational_budget_policy(
+    config: HMCTuneVerifyRepairLoopConfig,
+) -> bool:
+    return config.algorithm_id == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+
+
+def _phase7_verification_num_results(
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+) -> int:
+    return int(
+        budget_policy.operational_verification_num_results
+        if _phase7_uses_operational_budget_policy(config)
+        else budget_policy.verification_num_results
+    )
+
+
+def _phase7_verification_num_burnin_steps(
+    config: HMCTuneVerifyRepairLoopConfig,
+    budget_policy: _HMCAttemptBudgetPolicy,
+) -> int:
+    return int(
+        budget_policy.operational_verification_num_burnin_steps
+        if _phase7_uses_operational_budget_policy(config)
+        else budget_policy.verification_num_burnin_steps
+    )
+
+
+def _phase7_operational_work_reconciliation(
+    *,
+    prior_attempts: Sequence[HMCTuneVerifyRepairAttempt],
+    fixed_mass_step_stage: HMCFixedMassStepStageResult | None,
+    verification_config_payload: Mapping[str, Any] | None,
+    verification_diagnostics: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    """Charge every started verification at its cap against the Phase 5 manifest."""
+
+    if (
+        fixed_mass_step_stage is None
+        or fixed_mass_step_stage._operational_public_work_manifest is None
+    ):
+        return None
+    public_manifest = validate_public_hmc_work_manifest(
+        fixed_mass_step_stage._operational_public_work_manifest
+    )
+    partial = validate_executed_hmc_work_reconciliation(
+        fixed_mass_step_stage.diagnostics.get("executed_work_reconciliation", {}),
+        expected_public_manifest_hash=public_manifest["manifest_hash"],
+        public_manifest=public_manifest,
+    )
+    verification_started = (
+        verification_config_payload is not None
+        and not verification_diagnostics.get("not_run")
+    )
+    prior_started_count = sum(
+        1
+        for attempt in prior_attempts
+        if attempt.fixed_mass_step_stage is fixed_mass_step_stage
+        and attempt.verification_config_payload is not None
+        and not attempt.verification_diagnostics.get("not_run")
+    )
+    start_count = prior_started_count + int(verification_started)
+    start_cap = int(public_manifest["fresh_verification_start_count_upper_bound"])
+    if start_count > start_cap:
+        raise ValueError("operational fresh verification start count exceeded its bound")
+    verification_work_per_start = int(public_manifest["fresh_verification_results"]) + int(
+        public_manifest["fresh_verification_burnin_steps"]
+    )
+    executed = dict(partial["executed_work"])
+    executed["metric_adaptation_batched_transitions"] = int(
+        public_manifest["maximum_work"]["metric_adaptation_batched_transitions"]
+    )
+    executed["fresh_verification_batched_transitions"] = (
+        start_count * verification_work_per_start
+    )
+    executed["total_batched_transitions"] = sum(
+        int(executed.get(key, 0))
+        for key in (
+            "metric_adaptation_batched_transitions",
+            "initial_candidate_batched_transitions",
+            "extension_candidate_batched_transitions",
+            "exact_l_tune_batched_transitions",
+            "fresh_verification_batched_transitions",
+        )
+    )
+    reconciliation = reconcile_executed_hmc_work(
+        public_manifest=public_manifest,
+        executed_work=executed,
+    )
+    return {
+        "schema": "bayesfilter.hmc_operational_phase7_work_summary.v1",
+        "reconciliation": reconciliation,
+        "accounting_scope": "metric_adaptation_through_started_fresh_verification",
+        "fresh_verification_start_count_charged": start_count,
+        "fresh_verification_start_count_upper_bound": start_cap,
+        "fresh_verification_accounting_basis": "declared_cap_per_started_verification",
+        "fresh_verification_exact_completed_draw_count_claimed": False,
+    }
 
 
 def _phase7_direct_candidate_queue_route(
@@ -15720,6 +16738,7 @@ def _phase7_windowed_stage_config(
     attempt_index: int,
 ) -> HMCWindowedMassStageConfig:
     return HMCWindowedMassStageConfig(
+        algorithm_id=windowed_algorithm_for_selection_algorithm(config.algorithm_id),
         target_accept_prob=config.target_accept_prob,
         seed=_derive_seed(_phase7_attempt_seed(config.seed, attempt_index), stage_index=0),
         chain_execution_mode=config.chain_execution_mode,
@@ -15876,9 +16895,7 @@ def _phase4_latent_adapter_for_step_stage(
     mass_signature = _mass_artifact_signature(geometry.mass_artifact)
     if mass_signature != geometry.mass_artifact_signature:
         raise ValueError("geometry mass artifact signature mismatch")
-    if windowed_stage.windowed_mass_result is None:
-        raise ValueError("Phase 4 result missing windowed mass artifact")
-    phase4_initial_mass = windowed_stage.windowed_mass_result.final_mass_artifact
+    phase4_initial_mass = _phase4_adapted_mass_artifact(windowed_stage)
     if not isinstance(phase4_initial_mass, PrecomputedMassArtifact):
         raise TypeError("Phase 4 final mass artifact must be PrecomputedMassArtifact")
     if phase4_initial_mass.adapter_signature != windowed_stage.hmc_adapter_signature:
@@ -15898,6 +16915,8 @@ def _phase4_latent_adapter_for_step_stage(
 def _phase4_adapted_mass_artifact(
     windowed_stage: HMCWindowedMassStageResult,
 ) -> PrecomputedMassArtifact:
+    if windowed_stage.operational_mass_artifact is not None:
+        return windowed_stage.operational_mass_artifact
     windowed_result = windowed_stage.windowed_mass_result
     if windowed_result is None or windowed_result.final_mass_artifact is None:
         raise ValueError("Phase 4 result does not carry final mass artifact")
@@ -16055,16 +17074,37 @@ def _joint_l_epsilon_anchor_l(
     *,
     selected_kernel: Mapping[str, Any],
     attempt_state: "_HMCPhaseAttemptState | None",
+    final_step_size: float | None = None,
+    target_trajectory_length: float | None = None,
+    max_leapfrog_steps: int = _GEOMETRY_MAX_LEAPFROG,
 ) -> int:
     if attempt_state is not None:
         for value in (
-            attempt_state.selected_num_leapfrog_steps,
             attempt_state.phase6_retry_num_leapfrog_steps,
+            attempt_state.selected_num_leapfrog_steps,
         ):
             if value is not None:
                 anchor = int(value)
                 if anchor > 0:
                     return anchor
+    if final_step_size is not None or target_trajectory_length is not None:
+        step = float(final_step_size) if final_step_size is not None else float("nan")
+        target = (
+            float(target_trajectory_length)
+            if target_trajectory_length is not None
+            else float("nan")
+        )
+        if not np.isfinite(step) or step <= 0.0:
+            raise ValueError("final adapted step size must be finite and positive")
+        if not np.isfinite(target) or target <= 0.0:
+            raise ValueError("target trajectory length must be finite and positive")
+        return int(
+            np.clip(
+                np.ceil(target / step),
+                _GEOMETRY_MIN_LEAPFROG,
+                _validate_max_leapfrog_steps(max_leapfrog_steps),
+            )
+        )
     anchor = int(selected_kernel["num_leapfrog_steps"])
     if anchor <= 0:
         raise ValueError("joint L/epsilon grid anchor L must be positive")
@@ -17513,24 +18553,51 @@ def _kernel_stage_runner_route_summary(
     handoff_source: str | None = None,
     initial_handoff_contract_count: int = 0,
 ) -> Mapping[str, Any]:
+    initial_count = int(initial_handoff_contract_count)
+    final_count = len(contract_payloads)
+    if initial_count < 0 or initial_count > final_count:
+        raise ValueError("runner handoff contract count is inconsistent")
+    reusable_events = tuple(
+        item
+        for item in events
+        if item.get("route") != "single_use_or_injected_runner"
+    )
+    stage_build_count = sum(
+        1 for item in reusable_events if item.get("runner_reused") is False
+    )
+    stage_reuse_count = sum(
+        1 for item in reusable_events if item.get("runner_reused") is True
+    )
+    stage_new_distinct_count = final_count - initial_count
+    single_use_count = sum(
+        1 for item in events if item.get("used_single_use_runner") is True
+    )
+    injected_count = sum(
+        1
+        for item in events
+        if item.get("route") == "single_use_or_injected_runner"
+        and item.get("used_single_use_runner") is False
+    )
     return {
         "active_route": str(active_route),
         "semantic_source": str(semantic_source),
         "runner_cache_handoff_source": (
             None if handoff_source is None else str(handoff_source)
         ),
-        "initial_handoff_contract_count": int(initial_handoff_contract_count),
-        "reusable_runner_build_count": len(contract_payloads),
-        "distinct_static_runner_contract_count": len(contract_payloads),
-        "single_use_build_count": sum(
-            1 for item in events if item.get("used_single_use_runner") is True
+        "initial_handoff_contract_count": initial_count,
+        "stage_runner_build_count": stage_build_count,
+        "stage_runner_reuse_count": stage_reuse_count,
+        "stage_new_distinct_contract_count": stage_new_distinct_count,
+        "final_distinct_contract_count": final_count,
+        "single_use_call_count": single_use_count,
+        "injected_runner_call_count": injected_count,
+        "contract_count_invariant_satisfied": (
+            final_count == initial_count + stage_new_distinct_count
         ),
-        "injected_runner_call_count": sum(
-            1
-            for item in events
-            if item.get("route") == "single_use_or_injected_runner"
-            and item.get("used_single_use_runner") is False
-        ),
+        # Compatibility aliases retain only meanings that were already exact.
+        "reusable_runner_build_count": stage_build_count,
+        "distinct_static_runner_contract_count": final_count,
+        "single_use_build_count": single_use_count,
         "round_route_events": tuple(dict(item) for item in events),
         "distinct_static_runner_contracts": tuple(
             {
@@ -17554,6 +18621,11 @@ def _kernel_stage_runner_route_summary(
             str(reuse_nonclaim),
             "does not establish posterior convergence or sampler superiority",
         ),
+        "evidence_role": "engineering_only",
+        "promotion_role": "non_promoting",
+        "stopping_rule_role": "not_a_stopping_rule",
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
     }
 
 
@@ -19391,8 +20463,11 @@ def _run_phase7_injected_final_verification(
     leapfrog = verification_input.num_leapfrog_steps
     verification_seed = verification_input.verification_seed
     verification_config = FullChainHMCConfig(
-        num_results=budget_policy.verification_num_results,
-        num_burnin_steps=budget_policy.verification_num_burnin_steps,
+        num_results=_phase7_verification_num_results(config, budget_policy),
+        num_burnin_steps=_phase7_verification_num_burnin_steps(
+            config,
+            budget_policy,
+        ),
         step_size=step,
         num_leapfrog_steps=int(leapfrog),
         seed=verification_seed,
@@ -19428,10 +20503,10 @@ def _run_phase7_injected_final_verification(
                 "num_leapfrog_steps": int(leapfrog),
                 "step_size": step,
                 "verification_num_results": int(
-                    budget_policy.verification_num_results
+                    _phase7_verification_num_results(config, budget_policy)
                 ),
                 "verification_num_burnin_steps": int(
-                    budget_policy.verification_num_burnin_steps
+                    _phase7_verification_num_burnin_steps(config, budget_policy)
                 ),
             },
         )
@@ -19534,7 +20609,7 @@ def _run_phase7_sequential_rhat_final_verification(
         if verification_input.source_kind == "historical_phase6"
         else verification_input.target_scope
     )
-    max_results = int(budget_policy.verification_num_results)
+    max_results = _phase7_verification_num_results(config, budget_policy)
     configured_chunk = config.verification_chunk_max_results
     check_interval = min(
         64 if configured_chunk is None else int(configured_chunk),
@@ -19553,7 +20628,10 @@ def _run_phase7_sequential_rhat_final_verification(
     sequential_config = SequentialRHatHMCVerificationConfig(
         check_interval=check_interval,
         max_results=max_results,
-        num_burnin_steps=budget_policy.verification_num_burnin_steps,
+        num_burnin_steps=_phase7_verification_num_burnin_steps(
+            config,
+            budget_policy,
+        ),
         step_size=step,
         num_leapfrog_steps=int(leapfrog),
         seed=verification_seed,
@@ -19755,12 +20833,19 @@ def _run_phase7_sequential_rhat_final_verification(
     diagnostics["runner_route_summary"] = {
         "active_route": "phase7_sequential_rhat_fixed_size_chunk_verifier",
         "single_use_build_count": 0,
+        "single_use_call_count": 0,
+        "injected_runner_call_count": 0,
         "fallback_status": "none",
         "semantic_source": "_run_phase7_sequential_rhat_final_verification",
         "route_nonclaims": (
             "sequential R-hat final verification uses fixed-size TF/TFP chunks",
             "R-hat is historical explanatory telemetry, not a stopping rule, tuning handoff criterion, or posterior convergence proof",
         ),
+        "evidence_role": "engineering_only",
+        "promotion_role": "non_promoting",
+        "stopping_rule_role": "not_a_stopping_rule",
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
     }
     verification_payload = {
         "verification_policy": "sequential_rhat",
@@ -21819,6 +22904,7 @@ def _windowed_stage_segmented_capture_payload(
     progress_callback: LoopProgressCallback | None,
     attempt_index: int | None,
     route_category: str,
+    route_decision: HMCAlgorithmRouteDecision,
 ) -> Mapping[str, Any]:
     """Run windowed-mass diagnostic draws as small state-carrying HMC chunks."""
 
@@ -21853,6 +22939,7 @@ def _windowed_stage_segmented_capture_payload(
                 "windowed_mass_public_timeout_closeout",
                 attempt_index=attempt_index,
                 route_category=route_category,
+                route_decision=route_decision,
                 completed=True,
                 elapsed_s=time.perf_counter() - run_start,
                 timeout_closeout={
@@ -21887,6 +22974,7 @@ def _windowed_stage_segmented_capture_payload(
             "windowed_mass_segment_start",
             attempt_index=attempt_index,
             route_category=route_category,
+            route_decision=route_decision,
             started=True,
             elapsed_s=0.0,
             started_perf_counter_s=time.perf_counter(),
@@ -21954,6 +23042,7 @@ def _windowed_stage_segmented_capture_payload(
             "windowed_mass_segment_complete",
             attempt_index=attempt_index,
             route_category=route_category,
+            route_decision=route_decision,
             completed=True,
             elapsed_s=elapsed,
             segment_index=segment_index,
@@ -22292,8 +23381,7 @@ def _classify_windowed_stage_capture(
 ) -> tuple[str, ...]:
     hard_vetoes: list[str] = []
     if capture.get("public_timeout_closeout") is not None:
-        hard_vetoes.append(_WINDOWED_MASS_PUBLIC_TIMEOUT_HARD_VETO)
-        return tuple(hard_vetoes)
+        return ()
     if run_error is not None:
         hard_vetoes.append("windowed_stage_hmc_error")
     expected_steps = capture.get("expected_steps")

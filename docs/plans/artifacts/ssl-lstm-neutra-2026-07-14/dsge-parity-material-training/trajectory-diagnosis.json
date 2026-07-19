@@ -1,0 +1,87 @@
+{
+  "schema": "bayesfilter.ssl_lstm_neutra.dsge_parity_trajectory_diagnosis.v1",
+  "status": "COMPLETED_READ_ONLY_DIAGNOSIS",
+  "date": "2026-07-15",
+  "execution": {
+    "device": "CPU",
+    "gpu_hidden": true,
+    "role": "read_only_checkpoint_reconstruction",
+    "mutated_training_artifacts": false
+  },
+  "source_artifacts": {
+    "program_result": {
+      "path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/dsge-parity-material-training/program-result.json",
+      "sha256": "3b2b1a27c4b9af4d4f10026a111d03ed464c42b3d4f3a4f0a8a93217686c230d"
+    },
+    "seed_a_result": {
+      "path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/dsge-parity-material-training/seed-a/result.json",
+      "sha256": "6b0b5ff525e9081870b707784715b6e31e1c8f47d8fec59ff7b96a1bc7bc8186"
+    },
+    "seed_b_result": {
+      "path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/dsge-parity-material-training/seed-b/result.json",
+      "sha256": "3cfd5f1d936c99d1f42e4d7f5b4900da9d49403bcac902f55e912ac7b04ab40c"
+    }
+  },
+  "seed_a": {
+    "final_overall_saturation_fraction": 0.0,
+    "final_stage_saturation_fractions": [0.0, 0.0, 0.0],
+    "final_moderate_shell_max_inverse_radius": 2.8565217521249,
+    "clipping_fraction_by_schedule_segment": [
+      {"steps": "1-999", "fraction": 0.02902902902902903},
+      {"steps": "1000-3999", "fraction": 0.0003333333333333333},
+      {"steps": "4000-5000", "fraction": 0.0}
+    ]
+  },
+  "seed_b": {
+    "first_checkpoint_overall_saturation_above_0_05": {
+      "step": 900,
+      "overall_fraction": 0.078125,
+      "stage_fractions": [0.15625, 0.078125, 0.0],
+      "moderate_shell_max_inverse_radius": 4.033746479273146
+    },
+    "first_periodic_validation_overall_saturation_above_0_05": {
+      "step": 1000,
+      "overall_fraction": 0.09895833333333333
+    },
+    "final": {
+      "step": 5000,
+      "overall_saturation_fraction": 0.11197916666666667,
+      "stage_saturation_fractions": [0.25, 0.0859375, 0.0],
+      "moderate_shell_max_inverse_radius": 4.395939194622471,
+      "worst_moderate_shell_label": "moderate_shell_1"
+    },
+    "sustained_late_shell_failure": {
+      "first_step": 3500,
+      "threshold": 4.3,
+      "all_100_step_checkpoints_3500_through_5000_failed": true,
+      "last_preceding_passing_checkpoint": {
+        "step": 3400,
+        "moderate_shell_max_inverse_radius": 4.243585736429882
+      }
+    },
+    "final_worst_shell_inverse_component_norms": {
+      "theta_before_inverse": 1.1854637387299891,
+      "after_fixed_translation_inverse": 1.5068876361860146,
+      "after_stage_3_inverse": 1.300050785410992,
+      "after_stage_2_inverse": 1.9427087792008106,
+      "after_stage_1_inverse": 4.395939194622468
+    },
+    "clipping_fraction_by_schedule_segment": [
+      {"steps": "1-999", "fraction": 0.03303303303303303},
+      {"steps": "1000-3999", "fraction": 0.0},
+      {"steps": "4000-5000", "fraction": 0.0}
+    ]
+  },
+  "interpretation": {
+    "hard_veto_supported": false,
+    "candidate_instability_supported": true,
+    "diagnostic_summary": "Seed B entered scale saturation during the original 0.01 learning-rate segment. Stage 1 became the dominant saturated component and the dominant final inverse expansion on the failed shell direction. Saturation preceded the sustained late shell failure; clipping did not persist after the first schedule segment.",
+    "repair_trigger": "Test removal of the aggressive initial learning-rate segment before changing topology or objective.",
+    "nonclaims": [
+      "The diagnosis does not prove the initial learning rate is the unique cause.",
+      "An earlier seed-B checkpoint is not retrospectively nominated.",
+      "Seed A is not promoted alone.",
+      "No posterior, HMC, predictive, superiority, default-readiness, or NeuTra-direction claim is supported."
+    ]
+  }
+}

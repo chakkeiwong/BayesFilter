@@ -1,0 +1,51 @@
+{
+  "schema": "bayesfilter.ssl_lstm_neutra.phase8_controlled_calibration.smoke_failure.v1",
+  "status": "FAILED_EXECUTION",
+  "decision": "PHASE8_CONTROLLED_CALIBRATION_SMOKE_IMPLEMENTATION_FAILURE_REPAIR_REQUIRED",
+  "attempt": "original_smoke",
+  "failure": {
+    "exception_type": "TypeError",
+    "message": "Missing required positional argument",
+    "surface": "tf.concat constructing the 20-feature margin vector",
+    "source_line_at_failure": 357,
+    "cause": "axis was omitted from tf.concat",
+    "receipt_written": false
+  },
+  "evidence_classification": {
+    "implementation_failure": true,
+    "covariance_failure": false,
+    "mmd_failure": false,
+    "gpu_or_xla_failure": false,
+    "calibration_power_evidence": false,
+    "scientific_direction_evidence": false
+  },
+  "source_bindings_at_failure": {
+    "plan_sha256": "8e50acc4d9b5d447ad9890e23d573f2bd5fe2cf476a45788ab60120bf7a09ac3",
+    "runner_sha256": "6e7d8ffb5596d1ec46cfd9fb8bdacbf723cce4f77e9202005faf299701b747ff",
+    "predictive_source_sha256": "e6e299c030139722e6f3082132617d4da25e5f5fbebc690099056dfa388c55fc",
+    "target_pilot_sha256": "5ae511c248e222edf14660c91c4a48412706c6f452298ebe5e144bbe8f01c098"
+  },
+  "run_manifest": {
+    "git_commit": "ffaaaf903354e095da126dbfa47878c34717c5b8",
+    "git_dirty": true,
+    "command": "CUDA_VISIBLE_DEVICES=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/tmp/bayesfilter-phase8-calibration-smoke-pyc CUDA_CACHE_PATH=/tmp/bayesfilter-phase8-calibration-smoke-cuda timeout 660s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/run_ssl_lstm_neutra_phase8_controlled_calibration_2026_07_17.py --mode smoke --output docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/controlled-calibration-smoke.json --wall-cap-seconds 600",
+    "conda_env": "tfgpu interpreter",
+    "device": "physical GPU 1 exposed as TensorFlow /GPU:0",
+    "dtype": "float64",
+    "jit_compile": true,
+    "tf32_enabled": true,
+    "root_seed": [14001, 14002],
+    "wall_cap_seconds": 600,
+    "outer_timeout_seconds": 660,
+    "wall_time_seconds": "not captured because failure preceded receipt construction; console timestamps bound execution to approximately 13 seconds",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "output_path": "docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-8-predictive-design/controlled-calibration-smoke.json",
+    "output_absent_after_failure": true
+  },
+  "nonclaims": [
+    "no controlled calibration smoke pass",
+    "no tolerance nomination or validation",
+    "no G/H confirmation forecast read",
+    "no inference about posterior truth, predictive equivalence, or the scientific direction"
+  ]
+}

@@ -15,6 +15,7 @@ from bayesfilter.inference.hmc_verification import (
     evaluate_hmc_acceptance_evidence,
     hmc_acceptance_evidence_from_payload,
     hmc_acceptance_evidence_v2_migration_view,
+    hmc_acceptance_evidence_v3_migration_view,
     summarize_hmc_tuning_telemetry,
 )
 
@@ -137,9 +138,10 @@ def test_retained_target_health_types_target_status_failures(
                 if telemetry_mode == "malformed":
                     payload.pop("floor_count_value")
                 elif telemetry_mode == "nonvalid":
-                    payload["status_code"] = tf.concat(
-                        (tf.ones((1,), tf.int32), tf.zeros((3,), tf.int32)),
-                        axis=0,
+                    payload["status_code"] = tf.tensor_scatter_nd_update(
+                        payload["status_code"],
+                        indices=tf.zeros((1, tf.rank(payload["status_code"])), tf.int32),
+                        updates=tf.ones((1,), tf.int32),
                     )
                 return payload
 
@@ -185,6 +187,7 @@ def test_tuning_telemetry_separates_mean_probability_from_binary_acceptance() ->
     np.testing.assert_allclose(result["binary_acceptance_rate_by_chain"], [0.5, 0.25])
     np.testing.assert_allclose(result["movement_rate_by_chain"], [1.0, 0.0])
     np.testing.assert_allclose(result["repeated_state_fraction_by_chain"], [0.0, 1.0])
+    assert result["schema"] == "bayesfilter.hmc_tuning_telemetry.v4"
     assert result["energy_proxy_role"].startswith("absolute_log_accept_ratio")
 
 
@@ -198,6 +201,22 @@ def test_tuning_telemetry_supports_single_chain_shape() -> None:
     assert int(result["chain_count"].numpy()) == 1
     assert int(result["draw_count"].numpy()) == 3
     assert result["mean_acceptance_probability_by_chain"].shape == (1,)
+
+
+def test_tuning_telemetry_movement_matches_coordinate_wise_admission() -> None:
+    samples = np.zeros((8, 2, 3), dtype=float)
+    samples[:, :, 1:] = np.arange(8, dtype=float)[:, None, None]
+
+    result = summarize_hmc_tuning_telemetry(
+        samples=samples,
+        log_accept_ratio=np.zeros((8, 2), dtype=float),
+        is_accepted=np.ones((8, 2), dtype=bool),
+    )
+
+    np.testing.assert_allclose(result["movement_rate_by_chain"], [0.0, 0.0])
+    np.testing.assert_allclose(
+        result["repeated_state_fraction_by_chain"], [1.0, 1.0]
+    )
 
 
 def test_tuning_telemetry_marks_single_draw_movement_unavailable_without_nan() -> None:
@@ -306,12 +325,12 @@ def test_acceptance_evidence_exact_directional_decisions(
     assert evidence.decision == decision
     assert evidence.usable_decisions_per_chain == 64
     assert evidence.excluded_remainder_per_chain == 0
-    assert evidence.standard_error == pytest.approx(0.0, abs=1.0e-15)
+    assert evidence.standard_error is None
     assert evidence.realized_acceptance_rate == pytest.approx(1.0)
     assert evidence.realized_acceptance_rate_by_chain == pytest.approx((1.0,) * 4)
 
 
-def test_acceptance_evidence_uses_declared_chain_block_interval() -> None:
+def test_acceptance_evidence_uses_chain_mean_hoeffding_interval() -> None:
     block_means = np.array(
         [
             [0.60, 0.70, 0.65, 0.75],
@@ -327,17 +346,18 @@ def test_acceptance_evidence_uses_declared_chain_block_interval() -> None:
 
     evidence = _evidence(probabilities)
     chain_means = np.mean(block_means, axis=1)
-    expected_variance = np.var(chain_means, ddof=1) / 4
-    expected_variance += np.mean(np.var(block_means, axis=1, ddof=1)) / (4 * 4)
-    expected_se = np.sqrt(expected_variance)
+    half_width = np.sqrt(np.log(2.0 / 0.10) / (2.0 * 4))
+    pooled = np.mean(chain_means)
 
-    assert evidence.standard_error == pytest.approx(expected_se)
-    assert evidence.interval == pytest.approx(
-        (
-            np.mean(chain_means) - 2.3533634348 * expected_se,
-            np.mean(chain_means) + 2.3533634348 * expected_se,
-        )
+    assert evidence.chain_mean_uncertainty_interval == pytest.approx(
+        (max(0.0, pooled - half_width), min(1.0, pooled + half_width))
     )
+    assert (
+        evidence.chain_mean_uncertainty_method
+        == "two_sided_hoeffding_independent_chains"
+    )
+    assert evidence.chain_mean_uncertainty_level == pytest.approx(0.90)
+    assert evidence.standard_error is None
     assert evidence.decision == "inconclusive_evidence"
 
 
@@ -827,6 +847,39 @@ def test_v2_proxy_veto_migration_is_non_actionable() -> None:
         hmc_acceptance_evidence_from_payload(legacy)
 
 
+def test_v3_migration_view_cannot_promote_historical_evidence() -> None:
+    current = _evidence(0.70).payload()
+    legacy = {
+        **current,
+        "schema": "bayesfilter.hmc_acceptance_evidence.v3",
+        "interval": current["chain_mean_uncertainty_interval"],
+        "standard_error": 0.01,
+    }
+    for name in (
+        "chain_mean_uncertainty_interval",
+        "chain_mean_uncertainty_method",
+        "chain_mean_uncertainty_level",
+    ):
+        legacy.pop(name)
+    legacy["policy"] = {
+        **legacy["policy"],
+        "schema": "bayesfilter.hmc_acceptance_policy.v3",
+        "student_critical_value": 2.3533634348,
+    }
+    legacy["policy"].pop("uncertainty_method")
+    legacy["policy"].pop("tuning_decision_role")
+
+    view = hmc_acceptance_evidence_v3_migration_view(legacy)
+
+    assert view["acceptance_decision"] == "recompute_required"
+    assert view["promotion_eligible"] is False
+    assert view["promotion_eligible_under_v4"] is False
+    assert view["historical_v3_acceptance_decision"] == "passed"
+    assert view["historical_v3_promotion_eligible"] is True
+    with pytest.raises(ValueError, match="schema mismatch"):
+        hmc_acceptance_evidence_from_payload(legacy)
+
+
 def test_acceptance_evidence_payload_replay_is_deterministic_and_validated() -> None:
     first = _evidence(0.70)
     second = _evidence(0.70)
@@ -903,8 +956,8 @@ def test_acceptance_policy_rejects_noninteger_count_scalars(
     ("mutation", "error"),
     [
         ("pooled_mean", "pooled_mean does not match"),
-        ("standard_error", "standard_error does not match"),
-        ("interval", "interval does not match"),
+        ("uncertainty_interval", "uncertainty interval is inconsistent"),
+        ("uncertainty_method", "unsupported chain-mean uncertainty method"),
         ("decision", "decision is inconsistent"),
         ("policy", "decision is inconsistent"),
     ],
@@ -916,10 +969,10 @@ def test_acceptance_evidence_payload_rejects_arithmetic_and_policy_corruption(
     payload = dict(_evidence(0.70).payload())
     if mutation == "pooled_mean":
         payload["pooled_mean"] = 0.71
-    elif mutation == "standard_error":
-        payload["standard_error"] = 0.01
-    elif mutation == "interval":
-        payload["interval"] = (0.69, 0.71)
+    elif mutation == "uncertainty_interval":
+        payload["chain_mean_uncertainty_interval"] = (0.69, 0.71)
+    elif mutation == "uncertainty_method":
+        payload["chain_mean_uncertainty_method"] = "forged_method"
     elif mutation == "decision":
         payload["decision"] = "repair_step_higher"
         payload["passed"] = False

@@ -74,8 +74,8 @@ if(LLVM_INCLUDE_DIR)
     list(APPEND EXTRA_INCLUDES "${LLVM_INCLUDE_DIR}")
 else()
     message(STATUS
-        "LLVM headers not found; install llvm development headers so "
-        "llvm/ADT/ArrayRef.h is available for the TensorFlow XLA custom op")
+        "Standalone LLVM headers not found; using TensorFlow's packaged "
+        "include tree and allowing the compiler to enforce actual dependencies")
 endif()
 if(EXISTS "${TF_get_include}/external/highwayhash/highwayhash/arch_specific.h")
     list(APPEND EXTRA_INCLUDES "${TF_get_include}/external/highwayhash")
@@ -104,12 +104,6 @@ target_include_directories(
     ${TF_get_include}
     ${Python3_INCLUDE_DIRS}
     ${EXTRA_INCLUDES})
-if(NOT LLVM_INCLUDE_DIR)
-    message(FATAL_ERROR
-        "Missing LLVM headers required by the TensorFlow XLA custom op. "
-        "Install llvm development headers in the active environment or system "
-        "so llvm/ADT/ArrayRef.h is reachable.")
-endif()
 if(HAS_CUDA)
     target_include_directories(symmetric_sylvester PRIVATE ${CUDA_INCLUDE})
     target_compile_definitions(symmetric_sylvester PRIVATE HAS_CUDA)

@@ -2348,6 +2348,39 @@ def test_extension_rejects_slot_seed_and_declared_epsilon_corruption() -> None:
         )
 
 
+def test_extension_boundary_rejects_stale_v3_acceptance_policy_signature() -> None:
+    runner, _calls = _fake_extension_runner(
+        probability_by_l={10: 0.70, 20: 0.40}
+    )
+
+    def corrupting_extender(**kwargs):
+        finalized, extension = extend_operational_fixed_trajectory_evidence(**kwargs)
+        stale_signature = _signature(
+            "bayesfilter.hmc_acceptance_policy.v3",
+            kwargs["acceptance_policy"].payload(),
+        )
+        # Simulate a corrupt custom extender after dataclass construction so
+        # the outer selection boundary, rather than __post_init__, is tested.
+        object.__setattr__(
+            extension,
+            "acceptance_policy_signature",
+            stale_signature,
+        )
+        return finalized, extension
+
+    with pytest.raises(
+        ValueError,
+        match="evidence extender changed the declared extension contract",
+    ):
+        run_bounded_operational_fixed_trajectory_selection(
+            **_bounded_extension_kwargs(
+                selector=_attempt5_like_selection,
+                runner=runner,
+                evidence_extender=corrupting_extender,
+            )
+        )
+
+
 def test_outer_loop_rejects_candidate_set_and_initial_seed_corruption() -> None:
     runner, _calls = _fake_extension_runner(inconclusive=True)
 

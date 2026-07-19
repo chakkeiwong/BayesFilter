@@ -152,6 +152,39 @@ def test_batched_svd_custom_gradient_tape_uses_returned_score() -> None:
     )
 
 
+def test_batched_svd_custom_gradient_supports_row_aligned_observations() -> None:
+    tensors = _fixture(batch_size=2, time_steps=3)
+    model, derivatives = _model_derivatives(tensors)
+    theta = tf.Variable(_theta_for_fixture(tensors))
+    observations = tf.stack(
+        (tensors["observations"], tensors["observations"] + 0.025), axis=0
+    )
+    weights = tf.constant([1.25, -0.5], dtype=tf.float64)
+
+    with tf.GradientTape() as tape:
+        value, score, diagnostics = (
+            tf_batched_svd_sigma_point_value_and_score_custom_gradient(
+                theta,
+                observations,
+                model,
+                derivatives,
+                spectral_gap_tolerance=tf.constant(1.0e-10, dtype=tf.float64),
+            )
+        )
+        objective = tf.reduce_sum(weights * value)
+    gradient = tape.gradient(objective, theta)
+
+    np.testing.assert_allclose(
+        gradient.numpy(),
+        (weights[:, tf.newaxis] * score).numpy(),
+        rtol=1.0e-7,
+        atol=1.0e-7,
+    )
+    assert diagnostics["batching_contract"].numpy() == (
+        b"batch_over_parameter_proposals_and_row_aligned_observations"
+    )
+
+
 def test_batched_svd_custom_gradient_blocks_model_autodiff_leakage() -> None:
     tensors = _fixture()
     model, derivatives = _model_derivatives(tensors)

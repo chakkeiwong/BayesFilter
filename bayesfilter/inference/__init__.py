@@ -46,6 +46,12 @@ from bayesfilter.inference.hmc import (
     write_sequential_rhat_pre_verification_handoff_checkpoint,
     write_hmc_sample_archive,
 )
+from bayesfilter.inference.fixed_kernel_arm import (
+    FixedKernelArmConfig,
+    FixedKernelArmResult,
+    minimum_latent_ess,
+    run_fixed_kernel_arm,
+)
 from bayesfilter.inference.backend_parity import (
     BackendParityGate,
     BackendParityResult,
@@ -242,10 +248,14 @@ from bayesfilter.inference.cpu_xla_cloud import (
     detected_cpu_core_count,
 )
 from bayesfilter.inference.quadratic_map_covariance import (
+    ITERATIVE_QUADRATIC_MAP_COVARIANCE_NONCLAIMS,
     QUADRATIC_MAP_COVARIANCE_NONCLAIMS,
+    IterativeQuadraticMapCovarianceConfig,
+    IterativeQuadraticMapCovarianceResult,
     QuadraticMapCovarianceLocatorConfig,
     QuadraticMapCovarianceMassConfig,
     QuadraticMapCovarianceResult,
+    estimate_iterative_quadratic_map_covariance,
     estimate_quadratic_map_covariance,
 )
 from bayesfilter.inference.sequential_map_covariance import (
@@ -254,6 +264,24 @@ from bayesfilter.inference.sequential_map_covariance import (
     SequentialMapCovarianceResult,
     dimension_scaled_search_count,
     estimate_sequential_map_covariance,
+)
+from bayesfilter.inference.block_coordinate_center import (
+    BLOCK_COORDINATE_CENTER_NONCLAIMS,
+    BlockCoordinateCenterBlock,
+    BlockCoordinateCenterConfig,
+    BlockCoordinateCenterResult,
+    classify_center_trace_cycles,
+    locate_block_coordinate_center,
+)
+from bayesfilter.inference.joint_center import (
+    JOINT_CENTER_NONCLAIMS,
+    JointCenterCheckpoint,
+    JointCenterLocatorConfig,
+    JointCenterResult,
+    JointCenterStagedConfig,
+    JointCenterStagedResult,
+    locate_joint_center,
+    locate_joint_center_staged,
 )
 from bayesfilter.inference.posterior_adapter import (
     HessianPosteriorAdapter,
@@ -319,6 +347,10 @@ __all__ = [
     "FixedSizeHMCChunkConfig",
     "FixedSizeHMCChunkRunResult",
     "FixedSizeHMCChunkRunner",
+    "FixedKernelArmConfig",
+    "FixedKernelArmResult",
+    "minimum_latent_ess",
+    "run_fixed_kernel_arm",
     "HMCSampleArchiveManifest",
     "InternalSegmentHMCRunResult",
     "InternalSegmentHMCRunner",
@@ -404,6 +436,17 @@ __all__ = [
     "LatentAffineHMCTransform",
     "LoadedFrozenNeuTraArtifact",
     "LOW_RANK_SPD_QUADRATIC_GEOMETRY_NONCLAIMS",
+    "BLOCK_COORDINATE_CENTER_NONCLAIMS",
+    "BlockCoordinateCenterBlock",
+    "BlockCoordinateCenterConfig",
+    "BlockCoordinateCenterResult",
+    "JOINT_CENTER_NONCLAIMS",
+    "JointCenterCheckpoint",
+    "JointCenterLocatorConfig",
+    "JointCenterResult",
+    "JointCenterStagedConfig",
+    "JointCenterStagedResult",
+    "ITERATIVE_QUADRATIC_MAP_COVARIANCE_NONCLAIMS",
     "LowRankSPDQuadraticGeometryConfig",
     "LowRankSPDQuadraticGeometryResult",
     "MassMatrixResult",
@@ -418,6 +461,8 @@ __all__ = [
     "PriorSupportError",
     "QUADRATIC_MAP_COVARIANCE_NONCLAIMS",
     "SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS",
+    "IterativeQuadraticMapCovarianceConfig",
+    "IterativeQuadraticMapCovarianceResult",
     "QuadraticMapCovarianceLocatorConfig",
     "QuadraticMapCovarianceMassConfig",
     "QuadraticMapCovarianceResult",
@@ -457,6 +502,7 @@ __all__ = [
     "bind_fixed_transport_hmc_mechanics",
     "bracket_initial_step_size",
     "classify_hmc_fixed_grid_acceptance",
+    "classify_center_trace_cycles",
     "classify_target_failure_mode",
     "classify_hmc_screen",
     "classify_fixed_kernel_screen_with_tuning_policy",
@@ -469,6 +515,9 @@ __all__ = [
     "inspect_sequential_rhat_private_checkpoint",
     "latent_to_position",
     "latent_value_and_score",
+    "locate_block_coordinate_center",
+    "locate_joint_center",
+    "locate_joint_center_staged",
     "finalize_dense_iaf_neutra_artifact_payload",
     "load_frozen_neutra_artifact",
     "evaluate_target_with_failure_policy",
@@ -479,6 +528,7 @@ __all__ = [
     "dimension_scaled_search_count",
     "default_cpu_worker_count",
     "detected_cpu_core_count",
+    "estimate_iterative_quadratic_map_covariance",
     "estimate_quadratic_map_covariance",
     "estimate_sequential_map_covariance",
     "fit_fixed_center_curvature",

@@ -106,7 +106,11 @@ def tf_batched_svd_sigma_point_value_and_score_custom_gradient(
             "strict_spd_branch_required": tf.constant(True),
             "rank_deficient_branch_allowed": tf.constant(False),
             "fixed_null_support_allowed": tf.constant(False),
-            "batching_contract": tf.constant("batch_over_parameter_proposals"),
+            "batching_contract": tf.constant(
+                "batch_over_parameter_proposals_and_row_aligned_observations"
+                if tf.convert_to_tensor(observations).shape.rank == 3
+                else "batch_over_parameter_proposals"
+            ),
             "numpy_runtime_allowed": tf.constant(False),
             "python_loop_over_time_allowed": tf.constant(False),
             "python_loop_over_batch_allowed": tf.constant(False),

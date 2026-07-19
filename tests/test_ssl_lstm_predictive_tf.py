@@ -231,6 +231,50 @@ def test_terminal_covariance_fail_closed_policy() -> None:
     assert all(bool(tf.math.is_finite(value)) for value in nonfinite[6:11])
 
 
+def test_batched_terminal_covariance_audit_matches_scalar_eager_fixture() -> None:
+    raw = tf.stack(
+        (
+            tf.linalg.diag(tf.constant((2.0, 0.5, 0.1), tf.float64)),
+            tf.constant(
+                ((1.0, 0.2, 0.0), (0.2, 0.8, -0.1), (0.0, -0.1, 0.6)),
+                tf.float64,
+            ),
+        )
+    )
+    batched = predictive._audit_terminal_covariance_batch_core(raw)
+    scalar_rows = [
+        predictive._audit_terminal_covariance(item) for item in tf.unstack(raw)
+    ]
+    scalar = tuple(
+        tf.stack([row[index] for row in scalar_rows], axis=0)
+        for index in range(len(scalar_rows[0]))
+    )
+    for left, right in zip(batched, scalar, strict=True):
+        if left.dtype.is_integer:
+            tf.debugging.assert_equal(left, right)
+        else:
+            tf.debugging.assert_near(left, right, atol=1.0e-15, rtol=0.0)
+
+
+def test_staged_covariance_audit_replaces_only_covariance_status_bits() -> None:
+    tensors = tuple(tf.constant(index, tf.int32) for index in range(22))
+    tensors = (
+        *tensors[:21],
+        tf.constant(predictive.STATUS_PROJECTION | predictive.STATUS_FILTER_PARITY),
+    )
+    covariance = tuple(tf.constant(index + 100, tf.int32) for index in range(12))
+    covariance = (*covariance[:11], tf.constant(predictive.STATUS_ASYMMETRIC))
+    replaced = predictive._replace_terminal_covariance_audit(tensors, covariance)
+    assert len(replaced) == 22
+    for index in range(1, 12):
+        tf.debugging.assert_equal(replaced[index], covariance[index - 1])
+    for index in range(12, 21):
+        tf.debugging.assert_equal(replaced[index], tensors[index])
+    assert int(replaced[21]) == (
+        predictive.STATUS_FILTER_PARITY | predictive.STATUS_ASYMMETRIC
+    )
+
+
 def test_terminal_extraction_all_frozen_rows(compiled_bundle) -> None:
     config, points, terminal, _bank, _paths = compiled_bundle
     assert tuple(terminal.mean.shape) == (10, 3)
@@ -250,6 +294,10 @@ def test_terminal_extraction_all_frozen_rows(compiled_bundle) -> None:
             atol=float(16.0 * terminal.psd_tolerance[index]),
             rtol=0.0,
         )
+    covariance_program = predictive.ssl_lstm_terminal_covariance_audit_compiled_program(
+        10
+    )
+    assert covariance_program.experimental_get_tracing_count() == 1
 
 
 def test_forecast_recursion_noise_placement_and_replay(compiled_bundle) -> None:
@@ -393,6 +441,26 @@ def test_scalar_batch_order_and_eager_xla_parity(compiled_bundle) -> None:
         )
 
 
+def test_chunked_forecast_matches_unchunked_draw_order_and_provenance(
+    compiled_bundle,
+) -> None:
+    config, points, _terminal, bank, unchunked = compiled_bundle
+    chunked = predictive.forecast_ssl_lstm_paths(
+        points[:2], bank, config, draw_chunk_size=1
+    )
+    for chunked_tensor, unchunked_tensor in zip(
+        _path_tensors(chunked), _path_tensors(unchunked), strict=True
+    ):
+        tf.debugging.assert_equal(chunked_tensor, unchunked_tensor)
+    assert chunked.provenance.draw_count == 2
+    assert chunked.provenance.draw_chunk_size == 1
+    assert unchunked.provenance.draw_chunk_size == 2
+    assert chunked.provenance.innovation_bank_signature == bank.content_signature
+    assert chunked.provenance.innovation_tensor_hashes == (
+        unchunked.provenance.innovation_tensor_hashes
+    )
+
+
 def test_compiled_trace_hlo_and_provenance(compiled_bundle) -> None:
     config, points, terminal, bank, paths = compiled_bundle
     terminal_program = predictive.ssl_lstm_terminal_compiled_program(config, 10)
@@ -444,6 +512,10 @@ def test_invalid_shapes_dtype_and_bank_tampering() -> None:
         predictive.extract_ssl_lstm_terminal_states(tf.zeros([4], tf.float64), config)
     with pytest.raises((TypeError, ValueError)):
         predictive.forecast_ssl_lstm_paths(tf.zeros([2, 4], tf.float64), bank, config)
+    with pytest.raises(ValueError, match="draw_chunk_size"):
+        predictive.forecast_ssl_lstm_paths(
+            tf.zeros([1, 4], tf.float64), bank, config, draw_chunk_size=2
+        )
     tampered = dataclasses.replace(bank, role_code=999)
     with pytest.raises((TypeError, ValueError)):
         predictive.forecast_ssl_lstm_paths(tf.zeros([1, 4], tf.float64), tampered, config)

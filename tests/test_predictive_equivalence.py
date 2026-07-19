@@ -1,23 +1,28 @@
 from __future__ import annotations
 
 import copy
+import inspect
 from dataclasses import replace
 
 import pytest
 import tensorflow as tf
 
+import bayesfilter.inference.predictive_equivalence as predictive_equivalence
 from bayesfilter.inference.predictive_equivalence import (
     MMDInterval,
     PredictiveContractError,
     PredictiveStatisticsConfig,
     SimultaneousIntervals,
     adapt_ssl_lstm_observations,
+    chain_batch_long_run_covariance,
     chain_batch_means,
     classify_predictive_evidence,
     cross_chain_linear_mmd,
     cross_chain_mmd_upper_interval,
     fixed_rbf_mmd,
     hierarchical_resample_indices,
+    mean_log_variance_influence,
+    pooled_pairwise_distance_scale,
     simultaneous_feature_intervals,
     standardize_forecast_paths,
     summarize_forecast_paths,
@@ -457,6 +462,202 @@ def test_chain_batch_means_preserves_chain_and_trailing_axes() -> None:
         chain_batch_means(values, block_length=3)
     with pytest.raises(PredictiveContractError, match="two complete"):
         chain_batch_means(values, block_length=8)
+
+
+def test_long_run_covariance_matches_manual_batch_means_formula() -> None:
+    values = tf.reshape(tf.range(2 * 8 * 2, dtype=F64), [2, 8, 2]) / 7.0
+    result = chain_batch_long_run_covariance(
+        values,
+        block_length=2,
+        ridge_ladder=(0.0, 1.0e-8),
+        condition_number_max=1.0e16,
+        jit_compile=False,
+    )
+    batches = chain_batch_means(values, block_length=2, jit_compile=False)
+    centered = batches - tf.reduce_mean(batches, axis=1, keepdims=True)
+    per_chain = tf.einsum("cbf,cbg->cfg", centered, centered) / 3.0
+    expected_spectral = 2.0 * tf.reduce_mean(per_chain, axis=0)
+    expected_mean_covariance = expected_spectral / 16.0
+    tf.debugging.assert_near(result.spectral_covariance, expected_spectral)
+    tf.debugging.assert_near(result.pooled_mean_covariance, expected_mean_covariance)
+    assert result.chain_count == 2
+    assert result.draw_count == 8
+    assert result.batch_count == 4
+    assert result.inference_admissible
+    assert _status(result.status) == "VALID"
+
+
+def test_mean_log_variance_influence_matches_manual_cluster_formula() -> None:
+    paths = tf.reshape(tf.range(2 * 4 * 3 * 10, dtype=F64), [2, 4, 3, 10]) / 19.0
+    result = mean_log_variance_influence(paths, jit_compile=False)
+    flat = tf.reshape(paths, [-1, 10])
+    means = tf.reduce_mean(flat, axis=0)
+    centered = paths - means
+    variances = tf.reduce_sum(tf.square(centered), axis=[0, 1, 2]) / 23.0
+    expected_mean_if = tf.reduce_mean(centered, axis=2)
+    second_moment = tf.reduce_mean(tf.square(centered), axis=[0, 1, 2])
+    expected_log_variance_if = (
+        tf.reduce_mean(tf.square(centered), axis=2) / second_moment - 1.0
+    )
+    tf.debugging.assert_near(result.standardized_means, means)
+    tf.debugging.assert_near(result.log_variances, tf.math.log(variances))
+    tf.debugging.assert_near(
+        result.influence_values,
+        tf.concat((expected_mean_if, expected_log_variance_if), axis=-1),
+    )
+    tf.debugging.assert_near(
+        tf.reduce_mean(result.influence_values, axis=[0, 1]),
+        tf.zeros([20], F64),
+        atol=1.0e-14,
+    )
+    assert (result.chain_count, result.draw_count, result.forecast_replication_count) == (
+        2,
+        4,
+        3,
+    )
+    assert result.path_count == 24
+    assert _status(result.status) == "VALID"
+
+
+def test_mean_log_variance_influence_default_xla_matches_eager() -> None:
+    paths = tf.sin(_four_chain_paths()) + 0.03 * _four_chain_paths()
+    eager = mean_log_variance_influence(paths, jit_compile=False)
+    compiled = mean_log_variance_influence(paths)
+    for name in (
+        "feature_estimate",
+        "standardized_means",
+        "log_variances",
+        "influence_values",
+    ):
+        tf.debugging.assert_near(getattr(compiled, name), getattr(eager, name), atol=1e-12)
+
+
+def test_mean_log_variance_influence_fails_on_zero_variance() -> None:
+    with pytest.raises(PredictiveContractError, match="zero variance"):
+        mean_log_variance_influence(tf.ones((4, 8, 2, 10), F64), jit_compile=False)
+
+
+def test_pairwise_distance_scale_matches_manual_euclidean_median() -> None:
+    paths = tf.constant(
+        [
+            [
+                [[0.0] * 10, [3.0] + [0.0] * 9],
+                [[4.0] + [0.0] * 9, [0.0] * 10],
+            ]
+        ],
+        F64,
+    )
+    result = pooled_pairwise_distance_scale(paths, jit_compile=False)
+    # Positive distances are 1, 3, 3, 4, 4; the duplicated zero pair is excluded.
+    assert float(result.median_distance) == pytest.approx(3.0)
+    assert int(result.positive_pair_count) == 5
+    assert int(result.total_pair_count) == 6
+    assert result.path_count == 4
+
+
+def test_pairwise_distance_scale_default_xla_matches_eager() -> None:
+    paths = tf.sin(_four_chain_paths())
+    eager = pooled_pairwise_distance_scale(paths, jit_compile=False)
+    compiled = pooled_pairwise_distance_scale(paths)
+    tf.debugging.assert_near(compiled.median_distance, eager.median_distance, atol=1e-12)
+    tf.debugging.assert_equal(compiled.positive_pair_count, eager.positive_pair_count)
+    tf.debugging.assert_equal(compiled.total_pair_count, eager.total_pair_count)
+
+
+def test_pairwise_distance_scale_kernel_has_no_dynamic_boolean_mask() -> None:
+    source = inspect.getsource(predictive_equivalence._pairwise_distance_scale_kernel)
+    assert "boolean_mask" not in source
+    assert "tf.logical_and(upper" in source
+    assert "count * count" in source
+
+
+def test_pairwise_distance_scale_fails_on_duplicate_degenerate_cloud() -> None:
+    with pytest.raises(PredictiveContractError, match="duplicate-degenerate"):
+        pooled_pairwise_distance_scale(tf.zeros((2, 2, 1, 10), F64), jit_compile=False)
+
+
+def test_long_run_covariance_selects_first_eligible_ridge_for_singular_input() -> None:
+    base = tf.reshape(tf.range(4 * 8, dtype=F64), [4, 8, 1])
+    values = tf.concat((base, 2.0 * base), axis=-1)
+    result = chain_batch_long_run_covariance(
+        values,
+        block_length=2,
+        ridge_ladder=(0.0, 1.0e-12, 1.0e-10, 1.0e-8, 1.0e-6),
+        condition_number_max=1.0e8,
+        jit_compile=False,
+    )
+    assert result.inference_admissible
+    assert int(result.selected_ridge_index) == 4
+    assert float(result.selected_ridge_multiplier) == pytest.approx(1.0e-6)
+    assert bool(tf.reduce_all(result.eigenvalues > 0.0))
+    assert float(result.condition_number) <= 1.0e8
+    tf.debugging.assert_near(
+        result.precision @ result.regularized_covariance,
+        tf.eye(2, dtype=F64),
+        atol=1.0e-8,
+    )
+
+
+def test_long_run_covariance_fails_closed_when_ridge_ladder_is_insufficient() -> None:
+    base = tf.reshape(tf.range(4 * 8, dtype=F64), [4, 8, 1])
+    values = tf.concat((base, 2.0 * base), axis=-1)
+    result = chain_batch_long_run_covariance(
+        values,
+        block_length=2,
+        ridge_ladder=(0.0,),
+        condition_number_max=1.0e12,
+        jit_compile=False,
+    )
+    assert not result.inference_admissible
+    assert int(result.selected_ridge_index) == -1
+    assert _status(result.status) == "INVALID_HARD_VETO"
+    assert bool(tf.reduce_all(tf.math.is_nan(result.precision)))
+
+
+def test_long_run_covariance_default_xla_matches_eager() -> None:
+    draw = tf.reshape(tf.cast(tf.range(8), F64), (1, 8, 1))
+    chain = tf.reshape(tf.cast(tf.range(4), F64), (4, 1, 1))
+    feature = tf.reshape(tf.constant([1.0, 1.7, -0.4], F64), (1, 1, 3))
+    values = tf.sin((draw + 0.3 * chain + 1.0) * feature)
+    eager = chain_batch_long_run_covariance(
+        values,
+        block_length=2,
+        jit_compile=False,
+    )
+    compiled = chain_batch_long_run_covariance(values, block_length=2)
+    for name in (
+        "spectral_covariance",
+        "pooled_mean_covariance",
+        "regularized_covariance",
+        "precision",
+        "eigenvalues",
+        "condition_number",
+    ):
+        tf.debugging.assert_near(getattr(compiled, name), getattr(eager, name), atol=1e-10)
+    assert compiled.inference_admissible == eager.inference_admissible
+    assert int(compiled.selected_ridge_index) == int(eager.selected_ridge_index)
+    assert _status(compiled.status) == _status(eager.status) == "VALID"
+
+
+@pytest.mark.parametrize(
+    "kwargs,match",
+    [
+        ({"ridge_ladder": (0.0, 0.0)}, "unique"),
+        ({"ridge_ladder": (1.0e-8, 0.0)}, "increasing"),
+        ({"ridge_ladder": (0.0, -1.0)}, "nonnegative"),
+        ({"condition_number_max": 1.0}, "exceed one"),
+    ],
+)
+def test_long_run_covariance_rejects_invalid_policy(
+    kwargs: dict[str, object], match: str
+) -> None:
+    with pytest.raises(PredictiveContractError, match=match):
+        chain_batch_long_run_covariance(
+            tf.ones((4, 8, 2), F64),
+            block_length=2,
+            jit_compile=False,
+            **kwargs,
+        )
 
 
 def test_hierarchical_indices_replay_and_preserve_fixed_chains() -> None:

@@ -16,6 +16,11 @@ import pytest
 import bayesfilter
 import bayesfilter.inference.hmc_budget_ladder as hmc_budget_ladder
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+from bayesfilter.hmc_route_contract import (
+    LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
+    OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+)
 from bayesfilter.inference.hmc_coordinates import WarmupTrajectoryPolicy
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,
@@ -60,6 +65,7 @@ from tests.test_hmc_kernel_tuning_windowed_mass import (
 
 def _loop_config(**overrides: Any) -> HMCTuneVerifyRepairLoopConfig:
     payload = {
+        "algorithm_id": LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
         "target_accept_prob": 0.70,
         "acceptance_band": (0.65, 0.75),
         "repair_band": (0.55, 0.85),
@@ -513,9 +519,21 @@ def test_default_budget_policy_matches_reviewed_phase7_mapping() -> None:
     assert policy0.phase6_screen_burnin_steps == 63
     assert policy0.verification_num_results == 500
     assert policy0.verification_num_burnin_steps == 125
+    assert policy0.operational_screen_num_results == 64
+    assert policy0.operational_screen_num_burnin_steps == 16
+    assert policy0.operational_evidence_extension_checkpoints == ()
+    assert policy0.operational_exact_l_tune_adaptation_steps == 64
+    assert policy0.operational_verification_num_results == 64
+    assert policy0.operational_verification_num_burnin_steps == 16
+    assert policy0.operational_budget_policy_id == (
+        "bayesfilter.hmc_operational_statistical_work.v1"
+    )
     assert policy1.budget == 2000
     assert policy1.verification_num_results == 1000
     assert policy1.phase5_tune_budgets == (500, 1000, 2000)
+    assert policy1.operational_screen_num_results == 64
+    assert policy1.operational_exact_l_tune_adaptation_steps == 64
+    assert policy1.operational_verification_num_results == 64
 
 
 def test_default_budget_policy_caps_ccma_scale_serious_attempts() -> None:
@@ -531,12 +549,139 @@ def test_default_budget_policy_caps_ccma_scale_serious_attempts() -> None:
     assert policy0.phase6_screen_burnin_steps == 313
     assert policy0.verification_num_results == 2500
     assert policy0.verification_num_burnin_steps == 625
+    assert policy0.operational_screen_num_results == 64
+    assert policy0.operational_screen_num_burnin_steps == 16
+    assert policy0.operational_exact_l_tune_adaptation_steps == 64
+    assert policy0.operational_verification_num_results == 64
+    assert policy0.operational_verification_num_burnin_steps == 16
+    assert policy0.operational_evidence_extension_checkpoints == ()
     assert policy1.budget == 10000
     assert policy1.phase5_tune_budgets == (2500, 5000, 10000)
     assert policy1.phase6_screen_num_results == 2500
     assert policy1.phase6_screen_burnin_steps == 625
     assert policy1.verification_num_results == 5000
+    assert policy1.operational_screen_num_results == 64
+    assert policy1.operational_verification_num_results == 64
     assert policy2.budget == 10000
+
+
+def test_operational_budget_payload_round_trip_preserves_custom_fields() -> None:
+    base = _default_attempt_budget_policy(314, 0)
+    custom = replace(
+        base,
+        operational_screen_num_results=80,
+        operational_screen_num_burnin_steps=20,
+        operational_evidence_extension_checkpoints=(256,),
+        operational_exact_l_tune_adaptation_steps=96,
+        operational_verification_num_results=72,
+        operational_verification_num_burnin_steps=18,
+        operational_budget_policy_hash=None,
+    )
+
+    restored = hmc_kernel_tuning._attempt_budget_policy_from_payload(
+        custom.payload(),
+        serious_policy=True,
+    )
+    assert restored.payload() == custom.payload()
+
+    forged = dict(custom.payload())
+    forged["operational_budget_policy_hash"] = "forged"
+    with pytest.raises(ValueError, match="hash mismatch"):
+        hmc_kernel_tuning._attempt_budget_policy_from_payload(
+            forged,
+            serious_policy=True,
+        )
+
+
+def test_operational_budget_policy_rejects_supplied_hash_drift() -> None:
+    base = _default_attempt_budget_policy(314, 0)
+    with pytest.raises(ValueError, match="does not match"):
+        replace(
+            base,
+            operational_screen_num_results=65,
+            operational_budget_policy_hash=base.operational_budget_policy_hash,
+        )
+
+
+def test_selection_route_public_payload_preserves_runtime_qualifiers() -> None:
+    config = HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+        chain_execution_mode="eager",
+        use_xla=False,
+        public_timeout_budget_s=12.0,
+        incall_progress_heartbeat_s=3.0,
+    )
+    payload = hmc_kernel_tuning._selection_route_public_payload(
+        config,
+        output_path_enabled=True,
+        checkpointing_enabled=True,
+        runner_identity="injected",
+    )
+
+    qualifiers = payload["execution_control_configuration"]
+    assert qualifiers == {
+        "chain_execution_mode": "eager",
+        "use_xla": False,
+        "timeout_enabled": True,
+        "heartbeat_enabled": True,
+        "output_path_enabled": True,
+        "checkpointing_enabled": True,
+        "runner_identity": "injected",
+    }
+
+
+def test_phase7_verification_budget_is_route_aware() -> None:
+    policy = _default_attempt_budget_policy(314, 0)
+
+    operational = HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+    )
+    legacy = HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    )
+
+    assert hmc_kernel_tuning._phase7_verification_num_results(
+        operational,
+        policy,
+    ) == 64
+    assert hmc_kernel_tuning._phase7_verification_num_burnin_steps(
+        operational,
+        policy,
+    ) == 16
+    assert hmc_kernel_tuning._phase7_verification_num_results(legacy, policy) == 2500
+    assert hmc_kernel_tuning._phase7_verification_num_burnin_steps(
+        legacy,
+        policy,
+    ) == 625
+
+
+def test_operational_seed_domain_and_policy_identifiers_are_invariant() -> None:
+    source = inspect.getsource(
+        __import__(
+            "bayesfilter.inference.hmc_kernel_selection",
+            fromlist=[""],
+        )
+    )
+    tuning_source = inspect.getsource(hmc_kernel_tuning)
+
+    for domain in (
+        'domain="candidate_selection"',
+        'domain="exact_final_l_epsilon_tune"',
+        'f"selection_evidence_extension_{round_index}_{checkpoint_count}"',
+    ):
+        assert domain in source
+    assert 'domain="independent_final_verification"' in tuning_source
+    assert 'domain="repair_verification"' in tuning_source
+    assert 'domain="evidence_extension"' in tuning_source
+    assert hmc_kernel_tuning._PHASE7_OPERATIONAL_SELECTION_SEED_POLICY == (
+        "bayesfilter.phase7_operational_selection_verification_seed.v2"
+    )
+    assert hmc_kernel_tuning._PHASE7_OPERATIONAL_REPAIR_SEED_POLICY == (
+        "bayesfilter.phase7_operational_repair_verification_seed.v2"
+    )
+    assert hmc_kernel_tuning._PHASE7_OPERATIONAL_EVIDENCE_EXTENSION_SEED_POLICY == (
+        "bayesfilter.phase7_operational_evidence_extension_seed.v2"
+    )
 
 
 def test_geometry_scaled_budget_policy_increases_with_condition_number() -> None:
@@ -1028,6 +1173,35 @@ def test_outer_loop_passes_only_after_fresh_fixed_kernel_verification() -> None:
     assert verification_calls
     assert all(call["trace_policy"] == "standard" for call in verification_calls)
     assert all(call["use_xla"] is False for call in verification_calls)
+
+
+def test_outer_loop_rejects_windowed_algorithm_lineage_mismatch_before_phase5() -> None:
+    stage_calls: list[str] = []
+
+    def forbidden_fixed_stage(**_kwargs: Any) -> Any:
+        stage_calls.append("fixed_mass_step")
+        raise AssertionError("route mismatch must block before Phase 5")
+
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_loop_config(
+            algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            max_attempts=1,
+        ),
+        run_full_chain=lambda *_args, **_kwargs: _fake_result(),
+        _budget_policy_factory=_tiny_budget_factory,
+        _windowed_stage_runner=lambda **_kwargs: _windowed_stage(),
+        _fixed_mass_step_stage_runner=forbidden_fixed_stage,
+    )
+
+    assert result.final_status == "hard_veto"
+    assert result.hard_vetoes == ("phase7_runtime_error",)
+    diagnostics = result.attempts[0].verification_diagnostics
+    assert diagnostics["error_type"] == "ValueError"
+    assert "algorithm route lineage mismatch" in diagnostics["error_message"]
+    assert stage_calls == []
 
 
 def test_phase7_public_timeout_before_windowed_mass_skips_windowed_runner(
@@ -1665,7 +1839,11 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert route["active_route"] == "phase7_sequential_rhat_fixed_size_chunk_verifier"
     assert route["single_use_build_count"] == 0
     assert route["fallback_status"] == "none"
-    assert "not a stopping rule" in route["route_nonclaims"][1]
+    assert route["evidence_role"] == "engineering_only"
+    assert route["promotion_role"] == "non_promoting"
+    assert route["stopping_rule_role"] == "not_a_stopping_rule"
+    assert route["reports_posterior_convergence"] is False
+    assert route["reports_sampler_superiority"] is False
     assert verification["sequential_rhat_verification"] is True
     assert verification["all_finite_rhat_at_or_below_threshold"] is True
     assert result.attempts[0].verification_config_payload["verification_policy"] == (
@@ -2533,14 +2711,14 @@ def test_phase7_checkpoint_writer_emits_boundary_before_windowed_execute_error(
         writer_calls.append(kwargs)
         return boundary_reference
 
-    class _FailingReusableRunner:
+    class _FailingChunkRunner:
         def run(self, **_kwargs: Any) -> Any:
             raise RuntimeError("windowed execute blocked after boundary checkpoint")
 
     monkeypatch.setattr(
         hmc_kernel_tuning,
-        "build_reusable_full_chain_tfp_hmc_runner",
-        lambda *_args, **_kwargs: _FailingReusableRunner(),
+        "build_fixed_size_hmc_chunk_runner",
+        lambda *_args, **_kwargs: _FailingChunkRunner(),
     )
     monkeypatch.setattr(
         hmc_kernel_tuning,
@@ -4716,6 +4894,7 @@ def test_windowed_mass_public_timeout_closeout_before_runner_skips_hmc_call(
         geometry=_geometry(),
         bootstrap=_bootstrap(),
         config=hmc_kernel_tuning.HMCWindowedMassStageConfig(
+            algorithm_id=LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
             target_accept_prob=0.70,
             chain_execution_mode="eager",
             target_scope="kernel_fixed_mass_step_toy_gaussian",
@@ -4730,9 +4909,12 @@ def test_windowed_mass_public_timeout_closeout_before_runner_skips_hmc_call(
 
     assert calls == []
     assert result.passed is False
-    assert result.final_status == "hard_veto"
-    assert result.diagnostic_role == "hard_veto"
-    assert result.hard_vetoes == ("windowed_mass_public_timeout_soft_deadline",)
+    assert result.final_status == "budget_exhausted"
+    assert result.diagnostic_role == "windowed_mass_resource_timeout_non_promoting"
+    assert result.hard_vetoes == ()
+    assert result.repair_triggers == (
+        "windowed_mass_public_timeout_closeout_before_hmc_call",
+    )
     closeout = result.diagnostics["public_timeout_closeout"]
     assert closeout["remaining_s"] == pytest.approx(1.0)
     assert closeout["closeout_required_before_hmc_call"] is True
@@ -4742,8 +4924,9 @@ def test_windowed_mass_public_timeout_closeout_before_runner_skips_hmc_call(
         "windowed_mass_public_timeout_closeout"
     ]
     event_payload = events[0][1]
-    assert event_payload["public_timeout_closeout"]["hard_veto"] == (
-        "windowed_mass_public_timeout_soft_deadline"
+    assert event_payload["public_timeout_closeout"]["hard_veto"] is None
+    assert event_payload["public_timeout_closeout"]["final_status"] == (
+        "budget_exhausted"
     )
     assert event_payload["hmc_mechanics_exposed"] is False
     forbidden_fields = {
@@ -4764,6 +4947,55 @@ def test_windowed_mass_public_timeout_closeout_before_runner_skips_hmc_call(
         "final_state",
     ):
         assert forbidden not in public_text
+
+
+def test_outer_loop_preserves_windowed_resource_closeout_as_budget_exhausted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(hmc_kernel_tuning.time, "perf_counter", lambda: 9.0)
+
+    def windowed_stage_runner(**kwargs: Any):
+        return hmc_kernel_tuning.run_hmc_windowed_mass_stage(
+            adapter=kwargs["adapter"],
+            geometry=kwargs["geometry"],
+            bootstrap=kwargs["bootstrap"],
+            config=replace(
+                kwargs["config"],
+                public_timeout_budget_s=10.0,
+                public_timeout_started_perf_counter_s=0.0,
+            ),
+            _attempt_budget_policy=kwargs["_attempt_budget_policy"],
+            _attempt_state=kwargs["_attempt_state"],
+            _progress_callback=kwargs["_progress_callback"],
+            _attempt_index=kwargs["_attempt_index"],
+        )
+
+    result = run_hmc_tune_verify_repair_loop(
+        adapter=_ToyGaussianAdapter(),
+        geometry=_geometry(),
+        bootstrap=_bootstrap(),
+        config=_loop_config(
+            algorithm_id=OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+            max_attempts=1,
+        ),
+        run_full_chain=lambda *_args, **_kwargs: _fake_result(),
+        _budget_policy_factory=_tiny_budget_factory,
+        _windowed_stage_runner=windowed_stage_runner,
+    )
+
+    assert result.final_status == "budget_exhausted"
+    assert result.diagnostic_role == "windowed_mass_resource_timeout_non_promoting"
+    assert result.hard_vetoes == ()
+    assert result.repair_triggers == (
+        "windowed_mass_public_timeout_closeout_before_hmc_call",
+    )
+    attempt = result.attempts[0]
+    assert attempt.final_status == "budget_exhausted"
+    assert attempt.fixed_mass_step_stage is None
+    summary = hmc_kernel_tuning._phase7_attempt_public_summary(attempt)
+    work = summary["operational_work_manifest_summary"]
+    assert work["partial_resource_closeout"] is True
+    assert work["executed_work_reconciliation"]["within_public_bounds"] is True
 
 def test_outer_loop_blocks_verification_acceptance_retry_before_stage_overhead(
     monkeypatch: pytest.MonkeyPatch,
@@ -5253,6 +5485,13 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
                 "bank": bank.copy(),
                 "seed": tuple(config.seed),
                 "leapfrog": int(config.num_leapfrog_steps),
+                "num_results": int(config.num_results),
+                "num_burnin_steps": int(config.num_burnin_steps),
+                "adaptation_steps": int(
+                    config.tuning_policy.num_adaptation_steps
+                )
+                if config.tuning_policy.uses_dual_averaging
+                else 0,
                 "uses_dual_averaging": bool(
                     config.tuning_policy.uses_dual_averaging
                 ),
@@ -5376,8 +5615,8 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
             target_scope="kernel_windowed_mass_toy_gaussian",
         ),
         run_full_chain=operational_runner,
-        _budget_policy_factory=lambda _dimension, attempt: _operational_budget(
-            attempt
+        _budget_policy_factory=lambda dimension, attempt: (
+            _default_attempt_budget_policy(dimension, attempt)
         ),
         _windowed_stage_runner=windowed_runner,
         _frozen_step_trajectory_stage_runner=forbidden,
@@ -5392,7 +5631,10 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
     )
     assert all(not call["uses_dual_averaging"] for call in selector_calls[:9])
     assert all(call["uses_dual_averaging"] for call in selector_calls[-2:])
-    assert tuple(call["leapfrog"] for call in selector_calls[-2:]) == (4, 2)
+    assert all(call["num_results"] == 64 for call in selector_calls[:9])
+    assert all(call["num_burnin_steps"] == 16 for call in selector_calls[:9])
+    assert all(call["adaptation_steps"] == 64 for call in selector_calls[-2:])
+    assert tuple(call["leapfrog"] for call in selector_calls[-2:]) == (3, 1)
     assert len({call["seed"] for call in selector_calls}) == 11
     assert len(verification_inputs) == 2
     first_input, repaired_input = verification_inputs
@@ -5404,7 +5646,7 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
     assert first_input.trajectory_signature == repaired_input.trajectory_signature
     assert first_input.start_bank_signature == repaired_input.start_bank_signature
     assert first_input.num_leapfrog_steps == repaired_input.num_leapfrog_steps
-    assert first_input.num_leapfrog_steps == 2
+    assert first_input.num_leapfrog_steps == 1
     assert repaired_input.step_size == pytest.approx(2.0 * first_input.step_size)
     assert first_input.verification_seed != repaired_input.verification_seed
 
@@ -5412,13 +5654,37 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
     selection = fixed._operational_selection
     assert selection is not None
     assert selection.disposition == "representative_selected"
-    assert selection.representative.candidate.num_leapfrog_steps == 2
+    assert selection.representative.candidate.num_leapfrog_steps == 1
     assert len(selection.candidate_retune_failures) == 1
     assert selection.candidate_retune_failures[0].nomination_ordinal == 0
     summary = fixed.payload()["operational_selection_summary"]
     assert summary["schema"] == "bayesfilter.hmc_fixed_trajectory_selection_summary.v4"
     assert summary["candidate_retune_failure_count"] == 1
     assert "operational_candidate_retune_failed" not in fixed.repair_triggers
+    work_summary = fixed.payload()["operational_work_manifest_summary"]
+    assert work_summary["policy_id"] == (
+        "bayesfilter.hmc_operational_statistical_work.v1"
+    )
+    assert work_summary["public_manifest_hash"]
+    assert work_summary["private_manifest_hash"]
+    assert work_summary["resolved_candidate_count"] == 3
+    reconciliation = work_summary["executed_work_reconciliation"]
+    assert reconciliation["within_public_bounds"] is True
+    assert reconciliation["bound_exceeded_keys"] == ()
+    assert reconciliation["private_hmc_mechanics_exposed"] is False
+    assert work_summary["accounting_scope"] == "through_fixed_mass_selection"
+    assert work_summary["fresh_verification_accounted"] is False
+    public_text = json.dumps(work_summary, sort_keys=True)
+    for forbidden_token in (
+        '"seed"',
+        '"step_size"',
+        '"num_leapfrog_steps"',
+        '"mass"',
+        '"state"',
+        '"samples"',
+        '"private_path"',
+    ):
+        assert forbidden_token not in public_text
 
     first_state = result.attempts[0].handoff_state_payload
     assert first_state["verification_repair_applied"] is True
@@ -5441,6 +5707,25 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
         "repair_verification",
     )
     assert result.final_kernel_hash is not None
+    first_attempt_public = hmc_kernel_tuning._phase7_attempt_public_summary(
+        result.attempts[0]
+    )
+    second_attempt_public = hmc_kernel_tuning._phase7_attempt_public_summary(second)
+    first_phase7_work = first_attempt_public["operational_work_manifest_summary"][
+        "phase7_cumulative_work_summary"
+    ]
+    second_phase7_work = second_attempt_public["operational_work_manifest_summary"][
+        "phase7_cumulative_work_summary"
+    ]
+    assert first_phase7_work["fresh_verification_start_count_charged"] == 1
+    assert second_phase7_work["fresh_verification_start_count_charged"] == 2
+    assert first_phase7_work["reconciliation"]["executed_work"][
+        "fresh_verification_batched_transitions"
+    ] == 80
+    assert second_phase7_work["reconciliation"]["executed_work"][
+        "fresh_verification_batched_transitions"
+    ] == 160
+    assert second_phase7_work["reconciliation"]["within_public_bounds"] is True
 
 
 def test_operational_phase5_selection_repairs_through_empirical_midpoint(
@@ -5673,7 +5958,7 @@ def test_operational_exact_l_candidate_failure_is_budget_exhausted_not_runtime_e
     assert tuple(
         candidates_by_signature[item["candidate_signature"]]
         for item in failures
-    ) == (4, 2, 8)
+    ) == (3, 1, 6)
     assert tuple(item["nomination_ordinal"] for item in failures) == (0, 1, 2)
     assert len({tuple(item["seed"]) for item in failures}) == 3
 
