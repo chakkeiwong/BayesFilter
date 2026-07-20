@@ -7071,11 +7071,25 @@ def _operational_windowed_mass_capture(
         started_perf_counter_s=time.perf_counter(),
     )
     operational_start = time.perf_counter()
+    screened_seed = bool(
+        attempt_state is None
+        and isinstance(mass_window_seed_kernel.get("screen_config_payload"), Mapping)
+    )
     operational_outcome = run_operational_windowed_warmup(
         adapter=adapter,
         initial_transform=active_transform,
         initial_canonical_theta=initial_theta,
         initial_step_size=float(mass_window_seed_kernel["step_size"]),
+        initial_step_size_upper_bound=(
+            float(mass_window_seed_kernel["step_size"])
+            if screened_seed
+            else None
+        ),
+        initial_step_qualification_source=(
+            "bayesfilter_fixed_kernel_screen_handoff"
+            if screened_seed
+            else None
+        ),
         trajectory_policy=trajectory_policy,
         config=windowed_config,
         target_accept_prob=config.target_accept_prob,

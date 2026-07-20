@@ -18,10 +18,14 @@ import tensorflow as tf
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 from bayesfilter.nonlinear.ssl_lstm_protocol import SSLLSTMStaticConfig
 from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
+    make_ssl_lstm_svd_ukf_components,
     ssl_lstm_parameter_slices,
     ssl_lstm_transition,
-    tf_ssl_lstm_svd_ukf_score,
     unpack_ssl_lstm_parameters,
+)
+from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_filter
+from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
+    tf_principal_sqrt_ukf_score,
 )
 
 
@@ -164,6 +168,9 @@ class ComplexityTargetConfig:
             "observations": [float(v) for v in tf.reshape(self.observations, [-1]).numpy()],
             "prior_center": [float(v) for v in self.prior_center.numpy()],
             "prior_standard_deviation": float(self.prior_standard_deviation),
+            "filter_backend": "tf_principal_sqrt_ukf",
+            "score_backend": "tf_principal_sqrt_ukf_score",
+            "square_root_derivative": "analytic_principal_sqrt_sylvester",
             "parameter_transform": {
                 "orientation": "identity",
                 "inverse_orientation": "identity",
@@ -225,19 +232,51 @@ class SSLLSTMComplexityPosteriorTarget:
 
     def _value_score_impl(self, free: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         full = self.full_theta(free)
-        score_result, _components = tf_ssl_lstm_svd_ukf_score(
-            self.config.observations,
+        components = make_ssl_lstm_svd_ukf_components(
             full,
             self.config.static_config,
-            evidence_path="docs/plans/bayesfilter-ssl-lstm-neutra-hmc-state-complexity-ladder-plan-2026-07-19.md",
+            evidence_path=(
+                "docs/plans/"
+                "bayesfilter-ssl-lstm-neutra-hmc-state-complexity-"
+                "ladder-plan-2026-07-19.md"
+            ),
             derivative_parameter_indices=self.config.free_indices,
-            spectral_gap_tolerance=tf.constant(1.0e-10, tf.float64),
+        )
+        score_result = tf_principal_sqrt_ukf_score(
+            self.config.observations,
+            components.model,
+            components.derivatives,
+            innovation_floor=tf.constant(1.0e-12, tf.float64),
         )
         delta = free - self.config.prior_center
         variance = tf.constant(self.config.prior_standard_deviation ** 2, tf.float64)
         value = score_result.log_likelihood - 0.5 * tf.reduce_sum(tf.square(delta) / variance)
         score = score_result.score - delta / variance
         return tf.ensure_shape(value, []), tf.ensure_shape(score, [4])
+
+    def _value_impl(self, free: tf.Tensor) -> tf.Tensor:
+        full = self.full_theta(free)
+        components = make_ssl_lstm_svd_ukf_components(
+            full,
+            self.config.static_config,
+            evidence_path=(
+                "docs/plans/"
+                "bayesfilter-ssl-lstm-neutra-hmc-state-complexity-"
+                "ladder-plan-2026-07-19.md"
+            ),
+            derivative_parameter_indices=self.config.free_indices,
+        )
+        result = tf_svd_sigma_point_filter(
+            self.config.observations,
+            components.model,
+            backend="tf_principal_sqrt_ukf",
+            innovation_floor=tf.constant(1.0e-12, tf.float64),
+            return_filtered=False,
+        )
+        delta = free - self.config.prior_center
+        variance = tf.constant(self.config.prior_standard_deviation ** 2, tf.float64)
+        value = result.log_likelihood - 0.5 * tf.reduce_sum(tf.square(delta) / variance)
+        return tf.ensure_shape(value, [])
 
     def _batch_value_score_impl(self, free: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values, scores = tf.map_fn(self._value_score_impl, free, fn_output_signature=(tf.float64, tf.TensorSpec([4], tf.float64)))
@@ -259,6 +298,14 @@ class SSLLSTMComplexityPosteriorTarget:
         if values.shape.rank != 1 or values.shape[-1] != 4:
             raise ValueError("eager target point must have shape [4]")
         return self._value_score_impl(values)
+
+    def eager_value(self, free: Any) -> tf.Tensor:
+        """Evaluate one target value without derivative propagation."""
+
+        values = tf.convert_to_tensor(free, tf.float64)
+        if values.shape.rank != 1 or values.shape[-1] != 4:
+            raise ValueError("eager target point must have shape [4]")
+        return self._value_impl(values)
 
     def log_prob_and_grad(self, free: Any) -> tuple[tf.Tensor, tf.Tensor]:
         return self.value_and_score(free)

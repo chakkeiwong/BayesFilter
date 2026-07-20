@@ -32,11 +32,15 @@ NEUTRA_TRAINING_NONCLAIMS = (
 DSGE_PAPER_NEUTRA_FAMILY = "dsge_paper_dense_iaf"
 SSL_LSTM_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_capacity_dense_iaf"
 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_tuned_capacity_dense_iaf"
+SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_deep_capacity_dense_iaf"
+SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY = "ssl_lstm_wide_capacity_dense_iaf"
 COMPOSED_NEUTRA_FAMILIES = frozenset(
     (
         DSGE_PAPER_NEUTRA_FAMILY,
         SSL_LSTM_CAPACITY_NEUTRA_FAMILY,
         SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+        SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+        SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
     )
 )
 DSGE_PAPER_TRAINING_STEPS = 5000
@@ -118,11 +122,14 @@ class NeuTraTrainerConfig:
         if len(set(names)) != len(names):
             raise ValueError("target_parameter_names must be unique")
         if self.family in COMPOSED_NEUTRA_FAMILIES:
-            hidden_layers = (
-                (int(self.dimension), int(self.dimension))
-                if self.family == DSGE_PAPER_NEUTRA_FAMILY
-                else (32, 32)
-            )
+            if self.family == DSGE_PAPER_NEUTRA_FAMILY:
+                hidden_layers = (int(self.dimension), int(self.dimension))
+            elif self.family == SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY:
+                hidden_layers = (32, 32, 32)
+            elif self.family == SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY:
+                hidden_layers = (64, 64)
+            else:
+                hidden_layers = (32, 32)
             required = {
                 "hidden_layers": hidden_layers,
                 "activation": "elu",
@@ -134,7 +141,11 @@ class NeuTraTrainerConfig:
                 "stages": 3,
                 "target_chart": "identity",
             }
-            if self.family == SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY:
+            if self.family in {
+                SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+            }:
                 required["learning_rate_schedule"] = "adaptive_constant"
             else:
                 required.update(
@@ -165,7 +176,11 @@ class NeuTraTrainerConfig:
                 raise ValueError(
                     f"{self.family} preset mismatch: " + ", ".join(mismatches)
                 )
-            if self.family == SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY:
+            if self.family in {
+                SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+            }:
                 if not 1.0e-4 <= float(self.learning_rate) <= 2.0e-3:
                     raise ValueError("tuned capacity learning_rate outside search contract")
                 if float(self.initialization_scale) not in {0.005, 0.01, 0.02}:
@@ -316,6 +331,86 @@ def ssl_lstm_tuned_capacity_neutra_config(
     )
 
 
+def ssl_lstm_deep_capacity_neutra_config(
+    *,
+    dimension: int,
+    fixed_translation: Sequence[float],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    learning_rate: float,
+    initialization_scale: float,
+    gradient_clip_norm: float,
+    initialization_seed: tuple[int, int] = (20260715, 4101),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Return the explicitly labeled three-hidden-layer SSL-LSTM diagnostic."""
+
+    return NeuTraTrainerConfig(
+        dimension=int(dimension),
+        family=SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+        hidden_layers=(32, 32, 32),
+        activation="elu",
+        s_max=1.0,
+        initialization_scale=float(initialization_scale),
+        initialization_seed=tuple(int(value) for value in initialization_seed),
+        learning_rate=float(learning_rate),
+        learning_rate_schedule="adaptive_constant",
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1.0e-7,
+        gradient_clip_norm=float(gradient_clip_norm),
+        gradient_clip_mode="per_variable",
+        stages=3,
+        fixed_translation=tuple(float(value) for value in fixed_translation),
+        target_parameter_names=tuple(str(value) for value in target_parameter_names),
+        target_chart="identity",
+        target_signature=str(target_signature),
+        target_adapter_signature=str(target_adapter_signature),
+        jit_compile=bool(jit_compile),
+    )
+
+
+def ssl_lstm_wide_capacity_neutra_config(
+    *,
+    dimension: int,
+    fixed_translation: Sequence[float],
+    target_parameter_names: Sequence[str],
+    target_signature: str,
+    target_adapter_signature: str,
+    learning_rate: float,
+    initialization_scale: float,
+    gradient_clip_norm: float,
+    initialization_seed: tuple[int, int] = (20260715, 4101),
+    jit_compile: bool = True,
+) -> NeuTraTrainerConfig:
+    """Return the explicitly labeled two-hidden-layer 64x64 diagnostic."""
+
+    return NeuTraTrainerConfig(
+        dimension=int(dimension),
+        family=SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+        hidden_layers=(64, 64),
+        activation="elu",
+        s_max=1.0,
+        initialization_scale=float(initialization_scale),
+        initialization_seed=tuple(int(value) for value in initialization_seed),
+        learning_rate=float(learning_rate),
+        learning_rate_schedule="adaptive_constant",
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1.0e-7,
+        gradient_clip_norm=float(gradient_clip_norm),
+        gradient_clip_mode="per_variable",
+        stages=3,
+        fixed_translation=tuple(float(value) for value in fixed_translation),
+        target_parameter_names=tuple(str(value) for value in target_parameter_names),
+        target_chart="identity",
+        target_signature=str(target_signature),
+        target_adapter_signature=str(target_adapter_signature),
+        jit_compile=bool(jit_compile),
+    )
+
+
 def dsge_paper_learning_rate(
     learning_rate: float = 0.01,
 ) -> tf.keras.optimizers.schedules.PiecewiseConstantDecay:
@@ -351,6 +446,8 @@ class NeuTraValidation:
     theta: tf.Tensor
     logdet: tf.Tensor
     scale_log: tf.Tensor
+    scale_logits: tf.Tensor
+    hidden_preactivations: tf.Tensor
 
 
 class _TrainableTransport:
@@ -367,6 +464,13 @@ class _TrainableTransport:
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         raise NotImplementedError
+
+    def diagnostics(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        """Return raw scale logits and hidden preactivations for diagnostics."""
+
+        scale_log = self.scale_log(z)
+        batch = tf.shape(z)[0]
+        return scale_log, tf.zeros((batch, 0, 0), dtype=z.dtype)
 
     def frozen_component_payload(self, *, component_id: str) -> Mapping[str, Any]:
         raise NotImplementedError
@@ -402,6 +506,9 @@ class _TrainableAffineDiagonal(_TrainableTransport):
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(z) + self.raw_scale
+
+    def diagnostics(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        return self.scale_log(z), tf.zeros((tf.shape(z)[0], 0, 0), dtype=z.dtype)
 
     def frozen_component_payload(self, *, component_id: str) -> Mapping[str, Any]:
         return {
@@ -480,17 +587,39 @@ class _TrainableDenseIAF(_TrainableTransport):
         return scale_log
 
     def _network(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        scale_log, shift, _, _ = self._network_with_diagnostics(z)
+        return scale_log, shift
+
+    def _network_with_diagnostics(
+        self, z: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         h = z
+        preactivations = []
         for weight, bias, mask in zip(
             self.weights[:-1], self.biases[:-1], self.masks[:-1]
         ):
             h = tf.matmul(h, weight * mask) + bias
+            preactivations.append(h)
             h = _activation(h, self.activation)
         raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
         scale_logits = raw[..., : self.dimension]
         shift = raw[..., self.dimension :]
         scale_log = self.s_max * tf.math.tanh(scale_logits / self.s_max)
-        return scale_log, shift
+        max_width = max(self.hidden_layers, default=0)
+        padded = [
+            tf.pad(values, [[0, 0], [0, max_width - int(values.shape[-1])]])
+            for values in preactivations
+        ]
+        hidden = (
+            tf.stack(padded, axis=1)
+            if padded
+            else tf.zeros((tf.shape(z)[0], 0, max_width), dtype=z.dtype)
+        )
+        return scale_log, shift, scale_logits, hidden
+
+    def diagnostics(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        _, _, scale_logits, hidden = self._network_with_diagnostics(z)
+        return scale_logits, hidden
 
     def frozen_component_payload(self, *, component_id: str) -> Mapping[str, Any]:
         return {
@@ -610,6 +739,22 @@ class _TrainableComposedIAF(_TrainableTransport):
             values, _ = component.forward_and_logdet(values)
         return tf.concat(stage_scales, axis=-1)
 
+    def diagnostics(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        values = z
+        stage_logits = []
+        stage_hidden = []
+        for component in self.components:
+            if isinstance(component, _TrainableDenseIAF):
+                scale_log, shift, scale_logits, hidden = (
+                    component._network_with_diagnostics(values)
+                )
+                stage_logits.append(scale_logits)
+                stage_hidden.append(hidden)
+                values = values * tf.exp(scale_log) + shift
+            else:
+                values, _ = component.forward_and_logdet(values)
+        return tf.stack(stage_logits, axis=1), tf.stack(stage_hidden, axis=1)
+
     def frozen_component_payload(self, *, component_id: str) -> Mapping[str, Any]:
         raise NeuTraTrainingError("composed transport serializes its ordered children")
 
@@ -654,7 +799,11 @@ class NeuTraReverseKLTrainer:
             self.second_moments = ()
             optimizer_learning_rate: Any = (
                 float(config.learning_rate)
-                if config.family == SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY
+                if config.family in {
+                    SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+                    SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+                    SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+                }
                 else dsge_paper_learning_rate(config.learning_rate)
             )
             self.optimizer = tf.keras.optimizers.Adam(
@@ -672,6 +821,12 @@ class NeuTraReverseKLTrainer:
                     name=f"neutra_m_{index}",
                 )
                 for index, variable in enumerate(self.variables)
+            )
+            self._generic_learning_rate = tf.Variable(
+                float(config.learning_rate),
+                dtype=tf.float64,
+                trainable=False,
+                name="neutra_generic_learning_rate",
             )
             self.second_moments = tuple(
                 tf.Variable(
@@ -768,16 +923,24 @@ class NeuTraReverseKLTrainer:
             raise ValueError("external validation value shape mismatch")
         theta, logdet = self.transport.forward_and_logdet(values)
         scale_log = self.transport.scale_log(values)
+        scale_logits, hidden_preactivations = self.transport.diagnostics(values)
         per_sample_loss = -tf.stop_gradient(value_tensor) - logdet
         _assert_finite(per_sample_loss, "external validation loss")
         _assert_finite(theta, "external validation theta")
         _assert_finite(scale_log, "external validation scale_log")
+        _assert_finite(scale_logits, "external validation scale_logits")
+        _assert_finite(
+            hidden_preactivations,
+            "external validation hidden_preactivations",
+        )
         return NeuTraValidation(
             per_sample_loss=per_sample_loss,
             target_value=tf.stop_gradient(value_tensor),
             theta=theta,
             logdet=logdet,
             scale_log=scale_log,
+            scale_logits=scale_logits,
+            hidden_preactivations=hidden_preactivations,
         )
 
     def sample_base(self, *, batch_size: int, seed: Sequence[int]) -> tf.Tensor:
@@ -794,7 +957,11 @@ class NeuTraReverseKLTrainer:
     def learning_rate_at(self, iteration: int) -> tf.Tensor:
         if int(iteration) < 0:
             raise ValueError("iteration must be nonnegative")
-        if self.config.family == SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY:
+        if self.config.family in {
+            SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+        }:
             if self.optimizer is None:
                 raise NeuTraTrainingError("tuned capacity optimizer is unavailable")
             return tf.cast(self.optimizer.learning_rate, tf.float64)
@@ -805,23 +972,30 @@ class NeuTraReverseKLTrainer:
                 ),
                 tf.float64,
             )
+        if self.optimizer is None:
+            return tf.identity(self._generic_learning_rate)
         return tf.constant(self.config.learning_rate, tf.float64)
 
     def set_learning_rate(self, learning_rate: float) -> None:
         """Assign the effective LR for the tuned family without resetting Adam."""
 
-        if self.config.family != SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY:
-            raise NeuTraTrainingError(
-                "mutable learning rate is restricted to the tuned capacity family"
-            )
         value = float(learning_rate)
         if not math.isfinite(value) or value <= 0.0:
             raise ValueError("learning_rate must be finite and positive")
         if value > float(self.config.learning_rate):
             raise ValueError("learning_rate cannot exceed configured initial rate")
         if self.optimizer is None:
-            raise NeuTraTrainingError("tuned capacity optimizer is unavailable")
-        self.optimizer.learning_rate.assign(value)
+            self._generic_learning_rate.assign(value)
+        else:
+            if self.config.family not in {
+                SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+                SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+            }:
+                raise NeuTraTrainingError(
+                    "mutable learning rate is restricted to generic or tuned capacity families"
+                )
+            self.optimizer.learning_rate.assign(value)
 
     def state_payload(self) -> Mapping[str, Any]:
         payload = {
@@ -832,6 +1006,7 @@ class NeuTraReverseKLTrainer:
             "variables": [_tensor_values(variable) for variable in self.variables],
             "first_moments": [_tensor_values(value) for value in self.first_moments],
             "second_moments": [_tensor_values(value) for value in self.second_moments],
+            "effective_learning_rate": float(self.learning_rate_at(int(self.step.numpy())).numpy()),
             "nonclaims": list(NEUTRA_TRAINING_NONCLAIMS),
         }
         if self.optimizer is not None:
@@ -863,6 +1038,15 @@ class NeuTraReverseKLTrainer:
         step = int(state.get("step", -1))
         if step < 0:
             raise NeuTraTrainingError("trainer step must be nonnegative")
+        effective_learning_rate = float(
+            state.get("effective_learning_rate", self.config.learning_rate)
+        )
+        if (
+            not math.isfinite(effective_learning_rate)
+            or effective_learning_rate <= 0.0
+            or effective_learning_rate > float(self.config.learning_rate)
+        ):
+            raise NeuTraTrainingError("trainer effective_learning_rate is invalid")
         validated_variables = _validated_rows(
             self.variables, state.get("variables"), "variables", dtype=tf.float64
         )
@@ -901,6 +1085,14 @@ class NeuTraReverseKLTrainer:
         if self.optimizer is not None and validated_optimizer is not None:
             for variable, value in zip(self.optimizer.variables, validated_optimizer):
                 variable.assign(value)
+        if self.optimizer is None:
+            self._generic_learning_rate.assign(effective_learning_rate)
+        elif self.config.family in {
+            SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
+            SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
+        }:
+            self.optimizer.learning_rate.assign(effective_learning_rate)
         self.step.assign(step)
 
     def frozen_transport_payload(
@@ -945,6 +1137,12 @@ class NeuTraReverseKLTrainer:
                 ),
                 SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY: (
                     "bayesfilter_ssl_lstm_tuned_capacity_32x32_neutra_v1"
+                ),
+                SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY: (
+                    "bayesfilter_ssl_lstm_deep_capacity_32x32x32_neutra_v1"
+                ),
+                SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY: (
+                    "bayesfilter_ssl_lstm_wide_capacity_64x64_neutra_v1"
                 ),
             }[self.config.family]
             raw.update(
@@ -1032,11 +1230,22 @@ class NeuTraReverseKLTrainer:
         theta, logdet = self.transport.forward_and_logdet(z)
         target_value, _ = _target_value_and_score(self.target, theta)
         scale_log = self.transport.scale_log(z)
+        scale_logits, hidden_preactivations = self.transport.diagnostics(z)
         per_sample_loss = -target_value - logdet
         _assert_finite(per_sample_loss, "validation loss")
         _assert_finite(theta, "validation theta")
         _assert_finite(scale_log, "validation scale_log")
-        return per_sample_loss, target_value, theta, logdet, scale_log
+        _assert_finite(scale_logits, "validation scale_logits")
+        _assert_finite(hidden_preactivations, "validation hidden_preactivations")
+        return (
+            per_sample_loss,
+            target_value,
+            theta,
+            logdet,
+            scale_log,
+            scale_logits,
+            hidden_preactivations,
+        )
 
     def _train_step_impl(self, z: tf.Tensor) -> tuple[tf.Tensor, ...]:
         result, gradients = self._loss_and_gradients_impl(z)
@@ -1082,7 +1291,7 @@ class NeuTraReverseKLTrainer:
         next_step = self.step + tf.constant(1, dtype=tf.int64)
         beta1 = tf.cast(self.config.beta1, tf.float64)
         beta2 = tf.cast(self.config.beta2, tf.float64)
-        learning_rate = tf.cast(self.config.learning_rate, tf.float64)
+        learning_rate = tf.cast(self._generic_learning_rate, tf.float64)
         epsilon = tf.cast(self.config.epsilon, tf.float64)
         step_float = tf.cast(next_step, tf.float64)
         for variable, gradient, first, second in zip(
@@ -1186,7 +1395,7 @@ class NeuTraReverseKLTrainer:
             next_step = self.step + tf.constant(1, dtype=tf.int64)
             beta1 = tf.cast(self.config.beta1, tf.float64)
             beta2 = tf.cast(self.config.beta2, tf.float64)
-            learning_rate = tf.cast(self.config.learning_rate, tf.float64)
+            learning_rate = tf.cast(self._generic_learning_rate, tf.float64)
             epsilon = tf.cast(self.config.epsilon, tf.float64)
             step_float = tf.cast(next_step, tf.float64)
             for variable, gradient, first, second in zip(

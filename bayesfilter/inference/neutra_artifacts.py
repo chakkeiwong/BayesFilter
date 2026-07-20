@@ -687,6 +687,20 @@ def _load_dense_iaf_neutra_artifact(
             expected_hidden=(32, 32),
             label="SSL-LSTM capacity NeuTra",
         )
+    elif procedure == "bayesfilter_ssl_lstm_deep_capacity_32x32x32_neutra_v1":
+        _validate_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(32, 32, 32),
+            label="SSL-LSTM deep capacity NeuTra",
+        )
+    elif procedure == "bayesfilter_ssl_lstm_wide_capacity_64x64_neutra_v1":
+        _validate_composed_neutra_payload(
+            normalized,
+            dimension,
+            expected_hidden=(64, 64),
+            label="SSL-LSTM wide capacity NeuTra",
+        )
     finalized = finalize_dense_iaf_neutra_artifact_payload(normalized)
     for key in ("topology_hash", "tensor_hash", "transport_hash"):
         supplied = _nonempty_text(normalized.get(key), key)

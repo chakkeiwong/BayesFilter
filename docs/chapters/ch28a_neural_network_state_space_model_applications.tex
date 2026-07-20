@@ -770,6 +770,20 @@ and stopped at 2,000; H selected step 900 and stopped at 1,900; each used one
 learning-rate repair.  This supports viability under two streams, not optimizer
 superiority or complete mode coverage.
 
+For the subsequent state-complexity ladder, the prospective final-training
+protocol is deliberately shorter and more explicit.  Its maximum is 2,000
+optimizer steps, with a fixed heldout batch checked every 250 steps.  A
+meaningful improvement requires the paired one-sided upper confidence bound for
+candidate-minus-best loss to lie below the declared minimum delta; numerical
+equality of aggregate losses is not the criterion.  At the first 250-step
+cycle without such improvement, the trainer restores the best transport and
+Adam state and halves the learning rate.  With no subsequent improvement it
+continues for two further 250-step cycles, stopping 750 steps after the best
+checkpoint.  A new meaningful improvement replaces the best checkpoint and
+restarts this clock.  The 2,000-step cap and 250-step cadence are reviewed
+experimental defaults, not proofs of optimal training duration; downstream
+transport and HMC gates remain necessary.
+
 \paragraph{Exact target and retained sampling.}
 The frozen G/H transports passed value, analytic score, finite-difference,
 round-trip, serialization, scalar/batch, and trusted GPU/XLA checks for
@@ -1145,6 +1159,281 @@ veto, not evidence that the equations or the neural-state-space idea are wrong.
 The supervisor was subsequently changed so future rungs run in killable
 subprocesses with the remaining wall budget; $q=20$ was not rerun or
 retroactively promoted.
+
+\subsection{Matrix-free differentiation for nonlinear filters}
+\label{subsec:bf-ssl-lstm-matrix-free-filter-derivatives}
+
+The $q=20$ resource veto motivated a derivative-level redesign.  The number
+of sigma points is not, by itself, the central problem.  The expensive pattern
+is to construct a dense local Jacobian for every point and then use that
+Jacobian only through products with a small number of sensitivity directions.
+This pattern appears in sigma-point filters, fixed particle replays, and other
+deterministic filtering recursions.  It can be removed without changing the
+filter scalar.
+
+Let a local transition and observation map be
+\begin{align}
+  x^+_r &= f_\theta(x_r,\epsilon_r), \\
+  y_r^\star &= g_\theta(x^+_r),
+  \label{eq:bf-ssl-lstm-local-point-maps}
+\end{align}
+where $r=1,\ldots,R$ indexes sigma points, quadrature points, or fixed replay
+particles.  Suppose the score calculation carries $p$ parameter directions
+$v_1,\ldots,v_p$.  Write $\dot x_{jr}$, $\dot\epsilon_{jr}$, and
+$\dot x^+_{jr}$ for the tangents in direction $v_j$.  A dense implementation
+first constructs $D_xf_\theta$ and $D_\epsilon f_\theta$ and then evaluates
+\begin{equation}
+  \dot x^+_{jr}
+  =D_xf_\theta(x_r,\epsilon_r)\dot x_{jr}
+   +D_\epsilon f_\theta(x_r,\epsilon_r)\dot\epsilon_{jr}
+   +D_\theta f_\theta(x_r,\epsilon_r)v_j.
+  \label{eq:bf-ssl-lstm-dense-local-chain-rule}
+\end{equation}
+The matrix-free form evaluates the right-hand side directly as a
+Jacobian--vector product (JVP):
+\begin{equation}
+  \operatorname{JVP}_{f}
+  (x_r,\epsilon_r;\dot x_{jr},\dot\epsilon_{jr},v_j)
+  :=\left.\frac{d}{ds}
+  f_{\theta+s v_j}
+  (x_r+s\dot x_{jr},\epsilon_r+s\dot\epsilon_{jr})
+  \right|_{s=0}.
+  \label{eq:bf-ssl-lstm-transition-jvp-definition}
+\end{equation}
+Equations~\eqref{eq:bf-ssl-lstm-dense-local-chain-rule} and
+\eqref{eq:bf-ssl-lstm-transition-jvp-definition} are algebraically identical.
+The difference is computational: the second expression need not store or
+compute entries of the Jacobian that are never contracted with a tangent.
+The observation tangent is treated in the same way,
+\begin{equation}
+  \dot y^star_{jr}
+  =D_xg_\theta(x^+_r)\dot x^+_{jr}
+   +D_\theta g_\theta(x^+_r)v_j.
+  \label{eq:bf-ssl-lstm-observation-jvp-definition}
+\end{equation}
+
+\subsubsection{Direct SSL--LSTM tangent recursion}
+
+For the state $x=(z,a,c)$ in Equation~\eqref{eq:bf-ssl-lstm-state}, consider
+first a state tangent $(\dot z,\dot a,\dot c)$ with parameters held fixed.
+The four gate preactivation tangents are
+\begin{equation}
+  \dot\eta_g=W_g\dot z+U_g\dot a,
+  \qquad g\in\{i,f,o,r\}.
+  \label{eq:bf-ssl-lstm-gate-preactivation-jvp}
+\end{equation}
+The gate tangents follow elementwise:
+\begin{align}
+  \dot i &=i\odot(1-i)\odot\dot\eta_i, &
+  \dot f &=f\odot(1-f)\odot\dot\eta_f, \\
+  \dot o &=o\odot(1-o)\odot\dot\eta_o, &
+  \dot r &=(1-r\odot r)\odot\dot\eta_r.
+  \label{eq:bf-ssl-lstm-gate-jvp}
+\end{align}
+Differentiating the memory, hidden, and latent updates gives
+\begin{align}
+  \dot c^+
+    &=\dot f\odot c+f\odot\dot c
+      +\dot i\odot r+i\odot\dot r, \\
+  \dot a^+
+    &=\dot o\odot\tanh(c^+)
+      +o\odot\{1-\tanh^2(c^+)\}\odot\dot c^+, \\
+  \dot z^+&=A\dot a^+.
+  \label{eq:bf-ssl-lstm-state-jvp}
+\end{align}
+Thus the state JVP is obtained using matrix--vector products and elementwise
+operations only.  For the structural UKF, an innovation tangent is added to
+the first $k$ coordinates of $(\dot z^+,\dot a^+,\dot c^+)$.  The linear
+observation map has
+\begin{equation}
+  \dot y^star=C\dot z.
+  \label{eq:bf-ssl-lstm-observation-state-jvp}
+\end{equation}
+Direct parameter terms are then added exactly as in
+Equations~\eqref{eq:bf-ssl-lstm-dense-local-chain-rule} and
+\eqref{eq:bf-ssl-lstm-observation-jvp-definition}.  Separating propagated
+state tangents from direct parameter tangents is an implementation convention;
+their sum is the total directional derivative.
+
+\subsubsection{Why the order changes}
+
+For the complexity ladder, $k=h=q$, the filtering-state dimension is
+$n=3q$, and the UKF augments the state by the $q$-dimensional innovation.
+Consequently,
+\begin{equation}
+  n_{\mathrm{aug}}=n+q=4q,
+  \qquad R=2n_{\mathrm{aug}}+1=8q+1.
+  \label{eq:bf-ssl-lstm-ukf-point-count}
+\end{equation}
+The pointwise dense state-Jacobian tensor contains
+\begin{equation}
+  Rn^2=(8q+1)(3q)^2=72q^3+9q^2
+  \label{eq:bf-ssl-lstm-dense-jacobian-entry-count}
+\end{equation}
+entries per time step.  At $q=20$, this is a tensor of shape
+$[161,60,60]$ with 579,600 float64 entries.  Its raw size is not a complete
+memory model: compiler temporaries, multiple gate blocks, derivative
+directions, covariance derivatives, and values retained across a compiled
+loop can make the process high-water mark much larger.
+
+More importantly, constructing every output--input derivative block of the
+LSTM and multiplying latent maps through those blocks can require
+$O(Rq^3)$ work per time step.  Since $R=O(q)$, this is $O(q^4)$.  Directly
+propagating $p$ tangents through
+Equations~\eqref{eq:bf-ssl-lstm-gate-preactivation-jvp}--
+\eqref{eq:bf-ssl-lstm-state-jvp} costs $O(pRq^2)$.  The Gaussian moment,
+covariance, solve, and principal-square-root derivative operations still cost
+up to $O(pq^3)$.  Therefore the expected selected-direction filter order is
+\begin{equation}
+  O(TpRq^2)+O(Tpq^3)=O(Tpq^3),
+  \label{eq:bf-ssl-lstm-matrix-free-selected-order}
+\end{equation}
+and with the current fixed $p=4$ it is cubic rather than quartic in $q$.
+This is an operation-count result.  Kernel launch overhead, layout, XLA
+fusion, and hardware utilization determine the measured crossover and must be
+benchmarked separately.
+
+\begin{table}[tbp]
+  \centering
+  \caption{Dense and matrix-free local derivative objects for the SSL--LSTM
+  complexity target.  The dimensions suppress the time axis.}
+  \label{tab:bf-ssl-lstm-matrix-free-shapes}
+  \begin{tabular}{lll}
+    \toprule
+    Object & Dense route & Matrix-free route \\
+    \midrule
+    Transition state derivative & $[R,n,n]$ & not materialized \\
+    State tangents & $[p,R,n]$ & $[p,R,n]$ \\
+    Transition derivative output & $[p,R,n]$ & $[p,R,n]$ \\
+    Observation state derivative & $[R,d_y,n]$ & not materialized \\
+    Covariance derivatives & $[p,n,n]$ & $[p,n,n]$ \\
+    Principal-root derivatives & $[p,n_{\mathrm{aug}},n_{\mathrm{aug}}]$
+      & $[p,n_{\mathrm{aug}},n_{\mathrm{aug}}]$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Forward JVP versus reverse VJP}
+
+Forward propagation is appropriate when the number $p$ of required
+directions is small.  That is the present ladder: it estimates four homologous
+coordinates even though the full chart grows as
+Equation~\eqref{eq:bf-ssl-lstm-parameter-count}.  If the full parameter chart
+is estimated, carrying one tangent per parameter can itself become the
+bottleneck.  For a scalar log likelihood $\mathcal L$, reverse mode instead
+propagates an output cotangent $\bar x^+$ through a vector--Jacobian product
+\begin{equation}
+  \operatorname{VJP}_{f}(\bar x^+)
+  =\left(
+     D_xf_\theta^\top\bar x^+,
+     D_\epsilon f_\theta^\top\bar x^+,
+     D_\theta f_\theta^\top\bar x^+
+   \right).
+  \label{eq:bf-ssl-lstm-transition-vjp}
+\end{equation}
+A full filter VJP also requires reverse rules for weighted moments, covariance
+updates, matrix solves, log determinants, square roots, normalized weights,
+resampling or fixed replay, and any transport.  It normally needs
+checkpointing or recomputation of the forward filtering states.  The practical
+dispatch rule is therefore:
+\begin{equation}
+  \begin{aligned}
+    \text{small selected block}
+      &\Rightarrow \text{batched forward JVP},\\
+    \text{large chart and scalar target}
+      &\Rightarrow \text{reverse VJP}.
+  \end{aligned}
+  \label{eq:bf-ssl-lstm-jvp-vjp-dispatch}
+\end{equation}
+Matrix-free does not mean ``no matrices.''  Covariances, factors, and small
+linear solves remain matrices.  It means that large derivative operators are
+applied to the directions actually required instead of being materialized as
+dense Jacobians.
+
+\subsubsection{Transfer across filter families}
+
+The reusable design is a local derivative contract, not one universal filter:
+\begin{align*}
+  &\code{transition},\quad \code{transition\_jvp},\quad
+    \code{transition\_vjp},\\
+  &\code{observe},\quad \code{observe\_jvp},\quad
+    \code{observe\_vjp}.
+\end{align*}
+Each filter retains its own probability approximation and recursion.
+
+\begin{itemize}
+  \item The structural UKF uses the transition JVP on augmented
+  state/innovation points, then applies its existing weighted-moment,
+  covariance, and principal-square-root derivative recursion.
+  \item Fixed-SGQF uses the same point-map JVP on its fixed sparse quadrature
+  cloud.  Its quadrature weights, Cholesky branch, failure semantics, and
+  likelihood remain unchanged.
+  \item The fixed Zhao--Cui SSL--LSTM adapter carries particle state scores.
+  Replacing a pointwise $D_xf$ multiplication by the identical JVP avoids an
+  $[N,n,n]$ tensor while preserving fixed seeds, log-mean-exp likelihood, and
+  weighted recentering.  This is a BayesFilter
+  \code{fixed\_hmc\_adaptation} derivative detail relative to
+  \citet{zhao2024ttsequential}; it is not a source-faithful SSL--LSTM claim.
+  \item LEDH has a different dominant operator: streaming particle transport.
+  Its appropriate matrix-free form is a chunked transport JVP or VJP rather
+  than a sigma-point callback.  The existing streaming LEDH operators already
+  follow this pattern; Section~\ref{sec:bf-ledh-ot-jvp} explains why the full
+  scalar score favors a VJP when the parameter chart is large.
+\end{itemize}
+
+Weighted means and covariances, Cholesky or principal-root derivatives,
+solves, log determinants, normalized weights, and frozen-randomness replay are
+the common primitive layer.  Point or particle clouds should be processed in
+chunks when their leading dimension is large, and primal/JVP calculations
+should be fused when doing so shortens tensor lifetimes.  These implementation
+choices can reduce repeated work, but they do not make UKF, SGQF, Zhao--Cui,
+and LEDH statistically equivalent.
+
+\subsubsection{Equivalence and validation requirements}
+
+A matrix-free route is admissible only if it differentiates the same executed
+scalar.  Required checks are:
+\begin{enumerate}[label=(\arabic*)]
+  \item dense Jacobian products versus direct JVPs on small cases;
+  \item central directional finite differences;
+  \item the adjoint identity
+  $\langle\bar y,Jv\rangle=\langle J^\top\bar y,v\rangle$ whenever both JVP
+  and VJP are implemented;
+  \item end-to-end value and score parity on the same point rule, weights,
+  factor branch, randomness, and regularization;
+  \item eager/XLA parity and explicit shape checks;
+  \item a guard proving the matrix-free route does not invoke the dense
+  Jacobian builder.
+\end{enumerate}
+Passing these checks establishes derivative equivalence for the tested fixed
+computation.  It does not establish that the filter approximates the exact
+nonlinear likelihood well, that posterior sampling has converged, that NeuTra
+is adequate, or that the $q=20$ ladder now fits its resource budget.  Runtime
+and memory improvement require a separate trusted repeated benchmark, and a
+full-chart model requires the reverse/VJP development not completed by the
+selected-direction JVP.
+
+\paragraph{Observed GPU/XLA engineering evidence.}
+A subsequent fresh-process benchmark compared the dense and JVP forms on the
+identical four-direction principal-root UKF score at $q\in\{5,10,20\}$, using
+three alternating-order repetitions and five fixed warm points per process.
+Across all paired points, the value difference was zero and the largest score
+difference was $1.78\times10^{-15}$.  At $q=20$, the post-compile warm
+TensorFlow allocator peak fell from 12.614~MiB for the dense route to
+4.050~MiB for the JVP route, while the cold compile/first-call peak was
+unchanged at 363.892~MiB.  Process high-water RSS fell only from about
+2.39--2.41~GiB to 2.30~GiB.  Thus the JVP removes steady derivative allocation
+but does not explain the historical 36-GiB process report.
+
+The median paired warm-time ratios $\mathrm{JVP}/\mathrm{dense}$ were 1.895,
+1.086, and 0.898 at $q=5,10,20$, respectively.  GPU~0 background utilization
+exceeded the prospective contamination threshold in at least one arm of every
+$q=10$ and $q=20$ pair.  Moreover, the $q=20$ median missed the predeclared
+0.80 threshold for nominating an expensive downstream rerun.  The evidence
+therefore supports exactness and lower warm allocation, but not a sufficiently
+large uncontaminated end-to-end speedup or renewed $q=20$ NeuTra/HMC execution.
+No statistical-superiority, posterior, or default-readiness claim follows from
+three timing repetitions.
 
 \subsection{Execution and test evidence}
 \label{subsec:bf-ssl-lstm-direct-test-evidence}

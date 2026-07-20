@@ -14,6 +14,7 @@ from bayesfilter.inference import (
     FullChainHMCConfig,
     HMCTuningPolicy,
     ValueScoreCapability,
+    build_independent_chain_tfp_hmc_runner,
     build_reusable_full_chain_tfp_hmc_runner,
     run_gaussian_dual_averaging_diagnostic,
     run_full_chain_tfp_hmc,
@@ -310,7 +311,13 @@ def test_phase4_chain_batched_full_chain_hmc_broadcasts_upstream_gradients() -> 
     assert result.samples.shape == (4, 4, 2)
     assert int(result.diagnostics["nonfinite_sample_count"].numpy()) == 0
     assert int(result.diagnostics["finite_sample_count"].numpy()) == 16
-    assert set(result.trace) == {"is_accepted", "log_accept_ratio", "target_log_prob"}
+    assert set(result.trace) == {
+        "is_accepted",
+        "log_acceptance_correction",
+        "log_accept_ratio",
+        "proposed_target_log_prob",
+        "target_log_prob",
+    }
     assert result.trace["is_accepted"].shape == (4, 4)
     assert result.trace["log_accept_ratio"].shape == (4, 4)
     assert result.trace["target_log_prob"].shape == (4, 4)
@@ -332,7 +339,13 @@ def test_phase4_target_status_trace_policy_preserves_default_trace_when_disabled
         config,
     )
 
-    assert set(result.trace) == {"is_accepted", "log_accept_ratio", "target_log_prob"}
+    assert set(result.trace) == {
+        "is_accepted",
+        "log_acceptance_correction",
+        "log_accept_ratio",
+        "proposed_target_log_prob",
+        "target_log_prob",
+    }
     assert "target_status_telemetry" not in result.trace
     assert result.metadata["target_status_trace_policy"] == "none"
 
@@ -384,7 +397,9 @@ def test_phase4_target_status_trace_policy_records_raw_and_summary_telemetry() -
     assert result.samples.shape == (3, 2, 2)
     assert set(result.trace) == {
         "is_accepted",
+        "log_acceptance_correction",
         "log_accept_ratio",
+        "proposed_target_log_prob",
         "target_log_prob",
         "target_status_telemetry",
     }
@@ -446,7 +461,13 @@ def test_phase4_reusable_full_chain_runner_reuses_compiled_shape_and_seed_argume
     assert second.samples.shape == (2, 4, 2)
     assert int(first.diagnostics["nonfinite_sample_count"].numpy()) == 0
     assert int(second.diagnostics["nonfinite_sample_count"].numpy()) == 0
-    assert set(second.trace) == {"is_accepted", "log_accept_ratio", "target_log_prob"}
+    assert set(second.trace) == {
+        "is_accepted",
+        "log_acceptance_correction",
+        "log_accept_ratio",
+        "proposed_target_log_prob",
+        "target_log_prob",
+    }
     assert first.metadata["reusable_runner"] is True
     assert second.metadata["reusable_runner"] is True
     assert first.metadata["sample_chain_invocation_count"] == 1
@@ -473,6 +494,71 @@ def test_phase4_reusable_full_chain_runner_reuses_compiled_shape_and_seed_argume
     assert second.metadata["target_scope"] == "phase4_reviewed_batched_gaussian"
     assert second.metadata["requested_target_scope"] == "phase4_reviewed_batched_gaussian"
     assert "no sampler convergence claim" in second.metadata["nonclaims"]
+
+
+def test_phase4_independent_chain_runner_threaded_replays_serial_chain_order() -> None:
+    initial_state = tf.constant(
+        [[0.1, -0.2], [0.2, 0.1], [-0.1, 0.3], [0.05, -0.05]],
+        dtype=tf.float64,
+    )
+    config = FullChainHMCConfig(
+        num_results=3,
+        num_burnin_steps=2,
+        step_size=0.05,
+        num_leapfrog_steps=2,
+        seed=(20260719, 7100),
+        use_xla=False,
+        trace_policy="standard",
+        target_scope="phase4_reviewed_batched_gaussian",
+    )
+    runner = build_independent_chain_tfp_hmc_runner(
+        ReviewedBatchedGaussianAdapter(), initial_state, config
+    )
+
+    serial = runner.run(root_seed=(20260719, 7101), mode="serial")
+    threaded = runner.run(root_seed=(20260719, 7101), mode="threaded")
+
+    assert serial.samples.shape == (3, 4, 2)
+    assert threaded.samples.shape == (3, 4, 2)
+    np.testing.assert_array_equal(threaded.samples.numpy(), serial.samples.numpy())
+    assert set(threaded.trace) == set(serial.trace)
+    for key in serial.trace:
+        np.testing.assert_array_equal(
+            tf.convert_to_tensor(threaded.trace[key]).numpy(),
+            tf.convert_to_tensor(serial.trace[key]).numpy(),
+        )
+    assert threaded.metadata["execution_mode"] == "threaded"
+    assert threaded.metadata["chain_count"] == 4
+    assert threaded.metadata["root_seed"] == (20260719, 7101)
+    assert len(set(threaded.metadata["chain_seeds"])) == 4
+    assert len(threaded.metadata["per_chain_call_s"]) == 4
+    assert int(threaded.diagnostics["nonfinite_sample_count"].numpy()) == 0
+    movement = threaded.diagnostics["tuning_telemetry"]["movement_rate_by_chain"]
+    np.testing.assert_array_equal(np.asarray(movement), np.ones(4))
+
+
+def test_phase4_independent_chain_runner_validates_mode_state_and_seed() -> None:
+    initial_state = tf.zeros((2, 2), tf.float64)
+    config = FullChainHMCConfig(
+        num_results=2,
+        num_burnin_steps=1,
+        step_size=0.05,
+        num_leapfrog_steps=1,
+        seed=(20260719, 7200),
+        use_xla=False,
+        trace_policy="standard",
+        target_scope="phase4_reviewed_batched_gaussian",
+    )
+    runner = build_independent_chain_tfp_hmc_runner(
+        ReviewedBatchedGaussianAdapter(), initial_state, config
+    )
+
+    with pytest.raises(ValueError, match="mode"):
+        runner.run(mode="process")
+    with pytest.raises(ValueError, match="current_state shape"):
+        runner.run(current_state=tf.zeros((3, 2), tf.float64))
+    with pytest.raises(ValueError, match="root_seed"):
+        runner.run(root_seed=(1, 2, 3))
 
 
 def test_phase4_reusable_full_chain_runner_dynamic_l_reuses_xla_trace() -> None:

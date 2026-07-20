@@ -19,13 +19,17 @@ from bayesfilter.inference.neutra_training import (
     DSGE_PAPER_LR_BOUNDARIES,
     DSGE_PAPER_NEUTRA_FAMILY,
     SSL_LSTM_CAPACITY_NEUTRA_FAMILY,
+    SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY,
     SSL_LSTM_TUNED_CAPACITY_NEUTRA_FAMILY,
+    SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY,
     NeuTraReverseKLTrainer,
     NeuTraTrainerConfig,
     NeuTraTrainingError,
     dsge_paper_neutra_config,
     ssl_lstm_capacity_neutra_config,
+    ssl_lstm_deep_capacity_neutra_config,
     ssl_lstm_tuned_capacity_neutra_config,
+    ssl_lstm_wide_capacity_neutra_config,
 )
 from bayesfilter.inference.neutra_training import _stable_hash
 
@@ -119,6 +123,40 @@ def _tuned_capacity_config(**changes):
     }
     values.update(changes)
     return ssl_lstm_tuned_capacity_neutra_config(**values)
+
+
+def _deep_capacity_config(**changes):
+    values = {
+        "dimension": 4,
+        "fixed_translation": TRANSLATION,
+        "target_parameter_names": PARAMETER_NAMES,
+        "target_signature": TARGET_SIGNATURE,
+        "target_adapter_signature": ADAPTER_SIGNATURE,
+        "learning_rate": 1.0e-3,
+        "initialization_scale": 0.01,
+        "gradient_clip_norm": 5.0,
+        "initialization_seed": (20260715, 4101),
+        "jit_compile": False,
+    }
+    values.update(changes)
+    return ssl_lstm_deep_capacity_neutra_config(**values)
+
+
+def _wide_capacity_config(**changes):
+    values = {
+        "dimension": 4,
+        "fixed_translation": TRANSLATION,
+        "target_parameter_names": PARAMETER_NAMES,
+        "target_signature": TARGET_SIGNATURE,
+        "target_adapter_signature": ADAPTER_SIGNATURE,
+        "learning_rate": 1.0e-3,
+        "initialization_scale": 0.01,
+        "gradient_clip_norm": 5.0,
+        "initialization_seed": (20260715, 4101),
+        "jit_compile": False,
+    }
+    values.update(changes)
+    return ssl_lstm_wide_capacity_neutra_config(**values)
 
 
 def _explicit_variables(trainer):
@@ -591,6 +629,64 @@ def test_tuned_capacity_mutable_learning_rate_resume_and_label_are_exact() -> No
     assert payload["procedure"] == (
         "bayesfilter_ssl_lstm_tuned_capacity_32x32_neutra_v1"
     )
+    loaded = load_frozen_neutra_artifact(
+        payload, expected_target_signature=TARGET_SIGNATURE
+    )
+    theta, logdet = trainer.forward_and_logdet(_base_rows())
+    np.testing.assert_array_equal(loaded.transport.forward_batch(_base_rows()), theta)
+    np.testing.assert_array_equal(
+        loaded.transport.log_abs_det_jacobian_batch(_base_rows()), logdet
+    )
+
+
+def test_deep_capacity_has_distinct_three_layer_contract() -> None:
+    target = _ParityTarget()
+    config = _deep_capacity_config()
+    assert config.family == SSL_LSTM_DEEP_CAPACITY_NEUTRA_FAMILY
+    assert config.hidden_layers == (32, 32, 32)
+    trainer = NeuTraReverseKLTrainer(target, config)
+    assert sum(int(tf.size(value)) for value in trainer.variables) == 7608
+    trainer.train_step(_base_rows())
+    payload = trainer.frozen_transport_payload(
+        transport_id="ssl-lstm-deep-capacity-32x32x32-fixture",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["procedure"] == (
+        "bayesfilter_ssl_lstm_deep_capacity_32x32x32_neutra_v1"
+    )
+    assert [
+        row["hidden_layers"]
+        for row in payload["components"]
+        if row["kind"] == "dense_autoregressive_iaf"
+    ] == [[32, 32, 32]] * 3
+    loaded = load_frozen_neutra_artifact(
+        payload, expected_target_signature=TARGET_SIGNATURE
+    )
+    theta, logdet = trainer.forward_and_logdet(_base_rows())
+    np.testing.assert_array_equal(loaded.transport.forward_batch(_base_rows()), theta)
+    np.testing.assert_array_equal(
+        loaded.transport.log_abs_det_jacobian_batch(_base_rows()), logdet
+    )
+
+
+def test_wide_capacity_has_distinct_64x64_contract() -> None:
+    target = _ParityTarget()
+    config = _wide_capacity_config()
+    assert config.family == SSL_LSTM_WIDE_CAPACITY_NEUTRA_FAMILY
+    assert config.hidden_layers == (64, 64)
+    trainer = NeuTraReverseKLTrainer(target, config)
+    assert sum(int(tf.size(value)) for value in trainer.variables) == 15000
+    trainer.train_step(_base_rows())
+    payload = trainer.frozen_transport_payload(
+        transport_id="ssl-lstm-wide-capacity-64x64-fixture",
+        target_signature=TARGET_SIGNATURE,
+    )
+    assert payload["procedure"] == "bayesfilter_ssl_lstm_wide_capacity_64x64_neutra_v1"
+    assert [
+        row["hidden_layers"]
+        for row in payload["components"]
+        if row["kind"] == "dense_autoregressive_iaf"
+    ] == [[64, 64]] * 3
     loaded = load_frozen_neutra_artifact(
         payload, expected_target_signature=TARGET_SIGNATURE
     )

@@ -7,6 +7,7 @@ import json
 import re
 import secrets
 import time
+from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -2887,6 +2888,195 @@ class ReusableFullChainHMCRunner:
                 "no performance superiority claim",
             ),
         }
+
+
+class IndependentChainHMCRunner:
+    """Run independent scalar-chain XLA graphs serially or in threads.
+
+    This is the production-chain boundary used by the local ``dsge_hmc``
+    implementation: one reviewed TFP runner per chain remains inside the
+    GPU-owning process, while Python threads schedule the independent compiled
+    calls.  It is intentionally separate from CPU process pools used to
+    evaluate independent NeuTra training rows.
+    """
+
+    def __init__(
+        self,
+        adapter: Any,
+        initial_state_template: Any,
+        config: FullChainHMCConfig,
+    ) -> None:
+        import tensorflow as tf
+
+        template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
+        if template.shape.rank != 2:
+            raise ValueError(
+                "independent-chain HMC requires initial_state_template shape "
+                "[chain, parameter]"
+            )
+        if any(dim is None for dim in template.shape):
+            raise ValueError("independent-chain HMC requires a fully static state shape")
+        self.adapter = adapter
+        self.config = config
+        self._initial_state_template = template
+        self._chain_count = int(template.shape[0])
+        self._parameter_dim = int(template.shape[1])
+        if self._chain_count < 1:
+            raise ValueError("independent-chain HMC requires at least one chain")
+        self._runners = tuple(
+            ReusableFullChainHMCRunner(adapter, template[index], config)
+            for index in range(self._chain_count)
+        )
+        self._call_count = 0
+
+    @property
+    def chain_count(self) -> int:
+        return self._chain_count
+
+    @property
+    def state_shape(self) -> tuple[int, int]:
+        return (self._chain_count, self._parameter_dim)
+
+    def run(
+        self,
+        *,
+        current_state: Any | None = None,
+        root_seed: tuple[int, int] | Any | None = None,
+        step_size: float | Any | None = None,
+        mode: str = "threaded",
+    ) -> FullChainHMCRunResult:
+        """Run every scalar chain and restore TFP's draw-chain-parameter shape."""
+
+        import tensorflow as tf
+
+        if mode not in {"serial", "threaded"}:
+            raise ValueError("independent-chain HMC mode must be 'serial' or 'threaded'")
+        state = self._initial_state_template if current_state is None else current_state
+        state_tensor = tf.convert_to_tensor(state, dtype=tf.float64)
+        if tuple(state_tensor.shape.as_list()) != self.state_shape:
+            raise ValueError(
+                "current_state shape must match independent-chain runner template"
+            )
+        seed_value = self.config.seed if root_seed is None else root_seed
+        seed_tensor = tf.convert_to_tensor(seed_value, dtype=tf.int32)
+        if tuple(seed_tensor.shape.as_list()) != (2,):
+            raise ValueError("root_seed must have static shape (2,)")
+        step_value = self.config.step_size if step_size is None else step_size
+        step_tensor = tf.convert_to_tensor(step_value, dtype=tf.float64)
+        if step_tensor.shape.rank != 0:
+            raise ValueError("step_size must be a scalar")
+        chain_seeds = tuple(
+            tf.random.experimental.stateless_fold_in(seed_tensor, index)
+            for index in range(self._chain_count)
+        )
+
+        def run_one(index: int) -> tuple[Any, Mapping[str, Any], float]:
+            chain_started = time.perf_counter()
+            samples, trace = self._runners[index]._runner(
+                state_tensor[index],
+                chain_seeds[index],
+                step_tensor,
+            )
+            return samples, trace, time.perf_counter() - chain_started
+
+        started = time.perf_counter()
+        if mode == "threaded" and self._chain_count > 1:
+            with ThreadPoolExecutor(max_workers=self._chain_count) as pool:
+                chain_outputs = tuple(pool.map(run_one, range(self._chain_count)))
+        else:
+            chain_outputs = tuple(run_one(index) for index in range(self._chain_count))
+        wall_s = time.perf_counter() - started
+        self._call_count += 1
+
+        samples = tf.stack(
+            [tf.convert_to_tensor(output[0]) for output in chain_outputs],
+            axis=1,
+        )
+        trace = _stack_independent_chain_trace(
+            [output[1] for output in chain_outputs]
+        )
+        diagnostics = _full_chain_hmc_diagnostics(
+            samples,
+            trace,
+            trace_policy=self.config.trace_policy,
+        )
+        metadata = {
+            "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+            "reusable_runner": True,
+            "execution_mode": mode,
+            "chain_count": self._chain_count,
+            "state_shape": self.state_shape,
+            "root_seed": tuple(int(value) for value in seed_tensor.numpy()),
+            "chain_seeds": tuple(
+                tuple(int(value) for value in seed.numpy()) for seed in chain_seeds
+            ),
+            "ensemble_call_count": self._call_count,
+            "ensemble_call_s": wall_s,
+            "per_chain_call_s": tuple(
+                float(output[2]) for output in chain_outputs
+            ),
+            "use_xla": self.config.use_xla,
+            "trace_policy": self.config.trace_policy,
+            "target_scope": self.config.target_scope,
+            "source_topology": (
+                "dsge_hmc_independent_scalar_chain_tf_function_thread_pool"
+            ),
+            "nonclaims": (
+                "HMC execution-topology mechanics only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "native divergence unavailability is not zero divergences",
+            ),
+        }
+        return FullChainHMCRunResult(
+            samples=samples,
+            trace=trace,
+            diagnostics=diagnostics,
+            metadata=metadata,
+        )
+
+    __call__ = run
+
+
+def _stack_independent_chain_trace(
+    chain_traces: Sequence[Mapping[str, Any]],
+) -> Mapping[str, Any]:
+    """Stack identical scalar-chain trace trees along the chain axis."""
+
+    import tensorflow as tf
+
+    if not chain_traces:
+        raise ValueError("at least one chain trace is required")
+    keys = tuple(chain_traces[0].keys())
+    expected = set(keys)
+    if any(set(trace) != expected for trace in chain_traces[1:]):
+        raise ValueError("independent-chain trace keys must match")
+
+    def stack_values(values: Sequence[Any]) -> Any:
+        first = values[0]
+        if isinstance(first, Mapping):
+            child_keys = tuple(first.keys())
+            expected_children = set(child_keys)
+            for value in values[1:]:
+                if not isinstance(value, Mapping) or set(value) != expected_children:
+                    raise ValueError("independent-chain nested trace keys must match")
+            return {
+                key: stack_values([value[key] for value in values])
+                for key in child_keys
+            }
+        return tf.stack([tf.convert_to_tensor(value) for value in values], axis=1)
+
+    return {key: stack_values([trace[key] for trace in chain_traces]) for key in keys}
+
+
+def build_independent_chain_tfp_hmc_runner(
+    adapter: Any,
+    initial_state_template: Any,
+    config: FullChainHMCConfig,
+) -> IndependentChainHMCRunner:
+    """Build the independent scalar-chain serial/threaded HMC topology."""
+
+    return IndependentChainHMCRunner(adapter, initial_state_template, config)
 
 
 def build_reusable_full_chain_tfp_hmc_runner(

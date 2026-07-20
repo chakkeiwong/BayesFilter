@@ -131,6 +131,30 @@ def test_batch_duplication_and_permutation_leave_mean_gradient_unchanged(family)
         np.testing.assert_allclose(shuffled, expected, rtol=2e-12, atol=2e-12)
 
 
+def test_validation_exposes_scale_logits_and_hidden_preactivations() -> None:
+    target = CorrelatedGaussianTarget()
+    trainer = NeuTraReverseKLTrainer(
+        target,
+        _config(
+            dimension=2,
+            family="dense_iaf",
+            hidden_layers=(3, 4),
+            activation="elu",
+            target_signature=TARGET_SIGNATURE,
+        ),
+    )
+    z = tf.constant([[0.2, -0.4], [0.1, 0.3]], dtype=tf.float64)
+    validation = trainer.validation_batch(z)
+    assert tuple(validation.scale_logits.shape) == (2, 2)
+    assert tuple(validation.hidden_preactivations.shape) == (2, 2, 4)
+    np.testing.assert_allclose(
+        validation.scale_log.numpy(),
+        np.tanh(validation.scale_logits.numpy()),
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert np.all(np.isfinite(validation.hidden_preactivations.numpy()))
+
 def test_dense_iaf_manual_target_score_gradient_matches_debug_full_autodiff() -> None:
     target = CurvedRidgeTarget()
     trainer = NeuTraReverseKLTrainer(target, _config())
@@ -194,6 +218,35 @@ def test_state_restore_replays_next_update_exactly() -> None:
     tampered["step"] = int(tampered["step"]) + 1
     with pytest.raises(NeuTraTrainingError, match="state_hash mismatch"):
         resumed.restore_state(tampered)
+
+
+@pytest.mark.parametrize("family", ("affine_diag", "dense_iaf"))
+def test_generic_learning_rate_state_controls_next_update_and_replays(family) -> None:
+    config = _config(family=family, learning_rate=1.0e-2)
+    reference = NeuTraReverseKLTrainer(CorrelatedGaussianTarget(), config)
+    reduced = NeuTraReverseKLTrainer(CorrelatedGaussianTarget(), config)
+    reduced.set_learning_rate(2.0e-3)
+    assert float(reduced.learning_rate_at(0).numpy()) == pytest.approx(2.0e-3)
+    assert reduced.state_payload()["effective_learning_rate"] == pytest.approx(2.0e-3)
+    assert reduced.state_payload()["state_hash"] != reference.state_payload()["state_hash"]
+    z = _base_rows()
+    reference.train_step(z)
+    reduced.train_step(z)
+    assert not all(
+        np.array_equal(left.numpy(), right.numpy())
+        for left, right in zip(reference.variables, reduced.variables)
+    )
+
+    state = reduced.state_payload()
+    expected = reduced.train_step(z)
+    expected_variables = tuple(variable.numpy().copy() for variable in reduced.variables)
+    resumed = NeuTraReverseKLTrainer(CorrelatedGaussianTarget(), config)
+    resumed.restore_state(state)
+    assert float(resumed.learning_rate_at(1).numpy()) == pytest.approx(2.0e-3)
+    actual = resumed.train_step(z)
+    np.testing.assert_array_equal(actual.loss.numpy(), expected.loss.numpy())
+    for expected_value, actual_variable in zip(expected_variables, resumed.variables):
+        np.testing.assert_array_equal(actual_variable.numpy(), expected_value)
 
 
 def test_frozen_snapshot_replays_trainable_transport() -> None:

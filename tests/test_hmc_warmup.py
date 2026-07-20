@@ -60,6 +60,11 @@ class _GaussianAdapter:
         return log_prob, score
 
 
+class _DeclaredDomainGaussianAdapter(_GaussianAdapter):
+    def classify_target_exception(self, error: BaseException) -> bool:
+        return isinstance(error, tf.errors.InvalidArgumentError)
+
+
 class _TargetStatusGaussianAdapter(_GaussianAdapter):
     def __init__(self, covariance: np.ndarray, *, nonvalid: bool = False) -> None:
         super().__init__(covariance)
@@ -426,6 +431,281 @@ def test_reasonable_epsilon_uses_real_mean_acceptance_probability() -> None:
     assert len(result.attempts) >= 1
     assert 0.25 <= result.attempts[-1].mean_acceptance_probability <= 0.75
     assert len({attempt.seed for attempt in result.attempts}) == 1
+    assert all(attempt.num_leapfrog_steps == 1 for attempt in result.attempts)
+
+
+def test_reasonable_epsilon_uses_requested_fixed_trajectory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import tensorflow_probability as tfp
+
+    observed: list[int] = []
+    original_kernel = tfp.mcmc.HamiltonianMonteCarlo
+
+    def recording_kernel(**kwargs: object):
+        observed.append(int(kwargs["num_leapfrog_steps"]))
+        return original_kernel(**kwargs)
+
+    monkeypatch.setattr(tfp.mcmc, "HamiltonianMonteCarlo", recording_kernel)
+    adapter = _GaussianAdapter(np.eye(2))
+    latent_adapter = _AffineWarmupAdapter(
+        base_adapter=adapter,
+        transform=_transform(np.eye(2)),
+        target_scope="hmc_warmup_gaussian",
+    )
+
+    result = find_reasonable_epsilon(
+        adapter=latent_adapter,
+        current_state=np.array([0.3, -0.2]),
+        initial_step_size=1.0,
+        seed=(20260719, 1),
+        num_leapfrog_steps=7,
+    )
+
+    assert result.attempts
+    assert observed and set(observed) == {7}
+    assert all(attempt.num_leapfrog_steps == 7 for attempt in result.attempts)
+
+
+def test_reasonable_epsilon_aggregates_distinct_momentum_probes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import tensorflow_probability as tfp
+
+    observed_seeds: list[tuple[int, int]] = []
+    finite_result = types.SimpleNamespace(
+        target_log_prob=tf.constant(0.0, tf.float64),
+        grads_target_log_prob=(tf.zeros(2, tf.float64),),
+        step_size=tf.constant(1.0, tf.float64),
+    )
+
+    class _ProbeKernel:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def bootstrap_results(self, _state: tf.Tensor) -> object:
+            return types.SimpleNamespace(accepted_results=finite_result)
+
+        def one_step(
+            self,
+            state: tf.Tensor,
+            _results: object,
+            *,
+            seed: tf.Tensor,
+        ) -> tuple[tf.Tensor, object]:
+            observed_seeds.append(tuple(int(item) for item in seed.numpy()))
+            return state, types.SimpleNamespace(
+                log_accept_ratio=tf.math.log(tf.constant(0.5, tf.float64)),
+                accepted_results=finite_result,
+                proposed_state=state,
+                proposed_results=finite_result,
+            )
+
+    monkeypatch.setattr(tfp.mcmc, "HamiltonianMonteCarlo", _ProbeKernel)
+    latent_adapter = _AffineWarmupAdapter(
+        base_adapter=_DeclaredDomainGaussianAdapter(np.eye(2)),
+        transform=_transform(np.eye(2)),
+        target_scope="hmc_warmup_gaussian",
+    )
+
+    result = find_reasonable_epsilon(
+        adapter=latent_adapter,
+        current_state=np.array([0.3, -0.2]),
+        initial_step_size=1.0,
+        seed=(20260719, 3),
+        num_leapfrog_steps=5,
+        momentum_probe_count=4,
+    )
+
+    assert result.passed
+    assert len(result.attempts) == 1
+    attempt = result.attempts[0]
+    assert len(attempt.probe_seeds) == 4
+    assert len(set(attempt.probe_seeds)) == 4
+    assert observed_seeds == list(attempt.probe_seeds)
+    assert attempt.mean_acceptance_probability == pytest.approx(0.5)
+    assert attempt.minimum_acceptance_probability == pytest.approx(0.5)
+    assert attempt.maximum_acceptance_probability == pytest.approx(0.5)
+
+
+def test_reasonable_epsilon_shrinks_after_target_domain_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import tensorflow_probability as tfp
+
+    finite_result = types.SimpleNamespace(
+        target_log_prob=tf.constant(0.0, tf.float64),
+        grads_target_log_prob=(tf.zeros(2, tf.float64),),
+        step_size=tf.constant(1.0, tf.float64),
+    )
+
+    class _DomainKernel:
+        def __init__(self, **kwargs: object) -> None:
+            self.step_size = float(tf.convert_to_tensor(kwargs["step_size"]).numpy())
+
+        def bootstrap_results(self, _state: tf.Tensor) -> object:
+            return types.SimpleNamespace(accepted_results=finite_result)
+
+        def one_step(
+            self,
+            state: tf.Tensor,
+            _results: object,
+            *,
+            seed: tf.Tensor,
+        ) -> tuple[tf.Tensor, object]:
+            del seed
+            if self.step_size > 1.0:
+                raise tf.errors.InvalidArgumentError(
+                    None,
+                    None,
+                    "candidate left the exact target domain",
+                )
+            return state, types.SimpleNamespace(
+                log_accept_ratio=tf.math.log(tf.constant(0.5, tf.float64)),
+                accepted_results=finite_result,
+                proposed_state=state,
+                proposed_results=finite_result,
+            )
+
+    monkeypatch.setattr(tfp.mcmc, "HamiltonianMonteCarlo", _DomainKernel)
+    latent_adapter = _AffineWarmupAdapter(
+        base_adapter=_DeclaredDomainGaussianAdapter(np.eye(2)),
+        transform=_transform(np.eye(2)),
+        target_scope="hmc_warmup_gaussian",
+    )
+
+    result = find_reasonable_epsilon(
+        adapter=latent_adapter,
+        current_state=np.array([0.3, -0.2]),
+        initial_step_size=4.0,
+        seed=(20260719, 4),
+        momentum_probe_count=4,
+    )
+
+    assert result.passed
+    assert result.selected_step_size == pytest.approx(1.0)
+    assert result.attempts[0].engineering_health_failures == (
+        "target_domain_execution_failure",
+    )
+    assert result.attempts[0].usable is False
+    assert result.attempts[-1].usable is True
+
+
+def test_operational_warmup_passes_active_l_to_every_epsilon_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_find = hmc_warmup.find_reasonable_epsilon
+    observed: list[int] = []
+
+    def recording_find(**kwargs: object) -> ReasonableEpsilonResult:
+        observed.append(int(kwargs["num_leapfrog_steps"]))
+        return original_find(**kwargs)
+
+    monkeypatch.setattr(hmc_warmup, "find_reasonable_epsilon", recording_find)
+    run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.array([[1.2, -0.2], [-0.2, 0.5]])),
+        initial_transform=_transform(np.eye(2)),
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=0.35,
+        trajectory_policy=WarmupTrajectoryPolicy(5, 16),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=112,
+            initial_buffer=16,
+            final_buffer=32,
+            first_window_size=64,
+            min_window_samples=32,
+            mass_shrinkage=0.25,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260719, 2),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="eager",
+    )
+
+    assert observed
+    assert set(observed) == {5}
+
+
+def test_operational_warmup_external_bound_caps_consumed_step() -> None:
+    upper_bound = 0.2
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.eye(2)),
+        initial_transform=_transform(np.eye(2)),
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=upper_bound,
+        initial_step_size_upper_bound=upper_bound,
+        initial_step_qualification_source="unit_test_fixed_kernel_screen",
+        trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=20,
+            initial_buffer=2,
+            final_buffer=8,
+            first_window_size=10,
+            min_window_samples=2,
+        ),
+        target_accept_prob=0.05,
+        seed=(20260719, 5),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="eager",
+    )
+
+    assert result.reasonable_epsilon.status == "externally_qualified"
+    assert result.reasonable_epsilon.attempts == ()
+    assert result.reasonable_epsilon.qualification_source == (
+        "unit_test_fixed_kernel_screen"
+    )
+    assert all(
+        np.max(window.consumed_step_size_trace) <= upper_bound * (1.0 + 1.0e-12)
+        for window in result.windows
+    )
+    assert all(
+        np.max(window.step_size_trace) <= upper_bound * (1.0 + 1.0e-12)
+        for window in result.windows
+    )
+    assert any(
+        np.max(window.proposed_step_size_trace) > upper_bound
+        for window in result.windows
+    )
+    assert sum(
+        window.public_payload()["step_ceiling_hit_count"]
+        for window in result.windows
+    ) > 0
+
+
+@pytest.mark.parametrize(
+    ("upper_bound", "source", "message"),
+    (
+        (0.1, "screen", "bound the initial step"),
+        (0.5, None, "requires qualification provenance"),
+        (None, "screen", "requires an upper bound"),
+    ),
+)
+def test_operational_warmup_rejects_invalid_external_bound_contract(
+    upper_bound: float | None,
+    source: str | None,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        run_operational_windowed_warmup(
+            adapter=_GaussianAdapter(np.eye(2)),
+            initial_transform=_transform(np.eye(2)),
+            initial_canonical_theta=np.array([0.2, -0.1]),
+            initial_step_size=0.2,
+            initial_step_size_upper_bound=upper_bound,
+            initial_step_qualification_source=source,
+            trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+            config=WindowedMassAdaptationConfig(
+                warmup_steps=20,
+                initial_buffer=2,
+                final_buffer=8,
+                first_window_size=10,
+                min_window_samples=2,
+            ),
+            target_accept_prob=0.70,
+            seed=(20260719, 6),
+            target_scope="hmc_warmup_gaussian",
+            chain_execution_mode="eager",
+        )
 
 
 def test_reasonable_epsilon_failure_payload_is_standard_json() -> None:

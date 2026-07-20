@@ -1373,7 +1373,30 @@ def test_real_default_route_emits_operational_v2_and_exact_compatibility() -> No
     assert result.passed is True
     assert result.operational_warmup_result is not None
     operational = result.operational_warmup_result
-    assert operational.operational_metric_update_count >= 1
+    assert operational.reasonable_epsilon.status == "externally_qualified"
+    assert operational.reasonable_epsilon.qualification_source == (
+        "bayesfilter_fixed_kernel_screen_handoff"
+    )
+    bootstrap_step = float(bootstrap.selected_kernel_payload["step_size"])
+    assert all(
+        np.max(window.consumed_step_size_trace)
+        <= bootstrap_step * (1.0 + 1.0e-12)
+        for window in operational.windows
+        if window.dual_averaging_generation == 0
+    )
+    if operational.operational_metric_update_count == 0:
+        rejected = [
+            window.metric_decision
+            for window in operational.windows
+            if window.metric_decision is not None
+            and window.metric_decision.outcome == "candidate_metric_rejected"
+        ]
+        assert rejected
+        assert all(
+            decision.report["candidate_rejection_stage"] == "reasonable_epsilon"
+            and decision.report["incumbent_metric_retained"] is True
+            for decision in rejected
+        )
     assert operational.every_update_used_by_later_transition is True
     assert operational.public_payload()["schema"] == (
         "bayesfilter.hmc_operational_windowed_warmup.v2"
@@ -1513,6 +1536,8 @@ def test_operational_retry_consumes_carried_transform_endpoint_step_and_l(
         retry_state.canonical_theta_state,
     )
     assert observed["initial_step_size"] == pytest.approx(0.19)
+    assert observed["initial_step_size_upper_bound"] is None
+    assert observed["initial_step_qualification_source"] is None
     assert observed["trajectory_policy"].num_leapfrog_steps == 7
     _estimate, base_transform = transform_from_precomputed_mass_artifact(
         geometry.mass_artifact,

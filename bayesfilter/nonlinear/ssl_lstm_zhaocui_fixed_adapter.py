@@ -23,10 +23,10 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     SSLLSTMConstrainedParameters,
     ssl_lstm_observation,
     ssl_lstm_observation_parameter_derivative,
-    ssl_lstm_observation_state_jacobian,
+    ssl_lstm_observation_state_jvp,
     ssl_lstm_transition,
     ssl_lstm_transition_parameter_derivative,
-    ssl_lstm_transition_state_jacobian,
+    ssl_lstm_transition_state_jvp,
     unpack_ssl_lstm_parameters,
 )
 
@@ -353,12 +353,18 @@ def _transition_replay_step(
     process_noise: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     deterministic_next = ssl_lstm_transition(params, state)
-    state_jacobian = ssl_lstm_transition_state_jacobian(params, state)
     direct_score = tf.transpose(
         ssl_lstm_transition_parameter_derivative(params, state),
         perm=[1, 2, 0],
     )
-    propagated_score = tf.einsum("rij,rjp->rip", state_jacobian, state_score)
+    propagated_score = tf.transpose(
+        ssl_lstm_transition_state_jvp(
+            params,
+            state,
+            tf.transpose(state_score, perm=[2, 0, 1]),
+        ),
+        perm=[1, 2, 0],
+    )
     process_std_score = _std_score_from_covariance_derivative(
         params.d_ukf_innovation_covariance,
         params.process_std,
@@ -408,15 +414,17 @@ def _observation_logpdf_and_score(
         axis=1,
     )
 
-    observation_state_jacobian = ssl_lstm_observation_state_jacobian(params, state)
     direct_mean_score = tf.transpose(
         ssl_lstm_observation_parameter_derivative(params, state),
         perm=[1, 2, 0],
     )
-    propagated_mean_score = tf.einsum(
-        "rdn,rnp->rdp",
-        observation_state_jacobian,
-        state_score,
+    propagated_mean_score = tf.transpose(
+        ssl_lstm_observation_state_jvp(
+            params,
+            state,
+            tf.transpose(state_score, perm=[2, 0, 1]),
+        ),
+        perm=[1, 2, 0],
     )
     mean_score = propagated_mean_score + direct_mean_score
     residual_precision = residual / variance[tf.newaxis, :]

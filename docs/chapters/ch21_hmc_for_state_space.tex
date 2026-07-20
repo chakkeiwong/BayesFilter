@@ -77,6 +77,41 @@ is deliberately conservative:
     progress and an attempt slot remains.
 \end{enumerate}
 
+The step-size search and the trajectory length must refer to the same HMC
+kernel.  In particular, a reasonable-step calculation performed with one
+leapfrog step is not valid evidence for a later fixed trajectory with
+\(L>1\).  BayesFilter therefore evaluates every reasonable-step proposal with
+the active fixed \(L\), and records that value in the private attempt evidence.
+
+Operational warmup also distinguishes a screened step from an unscreened
+proposal.  If the bootstrap stage has already passed a fixed-kernel screen at
+\((L,\epsilon_{\mathrm{screen}})\), the first warmup chart treats
+\(\epsilon_{\mathrm{screen}}\) as a qualified upper bound.  Dual averaging may
+adapt below that value, but the step actually supplied to the inner HMC kernel
+and the retained handoff step are clamped so that
+\[
+  0 < \epsilon_t \leq \epsilon_{\mathrm{screen}}.
+\]
+The artifact records the raw dual-averaging proposal, the bounded next step,
+the step consumed by HMC, and the number of ceiling hits.  Ceiling hits are
+explanatory diagnostics: they show pressure toward an unqualified region, but
+do not by themselves prove that the bound is optimal.
+
+When a windowed mass update changes coordinates, the old step bound does not
+transfer automatically.  BayesFilter maps the endpoint into the candidate
+chart and qualifies a new fixed-\(L\) step using four independent momentum
+probes per candidate.  All probes must execute with finite, target-valid
+states; their acceptance probabilities are aggregated for the bracket.  A
+model-domain failure, such as a non-positive-definite covariance at a proposed
+parameter value, rejects that epsilon candidate and drives the bracket
+downward.  An unrelated TensorFlow runner or device error remains an
+implementation failure rather than being misclassified as low acceptance.
+
+If a candidate chart cannot obtain a qualified step, the mass update is
+rejected and the incumbent chart is retained.  This is a non-promoting metric
+decision, not permission to weaken target-domain assertions or replace the
+declared target.
+
 This procedure is a tuning and diagnostics policy, not a posterior-validity
 proof.  A passing tuner means that BayesFilter found a finite fixed HMC kernel
 that survived the declared local screens.  Posterior convergence, scientific

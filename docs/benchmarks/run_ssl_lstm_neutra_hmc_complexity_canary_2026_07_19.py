@@ -157,6 +157,14 @@ def configure_gpu() -> list[Any]:
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    source_hashes = {
+        "plan": _sha(PLAN),
+        "runner": _sha(SCRIPT),
+        "target": _sha(Path("bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py")),
+        "pool": _sha(Path("bayesfilter/inference/cpu_value_score_pool.py")),
+        "trainer": _sha(Path("bayesfilter/inference/neutra_training.py")),
+        "hmc": _sha(Path("bayesfilter/inference/hmc.py")),
+    }
     gpus = configure_gpu()
     started = time.perf_counter()
     target = complexity_posterior_target(args.q, jit_compile=True)
@@ -221,8 +229,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 dtype=tf.float64,
             )
             validation_theta, _ = trainer.forward_and_logdet(validation_z)
-            validation_values, _validation_scores, validation_pool_metadata = (
-                value_score_pool.evaluate(
+            validation_values, validation_pool_metadata = (
+                value_score_pool.evaluate_values(
                     validation_theta.numpy(),
                     request_id=f"q{args.q}-stream{stream_index}-validation",
                 )
@@ -297,6 +305,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     first_hmc = runner.run()
     warm_hmc = runner.run(seed=(20260719, 5000 + args.q))
     rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
+    worker_rss = max(
+        int(record["worker_backend"]["active_worker_ru_maxrss_sum_bytes"])
+        for record in streams
+    )
+    combined_rss = rss + worker_rss
     gpu_memory = {key: int(value) for key, value in tf.config.experimental.get_memory_info("GPU:0").items()}
     warm_training_max = max(float(row["warm_step_max_seconds"]) for row in streams)
     projected_training = 2.0 * (float(streams[0]["first_step_seconds"]) + 4999.0 * warm_training_max)
@@ -337,19 +350,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
             "wall_seconds": time.perf_counter() - started,
             "ru_maxrss_bytes": rss,
+            "active_worker_ru_maxrss_sum_bytes": worker_rss,
+            "combined_conservative_host_bytes": combined_rss,
             "host_ram_cap_bytes": HOST_RAM_CAP_BYTES,
             "gpu_memory_bytes": gpu_memory,
             "plan": PLAN.as_posix(),
             "runner": SCRIPT.as_posix(),
-            "source_hashes": {
-                "plan": _sha(PLAN),
-                "runner": _sha(SCRIPT),
-                "target": _sha(Path("bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py")),
-                "trainer": _sha(Path("bayesfilter/inference/neutra_training.py")),
-                "hmc": _sha(Path("bayesfilter/inference/hmc.py")),
-            },
+            "source_hashes": source_hashes,
         },
-        "hard_vetoes": (["host_ram_cap_exceeded"] if rss > HOST_RAM_CAP_BYTES else []),
+        "hard_vetoes": (
+            ["combined_host_ram_cap_exceeded"]
+            if combined_rss > HOST_RAM_CAP_BYTES
+            else []
+        ),
         "nonclaims": [
             "timing and mechanics canary only",
             "no hyperparameter nomination",
@@ -365,7 +378,7 @@ def main() -> int:
     parser.add_argument("--q", type=int, choices=(1, 2, 5, 10, 20), required=True)
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=480)
-    parser.add_argument("--worker-count", type=int, default=8)
+    parser.add_argument("--worker-count", type=int, default=32)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.steps < 2 or args.batch_size <= 0 or args.worker_count <= 0:

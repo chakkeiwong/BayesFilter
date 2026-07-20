@@ -1,0 +1,355 @@
+from __future__ import annotations
+
+import os
+
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+
+import pytest
+import numpy as np
+
+from bayesfilter.inference.hmc_operational_broad_grid import (
+    GUARD_ROLE,
+    MAX_L,
+    MIN_GUARD_L,
+    PRIMARY_L_GRID,
+    OperationalBroadGridPolicy,
+    OperationalBroadGridExecutionConfig,
+    OperationalMassHandoff,
+    OperationalPairEvidence,
+    OperationalPrimaryCandidate,
+    OperationalPrimaryRequest,
+    SameEpsilonNeighborGuard,
+    SameEpsilonNeighborGuardRequest,
+    assemble_operational_broad_grid_result,
+    classify_operational_pair_evidence,
+    expand_same_epsilon_neighbor_guards,
+    operational_broad_seed,
+    primary_requests,
+    run_operational_broad_grid,
+    run_operational_broad_grid_process_parallel,
+)
+from bayesfilter.inference.hmc_coordinates import (
+    AffineCoordinateTransform,
+    MomentumMetric,
+    PositionCovarianceEstimate,
+)
+
+
+POLICY = OperationalBroadGridPolicy(
+    root_seed=(20260720, 9100),
+    confirmation_num_results=128,
+)
+
+
+def _handoff(*, disposition="dense_update", retained=False):
+    prior = "metric-prior"
+    frozen = prior if retained else "metric-frozen"
+    return OperationalMassHandoff(
+        update_disposition=disposition,
+        prior_metric_signature=prior,
+        frozen_metric_signature=frozen,
+        coordinate_signature="coordinate",
+        adapter_signature="adapter",
+        target_signature="target",
+        lineage_signature="lineage",
+        canonical_covariance_signature="canonical-covariance",
+        latent_metric_signature="latent-metric",
+        metric_evidence_signature="evidence",
+        retained_prior_metric=retained,
+        latent_identity_equivalence_proven=disposition == "dense_update",
+    )
+
+
+def _primary(l, *, epsilon=0.2, viable=True):
+    request = OperationalPrimaryRequest(
+        num_leapfrog_steps=l,
+        tune_seed=operational_broad_seed(
+            POLICY.root_seed,
+            domain="primary_independent_epsilon_tune",
+            num_leapfrog_steps=l,
+        ),
+        mass_handoff_signature=_handoff().signature,
+    )
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=((0.70,) * POLICY.evidence_unit_count),
+        evidence_signature=f"evidence-{l}",
+        policy=POLICY,
+        hard_rejection_reasons=() if viable else ("candidate_invalid",),
+    )
+    return OperationalPrimaryCandidate(
+        request=request,
+        tuned_step_size=epsilon,
+        evidence=evidence,
+        metric_signature="metric-frozen",
+        coordinate_signature="coordinate",
+        lineage_signature="lineage",
+        tune_evidence_signature=f"tune-{l}",
+    )
+
+
+def _guard(request, *, viable=True):
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=((0.70,) * POLICY.evidence_unit_count),
+        evidence_signature=f"guard-evidence-{request.num_leapfrog_steps}-{request.inherited_step_size}",
+        policy=POLICY,
+        hard_rejection_reasons=() if viable else ("candidate_invalid",),
+    )
+    return SameEpsilonNeighborGuard(request=request, evidence=evidence)
+
+
+def test_exact_primary_grid_and_mass_handoff_gate():
+    assert PRIMARY_L_GRID == (3, 5, 9, 13, 18, 25)
+    assert primary_requests(POLICY, _handoff())
+    assert primary_requests(POLICY, _handoff(disposition="diagonal_fallback", retained=True)) == ()
+
+
+def test_primary_and_guard_boundaries_are_strict():
+    with pytest.raises(ValueError):
+        OperationalPrimaryRequest(
+            num_leapfrog_steps=2,
+            tune_seed=(1, 2),
+            mass_handoff_signature="handoff",
+        )
+    with pytest.raises(ValueError):
+        OperationalPrimaryRequest(
+            num_leapfrog_steps=26,
+            tune_seed=(1, 2),
+            mass_handoff_signature="handoff",
+        )
+    with pytest.raises(ValueError):
+        SameEpsilonNeighborGuardRequest(
+            num_leapfrog_steps=1,
+            inherited_step_size=0.2,
+            parent_candidate_signatures=("parent",),
+            parent_l_values=(3,),
+            screen_seeds=((1, 2), (3, 4), (5, 6)),
+            mass_handoff_signature="handoff",
+            metric_signature="metric",
+            coordinate_signature="coordinate",
+            lineage_signature="lineage",
+        )
+
+
+def test_seed_domains_are_order_independent_and_disjoint():
+    primary = operational_broad_seed(
+        POLICY.root_seed,
+        domain="primary_independent_epsilon_tune",
+        num_leapfrog_steps=9,
+        epsilon=0.2,
+    )
+    guard = operational_broad_seed(
+        POLICY.root_seed,
+        domain="same_epsilon_neighbor_guard_screen",
+        num_leapfrog_steps=8,
+        epsilon=0.2,
+        replication_index=0,
+    )
+    assert primary != guard
+    assert primary == operational_broad_seed(
+        POLICY.root_seed,
+        domain="primary_independent_epsilon_tune",
+        num_leapfrog_steps=9,
+        epsilon=0.2,
+    )
+
+
+def test_one_hop_guard_expansion_admits_l2_and_does_not_recurse():
+    guards = expand_same_epsilon_neighbor_guards(
+        (_primary(3), _primary(5), _primary(25)),
+        policy=POLICY,
+        handoff=_handoff(),
+    )
+    assert tuple(item.num_leapfrog_steps for item in guards) == (2, 4, 6, 24)
+    assert all(item.num_leapfrog_steps >= MIN_GUARD_L for item in guards)
+    assert all(item.num_leapfrog_steps <= MAX_L for item in guards)
+    assert all(item.inherited_step_size == 0.2 for item in guards)
+    assert all(item.payload()["epsilon_retuned"] is False for item in guards)
+    assert all(item.payload()["recursive_expansion_allowed"] is False for item in guards)
+    assert all(item.payload()["role"] == GUARD_ROLE for item in guards)
+
+
+def test_guard_pair_deduplication_keeps_distinct_epsilon_pairs():
+    guards = expand_same_epsilon_neighbor_guards(
+        (_primary(3, epsilon=0.2), _primary(5, epsilon=0.3)),
+        policy=POLICY,
+        handoff=_handoff(),
+    )
+    identities = {(item.num_leapfrog_steps, item.inherited_step_size) for item in guards}
+    assert identities == {(2, 0.2), (4, 0.2), (4, 0.3), (6, 0.3)}
+
+
+def test_uncertainty_interval_can_preserve_noisy_candidate_and_hard_veto_wins():
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=(0.64, 0.68, 0.70, 0.74, 0.76, 0.67, 0.71, 0.72, 0.69, 0.73, 0.66, 0.75),
+        evidence_signature="noisy",
+        policy=POLICY,
+    )
+    assert evidence.disposition in {"provisional_viable", "unresolved_budget"}
+    veto = classify_operational_pair_evidence(
+        chain_run_means=(0.70,) * POLICY.evidence_unit_count,
+        evidence_signature="veto",
+        policy=POLICY,
+        hard_rejection_reasons=("nonfinite_target_state",),
+    )
+    assert veto.disposition == "hard_rejected"
+
+
+def test_pair_local_guard_failure_does_not_erase_other_epsilon():
+    primary = (_primary(3, epsilon=0.2), _primary(5, epsilon=0.3))
+    requests = expand_same_epsilon_neighbor_guards(primary, policy=POLICY, handoff=_handoff())
+    records = tuple(_guard(request, viable=not (request.num_leapfrog_steps == 4 and request.inherited_step_size == 0.2)) for request in requests)
+    assert sum(item.viable for item in records) == len(records) - 1
+    assert any(item.request.num_leapfrog_steps == 4 and item.request.inherited_step_size == 0.3 for item in records)
+
+
+def test_complete_barrier_preserves_every_viable_pair_without_ranking():
+    primaries = tuple(_primary(item) for item in PRIMARY_L_GRID)
+    guards = tuple(
+        _guard(request)
+        for request in expand_same_epsilon_neighbor_guards(
+            primaries, policy=POLICY, handoff=_handoff()
+        )
+    )
+    result = assemble_operational_broad_grid_result(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_candidates=primaries,
+        guard_candidates=guards,
+    )
+    assert result.disposition == "viable_pair_set"
+    assert result.primary_barrier.complete
+    assert result.guard_barrier.complete
+    assert result.payload()["representative"] is None
+    assert result.public_payload()["epsilon_values_exposed"] is False
+
+
+def test_incomplete_primary_barrier_is_not_promotable():
+    result = assemble_operational_broad_grid_result(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_candidates=(_primary(3),),
+    )
+    assert result.disposition == "shared_execution_invalid"
+    assert not result.primary_barrier.complete
+    assert result.guard_barrier.planned_signatures == ()
+
+
+def test_affine_whitening_locks_canonical_kinetic_metric_without_double_inversion():
+    covariance = np.asarray(((4.0, 1.0), (1.0, 2.0)), dtype=float)
+    estimate = PositionCovarianceEstimate(
+        center=np.zeros(2),
+        covariance=covariance,
+        source_coordinate_signature="source",
+        estimator_family="fixture",
+        state_count=128,
+        effective_rank=2,
+        regularization_report={"method": "none"},
+        adequacy_report={"passed": True},
+    )
+    transform = AffineCoordinateTransform.from_covariance_estimate(estimate)
+    latent_metric = MomentumMetric.identity_for(transform)
+    canonical_momentum_covariance = np.linalg.inv(covariance)
+    canonical_kinetic_precision = covariance
+    assert np.allclose(
+        canonical_momentum_covariance @ canonical_kinetic_precision,
+        np.eye(2),
+    )
+    canonical_momentum = np.asarray((0.7, -0.4))
+    latent_momentum = canonical_momentum @ transform.factor
+    assert np.isclose(
+        latent_momentum @ latent_momentum,
+        canonical_momentum @ canonical_kinetic_precision @ canonical_momentum,
+    )
+    assert np.allclose(latent_metric.momentum_covariance, np.eye(2))
+    assert np.allclose(latent_metric.kinetic_precision, np.eye(2))
+
+
+def test_serial_runner_records_failure_as_barrier_not_partial_promotion():
+    calls = []
+
+    def primary_runner(request):
+        calls.append(request.num_leapfrog_steps)
+        if request.num_leapfrog_steps == 9:
+            raise RuntimeError("worker failed")
+        return _primary(request.num_leapfrog_steps)
+
+    def guard_runner(request):
+        return _guard(request)
+
+    result = run_operational_broad_grid(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_runner=primary_runner,
+        guard_runner=guard_runner,
+    )
+    assert result.disposition == "shared_execution_invalid"
+    assert result.guard_candidates == ()
+    assert not result.primary_barrier.complete
+
+
+def _process_execution(*, guard_factory="guard_factory"):
+    module = "bayesfilter.testing.hmc_operational_broad_grid_fixture"
+    return OperationalBroadGridExecutionConfig(
+        mode="process_parallel",
+        primary_max_workers=2,
+        guard_max_workers=2,
+        primary_worker_factory_locator=f"{module}:primary_factory",
+        guard_worker_factory_locator=f"{module}:{guard_factory}",
+        worker_environment=(("CUDA_VISIBLE_DEVICES", "-1"),),
+    )
+
+
+def _pair_mechanics(result):
+    return (
+        tuple(item.payload() for item in result.primary_candidates),
+        tuple(item.payload() for item in result.guard_candidates),
+        result.disposition,
+    )
+
+
+def test_process_parallel_matches_serial_pair_semantics():
+    from bayesfilter.testing.hmc_operational_broad_grid_fixture import (
+        guard_factory,
+        primary_factory,
+    )
+
+    serial = run_operational_broad_grid(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_runner=lambda request: primary_factory(request, POLICY, _handoff()),
+        guard_runner=lambda request: guard_factory(request, POLICY, _handoff()),
+    )
+    parallel = run_operational_broad_grid_process_parallel(
+        policy=POLICY,
+        handoff=_handoff(),
+        execution=_process_execution(),
+    )
+    assert _pair_mechanics(parallel) == _pair_mechanics(serial)
+    assert parallel.execution.mode == "process_parallel"
+    assert parallel.primary_barrier.complete
+    assert parallel.guard_barrier.complete
+
+
+def test_process_parallel_guard_failure_invalidates_complete_barrier():
+    result = run_operational_broad_grid_process_parallel(
+        policy=POLICY,
+        handoff=_handoff(),
+        execution=_process_execution(guard_factory="failing_guard_factory"),
+    )
+    assert result.disposition == "shared_execution_invalid"
+    assert result.primary_barrier.complete
+    assert not result.guard_barrier.complete
+    assert any("fixture guard worker failure" in item for item in result.guard_barrier.failure_reasons)
+
+
+def test_process_configuration_requires_memory_growth_for_gpu_workers():
+    module = "bayesfilter.testing.hmc_operational_broad_grid_fixture"
+    with pytest.raises(ValueError, match="TF_FORCE_GPU_ALLOW_GROWTH=true"):
+        OperationalBroadGridExecutionConfig(
+            mode="process_parallel",
+            primary_max_workers=6,
+            guard_max_workers=6,
+            primary_worker_factory_locator=f"{module}:primary_factory",
+            guard_worker_factory_locator=f"{module}:guard_factory",
+            worker_environment=(("CUDA_VISIBLE_DEVICES", "0"),),
+        )

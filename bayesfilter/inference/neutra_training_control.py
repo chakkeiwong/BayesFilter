@@ -22,6 +22,7 @@ class NeuTraPlateauConfig:
     max_steps: int = 5000
     initial_learning_rate: float = 1.0e-3
     learning_rate_factor: float = 0.5
+    post_repair_no_improvement_cycles: int = 1
     minimum_learning_rate_fraction: float = 1.0 / 16.0
     absolute_min_delta: float = 0.0
     one_sided_critical_value: float = 1.6694022215079607
@@ -36,8 +37,10 @@ class NeuTraPlateauConfig:
             raise ValueError("patience_steps must be positive")
         if int(self.patience_steps) % int(self.validation_check_every) != 0:
             raise ValueError("patience_steps must be a validation interval multiple")
-        if int(self.max_steps) < 2 * int(self.patience_steps):
-            raise ValueError("max_steps must allow two patience periods")
+        if int(self.post_repair_no_improvement_cycles) <= 0:
+            raise ValueError("post_repair_no_improvement_cycles must be positive")
+        if int(self.max_steps) < self.plateau_stop_steps:
+            raise ValueError("max_steps must allow the complete plateau repair window")
         for name in (
             "initial_learning_rate",
             "learning_rate_factor",
@@ -67,6 +70,12 @@ class NeuTraPlateauConfig:
     def minimum_learning_rate(self) -> float:
         return float(self.initial_learning_rate) * float(
             self.minimum_learning_rate_fraction
+        )
+
+    @property
+    def plateau_stop_steps(self) -> int:
+        return int(self.patience_steps) * (
+            1 + int(self.post_repair_no_improvement_cycles)
         )
 
     def manifest_payload(self) -> Mapping[str, Any]:
@@ -244,8 +253,9 @@ class NeuTraPlateauController:
                 paired_mean_delta=mean_delta,
                 paired_one_sided_upper=upper,
             )
-        if self.reduction_for_current_plateau and self.steps_since_best >= (
-            2 * int(self.config.patience_steps)
+        if (
+            self.reduction_for_current_plateau
+            and self.steps_since_best >= self.config.plateau_stop_steps
         ):
             self.status = "stopped"
             self.stop_reason = "plateau_after_lr_repair"
@@ -323,7 +333,7 @@ class NeuTraPlateauController:
             raise NeuTraPlateauError("plateau state_hash mismatch")
         if state.get("schema") != "bayesfilter.neutra.plateau_state.v2":
             raise NeuTraPlateauError("unsupported plateau state schema")
-        if state.get("config") != self.config.manifest_payload():
+        if not self._config_payload_matches(state.get("config")):
             raise NeuTraPlateauError("plateau config mismatch")
 
         restored = NeuTraPlateauController(self.config)
@@ -375,6 +385,17 @@ class NeuTraPlateauController:
             raise NeuTraPlateauError("plateau stop status/reason mismatch")
         restored._validate_consistency()
         self.__dict__.update(restored.__dict__)
+
+    def _config_payload_matches(self, payload: Any) -> bool:
+        if not isinstance(payload, Mapping):
+            return False
+        supplied = dict(payload)
+        if (
+            "post_repair_no_improvement_cycles" not in supplied
+            and int(self.config.post_repair_no_improvement_cycles) == 1
+        ):
+            supplied["post_repair_no_improvement_cycles"] = 1
+        return supplied == self.config.manifest_payload()
 
     def _validate_step(self, step: int) -> None:
         if step < 0:

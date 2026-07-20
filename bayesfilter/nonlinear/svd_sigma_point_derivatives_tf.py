@@ -33,6 +33,11 @@ TFTransitionInnovationJacobianFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TFTransitionParameterDerivativeFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TFObservationStateJacobianFn = Callable[[tf.Tensor], tf.Tensor]
 TFObservationParameterDerivativeFn = Callable[[tf.Tensor], tf.Tensor]
+TFTransitionJVPFn = Callable[
+    [tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor],
+    tf.Tensor,
+]
+TFObservationJVPFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,8 @@ class TFStructuralFirstDerivatives:
     observation_state_jacobian_fn: TFObservationStateJacobianFn
     d_observation_fn: TFObservationParameterDerivativeFn
     name: str = "tf_structural_first_derivatives"
+    transition_jvp_fn: TFTransitionJVPFn | None = None
+    observation_jvp_fn: TFObservationJVPFn | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -391,6 +398,108 @@ def _matvec_points(jacobian: tf.Tensor, vectors: tf.Tensor) -> tf.Tensor:
     return tf.einsum("roi,pri->pro", jacobian, vectors)
 
 
+def _transition_first_order_values(
+    derivatives: TFStructuralFirstDerivatives,
+    previous_points: tf.Tensor,
+    innovation_points: tf.Tensor,
+    d_previous_points: tf.Tensor,
+    d_innovation_points: tf.Tensor,
+    *,
+    parameter_dim: int,
+    point_count: int,
+    state_dim: int,
+    innovation_dim: int,
+) -> tf.Tensor:
+    d_transition_param = derivatives.d_transition_fn(
+        previous_points,
+        innovation_points,
+    )
+    _validate_shape(
+        d_transition_param,
+        (parameter_dim, point_count, state_dim),
+        "d_transition",
+    )
+    if derivatives.transition_jvp_fn is not None:
+        propagated = derivatives.transition_jvp_fn(
+            previous_points,
+            innovation_points,
+            d_previous_points,
+            d_innovation_points,
+        )
+        _validate_shape(
+            propagated,
+            (parameter_dim, point_count, state_dim),
+            "transition_jvp",
+        )
+        return propagated + d_transition_param
+
+    transition_state_jacobian = derivatives.transition_state_jacobian_fn(
+        previous_points,
+        innovation_points,
+    )
+    transition_innovation_jacobian = derivatives.transition_innovation_jacobian_fn(
+        previous_points,
+        innovation_points,
+    )
+    _validate_shape(
+        transition_state_jacobian,
+        (point_count, state_dim, state_dim),
+        "transition_state_jacobian",
+    )
+    _validate_shape(
+        transition_innovation_jacobian,
+        (point_count, state_dim, innovation_dim),
+        "transition_innovation_jacobian",
+    )
+    return (
+        _matvec_points(transition_state_jacobian, d_previous_points)
+        + _matvec_points(transition_innovation_jacobian, d_innovation_points)
+        + d_transition_param
+    )
+
+
+def _observation_first_order_values(
+    derivatives: TFStructuralFirstDerivatives,
+    predicted_points: tf.Tensor,
+    d_predicted_points: tf.Tensor,
+    *,
+    parameter_dim: int,
+    point_count: int,
+    observation_dim: int,
+    state_dim: int,
+) -> tf.Tensor:
+    d_observation_param = derivatives.d_observation_fn(predicted_points)
+    _validate_shape(
+        d_observation_param,
+        (parameter_dim, point_count, observation_dim),
+        "d_observation",
+    )
+    if derivatives.observation_jvp_fn is not None:
+        propagated = derivatives.observation_jvp_fn(
+            predicted_points,
+            d_predicted_points,
+        )
+        _validate_shape(
+            propagated,
+            (parameter_dim, point_count, observation_dim),
+            "observation_jvp",
+        )
+        return propagated + d_observation_param
+
+    observation_state_jacobian = derivatives.observation_state_jacobian_fn(
+        predicted_points,
+    )
+    _validate_shape(
+        observation_state_jacobian,
+        (point_count, observation_dim, state_dim),
+        "observation_state_jacobian",
+    )
+    return (
+        _matvec_points(observation_state_jacobian, d_predicted_points)
+        + d_observation_param
+    )
+
+
 def _smooth_sigma_point_score_with_rule(
     observations: tf.Tensor,
     model: TFStructuralStateSpace,
@@ -519,37 +628,16 @@ def _smooth_sigma_point_score_with_rule(
         d_innovation_points = d_aug_points[:, :, state_dim:]
 
         predicted_points = model.transition(previous_points, innovation_points)
-        transition_state_jacobian = derivatives.transition_state_jacobian_fn(
+        d_predicted_points = _transition_first_order_values(
+            derivatives,
             previous_points,
             innovation_points,
-        )
-        transition_innovation_jacobian = derivatives.transition_innovation_jacobian_fn(
-            previous_points,
-            innovation_points,
-        )
-        d_transition_param = derivatives.d_transition_fn(
-            previous_points,
-            innovation_points,
-        )
-        _validate_shape(
-            transition_state_jacobian,
-            (sigma_rule.point_count, state_dim, state_dim),
-            "transition_state_jacobian",
-        )
-        _validate_shape(
-            transition_innovation_jacobian,
-            (sigma_rule.point_count, state_dim, innovation_dim),
-            "transition_innovation_jacobian",
-        )
-        _validate_shape(
-            d_transition_param,
-            (p, sigma_rule.point_count, state_dim),
-            "d_transition",
-        )
-        d_predicted_points = (
-            _matvec_points(transition_state_jacobian, d_previous_points)
-            + _matvec_points(transition_innovation_jacobian, d_innovation_points)
-            + d_transition_param
+            d_previous_points,
+            d_innovation_points,
+            parameter_dim=p,
+            point_count=sigma_rule.point_count,
+            state_dim=state_dim,
+            innovation_dim=innovation_dim,
         )
         residuals = model.deterministic_residual(
             previous_points,
@@ -584,23 +672,14 @@ def _smooth_sigma_point_score_with_rule(
         )
 
         observation_points = model.observe(predicted_points)
-        observation_state_jacobian = derivatives.observation_state_jacobian_fn(
+        d_observation_points = _observation_first_order_values(
+            derivatives,
             predicted_points,
-        )
-        d_observation_param = derivatives.d_observation_fn(predicted_points)
-        _validate_shape(
-            observation_state_jacobian,
-            (sigma_rule.point_count, observation_dim, state_dim),
-            "observation_state_jacobian",
-        )
-        _validate_shape(
-            d_observation_param,
-            (p, sigma_rule.point_count, observation_dim),
-            "d_observation",
-        )
-        d_observation_points = (
-            _matvec_points(observation_state_jacobian, d_predicted_points)
-            + d_observation_param
+            d_predicted_points,
+            parameter_dim=p,
+            point_count=sigma_rule.point_count,
+            observation_dim=observation_dim,
+            state_dim=state_dim,
         )
         observation_mean = tf.linalg.matvec(
             tf.transpose(observation_points),
@@ -997,37 +1076,16 @@ def _principal_sqrt_sigma_point_score_with_rule(
         d_innovation_points = d_aug_points[:, :, state_dim:]
 
         predicted_points = model.transition(previous_points, innovation_points)
-        transition_state_jacobian = derivatives.transition_state_jacobian_fn(
+        d_predicted_points = _transition_first_order_values(
+            derivatives,
             previous_points,
             innovation_points,
-        )
-        transition_innovation_jacobian = derivatives.transition_innovation_jacobian_fn(
-            previous_points,
-            innovation_points,
-        )
-        d_transition_param = derivatives.d_transition_fn(
-            previous_points,
-            innovation_points,
-        )
-        _validate_shape(
-            transition_state_jacobian,
-            (sigma_rule.point_count, state_dim, state_dim),
-            "transition_state_jacobian",
-        )
-        _validate_shape(
-            transition_innovation_jacobian,
-            (sigma_rule.point_count, state_dim, innovation_dim),
-            "transition_innovation_jacobian",
-        )
-        _validate_shape(
-            d_transition_param,
-            (p, sigma_rule.point_count, state_dim),
-            "d_transition",
-        )
-        d_predicted_points = (
-            _matvec_points(transition_state_jacobian, d_previous_points)
-            + _matvec_points(transition_innovation_jacobian, d_innovation_points)
-            + d_transition_param
+            d_previous_points,
+            d_innovation_points,
+            parameter_dim=p,
+            point_count=sigma_rule.point_count,
+            state_dim=state_dim,
+            innovation_dim=innovation_dim,
         )
         residuals = model.deterministic_residual(
             previous_points,
@@ -1062,23 +1120,14 @@ def _principal_sqrt_sigma_point_score_with_rule(
         )
 
         observation_points = model.observe(predicted_points)
-        observation_state_jacobian = derivatives.observation_state_jacobian_fn(
+        d_observation_points = _observation_first_order_values(
+            derivatives,
             predicted_points,
-        )
-        d_observation_param = derivatives.d_observation_fn(predicted_points)
-        _validate_shape(
-            observation_state_jacobian,
-            (sigma_rule.point_count, observation_dim, state_dim),
-            "observation_state_jacobian",
-        )
-        _validate_shape(
-            d_observation_param,
-            (p, sigma_rule.point_count, observation_dim),
-            "d_observation",
-        )
-        d_observation_points = (
-            _matvec_points(observation_state_jacobian, d_predicted_points)
-            + d_observation_param
+            d_predicted_points,
+            parameter_dim=p,
+            point_count=sigma_rule.point_count,
+            observation_dim=observation_dim,
+            state_dim=state_dim,
         )
         observation_mean = tf.linalg.matvec(
             tf.transpose(observation_points),

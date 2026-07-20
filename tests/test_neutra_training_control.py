@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 
 import pytest
 
@@ -17,6 +19,17 @@ from bayesfilter.inference.neutra_training_control import (
 STATE_A = "a" * 64
 STATE_B = "b" * 64
 STATE_C = "c" * 64
+
+
+def _payload_hash(payload):
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _config(**changes):
@@ -76,6 +89,116 @@ def test_exact_n_reduction_and_2n_stop_without_resetting_patience() -> None:
     assert stopped.should_stop is True
     assert stopped.stop_reason == "plateau_after_lr_repair"
     assert controller.learning_rate_reductions == 1
+
+
+def test_two_post_repair_cycles_stop_at_three_patience_periods() -> None:
+    controller = NeuTraPlateauController(
+        _config(
+            validation_check_every=250,
+            patience_steps=250,
+            post_repair_no_improvement_cycles=2,
+        )
+    )
+    assert _observe(controller, 0).kind == "initialize_best"
+    reduction = _observe(controller, 250)
+    assert reduction.kind == "reduce_learning_rate"
+    assert reduction.current_learning_rate == pytest.approx(5.0e-4)
+    assert _observe(controller, 500).kind == "continue"
+    stopped = _observe(controller, 750)
+    assert stopped.should_stop is True
+    assert stopped.stop_reason == "plateau_after_lr_repair"
+    assert stopped.steps_since_best == 750
+
+
+def test_improvement_resets_two_cycle_post_repair_window() -> None:
+    controller = NeuTraPlateauController(
+        _config(
+            validation_check_every=250,
+            patience_steps=250,
+            post_repair_no_improvement_cycles=2,
+        )
+    )
+    _observe(controller, 0)
+    assert _observe(controller, 250).kind == "reduce_learning_rate"
+    improved = _observe(
+        controller,
+        500,
+        losses=(0.5, 1.5, 2.5, 3.5),
+        state=STATE_B,
+    )
+    assert improved.kind == "improved"
+    assert improved.best_step == 500
+    assert _observe(
+        controller,
+        750,
+        losses=(0.5, 1.5, 2.5, 3.5),
+        state=STATE_B,
+    ).kind == "reduce_learning_rate"
+    assert _observe(
+        controller,
+        1000,
+        losses=(0.5, 1.5, 2.5, 3.5),
+        state=STATE_B,
+    ).kind == "continue"
+    assert _observe(
+        controller,
+        1250,
+        losses=(0.5, 1.5, 2.5, 3.5),
+        state=STATE_B,
+    ).stop_reason == "plateau_after_lr_repair"
+
+
+def test_two_cycle_post_repair_resume_matches_uninterrupted_stop() -> None:
+    config = _config(
+        validation_check_every=250,
+        patience_steps=250,
+        post_repair_no_improvement_cycles=2,
+    )
+    uninterrupted = NeuTraPlateauController(config)
+    _observe(uninterrupted, 0)
+    _observe(uninterrupted, 250)
+    _observe(uninterrupted, 500)
+    checkpoint = uninterrupted.state_payload()
+
+    resumed = NeuTraPlateauController(config)
+    resumed.restore_state(checkpoint)
+    left = _observe(uninterrupted, 750)
+    right = _observe(resumed, 750)
+    assert left == right
+    assert right.stop_reason == "plateau_after_lr_repair"
+    assert resumed.state_payload() == uninterrupted.state_payload()
+
+
+def test_plateau_config_binds_post_repair_cycles_and_full_window() -> None:
+    config = _config(post_repair_no_improvement_cycles=2)
+    assert config.plateau_stop_steps == 1500
+    assert config.manifest_payload()["post_repair_no_improvement_cycles"] == 2
+    with pytest.raises(ValueError, match="complete plateau repair window"):
+        _config(
+            validation_check_every=250,
+            patience_steps=250,
+            max_steps=500,
+            post_repair_no_improvement_cycles=2,
+        )
+
+
+def test_legacy_default_cycle_checkpoint_remains_resumable() -> None:
+    controller = NeuTraPlateauController(_config())
+    _observe(controller, 0)
+    legacy = copy.deepcopy(controller.state_payload())
+    legacy.pop("state_hash")
+    legacy["config"].pop("post_repair_no_improvement_cycles")
+    legacy["state_hash"] = _payload_hash(legacy)
+
+    resumed = NeuTraPlateauController(_config())
+    resumed.restore_state(legacy)
+    assert resumed.best_step == 0
+
+    incompatible = NeuTraPlateauController(
+        _config(post_repair_no_improvement_cycles=2)
+    )
+    with pytest.raises(NeuTraPlateauError, match="config mismatch"):
+        incompatible.restore_state(legacy)
 
 
 def test_improvement_after_reduction_starts_a_new_plateau() -> None:

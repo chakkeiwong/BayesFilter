@@ -578,6 +578,17 @@ class _AffineWarmupAdapter:
             raise TypeError("target_status_telemetry must return a mapping")
         return payload
 
+    def classify_target_exception(self, error: BaseException) -> bool:
+        """Forward only an adapter-declared target-domain failure classifier."""
+
+        classifier = getattr(self.base_adapter, "classify_target_exception", None)
+        if not callable(classifier):
+            return False
+        result = classifier(error)
+        if not isinstance(result, (bool, np.bool_)):
+            raise TypeError("classify_target_exception must return a boolean")
+        return bool(result)
+
 
 def _base_adapter_signature(adapter: Any) -> str:
     signature = getattr(adapter, "adapter_signature", None)
@@ -596,6 +607,10 @@ class ReasonableEpsilonAttempt:
     mean_acceptance_probability: float | None
     finite: bool
     seed: tuple[int, int]
+    num_leapfrog_steps: int = 1
+    probe_seeds: tuple[tuple[int, int], ...] = ()
+    minimum_acceptance_probability: float | None = None
+    maximum_acceptance_probability: float | None = None
     engineering_health_failures: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -621,12 +636,46 @@ class ReasonableEpsilonAttempt:
             raise ValueError(
                 "reasonable-epsilon health failures must contain nonempty codes"
             )
-        if not set(health_failures).issubset({"target_status_telemetry_failure"}):
+        if not set(health_failures).issubset(
+            {"target_status_telemetry_failure", "target_domain_execution_failure"}
+        ):
             raise ValueError("unsupported reasonable-epsilon health failure")
+        seed = _strict_seed(self.seed, name="attempt seed")
+        probe_seeds = tuple(
+            _strict_seed(item, name="probe seed") for item in self.probe_seeds
+        )
+        if not probe_seeds:
+            probe_seeds = (seed,)
+        if probe_seeds[0] != seed or len(set(probe_seeds)) != len(probe_seeds):
+            raise ValueError("reasonable-epsilon probe seeds must be distinct and led by seed")
+        minimum = self.minimum_acceptance_probability
+        maximum = self.maximum_acceptance_probability
+        if finite:
+            minimum = mean if minimum is None else float(minimum)
+            maximum = mean if maximum is None else float(maximum)
+            if (
+                not np.all(np.isfinite((minimum, maximum)))
+                or not 0.0 <= minimum <= mean <= maximum <= 1.0
+            ):
+                raise ValueError("reasonable-epsilon probe acceptance range is invalid")
+        elif minimum is not None or maximum is not None:
+            raise ValueError("nonfinite reasonable-epsilon attempt cannot carry acceptance range")
         object.__setattr__(self, "step_size", step)
         object.__setattr__(self, "mean_acceptance_probability", mean)
         object.__setattr__(self, "finite", finite)
-        object.__setattr__(self, "seed", _strict_seed(self.seed, name="attempt seed"))
+        object.__setattr__(self, "seed", seed)
+        object.__setattr__(
+            self,
+            "num_leapfrog_steps",
+            _strict_integer(
+                self.num_leapfrog_steps,
+                name="num_leapfrog_steps",
+                minimum=1,
+            ),
+        )
+        object.__setattr__(self, "probe_seeds", probe_seeds)
+        object.__setattr__(self, "minimum_acceptance_probability", minimum)
+        object.__setattr__(self, "maximum_acceptance_probability", maximum)
         object.__setattr__(self, "engineering_health_failures", health_failures)
 
     @property
@@ -638,6 +687,11 @@ class ReasonableEpsilonAttempt:
             "step_size": self.step_size,
             "mean_acceptance_probability": self.mean_acceptance_probability,
             "finite": self.finite,
+            "num_leapfrog_steps": self.num_leapfrog_steps,
+            "probe_count": len(self.probe_seeds),
+            "probe_seeds": self.probe_seeds,
+            "minimum_acceptance_probability": self.minimum_acceptance_probability,
+            "maximum_acceptance_probability": self.maximum_acceptance_probability,
             "engineering_health_failures": self.engineering_health_failures,
             "usable": self.usable,
             "seed": self.seed,
@@ -649,19 +703,20 @@ class ReasonableEpsilonResult:
     status: str
     selected_step_size: float | None
     attempts: tuple[ReasonableEpsilonAttempt, ...]
+    qualification_source: str | None = None
 
     def __post_init__(self) -> None:
         status = str(self.status)
-        if status not in {"passed", "inconclusive_bracket"}:
+        if status not in {"passed", "externally_qualified", "inconclusive_bracket"}:
             raise ValueError("unsupported reasonable-epsilon status")
         attempts = tuple(self.attempts)
-        if not attempts or not all(
+        if attempts and not all(
             isinstance(item, ReasonableEpsilonAttempt) for item in attempts
         ):
-            raise ValueError("reasonable-epsilon result requires typed attempts")
+            raise ValueError("reasonable-epsilon result attempts must be typed")
         selected = self.selected_step_size
         if status == "passed":
-            if selected is None:
+            if selected is None or not attempts:
                 raise ValueError("passed reasonable-epsilon result requires a step")
             selected = float(selected)
             if (
@@ -672,21 +727,37 @@ class ReasonableEpsilonResult:
                 or not np.isclose(selected, attempts[-1].step_size, rtol=0.0, atol=0.0)
             ):
                 raise ValueError("selected reasonable epsilon lacks final finite evidence")
+        elif status == "externally_qualified":
+            if attempts or selected is None:
+                raise ValueError(
+                    "externally qualified epsilon requires one selected step and no probes"
+                )
+            selected = float(selected)
+            if not np.isfinite(selected) or selected <= 0.0:
+                raise ValueError("externally qualified epsilon must be positive and finite")
         elif selected is not None:
             raise ValueError("inconclusive reasonable-epsilon result cannot select a step")
+        source = None if self.qualification_source is None else str(self.qualification_source)
+        if status == "externally_qualified":
+            if not source:
+                raise ValueError("externally qualified epsilon requires provenance")
+        elif source is not None:
+            raise ValueError("epsilon qualification source is only valid for external evidence")
         object.__setattr__(self, "status", status)
         object.__setattr__(self, "selected_step_size", selected)
         object.__setattr__(self, "attempts", attempts)
+        object.__setattr__(self, "qualification_source", source)
 
     @property
     def passed(self) -> bool:
-        return self.status == "passed"
+        return self.status in {"passed", "externally_qualified"}
 
     def payload(self) -> Mapping[str, Any]:
         return {
             "status": self.status,
             "selected_step_size": self.selected_step_size,
             "attempts": tuple(attempt.payload() for attempt in self.attempts),
+            "qualification_source": self.qualification_source,
             "diagnostic_role": "reasonable_epsilon_engineering_bracket",
             "nonclaims": OPERATIONAL_WARMUP_NONCLAIMS,
         }
@@ -701,9 +772,11 @@ def find_reasonable_epsilon(
     max_attempts: int = 20,
     lower_acceptance: float = 0.25,
     upper_acceptance: float = 0.75,
+    num_leapfrog_steps: int = 1,
+    momentum_probe_count: int = 1,
     target_status_trace_policy: str = "none",
 ) -> ReasonableEpsilonResult:
-    """Bracket a finite one-step HMC epsilon using mean accept probability."""
+    """Bracket epsilon using the fixed trajectory that will consume it."""
 
     import tensorflow as tf
     import tensorflow_probability as tfp
@@ -720,6 +793,16 @@ def find_reasonable_epsilon(
     ):
         raise ValueError("reasonable-epsilon acceptance bracket must lie inside (0, 1)")
     normalized_seed = _strict_seed(seed, name="seed")
+    leapfrog_steps = _strict_integer(
+        num_leapfrog_steps,
+        name="num_leapfrog_steps",
+        minimum=1,
+    )
+    probe_count = _strict_integer(
+        momentum_probe_count,
+        name="momentum_probe_count",
+        minimum=1,
+    )
     target_status_policy = _target_status_policy(target_status_trace_policy)
     state = tf.convert_to_tensor(current_state, dtype=tf.float64)
     if (
@@ -747,68 +830,125 @@ def find_reasonable_epsilon(
     attempts: list[ReasonableEpsilonAttempt] = []
     high_acceptance_step: float | None = None
     low_acceptance_step: float | None = None
-    proposal_seed = _seed(normalized_seed, 0)
+    proposal_seeds = tuple(_seed(normalized_seed, index) for index in range(probe_count))
+
+    def is_declared_target_domain_failure(error: BaseException) -> bool:
+        classifier = getattr(adapter, "classify_target_exception", None)
+        if not callable(classifier):
+            return False
+        try:
+            result = classifier(error)
+        except Exception as exc:  # noqa: BLE001 - classifier is adapter authority.
+            raise RuntimeError(
+                "target exception classifier failed during epsilon search"
+            ) from exc
+        if not isinstance(result, (bool, np.bool_)):
+            raise TypeError("classify_target_exception must return a boolean")
+        return bool(result)
+
     for index in range(attempt_limit):
         kernel = tfp.mcmc.HamiltonianMonteCarlo(
             target_log_prob_fn=target,
             step_size=tf.constant(step, dtype=state.dtype),
-            num_leapfrog_steps=1,
+            num_leapfrog_steps=leapfrog_steps,
         )
         results = kernel.bootstrap_results(state)
         if not _kernel_result_value_score_finite(results.accepted_results):
             raise ValueError("reasonable-epsilon bootstrap target evidence is nonfinite")
-        try:
-            next_state, next_results = kernel.one_step(
-                state,
-                results,
-                seed=tf.constant(proposal_seed, dtype=tf.int32),
-            )
+        acceptance_probabilities: list[float] = []
+        finite = True
+        health_failure_list: list[str] = []
+        for proposal_seed in proposal_seeds:
+            try:
+                next_state, next_results = kernel.one_step(
+                    state,
+                    results,
+                    seed=tf.constant(proposal_seed, dtype=tf.int32),
+                )
+            except tf.errors.InvalidArgumentError as exc:
+                if not is_declared_target_domain_failure(exc):
+                    raise RuntimeError(
+                        "unclassified TensorFlow InvalidArgumentError during "
+                        "reasonable-epsilon search"
+                    ) from exc
+                finite = False
+                health_failure_list.append("target_domain_execution_failure")
+                break
+            except tf.errors.InternalError as exc:
+                if (
+                    "covariance must be positive definite" not in str(exc)
+                    or not is_declared_target_domain_failure(exc)
+                ):
+                    raise RuntimeError(
+                        "reasonable-epsilon HMC proposal execution failed"
+                    ) from exc
+                finite = False
+                health_failure_list.append("target_domain_execution_failure")
+                break
+            except tf.errors.OpError as exc:
+                raise RuntimeError(
+                    "reasonable-epsilon HMC proposal execution failed"
+                ) from exc
+            except Exception as exc:  # noqa: BLE001 - non-target runner failure is fatal.
+                raise RuntimeError(
+                    "reasonable-epsilon HMC proposal execution failed"
+                ) from exc
             log_accept = tf.convert_to_tensor(next_results.log_accept_ratio, tf.float64)
             retained_finite = bool(
                 _all_finite_tensors((next_state,))
                 and _kernel_result_value_score_finite(next_results.accepted_results)
             )
-            finite = bool(
+            if not retained_finite:
+                raise ValueError(
+                    "reasonable-epsilon accepted or retained state is nonfinite"
+                )
+            probe_finite = bool(
                 tf.reduce_all(tf.math.is_finite(log_accept)).numpy()
                 and _all_finite_tensors((next_results.proposed_state,))
                 and _kernel_result_value_score_finite(next_results.proposed_results)
             )
-            mean_accept = (
+            if not probe_finite:
+                finite = False
+                break
+            acceptance_probabilities.append(
                 float(tf.reduce_mean(tf.exp(tf.minimum(log_accept, 0.0))).numpy())
-                if finite
-                else None
             )
-        except Exception as exc:  # noqa: BLE001 - shared runner failure is fail-closed.
-            raise RuntimeError(
-                "reasonable-epsilon HMC proposal execution failed"
-            ) from exc
-        if not retained_finite:
-            raise ValueError(
-                "reasonable-epsilon accepted or retained state is nonfinite"
-            )
-        health_failures: tuple[str, ...] = ()
-        if finite and target_status_policy == "per_chain_step":
-            proposal_failed = _target_status_failed(
-                adapter,
-                next_results.proposed_state,
-                expected_shape=target_status_shape,
-            )
-            retained_failed = _target_status_failed(
-                adapter,
-                next_state,
-                expected_shape=target_status_shape,
-            )
-            if retained_failed:
-                raise ValueError(
-                    "reasonable-epsilon accepted or retained target status is nonvalid"
+            if target_status_policy == "per_chain_step":
+                proposal_failed = _target_status_failed(
+                    adapter,
+                    next_results.proposed_state,
+                    expected_shape=target_status_shape,
                 )
-            if proposal_failed:
-                health_failures = ("target_status_telemetry_failure",)
+                retained_failed = _target_status_failed(
+                    adapter,
+                    next_state,
+                    expected_shape=target_status_shape,
+                )
+                if retained_failed:
+                    raise ValueError(
+                        "reasonable-epsilon accepted or retained target status is nonvalid"
+                    )
+                if proposal_failed:
+                    health_failure_list.append("target_status_telemetry_failure")
+        mean_accept = (
+            float(np.mean(acceptance_probabilities))
+            if finite and len(acceptance_probabilities) == probe_count
+            else None
+        )
+        health_failures = tuple(dict.fromkeys(health_failure_list))
         attempt = ReasonableEpsilonAttempt(
             step_size=step,
             mean_acceptance_probability=mean_accept,
             finite=finite,
-            seed=proposal_seed,
+            seed=proposal_seeds[0],
+            num_leapfrog_steps=leapfrog_steps,
+            probe_seeds=proposal_seeds,
+            minimum_acceptance_probability=None
+            if mean_accept is None
+            else min(acceptance_probabilities),
+            maximum_acceptance_probability=None
+            if mean_accept is None
+            else max(acceptance_probabilities),
             engineering_health_failures=health_failures,
         )
         attempts.append(attempt)
@@ -906,6 +1046,9 @@ class OperationalWarmupWindowResult:
     is_accepted: Any
     target_log_prob: Any
     step_size_trace: Any
+    proposed_step_size_trace: Any
+    consumed_step_size_trace: Any
+    step_size_upper_bound: float
     metric_decision: MetricAdequacyDecision | None
     next_coordinate_signature: str | None
     next_metric_signature: str | None
@@ -957,6 +1100,13 @@ class OperationalWarmupWindowResult:
         accepted = accepted_input.astype(bool, copy=True)
         target_value = np.asarray(self.target_log_prob, dtype=float).copy()
         step_trace = np.asarray(self.step_size_trace, dtype=float).copy()
+        proposed_step_trace = np.asarray(
+            self.proposed_step_size_trace, dtype=float
+        ).copy()
+        consumed_step_trace = np.asarray(
+            self.consumed_step_size_trace, dtype=float
+        ).copy()
+        step_upper_bound = float(self.step_size_upper_bound)
         dimension = int(final_latent.size)
         expected_draw_shape = (self.window.length, dimension)
         expected_trace_shape = (self.window.length,)
@@ -970,6 +1120,8 @@ class OperationalWarmupWindowResult:
             or accepted.shape != expected_trace_shape
             or target_value.shape != expected_trace_shape
             or step_trace.shape != expected_trace_shape
+            or proposed_step_trace.shape != expected_trace_shape
+            or consumed_step_trace.shape != expected_trace_shape
         ):
             raise ValueError("operational warmup window arrays are misaligned")
         arrays = (
@@ -980,11 +1132,28 @@ class OperationalWarmupWindowResult:
             log_accept,
             target_value,
             step_trace,
+            proposed_step_trace,
+            consumed_step_trace,
         )
         if any(not np.all(np.isfinite(array)) for array in arrays):
             raise ValueError("operational warmup window arrays must be finite")
-        if np.any(step_trace <= 0.0):
-            raise ValueError("step_size_trace must be positive")
+        if (
+            not np.isfinite(step_upper_bound)
+            or step_upper_bound <= 0.0
+            or np.any(step_trace <= 0.0)
+            or np.any(proposed_step_trace <= 0.0)
+            or np.any(consumed_step_trace <= 0.0)
+            or np.any(step_trace > step_upper_bound * (1.0 + 1.0e-12))
+            or np.any(consumed_step_trace > step_upper_bound * (1.0 + 1.0e-12))
+        ):
+            raise ValueError("operational warmup step ceiling is invalid")
+        if not np.allclose(
+            step_trace,
+            np.minimum(proposed_step_trace, step_upper_bound),
+            rtol=1.0e-12,
+            atol=0.0,
+        ):
+            raise ValueError("bounded step trace does not match proposed step and ceiling")
         if not np.allclose(final_latent, latent_draws[-1], rtol=0.0, atol=0.0):
             raise ValueError("final latent state must equal the last warmup draw")
         if not np.allclose(final_theta, theta_draws[-1], rtol=0.0, atol=0.0):
@@ -1135,6 +1304,9 @@ class OperationalWarmupWindowResult:
         object.__setattr__(self, "is_accepted", accepted)
         object.__setattr__(self, "target_log_prob", target_value)
         object.__setattr__(self, "step_size_trace", step_trace)
+        object.__setattr__(self, "proposed_step_size_trace", proposed_step_trace)
+        object.__setattr__(self, "consumed_step_size_trace", consumed_step_trace)
+        object.__setattr__(self, "step_size_upper_bound", step_upper_bound)
         object.__setattr__(self, "next_coordinate_signature", next_coordinate)
         object.__setattr__(self, "next_metric_signature", next_metric)
         object.__setattr__(self, "dual_averaging_generation", generation)
@@ -1158,6 +1330,20 @@ class OperationalWarmupWindowResult:
             "target_status_trace_policy": self.target_status_trace_policy,
             "target_status_failure_count": self.target_status_failure_count,
             "max_abs_log_accept_energy_proxy": self.max_abs_log_accept_energy_proxy,
+            "step_size_upper_bound": self.step_size_upper_bound,
+            "maximum_bounded_next_step_size": float(np.max(self.step_size_trace)),
+            "maximum_proposed_step_size": float(
+                np.max(self.proposed_step_size_trace)
+            ),
+            "maximum_consumed_step_size": float(
+                np.max(self.consumed_step_size_trace)
+            ),
+            "step_ceiling_hit_count": int(
+                np.sum(
+                    self.proposed_step_size_trace
+                    > self.step_size_upper_bound * (1.0 + 1.0e-12)
+                )
+            ),
             "metric_decision": None
             if self.metric_decision is None
             else self.metric_decision.payload(),
@@ -1503,6 +1689,8 @@ def run_operational_windowed_warmup(
     initial_transform: AffineCoordinateTransform,
     initial_canonical_theta: Any,
     initial_step_size: float,
+    initial_step_size_upper_bound: float | None = None,
+    initial_step_qualification_source: str | None = None,
     trajectory_policy: WarmupTrajectoryPolicy,
     config: WindowedMassAdaptationConfig,
     target_accept_prob: float,
@@ -1540,6 +1728,28 @@ def run_operational_windowed_warmup(
     target_accept = float(target_accept_prob)
     if not np.isfinite(target_accept) or not 0.0 < target_accept < 1.0:
         raise ValueError("target_accept_prob must be finite and in (0, 1)")
+    initial_bound = (
+        None
+        if initial_step_size_upper_bound is None
+        else float(initial_step_size_upper_bound)
+    )
+    if initial_bound is not None and (
+        not np.isfinite(initial_bound)
+        or initial_bound <= 0.0
+        or float(initial_step_size) > initial_bound * (1.0 + 1.0e-12)
+    ):
+        raise ValueError(
+            "initial_step_size_upper_bound must be positive and bound the initial step"
+        )
+    qualification_source = (
+        None
+        if initial_step_qualification_source is None
+        else str(initial_step_qualification_source)
+    )
+    if initial_bound is None and qualification_source is not None:
+        raise ValueError("initial step qualification source requires an upper bound")
+    if initial_bound is not None and not qualification_source:
+        raise ValueError("initial step upper bound requires qualification provenance")
     theta = np.asarray(initial_canonical_theta, dtype=float)
     if theta.shape != (initial_transform.dimension,) or not np.all(np.isfinite(theta)):
         raise ValueError("initial_canonical_theta must be one finite transform vector")
@@ -1561,16 +1771,28 @@ def run_operational_windowed_warmup(
         transform=initial_transform,
         target_scope=target_scope,
     )
-    reasonable = find_reasonable_epsilon(
-        adapter=first_adapter,
-        current_state=latent,
-        initial_step_size=initial_step_size,
-        seed=_seed(normalized_seed, -1, lane=1),
-        target_status_trace_policy=target_status_policy,
+    reasonable = (
+        ReasonableEpsilonResult(
+            status="externally_qualified",
+            selected_step_size=float(initial_step_size),
+            attempts=(),
+            qualification_source=qualification_source,
+        )
+        if initial_bound is not None
+        else find_reasonable_epsilon(
+            adapter=first_adapter,
+            current_state=latent,
+            initial_step_size=initial_step_size,
+            seed=_seed(normalized_seed, -1, lane=1),
+            num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
+            momentum_probe_count=4,
+            target_status_trace_policy=target_status_policy,
+        )
     )
     if not reasonable.passed or reasonable.selected_step_size is None:
         raise ValueError("operational warmup reasonable epsilon search was inconclusive")
     epsilon = float(reasonable.selected_step_size)
+    active_step_upper_bound = epsilon if initial_bound is None else initial_bound
     windows = build_windowed_warmup_schedule(config)
     segmented_execution = execution_segment_size is not None
     segment_size = (
@@ -1679,6 +1901,7 @@ def run_operational_windowed_warmup(
                 return closeout
         active_transform = kernel_state.transform
         active_metric = kernel_state.momentum_metric
+        window_step_upper_bound = active_step_upper_bound
         active_adapter = _AffineWarmupAdapter(
             base_adapter=adapter,
             transform=active_transform,
@@ -1692,13 +1915,38 @@ def run_operational_windowed_warmup(
                 step_size=tf.constant(epsilon, dtype=current_latent.dtype),
                 num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
             )
+            def bounded_step_setter(
+                kernel_results: Any, new_step_size: Any
+            ) -> Any:
+                from tensorflow_probability.python.internal import unnest
+
+                bounded = tf.minimum(
+                    tf.convert_to_tensor(new_step_size, dtype=current_latent.dtype),
+                    tf.constant(window_step_upper_bound, dtype=current_latent.dtype),
+                )
+                return unnest.replace_innermost(
+                    kernel_results,
+                    step_size=bounded,
+                )
+
             active_adaptive_kernel = tfp.mcmc.DualAveragingStepSizeAdaptation(
                 inner_kernel=base_kernel,
                 num_adaptation_steps=config.warmup_steps - transition_count,
                 target_accept_prob=tf.constant(target_accept, dtype=current_latent.dtype),
+                step_size_setter_fn=bounded_step_setter,
+                shrinkage_target=tf.constant(
+                    min(10.0 * epsilon, window_step_upper_bound),
+                    dtype=current_latent.dtype,
+                ),
             )
             previous_kernel_results = active_adaptive_kernel.bootstrap_results(
                 current_latent
+            )
+            previous_kernel_results = previous_kernel_results._replace(
+                new_step_size=tf.minimum(
+                    previous_kernel_results.new_step_size,
+                    tf.constant(window_step_upper_bound, current_latent.dtype),
+                )
             )
             runner_generation += 1
 
@@ -1707,7 +1955,14 @@ def run_operational_windowed_warmup(
             trace = {
                 "is_accepted": inner.is_accepted,
                 "log_accept_ratio": inner.log_accept_ratio,
-                "step_size": kernel_results.new_step_size,
+                "step_size": tf.minimum(
+                    kernel_results.new_step_size,
+                    tf.constant(window_step_upper_bound, current_latent.dtype),
+                ),
+                "proposed_step_size": kernel_results.new_step_size,
+                "consumed_step_size": (
+                    kernel_results.inner_results.accepted_results.step_size
+                ),
                 "target_log_prob": inner.accepted_results.target_log_prob,
             }
             divergence = _native_divergence(inner)
@@ -1801,6 +2056,12 @@ def run_operational_windowed_warmup(
             segment_states.append(checkpoint.all_states)
             segment_traces.append(checkpoint.trace)
             final_kernel_results = checkpoint.final_kernel_results
+            final_kernel_results = final_kernel_results._replace(
+                new_step_size=tf.minimum(
+                    final_kernel_results.new_step_size,
+                    tf.constant(window_step_upper_bound, current_latent.dtype),
+                )
+            )
             current_latent = checkpoint.all_states[-1]
             completed_in_window += active_results
             if segment_callback is not None:
@@ -1867,8 +2128,25 @@ def run_operational_windowed_warmup(
         if not np.all(np.isfinite(target_values)):
             raise ValueError("operational warmup produced nonfinite target values")
         step_trace = np.asarray(trace["step_size"].numpy(), dtype=float)
-        if not np.all(np.isfinite(step_trace)) or np.any(step_trace <= 0.0):
-            raise ValueError("operational warmup produced invalid dual-averaging step")
+        proposed_step_trace = np.asarray(
+            trace["proposed_step_size"].numpy(), dtype=float
+        )
+        consumed_step_trace = np.asarray(
+            trace["consumed_step_size"].numpy(), dtype=float
+        )
+        if (
+            not np.all(np.isfinite(step_trace))
+            or not np.all(np.isfinite(proposed_step_trace))
+            or not np.all(np.isfinite(consumed_step_trace))
+            or np.any(step_trace <= 0.0)
+            or np.any(proposed_step_trace <= 0.0)
+            or np.any(consumed_step_trace <= 0.0)
+            or np.any(
+                consumed_step_trace
+                > window_step_upper_bound * (1.0 + 1.0e-12)
+            )
+        ):
+            raise ValueError("operational warmup produced an invalid bounded step")
         epsilon_end = float(np.reshape(step_trace, [-1])[-1])
         accepted = np.asarray(trace["is_accepted"].numpy(), dtype=bool)
         mean_accept = float(np.mean(np.exp(np.minimum(log_accept, 0.0))))
@@ -2120,6 +2398,8 @@ def run_operational_windowed_warmup(
                         current_state=mapped_latent,
                         initial_step_size=candidate_epsilon_start,
                         seed=_seed(normalized_seed, window.index, lane=3),
+                        num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
+                        momentum_probe_count=4,
                         target_status_trace_policy=target_status_policy,
                     )
                     if (
@@ -2156,6 +2436,7 @@ def run_operational_windowed_warmup(
                 target_score_map_residual = candidate_score_residual
                 next_reasonable_epsilon = candidate_reasonable
                 epsilon_end = float(candidate_reasonable.selected_step_size)
+                active_step_upper_bound = epsilon_end
                 active_adaptive_kernel = None
                 active_runner = None
                 previous_kernel_results = None
@@ -2202,6 +2483,9 @@ def run_operational_windowed_warmup(
                 is_accepted=accepted,
                 target_log_prob=target_values,
                 step_size_trace=step_trace,
+                proposed_step_size_trace=proposed_step_trace,
+                consumed_step_size_trace=consumed_step_trace,
+                step_size_upper_bound=window_step_upper_bound,
                 metric_decision=metric_decision,
                 next_coordinate_signature=next_coordinate_signature,
                 next_metric_signature=next_metric_signature,

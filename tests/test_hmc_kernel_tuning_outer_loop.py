@@ -5634,7 +5634,8 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
     assert all(call["num_results"] == 64 for call in selector_calls[:9])
     assert all(call["num_burnin_steps"] == 16 for call in selector_calls[:9])
     assert all(call["adaptation_steps"] == 64 for call in selector_calls[-2:])
-    assert tuple(call["leapfrog"] for call in selector_calls[-2:]) == (3, 1)
+    retuned_leapfrogs = tuple(call["leapfrog"] for call in selector_calls[-2:])
+    assert retuned_leapfrogs[0] > retuned_leapfrogs[1] >= 1
     assert len({call["seed"] for call in selector_calls}) == 11
     assert len(verification_inputs) == 2
     first_input, repaired_input = verification_inputs
@@ -5646,7 +5647,7 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
     assert first_input.trajectory_signature == repaired_input.trajectory_signature
     assert first_input.start_bank_signature == repaired_input.start_bank_signature
     assert first_input.num_leapfrog_steps == repaired_input.num_leapfrog_steps
-    assert first_input.num_leapfrog_steps == 1
+    assert first_input.num_leapfrog_steps == retuned_leapfrogs[1]
     assert repaired_input.step_size == pytest.approx(2.0 * first_input.step_size)
     assert first_input.verification_seed != repaired_input.verification_seed
 
@@ -5654,7 +5655,10 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
     selection = fixed._operational_selection
     assert selection is not None
     assert selection.disposition == "representative_selected"
-    assert selection.representative.candidate.num_leapfrog_steps == 1
+    assert (
+        selection.representative.candidate.num_leapfrog_steps
+        == retuned_leapfrogs[1]
+    )
     assert len(selection.candidate_retune_failures) == 1
     assert selection.candidate_retune_failures[0].nomination_ordinal == 0
     summary = fixed.payload()["operational_selection_summary"]
@@ -5955,10 +5959,13 @@ def test_operational_exact_l_candidate_failure_is_budget_exhausted_not_runtime_e
         item.candidate.signature: item.candidate.num_leapfrog_steps
         for item in fixed._operational_selection.candidate_results
     }
-    assert tuple(
+    failed_leapfrogs = tuple(
         candidates_by_signature[item["candidate_signature"]]
         for item in failures
-    ) == (3, 1, 6)
+    )
+    assert len(set(failed_leapfrogs)) == 3
+    assert failed_leapfrogs[0] > failed_leapfrogs[1] >= 1
+    assert failed_leapfrogs[2] > failed_leapfrogs[0]
     assert tuple(item["nomination_ordinal"] for item in failures) == (0, 1, 2)
     assert len({tuple(item["seed"]) for item in failures}) == 3
 

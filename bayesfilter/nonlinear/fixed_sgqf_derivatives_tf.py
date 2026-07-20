@@ -29,6 +29,7 @@ TFTransitionStateJacobianFn = Callable[[tf.Tensor], tf.Tensor]
 TFTransitionParameterDerivativeFn = Callable[[tf.Tensor], tf.Tensor]
 TFObservationStateJacobianFn = Callable[[tf.Tensor], tf.Tensor]
 TFObservationParameterDerivativeFn = Callable[[tf.Tensor], tf.Tensor]
+TFPointMapJVPFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,8 @@ class TFFixedSGQFDerivatives:
     observation_state_jacobian_fn: TFObservationStateJacobianFn
     d_observation_fn: TFObservationParameterDerivativeFn
     name: str = "tf_fixed_sgqf_derivatives"
+    transition_jvp_fn: TFPointMapJVPFn | None = None
+    observation_jvp_fn: TFPointMapJVPFn | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -127,6 +130,23 @@ def _einsum_pointwise_jacobian(jacobians: tf.Tensor, point_derivatives: tf.Tenso
     """Apply pointwise Jacobians to per-parameter point derivatives."""
 
     return tf.einsum("rmn,prn->prm", jacobians, point_derivatives)
+
+
+def _point_map_first_order_values(
+    points: tf.Tensor,
+    point_derivatives: tf.Tensor,
+    *,
+    jacobian_fn: TFTransitionStateJacobianFn | TFObservationStateJacobianFn,
+    parameter_derivative_fn: TFTransitionParameterDerivativeFn | TFObservationParameterDerivativeFn,
+    jvp_fn: TFPointMapJVPFn | None,
+) -> tf.Tensor:
+    direct = parameter_derivative_fn(points)
+    propagated = (
+        jvp_fn(points, point_derivatives)
+        if jvp_fn is not None
+        else _einsum_pointwise_jacobian(jacobian_fn(points), point_derivatives)
+    )
+    return propagated + direct
 
 
 def _covariance_first_derivative(centered: tf.Tensor, d_centered: tf.Tensor, weights: tf.Tensor) -> tf.Tensor:
@@ -293,9 +313,13 @@ def tf_fixed_sgqf_score(
         d_previous_points = d_mean[:, tf.newaxis, :] + tf.einsum("rd,pnd->prn", cloud.points, d_previous_factor)
 
         transition_values = model.transition(previous_points)
-        transition_jacobian = derivatives.transition_state_jacobian_fn(previous_points)
-        d_transition_direct = derivatives.d_transition_fn(previous_points)
-        d_transition_values = _einsum_pointwise_jacobian(transition_jacobian, d_previous_points) + d_transition_direct
+        d_transition_values = _point_map_first_order_values(
+            previous_points,
+            d_previous_points,
+            jacobian_fn=derivatives.transition_state_jacobian_fn,
+            parameter_derivative_fn=derivatives.d_transition_fn,
+            jvp_fn=derivatives.transition_jvp_fn,
+        )
 
         predicted_mean = _weighted_mean(transition_values, weights)
         d_predicted_mean = tf.einsum("r,prn->pn", weights, d_transition_values)
@@ -336,9 +360,13 @@ def tf_fixed_sgqf_score(
         d_predictive_points = d_predicted_mean[:, tf.newaxis, :] + tf.einsum("rd,pnd->prn", cloud.points, d_predicted_factor)
 
         observation_values = model.observe(predictive_points)
-        observation_jacobian = derivatives.observation_state_jacobian_fn(predictive_points)
-        d_observation_direct = derivatives.d_observation_fn(predictive_points)
-        d_observation_values = _einsum_pointwise_jacobian(observation_jacobian, d_predictive_points) + d_observation_direct
+        d_observation_values = _point_map_first_order_values(
+            predictive_points,
+            d_predictive_points,
+            jacobian_fn=derivatives.observation_state_jacobian_fn,
+            parameter_derivative_fn=derivatives.d_observation_fn,
+            jvp_fn=derivatives.observation_jvp_fn,
+        )
 
         observation_mean = _weighted_mean(observation_values, weights)
         d_observation_mean = tf.einsum("r,prm->pm", weights, d_observation_values)

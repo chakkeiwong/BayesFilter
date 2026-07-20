@@ -353,6 +353,16 @@ def make_ssl_lstm_fixed_sgqf_components(
         observation_state_jacobian_fn=lambda points: ssl_lstm_observation_state_jacobian(params, points),
         d_observation_fn=lambda points: ssl_lstm_observation_parameter_derivative(params, points),
         name="ssl_lstm_fixed_sgqf_hand_derivatives",
+        transition_jvp_fn=lambda points, tangents: ssl_lstm_transition_state_jvp(
+            params,
+            points,
+            tangents,
+        ),
+        observation_jvp_fn=lambda points, tangents: ssl_lstm_observation_state_jvp(
+            params,
+            points,
+            tangents,
+        ),
     )
     cloud = tf_fixed_sgqf_cloud(dim=config.augmented_state_dim, sparse_level=sparse_level)
     protocol = build_expected_ssl_lstm_adapter_protocol(
@@ -497,6 +507,28 @@ def make_ssl_lstm_svd_ukf_components(
         observation_state_jacobian_fn=lambda points: ssl_lstm_observation_state_jacobian(params, points),
         d_observation_fn=lambda points: d_observation_fn(params, points),
         name="ssl_lstm_svd_ukf_hand_derivatives",
+        transition_jvp_fn=lambda previous, innovation, state_tangents, innovation_tangents: (
+            ssl_lstm_transition_state_jvp(params, previous, state_tangents)
+            + tf.concat(
+                [
+                    innovation_tangents,
+                    tf.zeros(
+                        [
+                            tf.shape(innovation_tangents)[0],
+                            tf.shape(innovation_tangents)[1],
+                            2 * h,
+                        ],
+                        dtype=tf.float64,
+                    ),
+                ],
+                axis=2,
+            )
+        ),
+        observation_jvp_fn=lambda points, tangents: ssl_lstm_observation_state_jvp(
+            params,
+            points,
+            tangents,
+        ),
     )
     protocol = build_expected_ssl_lstm_adapter_protocol(
         config,
@@ -668,6 +700,72 @@ def ssl_lstm_transition_state_jacobian(
     return jacobian
 
 
+def ssl_lstm_transition_state_jvp(
+    params: SSLLSTMConstrainedParameters,
+    points: tf.Tensor,
+    point_tangents: tf.Tensor,
+) -> tf.Tensor:
+    """Apply the transition state derivative without forming its Jacobian.
+
+    ``point_tangents`` has layout ``[direction, point, state]`` and the return
+    value has the same leading axes.
+    """
+
+    values = _as_points(points)
+    tangents = tf.convert_to_tensor(point_tangents, dtype=tf.float64)
+    if tangents.shape.rank != 3:
+        raise ValueError("SSL-LSTM point tangents must be rank three")
+    k = int(params.config.latent_dim)
+    h = int(params.config.hidden_dim)
+    n = int(params.config.augmented_state_dim)
+    if tangents.shape[-1] is not None and int(tangents.shape[-1]) != n:
+        raise ValueError("SSL-LSTM point tangent state dimension mismatch")
+
+    z_prev, a_prev, c_prev = _split_state(params, values)
+    d_z_prev = tangents[:, :, :k]
+    d_a_prev = tangents[:, :, k : k + h]
+    d_c_prev = tangents[:, :, k + h :]
+    gates = _gate_values(params, z_prev, a_prev, c_prev)
+    activation_derivatives = _gate_activation_derivatives(gates)
+    d_preactivation = (
+        tf.einsum("ghk,prk->prgh", params.lstm_input, d_z_prev)
+        + tf.einsum("ghj,prj->prgh", params.lstm_recurrent, d_a_prev)
+    )
+    d_input = (
+        activation_derivatives["input"][tf.newaxis, :, :]
+        * d_preactivation[:, :, _GATE_INDEX["input"], :]
+    )
+    d_forget = (
+        activation_derivatives["forget"][tf.newaxis, :, :]
+        * d_preactivation[:, :, _GATE_INDEX["forget"], :]
+    )
+    d_output = (
+        activation_derivatives["output"][tf.newaxis, :, :]
+        * d_preactivation[:, :, _GATE_INDEX["output"], :]
+    )
+    d_candidate = (
+        activation_derivatives["candidate"][tf.newaxis, :, :]
+        * d_preactivation[:, :, _GATE_INDEX["candidate"], :]
+    )
+    d_cell = (
+        d_forget * c_prev[tf.newaxis, :, :]
+        + gates["forget"][tf.newaxis, :, :] * d_c_prev
+        + d_input * gates["candidate"][tf.newaxis, :, :]
+        + gates["input"][tf.newaxis, :, :] * d_candidate
+    )
+    tanh_cell = tf.math.tanh(gates["cell"])
+    d_hidden = (
+        d_output * tanh_cell[tf.newaxis, :, :]
+        + gates["output"][tf.newaxis, :, :]
+        * (1.0 - tf.square(tanh_cell))[tf.newaxis, :, :]
+        * d_cell
+    )
+    d_latent = tf.einsum("kh,prh->prk", params.latent_weight, d_hidden)
+    result = tf.concat([d_latent, d_hidden, d_cell], axis=2)
+    result.set_shape([tangents.shape[0], tangents.shape[1], n])
+    return result
+
+
 def ssl_lstm_transition_parameter_derivative(
     params: SSLLSTMConstrainedParameters,
     points: tf.Tensor,
@@ -806,6 +904,31 @@ def ssl_lstm_observation_state_jacobian(
     return tf.broadcast_to(
         matrix[tf.newaxis, :, :],
         [point_count, params.config.observation_dim, k + 2 * h],
+    )
+
+
+def ssl_lstm_observation_state_jvp(
+    params: SSLLSTMConstrainedParameters,
+    points: tf.Tensor,
+    point_tangents: tf.Tensor,
+) -> tf.Tensor:
+    """Apply the linear observation state derivative matrix-free."""
+
+    values = _as_points(points)
+    tangents = tf.convert_to_tensor(point_tangents, dtype=tf.float64)
+    if tangents.shape.rank != 3:
+        raise ValueError("SSL-LSTM point tangents must be rank three")
+    if (
+        tangents.shape[1] is not None
+        and values.shape[0] is not None
+        and int(tangents.shape[1]) != int(values.shape[0])
+    ):
+        raise ValueError("SSL-LSTM point tangent point count mismatch")
+    k = int(params.config.latent_dim)
+    return tf.einsum(
+        "dk,prk->prd",
+        params.observation_weight,
+        tangents[:, :, :k],
     )
 
 
@@ -1036,10 +1159,12 @@ __all__ = [
     "make_ssl_lstm_svd_ukf_components",
     "ssl_lstm_observation",
     "ssl_lstm_observation_parameter_derivative",
+    "ssl_lstm_observation_state_jvp",
     "ssl_lstm_observation_state_jacobian",
     "ssl_lstm_parameter_slices",
     "ssl_lstm_transition",
     "ssl_lstm_transition_parameter_derivative",
+    "ssl_lstm_transition_state_jvp",
     "ssl_lstm_transition_state_jacobian",
     "tf_ssl_lstm_fixed_sgqf_score",
     "tf_ssl_lstm_svd_ukf_score",
