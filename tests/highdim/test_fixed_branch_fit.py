@@ -885,6 +885,47 @@ def test_scaled_augmented_ridge_predictions_are_column_rescaling_invariant():
     )
 
 
+def test_stable_overdetermined_lstsq_custom_gradient_matches_directional_fd():
+    matrix = tf.constant(
+        [
+            [1.0, -0.5],
+            [1.0, 0.0],
+            [1.0, 0.75],
+            [1.0, 1.25],
+        ],
+        dtype=tf.float64,
+    )
+    rhs = tf.constant([[0.2], [0.8], [1.1], [1.9]], dtype=tf.float64)
+    dot_matrix = tf.constant(
+        [[0.03, -0.02], [-0.01, 0.04], [0.02, 0.01], [-0.04, 0.02]],
+        dtype=tf.float64,
+    )
+    dot_rhs = tf.constant([[0.01], [-0.02], [0.03], [0.02]], dtype=tf.float64)
+    output_weight = tf.constant([[0.7], [-0.4]], dtype=tf.float64)
+
+    with tf.GradientTape() as tape:
+        tape.watch((matrix, rhs))
+        solution = fitting._stable_overdetermined_lstsq(matrix, rhs)
+        scalar = tf.reduce_sum(output_weight * solution)
+    grad_matrix, grad_rhs = tape.gradient(scalar, (matrix, rhs))
+    analytic = tf.reduce_sum(grad_matrix * dot_matrix) + tf.reduce_sum(
+        grad_rhs * dot_rhs
+    )
+
+    h = tf.constant(1e-5, dtype=tf.float64)
+    plus = fitting._stable_overdetermined_lstsq(
+        matrix + h * dot_matrix,
+        rhs + h * dot_rhs,
+    )
+    minus = fitting._stable_overdetermined_lstsq(
+        matrix - h * dot_matrix,
+        rhs - h * dot_rhs,
+    )
+    finite_difference = tf.reduce_sum(output_weight * (plus - minus)) / (2.0 * h)
+
+    tf.debugging.assert_near(analytic, finite_difference, atol=2e-9, rtol=2e-8)
+
+
 @pytest.mark.parametrize(
     ("design", "target", "weights", "ridge", "match"),
     [

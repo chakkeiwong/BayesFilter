@@ -62,6 +62,17 @@ V1_PUBLIC_SYMBOLS = {
 
 
 COMMON_INFERENCE_RUNTIME_SYMBOLS = {
+    "InvalidNeuTraBatchTarget",
+    "NeuTraBatchTargetBinding",
+    "NEUTRA_BATCHING_SCHEMA",
+    "batch_native_value_status_target_fn",
+    "bind_batch_native_neutra_target",
+    "require_batch_native_neutra_target",
+    "NeuTraTrainingError",
+    "PlainDenseIAFTrainingConfig",
+    "PlainDenseIAFTrainingResult",
+    "PlainDenseIAFTransport",
+    "train_plain_dense_iaf",
     "CandidateResult",
     "BackendParityGate",
     "BackendParityResult",
@@ -271,5 +282,31 @@ def test_top_level_import_does_not_import_tensorflow_until_symbol_resolution() -
     )
     assert result.stdout.strip() == (
         '{"has_all": true, "tensorflow": false, '
+        '"tensorflow_probability": false}'
+    )
+
+
+def test_inference_package_import_remains_lazy() -> None:
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = "-1"
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
+    code = (
+        "import json, sys; "
+        "import bayesfilter.inference as inference; "
+        "print(json.dumps({"
+        "'tensorflow': 'tensorflow' in sys.modules, "
+        "'tensorflow_probability': 'tensorflow_probability' in sys.modules, "
+        "'has_training_symbol': 'train_plain_dense_iaf' in inference.__all__"
+        "}, sort_keys=True))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        check=True,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip() == (
+        '{"has_training_symbol": true, "tensorflow": false, '
         '"tensorflow_probability": false}'
     )

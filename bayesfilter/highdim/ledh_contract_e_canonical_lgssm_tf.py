@@ -1270,6 +1270,7 @@ def _canonical_fused_step_core(
     row_chunk_size: int,
     col_chunk_size: int,
     execute_contract_e: bool,
+    cache_same_cloud_geometry: bool = False,
 ) -> dict[str, tf.Tensor]:
     """Advance one finite LGSSM value/score step with shared primal state."""
 
@@ -1381,6 +1382,7 @@ def _canonical_fused_step_core(
             balance_steps=balance_steps,
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
+            cache_same_cloud_geometry=cache_same_cloud_geometry,
         )
         quotient = contract_e["quotient"]
         reset = contract_e["reset"]
@@ -1485,6 +1487,7 @@ def _canonical_fused_loop_core(
     row_chunk_size: int,
     col_chunk_size: int,
     execute_contract_e: bool,
+    cache_same_cloud_geometry: bool = False,
 ) -> dict[str, tf.Tensor]:
     """Evaluate value and total score with one functional time recursion."""
 
@@ -1576,6 +1579,7 @@ def _canonical_fused_loop_core(
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
             execute_contract_e=execute_contract_e,
+            cache_same_cloud_geometry=cache_same_cloud_geometry,
         )
         active = prepared["fixed_reset_mask"][:, time_index]
         active_mass = tf.where(
@@ -1730,6 +1734,7 @@ def canonical_value_and_score_core(
     balance_steps: int,
     row_chunk_size: int,
     col_chunk_size: int,
+    cache_same_cloud_geometry: bool = False,
 ) -> dict[str, tf.Tensor]:
     if balance_steps <= 0:
         raise ValueError("canonical balance_steps must be positive")
@@ -1741,6 +1746,7 @@ def canonical_value_and_score_core(
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
         execute_contract_e=True,
+        cache_same_cloud_geometry=cache_same_cloud_geometry,
     )
 
 
@@ -1753,6 +1759,7 @@ def make_canonical_value_and_score_tf(
     col_chunk_size: int,
     jit_compile: bool = True,
     dtype: tf.dtypes.DType = DTYPE,
+    cache_same_cloud_geometry: bool = False,
 ):
     """Bind fixed prepared inputs into the one admissible value-and-score graph."""
 
@@ -1788,6 +1795,77 @@ def make_canonical_value_and_score_tf(
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
             execute_contract_e=execute_contract_e,
+            cache_same_cloud_geometry=cache_same_cloud_geometry,
+        )
+
+    return value_and_score
+
+
+def make_canonical_prepared_value_and_score_tf(
+    *,
+    batch_size: int,
+    time_steps: int,
+    num_particles: int,
+    steps: int,
+    balance_steps: int,
+    row_chunk_size: int,
+    col_chunk_size: int,
+    jit_compile: bool = True,
+    dtype: tf.dtypes.DType = DTYPE,
+    cache_same_cloud_geometry: bool = False,
+):
+    """Compile the canonical route once for fixed-shape prepared seed batches."""
+
+    if min(
+        batch_size,
+        time_steps,
+        num_particles,
+        steps,
+        balance_steps,
+        row_chunk_size,
+        col_chunk_size,
+    ) <= 0:
+        raise ValueError("canonical prepared-route dimensions and controls must be positive")
+    dtype = _canonical_dtype(dtype)
+    validate_transport_chunks(
+        num_particles,
+        row_chunk_size=row_chunk_size,
+        col_chunk_size=col_chunk_size,
+    )
+    prepared_signature = {
+        "observations": tf.TensorSpec([time_steps, OBSERVATION_DIMENSION], dtype),
+        "initial_noise": tf.TensorSpec(
+            [batch_size, num_particles, STATE_DIMENSION], dtype
+        ),
+        "transition_noise": tf.TensorSpec(
+            [batch_size, time_steps, num_particles, STATE_DIMENSION], dtype
+        ),
+        "fixed_reset_mask": tf.TensorSpec([batch_size, time_steps], tf.bool),
+        "residual_design": tf.TensorSpec(
+            [batch_size, time_steps, num_particles, STATE_DIMENSION], dtype
+        ),
+        "prepared_ridge": tf.TensorSpec([batch_size, time_steps], dtype),
+        "epsilon": tf.TensorSpec([], dtype),
+        "scaling": tf.TensorSpec([], dtype),
+    }
+
+    @tf.function(
+        input_signature=[tf.TensorSpec([PARAMETER_COUNT], dtype), prepared_signature],
+        jit_compile=jit_compile,
+        reduce_retracing=True,
+    )
+    def value_and_score(
+        theta: tf.Tensor, prepared: Mapping[str, tf.Tensor]
+    ) -> dict[str, tf.Tensor]:
+        return _canonical_fused_loop_core(
+            theta,
+            prepared,
+            steps=steps,
+            balance_steps=balance_steps,
+            row_chunk_size=row_chunk_size,
+            col_chunk_size=col_chunk_size,
+            execute_contract_e=True,
+            cache_same_cloud_geometry=cache_same_cloud_geometry,
         )
 
     return value_and_score
@@ -1800,5 +1878,6 @@ __all__ = [
     "PARAMETER_NAMES",
     "STATE_DIMENSION",
     "canonical_value_and_score_core",
+    "make_canonical_prepared_value_and_score_tf",
     "make_canonical_value_and_score_tf",
 ]

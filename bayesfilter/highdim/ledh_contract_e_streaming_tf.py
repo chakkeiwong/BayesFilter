@@ -27,6 +27,7 @@ from experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf impo
     _filterflow_streaming_transport_from_potentials,
     _filterflow_streaming_transport_from_potentials_jvp,
     _filterflow_streaming_transport_from_potentials_vjp,
+    _filterflow_cached_same_cloud_softmin_jvp,
     _half_pairwise_squared_cross_jvp,
     _pairwise_squared_cross,
     _slice_axis1_padded_2d,
@@ -213,8 +214,9 @@ def _balanced_transport_forward_jvp_state_core(
     balance_steps: int = 0,
     row_chunk_size: int,
     col_chunk_size: int,
+    cache_same_cloud_geometry: bool = False,
 ) -> dict[str, tf.Tensor]:
-    """Build one shared primal/JVP OT state for an exact one-tile traversal."""
+    """Build one shared primal/JVP OT state from one fixed potential solve."""
 
     particle_count = scaled_geometry.shape[1]
     if particle_count is None:
@@ -224,14 +226,33 @@ def _balanced_transport_forward_jvp_state_core(
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
     )
-    if row_chunk_size != int(particle_count) or col_chunk_size != int(particle_count):
-        raise ValueError("shared same-pass marginal state currently requires K=N")
+    dense_single_block = (
+        row_chunk_size == int(particle_count)
+        and col_chunk_size == int(particle_count)
+    )
+    if cache_same_cloud_geometry and not dense_single_block:
+        raise ValueError("same-cloud geometry cache requires a one-block K=N scope")
     dtype = scaled_geometry.dtype
     float_n = tf.cast(particle_count, dtype)
     uniform_log_weight = -tf.math.log(float_n) * tf.ones_like(
         normalized_log_weights
     )
     uniform_tangent = tf.zeros_like(normalized_log_weights_tangent)
+    pairwise_cost = (
+        0.5 * _pairwise_squared_cross(scaled_geometry, scaled_geometry)
+        if cache_same_cloud_geometry
+        else None
+    )
+    pairwise_cost_tangent = (
+        _half_pairwise_squared_cross_jvp(
+            scaled_geometry,
+            scaled_geometry,
+            scaled_geometry_tangent,
+            scaled_geometry_tangent,
+        )
+        if cache_same_cloud_geometry
+        else None
+    )
     (
         initial_row_potential,
         column_potential,
@@ -253,6 +274,8 @@ def _balanced_transport_forward_jvp_state_core(
         steps=steps,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
+        cached_pairwise_cost=pairwise_cost,
+        cached_pairwise_cost_tangent=pairwise_cost_tangent,
     )
     row_potential, row_potential_tangent = (
         _filterflow_streaming_terminal_balance_potential_jvp(
@@ -266,15 +289,84 @@ def _balanced_transport_forward_jvp_state_core(
             balance_steps=balance_steps,
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
+            cached_pairwise_cost=pairwise_cost,
+            cached_pairwise_cost_tangent=pairwise_cost_tangent,
         )
     )
+    if not dense_single_block:
+        (
+            payload_numerator,
+            payload_numerator_tangent,
+            row_mass,
+            row_mass_tangent,
+        ) = (
+            _filterflow_streaming_transport_from_potentials_jvp(
+                scaled_geometry,
+                payload[:, :, :-1],
+                row_potential,
+                column_potential,
+                epsilon,
+                normalized_log_weights,
+                float_n,
+                scaled_geometry_tangent,
+                payload_tangent[:, :, :-1, :],
+                row_potential_tangent,
+                column_potential_tangent,
+                normalized_log_weights_tangent,
+                row_chunk_size=row_chunk_size,
+                col_chunk_size=col_chunk_size,
+                return_mass_state=True,
+            )
+        )
+        augmented_numerator = tf.concat(
+            [payload_numerator, row_mass[:, :, None]], axis=2
+        )
+        augmented_tangent = tf.concat(
+            [payload_numerator_tangent, row_mass_tangent[:, :, None, :]],
+            axis=2,
+        )
+        column_mass, post_quotient_column_mass = (
+            _streaming_column_masses_from_potentials_core(
+                scaled_geometry,
+                normalized_log_weights,
+                row_mass,
+                row_potential,
+                column_potential,
+                epsilon,
+                row_chunk_size=row_chunk_size,
+                col_chunk_size=col_chunk_size,
+            )
+        )
+        return {
+            "augmented_numerator": augmented_numerator,
+            "augmented_tangent": augmented_tangent,
+            "row_potential": row_potential,
+            "column_potential": column_potential,
+            "row_potential_tangent": row_potential_tangent,
+            "column_potential_tangent": column_potential_tangent,
+            "column_mass": column_mass,
+            "post_quotient_column_mass": post_quotient_column_mass,
+            "sinkhorn_state_constructions": tf.ones([], tf.int32),
+            "terminal_balance_state_constructions": tf.ones([], tf.int32),
+            "transport_tile_sweeps": tf.ones([], tf.int32),
+            "marginal_tile_sweeps": tf.ones([], tf.int32),
+            "diagnostic_solver_reconstructions": tf.zeros([], tf.int32),
+        }
     epsilon = tf.reshape(tf.cast(epsilon, dtype), [-1])
-    cost = 0.5 * _pairwise_squared_cross(scaled_geometry, scaled_geometry)
-    cost_tangent = _half_pairwise_squared_cross_jvp(
-        scaled_geometry,
-        scaled_geometry,
-        scaled_geometry_tangent,
-        scaled_geometry_tangent,
+    cost = (
+        pairwise_cost
+        if pairwise_cost is not None
+        else 0.5 * _pairwise_squared_cross(scaled_geometry, scaled_geometry)
+    )
+    cost_tangent = (
+        pairwise_cost_tangent
+        if pairwise_cost_tangent is not None
+        else _half_pairwise_squared_cross_jvp(
+            scaled_geometry,
+            scaled_geometry,
+            scaled_geometry_tangent,
+            scaled_geometry_tangent,
+        )
     )
     logits = (
         row_potential[:, :, None]
@@ -890,6 +982,7 @@ def _streaming_row_quotient_forward_jvp_core(
     balance_steps: int = 0,
     row_chunk_size: int,
     col_chunk_size: int,
+    cache_same_cloud_geometry: bool = False,
 ) -> dict[str, tf.Tensor]:
     """Return quotient value, JVP, and marginals from one shared OT state."""
 
@@ -908,6 +1001,7 @@ def _streaming_row_quotient_forward_jvp_core(
         balance_steps=balance_steps,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
+        cache_same_cloud_geometry=cache_same_cloud_geometry,
     )
     augmented_numerator = state["augmented_numerator"]
     augmented_tangent = state["augmented_tangent"]
@@ -1195,6 +1289,7 @@ def _contract_e_streaming_forward_jvp_core(
     balance_steps: int = 0,
     row_chunk_size: int,
     col_chunk_size: int,
+    cache_same_cloud_geometry: bool = False,
 ) -> dict[str, Any]:
     """Evaluate canonical Contract E value and all tangents from shared state."""
 
@@ -1213,6 +1308,7 @@ def _contract_e_streaming_forward_jvp_core(
         balance_steps=balance_steps,
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
+        cache_same_cloud_geometry=cache_same_cloud_geometry,
     )
     reset = _contract_e_chol_cloud_forward_core(
         source_particles,

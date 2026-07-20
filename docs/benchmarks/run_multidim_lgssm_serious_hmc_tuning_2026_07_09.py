@@ -10,6 +10,7 @@ delegate tuning decisions to an agent.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -25,6 +26,7 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "1")
 
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,6 +53,15 @@ XLA_SCORE_SCHEMA = "bayesfilter.deterministic_lgssm_hmc_tuning_xla_score_gate.v1
 GEOMETRY_SCHEMA = "bayesfilter.deterministic_lgssm_hmc_tuning_geometry.v1"
 MASS_SCHEMA = "bayesfilter.deterministic_lgssm_hmc_tuning_mass.v1"
 KERNEL_TUNING_SCHEMA = "bayesfilter.deterministic_lgssm_hmc_tuning_kernel.v1"
+FINAL_RECOVERY_SCHEMA = (
+    "bayesfilter.deterministic_lgssm_hmc_final_recovery_result.v1"
+)
+PRIVATE_TUNING_REPLAY_SCHEMA = (
+    "bayesfilter.deterministic_lgssm_hmc_private_tuning_replay.v1"
+)
+PRIVATE_TUNING_REPLAY_REFERENCE_SCHEMA = (
+    "bayesfilter.deterministic_lgssm_hmc_private_tuning_replay_reference.v1"
+)
 TARGET_SCOPE = "bayesfilter_multidim_lower_triangular_lgssm_t120_hmc_2026_07_09"
 DEFAULT_CONFIG_PATH = (
     ROOT / "docs/benchmarks/configs/multidim_lgssm_serious_hmc_tuning_2026_07_09.json"
@@ -111,12 +122,28 @@ class DeterministicLGSSMHMCConfig:
         return ROOT / self.payload["artifact_paths"]["kernel_tuning"]
 
     @property
+    def private_tuning_replay_path(self) -> Path:
+        return self.artifact_root / "private_diagnostics" / "kernel_tuning_replay.json"
+
+    @property
     def artifact_root(self) -> Path:
         return ROOT / self.payload["artifact_paths"]["root"]
 
     @property
     def source_contract_path(self) -> Path:
         return ROOT / self.payload["source_contract"]["path"]
+
+    @property
+    def final_result_path(self) -> Path:
+        return ROOT / self.payload["artifact_paths"]["final_result"]
+
+    @property
+    def no_overwrite(self) -> bool:
+        return bool(
+            self.payload.get("execution_policy", {}).get(
+                "artifact_no_overwrite", False
+            )
+        )
 
     def validate_fixture_stage(self) -> None:
         if self.horizon != 120:
@@ -522,6 +549,43 @@ def build_kernel_tuning(config: DeterministicLGSSMHMCConfig) -> Mapping[str, Any
         output_dir=config.artifact_root / "kernel_tuning_public",
     )
     elapsed_s = time.perf_counter() - start
+    private_replay_reference: Mapping[str, Any] = {
+        "schema": PRIVATE_TUNING_REPLAY_REFERENCE_SCHEMA,
+        "available": False,
+        "reason": "tuning_result_not_passed",
+        "path_publicized": False,
+        "hmc_mechanics_publicized": False,
+        "mass_arrays_publicized": False,
+    }
+    if result.passed:
+        private_replay = build_private_tuning_replay_payload(
+            config=config,
+            result=result,
+            fixture=fixture,
+            xla_gate=xla_gate,
+            geometry=geometry,
+            mass=mass,
+        )
+        write_json(
+            private_replay,
+            config.private_tuning_replay_path,
+            overwrite=not config.no_overwrite,
+        )
+        private_replay_file_sha256 = file_sha256(config.private_tuning_replay_path)
+        private_replay_reference = {
+            "schema": PRIVATE_TUNING_REPLAY_REFERENCE_SCHEMA,
+            "available": True,
+            "artifact_hash": private_replay["artifact_hash"],
+            "file_sha256": private_replay_file_sha256,
+            "byte_count": config.private_tuning_replay_path.stat().st_size,
+            "private_loop_final_kernel_hash": private_replay[
+                "private_loop_final_kernel_hash"
+            ],
+            "public_final_kernel_hash": private_replay["public_final_kernel_hash"],
+            "path_publicized": False,
+            "hmc_mechanics_publicized": False,
+            "mass_arrays_publicized": False,
+        }
     tuner_payload = result.payload(include_internal_diagnostics=False)
     final_kernel_payload = result.final_kernel_payload
     final_kernel_hash = result.final_kernel_hash
@@ -578,6 +642,8 @@ def build_kernel_tuning(config: DeterministicLGSSMHMCConfig) -> Mapping[str, Any
         "repair_triggers": result.repair_triggers,
         "final_kernel_payload": final_kernel_payload,
         "final_kernel_hash": final_kernel_hash,
+        "private_replay_reference": private_replay_reference,
+        "final_kernel_requires_serious_sampling_pass": True,
         "passed": passed,
         "vetoes": vetoes,
         "metric_roles": {
@@ -585,6 +651,7 @@ def build_kernel_tuning(config: DeterministicLGSSMHMCConfig) -> Mapping[str, Any
             "xla_confirmed": "veto_diagnostic",
             "hard_vetoes": "veto_diagnostic",
             "final_kernel_payload": "veto_if_missing",
+            "final_kernel_requires_serious_sampling_pass": "boundary_nonclaim",
             "final_status": "veto_diagnostic",
             "repair_triggers": "explanatory_only",
             "elapsed_seconds": "explanatory_only",
@@ -601,6 +668,343 @@ def build_kernel_tuning(config: DeterministicLGSSMHMCConfig) -> Mapping[str, Any
     normalized = json_ready(payload)
     normalized["artifact_hash"] = f"sha256:{stable_config_hash(normalized)}"
     return normalized
+
+
+def build_private_tuning_replay_payload(
+    *,
+    config: DeterministicLGSSMHMCConfig,
+    result: Any,
+    fixture: Mapping[str, Any],
+    xla_gate: Mapping[str, Any],
+    geometry: Mapping[str, Any],
+    mass: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Build the ignored replay payload consumed by retained Phase 7 HMC."""
+
+    loop = result.tune_verify_repair_loop
+    if result.passed is not True or result.final_status != "passed":
+        raise ValueError("private replay requires a passed tuning result")
+    if result.hard_vetoes:
+        raise ValueError("private replay rejects hard-vetoed tuning results")
+    if loop is None or loop.passed is not True or loop.final_kernel_payload is None:
+        raise ValueError("private replay requires a passed private tuning loop")
+    if loop.final_kernel_hash is None:
+        raise ValueError("private replay requires a private loop kernel hash")
+
+    tuning_payload = dict(result.payload(include_internal_diagnostics=True))
+    tuning_payload["tune_verify_repair_loop"] = loop.payload(
+        include_final_mass_arrays=True
+    )
+    private_final = tuning_payload["tune_verify_repair_loop"]["final_kernel_payload"]
+    if not isinstance(private_final, Mapping):
+        raise ValueError("private replay final kernel payload is missing")
+    required_private_fields = {
+        "adapted_mass_artifact_payload",
+        "step_size",
+        "num_leapfrog_steps",
+    }
+    missing = sorted(required_private_fields.difference(private_final))
+    if missing:
+        raise ValueError(f"private replay final kernel fields missing: {missing}")
+    payload = {
+        "schema": PRIVATE_TUNING_REPLAY_SCHEMA,
+        "config_hash": config.hash,
+        "fixture_hash": fixture["artifact_hash"],
+        "xla_compile_hash": xla_gate["artifact_hash"],
+        "geometry_hash": geometry["artifact_hash"],
+        "mass_hash": mass["artifact_hash"],
+        "target_scope": TARGET_SCOPE,
+        "adapter_signature": result.adapter_signature,
+        "public_final_kernel_hash": result.final_kernel_hash,
+        "private_loop_final_kernel_hash": loop.final_kernel_hash,
+        "selected_step_hash": private_final["selected_step_hash"],
+        "selected_trajectory_hash": private_final["selected_trajectory_hash"],
+        "tuning_payload": tuning_payload,
+        "private_replay_payload": True,
+        "public_reconstruction_api": False,
+        "nonclaims": (
+            "private exact frozen-kernel replay payload only",
+            "not posterior convergence evidence",
+            "not posterior recovery evidence",
+            "not sampler superiority evidence",
+            "not production or default readiness evidence",
+        ),
+    }
+    normalized = json_ready(payload)
+    normalized["artifact_hash"] = f"sha256:{stable_config_hash(normalized)}"
+    return normalized
+
+
+def build_final_recovery(
+    config: DeterministicLGSSMHMCConfig,
+    *,
+    phase7_config_path: str | Path,
+) -> Mapping[str, Any]:
+    """Independently verify retained samples and evaluate fixture recovery."""
+
+    from bayesfilter.inference.hmc_convergence import (
+        RankNormalizedHMCThresholds,
+        rank_normalized_hmc_diagnostics,
+    )
+    from bayesfilter.testing.deterministic_lgssm_hmc_phase7_tf import (
+        PHASE7_CONFIG_SCHEMA_V3,
+        DeterministicLGSSMPhase7Config,
+        validate_phase7_v3_inputs,
+    )
+
+    phase7 = DeterministicLGSSMPhase7Config.load(phase7_config_path)
+    if phase7.payload.get("schema") != PHASE7_CONFIG_SCHEMA_V3:
+        raise ValueError("final recovery requires the fresh Phase 7 V3 config")
+    if phase7.payload["source_tuning_config_hash"] != config.hash:
+        raise ValueError("final recovery tuning/Phase 7 config mismatch")
+    if phase7.artifact_root.resolve() != config.artifact_root.resolve():
+        raise ValueError("final recovery artifact-root mismatch")
+    preflight = validate_phase7_v3_inputs(
+        phase7,
+        require_fresh_outputs=False,
+    )
+    terminal_path = phase7.artifact_path("public_result")
+    private_path = phase7.artifact_path("private_retained_samples")
+    terminal = load_json(terminal_path)
+    if terminal.get("passed") is not True or terminal.get("smoke") is not False:
+        raise ValueError("final recovery requires a passing serious terminal result")
+    if terminal.get("config_hash") != phase7.hash:
+        raise ValueError("serious terminal config hash mismatch")
+    expected_replay_hash = phase7.payload["governed_source_references"][
+        "private_replay"
+    ]["artifact_hash"]
+    with np.load(private_path, allow_pickle=False) as archive:
+        retained = np.asarray(archive["retained_raw_samples"], dtype=np.float64)
+        final_states = np.asarray(archive["final_worker_states"], dtype=np.float64)
+        archive_config_hash = str(archive["config_hash"].item())
+        archive_replay_hash = str(archive["private_replay_hash"].item())
+    if retained.ndim != 3 or retained.shape[1:] != (4, 18):
+        raise ValueError("retained archive must have shape [draw, 4, 18]")
+    if retained.shape[0] != int(terminal["retained_results_per_chain"]):
+        raise ValueError("retained archive draw count disagrees with terminal result")
+    if final_states.shape != (2, 2, 18):
+        raise ValueError("retained archive final worker-state shape mismatch")
+    if not np.all(np.isfinite(retained)) or not np.all(np.isfinite(final_states)):
+        raise ValueError("retained archive contains nonfinite values")
+    if archive_config_hash != phase7.hash or archive_replay_hash != expected_replay_hash:
+        raise ValueError("retained archive provenance mismatch")
+    private_file_sha256 = file_sha256(private_path)
+    private_reference = terminal.get("private_retained_sample_reference")
+    if not isinstance(private_reference, Mapping) or (
+        private_reference.get("file_sha256") != private_file_sha256
+        or int(private_reference.get("byte_count", -1)) != private_path.stat().st_size
+        or private_reference.get("shape_verified") is not True
+        or private_reference.get("finite_verified") is not True
+        or private_reference.get("provenance_verified") is not True
+    ):
+        raise ValueError("retained archive terminal reference mismatch")
+    parameter_names = tuple(config.payload["model"]["parameter_names"])
+    gate = config.payload["final_recovery_gate"]
+    thresholds = RankNormalizedHMCThresholds(
+        rhat_max=float(gate["r_hat_threshold"]),
+        bulk_ess_min=float(gate["bulk_ess_min_per_parameter"]),
+        tail_ess_min=float(gate["tail_ess_min_per_parameter"]),
+    )
+    diagnostics = rank_normalized_hmc_diagnostics(
+        retained,
+        parameter_names=parameter_names,
+        thresholds=thresholds,
+    )
+    terminal_diagnostics = terminal.get("final_diagnostics")
+    diagnostics_agree = _convergence_diagnostics_agree(
+        diagnostics,
+        terminal_diagnostics,
+    )
+    if not diagnostics_agree:
+        raise ValueError("recomputed diagnostics disagree with serious terminal result")
+    fixture = load_json(config.fixture_path)
+    truth = np.asarray(fixture["raw_truth"], dtype=np.float64)
+    if truth.shape != (18,) or not np.all(np.isfinite(truth)):
+        raise ValueError("fixture raw truth is invalid")
+    pooled = retained.reshape(-1, retained.shape[-1])
+    posterior_mean = np.mean(pooled, axis=0)
+    posterior_sd = np.std(pooled, axis=0, ddof=1)
+    quantiles = np.quantile(pooled, [0.05, 0.50, 0.95], axis=0, method="linear")
+    diagnostic_rows = {
+        str(row["parameter"]): row for row in diagnostics["parameter_diagnostics"]
+    }
+    half = retained.shape[0] // 2
+    split_raw = np.reshape(
+        np.stack((retained[:half], retained[-half:]), axis=2),
+        (half, 2 * retained.shape[1], retained.shape[2]),
+    )
+    mean_ess = np.asarray(
+        tfp.mcmc.effective_sample_size(
+            tf.convert_to_tensor(split_raw, dtype=tf.float64),
+            filter_beyond_positive_pairs=True,
+            cross_chain_dims=1,
+        ).numpy(),
+        dtype=np.float64,
+    )
+    if mean_ess.shape != (18,) or not np.all(np.isfinite(mean_ess)) or np.any(
+        mean_ess <= 0.0
+    ):
+        raise ValueError("raw-mean ESS is nonfinite or invalid")
+    prior_scales = geometry_scale_from_config(config)
+    max_z = float(gate["truth_distance_max_abs_z"])
+    rows = []
+    for index, name in enumerate(parameter_names):
+        sd = float(posterior_sd[index])
+        mean_mcse = sd / np.sqrt(float(mean_ess[index]))
+        recovery_z = (
+            abs(float(posterior_mean[index]) - float(truth[index])) / sd
+            if sd > 0.0
+            else float("inf")
+        )
+        rows.append(
+            {
+                "parameter": name,
+                "truth": float(truth[index]),
+                "posterior_mean": float(posterior_mean[index]),
+                "posterior_sd": sd,
+                "mean_mcse": float(mean_mcse),
+                "mean_ess": float(mean_ess[index]),
+                "mean_mcse_definition": (
+                    "posterior_sd / sqrt(split-chain cross-chain ESS of raw draws)"
+                ),
+                "q05": float(quantiles[0, index]),
+                "q50": float(quantiles[1, index]),
+                "q95": float(quantiles[2, index]),
+                "abs_mean_minus_truth_over_sd": float(recovery_z),
+                "prior_sd": float(prior_scales[index]),
+                "posterior_to_prior_sd_ratio": float(sd / prior_scales[index]),
+                "convergence_passed": bool(diagnostic_rows[name]["passed"]),
+                "recovery_passed": bool(
+                    np.isfinite(sd)
+                    and sd > 0.0
+                    and np.isfinite(mean_mcse)
+                    and np.isfinite(recovery_z)
+                    and recovery_z <= max_z
+                ),
+            }
+        )
+    recovery_passed = all(row["recovery_passed"] for row in rows)
+    passed = bool(
+        diagnostics["passed"]
+        and diagnostics_agree
+        and recovery_passed
+        and not diagnostics.get("hard_vetoes")
+    )
+    payload = {
+        "schema": FINAL_RECOVERY_SCHEMA,
+        "stage": "final_recovery",
+        "passed": passed,
+        "decision": (
+            "PASS_SINGLE_FIXTURE_FULL_ESTIMATION_RECOVERY_SCREEN"
+            if passed
+            else "FAIL_SINGLE_FIXTURE_FULL_ESTIMATION_RECOVERY_SCREEN"
+        ),
+        "config_path": str(config.path.resolve().relative_to(ROOT)),
+        "config_hash": config.hash,
+        "phase7_config_path": str(Path(phase7_config_path).resolve().relative_to(ROOT)),
+        "phase7_config_hash": phase7.hash,
+        "phase7_terminal_path": str(terminal_path.relative_to(ROOT)),
+        "phase7_terminal_artifact_hash": terminal.get("artifact_hash"),
+        "preflight_artifact_hash": preflight["artifact_hash"],
+        "private_retained_samples": {
+            "file_sha256": private_file_sha256,
+            "byte_count": private_path.stat().st_size,
+            "shape": tuple(int(item) for item in retained.shape),
+            "config_hash_verified": True,
+            "private_replay_hash_verified": True,
+            "terminal_reference_verified": True,
+            "all_finite": True,
+        },
+        "diagnostics": diagnostics,
+        "terminal_diagnostics_agree": diagnostics_agree,
+        "recovery_threshold_max_abs_z": max_z,
+        "parameter_recovery": tuple(rows),
+        "max_abs_mean_minus_truth_over_sd": max(
+            row["abs_mean_minus_truth_over_sd"] for row in rows
+        ),
+        "all_parameter_recovery_passed": recovery_passed,
+        "metric_roles": {
+            "diagnostics": "promotion_and_veto_criterion",
+            "parameter_recovery": "single_fixture_recovery_screen",
+            "posterior_to_prior_sd_ratio": "explanatory_only",
+            "mean_mcse": "explanatory_uncertainty_diagnostic",
+        },
+        "nonclaims": (
+            "single deterministic synthetic-fixture recovery screen only",
+            "not calibrated coverage evidence",
+            "not estimator generality or robustness evidence",
+            "not sampler superiority evidence",
+            "not GPU, production, or default readiness evidence",
+        ),
+    }
+    normalized = json_ready(payload)
+    normalized["artifact_hash"] = f"sha256:{stable_config_hash(normalized)}"
+    return normalized
+
+
+def _convergence_diagnostics_agree(
+    recomputed: Mapping[str, Any],
+    terminal: Any,
+    *,
+    atol: float = 1e-12,
+) -> bool:
+    if not isinstance(terminal, Mapping):
+        return False
+    exact_fields = (
+        "schema",
+        "passed",
+        "input_all_finite",
+        "diagnostics_all_finite",
+        "draw_count_per_chain",
+        "chain_count",
+        "parameter_count",
+        "split_draw_count_per_chain",
+        "split_chain_count",
+    )
+    if any(recomputed.get(name) != terminal.get(name) for name in exact_fields):
+        return False
+    if recomputed.get("definitions") != terminal.get("definitions") or (
+        tuple(recomputed.get("hard_vetoes", ()))
+        != tuple(terminal.get("hard_vetoes", ()))
+    ):
+        return False
+    for name in ("max_rhat", "min_bulk_ess", "min_tail_ess"):
+        if not np.isclose(
+            float(recomputed[name]),
+            float(terminal.get(name, float("nan"))),
+            rtol=0.0,
+            atol=atol,
+        ):
+            return False
+    left_rows = recomputed.get("parameter_diagnostics", ())
+    right_rows = terminal.get("parameter_diagnostics", ())
+    if len(left_rows) != len(right_rows):
+        return False
+    numeric_fields = (
+        "rank_normalized_split_rhat",
+        "folded_rank_normalized_split_rhat",
+        "rhat",
+        "bulk_ess",
+        "tail_ess",
+        "lower_tail_ess",
+        "upper_tail_ess",
+    )
+    for left, right in zip(left_rows, right_rows, strict=True):
+        if left.get("parameter") != right.get("parameter") or left.get(
+            "passed"
+        ) != right.get("passed"):
+            return False
+        if any(
+            not np.isclose(
+                float(left[name]),
+                float(right.get(name, float("nan"))),
+                rtol=0.0,
+                atol=atol,
+            )
+            for name in numeric_fields
+        ):
+            return False
+    return True
 
 
 def kernel_tuning_config_from_config(
@@ -1089,12 +1493,27 @@ def fixture_diagnostics(
     }
 
 
-def write_json(payload: Mapping[str, Any], path: Path) -> None:
+def write_json(
+    payload: Mapping[str, Any],
+    path: Path,
+    *,
+    overwrite: bool = True,
+) -> None:
+    if not overwrite and path.exists():
+        raise FileExistsError(f"refusing to overwrite artifact: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(json_ready(payload), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    mode = "w" if overwrite else "x"
+    with path.open(mode, encoding="utf-8") as handle:
+        json.dump(json_ready(payload), handle, indent=2, sort_keys=True)
+        handle.write("\n")
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def json_ready(value: Any) -> Any:
@@ -1135,7 +1554,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--stage",
-        choices=("fixture", "xla_score", "geometry_mass", "kernel_tuning"),
+        choices=(
+            "fixture",
+            "xla_score",
+            "geometry_mass",
+            "kernel_tuning",
+            "burnin_sampling",
+            "final_recovery",
+        ),
         default="fixture",
         help="Driver stage to execute.",
     )
@@ -1145,6 +1571,23 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Optional output path override for fixture stage.",
     )
+    parser.add_argument(
+        "--phase7-config",
+        type=Path,
+        default=None,
+        help="Explicit Phase 7 config for smoke, serious, and recovery stages.",
+    )
+    parser.add_argument(
+        "--phase7-smoke",
+        action="store_true",
+        help="Run only the non-promoting tiny Phase 7 engineering smoke.",
+    )
+    parser.add_argument(
+        "--phase7-output-dir",
+        type=Path,
+        default=None,
+        help="Override Phase 7 public/private outputs, intended for /tmp smoke artifacts.",
+    )
     return parser.parse_args(argv)
 
 
@@ -1152,28 +1595,136 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     config = DeterministicLGSSMHMCConfig.load(args.config)
     if args.stage == "fixture":
+        _assert_fresh_outputs(config, (config.fixture_path,))
         payload = build_fixture(config)
         output = ROOT / args.output if args.output is not None and not args.output.is_absolute() else args.output
-        write_json(payload, config.fixture_path if output is None else output)
+        if config.no_overwrite and int(
+            config.payload["truth_and_data"]["fixture_hash_repetition_count"]
+        ) != 2:
+            raise ValueError("fresh fixture requires exactly two deterministic builds")
+        if config.no_overwrite:
+            repeated = build_fixture(config)
+            if payload != repeated:
+                raise ValueError("fresh fixture repeated generation mismatch")
+        write_json(
+            payload,
+            config.fixture_path if output is None else output,
+            overwrite=not config.no_overwrite,
+        )
         return 0
     if args.stage == "xla_score":
+        _assert_fresh_outputs(config, (config.xla_compile_path,))
         payload = build_xla_score_gate(config)
         output = ROOT / args.output if args.output is not None and not args.output.is_absolute() else args.output
-        write_json(payload, config.xla_compile_path if output is None else output)
+        write_json(
+            payload,
+            config.xla_compile_path if output is None else output,
+            overwrite=not config.no_overwrite,
+        )
         return 0
     if args.stage == "geometry_mass":
         if args.output is not None:
             raise ValueError("--output is not supported for geometry_mass; two artifacts are written")
+        _assert_fresh_outputs(config, (config.geometry_path, config.mass_path))
         geometry_payload, mass_payload = build_geometry_and_mass(config)
-        write_json(geometry_payload, config.geometry_path)
-        write_json(mass_payload, config.mass_path)
+        write_json(
+            geometry_payload,
+            config.geometry_path,
+            overwrite=not config.no_overwrite,
+        )
+        write_json(
+            mass_payload,
+            config.mass_path,
+            overwrite=not config.no_overwrite,
+        )
         return 0
     if args.stage == "kernel_tuning":
+        _assert_fresh_outputs(
+            config,
+            (
+                config.kernel_tuning_path,
+                config.private_tuning_replay_path,
+                config.artifact_root / "kernel_tuning_public",
+            ),
+        )
         payload = build_kernel_tuning(config)
         output = ROOT / args.output if args.output is not None and not args.output.is_absolute() else args.output
-        write_json(payload, config.kernel_tuning_path if output is None else output)
+        write_json(
+            payload,
+            config.kernel_tuning_path if output is None else output,
+            overwrite=not config.no_overwrite,
+        )
         return 0
+    if args.stage == "burnin_sampling":
+        if args.output is not None:
+            raise ValueError(
+                "--output is not supported for burnin_sampling; use the Phase 7 config"
+            )
+        from bayesfilter.testing.deterministic_lgssm_hmc_phase7_tf import (
+            DeterministicLGSSMPhase7Config,
+            run_phase7,
+        )
+
+        if args.phase7_config is None:
+            raise ValueError("burnin_sampling requires --phase7-config")
+        phase7_config = DeterministicLGSSMPhase7Config.load(args.phase7_config)
+        if phase7_config.payload["source_tuning_config_hash"] != config.hash:
+            raise ValueError("tuning and Phase 7 config mismatch")
+
+        output_dir = args.phase7_output_dir
+        if args.phase7_smoke and output_dir is None:
+            raise ValueError("--phase7-smoke requires --phase7-output-dir")
+        if args.phase7_smoke and not output_dir.resolve().is_relative_to(Path("/tmp")):
+            raise ValueError("Phase 7 smoke output must be under /tmp")
+        if args.phase7_smoke and output_dir.exists() and any(output_dir.iterdir()):
+            raise FileExistsError("Phase 7 smoke output directory must be empty")
+        if not args.phase7_smoke and output_dir is not None:
+            raise ValueError("serious Phase 7 must use its reviewed artifact paths")
+        result = run_phase7(
+            phase7_config,
+            smoke=bool(args.phase7_smoke),
+            output_override=(
+                None if output_dir is None else output_dir / "burnin_sampling.json"
+            ),
+            progress_override=(
+                None
+                if output_dir is None
+                else output_dir / "burnin_sampling_progress.json"
+            ),
+            private_samples_override=(
+                None
+                if output_dir is None
+                else output_dir / "private_diagnostics" / "phase7_retained_samples.npz"
+            ),
+        )
+        return 0 if result.get("passed") is True else 1
+    if args.stage == "final_recovery":
+        if args.output is not None:
+            raise ValueError("--output is not supported for final_recovery")
+        if args.phase7_config is None:
+            raise ValueError("final_recovery requires --phase7-config")
+        payload = build_final_recovery(
+            config,
+            phase7_config_path=args.phase7_config,
+        )
+        write_json(
+            payload,
+            config.final_result_path,
+            overwrite=not config.no_overwrite,
+        )
+        return 0 if payload.get("passed") is True else 1
     raise ValueError(f"unsupported stage: {args.stage}")
+
+
+def _assert_fresh_outputs(
+    config: DeterministicLGSSMHMCConfig,
+    paths: Sequence[Path],
+) -> None:
+    if not config.no_overwrite:
+        return
+    collisions = tuple(str(path) for path in paths if path.exists())
+    if collisions:
+        raise FileExistsError(f"fresh-run output collision: {collisions}")
 
 
 if __name__ == "__main__":

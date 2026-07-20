@@ -1110,6 +1110,68 @@ def test_phase3_hard_veto_does_not_call_phase7(monkeypatch: pytest.MonkeyPatch) 
     assert result.diagnostic_role == "bootstrap_screen_hard_veto"
 
 
+def test_bootstrap_hard_veto_retains_round_diagnostics_and_skips_handoff(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    geometry = _geometry()
+
+    def failing_chain(*_args: Any, **_kwargs: Any):
+        raise ValueError("PP-UKF target call failed: sentinel")
+
+    bootstrap = run_hmc_bootstrap_screen(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        config=_bootstrap_config(
+            max_repairs=0,
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        ),
+        run_full_chain=failing_chain,
+    )
+    assert bootstrap.rounds[-1].diagnostics["error_type"] == "ValueError"
+
+    calls: list[str] = []
+    module = __import__("bayesfilter.inference.hmc_kernel_tuning", fromlist=[""])
+    monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
+    monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
+
+    def forbidden_loop(**_kwargs: Any):
+        calls.append("loop")
+        raise AssertionError("Phase 7 must not run after bootstrap hard veto")
+
+    monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
+    result = tune_hmc_kernel(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=[0.0, 0.0],
+        config=HMCKernelTuningConfig.smoke(
+            target_scope="kernel_fixed_mass_step_toy_gaussian"
+        ),
+        output_dir=tmp_path,
+    )
+
+    assert calls == []
+    assert result.bootstrap is bootstrap
+    assert result.failure_diagnostics is not None
+    assert result.failure_diagnostics["round_index"] == 0
+    assert result.failure_diagnostics["exception_type"] == "ValueError"
+    assert result.failure_diagnostics["exception_message"] == (
+        "PP-UKF target call failed: sentinel"
+    )
+    artifact = json.loads(
+        (tmp_path / "hmc_kernel_tuning_result.json").read_text(encoding="utf-8")
+    )
+    assert artifact["stage_hashes"]["bootstrap"] == bootstrap.artifact_hash
+    assert artifact["bootstrap_public_summary"]["hard_veto_present"] is True
+    assert artifact["failure_diagnostics"]["exception_message"] == (
+        result.failure_diagnostics["exception_message"]
+    )
+    assert artifact["failure_diagnostics"]["hard_vetoes"] == list(
+        result.failure_diagnostics["hard_vetoes"]
+    )
+    assert artifact["failure_diagnostics"]["repair_triggers"] == list(
+        result.failure_diagnostics["repair_triggers"]
+    )
+
+
 def test_final_kernel_emitted_only_after_phase7_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     geometry = _geometry()
     bootstrap = _bootstrap_passed()
@@ -1131,6 +1193,47 @@ def test_final_kernel_emitted_only_after_phase7_pass(monkeypatch: pytest.MonkeyP
     assert result.final_kernel_payload is None
     assert result.final_kernel_hash is None
     assert "phase7_budget_exhausted" in result.repair_triggers
+
+
+def test_bootstrap_exception_provenance_is_preserved_in_terminal_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    geometry = _geometry()
+    module = __import__("bayesfilter.inference.hmc_kernel_tuning", fromlist=[""])
+
+    def failing_bootstrap(**_kwargs: Any):
+        raise ValueError("PP-UKF bootstrap target call failed: sentinel")
+
+    monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
+    monkeypatch.setattr(module, "run_hmc_bootstrap_screen", failing_bootstrap)
+
+    result = tune_hmc_kernel(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=[0.0, 0.0],
+        config=HMCKernelTuningConfig.smoke(
+            target_scope="kernel_fixed_mass_step_toy_gaussian"
+        ),
+        output_dir=tmp_path,
+    )
+
+    assert result.final_status == "hard_veto"
+    assert result.hard_vetoes == ("bootstrap_screen_error",)
+    assert result.failure_diagnostics == {
+        "schema": "bayesfilter.hmc_tuning_failure_diagnostics.v1",
+        "stage": "bootstrap",
+        "exception_type": "ValueError",
+        "exception_message": "PP-UKF bootstrap target call failed: sentinel",
+        "role": "diagnostic_exception_provenance_not_scientific_evidence",
+        "hmc_mechanics_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "reports_default_readiness": False,
+        "reports_gpu_or_xla_readiness": False,
+    }
+    artifact = json.loads(
+        (tmp_path / "hmc_kernel_tuning_result.json").read_text(encoding="utf-8")
+    )
+    assert artifact["failure_diagnostics"] == result.failure_diagnostics
 
 
 def test_phase23_final_kernel_emitted_only_after_phase7_pass(

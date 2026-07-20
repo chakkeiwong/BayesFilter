@@ -1006,7 +1006,7 @@ def _solve_scaled_augmented_ridge(
         and tf.reduce_all(tf.math.is_finite(augmented_rhs)).numpy()
     ):
         raise ValueError("scaled augmented solve nonfinite augmented system")
-    v_solution = tf.linalg.lstsq(augmented_matrix, augmented_rhs, fast=False)[:, 0]
+    v_solution = _stable_overdetermined_lstsq(augmented_matrix, augmented_rhs)[:, 0]
     solution = v_solution / column_scales
     singular_values = tf.linalg.svd(augmented_matrix, compute_uv=False)
     condition_number = _condition_number_from_singular_values(singular_values)
@@ -1079,6 +1079,44 @@ def _solve_scaled_augmented_ridge(
         scaled_augmented_condition_number=condition_number,
         diagnostics=diagnostics,
     )
+
+
+@tf.custom_gradient
+def _stable_overdetermined_lstsq(
+    matrix: tf.Tensor,
+    rhs: tf.Tensor,
+) -> tuple[tf.Tensor, object]:
+    """Use the stable least-squares primal with its exact full-rank pullback."""
+
+    a = tf.convert_to_tensor(matrix, dtype=tf.float64)
+    b = tf.convert_to_tensor(rhs, dtype=tf.float64)
+    solution = tf.linalg.lstsq(a, b, fast=False)
+
+    def grad(upstream: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        g = tf.convert_to_tensor(upstream, dtype=tf.float64)
+        _, upper = tf.linalg.qr(a, full_matrices=False)
+        intermediate = tf.linalg.triangular_solve(
+            upper,
+            g,
+            lower=False,
+            adjoint=True,
+        )
+        z = tf.linalg.triangular_solve(
+            upper,
+            intermediate,
+            lower=False,
+        )
+        solution_z_t = tf.linalg.matmul(solution, z, transpose_b=True)
+        symmetric = solution_z_t + tf.linalg.matrix_transpose(solution_z_t)
+        grad_a = -tf.linalg.matmul(a, symmetric) + tf.linalg.matmul(
+            b,
+            z,
+            transpose_b=True,
+        )
+        grad_b = tf.linalg.matmul(a, z)
+        return grad_a, grad_b
+
+    return solution, grad
 
 
 def _condition_number(matrix: tf.Tensor) -> float:

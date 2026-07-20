@@ -868,6 +868,47 @@ def _filterflow_streaming_softmin_jvp(
     return flat_value[:, :num_rows], flat_tangent[:, :num_rows, :]
 
 
+def _filterflow_cached_same_cloud_softmin_jvp(
+    epsilon: tf.Tensor,
+    values: tf.Tensor,
+    d_values: tf.Tensor,
+    pairwise_cost: tf.Tensor,
+    pairwise_cost_tangent: tf.Tensor,
+    d_epsilon: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Softmin JVP using a cached same-cloud cost and tangent.
+
+    The cache is valid only while the query/key cloud and its tangent remain
+    unchanged.  Sinkhorn and terminal-balance iterations change potentials and
+    values, but not the pairwise geometry, so reusing these two tensors is
+    semantics-preserving for the finite streamed route.
+    """
+
+    dtype = pairwise_cost.dtype
+    batch_size = tf.shape(pairwise_cost)[0]
+    epsilon = _epsilon_per_batch(tf.cast(epsilon, dtype), batch_size)
+    d_epsilon = tf.cast(d_epsilon, dtype)
+    values = tf.cast(values, dtype)
+    d_values = tf.cast(d_values, dtype)
+    pairwise_cost_tangent = tf.cast(pairwise_cost_tangent, dtype)
+    logits = values[:, None, :] - pairwise_cost / epsilon[:, None, None]
+    d_logits = (
+        d_values[:, None, :, :]
+        - pairwise_cost_tangent / epsilon[:, None, None, None]
+        + pairwise_cost[:, :, :, None]
+        * d_epsilon[:, None, None, :]
+        / (epsilon[:, None, None, None] * epsilon[:, None, None, None])
+    )
+    logsum = tf.reduce_logsumexp(logits, axis=2)
+    probabilities = tf.exp(logits - logsum[:, :, None])
+    d_logsum = tf.reduce_sum(probabilities[:, :, :, None] * d_logits, axis=2)
+    return (
+        -epsilon[:, None] * logsum,
+        -d_epsilon[:, None, :] * logsum[:, :, None]
+        - epsilon[:, None, None] * d_logsum,
+    )
+
+
 def _filterflow_streaming_softmin_vjp(
     epsilon: tf.Tensor,
     query: tf.Tensor,
@@ -2073,7 +2114,8 @@ def _filterflow_streaming_transport_from_potentials_jvp(
     *,
     row_chunk_size: int,
     col_chunk_size: int,
-) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    return_mass_state: bool = False,
+) -> tuple[tf.Tensor, ...]:
     row_chunk_size = _validate_chunk_size(row_chunk_size, "row_chunk_size")
     col_chunk_size = _validate_chunk_size(col_chunk_size, "col_chunk_size")
     dtype = scaled_x.dtype
@@ -2123,12 +2165,18 @@ def _filterflow_streaming_transport_from_potentials_jvp(
         size=num_row_blocks,
         element_shape=tf.TensorShape([None, row_chunk_size]),
     )
+    tangent_mass_blocks = tf.TensorArray(
+        dtype=dtype,
+        size=num_row_blocks,
+        element_shape=tf.TensorShape([None, row_chunk_size, None]),
+    )
 
     def row_cond(
         row_start: tf.Tensor,
         _particle_blocks: tf.TensorArray,
         _tangent_blocks: tf.TensorArray,
         _mass_blocks: tf.TensorArray,
+        _tangent_mass_blocks: tf.TensorArray,
     ) -> tf.Tensor:
         return row_start < num_particles
 
@@ -2137,6 +2185,7 @@ def _filterflow_streaming_transport_from_potentials_jvp(
         particle_ta: tf.TensorArray,
         tangent_ta: tf.TensorArray,
         mass_ta: tf.TensorArray,
+        tangent_mass_ta: tf.TensorArray,
     ):
         query_block = _slice_axis1_padded_3d(scaled_x, row_start, row_chunk_size)
         d_query_block = _slice_axis1_padded_4d(d_scaled_x, row_start, row_chunk_size)
@@ -2153,12 +2202,16 @@ def _filterflow_streaming_transport_from_potentials_jvp(
             dtype=dtype,
         )
         mass = tf.zeros([batch_size, row_chunk_size], dtype=dtype)
+        d_mass = tf.zeros(
+            [batch_size, row_chunk_size, param_dim], dtype=dtype
+        )
 
         def col_cond(
             col_start: tf.Tensor,
             _carried: tf.Tensor,
             _d_carried: tf.Tensor,
             _mass: tf.Tensor,
+            _d_mass: tf.Tensor,
         ) -> tf.Tensor:
             return col_start < num_particles
 
@@ -2167,6 +2220,7 @@ def _filterflow_streaming_transport_from_potentials_jvp(
             carried_accum: tf.Tensor,
             d_carried_accum: tf.Tensor,
             mass_accum: tf.Tensor,
+            d_mass_accum: tf.Tensor,
         ):
             key_block = _slice_axis1_padded_3d(scaled_x, col_start, col_chunk_size)
             d_key_block = _slice_axis1_padded_4d(d_scaled_x, col_start, col_chunk_size)
@@ -2246,29 +2300,59 @@ def _filterflow_streaming_transport_from_potentials_jvp(
             carried_next = carried_accum + transported_increment
             d_carried_next = d_carried_accum + d_increment
             mass_next = mass_accum + tf.reduce_sum(transport_block, axis=2)
+            d_mass_next = d_mass_accum + tf.reduce_sum(
+                transport_block[:, :, :, None] * d_log_transport,
+                axis=2,
+            )
             return (
                 col_start + col_chunk_tensor,
                 carried_next,
                 d_carried_next,
                 mass_next,
+                d_mass_next,
             )
 
-        _, carried, d_carried, mass = tf.while_loop(
+        _, carried, d_carried, mass, d_mass = tf.while_loop(
             col_cond,
             col_body,
-            loop_vars=(tf.constant(0, tf.int32), carried, d_carried, mass),
+            loop_vars=(
+                tf.constant(0, tf.int32),
+                carried,
+                d_carried,
+                mass,
+                d_mass,
+            ),
             maximum_iterations=num_col_blocks,
         )
         block_index = row_start // row_chunk_tensor
         particle_ta = particle_ta.write(block_index, carried)
         tangent_ta = tangent_ta.write(block_index, d_carried)
         mass_ta = mass_ta.write(block_index, mass)
-        return row_start + row_chunk_tensor, particle_ta, tangent_ta, mass_ta
+        tangent_mass_ta = tangent_mass_ta.write(block_index, d_mass)
+        return (
+            row_start + row_chunk_tensor,
+            particle_ta,
+            tangent_ta,
+            mass_ta,
+            tangent_mass_ta,
+        )
 
-    _, particle_blocks, tangent_blocks, mass_blocks = tf.while_loop(
+    (
+        _,
+        particle_blocks,
+        tangent_blocks,
+        mass_blocks,
+        tangent_mass_blocks,
+    ) = tf.while_loop(
         row_cond,
         row_body,
-        loop_vars=(tf.constant(0, tf.int32), particle_blocks, tangent_blocks, mass_blocks),
+        loop_vars=(
+            tf.constant(0, tf.int32),
+            particle_blocks,
+            tangent_blocks,
+            mass_blocks,
+            tangent_mass_blocks,
+        ),
         maximum_iterations=num_row_blocks,
     )
     stacked_particles = particle_blocks.stack()
@@ -2289,6 +2373,16 @@ def _filterflow_streaming_transport_from_potentials_jvp(
         transposed_mass,
         [batch_size, num_row_blocks * row_chunk_tensor],
     )[:, :num_particles]
+    stacked_tangent_mass = tangent_mass_blocks.stack()
+    transposed_tangent_mass = tf.transpose(
+        stacked_tangent_mass, [1, 0, 2, 3]
+    )
+    d_row_mass = tf.reshape(
+        transposed_tangent_mass,
+        [batch_size, num_row_blocks * row_chunk_tensor, param_dim],
+    )[:, :num_particles, :]
+    if return_mass_state:
+        return transported, d_transported, row_mass, d_row_mass
     row_residual = tf.reduce_max(tf.abs(row_mass - 1.0))
     return transported, d_transported, tf.cast(row_residual, dtype)
 
@@ -3139,6 +3233,8 @@ def _filterflow_streaming_terminal_balance_potential_jvp(
     balance_steps: int,
     row_chunk_size: int,
     col_chunk_size: int,
+    cached_pairwise_cost: tf.Tensor | None = None,
+    cached_pairwise_cost_tangent: tf.Tensor | None = None,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Value and no-tape total JVP of terminal IPFP refinement."""
 
@@ -3153,6 +3249,34 @@ def _filterflow_streaming_terminal_balance_potential_jvp(
     log_n = tf.math.log(tf.cast(tf.shape(x)[1], dtype))
     steps_tensor = tf.constant(balance_steps, tf.int32)
 
+    if (cached_pairwise_cost is None) != (cached_pairwise_cost_tangent is None):
+        raise ValueError("cached pairwise cost and tangent must be supplied together")
+
+    def softmin_jvp(
+        value: tf.Tensor, value_tangent: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        if cached_pairwise_cost is not None:
+            return _filterflow_cached_same_cloud_softmin_jvp(
+                eps,
+                value,
+                value_tangent,
+                cached_pairwise_cost,
+                cached_pairwise_cost_tangent,
+                zero_eps_tangent,
+            )
+        return _filterflow_streaming_softmin_jvp(
+            eps,
+            x,
+            x,
+            value,
+            zero_eps_tangent,
+            d_x,
+            d_x,
+            value_tangent,
+            row_chunk_size=row_chunk_size,
+            col_chunk_size=col_chunk_size,
+        )
+
     def cond(
         iteration: tf.Tensor,
         _row_potential: tf.Tensor,
@@ -3166,17 +3290,9 @@ def _filterflow_streaming_terminal_balance_potential_jvp(
         row_potential: tf.Tensor,
         d_row_potential: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        column_softmin, d_column_softmin = _filterflow_streaming_softmin_jvp(
-            eps,
-            x,
-            x,
+        column_softmin, d_column_softmin = softmin_jvp(
             row_potential / eps[:, None],
-            zero_eps_tangent,
-            d_x,
-            d_x,
             d_row_potential / eps[:, None, None],
-            row_chunk_size=row_chunk_size,
-            col_chunk_size=col_chunk_size,
         )
         effective_log_column_scale = (
             column_softmin / eps[:, None] + log_n + log_weights
@@ -3185,17 +3301,9 @@ def _filterflow_streaming_terminal_balance_potential_jvp(
             d_column_softmin / eps[:, None, None] + d_log_weights
         )
         next_row_potential, d_next_row_potential = (
-            _filterflow_streaming_softmin_jvp(
-                eps,
-                x,
-                x,
+            softmin_jvp(
                 effective_log_column_scale,
-                zero_eps_tangent,
-                d_x,
-                d_x,
                 d_effective_log_column_scale,
-                row_chunk_size=row_chunk_size,
-                col_chunk_size=col_chunk_size,
             )
         )
         return iteration + 1, next_row_potential, d_next_row_potential
@@ -4352,6 +4460,8 @@ def _filterflow_streaming_finite_sinkhorn_potentials_jvp_total(
     steps: int,
     row_chunk_size: int,
     col_chunk_size: int,
+    cached_pairwise_cost: tf.Tensor | None = None,
+    cached_pairwise_cost_tangent: tf.Tensor | None = None,
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     """Finite streaming Sinkhorn potentials and no-tape forward tangents."""
 
@@ -4368,54 +4478,42 @@ def _filterflow_streaming_finite_sinkhorn_potentials_jvp_total(
     eps = tf.cast(epsilon, dtype)
     scaling_factor = tf.cast(scaling, dtype) ** 2
     zero_eps_tangent = tf.zeros_like(d_running)
-    a_y, d_a_y = _filterflow_streaming_softmin_jvp(
-        running,
-        x,
-        x,
-        log_alpha,
-        d_running,
-        d_x,
-        d_x,
-        d_log_alpha,
-        row_chunk_size=row_chunk_size,
-        col_chunk_size=col_chunk_size,
-    )
-    b_x, d_b_x = _filterflow_streaming_softmin_jvp(
-        running,
-        x,
-        x,
-        log_beta,
-        d_running,
-        d_x,
-        d_x,
-        d_log_beta,
-        row_chunk_size=row_chunk_size,
-        col_chunk_size=col_chunk_size,
-    )
-    a_x, d_a_x = _filterflow_streaming_softmin_jvp(
-        running,
-        x,
-        x,
-        log_alpha,
-        d_running,
-        d_x,
-        d_x,
-        d_log_alpha,
-        row_chunk_size=row_chunk_size,
-        col_chunk_size=col_chunk_size,
-    )
-    b_y, d_b_y = _filterflow_streaming_softmin_jvp(
-        running,
-        x,
-        x,
-        log_beta,
-        d_running,
-        d_x,
-        d_x,
-        d_log_beta,
-        row_chunk_size=row_chunk_size,
-        col_chunk_size=col_chunk_size,
-    )
+
+    if (cached_pairwise_cost is None) != (cached_pairwise_cost_tangent is None):
+        raise ValueError("cached pairwise cost and tangent must be supplied together")
+
+    def softmin_jvp(
+        epsilon_value: tf.Tensor,
+        value: tf.Tensor,
+        epsilon_tangent: tf.Tensor,
+        value_tangent: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        if cached_pairwise_cost is not None:
+            return _filterflow_cached_same_cloud_softmin_jvp(
+                epsilon_value,
+                value,
+                value_tangent,
+                cached_pairwise_cost,
+                cached_pairwise_cost_tangent,
+                epsilon_tangent,
+            )
+        return _filterflow_streaming_softmin_jvp(
+            epsilon_value,
+            x,
+            x,
+            value,
+            epsilon_tangent,
+            d_x,
+            d_x,
+            value_tangent,
+            row_chunk_size=row_chunk_size,
+            col_chunk_size=col_chunk_size,
+        )
+
+    a_y, d_a_y = softmin_jvp(running, log_alpha, d_running, d_log_alpha)
+    b_x, d_b_x = softmin_jvp(running, log_beta, d_running, d_log_beta)
+    a_x, d_a_x = softmin_jvp(running, log_alpha, d_running, d_log_alpha)
+    b_y, d_b_y = softmin_jvp(running, log_beta, d_running, d_log_beta)
     steps_tensor = tf.constant(steps, tf.int32)
 
     def cond(
@@ -4482,53 +4580,17 @@ def _filterflow_streaming_finite_sinkhorn_potentials_jvp_total(
             * d_running_
             / (running_[:, :, None] * running_[:, :, None])
         )
-        at_y, d_at_y = _filterflow_streaming_softmin_jvp(
-            running_value,
-            x,
-            x,
-            at_y_values,
-            d_running_value,
-            d_x,
-            d_x,
-            d_at_y_values,
-            row_chunk_size=row_chunk_size,
-            col_chunk_size=col_chunk_size,
+        at_y, d_at_y = softmin_jvp(
+            running_value, at_y_values, d_running_value, d_at_y_values
         )
-        bt_x, d_bt_x = _filterflow_streaming_softmin_jvp(
-            running_value,
-            x,
-            x,
-            bt_x_values,
-            d_running_value,
-            d_x,
-            d_x,
-            d_bt_x_values,
-            row_chunk_size=row_chunk_size,
-            col_chunk_size=col_chunk_size,
+        bt_x, d_bt_x = softmin_jvp(
+            running_value, bt_x_values, d_running_value, d_bt_x_values
         )
-        at_x, d_at_x = _filterflow_streaming_softmin_jvp(
-            running_value,
-            x,
-            x,
-            at_x_values,
-            d_running_value,
-            d_x,
-            d_x,
-            d_at_x_values,
-            row_chunk_size=row_chunk_size,
-            col_chunk_size=col_chunk_size,
+        at_x, d_at_x = softmin_jvp(
+            running_value, at_x_values, d_running_value, d_at_x_values
         )
-        bt_y, d_bt_y = _filterflow_streaming_softmin_jvp(
-            running_value,
-            x,
-            x,
-            bt_y_values,
-            d_running_value,
-            d_x,
-            d_x,
-            d_bt_y_values,
-            row_chunk_size=row_chunk_size,
-            col_chunk_size=col_chunk_size,
+        bt_y, d_bt_y = softmin_jvp(
+            running_value, bt_y_values, d_running_value, d_bt_y_values
         )
         next_running = tf.maximum(running_value * scaling_factor, eps)
         active = tf.cast(running_value * scaling_factor >= eps, dtype)
@@ -4582,30 +4644,8 @@ def _filterflow_streaming_finite_sinkhorn_potentials_jvp_total(
     d_a_values = d_log_alpha + d_b_x / eps_[:, :, None]
     b_values = log_beta + a_y / eps_
     d_b_values = d_log_beta + d_a_y / eps_[:, :, None]
-    final_a, d_final_a = _filterflow_streaming_softmin_jvp(
-        eps,
-        x,
-        x,
-        a_values,
-        zero_eps_tangent,
-        d_x,
-        d_x,
-        d_a_values,
-        row_chunk_size=row_chunk_size,
-        col_chunk_size=col_chunk_size,
-    )
-    final_b, d_final_b = _filterflow_streaming_softmin_jvp(
-        eps,
-        x,
-        x,
-        b_values,
-        zero_eps_tangent,
-        d_x,
-        d_x,
-        d_b_values,
-        row_chunk_size=row_chunk_size,
-        col_chunk_size=col_chunk_size,
-    )
+    final_a, d_final_a = softmin_jvp(eps, a_values, zero_eps_tangent, d_a_values)
+    final_b, d_final_b = softmin_jvp(eps, b_values, zero_eps_tangent, d_b_values)
     return final_a, final_b, d_final_a, d_final_b, running, d_running
 
 

@@ -1613,6 +1613,14 @@ def _diagnostics_payload(run_result: FullChainHMCRunResult) -> Mapping[str, Any]
     if "log_accept_ratio" in trace:
         log_accept = np.asarray(_tensor_to_numpy(trace["log_accept_ratio"]), dtype=float)
         finite = np.isfinite(log_accept)
+        if np.any(finite):
+            payload["binary_acceptance_rate"] = payload["acceptance_rate"]
+            payload["acceptance_rate"] = float(
+                np.mean(np.exp(np.minimum(log_accept[finite], 0.0)))
+            )
+            payload["acceptance_rate_semantics"] = (
+                "mean_metropolis_acceptance_probability"
+            )
         payload["log_accept_ratio_finite"] = bool(np.all(finite))
         payload["max_abs_log_accept_ratio"] = (
             None if not np.any(finite) else float(np.max(np.abs(log_accept[finite])))

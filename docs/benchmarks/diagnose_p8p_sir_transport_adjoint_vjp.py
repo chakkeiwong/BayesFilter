@@ -564,6 +564,7 @@ def run_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def main() -> int:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     payload = run_diagnostic(args)
     output = Path(args.output)

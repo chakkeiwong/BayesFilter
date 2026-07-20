@@ -4,11 +4,17 @@ import inspect
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 from bayesfilter.runtime import stable_config_hash
+from bayesfilter.inference import (
+    build_retained_frozen_kernel_hmc_adapter_from_tuning_payload,
+)
 from docs.benchmarks import run_multidim_lgssm_serious_hmc_tuning_2026_07_09 as driver
+from tests.test_hmc_kernel_tuning_fixed_mass_step import _ToyGaussianAdapter
+from tests.test_hmc_kernel_tuning_outer_loop import _replay_tuning_payload
 
 
 def test_config_loads_and_preserves_hard_runtime_boundaries() -> None:
@@ -52,6 +58,42 @@ def test_fixture_stage_writes_json(tmp_path: Path) -> None:
     assert payload["horizon"] == 120
     assert payload["artifact_hash"].startswith("sha256:")
     assert payload["nonclaims"] == list(driver.NONCLAIMS)
+
+
+def test_driver_exposes_phase7_stage_without_nonjit_escape_hatch() -> None:
+    args = driver.parse_args(["--stage", "burnin_sampling"])
+    source = inspect.getsource(driver.parse_args)
+
+    assert args.stage == "burnin_sampling"
+    assert "no-jit" not in source
+    assert "jit_compile_false" not in source
+
+
+def test_kernel_tuning_artifact_requires_serious_sampling_handoff() -> None:
+    source = inspect.getsource(driver.build_kernel_tuning)
+
+    assert '"final_kernel_requires_serious_sampling_pass": True' in source
+    assert '"final_kernel_requires_serious_sampling_pass": "boundary_nonclaim"' in source
+
+
+def test_phase6_smoke_launcher_has_no_serious_mode_or_output_override() -> None:
+    from scripts import run_hmc_phase6_typed_identity_smoke as launcher
+
+    args = launcher.parse_args(
+        [
+            "--stage",
+            "burnin_sampling",
+            "--phase7-smoke",
+            "--phase7-smoke-authority",
+            "docs/plans/artifacts/hmc-semantic-identity-migration-2026-07-11/"
+            "phase6_smoke_authority.json",
+        ]
+    )
+    source = inspect.getsource(launcher)
+    assert args.phase7_smoke is True
+    assert "phase7-output-dir" not in source
+    assert "smoke=False" not in source
+    assert "run_phase7(" in source
 
 
 def test_xla_score_gate_uses_fixture_and_jit_compiles() -> None:
@@ -240,3 +282,70 @@ def test_driver_source_has_no_forbidden_runtime_autodiff_tokens() -> None:
     source = inspect.getsource(driver)
     for forbidden in ("GradientTape", "batch_jacobian", "tape.", "jit_compile=False"):
         assert forbidden not in source
+
+
+def test_private_replay_serializer_round_trips_existing_bayesfilter_contract() -> None:
+    tuning_payload = _replay_tuning_payload()
+    loop_payload = tuning_payload["tune_verify_repair_loop"]
+    private_final = loop_payload["final_kernel_payload"]
+    loop = SimpleNamespace(
+        passed=True,
+        final_kernel_payload=private_final,
+        final_kernel_hash=stable_config_hash(private_final),
+        payload=lambda *, include_final_mass_arrays: loop_payload,
+    )
+    result = SimpleNamespace(
+        passed=True,
+        final_status="passed",
+        hard_vetoes=(),
+        tune_verify_repair_loop=loop,
+        adapter_signature=tuning_payload["adapter_signature"],
+        final_kernel_hash=tuning_payload["final_kernel_hash"],
+        payload=lambda *, include_internal_diagnostics: tuning_payload,
+    )
+    config = driver.DeterministicLGSSMHMCConfig.load(driver.DEFAULT_CONFIG_PATH)
+    artifact = driver.build_private_tuning_replay_payload(
+        config=config,
+        result=result,
+        fixture={"artifact_hash": "sha256:fixture"},
+        xla_gate={"artifact_hash": "sha256:xla"},
+        geometry={"artifact_hash": "sha256:geometry"},
+        mass={"artifact_hash": "sha256:mass"},
+    )
+
+    replay = build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+        adapter=_ToyGaussianAdapter(),
+        tuning_payload=artifact["tuning_payload"],
+        initial_position=[0.0, 0.0],
+        target_scope="kernel_fixed_mass_step_toy_gaussian",
+    )
+
+    assert artifact["schema"] == driver.PRIVATE_TUNING_REPLAY_SCHEMA
+    assert artifact["private_loop_final_kernel_hash"] == loop.final_kernel_hash
+    assert replay.contract["replay_owned_by_bayesfilter"] is True
+    assert replay.final_kernel_payload["step_size"] > 0.0
+    assert replay.final_kernel_payload["num_leapfrog_steps"] > 0
+
+
+def test_private_replay_serializer_rejects_public_only_or_failed_payload() -> None:
+    config = driver.DeterministicLGSSMHMCConfig.load(driver.DEFAULT_CONFIG_PATH)
+    failed = SimpleNamespace(
+        passed=False,
+        final_status="hard_veto",
+        hard_vetoes=("example",),
+        tune_verify_repair_loop=None,
+    )
+
+    try:
+        driver.build_private_tuning_replay_payload(
+            config=config,
+            result=failed,
+            fixture={"artifact_hash": "sha256:fixture"},
+            xla_gate={"artifact_hash": "sha256:xla"},
+            geometry={"artifact_hash": "sha256:geometry"},
+            mass={"artifact_hash": "sha256:mass"},
+        )
+    except ValueError as error:
+        assert "passed tuning result" in str(error)
+    else:
+        raise AssertionError("failed tuning result must not emit private replay")

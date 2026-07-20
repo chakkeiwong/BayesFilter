@@ -38,6 +38,9 @@ if str(ROOT) not in sys.path:
 import tensorflow as tf
 
 from bayesfilter import highdim
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
+)
 from bayesfilter.highdim.ledh_forward_contract import (
     make_parameterized_sir_diagnostic_forward_contract,
 )
@@ -192,6 +195,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--cuda-visible-devices", default=_PRE_ARGS.cuda_visible_devices)
     parser.add_argument("--expect-device-kind", choices=("any", "cpu", "gpu"), default="gpu")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--historical-raw-diagnostic", action="store_true")
     parser.add_argument("--no-fail-on-veto", action="store_true")
     args = parser.parse_args()
     args.batch_seeds = _parse_int_csv(args.batch_seeds)
@@ -1131,16 +1135,8 @@ def _make_sir_callbacks_from_scaled_parameters(
     neighbor_degree = tf.cast(_SIR_NEIGHBOR_DEGREE, DTYPE)
     substeps = int(_SIR_RK4_SUBSTEPS)
     step_size = tf.cast(_SIR_DELTA, DTYPE) / tf.cast(substeps, DTYPE)
-    callbacks = _dpf_sir_callbacks()
-    process_chol = tf.linalg.cholesky(
-        tf.cast(
-            callbacks["process_noise_covariance_fn"](
-                tf.zeros([18], dtype=tf.float64),
-                0,
-            ),
-            DTYPE,
-        )
-    )
+    transition_covariance = tf.cast(tensors["transition_covariance"], DTYPE)
+    process_chol = tf.linalg.cholesky(transition_covariance[0])
     selector = tf.cast(_SIR_INFECTIOUS_SELECTOR, DTYPE)
     batch_size = len(seeds)
     num_particles = args.num_particles
@@ -2860,7 +2856,11 @@ def _validate_device(tensors: tuple[tf.Tensor, ...], expect_device_kind: str) ->
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="parameterized-SIR raw-barycentric diagnostic"
+    )
     precision = _configure_precision(args)
     physical_gpus, logical_gpus = _configure_gpus()
     tensors, sir_semantics = _build_base_tensors(args)

@@ -20,6 +20,7 @@ from __future__ import annotations
 import dataclasses
 import inspect
 import json
+import math
 import os
 import threading
 import time
@@ -1499,6 +1500,7 @@ class HMCGeometryInitializationConfig:
     allow_geometry_fallback: bool = False
     position_role: str = "initial_position"
     negative_hessian_source: str = "negative_hessian"
+    mass_policy: str = "windowed_adaptive"
     seed: tuple[int, int] = (20260621, 2)
     source: str = "bayesfilter.inference.hmc_kernel_tuning"
 
@@ -1541,6 +1543,11 @@ class HMCGeometryInitializationConfig:
         negative_hessian_source = str(self.negative_hessian_source)
         if not negative_hessian_source:
             raise ValueError("negative_hessian_source must be non-empty")
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
         object.__setattr__(self, "geometry_scaling_c", scaling)
         object.__setattr__(self, "stability_guard", guard)
         object.__setattr__(self, "covariance_jitter", jitter)
@@ -1550,6 +1557,7 @@ class HMCGeometryInitializationConfig:
         object.__setattr__(self, "allow_geometry_fallback", bool(self.allow_geometry_fallback))
         object.__setattr__(self, "position_role", position_role)
         object.__setattr__(self, "negative_hessian_source", negative_hessian_source)
+        object.__setattr__(self, "mass_policy", mass_policy)
         object.__setattr__(self, "seed", seed)
         object.__setattr__(self, "source", source)
 
@@ -1564,6 +1572,7 @@ class HMCGeometryInitializationConfig:
             "allow_geometry_fallback": self.allow_geometry_fallback,
             "position_role": self.position_role,
             "negative_hessian_source": self.negative_hessian_source,
+            "mass_policy": self.mass_policy,
             "seed": self.seed,
             "source": self.source,
         }
@@ -1973,6 +1982,7 @@ class HMCWindowedMassStageConfig:
     use_xla: bool = False
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
+    mass_policy: str = "windowed_adaptive"
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
@@ -2009,6 +2019,12 @@ class HMCWindowedMassStageConfig:
                 "target_status_trace_policy must be 'none' or 'per_chain_step'"
             )
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
+        object.__setattr__(self, "mass_policy", mass_policy)
         timeout_budget = (
             None
             if self.public_timeout_budget_s is None
@@ -2076,6 +2092,7 @@ class HMCWindowedMassStageConfig:
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
+            "mass_policy": self.mass_policy,
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": (
                 self.public_timeout_started_perf_counter_s
@@ -2171,6 +2188,13 @@ class HMCWindowedMassStageResult:
         )
         object.__setattr__(self, "diagnostic_run_config_payload", payload)
         object.__setattr__(self, "windowed_config_payload", dict(self.windowed_config_payload))
+        if self.config.mass_policy == "fixed_identity" and self.windowed_mass_result is not None:
+            if self.adapted_mass_artifact_signature != self.initial_mass_artifact_signature:
+                raise ValueError("fixed identity Phase 4 mass signature mutated")
+            if self.windowed_mass_result is not None:
+                checks = self.windowed_mass_result.semantic_checks()
+                if checks.get("fixed_identity_signature_unchanged") is not True:
+                    raise ValueError("fixed identity Phase 4 semantic invariant failed")
         if self.operational_warmup_result is not None and not isinstance(
             self.operational_warmup_result,
             OperationalWindowedWarmupResult,
@@ -2256,6 +2280,7 @@ class HMCWindowedMassStageResult:
             "adapter_signature": self.adapter_signature,
             "hmc_adapter_signature": self.hmc_adapter_signature,
             "initial_mass_artifact_signature": self.initial_mass_artifact_signature,
+            "mass_policy": self.config.mass_policy,
             "target_dimension": self.target_dimension,
             "final_status": self.final_status,
             "diagnostic_role": self.diagnostic_role,
@@ -2319,6 +2344,7 @@ class HMCFixedMassStepStageConfig:
     use_xla: bool = False
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
+    mass_policy: str = "windowed_adaptive"
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
@@ -2428,6 +2454,12 @@ class HMCFixedMassStepStageConfig:
                 "target_status_trace_policy must be 'none' or 'per_chain_step'"
             )
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
+        object.__setattr__(self, "mass_policy", mass_policy)
         timeout_budget = (
             None
             if self.public_timeout_budget_s is None
@@ -2523,6 +2555,7 @@ class HMCFixedMassStepStageConfig:
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
+            "mass_policy": self.mass_policy,
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": (
                 self.public_timeout_started_perf_counter_s
@@ -4526,6 +4559,7 @@ class HMCFrozenStepTrajectoryStageConfig:
     use_xla: bool = False
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
+    mass_policy: str = "windowed_adaptive"
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     staged_timeout_policy: HMCStagedTimeoutPolicy | None = None
@@ -4579,6 +4613,12 @@ class HMCFrozenStepTrajectoryStageConfig:
                 "target_status_trace_policy must be 'none' or 'per_chain_step'"
             )
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
+        object.__setattr__(self, "mass_policy", mass_policy)
         timeout_budget = (
             None
             if self.public_timeout_budget_s is None
@@ -4651,6 +4691,7 @@ class HMCFrozenStepTrajectoryStageConfig:
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
+            "mass_policy": self.mass_policy,
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": self.public_timeout_started_perf_counter_s,
             "staged_timeout_policy": None
@@ -4897,6 +4938,7 @@ class HMCTuneVerifyRepairLoopConfig:
     use_xla: bool = False
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
+    mass_policy: str = "windowed_adaptive"
     public_timeout_budget_s: float | None = None
     public_timeout_started_perf_counter_s: float | None = None
     verification_chunk_max_results: int | None = None
@@ -5038,6 +5080,12 @@ class HMCTuneVerifyRepairLoopConfig:
                 "target_status_trace_policy must be 'none' or 'per_chain_step'"
             )
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
+        object.__setattr__(self, "mass_policy", mass_policy)
         timeout_budget = (
             None
             if self.public_timeout_budget_s is None
@@ -5152,6 +5200,7 @@ class HMCTuneVerifyRepairLoopConfig:
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
+            "mass_policy": self.mass_policy,
             "public_timeout_budget_s": self.public_timeout_budget_s,
             "public_timeout_started_perf_counter_s": self.public_timeout_started_perf_counter_s,
             "verification_chunk_max_results": self.verification_chunk_max_results,
@@ -5416,6 +5465,7 @@ class HMCKernelTuningConfig:
     use_xla: bool = False
     target_scope: str | None = None
     target_status_trace_policy: str = "none"
+    mass_policy: str = "windowed_adaptive"
     geometry_scaling_c: float = 0.5
     stability_guard: float = 0.8
     covariance_jitter: float = 1.0e-9
@@ -5577,6 +5627,12 @@ class HMCKernelTuningConfig:
                 "target_status_trace_policy must be 'none' or 'per_chain_step'"
             )
         object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
+        object.__setattr__(self, "mass_policy", mass_policy)
         scaling = float(self.geometry_scaling_c)
         if not np.isfinite(scaling) or scaling <= 0.0:
             raise ValueError("geometry_scaling_c must be positive and finite")
@@ -5793,6 +5849,7 @@ class HMCKernelTuningConfig:
             "use_xla": self.use_xla,
             "target_scope": self.target_scope,
             "target_status_trace_policy": self.target_status_trace_policy,
+            "mass_policy": self.mass_policy,
             "geometry_scaling_c": self.geometry_scaling_c,
             "stability_guard": self.stability_guard,
             "covariance_jitter": self.covariance_jitter,
@@ -5865,6 +5922,7 @@ class HMCKernelTuningResult:
     diagnostic_roles: Mapping[str, str]
     nonclaims: tuple[str, ...] = HMC_KERNEL_TUNING_PUBLIC_NONCLAIMS
     phase7_early_closeout_public_summary: Mapping[str, Any] | None = None
+    failure_diagnostics: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.config, HMCKernelTuningConfig):
@@ -5906,6 +5964,12 @@ class HMCKernelTuningResult:
             "phase7_early_closeout_public_summary",
             early_closeout,
         )
+        failure_diagnostics = (
+            None
+            if self.failure_diagnostics is None
+            else dict(self.failure_diagnostics)
+        )
+        object.__setattr__(self, "failure_diagnostics", failure_diagnostics)
         nonclaims = tuple(str(item) for item in self.nonclaims)
         if not nonclaims:
             raise ValueError("nonclaims must be non-empty")
@@ -5999,6 +6063,7 @@ class HMCKernelTuningResult:
             "phase7_early_closeout_public_summary": (
                 self.phase7_early_closeout_public_summary
             ),
+            "failure_diagnostics": self.failure_diagnostics,
             "passed": self.passed,
             "smoke_result_is_contract_only": self.config.is_smoke,
             "final_kernel_requires_phase7_pass": True,
@@ -6078,6 +6143,20 @@ class RetainedFrozenKernelAdapterReplayResult:
             "reports_gpu_or_xla_readiness": False,
             "nonclaims": self.nonclaims,
         }
+
+    @property
+    def step_size(self) -> float:
+        value = self.final_kernel_payload.get("step_size")
+        if value is None:
+            raise ValueError("replay handoff is missing selected step size")
+        return float(value)
+
+    @property
+    def num_leapfrog_steps(self) -> int:
+        value = self.final_kernel_payload.get("num_leapfrog_steps")
+        if value is None:
+            raise ValueError("replay handoff is missing selected leapfrog count")
+        return int(value)
 
 
 def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
@@ -6213,6 +6292,491 @@ def build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
     )
 
 
+def build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+    *,
+    adapter: Any,
+    tuning_result: "HMCKernelTuningResult",
+    initial_position: Any,
+    initial_covariance: Any | None = None,
+    negative_hessian: Any | None = None,
+    parameter_scales: Any | None = None,
+    target_scope: str | None = None,
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Replay a passed public tuning result without exposing mechanics to callers.
+
+    The result object retains the private in-memory phase handoffs needed to
+    rebuild the verified adapter.  The helper assembles that private payload
+    inside BayesFilter, then delegates validation and reconstruction to the
+    canonical payload replay boundary above.  Callers never need to assemble
+    step size, trajectory, or mass-array fields themselves.
+    """
+
+    if not isinstance(tuning_result, HMCKernelTuningResult):
+        raise TypeError("tuning_result must be HMCKernelTuningResult")
+    if not tuning_result.passed:
+        raise ValueError("retained frozen-kernel replay requires passed tuning result")
+    if tuning_result.geometry is None or tuning_result.bootstrap is None:
+        raise ValueError("passed tuning result is missing geometry or bootstrap")
+    loop = tuning_result.tune_verify_repair_loop
+    if loop is None or not loop.passed or loop.final_kernel_payload is None:
+        raise ValueError("passed tuning result is missing private Phase 7 handoff")
+    private_payload = {
+        "schema": "bayesfilter.hmc_kernel_tuning_result.v1",
+        "config": tuning_result.config.payload(),
+        "adapter_signature": tuning_result.adapter_signature,
+        "target_dimension": tuning_result.target_dimension,
+        "geometry_artifact_hash": tuning_result.geometry.artifact_hash,
+        "bootstrap_artifact_hash": tuning_result.bootstrap.artifact_hash,
+        "loop_artifact_hash": loop.artifact_hash,
+        "geometry": tuning_result.geometry.payload(include_mass_arrays=True),
+        "bootstrap": tuning_result.bootstrap.payload(),
+        "tune_verify_repair_loop": loop.payload(include_final_mass_arrays=True),
+        "final_status": tuning_result.final_status,
+        "diagnostic_role": tuning_result.diagnostic_role,
+        "hard_vetoes": tuning_result.hard_vetoes,
+        "repair_triggers": tuning_result.repair_triggers,
+        "final_kernel_payload": loop.final_kernel_payload,
+        "final_kernel_hash": loop.final_kernel_hash,
+        "passed": True,
+    }
+    return build_retained_frozen_kernel_hmc_adapter_from_tuning_payload(
+        adapter=adapter,
+        tuning_payload=private_payload,
+        initial_position=initial_position,
+        initial_covariance=initial_covariance,
+        negative_hessian=negative_hessian,
+        parameter_scales=parameter_scales,
+        target_scope=target_scope,
+    )
+
+
+ADMITTED_KERNEL_MECHANICS_SCHEMA = (
+    "bayesfilter.admitted_hmc_kernel_replay_artifact.v1"
+)
+_ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA = (
+    "bayesfilter.admitted_hmc_kernel_mechanics.v1"
+)
+
+
+def admitted_kernel_mechanics_payload_from_tuning_result(
+    *,
+    adapter: Any,
+    tuning_result: "HMCKernelTuningResult",
+    initial_position: Any,
+    target_signature: str,
+    target_scope: str,
+    execution: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Extract the transition mechanics needed for durable kernel replay.
+
+    Tuning lineage (bootstrap/window/Phase 7 artifact hashes and run-specific
+    diagnostics) is deliberately excluded from this payload.  The mass arrays
+    and adapter signatures are retained because they define the actual
+    transition, while the ordinary artifact hash protects the persisted JSON
+    from accidental edits.
+    """
+
+    replay = build_retained_frozen_kernel_hmc_adapter_from_tuning_result(
+        adapter=adapter,
+        tuning_result=tuning_result,
+        initial_position=initial_position,
+        target_scope=target_scope,
+    )
+    if tuning_result.geometry is None:
+        raise ValueError("passed tuning result is missing geometry")
+    base_signature = stable_adapter_signature(adapter)
+    initial_mass = tuning_result.geometry.mass_artifact
+    mechanics = {
+        "schema": _ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA,
+        "target_signature": str(target_signature),
+        "target_scope": str(target_scope),
+        "target_dimension": int(tuning_result.target_dimension),
+        "base_adapter_signature": base_signature,
+        "phase4_hmc_adapter_signature": replay.contract[
+            "phase4_hmc_adapter_signature"
+        ],
+        "final_hmc_adapter_signature": replay.contract[
+            "final_hmc_adapter_signature"
+        ],
+        "mass_policy": str(tuning_result.config.mass_policy),
+        "initial_mass_artifact_payload": initial_mass.to_payload(include_arrays=True),
+        "adapted_mass_artifact_payload": replay.adapted_mass_artifact.to_payload(
+            include_arrays=True
+        ),
+        "step_size": float(replay.step_size),
+        "num_leapfrog_steps": int(replay.num_leapfrog_steps),
+        "target_accept_prob": float(tuning_result.config.target_accept_prob),
+        "acceptance_band": tuple(
+            float(item) for item in tuning_result.config.acceptance_band
+        ),
+        "execution": dict(execution),
+    }
+    if not mechanics["target_signature"] or not mechanics["target_scope"]:
+        raise ValueError("admitted kernel target identity must be non-empty")
+    loop = tuning_result.tune_verify_repair_loop
+    return {
+        "schema": ADMITTED_KERNEL_MECHANICS_SCHEMA,
+        "mechanics": mechanics,
+        "mechanics_sha256": stable_config_hash(mechanics),
+        "tuning_provenance": {
+            "geometry_artifact_hash": tuning_result.geometry.artifact_hash,
+            "bootstrap_artifact_hash": (
+                None
+                if tuning_result.bootstrap is None
+                else tuning_result.bootstrap.artifact_hash
+            ),
+            "loop_artifact_hash": None if loop is None else loop.artifact_hash,
+            "public_final_kernel_hash": tuning_result.final_kernel_hash,
+            "tuning_artifact_path": tuning_result.artifact_path,
+            "role": "explanatory_provenance_only_not_replay_admission",
+        },
+    }
+
+
+def admitted_kernel_mechanics_payload_from_serialized_tuning_payload(
+    *,
+    adapter: Any,
+    tuning_payload: Mapping[str, Any],
+    initial_position: Any,
+    target_signature: str,
+    target_scope: str,
+    execution: Mapping[str, Any],
+    source_artifact_path: str,
+    source_artifact_sha256: str,
+) -> Mapping[str, Any]:
+    """Migrate a passed serialized private tuning result into replay mechanics.
+
+    Historical public handoffs redact the mechanics required for replay, but
+    the in-process result payload preserves the passed attempt's stage
+    handoffs. This function accepts only the fixed-identity route and rebuilds
+    both retained adapter transforms before issuing a mechanics artifact.
+    """
+
+    if not isinstance(tuning_payload, Mapping):
+        raise TypeError("serialized tuning payload must be a mapping")
+    if tuning_payload.get("schema") != "bayesfilter.hmc_kernel_tuning_result.v1":
+        raise ValueError("serialized tuning payload schema mismatch")
+    if tuning_payload.get("passed") is not True or tuning_payload.get(
+        "final_status"
+    ) != "passed":
+        raise ValueError("serialized tuning payload did not pass")
+    if tuning_payload.get("hard_vetoes"):
+        raise ValueError("serialized tuning payload has hard vetoes")
+
+    dimension = int(tuning_payload.get("target_dimension", 0))
+    if dimension <= 0 or int(getattr(adapter, "parameter_dim", -1)) != dimension:
+        raise ValueError("serialized tuning target dimension mismatch")
+    base_signature = stable_adapter_signature(adapter)
+    if tuning_payload.get("adapter_signature") != base_signature:
+        raise ValueError("serialized tuning base adapter signature mismatch")
+    config = _required_mapping(tuning_payload, "config")
+    if config.get("mass_policy") != "fixed_identity":
+        raise ValueError("serialized tuning migration requires fixed identity mass")
+    if config.get("target_scope") != str(target_scope):
+        raise ValueError("serialized tuning target scope mismatch")
+
+    position_values = tuple(float(item) for item in initial_position)
+    if len(position_values) != dimension or any(value != 0.0 for value in position_values):
+        raise ValueError("fixed-identity migration requires a zero initial position")
+    identity = tuple(
+        tuple(1.0 if row == column else 0.0 for column in range(dimension))
+        for row in range(dimension)
+    )
+    geometry = _required_mapping(tuning_payload, "geometry")
+    geometry_mass_payload = _required_mapping(geometry, "mass_artifact_payload")
+    if geometry_mass_payload.get("covariance_source") != "identity":
+        raise ValueError("serialized geometry is not the fixed identity geometry")
+    initial_mass = PrecomputedMassArtifact(
+        position=position_values,
+        covariance=identity,
+        factor=identity,
+        adapter_signature=str(geometry_mass_payload.get("adapter_signature", "")),
+        position_role=str(geometry_mass_payload.get("position_role", "")),
+        covariance_source=str(geometry_mass_payload.get("covariance_source", "")),
+        matrix_used_for_square_root=str(
+            geometry_mass_payload.get("matrix_used_for_square_root", "")
+        ),
+        factor_orientation=str(
+            geometry_mass_payload.get("factor_orientation", "row_right_transpose")
+        ),
+        source=str(geometry_mass_payload.get("source", "")),
+        eigen_summary=geometry_mass_payload.get("eigen_summary"),
+        precision_eigen_summary=geometry_mass_payload.get(
+            "precision_eigen_summary"
+        ),
+        regularization_report=geometry_mass_payload.get("regularization_report"),
+        log_jacobian_convention=str(
+            geometry_mass_payload.get("log_jacobian_convention", "constant_omitted")
+        ),
+        nonclaims=tuple(geometry_mass_payload.get("nonclaims", ())),
+    )
+    if initial_mass.adapter_signature != base_signature:
+        raise ValueError("serialized geometry adapter signature mismatch")
+    initial_mass_signature = _mass_artifact_signature(initial_mass)
+    if initial_mass_signature != geometry.get("mass_artifact_signature"):
+        raise ValueError("reconstructed fixed identity geometry signature mismatch")
+
+    bootstrap = _required_mapping(tuning_payload, "bootstrap")
+    phase4_adapter = _build_bootstrap_fixed_mass_adapter(
+        adapter=adapter,
+        mass_artifact=initial_mass,
+        mass_signature=initial_mass_signature,
+        target_scope=str(target_scope),
+        nonclaims=FIXED_MASS_STEP_STAGE_NONCLAIMS,
+    )
+    phase4_signature = stable_adapter_signature(phase4_adapter)
+    if bootstrap.get("hmc_adapter_signature") != phase4_signature:
+        raise ValueError("serialized bootstrap adapter signature mismatch")
+
+    loop = _required_mapping(tuning_payload, "tune_verify_repair_loop")
+    attempts = loop.get("attempts")
+    if not isinstance(attempts, Sequence) or isinstance(attempts, (str, bytes)):
+        raise ValueError("serialized tuning loop is missing attempts")
+    passed_attempts = tuple(
+        attempt
+        for attempt in attempts
+        if isinstance(attempt, Mapping)
+        and attempt.get("passed") is True
+        and attempt.get("final_status") == "passed"
+    )
+    if len(passed_attempts) != 1:
+        raise ValueError("serialized tuning migration requires one passed attempt")
+    attempt = passed_attempts[0]
+    windowed = _required_mapping(attempt, "windowed_stage")
+    fixed_step = _required_mapping(attempt, "fixed_mass_step_stage")
+    handoff = _required_mapping(attempt, "handoff_state")
+    for label, stage in (("windowed", windowed), ("fixed-step", fixed_step)):
+        stage_mass_policy = stage.get("mass_policy", _required_mapping(stage, "config").get("mass_policy"))
+        if stage.get("passed") is not True or stage_mass_policy != "fixed_identity":
+            raise ValueError(f"serialized {label} stage did not preserve fixed identity")
+    phase4_candidates = (
+        bootstrap.get("hmc_adapter_signature"),
+        windowed.get("hmc_adapter_signature"),
+        fixed_step.get("phase4_hmc_adapter_signature"),
+    )
+    if any(candidate != phase4_signature for candidate in phase4_candidates):
+        raise ValueError("serialized Phase 4 adapter signatures disagree")
+
+    adapted_mass_payload = _required_mapping(
+        fixed_step, "adapted_mass_artifact_payload"
+    )
+    adapted_mass = PrecomputedMassArtifact.from_payload(
+        adapted_mass_payload,
+        expected_adapter_signature=phase4_signature,
+        expected_dim=dimension,
+    )
+    adapted_mass_signature = _mass_artifact_signature(adapted_mass)
+    expected_mass_signatures = (
+        windowed.get("adapted_mass_artifact_signature"),
+        fixed_step.get("adapted_mass_artifact_signature"),
+        handoff.get("mass_artifact_signature"),
+        _required_mapping(tuning_payload, "final_kernel_payload").get(
+            "adapted_mass_artifact_signature"
+        ),
+    )
+    if any(value != adapted_mass_signature for value in expected_mass_signatures):
+        raise ValueError("serialized adapted mass signatures disagree")
+    if adapted_mass_signature != windowed.get("initial_mass_artifact_signature"):
+        raise ValueError("serialized fixed identity mass mutated")
+
+    selected_step = _required_mapping(fixed_step, "selected_step_payload")
+    step_size = float(selected_step.get("step_size", float("nan")))
+    leapfrogs = int(selected_step.get("num_leapfrog_steps", 0))
+    if not math.isfinite(step_size) or step_size <= 0.0 or leapfrogs <= 0:
+        raise ValueError("serialized selected kernel mechanics are invalid")
+    if float(fixed_step.get("selected_step_size", float("nan"))) != step_size:
+        raise ValueError("serialized selected step size mismatch")
+    if int(fixed_step.get("fixed_num_leapfrog_steps", 0)) != leapfrogs:
+        raise ValueError("serialized selected leapfrog count mismatch")
+    if float(handoff.get("selected_step_size", float("nan"))) != step_size:
+        raise ValueError("serialized handoff step size mismatch")
+    if int(handoff.get("selected_num_leapfrog_steps", 0)) != leapfrogs:
+        raise ValueError("serialized handoff leapfrog count mismatch")
+    for required_flag in (
+        "final_kernel_handoff_complete",
+        "mass_handoff_complete",
+        "step_handoff_complete",
+        "required_private_handoff_complete",
+    ):
+        if handoff.get(required_flag) is not True:
+            raise ValueError(f"serialized handoff is incomplete: {required_flag}")
+
+    final_adapter = _build_fixed_mass_hmc_adapter(
+        adapter=phase4_adapter,
+        mass_artifact=adapted_mass,
+        mass_signature=adapted_mass_signature,
+        target_scope=str(target_scope),
+    )
+    final_signature = stable_adapter_signature(final_adapter)
+    final_signature_candidates = (
+        fixed_step.get("ladder_hmc_adapter_signature"),
+        selected_step.get("hmc_adapter_signature"),
+    )
+    if any(value != final_signature for value in final_signature_candidates):
+        raise ValueError("serialized final adapter signatures disagree")
+
+    target_accept_prob = float(config.get("target_accept_prob", float("nan")))
+    acceptance_band = tuple(float(item) for item in config.get("acceptance_band", ()))
+    if not math.isfinite(target_accept_prob) or len(acceptance_band) != 2:
+        raise ValueError("serialized acceptance policy is invalid")
+    public_final = _required_mapping(tuning_payload, "final_kernel_payload")
+    if (
+        float(public_final.get("target_accept_prob", float("nan")))
+        != target_accept_prob
+        or tuple(float(item) for item in public_final.get("acceptance_band", ()))
+        != acceptance_band
+        or public_final.get("fresh_fixed_kernel_verification_passed") is not True
+    ):
+        raise ValueError("serialized public acceptance handoff mismatch")
+
+    mechanics = {
+        "schema": _ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA,
+        "target_signature": str(target_signature),
+        "target_scope": str(target_scope),
+        "target_dimension": dimension,
+        "base_adapter_signature": base_signature,
+        "phase4_hmc_adapter_signature": phase4_signature,
+        "final_hmc_adapter_signature": final_signature,
+        "mass_policy": "fixed_identity",
+        "initial_mass_artifact_payload": initial_mass.to_payload(include_arrays=True),
+        "adapted_mass_artifact_payload": adapted_mass.to_payload(include_arrays=True),
+        "step_size": step_size,
+        "num_leapfrog_steps": leapfrogs,
+        "target_accept_prob": target_accept_prob,
+        "acceptance_band": acceptance_band,
+        "execution": dict(execution),
+    }
+    return {
+        "schema": ADMITTED_KERNEL_MECHANICS_SCHEMA,
+        "mechanics": mechanics,
+        "mechanics_sha256": stable_config_hash(mechanics),
+        "tuning_provenance": {
+            "source_artifact_path": str(source_artifact_path),
+            "source_artifact_sha256": str(source_artifact_sha256),
+            "geometry_artifact_hash": tuning_payload.get("geometry_artifact_hash"),
+            "bootstrap_artifact_hash": tuning_payload.get("bootstrap_artifact_hash"),
+            "loop_artifact_hash": tuning_payload.get("loop_artifact_hash"),
+            "public_final_kernel_hash": tuning_payload.get("final_kernel_hash"),
+            "passed_attempt_index": int(attempt.get("attempt_index", -1)),
+            "selected_step_hash": fixed_step.get("selected_step_hash"),
+            "verification_acceptance_rate": handoff.get(
+                "verification_acceptance_rate"
+            ),
+            "role": "explanatory_provenance_only_not_replay_admission",
+        },
+    }
+
+
+def build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload(
+    *,
+    adapter: Any,
+    mechanics_payload: Mapping[str, Any],
+    initial_position: Any,
+    target_signature: str,
+    target_scope: str,
+    execution: Mapping[str, Any],
+    target_accept_prob: float,
+    acceptance_band: tuple[float, float],
+) -> RetainedFrozenKernelAdapterReplayResult:
+    """Rebuild an admitted retained HMC adapter without invoking the tuner."""
+
+    if not isinstance(mechanics_payload, Mapping):
+        raise TypeError("mechanics_payload must be a mapping")
+    if mechanics_payload.get("schema") != ADMITTED_KERNEL_MECHANICS_SCHEMA:
+        raise ValueError("admitted kernel mechanics schema mismatch")
+    observed_hash = mechanics_payload.get("mechanics_sha256")
+    mechanics = dict(_required_mapping(mechanics_payload, "mechanics"))
+    if mechanics.get("schema") != _ADMITTED_KERNEL_MECHANICS_PAYLOAD_SCHEMA:
+        raise ValueError("admitted kernel mechanics payload schema mismatch")
+    if observed_hash != stable_config_hash(mechanics):
+        raise ValueError("admitted kernel mechanics fingerprint mismatch")
+    for key, expected in (
+        ("target_signature", str(target_signature)),
+        ("target_scope", str(target_scope)),
+        ("target_dimension", int(getattr(adapter, "parameter_dim", -1))),
+    ):
+        if mechanics.get(key) != expected:
+            raise ValueError(f"admitted kernel {key} mismatch")
+    if dict(mechanics.get("execution", {})) != dict(execution):
+        raise ValueError("admitted kernel execution settings mismatch")
+    if float(mechanics.get("target_accept_prob", float("nan"))) != float(target_accept_prob):
+        raise ValueError("admitted kernel target acceptance mismatch")
+    observed_band = tuple(float(item) for item in mechanics.get("acceptance_band", ()))
+    if observed_band != tuple(float(item) for item in acceptance_band):
+        raise ValueError("admitted kernel acceptance band mismatch")
+    if mechanics.get("mass_policy") != "fixed_identity":
+        raise ValueError("admitted kernel mass policy mismatch")
+    step_size = float(mechanics.get("step_size", float("nan")))
+    leapfrogs = int(mechanics.get("num_leapfrog_steps", 0))
+    if not math.isfinite(step_size) or step_size <= 0.0:
+        raise ValueError("admitted kernel step size must be positive and finite")
+    if leapfrogs <= 0:
+        raise ValueError("admitted kernel leapfrog count must be positive")
+    base_signature = stable_adapter_signature(adapter)
+    if mechanics.get("base_adapter_signature") != base_signature:
+        raise ValueError("admitted kernel base adapter signature mismatch")
+    position = initial_position
+    position_shape = getattr(position, "shape", None)
+    if tuple(position_shape or ()) != (int(mechanics["target_dimension"]),):
+        raise ValueError("admitted kernel initial position shape mismatch")
+    initial_mass = PrecomputedMassArtifact.from_payload(
+        _required_mapping(mechanics, "initial_mass_artifact_payload"),
+        expected_adapter_signature=base_signature,
+        expected_dim=int(mechanics["target_dimension"]),
+    )
+    if any(
+        float(left) != float(right)
+        for left, right in zip(position, initial_mass.position)
+    ):
+        raise ValueError("admitted kernel initial position mismatch")
+    initial_mass_signature = _mass_artifact_signature(initial_mass)
+    phase4_adapter = _build_bootstrap_fixed_mass_adapter(
+        adapter=adapter,
+        mass_artifact=initial_mass,
+        mass_signature=initial_mass_signature,
+        target_scope=str(target_scope),
+        nonclaims=FIXED_MASS_STEP_STAGE_NONCLAIMS,
+    )
+    if stable_adapter_signature(phase4_adapter) != mechanics[
+        "phase4_hmc_adapter_signature"
+    ]:
+        raise ValueError("admitted kernel Phase 4 adapter signature mismatch")
+    adapted_mass = PrecomputedMassArtifact.from_payload(
+        _required_mapping(mechanics, "adapted_mass_artifact_payload"),
+        expected_adapter_signature=str(mechanics["phase4_hmc_adapter_signature"]),
+        expected_dim=int(mechanics["target_dimension"]),
+    )
+    adapted_mass_signature = _mass_artifact_signature(adapted_mass)
+    final_adapter = _build_fixed_mass_hmc_adapter(
+        adapter=phase4_adapter,
+        mass_artifact=adapted_mass,
+        mass_signature=adapted_mass_signature,
+        target_scope=str(target_scope),
+    )
+    final_signature = stable_adapter_signature(final_adapter)
+    if final_signature != mechanics["final_hmc_adapter_signature"]:
+        raise ValueError("admitted kernel final adapter signature mismatch")
+    final_kernel_payload = dict(mechanics)
+    return RetainedFrozenKernelAdapterReplayResult(
+        adapter=final_adapter,
+        adapted_mass_artifact=adapted_mass,
+        contract={
+            "schema": "bayesfilter.retained_frozen_kernel_adapter_replay_contract.v1",
+            "base_adapter_signature": base_signature,
+            "phase4_hmc_adapter_signature": mechanics[
+                "phase4_hmc_adapter_signature"
+            ],
+            "adapted_mass_artifact_signature": adapted_mass_signature,
+            "final_hmc_adapter_signature": final_signature,
+            "target_scope": str(target_scope),
+            "target_dimension": int(mechanics["target_dimension"]),
+            "hmc_or_tuning_invoked": False,
+            "replay_owned_by_bayesfilter": True,
+        },
+        final_kernel_payload=final_kernel_payload,
+    )
+
+
 def _required_mapping(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
     value = payload.get(key)
     if not isinstance(value, Mapping):
@@ -6261,6 +6825,7 @@ def _geometry_config_from_payload(
         negative_hessian_source=str(
             payload.get("negative_hessian_source", "negative_hessian")
         ),
+        mass_policy=str(payload.get("mass_policy", "windowed_adaptive")),
         seed=tuple(int(item) for item in payload.get("seed", (20260621, 2))),
         source=str(payload.get("source", "bayesfilter.inference.hmc_kernel_tuning.geometry")),
     )
@@ -7722,9 +8287,13 @@ def run_hmc_windowed_mass_stage(
                 target_accept_prob=cfg.target_accept_prob,
                 source=cfg.source,
             )
+            semantic_config = dataclasses.replace(
+                windowed_config,
+                mass_policy=cfg.mass_policy,
+            )
             windowed_result = run_windowed_mass_adaptation_diagnostic(
                 policy,
-                config=windowed_config,
+                config=semantic_config,
                 initial_mass_artifact=stage_mass_artifact,
                 warmup_draws=capture["warmup_draws"],
                 initial_step_size=float(mass_window_seed_kernel["step_size"]),
@@ -9385,8 +9954,9 @@ def run_hmc_frozen_step_trajectory_stage(
                 contract_payloads=runner_contract_payloads,
                 semantic_source="run_hmc_frozen_step_trajectory_stage",
                 reuse_nonclaim=(
-                    "candidate L values often differ, but compatible selected-pair "
-                    "handoff screens may reuse a fixed-mass screen runner"
+                    "uniform route telemetry does not imply uniform candidate L; "
+                    "compatible selected-pair handoff screens may reuse a "
+                    "fixed-mass screen runner"
                 ),
                 handoff_source=runner_handoff_source,
                 initial_handoff_contract_count=initial_handoff_contract_count,
@@ -10803,7 +11373,10 @@ def tune_hmc_kernel(
 
     The caller supplies the model adapter, an initial position, optional
     geometry hints, an optional diagnostic callback, and an optional output
-    directory.  BayesFilter owns the mass, step-size, leapfrog, screen,
+    directory.  ``mass_policy='fixed_identity'`` ignores geometry hints and
+    freezes identity covariance in the supplied coordinates; the default
+    ``windowed_adaptive`` behavior is unchanged. BayesFilter owns the mass,
+    step-size, leapfrog, screen,
     verification, and repair mechanics.  A final kernel is emitted only when
     the Phase 7 fresh fixed-kernel verification passes.
     """
@@ -11148,6 +11721,21 @@ def tune_hmc_kernel(
     try:
         write_progress("start", started=True)
         write_progress("geometry_start", started=True)
+        if cfg.mass_policy == "fixed_identity" and any(
+            value is not None
+            for value in (negative_hessian, initial_covariance, parameter_scales)
+        ):
+            write_private_event(
+                "fixed_identity_geometry_hints_ignored",
+                "geometry_start",
+                {
+                    "mass_policy": cfg.mass_policy,
+                    "negative_hessian_supplied": negative_hessian is not None,
+                    "initial_covariance_supplied": initial_covariance is not None,
+                    "parameter_scales_supplied": parameter_scales is not None,
+                    "reports_posterior_convergence": False,
+                },
+            )
         geometry = initialize_hmc_kernel_geometry(
             adapter=adapter,
             initial_position=position,
@@ -11208,6 +11796,9 @@ def tune_hmc_kernel(
             final_kernel_hash=None,
             artifact_path=None if artifact_path is None else str(artifact_path),
             diagnostic_roles=_public_tuning_diagnostic_roles(),
+            failure_diagnostics=_public_failure_diagnostics(
+                stage="geometry", exc=exc
+            ),
         )
         write_result_artifact(result)
         write_progress(
@@ -11249,6 +11840,38 @@ def tune_hmc_kernel(
             progress_callback=write_bootstrap_progress,
             _private_diagnostic_callback=write_private_tuning_diagnostic,
         )
+        bootstrap_hard_vetoes = _bootstrap_hard_vetoes(bootstrap)
+        if bootstrap_hard_vetoes:
+            final_status = "hard_veto"
+            diagnostic_role = "bootstrap_screen_hard_veto"
+            hard_vetoes = bootstrap_hard_vetoes
+            repair_triggers = _bootstrap_repair_triggers(bootstrap)
+            result = HMCKernelTuningResult(
+                config=cfg,
+                adapter_signature=adapter_signature,
+                target_dimension=target_dimension,
+                geometry=geometry,
+                bootstrap=bootstrap,
+                tune_verify_repair_loop=None,
+                final_status=final_status,
+                diagnostic_role=diagnostic_role,
+                hard_vetoes=hard_vetoes,
+                repair_triggers=repair_triggers,
+                final_kernel_payload=None,
+                final_kernel_hash=None,
+                artifact_path=None if artifact_path is None else str(artifact_path),
+                diagnostic_roles=_public_tuning_diagnostic_roles(),
+                failure_diagnostics=_public_bootstrap_failure_diagnostics(bootstrap),
+            )
+            write_result_artifact(result)
+            write_progress(
+                "result_written",
+                extra={
+                    "final_status": result.final_status,
+                    "diagnostic_role": result.diagnostic_role,
+                },
+            )
+            return result
         handoff_kernel = _active_bootstrap_handoff_kernel_payload(
             geometry=geometry,
             bootstrap=bootstrap,
@@ -11282,7 +11905,11 @@ def tune_hmc_kernel(
         repair_triggers = (type(exc).__name__,)
         write_progress(
             "bootstrap_error",
-            extra={"error_type": type(exc).__name__, "error_message": str(exc)},
+            extra={
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "error_repr": repr(exc),
+            },
         )
         result = HMCKernelTuningResult(
             config=cfg,
@@ -11299,38 +11926,9 @@ def tune_hmc_kernel(
             final_kernel_hash=None,
             artifact_path=None if artifact_path is None else str(artifact_path),
             diagnostic_roles=_public_tuning_diagnostic_roles(),
-        )
-        write_result_artifact(result)
-        write_progress(
-            "result_written",
-            extra={
-                "final_status": result.final_status,
-                "diagnostic_role": result.diagnostic_role,
-            },
-        )
-        return result
-
-    bootstrap_hard_vetoes = _bootstrap_hard_vetoes(bootstrap)
-    if bootstrap_hard_vetoes:
-        final_status = "hard_veto"
-        diagnostic_role = "bootstrap_screen_hard_veto"
-        repair_triggers = _bootstrap_repair_triggers(bootstrap)
-        hard_vetoes = bootstrap_hard_vetoes
-        result = HMCKernelTuningResult(
-            config=cfg,
-            adapter_signature=adapter_signature,
-            target_dimension=target_dimension,
-            geometry=geometry,
-            bootstrap=bootstrap,
-            tune_verify_repair_loop=None,
-            final_status=final_status,
-            diagnostic_role=diagnostic_role,
-            hard_vetoes=hard_vetoes,
-            repair_triggers=repair_triggers,
-            final_kernel_payload=None,
-            final_kernel_hash=None,
-            artifact_path=None if artifact_path is None else str(artifact_path),
-            diagnostic_roles=_public_tuning_diagnostic_roles(),
+            failure_diagnostics=_public_failure_diagnostics(
+                stage="bootstrap", exc=exc
+            ),
         )
         write_result_artifact(result)
         write_progress(
@@ -11537,6 +12135,17 @@ def _select_geometry_hint(
         "parameter_scales": parameter_scales is not None,
     }
     failures: list[Mapping[str, Any]] = []
+    if config.mass_policy == "fixed_identity":
+        return _identity_hint(
+            position=position,
+            supplied=supplied,
+            failures=(
+                {
+                    "kind": "fixed_identity",
+                    "reason": "caller geometry hints ignored by explicit mass policy",
+                },
+            ),
+        )
     for kind, value in (
         ("negative_hessian", negative_hessian),
         ("initial_covariance", initial_covariance),
@@ -12053,6 +12662,8 @@ def _validate_fixed_mass_step_stage_inputs(
     windowed_stage: HMCWindowedMassStageResult,
     config: HMCFixedMassStepStageConfig,
 ) -> None:
+    if config.mass_policy != windowed_stage.config.mass_policy:
+        raise ValueError("Phase 5 mass policy does not match Phase 4")
     adapter_signature = stable_adapter_signature(adapter)
     if adapter_signature != windowed_stage.adapter_signature:
         raise ValueError("fixed-mass step stage adapter signature must match Phase 4")
@@ -12091,6 +12702,10 @@ def _validate_fixed_mass_step_stage_inputs(
     signature = _mass_artifact_signature(artifact)
     if signature != windowed_stage.adapted_mass_artifact_signature:
         raise ValueError("Phase 4 adapted mass signature mismatch")
+    if config.mass_policy == "fixed_identity" and (
+        signature != windowed_stage.initial_mass_artifact_signature
+    ):
+        raise ValueError("fixed identity Phase 5 mass signature mutated")
     artifact.validate_for_adapter(
         _phase4_latent_adapter_for_step_stage(
             adapter=adapter,
@@ -12111,6 +12726,10 @@ def _validate_frozen_step_trajectory_stage_inputs(
     fixed_mass_step_stage: HMCFixedMassStepStageResult,
     config: HMCFrozenStepTrajectoryStageConfig,
 ) -> None:
+    if config.mass_policy != windowed_stage.config.mass_policy:
+        raise ValueError("Phase 6 mass policy does not match Phase 4")
+    if config.mass_policy != fixed_mass_step_stage.config.mass_policy:
+        raise ValueError("Phase 6 mass policy does not match Phase 5")
     adapter_signature = stable_adapter_signature(adapter)
     if adapter_signature != fixed_mass_step_stage.adapter_signature:
         raise ValueError("frozen-step trajectory adapter signature mismatch")
@@ -12167,6 +12786,11 @@ def _validate_frozen_step_trajectory_stage_inputs(
         raise ValueError("frozen-step trajectory ladder HMC adapter signature mismatch")
     if fixed_mass_step_stage.adapted_mass_artifact_signature != windowed_stage.adapted_mass_artifact_signature:
         raise ValueError("frozen-step trajectory Phase 4 adapted mass signature mismatch")
+    if config.mass_policy == "fixed_identity" and (
+        fixed_mass_step_stage.adapted_mass_artifact_signature
+        != windowed_stage.initial_mass_artifact_signature
+    ):
+        raise ValueError("fixed identity Phase 6 mass signature mutated")
     if fixed_mass_step_stage.target_dimension != windowed_stage.target_dimension:
         raise ValueError("frozen-step trajectory target dimension mismatch")
     if geometry.target_dimension != fixed_mass_step_stage.target_dimension:
@@ -12203,6 +12827,7 @@ def _validate_frozen_step_trajectory_stage_inputs(
             if config.target_scope is not None
             else fixed_mass_step_stage.config.target_scope,
             target_status_trace_policy=fixed_mass_step_stage.config.target_status_trace_policy,
+            mass_policy=fixed_mass_step_stage.config.mass_policy,
             public_timeout_budget_s=fixed_mass_step_stage.config.public_timeout_budget_s,
             public_timeout_started_perf_counter_s=(
                 fixed_mass_step_stage.config.public_timeout_started_perf_counter_s
@@ -12287,6 +12912,7 @@ def _public_geometry_config(config: HMCKernelTuningConfig) -> HMCGeometryInitial
         allow_geometry_fallback=config.allow_geometry_fallback,
         position_role=config.geometry_position_role,
         negative_hessian_source=config.negative_hessian_source,
+        mass_policy=config.mass_policy,
         seed=_derive_seed(config.seed, stage_index=2),
         source=f"{config.source}.geometry",
     )
@@ -12366,6 +12992,7 @@ def _public_loop_config(
         use_xla=config.use_xla,
         target_scope=config.target_scope,
         target_status_trace_policy=config.target_status_trace_policy,
+        mass_policy=config.mass_policy,
         public_timeout_budget_s=config.public_timeout_budget_s,
         public_timeout_started_perf_counter_s=public_timeout_started_perf_counter_s,
         verification_chunk_max_results=config.verification_chunk_max_results,
@@ -12544,6 +13171,7 @@ def _public_final_kernel_summary_from_private_payload(
         "target_scope",
         "target_dimension",
         "adapted_mass_artifact_signature",
+        "mass_policy",
         "target_accept_prob",
         "acceptance_band",
         "verification_acceptance_rate",
@@ -13053,6 +13681,7 @@ def _public_tuning_artifact_payload(
         else len(result.tune_verify_repair_loop.attempts),
         "phase7_public_summary": phase7_public_summary,
         "phase7_early_closeout_public_summary": phase7_early_closeout,
+        "failure_diagnostics": result.failure_diagnostics,
         "diagnostic_roles": result.diagnostic_roles,
         "artifact_policy": {
             "posterior_samples_written": False,
@@ -13658,6 +14287,13 @@ def _phase7_verification_public_summary(
                 if isinstance(sequential_policy, Mapping)
                 else None
             )
+        ),
+        "rhat_definition": diagnostics.get("rhat_definition"),
+        "max_rank_normalized_split_rhat": diagnostics.get(
+            "max_rank_normalized_split_rhat"
+        ),
+        "max_folded_rank_normalized_split_rhat": diagnostics.get(
+            "max_folded_rank_normalized_split_rhat"
         ),
         "check_interval": diagnostics.get("check_interval"),
         "max_results": diagnostics.get("max_results")
@@ -16759,6 +17395,7 @@ def _phase7_windowed_stage_config(
         use_xla=config.use_xla,
         target_scope=config.target_scope,
         target_status_trace_policy=config.target_status_trace_policy,
+        mass_policy=config.mass_policy,
         public_timeout_budget_s=_staged_timeout_stage_budget(
             config.staged_timeout_policy,
             "windowed_mass",
@@ -16807,6 +17444,7 @@ def _phase7_fixed_step_stage_config(
         use_xla=config.use_xla,
         target_scope=config.target_scope,
         target_status_trace_policy=config.target_status_trace_policy,
+        mass_policy=config.mass_policy,
         public_timeout_budget_s=_staged_timeout_stage_budget(
             config.staged_timeout_policy,
             "fixed_mass_step",
@@ -16847,6 +17485,7 @@ def _phase7_trajectory_stage_config(
         use_xla=config.use_xla,
         target_scope=config.target_scope,
         target_status_trace_policy=config.target_status_trace_policy,
+        mass_policy=config.mass_policy,
         public_timeout_budget_s=_staged_timeout_stage_budget(
             config.staged_timeout_policy,
             "frozen_step_trajectory",
@@ -20823,6 +21462,7 @@ def _run_phase7_sequential_rhat_final_verification(
     diagnostics["sequential_rhat_policy"] = {
         "check_interval": check_interval,
         "rhat_threshold": 1.01,
+        "rhat_definition": diagnostics.get("rhat_definition"),
         "max_results": max_results,
         "verification_chunk_max_results": configured_chunk,
         "minimum_retained_results_for_pass": int(min_retained_for_pass),
@@ -20869,7 +21509,11 @@ def _run_phase7_sequential_rhat_final_verification(
         "num_burnin_steps": sequential_config.num_burnin_steps,
         "chain_count": sequential_config.chain_count,
         "rhat_threshold": sequential_config.rhat_threshold,
-        "rhat_threshold_role": "historical_explanatory_only_not_stopping_or_admission",
+        "rhat_threshold_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+        "rhat_definition": (
+            "max(rank-normalized split R-hat, "
+            "folded rank-normalized split R-hat)"
+        ),
         "acceptance_band": tuple(float(item) for item in config.acceptance_band),
         "acceptance_policy": acceptance_policy.payload(),
         "use_xla": sequential_config.use_xla,
@@ -22578,6 +23222,15 @@ def _phase7_final_kernel_payload(
     target_scope: str,
 ) -> Mapping[str, Any]:
     adapted_mass = _phase4_adapted_mass_artifact(windowed_stage)
+    if config.mass_policy == "fixed_identity":
+        if windowed_stage.config.mass_policy != "fixed_identity":
+            raise ValueError("fixed identity final kernel lost Phase 4 policy")
+        if fixed_mass_step_stage.config.mass_policy != "fixed_identity":
+            raise ValueError("fixed identity final kernel lost Phase 5 policy")
+        if trajectory_stage.config.mass_policy != "fixed_identity":
+            raise ValueError("fixed identity final kernel lost Phase 6 policy")
+        if _mass_artifact_signature(adapted_mass) != windowed_stage.initial_mass_artifact_signature:
+            raise ValueError("fixed identity final kernel mass signature mutated")
     step = _required_selected_step_size(fixed_mass_step_stage)
     leapfrog = trajectory_stage.selected_num_leapfrog_steps
     if leapfrog is None:
@@ -22590,6 +23243,7 @@ def _phase7_final_kernel_payload(
         "target_dimension": geometry.target_dimension,
         "adapted_mass_artifact_payload": adapted_mass.to_payload(include_arrays=True),
         "adapted_mass_artifact_signature": _mass_artifact_signature(adapted_mass),
+        "mass_policy": config.mass_policy,
         "step_size": float(step),
         "num_leapfrog_steps": int(leapfrog),
         "trajectory_length": float(step) * int(leapfrog),
@@ -22662,6 +23316,13 @@ def _phase7_direct_final_kernel_payload(
         raise ValueError("operational final kernel lineage is incomplete")
     adapted_mass = _phase4_adapted_mass_artifact(windowed_stage)
     mass_signature = _mass_artifact_signature(adapted_mass)
+    if config.mass_policy == "fixed_identity":
+        if (
+            windowed_stage.config.mass_policy != "fixed_identity"
+            or fixed_mass_step_stage.config.mass_policy != "fixed_identity"
+            or mass_signature != windowed_stage.initial_mass_artifact_signature
+        ):
+            raise ValueError("fixed identity direct final kernel mass signature mutated")
     if mass_signature != verification_input.adapted_mass_artifact_signature:
         raise ValueError("direct final kernel mass signature mismatch")
     step = verification_input.step_size
@@ -22674,6 +23335,7 @@ def _phase7_direct_final_kernel_payload(
         "target_dimension": geometry.target_dimension,
         "adapted_mass_artifact_payload": adapted_mass.to_payload(include_arrays=True),
         "adapted_mass_artifact_signature": mass_signature,
+        "mass_policy": config.mass_policy,
         "step_size": float(step),
         "num_leapfrog_steps": int(leapfrog),
         "trajectory_length": float(step) * int(leapfrog),
@@ -23954,9 +24616,13 @@ def _runtime_seconds_or_none(metadata: Mapping[str, Any]) -> float | None:
 
 
 def _bootstrap_error_diagnostics(exc: Exception) -> Mapping[str, Any]:
+    message = str(exc)
+    if len(message) > 2000:
+        message = message[:1997] + "..."
     return {
         "error_type": type(exc).__name__,
-        "error_message": str(exc),
+        "error_message": message,
+        "failure_diagnostics_role": "diagnostic_exception_provenance_not_scientific_evidence",
         "acceptance_rate": None,
         "runtime_s": None,
         "runtime_finite": False,
@@ -23973,6 +24639,57 @@ def _bootstrap_error_diagnostics(exc: Exception) -> Mapping[str, Any]:
             "unavailable_diagnostics": (),
             "nonclaims": BOOTSTRAP_SCREEN_NONCLAIMS,
         },
+    }
+
+
+def _public_failure_diagnostics(*, stage: str, exc: Exception) -> Mapping[str, Any]:
+    message = str(exc)
+    if len(message) > 2000:
+        message = message[:1997] + "..."
+    return {
+        "schema": "bayesfilter.hmc_tuning_failure_diagnostics.v1",
+        "stage": str(stage),
+        "exception_type": type(exc).__name__,
+        "exception_message": message,
+        "role": "diagnostic_exception_provenance_not_scientific_evidence",
+        "hmc_mechanics_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "reports_default_readiness": False,
+        "reports_gpu_or_xla_readiness": False,
+    }
+
+
+def _public_bootstrap_failure_diagnostics(
+    bootstrap: HMCBootstrapScreenResult,
+) -> Mapping[str, Any]:
+    """Summarize a returned bootstrap hard veto without exposing HMC mechanics."""
+
+    last_round = bootstrap.rounds[-1]
+    diagnostics = dict(last_round.diagnostics)
+    message = diagnostics.get("error_message")
+    if message is not None:
+        message = str(message)
+        if len(message) > 2000:
+            message = message[:1997] + "..."
+    error_type = diagnostics.get("error_type")
+    return {
+        "schema": "bayesfilter.hmc_tuning_failure_diagnostics.v1",
+        "stage": "bootstrap",
+        "diagnostic_stage": str(last_round.diagnostic_role),
+        "round_index": int(last_round.round_index),
+        "exception_type": None if error_type is None else str(error_type),
+        "exception_message": message,
+        "hard_vetoes": tuple(str(veto) for veto in last_round.hard_vetoes),
+        "repair_triggers": tuple(
+            str(trigger) for trigger in last_round.repair_triggers
+        ),
+        "role": "diagnostic_exception_provenance_not_scientific_evidence",
+        "hmc_mechanics_exposed": False,
+        "reports_posterior_convergence": False,
+        "reports_sampler_superiority": False,
+        "reports_default_readiness": False,
+        "reports_gpu_or_xla_readiness": False,
     }
 
 

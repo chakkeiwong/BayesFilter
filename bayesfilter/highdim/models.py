@@ -1947,18 +1947,14 @@ def _as_row_matrix(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
         tensor = tensor[tf.newaxis, :]
     if tensor.shape.rank != 2 or tensor.shape[1] != width:
         raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-        raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor
+    return _require_finite_tensor(tensor, name)
 
 
 def _as_path_matrix(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
     tensor = tf.convert_to_tensor(values, dtype=tf.float64)
     if tensor.shape.rank != 2 or tensor.shape[1] != width:
         raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-        raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor
+    return _require_finite_tensor(tensor, name)
 
 
 def _as_parameter_vector(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
@@ -1967,9 +1963,21 @@ def _as_parameter_vector(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
         tensor = tensor[0]
     if tensor.shape.rank != 1 or tensor.shape[0] != width:
         raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-        raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor
+    return _require_finite_tensor(tensor, name)
+
+
+def _require_finite_tensor(tensor: tf.Tensor, name: str) -> tf.Tensor:
+    """Preserve eager ValueErrors while making validation graph/XLA-safe."""
+
+    if tf.executing_eagerly():
+        if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
+            raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
+        return tensor
+    assertion = tf.debugging.assert_all_finite(
+        tensor, f"{name}: {HighDimStatus.NONFINITE_VALUE.value}"
+    )
+    with tf.control_dependencies([assertion]):
+        return tf.identity(tensor)
 
 
 def _mvn_log_prob(values: tf.Tensor, loc: tf.Tensor, covariance: tf.Tensor) -> tf.Tensor:

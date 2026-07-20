@@ -1,10 +1,9 @@
-"""Tiny CPU-only LGSSM NeuTra-style affine training fixture.
+"""Retired CPU-only LGSSM NeuTra-style affine training fixture.
 
-This module is a Phase 6 integration fixture.  It trains a two-parameter
-affine-diagonal transport for the existing LGSSM generic target, freezes that
-transport to the reviewed affine artifact schema, reloads it through the
-standard loader, and runs mechanics/reference checks.  It does not train dense
-IAF transports, run serious HMC, or establish posterior validity.
+The historical implementation lacked a repository-bound batch-native target
+and is non-executable migration evidence. The public entry point rejects before
+optimizer or artifact side effects. Use ``bayesfilter.inference.neutra_training``
+with a repository-issued batch-native target binding for live training.
 """
 
 from __future__ import annotations
@@ -112,10 +111,25 @@ class LGSSMAffineNeuTraTrainingResult:
 def train_and_validate_lgssm_affine_neutra(
     config: LGSSMAffineNeuTraTrainingConfig | None = None,
 ) -> LGSSMAffineNeuTraTrainingResult:
-    """Train, freeze, reload, and validate a tiny affine LGSSM transport."""
+    """Reject the retired scalar/row-mapped affine optimizer fixture."""
 
     cfg = LGSSMAffineNeuTraTrainingConfig() if config is None else config
     _validate_config(cfg)
+    raise LGSSMNeuTraTrainingError(
+        "retired migration debt: this affine fixture lacks a repository-bound "
+        "batch-native target and cannot perform NeuTra optimizer updates"
+    )
+
+
+def _historical_train_and_validate_lgssm_affine_neutra(
+    config: LGSSMAffineNeuTraTrainingConfig,
+) -> LGSSMAffineNeuTraTrainingResult:
+    """Preserve the old source as unreachable migration evidence."""
+
+    raise LGSSMNeuTraTrainingError(
+        "historical implementation is non-executable migration evidence"
+    )
+    cfg = config
     start = time.monotonic()
     tf.random.set_seed(int(cfg.seed))
     fixture = make_lgssm_generic_target_fixture()

@@ -13,8 +13,8 @@ from bayesfilter.highdim.ledh_forward_contract import (
     PARAMETERIZED_SIR_DIAGNOSTIC_ROW_ID,
 )
 from bayesfilter.highdim.ledh_score_contract import (
-    LEDH_SCORE_ADMISSION_STATUS_FULL,
     LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     validate_ledh_score_artifact,
 )
 from docs.benchmarks import benchmark_ledh_same_target_fixed_sir_score as fixed_sir
@@ -62,6 +62,7 @@ def _tiny_compact_args():
         device_scope = "cpu"
         cuda_visible_devices = None
         expect_device_kind = "cpu"
+        historical_raw_diagnostic = True
         output = "/tmp/fixed_sir_compact_tiny.json"
 
     return Args()
@@ -140,6 +141,9 @@ def test_phase4_fixed_sir_compact_default_source_has_no_reverse_records_or_autod
     source = "\n".join(
         [
             inspect.getsource(fixed_sir._compact_value_and_score_from_components),  # noqa: SLF001
+            inspect.getsource(fixed_sir._compact_value_and_score_across_seeds),  # noqa: SLF001
+            inspect.getsource(fixed_sir._value_objective_from_components),  # noqa: SLF001
+            inspect.getsource(fixed_sir._value_objective_across_seeds),  # noqa: SLF001
             inspect.getsource(fixed_sir._fixed_sir_compact_coordinate_fd_diagnostic),  # noqa: SLF001
             inspect.getsource(fixed_sir._fixed_sir_compact_score_artifact_from_diagnostic),  # noqa: SLF001
         ]
@@ -151,6 +155,55 @@ def test_phase4_fixed_sir_compact_default_source_has_no_reverse_records_or_autod
     assert "_transport_vjp_tf" not in source
     assert "GradientTape" not in source
     assert "ForwardAccumulator" not in source
+
+
+def test_phase4_fixed_sir_coordinate_fd_uses_compact_score_and_value_only_fd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    args = _tiny_compact_args()
+    args.batch_seeds = [81120, 81121]
+    compact_seeds = []
+    value_seeds = []
+    expected_score = tf.constant([1.0, 2.0, 3.0], dtype=tf.float64)
+
+    def fake_compact(_args, theta_values):
+        assert len(_args.batch_seeds) == 1
+        compact_seeds.append(int(_args.batch_seeds[0]))
+        theta = tf.convert_to_tensor(theta_values, dtype=tf.float64)
+        return {
+            "objective": tf.reduce_sum(theta * expected_score),
+            "log_likelihood": tf.reshape(tf.reduce_sum(theta * expected_score), [1]),
+            "gradient_tensor": expected_score,
+            "score_route": fixed_sir.FIXED_SIR_COMPACT_SCORE_ROUTE_ID,
+            "no_autodiff_score_route": True,
+            "value_score_route_status": "same_route_value_score",
+            "batch_seeds": list(_args.batch_seeds),
+            "time_steps": int(_args.time_steps),
+            "num_particles": int(_args.num_particles),
+        }
+
+    def fake_value(_args, theta_values):
+        assert len(_args.batch_seeds) == 1
+        value_seeds.append(int(_args.batch_seeds[0]))
+        theta = tf.convert_to_tensor(theta_values, dtype=tf.float64)
+        return tf.reduce_sum(theta * expected_score)
+
+    def forbidden_historical(*_args, **_kwargs):
+        raise AssertionError("historical fixed-SIR score route must not be used")
+
+    monkeypatch.setattr(fixed_sir, "_compact_value_and_score_from_components", fake_compact)
+    monkeypatch.setattr(fixed_sir, "_value_objective_from_components", fake_value)
+    monkeypatch.setattr(fixed_sir, "_fixed_sir_manual_score_diagnostic", forbidden_historical)
+
+    diagnostic = fixed_sir._fixed_sir_compact_coordinate_fd_diagnostic(  # noqa: SLF001
+        args,
+        [0.0, 0.0, 0.0],
+        fd_step=1.0e-3,
+    )
+
+    assert diagnostic["status"] == "pass"
+    assert compact_seeds == args.batch_seeds
+    assert value_seeds == args.batch_seeds * (2 * len(fixed_sir.PARAMETER_NAMES))
 
 
 def test_phase4_fixed_sir_compact_tiny_score_artifact_is_not_admitted() -> None:
@@ -171,7 +224,7 @@ def test_phase4_fixed_sir_compact_tiny_score_artifact_is_not_admitted() -> None:
         },
     )
 
-    assert artifact["score_admission_status"] == "tiny_score_diagnostic_not_admitted"
+    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert artifact["score_derivative_provenance"] == fixed_sir.FIXED_SIR_COMPACT_SCORE_ROUTE_ID
     assert artifact["score_precision"]["dtype"] == "float64"
     assert artifact["score_parameter_names"] == list(fixed_sir.PARAMETER_NAMES)
@@ -230,29 +283,20 @@ def test_phase4_fixed_sir_compact_full_admission_requires_production_precision()
         )
 
 
-def test_phase4_fixed_sir_compact_full_admission_accepts_compact_production_fixture() -> None:
-    artifact = fixed_sir._fixed_sir_compact_score_artifact_from_diagnostic(  # noqa: SLF001
-        _production_full_diagnostic_from_tiny(),
-        source_value_artifact=_load_value(),
-        source_value_artifact_path=FIXED_SIR_VALUE_REL,
-        require_all_parameter_correctness=True,
-        memory_diagnostics={
-            "n10000_memory_pass": True,
-            "source": "trusted_gpu_score_memory_artifact",
-            "peak_mib": 512.0,
-            "budget_mib": 14000.0,
-        },
-    )
-
-    normalized = validate_ledh_score_artifact(
-        artifact,
-        source_value_artifact=_load_value(),
-        expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID,
-        require_admitted=True,
-    )
-    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_FULL
-    assert normalized["score_derivative_provenance"] == fixed_sir.FIXED_SIR_COMPACT_SCORE_ROUTE_ID
-    assert normalized["score_precision"]["tf32_mode"] == "enabled"
+def test_phase4_fixed_sir_compact_full_shaped_fixture_is_historical_only() -> None:
+    with pytest.raises(ValueError, match="historical diagnostic only"):
+        fixed_sir._fixed_sir_compact_score_artifact_from_diagnostic(  # noqa: SLF001
+            _production_full_diagnostic_from_tiny(),
+            source_value_artifact=_load_value(),
+            source_value_artifact_path=FIXED_SIR_VALUE_REL,
+            require_all_parameter_correctness=True,
+            memory_diagnostics={
+                "n10000_memory_pass": True,
+                "source": "trusted_gpu_score_memory_artifact",
+                "peak_mib": 512.0,
+                "budget_mib": 14000.0,
+            },
+        )
 
 
 @pytest.mark.parametrize(
@@ -316,7 +360,7 @@ def test_phase4_fixed_sir_value_score_only_diagnostic_is_not_admitted() -> None:
         )
 
 
-def test_phase3_fixed_sir_memory_artifact_normalizes_as_tiny_directional_only() -> None:
+def test_phase3_fixed_sir_memory_artifact_normalizes_as_historical_directional_only() -> None:
     artifact = fixed_sir._fixed_sir_score_artifact_from_memory_result(
         _load_score_memory(),
         source_value_artifact=_load_value(),
@@ -324,7 +368,7 @@ def test_phase3_fixed_sir_memory_artifact_normalizes_as_tiny_directional_only() 
     )
 
     assert artifact["row_id"] == FIXED_SIR_AUSTRIA_ROW_ID
-    assert artifact["score_admission_status"] == "tiny_score_diagnostic_not_admitted"
+    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert artifact["score_correctness"]["kind"] == "same_scalar_directional_finite_difference"
     assert artifact["score_derivative_provenance"] == fixed_sir.FIXED_SIR_MEMORY_STYLE_SCORE_ROUTE_ID
     assert artifact["historical_memory_style_score_route"] == fixed_sir.FIXED_SIR_MEMORY_STYLE_SCORE_ROUTE_ID

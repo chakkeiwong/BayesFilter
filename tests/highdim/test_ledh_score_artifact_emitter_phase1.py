@@ -10,6 +10,7 @@ from bayesfilter.highdim.ledh_forward_contract import LGSSM_M3_T50_ROW_ID
 from bayesfilter.highdim.ledh_score_artifact import build_ledh_score_artifact
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_COMPACT_LGSSM_PROVENANCE,
     LEDH_SCORE_MEMORY_STYLE_LGSSM_PROVENANCE,
@@ -62,18 +63,9 @@ def _full_artifact(**overrides) -> dict:
     return build_ledh_score_artifact(**kwargs)
 
 
-def test_phase1_shared_emitter_builds_full_compact_admitted_artifact() -> None:
-    artifact = _full_artifact()
-    normalized = validate_ledh_score_artifact(
-        artifact,
-        source_value_artifact=_load_value(),
-        expected_row_id=LGSSM_M3_T50_ROW_ID,
-        require_admitted=True,
-    )
-
-    assert normalized["admitted"] is True
-    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_FULL
-    assert artifact["target_scalar"] == "observed_data_log_likelihood_estimator"
+def test_phase1_shared_v1_emitter_rejects_full_compact_admission() -> None:
+    with pytest.raises(ValueError, match="full admission is revoked"):
+        _full_artifact()
 
 
 def test_phase1_shared_emitter_rejects_missing_n10000_memory_gate() -> None:
@@ -120,7 +112,7 @@ def test_phase1_shared_emitter_keeps_tiny_artifact_non_admitted() -> None:
         require_admitted=False,
     )
 
-    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_TINY
+    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     with pytest.raises(ValueError, match="not admitted"):
         validate_ledh_score_artifact(
             artifact,

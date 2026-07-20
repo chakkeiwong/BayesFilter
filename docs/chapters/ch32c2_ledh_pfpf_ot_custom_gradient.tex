@@ -71,7 +71,8 @@ entropy-regularized OT, and Sinkhorn objects being differentiated.
 \section{Forward decomposition}
 \label{sec:bf-ledh-ot-forward-decomposition}
 
-At one observation time, the value path can be written as a composition
+At one observation time, the canonical value path is transition-first and can
+be written as a composition
 \begin{equation}
 \label{eq:bf-ledh-ot-forward-composition}
   \theta
@@ -80,26 +81,115 @@ At one observation time, the value path can be written as a composition
   \longmapsto
   (X, \log w)
   \longmapsto
-  \widetilde X
+  (\Delta_t,X^\star,\log w^\star)
   \longmapsto
-  \ell_t .
+  \mathcal L_t .
 \end{equation}
 Here \(X^-\in\mathbb R^{N\times d}\) is the pre-observation proposal cloud,
 \(\log w^-\) are proposal-correction log weights, and
 \(A_{\mathrm{flow}}\) denotes the LEDH auxiliary quantities needed for the
 proposal density and log-determinant correction.  The local LEDH construction
 uses particle-local linearizations and particle-local covariance state as in
-Li--Coates PF-PF.  The OT block then maps the weighted cloud to an equal-weight
-cloud
+Li--Coates PF-PF.  Corrected logits first produce the current likelihood
+increment \(\Delta_t\) and normalized weights.  Only after that increment has
+entered the scalar does an active reset map the weighted cloud to an
+equal-weight cloud
 \[
-  (X,\log w) \longmapsto \widetilde X.
+  (X,\log w) \longmapsto X^\star.
 \]
 
 This chapter focuses on the last map because it is the part that can dominate
 memory.  Naive reverse-mode autodiff through all pairwise costs, Sinkhorn
 updates, and barycentric products may retain objects of size \(O(KN^2)\).  A
-custom VJP instead treats the OT block as a finite differentiable program and
+custom VJP instead treats the reset block as a finite differentiable program and
 applies its adjoint by recomputation, streaming reductions, or checkpointing.
+
+The canonical reset in this chapter is Contract E--Chol.  A raw barycentric
+cloud, compact forward sensitivity of that raw scalar, or full-history/manual
+reverse derivative of that raw scalar is historical diagnostic evidence only.
+Even an algebraically correct derivative of the raw-barycentric scalar is wrong
+relative to the canonical Contract E total-gradient claim.  There is no
+canonical-to-raw fallback.
+
+\section{Canonical row quotient and Contract E composition}
+\label{sec:bf-ledh-contract-e-total-composition}
+
+The executed finite streaming transport does not get to assume its intended
+row marginal is exact.  It emits
+\begin{equation}
+\label{eq:bf-ledh-contract-e-row-quotient}
+  M_i=\sum_jP_{ij},\qquad
+  Q_i=\sum_jP_{ij}X_j,\qquad
+  Y_i^+=Q_i/M_i .
+\end{equation}
+The canonical route has no denominator floor.  For a tangent and an upstream
+cotangent,
+\begin{equation}
+\label{eq:bf-ledh-contract-e-row-quotient-jvp-vjp}
+  \dot Y_i^+=\frac{\dot Q_i-Y_i^+\dot M_i}{M_i},\qquad
+  G_i^Q=G_i^{Y^+}/M_i,\qquad
+  G_i^M=-\langle G_i^{Y^+},Y_i^+\rangle/M_i .
+\end{equation}
+Both \(G^Q\) and \(G^M\) must enter the finite Sinkhorn pullback.
+
+Contract E consumes the same source cloud \(X\), normalized probabilities
+\(w\), row-quotient cloud \(Y^+\), fixed residual design \(\Xi\), and prepared
+ridge \(\lambda\).  It depends directly on the weighted source moments as well
+as indirectly through transport.  In row-vector storage its local moments and
+reset are
+\begin{align}
+  \mu_w&=\sum_iw_iX_i,&
+  \Sigma_w&=\sum_iw_i(X_i-\mu_w)(X_i-\mu_w)^\top,\\
+  \bar Y^+&=N^{-1}\sum_iY_i^+,&
+  \Sigma_+&=N^{-1}\sum_i(Y_i^+-\bar Y^+)(Y_i^+-\bar Y^+)^\top,
+\end{align}
+\begin{equation}
+\label{eq:bf-ledh-contract-e-affine-reset}
+  G_+=\operatorname{sym}(\Sigma_w-\Sigma_+),\quad
+  B_\lambda=\operatorname{chol}(G_++\lambda I),\quad
+  \widetilde Y=Y^++\Xi B_\lambda^\top,
+\end{equation}
+\begin{equation}
+  \widetilde\Sigma=\frac1N\sum_i
+    (\widetilde Y_i-\bar{\widetilde Y})
+    (\widetilde Y_i-\bar{\widetilde Y})^\top,\quad
+  A_\lambda=
+    \operatorname{chol}(\Sigma_w+\lambda I)
+    \operatorname{chol}(\widetilde\Sigma+\lambda I)^{-1},
+\end{equation}
+\begin{equation}
+  X_i^\star=\mu_w+
+    (\widetilde Y_i-\bar{\widetilde Y})A_\lambda^\top.
+\end{equation}
+The implementation evaluates the last operator by a triangular solve rather
+than forming an explicit inverse.  Its cloud VJP first returns
+\[
+  G_X^{\mathrm{mom}},\quad G_w^{\mathrm{mom}},\quad G_{Y^+},
+  \quad G_\Xi,\quad g^\lambda .
+\]
+Composing \(G_{Y^+}\) through
+\eqref{eq:bf-ledh-contract-e-row-quotient-jvp-vjp} and the finite Sinkhorn
+program returns transport terms.  In common coordinates the canonical totals
+are
+\begin{equation}
+\label{eq:bf-ledh-contract-e-total-source-pullback}
+  G_X=G_X^{\mathrm{mom}}+G_X^{\mathrm{transport}},\qquad
+  G_w=G_w^{\mathrm{mom}}+G_w^{\mathrm{transport}} .
+\end{equation}
+The implementation naturally receives a normalized-log-weight cotangent from
+transport.  It therefore forms
+\begin{equation}
+\label{eq:bf-ledh-contract-e-total-logweight-pullback}
+  G_{\log w}
+  =G_{\log w}^{\mathrm{transport}}+w\odot G_w^{\mathrm{mom}}
+\end{equation}
+before applying the log-normalization pullback exactly once.  A
+probability-coordinate moment adjoint must not be added directly to a log-weight
+adjoint, and normalization must not be applied twice.  The residual and ridge
+adjoints are returned for parity, but the canonical route fixes their prepared
+values, so \(\dot\Xi=0\) and \(\dot\lambda=0\).  A future
+parameter-dependent design or ridge would be a different route and would have
+to differentiate that dependence fully.
 
 \section{Transport orientation}
 \label{sec:bf-ledh-ot-orientation}
@@ -496,6 +586,115 @@ trade is natural in HMC, because one scalar log target needs one reverse VJP to
 obtain all parameter-score components, while a forward-mode JVP would need one
 pass per requested direction.
 
+\section{Same-cloud geometry reuse in the finite JVP}
+\label{sec:bf-ledh-ot-same-cloud-cache}
+
+The canonical finite forward-JVP route repeatedly evaluates softmin operations
+on the same scaled particle cloud during one OT solve.  Let
+\(Z=(z_1,\ldots,z_N)\), let the parameter tangent axis have arbitrary size
+\(P\), and define
+\begin{align}
+\label{eq:bf-ledh-cached-cost}
+  C_{ij}
+  &=\frac12\lVert z_i-z_j\rVert^2,\\
+\label{eq:bf-ledh-cached-cost-jvp}
+  \dot C_{ij}^{(p)}
+  &=(z_i-z_j)^\top
+    \bigl(\dot z_i^{(p)}-\dot z_j^{(p)}\bigr),
+  \qquad p=1,\ldots,P.
+\end{align}
+The Sinkhorn potentials change from iteration to iteration, but \(Z\) and its
+tangent do not change within that finite solve.  Therefore the same \(C\) and
+\(\dot C\) appear in every annealed softmin, every terminal-balancing softmin,
+and the final transport assembly.
+
+\begin{proposition}[Same-cloud cache preserves the finite JVP]
+\label{prop:bf-ledh-same-cloud-cache}
+Fix the input cloud \(Z\), its parameter tangents \(\dot Z\), the finite
+temperature schedule, the potential initialization, the iteration counts, and
+all branch decisions for one OT solve.  Replacing each recomputation of
+\(C(Z)\) and \(D C(Z)[\dot Z]\) by the cached tensors in
+\eqref{eq:bf-ledh-cached-cost}--\eqref{eq:bf-ledh-cached-cost-jvp} leaves the
+mathematical softmin values and JVPs unchanged.  Consequently it leaves the
+declared finite Sinkhorn, terminal-balance, row-quotient, and Contract E total
+JVP unchanged in exact arithmetic.
+\end{proposition}
+
+\begin{proof}
+For log-scale inputs \(h_j\), one softmin and its JVP are
+\begin{align*}
+  m_i
+  &=-\varepsilon\log\sum_j
+    \exp\{h_j-C_{ij}/\varepsilon\},\\
+  \dot m_i
+  &=-\dot\varepsilon\log\sum_j e^{\ell_{ij}}
+    -\varepsilon\sum_j q_{ij}\dot\ell_{ij},\\
+  \dot\ell_{ij}
+  &=\dot h_j-\frac{\dot C_{ij}}{\varepsilon}
+    +\frac{C_{ij}\dot\varepsilon}{\varepsilon^2},
+  \qquad
+  q_{ij}=\frac{e^{\ell_{ij}}}{\sum_r e^{\ell_{ir}}}.
+\end{align*}
+Within the fixed solve, every occurrence of \(C_{ij}\) is the deterministic
+function in \eqref{eq:bf-ledh-cached-cost}, and every occurrence of
+\(\dot C_{ij}\) is its directional derivative in
+\eqref{eq:bf-ledh-cached-cost-jvp}.  Substituting stored copies of those same
+tensors changes neither displayed expression.  The finite solver is a
+composition of these softmins, affine potential updates, reductions, and the
+final transport and Contract E maps.  Induction over the fixed iteration
+sequence therefore gives the same value and tangent at every subsequent state.
+\end{proof}
+
+This optimization addresses a concrete generic bottleneck.  With \(K\)
+annealed Sinkhorn updates and \(L\) terminal-balance updates, the current
+same-cloud JVP evaluates four softmins before the loop, four per Sinkhorn
+update, two after it, and two per balance update.  Thus it otherwise constructs
+or differentiates pairwise geometry
+\[
+  4K+2L+6
+\]
+times per OT solve, before counting the final transport assembly.  For the
+measured \(K=20,L=8\) witness this is \(102\) repeated large geometry/JVP
+traversals per filtering time step.  Caching reduces those geometry
+constructions to one \(C\) and one \(\dot C\) per solve; it does not reduce the
+required softmax reductions or change either iteration count.
+
+The storage tradeoff is explicit.  For batch size \(B\), particle count \(N\),
+parameter count \(P\), and scalar width \(s\) bytes, the two cached tensors
+require approximately
+\begin{equation}
+\label{eq:bf-ledh-cached-memory}
+  s B N^2(1+P)
+\end{equation}
+bytes before compiler liveness and other filter state are counted.  The formula
+supports any positive \(P\), but does not imply that dense caching is feasible
+for every \((B,N,P)\).  The cache is therefore a scoped optimization: it may be
+enabled only when the route uses one exact same-cloud tile and a scope-specific
+GPU memory/performance check passes.  Otherwise the streamed recomputation path
+remains the correct fallback.  No cache may cross a time step, parameter
+evaluation, changed cloud, changed tangent, or changed dtype.
+
+On the July 2026 TF32/XLA diagnostic witness with \(T=50\), \(N=1024\),
+\(K=20\), and \(L=8\), five synchronized warm calls at \(B=1\) had median
+times \(3.013\) seconds without the cache and \(0.302\) seconds with it, a
+descriptive \(9.97\)-fold speedup.  At \(B=16\), three warm calls had medians
+\(25.922\) and \(2.591\) seconds, respectively, a descriptive
+\(10.00\)-fold speedup.  Both arms used one XLA \texttt{StatelessWhile}, the
+repository \(K=N\) chunk policy, the same prepared inputs, and the same 8 GiB
+device cap.  The relative score-norm differences were \(3.24\times10^{-5}\)
+and \(1.78\times10^{-5}\), respectively; all finite, replay, chart, marginal,
+and reset gates passed.  These differences are floating-point evaluation-order
+effects, not a change in the exact-arithmetic finite target.  LGSSM is only the
+measured performance witness: the implementation and parity tests carry an
+arbitrary final parameter axis and do not use Kalman or LGSSM formulas.
+
+An exact parameter-axis batching candidate for the Contract E Cholesky reset
+was also tested.  Although it matched the per-direction algebra on
+\(P\in\{1,3,5,18\}\), its measured \(B=1\) median rose from \(0.302\) to
+\(0.413\) seconds.  It is therefore rejected as an optimization and the
+per-direction reset JVP remains the active route.  Correct vectorization is not
+evidence of a performance gain.
+
 \section{Embedding the OT VJP in the filtering loop}
 \label{sec:bf-ledh-ot-filter-loop}
 
@@ -533,41 +732,1577 @@ transposed Jacobian multiplication for the executed map.  Therefore their
 reverse-time composition equals the VJP of the executed scalar.
 \end{proof}
 
+\section{A proposed score-aware teacher-projection extension}
+\label{sec:bf-ledh-contract-e-score-aware-teacher-projection}
+
+Contract E--Chol restores a selected value-side object: the weighted source
+mean and a ridged covariance identity.  Its fixed residual design and prepared
+ridge are not independent controls for likelihood accuracy, score accuracy,
+and structural support.  In particular, agreement of first two moments does not
+imply agreement of the tangent filtering measure.  This section therefore
+studies a major algorithmic extension, not a tuning change to
+\texttt{contract\_e\_chol\_v1}.
+
+The provisional name is \emph{Contract E--teacher projection}, abbreviated
+Contract E--TP.  It has no canonical, leaderboard, default, or HMC-facing status.
+It changes three parts of the reset contract:
+\begin{enumerate}[label=(\arabic*)]
+  \item it constructs a larger finite teacher by pairing parent particles with
+    fixed innovation points;
+  \item it compresses selected teacher feature expectations into a smaller
+    positive weighted cloud; and
+  \item it carries those nonuniform weights into the next LEDH step instead of
+    resetting the weights to \(1/N\).
+\end{enumerate}
+The current Contract E transport geometry may supply a reference cloud,
+preferred anchors, or a displacement objective.  It cannot guarantee
+score-feature feasibility by itself.  The existence result below instead uses
+anchors selected from the teacher support.  For a structurally degenerate model
+this is important: every teacher point is generated by the declared structural
+map, so compression never invents an off-support full-state barycenter.
+
+\subsection{The filtering derivative that must survive reset}
+
+Let \(\eta_{t,\theta}\) be a normalized filtering measure.  For a fixed test
+function \(h\), its tangent measure \(\zeta_{t,\theta}\) is defined weakly by
+\begin{equation}
+\label{eq:bf-ledh-tangent-measure-definition}
+  \zeta_{t,\theta}(h)
+  =D_\theta\{\eta_{t,\theta}(h)\}.
+\end{equation}
+The conditional path-score representation and the corresponding backward
+particle recursion are given in the inspected arXiv/technical-report version of
+\citet[Section~2, Eq.~(2.5), and Algorithm~1]{delmoral2015uniform}; that
+algorithm evaluates the backward statistic with pairwise parent--child work.
+The project construction below is different: it compresses a finite teacher
+measure while preserving selected expectations and their derivatives.  The
+literature supplies the filtering-derivative target; it does not prove the new
+compression rule.
+
+For a parameter-dependent feature \(h_\theta\), the total derivative is
+\begin{equation}
+\label{eq:bf-ledh-parameter-dependent-feature-derivative}
+  D_\theta\{\eta_{t,\theta}(h_\theta)\}
+  =\zeta_{t,\theta}(h_\theta)
+   +\eta_{t,\theta}(D_\theta h_\theta).
+\end{equation}
+Here \(\zeta_{t,\theta}(h_\theta)\) means that the tangent measure at the fixed
+parameter is applied to the frozen function \(x\mapsto h_\theta(x)\); the second
+term accounts for the feature's explicit parameter dependence.
+This distinction matters below.  Preserving a parameter-dependent predictive
+potential preserves the displayed total derivative.  It does not separately
+identify the two terms on the right unless the feature system also identifies
+them.
+
+\subsection{Parent-by-innovation teacher}
+
+Suppose the incoming finite cloud has parent points and positive normalized
+weights
+\[
+  \{(x_i,a_i)\}_{i=1}^{N_p},\qquad \sum_i a_i=1,
+\]
+and let a fixed innovation rule have points and positive weights
+\[
+  \{(\varepsilon_j,b_j)\}_{j=1}^{N_\varepsilon},\qquad
+  \sum_j b_j=1.
+\]
+For a structural transition \(F_\theta\), form
+\begin{equation}
+\label{eq:bf-ledh-score-aware-teacher-candidates}
+  z_{ij}(\theta)=F_\theta(x_i,\varepsilon_j).
+\end{equation}
+Thus a nominal \(N\)-parent by \(N\)-innovation construction has \(N^2\)
+candidates.  If \(c_{t,ij}(\theta)>0\) denotes the executed current-observation
+and proposal-correction factor, define
+\begin{equation}
+\label{eq:bf-ledh-score-aware-teacher-weights}
+  u_{ij}(\theta)=a_i b_j c_{t,ij}(\theta),\qquad
+  \pi_{ij}(\theta)=\frac{u_{ij}(\theta)}{\sum_{r,s}u_{rs}(\theta)}.
+\end{equation}
+All fixed LEDH noises, flow steps, proposal corrections, and branch choices that
+belong to the finite target must be included in \(c_{t,ij}\).  Omitting them
+would construct a teacher for a different scalar.
+
+After flattening \((i,j)\) to \(a=1,\ldots,N_T\), the teacher is
+\begin{equation}
+\label{eq:bf-ledh-score-aware-teacher-measure}
+  \eta^T_{t,\theta}=\sum_{a=1}^{N_T}\pi_a(\theta)
+  \delta_{z_a(\theta)}.
+\end{equation}
+This is a filtering teacher, not a smoother: it uses the current filtered
+parents and current innovations.  An \(O(N^2)\) backward tangent statistic may
+also be evaluated on this finite system, but the score-preservation theorem
+below does not inject that statistic as an externally supplied gradient.  It
+differentiates the same finite primal constraints.
+
+Choose \(K\) finite differentiable features and include mass explicitly:
+\begin{equation}
+\label{eq:bf-ledh-score-aware-feature-vector}
+  \psi_\theta(x)
+  =\left(1,x^\top,\operatorname{vech}(xx^\top)^\top,
+    r_{t+1,\theta,\xi}(x),\varphi_{1,\theta}(x),\ldots\right)^\top
+  \in\mathbb R^K.
+\end{equation}
+Here \(r_{t+1,\theta,\xi}(x)\) is the next-step finite predictive contribution
+conditional on parent \(x\), with the same fixed finite noise stream \(\xi\) and
+the same transition, LEDH proposal, importance correction, and observation
+program that the next value evaluation will execute.  For a model transition
+density it has the idealized form
+\begin{equation}
+\label{eq:bf-ledh-score-aware-predictive-potential}
+  r_{t+1,\theta}(x)
+  =\int f_\theta(x'\mid x)g_\theta(y_{t+1}\mid x')\,dx',
+\end{equation}
+or the exact fixed-rule finite sum corresponding to that integral.  Define the
+teacher target
+\begin{equation}
+\label{eq:bf-ledh-score-aware-teacher-target}
+  b_\theta
+  =\eta^T_{t,\theta}(\psi_\theta)
+  =\sum_{a=1}^{N_T}\pi_a(\theta)\psi_\theta(z_a(\theta)).
+\end{equation}
+
+\subsection{Positive compression as constrained feasibility}
+
+Let \(s_\ell(\theta)\), \(\ell=1,\ldots,m\), be selected teacher candidates and
+write
+\begin{equation}
+\label{eq:bf-ledh-score-aware-feature-matrix}
+  \Phi_\theta
+  =\begin{bmatrix}
+    \psi_\theta(s_1(\theta))&\cdots&\psi_\theta(s_m(\theta))
+  \end{bmatrix}.
+\end{equation}
+The student weights are required to satisfy
+\begin{equation}
+\label{eq:bf-ledh-score-aware-feasibility}
+  \Phi_\theta q_\theta=b_\theta,\qquad q_\theta\geq0.
+\end{equation}
+Because the first feature is one, the first equation is
+\(\mathbf1^\top q_\theta=1\).  Structural support, mass, moments, and predictive
+features are constraints, not terms in an arbitrarily weighted multi-objective
+loss.  A displacement or Contract E proximity objective may be minimized only
+inside this feasible set.
+
+\begin{proposition}[Finite positive teacher coreset]
+\label{prop:bf-ledh-score-aware-positive-coreset}
+For any finite teacher in
+\eqref{eq:bf-ledh-score-aware-teacher-measure} and any finite \(K\)-component
+feature vector whose first component is one, there exists a nonnegative student
+supported on at most \(K\) teacher candidates that satisfies
+\eqref{eq:bf-ledh-score-aware-feasibility} at the fixed parameter value.
+\end{proposition}
+
+\begin{proof}
+The full teacher weights are already a feasible nonnegative solution because
+\(b_\theta=\Phi^T_\theta\pi_\theta\).  If a feasible solution has more than \(K\)
+positive entries, the corresponding columns in \(\mathbb R^K\) are linearly
+dependent.  Hence there is a nonzero vector \(c\) supported on those entries
+with \(\Phi_\theta c=0\).  The first row of \(\Phi_\theta\) is all ones, so
+\(\mathbf1^\top c=0\); therefore \(c\) has both positive and negative entries.
+Set
+\[
+  \alpha=\min_{c_\ell>0}\frac{q_\ell}{c_\ell},\qquad
+  q'=q-\alpha c.
+\]
+Then \(q'\geq0\), at least one formerly positive component is zero, and
+\(\Phi_\theta q'=\Phi_\theta q=b_\theta\).  Repeating the elimination produces
+a feasible solution with at most \(K\) positive entries.
+\end{proof}
+
+Proposition~\ref{prop:bf-ledh-score-aware-positive-coreset} is a pointwise
+existence result.  It does not say that the active support varies smoothly with
+\(\theta\).  HMC cannot repeatedly choose a different linear-program basis and
+then ignore those switches.  A differentiable finite target needs a fixed local
+chart or a globally smooth positive projection.
+
+\begin{proposition}[Fixed active-set differentiable chart]
+\label{prop:bf-ledh-score-aware-fixed-chart}
+Let \(A\) select exactly \(K\) teacher candidates.  Suppose, at a center
+\(\theta_0\), that the square matrix \(\Phi_{A,\theta_0}\) is nonsingular and
+\[
+  q_{\theta_0}=\Phi_{A,\theta_0}^{-1}b_{\theta_0}>0
+\]
+componentwise.  If \(\Phi_{A,\theta}\) and \(b_\theta\) are continuously
+differentiable, then in a neighborhood of \(\theta_0\) the fixed-support rule
+\begin{equation}
+\label{eq:bf-ledh-score-aware-square-solve}
+  q_\theta=\Phi_{A,\theta}^{-1}b_\theta
+\end{equation}
+is positive and continuously differentiable.  For any parameter direction its
+tangent is the linear solve
+\begin{equation}
+\label{eq:bf-ledh-score-aware-weight-tangent}
+  \dot q
+  =\Phi_A^{-1}\left(\dot b-\dot\Phi_A q\right).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Matrix inversion is continuously differentiable on the open set of nonsingular
+matrices.  Thus \(q_\theta\) is continuously differentiable near \(\theta_0\).
+Strict positivity is an open condition, so it persists after reducing the
+neighborhood if necessary.  Differentiating
+\(\Phi_Aq=b\) yields
+\(\dot\Phi_Aq+\Phi_A\dot q=\dot b\), and solving for \(\dot q\) gives
+\eqref{eq:bf-ledh-score-aware-weight-tangent}.
+\end{proof}
+
+When more than \(K\) fixed anchors are desired, a semi-analytical Euclidean
+projection is
+\begin{equation}
+\label{eq:bf-ledh-score-aware-kkt-problem}
+  \min_q\ \frac12(q-q_0)^\top R(q-q_0)
+  \quad\text{subject to}\quad \Phi q=b,
+\end{equation}
+where \(R\) is positive definite and \(q_0\) may encode Contract E transport
+preferences.  If \(\Phi\) has full row rank, its equality-constrained solution is
+\begin{equation}
+\label{eq:bf-ledh-score-aware-kkt-solution}
+  q=q_0+R^{-1}\Phi^\top
+  (\Phi R^{-1}\Phi^\top)^{-1}(b-\Phi q_0).
+\end{equation}
+This requires a \(K\times K\) solve rather than a per-step high-dimensional
+optimizer.  Positivity is not implied by
+\eqref{eq:bf-ledh-score-aware-kkt-solution}; a negative component is a failed
+chart, not something that may be clipped without changing the constraints.
+
+\subsection{What the projection proves about tangents and score}
+
+\begin{proposition}[Selected-feature tangent preservation]
+\label{prop:bf-ledh-score-aware-tangent-preservation}
+Under Proposition~\ref{prop:bf-ledh-score-aware-fixed-chart}, define
+\[
+  \eta^S_{t,\theta}=\sum_{\ell\in A}q_{\ell,\theta}
+  \delta_{s_\ell(\theta)}.
+\]
+Then throughout the fixed-chart neighborhood,
+\begin{equation}
+\label{eq:bf-ledh-score-aware-feature-value-identity}
+  \eta^S_{t,\theta}(\psi_\theta)
+  =\eta^T_{t,\theta}(\psi_\theta),
+\end{equation}
+and, in every parameter direction,
+\begin{equation}
+\label{eq:bf-ledh-score-aware-feature-tangent-identity}
+  D_\theta\{\eta^S_{t,\theta}(\psi_\theta)\}
+  =D_\theta\{\eta^T_{t,\theta}(\psi_\theta)\}.
+\end{equation}
+For a parameter-independent retained feature \(h\), this implies
+\(\zeta^S_{t,\theta}(h)=\zeta^T_{t,\theta}(h)\).
+\end{proposition}
+
+\begin{proof}
+Equation~\eqref{eq:bf-ledh-score-aware-feature-value-identity} is exactly the
+constraint \(\Phi_Aq=b\).  Differentiating its left side and substituting
+\eqref{eq:bf-ledh-score-aware-weight-tangent} gives
+\[
+  \dot\Phi_Aq+\Phi_A\dot q
+  =\dot\Phi_Aq+\dot b-\dot\Phi_Aq
+  =\dot b,
+\]
+which is the derivative of the teacher target.  When \(h\) is parameter
+independent, definition~\eqref{eq:bf-ledh-tangent-measure-definition} gives the
+last statement.
+\end{proof}
+
+The proposition does not train a gradient to look like a teacher score.  The
+same differentiable primal solve produces both the student value and its
+tangent.  Consequently there is no omitted optimizer hypergradient and no
+externally overwritten score.
+
+\begin{proposition}[One-step value and score preservation]
+\label{prop:bf-ledh-score-aware-next-score}
+Assume the current likelihood increment \(\Delta_t(\theta)\) is computed before
+reset, as required by the canonical time order.  Suppose the positive
+next-step finite predictive contribution \(r_{t+1,\theta,\xi}\) is a retained
+feature and is exactly the contribution executed at the next step.  Define
+\[
+  Z^T_{t+1}(\theta)
+  =\eta^T_{t,\theta}(r_{t+1,\theta,\xi}),\qquad
+  Z^S_{t+1}(\theta)
+  =\eta^S_{t,\theta}(r_{t+1,\theta,\xi}).
+\]
+Then, throughout the fixed-chart neighborhood,
+\begin{align}
+  Z^S_{t+1}(\theta)&=Z^T_{t+1}(\theta),\\
+  \log Z^S_{t+1}(\theta)&=\log Z^T_{t+1}(\theta),\\
+  D_\theta\log Z^S_{t+1}(\theta)
+    &=D_\theta\log Z^T_{t+1}(\theta).
+\end{align}
+Therefore the two-step partial scalars
+\(\Delta_t+\log Z^S_{t+1}\) and
+\(\Delta_t+\log Z^T_{t+1}\), and their scores, are identical.
+\end{proposition}
+
+\begin{proof}
+The first equality is the retained predictive-feature row of
+\eqref{eq:bf-ledh-score-aware-feature-value-identity}.  Positivity permits
+taking logarithms.  The log values are equal as functions throughout the
+fixed-chart neighborhood, so their total derivatives are equal.  The current
+increment is shared because it entered the scalar before either reset.
+\end{proof}
+
+This result is exact relative to the declared finite teacher and selected
+one-step feature.  It is not a proof of equality to the exact nonlinear filter,
+nor does it determine all future likelihood functionals.  A full recursive
+method must construct and validate a new teacher and feature chart at every
+reset while retaining a globally differentiable finite target.  Whether a
+single fixed chart remains positive over an HMC-relevant parameter region is an
+open admission question.
+
+\subsection{Progressive score information and compact score-aware features}
+\label{sec:bf-ledh-tp-progressive-score-features}
+
+The one-step proposition above explains both the success of a two-observation
+test and its limitation.  The feature \(r_{t+1,\theta}\) identifies one future
+normalizing constant, but it does not identify how score information accumulated
+before time \(t\) is distributed over the current state.  A scalar cumulative
+score cannot repair this loss: it is constant across particles and therefore
+adds no constraint beyond mass.  The state-dependent object is the conditional
+additive score statistic.
+
+For clarity, first consider a hidden Markov model with initial density
+\(\mu_\theta\), transition density \(f_\theta\), and observation density
+\(g_\theta\).  With observations through time \(t\), define the complete-data
+additive score
+\begin{equation}
+\label{eq:bf-ledh-progressive-complete-score}
+  H_{t,\theta}(x_{0:t})
+  =\nabla_\theta\log\mu_\theta(x_0)
+   +\sum_{s=1}^{t}\nabla_\theta\log f_\theta(x_s\mid x_{s-1})
+   +\sum_{s=0}^{t}\nabla_\theta\log g_\theta(y_s\mid x_s),
+\end{equation}
+and its state-conditioned version
+\begin{equation}
+\label{eq:bf-ledh-progressive-score-mark}
+  \tau_{t,\theta}(x)
+  =\mathbb E_\theta\!\left[
+      H_{t,\theta}(X_{0:t})\mid X_t=x,y_{0:t}
+    \right].
+\end{equation}
+This is a \(p\)-vector when \(\theta\in\mathbb R^p\).  Its filtering mean is the
+observed-data score
+\(S_{t,\theta}=\eta_{t,\theta}(\tau_{t,\theta})\).  The centered progressive
+score field is
+\begin{equation}
+\label{eq:bf-ledh-centered-progressive-score}
+  c_{t,\theta}(x)=\tau_{t,\theta}(x)-S_{t,\theta},
+  \qquad \eta_{t,\theta}(c_{t,\theta})=0.
+\end{equation}
+This conditional expectation is the finite-dimensional statistic used in the
+backward particle interpretation of the filter derivative
+\citep[Section~2, Eq.~(2.5), Algorithm~1]{delmoral2015uniform}.  Computing it
+does not require sampling complete trajectories or storing their histories, but
+the exact finite-particle update uses pairwise parent--child work.
+
+\begin{proposition}[Tangent measure represented by the centered score field]
+\label{prop:bf-ledh-progressive-score-tangent-representation}
+Assume differentiation may be interchanged with the state integrals and all
+displayed expectations are finite.  For every parameter-independent integrable
+test function \(h\),
+\begin{equation}
+\label{eq:bf-ledh-progressive-score-covariance}
+  \zeta_{t,\theta}(h)
+  =\nabla_\theta\{\eta_{t,\theta}(h)\}
+  =\eta_{t,\theta}\!\left(hc_{t,\theta}^{\top}\right).
+\end{equation}
+For a differentiable parameter-dependent \(h_\theta\),
+\begin{equation}
+\label{eq:bf-ledh-progressive-score-total-derivative}
+  \nabla_\theta\{\eta_{t,\theta}(h_\theta)\}
+  =\eta_{t,\theta}(\nabla_\theta h_\theta)
+   +\eta_{t,\theta}\!\left(h_\theta c_{t,\theta}^{\top}\right).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Write the normalized filtering density as
+\(\eta_{t,\theta}(x_t)=\gamma_{t,\theta}(x_t)/Z_{t,\theta}\).
+Differentiating the unnormalized path integral for \(\gamma_{t,\theta}\)
+multiplies its integrand by the complete-data score
+\eqref{eq:bf-ledh-progressive-complete-score}.  Conditioning on \(X_t=x_t\)
+therefore gives
+\(\nabla_\theta\log\gamma_{t,\theta}(x_t)
+  =\tau_{t,\theta}(x_t)\).
+Integrating this identity gives
+\(\nabla_\theta\log Z_{t,\theta}=S_{t,\theta}\), hence
+\(\nabla_\theta\eta_{t,\theta}(x)
+  =\eta_{t,\theta}(x)c_{t,\theta}(x)\).
+Integration against \(h\) proves
+\eqref{eq:bf-ledh-progressive-score-covariance}.  The product rule adds
+\(\eta_{t,\theta}(\nabla_\theta h_\theta)\) when the feature depends explicitly
+on the parameter, proving
+\eqref{eq:bf-ledh-progressive-score-total-derivative}.
+\end{proof}
+
+The discrete \(O(N^2)\) recursion is explicit for an ordinary particle
+approximation of the model filter.  Given parents
+\((x_i,a_i,\tau_i)_{i=1}^{N_p}\) and common child locations \(z_k\), define the
+normalized backward weights
+\begin{equation}
+\label{eq:bf-ledh-progressive-backward-weight}
+  B_{ki}
+  =\frac{a_i f_\theta(z_k\mid x_i)}
+         {\sum_{j=1}^{N_p}a_j f_\theta(z_k\mid x_j)}.
+\end{equation}
+Then the child mark is
+\begin{equation}
+\label{eq:bf-ledh-progressive-score-recursion}
+  \tau'_k
+  =\nabla_\theta\log g_\theta(y_{t+1}\mid z_k)
+   +\sum_{i=1}^{N_p}B_{ki}
+      \left\{\tau_i+
+        \nabla_\theta\log f_\theta(z_k\mid x_i)\right\}.
+\end{equation}
+Initial-law score terms enter the initial marks.
+
+Equations~\eqref{eq:bf-ledh-progressive-backward-weight}--%
+\eqref{eq:bf-ledh-progressive-score-recursion} must not be copied unchanged
+into the corrected LEDH finite program.  Its teacher candidates are
+parent-specific deterministic quadrature/proposal images, so their discrete
+backward kernel is not automatically the continuous model kernel \(f_\theta\).
+A finite-target mark must be derived from the exact executed proposal measure,
+including transition, observation, proposal correction, Jacobian, quadrature
+mass, and support-motion terms.  Using only \(f_\theta\), or treating the
+derivative of a moving atomic measure as an ordinary density score, computes a
+different object.  Until that derivation is supplied, model-filter score fields
+may be used only as labeled diagnostic features.
+
+The full tensor-product proposal
+\(\{\phi_j(x)c_k(x):j=1,\ldots,K_0,\ k=1,\ldots,p\}\) uses \(K_0p\)
+additional constraints and is generally too large.  A compact diagnostic
+candidate retains
+\begin{equation}
+\label{eq:bf-ledh-compact-progressive-feature-vector}
+  \Psi_{t,\theta}(x)
+  =\left(
+    \phi_{t,\theta}(x)^{\top},
+    c_{t,\theta}(x)^{\top},
+    \{r_{t+1,\theta}(x)c_{t,\theta}(x)\}^{\top}
+   \right)^{\top}.
+\end{equation}
+The displayed form adds \(2p\), rather than \(K_0p\), rows.  There is a smaller
+gauge-fixed implementation.  Replacing every parent mark by
+\(\tau_i+a\), for a common vector \(a\), replaces every child mark in
+\eqref{eq:bf-ledh-progressive-score-recursion} by \(\tau'_k+a\), because each
+backward row sums to one.  Subsequent centering removes \(a\) exactly.  Hence an
+implementation that carries centered marks and explicitly re-centers them after
+selection need not impose the \(p\) zero-mean rows through the projection solve;
+it verifies zero mean as an invariant instead.  The nonredundant compact chart
+then appends only \(r_{t+1,\theta}c_{t,\theta}\), using \(K_0+p\) rows.  This asks
+the coreset to retain the score-bearing interaction with the next potential.  It
+is a feature-sufficiency hypothesis, not yet an exact finite-LEDH tangent
+theorem.
+
+At the first LGSSM reset this reduction is also forced by rank: the observation
+scale component of \(c_{t,\theta}\) is a quadratic function of the current state
+and lies in the mass/first/second-moment span.  Retaining all \(2p\) rows makes
+that feature matrix singular.  Dropping the zero-mean rows by the gauge argument
+avoids data-dependent feature deletion and leaves a fixed 16-row LGSSM chart.
+
+\begin{proposition}[One-step historical-score identity for a dominated filter]
+\label{prop:bf-ledh-progressive-next-score-preservation}
+Let teacher and student be two dominated filtering measures whose tangent
+measures admit Proposition~\ref{prop:bf-ledh-progressive-score-tangent-representation}
+with the same declared score-coordinate convention.  Suppose
+\begin{align}
+  \eta_t^S(r_{t+1,\theta})&=\eta_t^T(r_{t+1,\theta}),
+    \label{eq:bf-ledh-progressive-r-match}\\
+  \eta_t^S(r_{t+1,\theta}c_S^{\top})
+    &=\eta_t^T(r_{t+1,\theta}c_T^{\top}),
+    \label{eq:bf-ledh-progressive-rc-match}\\
+  \eta_t^S(\nabla_\theta r_{t+1,\theta})
+    &=\eta_t^T(\nabla_\theta r_{t+1,\theta}).
+    \label{eq:bf-ledh-progressive-dr-match}
+\end{align}
+Then the next normalizing constant and its total score agree.
+\end{proposition}
+
+\begin{proof}
+The first identity gives the common positive normalizing constant.  Applying
+\eqref{eq:bf-ledh-progressive-score-total-derivative} to
+\(h_\theta=r_{t+1,\theta}\) shows that its derivative is the sum of the
+explicit-feature term in \eqref{eq:bf-ledh-progressive-dr-match} and the
+historical tangent term in \eqref{eq:bf-ledh-progressive-rc-match}.  Both agree,
+so division by the common normalizing constant proves equality of the
+log-score.
+\end{proof}
+
+The proposition applies to the dominated model-filter setting just stated.  A
+moving discrete Contract E--TP cloud must first prove its corresponding tangent
+representation; matching sampled \(c\) and \(rc\) rows alone does not prove that
+its autodiff tangent measure equals \(q\,c\).  Consequently the compact rows can
+diagnose and potentially reduce information loss, but their success must still
+be judged by the total derivative of the executed scalar.
+
+For an LGSSM there is a stronger finite-horizon diagnostic.  The remaining-data
+likelihood
+\begin{equation}
+\label{eq:bf-ledh-lgssm-continuation-feature}
+  R_{t+1:T,\theta}(x)
+  =p_\theta(y_{t+1:T}\mid X_t=x)
+\end{equation}
+is available from a conditional Kalman recursion and is an exponential
+quadratic function of \(x\).  It is one parameter-dependent scalar feature
+regardless of \(p\) and \(T\).
+Writing its stabilized ratio as
+\[
+ \frac{R_{t+1:T,\theta}(x)}{R_{t+1:T,\theta}(0)}
+ =\exp\{-\tfrac12x^\top J_{t,\theta}x+h_{t,\theta}^\top x\},
+\]
+all pairs \((J_{t,\theta},h_{t,\theta})\) are obtained in one reverse-time
+Gaussian information recursion.  This avoids rebuilding a length-\(T-t\)
+conditional Kalman graph at every reset: construction is \(O(Td_x^3)\), followed
+by \(O(Nd_x^2)\) evaluation per cloud.  The stabilization removes only a common
+positive factor from the feature row and therefore does not change its linear
+constraint.
+
+\begin{proposition}[Finite-horizon continuation identity]
+\label{prop:bf-ledh-lgssm-continuation-certificate}
+Fix \(T\) and a parameter neighborhood on which one positive nonsingular chart
+is used.  If, immediately after reset at time \(t\),
+\begin{equation}
+  \eta^S_{t,\theta}(R_{t+1:T,\theta})
+  =\eta^T_{t,\theta}(R_{t+1:T,\theta})
+\end{equation}
+as an identity throughout that neighborhood, then teacher and student assign
+the same exact-model remaining-data likelihood and total derivative to their
+respective time-\(t\) measures.
+\end{proposition}
+
+\begin{proof}
+For either measure, the displayed expectation is the exact-model conditional
+factorization of the future observations given its time-\(t\) state
+distribution.  The two sides are equal positive differentiable functions of
+\(\theta\) on the fixed-chart neighborhood.  Taking logarithms and
+differentiating the same identity proves equality of their total derivatives,
+including both measure dependence and explicit parameter dependence of
+\(R_{t+1:T,\theta}\).
+\end{proof}
+
+This does not prove equality of the later recursively executed finite LEDH
+scalar.  Its quadrature/proposal operator differs from exact Kalman integration,
+and subsequent projections are nonlinear cloud maps.  The continuation row is
+therefore an LGSSM oracle diagnostic of reset information loss.  It may test
+whether a compact future-information summary repairs the observed drift, but it
+cannot be transferred to nonlinear models without a separately justified
+finite continuation approximation.  Neither this row nor the model-filter
+score field replaces the missing finite-LEDH tangent derivation.
+
+\subsubsection{A bounded ladder of progressive continuation marks}
+\label{sec:bf-ledh-progressive-continuation-ladder}
+
+One full remaining-data continuation feature is compact in row count, but its
+offline construction can be expensive and its approximation can be fragile in
+a persistent nonlinear model.  Replacing it by the entire sequence of all
+future prefixes would make the chart grow with the horizon.  The implemented
+intermediate design instead freezes a small ordered set of positive look-ahead
+lengths
+\(
+  \mathcal L=\{\ell_1<\cdots<\ell_r\}
+\)
+before preparation.  For each available prefix define
+\begin{equation}
+\label{eq:bf-ledh-progressive-continuation-mark}
+  B_{t,\ell,\theta}(x)
+  =\int
+    \prod_{s=t+1}^{t+\ell}
+      f_\theta(x_s\mid x_{s-1})
+      g_\theta(y_s\mid x_s)
+    \,d x_{t+1:t+\ell},
+  \qquad x_t=x.
+\end{equation}
+For a finite record ending at \(T\), the realized length is
+\(
+  \bar\ell_t=\min(\ell,T-t)
+\).
+If two requested lengths have the same realized length, only one row is kept.
+This de-duplication depends only on \(t,T,\mathcal L\), not on particles,
+parameters, observations, or numerical values, so it is a prepared chart shape
+rather than a runtime active-set decision.
+
+Let \(x_\star(\theta)\) be the declared reference point and set
+\begin{equation}
+\label{eq:bf-ledh-progressive-continuation-stabilized-mark}
+  h_{t,\ell,\theta}(x)
+  =\frac{B_{t,\ell,\theta}(x)}
+         {B_{t,\ell,\theta}(x_\star(\theta))}.
+\end{equation}
+The implementation evaluates numerator and denominator by the same fixed-grid
+backward target recursion.  The denominator is positive and common to a row;
+it changes neither the row span nor the equality constraint.  Its dependence
+on \(\theta\), including dependence through \(x_\star(\theta)\), remains in the
+autodiff graph.  For scalar SV the feature vector at time \(t\) is
+\begin{equation}
+\label{eq:bf-ledh-progressive-sv-feature-vector}
+  \psi_{t,\theta}(x)
+  =\left(1,x,x^2,
+    \{h_{t,\bar\ell,\theta}(x):
+       \bar\ell\in\overline{\mathcal L}_t\}\right)^\top,
+\end{equation}
+where \(\overline{\mathcal L}_t\) contains the distinct realized lengths.
+Thus the reset carries at most \(3+r\) weights and scalar locations, independent
+of \(T\); it does not carry a growing score history.  The backward preparation
+cost still grows with each requested continuation window, which is why
+\(\mathcal L\) is a capacity ladder rather than an unrestricted feature list.
+
+\subsubsection{Actual-SV amendment: an overcomplete analytical chart}
+\label{sec:bf-ledh-actual-sv-overcomplete-chart}
+
+A square chart uses one anchor for each feature.  It is algebraically unique
+when its feature matrix is nonsingular, but its positive domain can be much
+smaller than the parameter neighborhood on which a score is needed.  This is
+not repaired by adding features: each new feature adds an equality constraint.
+The amendment here keeps the feature target fixed and adds anchors, thereby
+adding degrees of freedom to its representation.
+
+The failure that motivates the amendment is concrete.  The Actual-SV
+experiment uses the two unconstrained coordinates
+\[
+  \theta=(\Phi^{-1}(\gamma),\log\beta),\qquad
+  \theta_0=(0.2533471031357997,-0.916290731874155),
+\]
+and, at every nonterminal time, the four features
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-four-features}
+  \psi_{t,\theta}(x)
+  =\bigl(1,x,x^2,h_{t,16,\theta}(x)\bigr)^\top,
+  \qquad q=4.
+\end{equation}
+The center-prepared four-anchor chart at zero-based time index \(748\) had
+minimum weight \(3.58612667\times10^{-7}\).  Holding its prepared indices and
+row scales fixed, changing the first coordinate by \(-10^{-5}\) produced
+\(-4.22267303\times10^{-6}\), while changing the second coordinate by
+\(+10^{-5}\) produced \(-5.23620186\times10^{-6}\).  Thus the executed square
+chart correctly failed closed: those moment targets are outside the positive
+simplex generated by those four frozen columns.  This is a chart failure, not
+a failure of the SV parameter transform, Sinkhorn balancing, or canonical
+Contract E--Chol.
+
+Choose one anchor count \(K>q\), constant across all nonterminal times.  At a
+given time, preparation freezes teacher indices \(i_1,\ldots,i_K\).  The
+indices are discrete prepared data, but the selected locations
+\(z_k(\theta)=z_{i_k}(\theta)\) are not frozen: they move with the finite
+teacher program.  Consequently their feature columns contribute to the total
+derivative.  Let \(D\in\R^{q\times q}\) be a positive diagonal row-scale
+matrix prepared at the center and then frozen, and define
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-scaled-system}
+  A_\theta=D^{-1}
+  \begin{bmatrix}
+    \psi_{t,\theta}(z_1(\theta))&\cdots&
+    \psi_{t,\theta}(z_K(\theta))
+  \end{bmatrix},
+  \qquad
+  b_\theta=D^{-1}m_{t,\theta},
+\end{equation}
+where \(m_{t,\theta}\) is the same finite teacher feature target used by the
+square chart.  Positivity and nonsingularity of \(D\) make row scaling an
+invertible numerical transformation, not a change in the constraints.
+
+\paragraph{Center reference.}
+The anchor indices are deterministic center-teacher weighted quantiles.  For
+anchor count \(K\), their probability levels are
+\((k-\tfrac12)/K\), \(k=1,\ldots,K\).  Stable sorting, cumulative teacher mass,
+and left search select indices.  Repeated indices are removed stably and, only
+to fill duplicates, unused teacher indices are added in descending normalized
+mass order with stable tie-breaking.  Every center teacher point is then
+assigned to its nearest anchor in state space, again with stable tie-breaking.
+Aggregating its normalized mass gives a vector \(v\in\R^K\).  Preparation
+rejects an empty cell: \(v_k>0\) for every \(k\) is a hard condition and is
+never manufactured by clipping or flooring.
+
+Write \(V=\diag(v)\), \(A_0=A_{\theta_0}\), and \(b_0=b_{\theta_0}\).  The
+center reference is the Pearson projection
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-reference-projection}
+  r=v+VA_0^\top(A_0VA_0^\top)^{-1}(b_0-A_0v).
+\end{equation}
+
+\begin{proposition}[Analytical Pearson center reference]
+\label{prop:bf-ledh-actual-sv-reference-projection}
+Suppose \(v>0\) componentwise and \(A_0\in\R^{q\times K}\) has full row rank.
+Then \eqref{eq:bf-ledh-actual-sv-reference-projection} is the unique solution of
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-reference-program}
+  \min_{u\in\R^K}
+  \frac12(u-v)^\top V^{-1}(u-v)
+  \quad\text{subject to}\quad A_0u=b_0.
+\end{equation}
+It satisfies \(A_0r=b_0\).  Strict positivity of \(r\) does not follow from the
+equality problem and is therefore a separate preparation gate.
+\end{proposition}
+
+\begin{proof}
+The Hessian \(V^{-1}\) is positive definite, so the objective is strictly
+convex.  The Lagrange equations for multiplier \(\nu\) are
+\[
+  V^{-1}(u-v)+A_0^\top\nu=0,
+  \qquad A_0u=b_0.
+\]
+Eliminating \(u=v-VA_0^\top\nu\) gives
+\(
+  (A_0VA_0^\top)\nu=A_0v-b_0
+\).
+Full row rank of \(A_0\) and \(V\succ0\) make this Gram matrix positive
+definite.  Substitution yields
+\eqref{eq:bf-ledh-actual-sv-reference-projection}; it is feasible and, by
+strict convexity, unique.  Equality feasibility alone imposes no sign
+constraint, so a nonpositive component must be rejected rather than hidden.
+\end{proof}
+
+For a positive accepted \(r\), freeze the Pearson precision and its inverse,
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-pearson-metric}
+  P=\diag(r_1^{-1},\ldots,r_K^{-1}),
+  \qquad R=P^{-1}=\diag(r).
+\end{equation}
+The choice is the Hessian of the Pearson chi-square discrepancy centered at
+\(r\); it is a declared metric hypothesis, not a statistical confidence
+threshold.  Runtime computes
+\begin{equation}
+\label{eq:bf-ledh-progressive-kkt-program}
+  w_\theta
+  =\arg\min_w\frac12(w-r)^\top P(w-r)
+  \quad\text{subject to}\quad A_\theta w=b_\theta.
+\end{equation}
+
+\begin{proposition}[Runtime solution and frozen-reference total JVP]
+\label{prop:bf-ledh-progressive-kkt-chart}
+Suppose \(r>0\), \(A_\theta\) has full row rank, and \(A_\theta,b_\theta\) are
+differentiable along a parameter direction.  Set
+\begin{equation}
+\label{eq:bf-ledh-progressive-kkt-solution}
+  S=A_\theta R A_\theta^\top,\qquad
+  c=b_\theta-A_\theta r,\qquad
+  \lambda=S^{-1}c,\qquad
+  w_\theta=r+RA_\theta^\top\lambda.
+\end{equation}
+Then \(w_\theta\) is the unique minimizer of
+\eqref{eq:bf-ledh-progressive-kkt-program} and satisfies
+\(A_\theta w_\theta=b_\theta\).  With the preparation
+\(r,R,D,i_1,\ldots,i_K\) frozen, its directional derivative is
+\begin{align}
+  \dot S&=\dot ARA^\top+AR\dot A^\top,&
+  \dot c&=\dot b-\dot A r,
+  \label{eq:bf-ledh-actual-sv-kkt-jvp-a}\\
+  \dot\lambda&=S^{-1}(\dot c-\dot S\lambda),&
+  \dot w&=R(\dot A^\top\lambda+A^\top\dot\lambda).
+  \label{eq:bf-ledh-actual-sv-kkt-jvp-b}
+\end{align}
+In particular,
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-differentiated-constraint}
+  A\dot w+\dot A w=\dot b,
+\end{equation}
+so the same finite program matches both the declared features and their total
+directional derivatives.
+\end{proposition}
+
+\begin{proof}
+The Lagrange equations for
+\eqref{eq:bf-ledh-progressive-kkt-program}, using the sign convention
+\(P(w-r)-A^\top\lambda=0\), give
+\(w=r+RA^\top\lambda\).  Substitution into \(Aw=b\) gives
+\(S\lambda=c\).  Since \(R\succ0\) and \(A\) has full row rank, \(S\succ0\),
+so the multiplier and the strictly convex minimizer are unique.  This proves
+\eqref{eq:bf-ledh-progressive-kkt-solution} and exact feasibility.
+
+Differentiate \(S\lambda=c\) while \(r\) and \(R\) are fixed:
+\(
+  S\dot\lambda+\dot S\lambda=\dot c
+\).
+Solving for \(\dot\lambda\), and then differentiating
+\(w=r+RA^\top\lambda\), yields
+\eqref{eq:bf-ledh-actual-sv-kkt-jvp-a}--
+\eqref{eq:bf-ledh-actual-sv-kkt-jvp-b}.  Finally, differentiating the already
+proved identity \(Aw=b\) gives
+\eqref{eq:bf-ledh-actual-sv-differentiated-constraint}.  Here \(\dot A\)
+contains the explicit parameter derivative of each feature, teacher motion,
+and motion of every selected location \(z_{i_k}(\theta)\); freezing an index
+does not freeze the tensor gathered at that index.
+\end{proof}
+
+\paragraph{Finite-program gate.}
+The claimed object is the executed TensorFlow solve, not an unknown exact-real
+solution.  Every prepared and runtime case must have finite inputs and outputs,
+full row rank, condition--roundoff below one, scaled equality residual no
+larger than its forward-error bound, and strictly positive computed weights.
+The implementation solves the \(q\times q\) Gram system by Cholesky or a linear
+solve; it never forms a matrix inverse and never stores or solves a dense
+\(K\times K\) precision system.  Failed cases return an invalid flag and poison
+claim-bearing outputs.  No clipping, weight floor, feature deletion, runtime
+optimization, or active-set switch is allowed.
+
+These diagnostics identify an unreliable finite solve but are not a rigorous
+componentwise sign certificate for the exact-real solution.  For a selected
+capacity, the weakest design case and weakest held-out case---defined by the
+smallest finite TensorFlow weight, then time and predeclared point order---are
+also recomputed at increasing CPU precision.  Stable sign is corroborating
+evidence only, not interval arithmetic and not part of the BayesFilter
+algorithmic backend.
+
+\begin{algorithm}[H]
+\caption{Actual-SV overcomplete analytical chart preparation and runtime}
+\label{alg:bf-ledh-actual-sv-overcomplete-chart}
+\begin{algorithmic}[1]
+  \State \textbf{Prepare:} freeze one global \(K>q\), the center
+    \(\theta_0\), row scales \(D_t\), and the design and held-out parameter
+    points before observing candidate results.
+  \For{each nonterminal time \(t\)}
+    \State Select \(K\) center-teacher weighted-quantile indices with the
+      deterministic duplicate-fill rule.
+    \State Aggregate stable nearest-anchor Voronoi masses \(v_t\); reject if
+      any component is nonfinite or nonpositive.
+    \State Form \(A_{t,0},b_{t,0}\) and solve
+      \eqref{eq:bf-ledh-actual-sv-reference-projection}; reject unless rank,
+      conditioning, residual, finiteness, and \(r_t>0\) gates pass.
+    \State Freeze indices, \(D_t\), \(r_t\), and \(R_t=\diag(r_t)\).
+  \EndFor
+  \State \textbf{Run:} gather the moving locations and feature columns at the
+    frozen indices, form \(A_{t,\theta},b_{t,\theta}\), and solve the
+    \(q\times q\) system in
+    \eqref{eq:bf-ledh-progressive-kkt-solution}.
+  \State Apply every finite-program gate; carry the resulting nonuniform
+    positive weights, or poison the claim-bearing recursion on failure.
+  \State For each parameter direction, propagate
+    \eqref{eq:bf-ledh-actual-sv-kkt-jvp-a}--
+    \eqref{eq:bf-ledh-actual-sv-kkt-jvp-b} through the same fixed-shape
+    filtering loop.
+\end{algorithmic}
+\end{algorithm}
+
+For \(q\) features and \(K\) anchors, forming \(ARA^\top\) costs
+\(O(Kq^2)\), its solve costs \(O(q^3)\), and temporary storage is
+\(O(Kq+q^2)\).  In Actual SV, \(q=4\), so increasing anchor capacity does not
+increase the dimension of the linear solve.  The recursive GPU route must use
+a fixed-shape \texttt{tf.while\_loop}; Python horizon unrolling remains a
+reference diagnostic only.
+
+This amendment proves the analytical projection, equality identities, and JVP
+of the declared finite chart.  It does not prove that a tested finite set of
+parameter points covers an HMC trajectory, that the four-feature teacher is an
+exact nonlinear filter, that the resulting score agrees with an independent
+dense target, or that Contract E--TP is canonical, leaderboard-ready, or
+superior.  Those are separate empirical or scientific questions.  In
+particular, matching one continuation mark and its derivative does not identify
+the entire filtering tangent measure; recursive same-target and quadrature
+refinement comparisons remain necessary descriptive evidence.
+
+\subsubsection{Executed Actual-SV selection and certification record}
+\label{sec:bf-ledh-actual-sv-overcomplete-certification}
+
+The preceding propositions state what follows mathematically from an accepted
+fixed preparation.  This subsection records separately how the preparation was
+selected, which finite cases were executed, which derivative references were
+usable, and what the resulting evidence can and cannot establish.  Numerical
+observations below are not assumptions of
+Propositions~\ref{prop:bf-ledh-actual-sv-reference-projection} and
+\ref{prop:bf-ledh-progressive-kkt-chart}.
+
+\paragraph{Frozen parameter sets and capacity selection.}
+Write
+\[
+  \theta(z)=\theta_0+10^{-5}z,
+  \qquad z\in\R^2.
+\]
+Before the capacity ladder was evaluated, the ordered design set was frozen as
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-design-set}
+ \mathcal Z_{\rm design}
+ =\{(0,0),(-1,0),(1,0),(0,-1),(0,1),
+      (-1,-1),(-1,1),(1,-1),(1,1)\},
+\end{equation}
+and the disjoint audit set was frozen as
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-heldout-set}
+ \mathcal Z_{\rm audit}
+ =\{(-\tfrac12,-\tfrac12),(-\tfrac12,\tfrac12),
+      (\tfrac12,-\tfrac12),(\tfrac12,\tfrac12),
+      (-\tfrac34,-\tfrac14),(-\tfrac34,\tfrac14),
+      (\tfrac34,-\tfrac14),(\tfrac34,\tfrac14)\}.
+\end{equation}
+The audit set did not participate in capacity selection and could not authorize
+trying another capacity after a failure.  One global capacity was required at
+all \(999\) nonterminal times.  The selection rule was the smallest
+\(K\in\{5,\ldots,25\}\) passing every design point at each of
+\(T=10,100,1000\).
+
+\begin{table}[H]
+\centering
+\caption{Frozen Actual-SV anchor-capacity ladder.  A failure is classified by
+the first mathematical preparation gate it violates, not by timeout.}
+\label{tab:bf-ledh-actual-sv-capacity-ladder}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Capacity & Observed disposition & Classification \\
+\midrule
+\(K=5,6\) & center preparation fails by \(T=10\) & negative Pearson reference \\
+\(K=7,\ldots,22\) & center preparation passes \(T=10\), fails by \(T=100\) & negative Pearson reference \\
+\(K=23\) & pass all design points at \(T=10,100,1000\) & selected smallest pass \\
+\(K=24,25\) & fail at time zero & zero Voronoi/reference mass \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+The selected \(K=23\) preparation passed all eight audit points once, without
+retuning.  Its weakest design weight was
+\(5.395467979032687\times10^{-165}\), at zero-based ordered design point \(7\), time zero,
+anchor \(22\).  Its weakest audit weight was
+\(5.396877738726166\times10^{-165}\), at
+zero-based ordered audit point \(2\), \(z=(\tfrac12,-\tfrac12)\), time zero,
+anchor \(22\).  Re-solving the saved
+\(4\)-by-\(23\) systems with \(50\), \(100\), and \(200\) decimal digits kept
+the same weakest anchor and a strictly positive sign.  The \(200\)-digit design
+value begins \(5.39546797902344038197\times10^{-165}\), and the corresponding
+audit value begins \(5.39687773872662767248\times10^{-165}\).  This supports
+the sign of the saved cases; it is not interval arithmetic and does not certify
+nearby unsampled parameters.
+
+\begin{proposition}[Scope of a finite chart audit]
+\label{prop:bf-ledh-actual-sv-finite-audit-scope}
+Let \(\mathcal Z\) be a finite parameter set.  If the fixed prepared chart
+passes every chart finite-program gate at every \(z\in\mathcal Z\), then the
+executed chart and its claim-bearing scalar outputs are admissible at those
+tested points.  At a tested point where the separate own-scalar derivative
+gate also passes, the checked JVP is admissible for that same finite scalar.
+These observations alone do not imply that either class of gate passes on
+\(\operatorname{conv}(\mathcal Z)\), on any open neighborhood, or along an HMC
+trajectory.
+\end{proposition}
+
+\begin{proof}
+The first two statements are exactly the corresponding conjunctions of the
+pointwise chart and derivative gate outcomes.
+A finite set contains no information about an untested point without an
+additional analytic bound, interval certificate, or verified continuity
+margin.  A continuous weight can be positive at every tested point and
+negative between two of them.  Therefore the stronger region claims do not
+follow from the finite audit.
+\end{proof}
+
+\paragraph{Own-scalar derivative references.}
+For the two-parameter center score, define the central finite-difference vector
+with \(h=10^{-5}\) by
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-fd-score}
+  g^{\rm FD}_j
+  =\frac{\mathcal L(\theta_0+h e_j)
+          -\mathcal L(\theta_0-h e_j)}{2h},
+  \qquad j=1,2,
+\end{equation}
+and report
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-fd-relative-error}
+  E_{\rm FD}
+  =\frac{\lVert g^{\rm manual}-g^{\rm FD}\rVert_2}
+         {\max(\lVert g^{\rm FD}\rVert_2,1)}.
+\end{equation}
+The frozen FD-only diagnostic tolerance was
+\(0.05\sqrt p=0.05\sqrt2=0.07071067811865477\).  This is an owner-selected
+engineering tolerance for this deterministic directional FD comparison.  It
+is \emph{not} a \(95\%\) confidence interval, a two-standard-deviation rule, or
+a statistical error probability: neither side of
+\eqref{eq:bf-ledh-actual-sv-fd-relative-error} is a sample from a declared
+sampling distribution.
+
+\begin{table}[H]
+\centering
+\caption{Actual-SV manual total JVP against central finite differences of the
+same finite scalar.}
+\label{tab:bf-ledh-actual-sv-fd-results}
+\begin{tabular}{@{}rll@{}}
+\toprule
+\(T\) & \(E_{\rm FD}\) & FD-only gate \\
+\midrule
+2    & \(2.323339358376968\times10^{-11}\) & pass \\
+10   & \(1.6187801132686436\times10^{-10}\) & pass \\
+100  & \(2.247653507298375\times10^{-9}\) & pass \\
+1000 & \(5.7988816510053705\times10^{-8}\) & pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ordinary TensorFlow reverse-mode autodiff agrees at the center through
+\(T=10\), but one tested \(T=10\) endpoint is already nonfinite and all five
+tested points are nonfinite at \(T\geq100\), even though the primal, manual JVP,
+and FD values remain finite.  Component-level investigations associate the
+failure with reverse propagation through extremely small positive-weight
+paths; they do not prove a unique failing operation.  The observed nonfinite
+result is therefore an implementation failure of that reverse-mode oracle for
+this finite program.  By itself it is evidence neither that the finite scalar
+is nondifferentiable nor that the manual JVP is correct.  A trial custom reverse
+pullback also returned nonfinite results at \(T=100\); it was removed rather
+than retained as a fallback.
+
+An independent TensorFlow eager \texttt{ForwardAccumulator} differentiated the
+unmodified primal instead.  With
+
+\[
+  E_{\rm FAD}
+  =\frac{\lVert g^{\rm manual}-g^{\rm FAD}\rVert_2}
+         {\max(\lVert g^{\rm manual}\rVert_2,
+                    \lVert g^{\rm FAD}\rVert_2,10^{-12})},
+\]
+the observed comparisons were:
+
+\begin{table}[H]
+\centering
+\caption{Actual-SV manual total JVP against eager forward autodiff of the same
+unmodified scalar.  The reference gate is
+\(\sqrt{\epsilon_{64}}=1.4901161193847656\times10^{-8}\).}
+\label{tab:bf-ledh-actual-sv-forward-ad-results}
+\begin{tabular}{@{}rll@{}}
+\toprule
+\(T\) & \(E_{\rm FAD}\) & float64 reference gate \\
+\midrule
+10   & \(1.298650134071988\times10^{-13}\) & pass \\
+100  & \(4.447444400460831\times10^{-12}\) & pass \\
+1000 & \(2.6364004959309425\times10^{-12}\) & pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At \(T=1000\), the manual and eager-forward scores were, respectively,
+\begin{align*}
+ g^{\rm manual}&=(5.664478697500771,-2.566049221886212),\\
+ g^{\rm FAD}&=(5.664478697506889,-2.5660492218710016).
+\end{align*}
+Their maximum absolute difference was
+\(1.5210499526574495\times10^{-11}\).  Automatic forward mode is a CPU
+reference exception, not the production route.  XLA compilation of the
+transformed nested loop failed on a nonconstant transpose permutation; a
+non-JIT \texttt{tf.function} transformation instead failed a TensorList shape
+invariant.  The production score is consequently the explicit two-direction
+manual JVP inside the XLA-default fixed-shape loop.  This choice is supported
+by the reported same-scalar checks; it is not justified merely by the failure
+of the other autodiff implementations.
+
+\paragraph{Independent dense-filter comparison.}
+Own-scalar differentiation does not establish that the scalar approximates the
+desired nonlinear filtering value or score.  The selected candidate was
+therefore compared at the center with a deterministic dense Actual-SV filter
+using Legendre orders \(129\) and \(257\) on radius \(10\).  For scalar score
+components \(a,b\), the reported symmetric-relative difference is
+\begin{equation}
+\label{eq:bf-ledh-actual-sv-symmetric-relative}
+  d_{\rm sym}(a,b)
+  =\begin{cases}
+     2|a-b|/(|a|+|b|),& |a|+|b|>0,\\
+     0,&a=b=0.
+   \end{cases}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{Descriptive candidate-minus-order-257 dense-reference comparisons.
+No scientific-equivalence threshold was declared.}
+\label{tab:bf-ledh-actual-sv-dense-comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}rlll@{}}
+\toprule
+\(T\) & Value difference & Absolute score difference & Componentwise \(d_{\rm sym}\) \\
+\midrule
+2 & \(1.3014182620452175\times10^{-8}\)
+  & \((2.6158827104438842\times10^{-8},\,2.8765310133849198\times10^{-9})\)
+  & \((1.187693931512109\times10^{-7},\,5.435712744272272\times10^{-9})\) \\
+10 & \(2.4500970141616563\times10^{-8}\)
+  & \((1.604391193232857\times10^{-7},\,7.053514550214857\times10^{-9})\)
+  & \((2.2686520413738664\times10^{-7},\,1.1943543223104596\times10^{-8})\) \\
+100 & \(-6.553175069257122\times10^{-7}\)
+  & \((1.235704860413911\times10^{-5},\,3.52904263500875\times10^{-6})\)
+  & \((1.2128187577154448\times10^{-5},\,1.192559771676947\times10^{-6})\) \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+There were no componentwise sign reversals.  The order-\(129\) versus
+order-\(257\) value changes were \(4.71\times10^{-14}\),
+\(2.34\times10^{-13}\), and \(2.39\times10^{-12}\) at the three horizons; the
+largest adjacent score change was \(1.07\times10^{-13}\).  Thus the observed
+candidate differences are not explained by that particular adjacent
+refinement.  They nevertheless remain descriptive: adjacent quadrature orders
+can share truncation bias, no rigorous dense-reference error bound was proved,
+and no target-specific equivalence margin was fixed before the run.
+
+\paragraph{Trusted GPU/XLA execution and failure recording.}
+The full \(T=1000,K=23\) manual-score route was executed in TensorFlow 2.19.1
+on one logical RTX 4080 SUPER GPU.  The logical device was configured before
+initialization with a hard \(8192\) MiB limit; memory growth was disabled
+because TensorFlow does not permit both policies simultaneously.  XLA was
+enabled and all claim-bearing outputs were placed on \texttt{GPU:0}.  The
+concrete graph contained three functional \texttt{StatelessWhile} nodes, and a
+source audit found no reachable Python horizon loop.
+
+All center and four FD endpoint charts were valid.  The center value and score
+were
+\[
+  \mathcal L(\theta_0)=-2286.226010065916,\qquad
+  g^{\rm manual}=(5.664478697508284,-2.56604922190062).
+\]
+The GPU FD relative error was \(6.037244233113808\times10^{-8}\), and warm
+replay, including the score, was bitwise identical.  Relative to the bound CPU
+artifact, the maximum objective absolute difference was
+\(9.094947017729282\times10^{-13}\), and the maximum manual-score absolute
+difference was \(1.4408030324375432\times10^{-11}\).  These CPU/GPU
+differences are descriptive; no equivalence threshold was added after seeing
+them.
+
+TensorFlow reported an allocator peak of \(1{,}995{,}776\) bytes.  This field
+does not include the CUDA context, loaded libraries, or driver allocations and
+must not be interpreted as total device use.  The run took \(69.5032\) seconds
+in one attempt; this single timing is engineering telemetry, not a performance
+distribution or method ranking.  TensorFlow's TF32 setting was recorded as
+enabled, but the candidate tensors were float64, so the artifact makes no TF32
+accuracy or throughput claim.
+
+After module initialization, the harness writes a fresh structured failure
+artifact for catchable Python, TensorFlow, configuration, identity, or
+allocation exceptions raised by the main evaluation before propagating the
+error.  Failures before that handler is installed, including import/device
+initialization failures, and native process aborts cannot be serialized by this
+mechanism.  The absence of a failure artifact is therefore not itself proof
+that no such failure occurred.  Successful completion, JSON parsing, the
+process exit status, and the saved output together establish the recorded
+successful run.
+
+\paragraph{Evidence boundary.}
+The authoritative machine-readable evidence is in the dated Actual-SV
+overcomplete analytical-chart repair directory under the repository's
+benchmark evidence tree.
+The selected preparation has SHA-256
+\begin{quote}\small\ttfamily
+e7958ba79da7f584b5e761faa22a9ed4f\allowbreak
+dc53cd90027b0c13389388e130c6a8f.
+\end{quote}
+Exact commands, environment, device configuration, source state, timings, and
+artifact paths are collected in the corresponding dated terminal result under
+the repository's plan directory.  It is the Actual-SV overcomplete analytical
+chart repair result dated 2026-07-17.
+
+The resulting ledger action is deliberately narrow.  The former Actual-SV
+fixed-square item is closed only as an experimental Contract E--TP local-chart
+and own-scalar engineering defect: the overcomplete route covers the declared
+finite points and differentiates its own finite scalar.  The evidence does not
+close canonical Contract E--Chol wiring, cross-model propagation, scientific
+score equivalence, trajectory-region validity, HMC readiness, default
+readiness, or leaderboard admission.
+
+\subsection{Algorithmic form and complexity}
+
+The proposed local step is:
+\begin{algorithm}[H]
+\caption{Proposed Contract E--TP local score-aware reset}
+\label{alg:bf-ledh-score-aware-teacher-projection}
+\begin{algorithmic}[1]
+  \State Compute the current LEDH corrected-weight increment \(\Delta_t\) and
+    normalized source weights; add \(\Delta_t\) to the scalar.
+  \State Form structurally valid teacher candidates
+    \(z_{ij}=F_\theta(x_i,\varepsilon_j)\) and normalized weights \(\pi_{ij}\).
+  \State Evaluate the fixed feature program \(\psi_\theta(z_{ij})\) and reduce
+    \(b_\theta=\sum_{ij}\pi_{ij}\psi_\theta(z_{ij})\).
+  \State Use a prepared fixed active set \(A\), or a reviewed full-support
+    positive chart, and solve \(\Phi_{A,\theta}q_\theta=b_\theta\).
+  \State Veto nonfinite, rank-deficient, nonpositive, or excessive-residual
+    charts; do not clip weights or drop constraints.
+  \State Carry \(\{s_\ell,q_\ell\}\) to the next LEDH step and initialize its
+    prior log weights with \(\log q_\ell\), not \(-\log m\).
+  \State In reverse mode, differentiate teacher construction, feature
+    reduction, the same linear solve, carried log weights, and every later
+    finite LEDH operation.
+\end{algorithmic}
+\end{algorithm}
+
+With \(N\) parents, \(N\) innovation points, and \(K\) retained features, dense
+teacher reduction costs \(O(N^2K)\).  A square chart adds \(O(K^3)\), while the
+KKT form adds \(O(mK^2+K^3)\).  The projection is therefore semi-analytical;
+the accepted \(N^2\) teacher work, not a large per-step optimizer, is expected
+to dominate.  Streaming can reduce teacher storage from \(O(N^2d)\) to blocks,
+provided the selected anchors and feature reductions are reproduced exactly in
+the pullback.
+
+\subsection{Concrete two-dimensional LGSSM witness}
+
+The reference experiment uses
+\begin{align}
+  x_t&=A_\theta x_{t-1}+\varepsilon_t,
+    &\varepsilon_t&\sim\mathcal N(0,Q_\theta),\\
+  y_t&=h^\top x_t+\nu_t,
+    &\nu_t&\sim\mathcal N(0,R_\theta),
+\end{align}
+with
+\begin{equation}
+\label{eq:bf-ledh-score-aware-lgssm-numbers}
+  A_\theta=\begin{bmatrix}\rho&0.18\\-0.12&0.83\end{bmatrix},\quad
+  Q_\theta=e^{2\ell_q}
+    \begin{bmatrix}1&0.22\\0.22&0.65\end{bmatrix},\quad
+  h=\begin{bmatrix}1\\0.35\end{bmatrix},\quad
+  R_\theta=e^{2\ell_r}.
+\end{equation}
+This witness isolates the teacher and compression reset.  It uses the bootstrap
+linear-Gaussian transition and observation potential directly; it does not
+execute an LEDH migration or PF--PF proposal correction.  It can therefore
+validate the finite teacher-projection propositions and the carried-weight
+score mechanism, but not the surrounding LEDH flow implementation.
+At
+\[
+  \theta_0=(\rho,\ell_q,\ell_r)=(0.72,-1.05,-0.70),
+\]
+the prior is
+\[
+  x_0\sim\mathcal N\!\left(
+    \begin{bmatrix}0.25\\-0.30\end{bmatrix},
+    \begin{bmatrix}0.70&0.16\\0.16&0.45\end{bmatrix}
+  \right),\qquad (y_1,y_2)=(0.40,-0.15).
+\]
+The realized matrices are
+\[
+  A=\begin{bmatrix}0.72&0.18\\-0.12&0.83\end{bmatrix},\quad
+  Q=\begin{bmatrix}
+    0.1224564283&0.0269404142\\
+    0.0269404142&0.0795966784
+  \end{bmatrix},\quad
+  R=0.2465969639.
+\]
+
+An order-nine tensor Gauss--Hermite rule in two dimensions gives 81 prior
+parents and 81 innovation points, hence a 6561-point teacher at time one.  The
+teacher weights are the Gauss--Hermite product weights multiplied by
+\(g_\theta(y_1\mid z_{ij})\) and normalized.  The seven retained features are
+\begin{equation}
+\label{eq:bf-ledh-score-aware-lgssm-features}
+  \psi_\theta(x)
+  =\left(1,x_1,x_2,x_1^2,x_1x_2,x_2^2,r_{2,\theta}(x)\right)^\top,
+\end{equation}
+where the linear-Gaussian predictive feature is available analytically:
+\begin{equation}
+  r_{2,\theta}(x)
+  =\mathcal N\!\left(
+    y_2;h^\top A_\theta x,
+    h^\top Q_\theta h+R_\theta
+  \right).
+\end{equation}
+
+A deterministic linear-program preparation at \(\theta_0\) produced a positive
+basic feasible set with zero-based teacher indices
+\[
+  A=(108,221,2317,2402,2474,3942,4001).
+\]
+Those indices are then frozen; only the seven-by-seven feature solve is
+differentiated.  The resulting support and weights are:
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+\(\ell\) & \(s_{\ell,1}\) & \(s_{\ell,2}\) & \(q_\ell\)\\
+\midrule
+1 & -3.4768598774 & -3.5565129989 & 0.0013273172\\
+2 & -2.2613978461 & -1.2129585132 & 0.0002961221\\
+3 & -0.5385388272 & -1.9705700614 & 0.0319724624\\
+4 & -0.4079200865 & -0.1434149819 & 0.0377858212\\
+5 & -0.6440561084 &  0.3400861366 & 0.0393703609\\
+6 &  1.3859662461 & -1.8303729322 & 0.0541647250\\
+7 &  0.4195516400 & -0.0203591973 & 0.8350831912\\
+\bottomrule
+\end{tabular}
+\end{center}
+The scaled feature matrix has condition number \(84.2606\), and the minimum
+weight is \(2.96122\times10^{-4}\); hence this center lies inside, rather than on
+the boundary of, the positive fixed chart.
+
+Table~\ref{tab:bf-ledh-score-aware-lgssm-witness} separates teacher accuracy
+from compression accuracy.  The Kalman filter is the exact LGSSM oracle.  The
+teacher is a finite quadrature approximation to it.  The student is proved and
+observed to reproduce the finite teacher for the retained predictive feature.
+\begin{table}[H]
+\centering
+\caption{Two-observation 2D LGSSM value and score at
+\(\theta_0=(0.72,-1.05,-0.70)\).}
+\label{tab:bf-ledh-score-aware-lgssm-witness}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+Method & log likelihood & \(\partial_\rho\) & \(\partial_{\ell_q}\) &
+  \(\partial_{\ell_r}\)\\
+\midrule
+Kalman oracle
+ & -1.637545116868 & -0.843840883733 & -0.405394763108 & -0.667711074507\\
+6561-point teacher
+ & -1.637542132400 & -0.843638383670 & -0.405408322446 & -0.667677325884\\
+7-point student
+ & -1.637542132400 & -0.843638383670 & -0.405408322446 & -0.667677325884\\
+Teacher minus Kalman
+ & \(2.98447\times10^{-6}\) & \(2.02500\times10^{-4}\) &
+   \(-1.35593\times10^{-5}\) & \(3.37486\times10^{-5}\)\\
+Student minus teacher
+ & \(0\) & \(0\) & \(5.55\times10^{-17}\) &
+   \(-1.11\times10^{-16}\)\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+The current teacher increment is \(-0.952850708925\), and the retained next
+increment is \(-0.684691423474\) for both teacher and student.  In float64, the
+maximum feature-value residual is \(1.30\times10^{-15}\), the maximum
+feature-tangent residual over all seven features and three parameters is
+\(4.05\times10^{-15}\), and the largest autodiff versus centered finite-
+difference residual is \(1.83\times10^{-10}\) with step \(10^{-5}\).
+
+The executable witness and its structured JSON result are stored under the
+chapter's benchmark and benchmark-artifact directories.  Their exact paths,
+command, and source state are recorded in the dated experiment result note.
+It intentionally hides CUDA and runs as a small TensorFlow float64 CPU
+reference.  It is implementation evidence for this numerical construction,
+not GPU/XLA or production evidence.
+
+\subsection{Mathematical and engineering boundary}
+
+The propositions prove a precise finite statement: a positive coreset exists at
+a fixed parameter value; a positive nonsingular frozen chart is locally
+differentiable; all retained feature totals and tangents match; and retaining
+the exact next finite predictive contribution makes the next value and score
+match the teacher.  They do not prove any of the following:
+\begin{itemize}
+  \item that a low-order or finite teacher equals the exact nonlinear filter;
+  \item that first two moments plus one predictive feature determine the entire
+    tangent filtering measure;
+  \item that one active set stays positive and nonsingular over an HMC
+    trajectory or posterior region;
+  \item that selecting a new active set online is differentiable;
+  \item that a 6561-to-7 compression remains accurate beyond the one retained
+    future observation;
+  \item that full-state Contract E affine anchors preserve the deterministic
+    support of a degenerate NAWM model; or
+  \item that this proposed route is HMC-ready, canonical, default-ready, or
+    computationally feasible at NAWM scale.
+\end{itemize}
+The next scientific tests must therefore use, in order, a multi-step LGSSM
+rollout with Kalman value and score at every step, a singular structural-linear
+fixture whose deterministic completion is exact, and only then a small pruned
+DSGE model.  Passing the numerical witness above establishes feasibility of the
+mechanism, not readiness of the algorithm.
+
+\section{Model-agnostic comparison of finite-filter scores}
+\label{sec:bf-ledh-score-comparison-opg}
+
+LGSSM experiments are diagnostic because their Kalman oracle exposes failures
+that would be hidden in a nonlinear model.  An LGSSM-specific expected Fisher
+matrix is nevertheless the wrong general score-comparison interface: the
+intended particle-filter applications usually do not have an analytic Fisher
+matrix.  This section therefore defines two diagnostics that require only a
+reference score and its time-local predictive increments.  They do not change
+the finite LEDH scalar, its derivative, or Contract E.  They change only how a
+candidate score error is reported.
+
+Fix the parameter coordinates before comparison.  In an HMC experiment these
+should normally be the unconstrained HMC coordinates.  Let
+\begin{equation}
+  \ell_T(\theta)=\sum_{t=1}^T \ell_t(\theta),\qquad
+  s_t=\nabla_\theta\ell_t(\theta),\qquad
+  g=\sum_{t=1}^T s_t,
+  \label{eq:bf-ledh-score-increments}
+\end{equation}
+where
+\(\ell_t(\theta)=\log p_\theta(y_t\mid y_{1:t-1})\) for the declared
+reference filter.  If \(\widehat g\) is a candidate score in the same
+coordinates, write \(\Delta=\widehat g-g\).
+
+\subsection{Global score-vector norm diagnostics}
+
+The direct global relative error is
+\begin{equation}
+  E_{\mathrm{total}}
+  =\frac{\lVert\Delta\rVert_2}{\lVert g\rVert_2}.
+  \label{eq:bf-ledh-score-total-relative}
+\end{equation}
+It is meaningful when \(\lVert g\rVert_2>0\), and must be reported as
+undefined rather than zero when the denominator is zero.  Unlike a maximum of
+componentwise relative errors, it does not diverge merely because one realized
+score component is close to zero.  It can, however, hide an inaccurate small
+component behind a large component, and the denominator can be small because
+predictive score increments cancel.  Report the absolute error
+\(\lVert\Delta\rVert_2\) with it.
+
+A cancellation-resistant companion is
+\begin{equation}
+  E_{\mathrm{energy}}
+  =\frac{\lVert\Delta\rVert_2}
+  {\left(\sum_{t=1}^T\lVert s_t\rVert_2^2\right)^{1/2}}.
+  \label{eq:bf-ledh-score-energy-relative}
+\end{equation}
+This denominator is the square root of the trace of the realized summed OPG
+matrix, equivalently \(\sqrt{T\operatorname{tr}(\overline S_T)}\).
+It is also undefined if every reference increment is zero.  Neither
+\eqref{eq:bf-ledh-score-total-relative} nor
+\eqref{eq:bf-ledh-score-energy-relative} is invariant to an arbitrary
+rescaling of the parameter coordinates.  Consequently the coordinate map is
+part of the artifact identity; a candidate and its reference must use the same
+map.
+
+\subsection{Average predictive-score OPG metric}
+
+Define the realized average outer-product-of-gradients matrix
+\begin{equation}
+  \overline S_T=\frac{1}{T}\sum_{t=1}^T s_t s_t^\top.
+  \label{eq:bf-ledh-average-opg}
+\end{equation}
+This is not \(gg^\top\).  The latter has rank at most one and repeats the
+near-zero-denominator problem rather than estimating independent parameter
+scales.  Nor is \(\overline S_T\) the outer product or covariance of scores
+from repeated particle seeds on one observed data set.  Centered variation
+across those seeds estimates Monte Carlo error; its uncentered second moment
+mixes the observed score, approximation bias, and Monte Carlo noise.  Particle-
+seed variation belongs in uncertainty intervals, not in the normalization
+matrix.
+
+For a diagonal-shrinkage coefficient \(0\leq\lambda\leq1\), a positive
+diagonal scale matrix \(D\), a base ridge \(\epsilon_0>0\), and an optional
+nonnegative numerical floor \(\epsilon_{\min}\), set
+\begin{align}
+  \rho_T&=\max\left\{\frac{\epsilon_0}{T},\epsilon_{\min}\right\},
+  \label{eq:bf-ledh-average-opg-ridge}\\
+  M_T&=(1-\lambda)\overline S_T
+       +\lambda\operatorname{Diag}(\operatorname{diag}\overline S_T)
+       +\rho_TD,
+  \label{eq:bf-ledh-average-opg-metric}\\
+  J_T&=T M_T.
+  \label{eq:bf-ledh-total-opg-metric}
+\end{align}
+The matrix \(D\) supplies score-squared units and must be frozen independently
+of the candidate error.  In dimensionless unconstrained coordinates, \(D=I\)
+is a possible declared baseline, not a universal scientific default.  A
+reference-derived diagonal scale may instead be frozen on separate simulated
+trajectories or a tuning split.  Choosing \(D\), \(\lambda\), or either ridge
+after inspecting which setting makes a candidate pass is forbidden.
+
+The total-score quadratic diagnostic and its diagonal companion are
+\begin{align}
+  E_{\mathrm{OPG}}
+  &=\left(\frac{1}{p}\Delta^\top J_T^{-1}\Delta\right)^{1/2},
+  \label{eq:bf-ledh-score-opg-error}\\
+  E_{\max,\mathrm{diag}}
+  &=\max_{1\leq j\leq p}
+    \frac{|\Delta_j|}{\sqrt{(J_T)_{jj}}}.
+  \label{eq:bf-ledh-score-opg-diagonal-error}
+\end{align}
+The first detects errors in correlated directions and the second prevents a
+small coordinate from being hidden by the global norm.  They are diagnostics,
+not acceptance thresholds until a model-class-specific plan freezes a
+criterion before candidate results are inspected.
+
+\begin{proposition}[Finite-horizon well-posedness]
+\label{prop:bf-ledh-average-opg-positive}
+Suppose \(D\succ0\), \(\epsilon_0>0\), \(T<\infty\), and
+\(0\leq\lambda\leq1\).  Then \(M_T\succ0\), even when \(T<p\), and
+\eqref{eq:bf-ledh-score-opg-error} is finite for every finite \(\Delta\).
+\end{proposition}
+
+\begin{proof}
+For every nonzero \(v\),
+\begin{align*}
+ v^\top M_Tv
+ &=\frac{1-\lambda}{T}\sum_{t=1}^T(v^\top s_t)^2
+   +\frac{\lambda}{T}\sum_{j=1}^p v_j^2
+      \sum_{t=1}^T s_{t,j}^2
+   +\rho_T v^\top Dv.
+\end{align*}
+The first two terms are nonnegative.  The last is strictly positive because
+\(\rho_T\geq\epsilon_0/T>0\) and \(D\succ0\).  Hence \(M_T\), and therefore
+\(J_T=T M_T\), is positive definite.
+\end{proof}
+
+The proposition makes a short-horizon diagnostic computable; it does not turn
+the missing directions into observed information.  In particular,
+\(\operatorname{rank}(\overline S_T)\leq\min(T,p)\).  For the current
+\(T=2,p=5\) LGSSM diagnostic, at least three directions are supplied entirely
+by shrinkage and ridge.  The artifact must report the unregularized rank or
+eigenvalues, \(\rho_T\), and whether the numerical floor is active.
+
+\begin{proposition}[Meaning of the \(1/T\) ridge]
+\label{prop:bf-ledh-average-opg-vanishing-ridge}
+Assume \(\epsilon_{\min}=0\), \(D_T\) is bounded, and
+\(\overline S_T\to S\).  If \(\lambda_T\to\lambda_\star\), then
+\[
+  M_T\longrightarrow
+  (1-\lambda_\star)S
+  +\lambda_\star\operatorname{Diag}(\operatorname{diag}S),
+\]
+while
+\[
+  J_T
+  =T\left[(1-\lambda_T)\overline S_T
+  +\lambda_T\operatorname{Diag}(\operatorname{diag}\overline S_T)\right]
+  +\epsilon_0D_T.
+\]
+Thus the ridge has constant size in the total-score metric and relative order
+\(1/T\) in every persistently identified direction.
+\end{proposition}
+
+\begin{proof}
+Substitute \(\rho_T=\epsilon_0/T\) into
+\eqref{eq:bf-ledh-average-opg-metric} and multiply by \(T\).  Boundedness of
+\(D_T\) makes \((\epsilon_0/T)D_T\to0\) in the average metric.  The stated
+limits then follow by continuity of the diagonal map.
+\end{proof}
+
+Applying \(\epsilon_0/T\) directly to the summed OPG would make the ridge only
+order \(1/T^2\) relative to its data term.  The average formulation is what
+gives the intended order \(1/T\).  A fixed \(\lambda>0\) does not disappear
+asymptotically: it converges to a diagonally shrunk metric, not to \(S\).
+Recovering the unshrunk OPG requires \(\lambda_T\to0\).  Similarly, when
+\(\epsilon_{\min}>0\) is active, the ridge no longer vanishes relative to the
+average metric.  Persistent floor activity is evidence of weak excitation or
+numerical scaling, and must be reported rather than hidden as successful
+normalization.
+
+Under the usual differentiability and interchange conditions at the true
+parameter,
+\(\mathbb E[s_t\mid y_{1:t-1}]=0\).  Predictive score increments are then a
+martingale-difference sequence, so cross-time score covariances vanish and the
+expected sum of \(s_ts_t^\top\) is the Fisher information of the observed-data
+score.  On one realized trajectory, however, \(\overline S_T\) remains a
+data-dependent OPG estimate.  For short or weakly excited records it should be
+pooled over independently simulated or observed trajectories fixed before the
+candidate comparison.  Exact LGSSM Fisher information is useful only as an
+oracle check that this generic construction behaves sensibly; it is not the
+normalization required by the nonlinear-model interface.
+
 \section{Implementation contract}
 \label{sec:bf-ledh-ot-implementation-contract}
 
-A robust implementation should expose two separable functions:
+A robust canonical implementation should expose two separable functions:
 \[
-  \operatorname{ot\_forward}(X,\log w;\rho)
+  \operatorname{reset\_forward}(X,\log w,\Xi,\lambda;\eta_{\rm OT})
   =
-  (\widetilde X,\mathrm{aux}),
+  (X^\star,\mathrm{aux}),
   \qquad
-  \operatorname{ot\_vjp}(\mathrm{aux},G_{\widetilde X})
+  \operatorname{reset\_vjp}(\mathrm{aux},G_{X^\star})
   =
   (G_X,G_{\log w}),
 \]
-where \(\rho\) contains the declared OT settings: cost convention, epsilon,
+where \(\eta_{\rm OT}\) contains the declared OT settings: cost convention, epsilon,
 annealing schedule, iteration budget, row and column chunk sizes, stabilization,
 and stop-gradient policy.  The auxiliary record should contain only mathematical
 or numerical data needed to reproduce the same finite map.  It should not
 silently change the scalar by switching from streaming to dense semantics, from
 finite Sinkhorn to another optimizer, or from one random stream to another.
 
-The current TensorFlow implementation follows this contract through an
-opt-in mode named \texttt{same\_scalar\_custom\_vjp}.  In dense mode, the
-custom-gradient primal calls the same finite FilterFlow-style annealed
-transport routine as the raw TensorFlow path, with the selected
-\texttt{transport\_ad\_mode} and any declared warm-start state.  Its backward
-rule then recomputes that same transport matrix under a local
-\texttt{GradientTape} and applies the unclipped upstream transport adjoint.  In
-streaming mode, the primal returns the transported particles without returning
-a dense transport matrix; the backward rule recomputes the same streaming
-transport under a local \texttt{GradientTape}.  This is a same-scalar
-checkpointed or recomputed VJP route.  It is not yet a fully hand-coded
-reverse scan of every softmin and normalization primitive in
-Proposition~\ref{prop:bf-ledh-ot-finite-sinkhorn-vjp}.  The hand-derived
-reverse scan remains the mathematical destination for a future lower-level
-adjoint implementation.
+The canonical TensorFlow implementation is owned by
+\texttt{ledh\_contract\_e\_reset\_tf.py},
+\texttt{ledh\_contract\_e\_streaming\_tf.py}, and the canonical finite filter
+callable.  The streaming layer carries the augmented payload \([X,1]\), so its
+forward and reverse programs retain both \(Q\) and \(M\) without materializing a
+dense production matrix.  Its VJP exposes source-particle direct and transport
+terms separately, probability-weight moment terms, normalized-log-weight
+transport terms, and their correctly composed totals.  The checked LGSSM
+callable packages a primal traversal and a separate five-direction manual-JVP
+traversal; pointwise tests match the manual JVP to forward autodiff of the
+private primal on frozen tiny fixtures.  This is not a claim that the manual
+traversal is mechanically generated from one primal trace or cannot drift.
 
 The following checks belong with any implementation:
 \begin{enumerate}[label=(\arabic*)]
@@ -606,10 +2341,16 @@ is why the custom-gradient design in this chapter emphasizes the OT VJP.
 \label{sec:bf-ledh-ot-boundary}
 
 This chapter gives a mathematical route for a custom gradient of the executed
-finite LEDH-PFPF-OT scalar.  It claims:
+finite LEDH-PFPF-OT scalar.  For the canonical Contract E route it claims:
 \begin{itemize}
-  \item the barycentric OT product has the VJP in
-  \eqref{eq:bf-ledh-ot-vjp-barycentric};
+  \item the raw barycentric OT product has the local VJP in
+  \eqref{eq:bf-ledh-ot-vjp-barycentric}, but that object is historical and is
+  not the canonical reset;
+  \item the canonical finite transport uses the row quotient in
+  \eqref{eq:bf-ledh-contract-e-row-quotient} and both quotient cotangents;
+  \item the canonical total pullback includes both direct weighted-moment and
+  streaming-transport terms as in
+  \eqref{eq:bf-ledh-contract-e-total-source-pullback};
   \item the normalized finite-transport matrix has the VJP in
   \eqref{eq:bf-ledh-ot-vjp-logw}--\eqref{eq:bf-ledh-ot-vjp-cost};
   \item finite Sinkhorn or annealed Sinkhorn can be differentiated by a reverse
@@ -622,6 +2363,15 @@ finite LEDH-PFPF-OT scalar.  It claims:
 It does \emph{not} claim that the relaxed OT filter equals a categorical
 particle filter, that finite Sinkhorn equals unregularized OT, that a custom VJP
 improves Monte Carlo accuracy, or that the resulting score is automatically
-HMC-ready for a structural model.  Those are separate validation questions.
+HMC-ready for a structural model.  It also does not claim that the checked tiny
+Contract E derivative certificates establish Kalman equivalence, full-time
+numerical adequacy, nonlinear state-support validity, v2 admission, leaderboard
+completeness, or default readiness.  Those are separate validation questions.
+The Actual-SV overcomplete result in
+Section~\ref{sec:bf-ledh-actual-sv-overcomplete-certification} is likewise an
+experimental finite-program certificate only.  It repairs the declared local
+fixed-square chart and own-scalar derivative failure; it is not evidence that
+the separate canonical, HMC-region, scientific-equivalence, or leaderboard
+gates have passed.
 
 \FloatBarrier

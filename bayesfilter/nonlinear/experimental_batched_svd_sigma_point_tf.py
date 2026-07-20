@@ -1759,6 +1759,7 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
     spectral_gap_tolerance: tf.Tensor | float = 1.0e-8,
     fixed_null_tolerance: tf.Tensor | float = 1.0e-10,
     principal_sqrt_reconstruction_tolerance: tf.Tensor | float = 1.0e-10,
+    principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
@@ -1960,6 +1961,7 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
                 singular_floor=placement_floor,
                 fixed_null_tolerance=fixed_null_tolerance,
                 lyapunov_tolerance=principal_sqrt_reconstruction_tolerance,
+                factor_backend=principal_sqrt_backend,
                 label="principal-sqrt sigma-point placement",
             )
         else:
@@ -2161,6 +2163,7 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
                 singular_floor=innovation_floor,
                 fixed_null_tolerance=fixed_null_tolerance,
                 lyapunov_tolerance=principal_sqrt_reconstruction_tolerance,
+                factor_backend=principal_sqrt_backend,
                 label="principal-sqrt sigma-point innovation",
             )
         else:
@@ -2700,6 +2703,7 @@ def tf_batched_svd_sigma_point_value_and_score_with_rule(
             )
         ),
         "derivative_provider": tf.constant(derivatives.name),
+        "principal_sqrt_backend": tf.constant(principal_sqrt_backend),
     }
     return checked_value, checked_score, diagnostics
 
@@ -2716,6 +2720,7 @@ def tf_batched_svd_sigma_point_value_and_score(
     spectral_gap_tolerance: tf.Tensor | float = 1.0e-8,
     fixed_null_tolerance: tf.Tensor | float = 1.0e-10,
     principal_sqrt_reconstruction_tolerance: tf.Tensor | float = 1.0e-10,
+    principal_sqrt_backend: TFPrincipalSqrtBackend = "compiled_custom_op",
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
 ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
@@ -2738,6 +2743,7 @@ def tf_batched_svd_sigma_point_value_and_score(
         fixed_null_tolerance=fixed_null_tolerance,
         principal_sqrt_reconstruction_tolerance=(
             principal_sqrt_reconstruction_tolerance),
+        principal_sqrt_backend=principal_sqrt_backend,
         jitter=jitter,
         allow_fixed_null_support=allow_fixed_null_support,
     )

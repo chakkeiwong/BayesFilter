@@ -7,6 +7,7 @@ from bayesfilter.nonlinear.fixed_sgqf_tf import (
     tf_fixed_sgqf_active_multi_indices,
     tf_fixed_sgqf_branch_identity,
     tf_fixed_sgqf_cloud,
+    tf_fixed_sgqf_level2_axis_cloud,
     tf_fixed_sgqf_combination_coefficient,
     tf_standard_normal_ghq_level_rule,
 )
@@ -122,6 +123,29 @@ def test_fixed_sgqf_level2_4d_cloud_reproduces_standard_normal_covariance() -> N
     np.testing.assert_allclose(cloud.weight_total, 1.0, atol=1e-14)
     np.testing.assert_allclose(mean, np.zeros(4), atol=1e-14)
     np.testing.assert_allclose(reconstructed, np.eye(4), atol=1e-12)
+
+
+def test_level2_axis_cloud_matches_generic_cloud_through_four_dimensions() -> None:
+    for dim in range(1, 5):
+        generic = tf_fixed_sgqf_cloud(dim, 2)
+        exact = tf_fixed_sgqf_level2_axis_cloud(dim)
+
+        np.testing.assert_allclose(exact.points, generic.points, atol=1e-12)
+        np.testing.assert_allclose(exact.weights, generic.weights, atol=1e-12)
+        assert exact.active_multi_indices == generic.active_multi_indices
+        assert exact.combination_coefficients == generic.combination_coefficients
+
+
+def test_level2_axis_cloud_is_feasible_and_moment_exact_in_18_dimensions() -> None:
+    cloud = tf_fixed_sgqf_level2_axis_cloud(18)
+    mean = tf.linalg.matvec(tf.transpose(cloud.points), cloud.weights)
+    reconstructed = _weighted_covariance(cloud.points, cloud.weights)
+
+    assert cloud.point_count == 37
+    assert cloud.negative_weight_count == 1
+    np.testing.assert_allclose(cloud.weight_total, 1.0, atol=1e-14)
+    np.testing.assert_allclose(mean, np.zeros(18), atol=1e-14)
+    np.testing.assert_allclose(reconstructed, np.eye(18), atol=1e-12)
 
 
 def test_fixed_sgqf_level2_4d_cloud_reproduces_standard_normal_covariance() -> None:

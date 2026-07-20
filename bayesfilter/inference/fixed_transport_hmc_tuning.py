@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import tensorflow as tf
 
 from bayesfilter.inference.batched_value_score import FixedTransportValueScoreAdapter
 from bayesfilter.inference.hmc import (
@@ -23,6 +24,10 @@ from bayesfilter.inference.hmc import (
     PrecomputedMassArtifact,
     run_full_chain_tfp_hmc,
     stable_adapter_signature,
+)
+from bayesfilter.inference.hmc_convergence import (
+    RANK_NORMALIZED_SPLIT_RHAT_DEFINITION,
+    rank_normalized_split_rhat_summary,
 )
 from bayesfilter.inference.hmc_budget_ladder import (
     FixedMassHMCTuningBudgetLadderConfig,
@@ -62,8 +67,9 @@ class FixedTransportHMCKernelTuningConfig:
     leapfrog_grid: tuple[int, ...] = (5, 10, 15, 20, 25)
     chain_count: int = 4
     target_accept_prob: float = 0.70
-    acceptance_band: tuple[float, float] = (0.60, 0.90)
-    repair_band: tuple[float, float] = (0.45, 0.98)
+    acceptance_band: tuple[float, float] = (0.65, 0.75)
+    repair_band: tuple[float, float] = (0.55, 0.85)
+    maximum_absolute_energy_error: float = 1000.0
     step_repair_factor: float = 2.0
     step_repair_min_directional_factor: float = 1.25
     budget_schedule: tuple[int, ...] = (8, 16, 32)
@@ -72,6 +78,9 @@ class FixedTransportHMCKernelTuningConfig:
     screen_num_burnin_steps: int = 4
     verification_num_results: int = 16
     verification_num_burnin_steps: int = 4
+    require_modern_rank_normalized_verification: bool = False
+    verification_min_retained_results_per_chain: int = 1000
+    verification_rhat_max: float = 1.01
     tune_seed_base: tuple[int, int] = (20260625, 100)
     screen_seed_base: tuple[int, int] = (20260625, 200)
     verification_seed_base: tuple[int, int] = (20260625, 300)
@@ -86,6 +95,7 @@ class FixedTransportHMCKernelTuningConfig:
     fixed_grid_fallback_acceptance_max: float = 0.85
     output_filename: str = "fixed_transport_hmc_tuning_result.json"
     source: str = "bayesfilter.inference.fixed_transport_hmc_tuning"
+    proposal_dynamics_identity: str = "exact_transformed_gradient"
 
     def __post_init__(self) -> None:
         step = float(self.initial_step_size)
@@ -110,6 +120,14 @@ class FixedTransportHMCKernelTuningConfig:
             raise ValueError("repair_band must contain acceptance_band")
         object.__setattr__(self, "acceptance_band", acceptance_band)
         object.__setattr__(self, "repair_band", repair_band)
+        dynamics_identity = str(self.proposal_dynamics_identity)
+        if not dynamics_identity:
+            raise ValueError("proposal_dynamics_identity must be non-empty")
+        object.__setattr__(self, "proposal_dynamics_identity", dynamics_identity)
+        maximum_energy = float(self.maximum_absolute_energy_error)
+        if not np.isfinite(maximum_energy) or maximum_energy <= 0.0:
+            raise ValueError("maximum_absolute_energy_error must be positive and finite")
+        object.__setattr__(self, "maximum_absolute_energy_error", maximum_energy)
         object.__setattr__(
             self,
             "step_repair_factor",
@@ -141,6 +159,36 @@ class FixedTransportHMCKernelTuningConfig:
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
             object.__setattr__(self, name, value)
+        require_modern = bool(self.require_modern_rank_normalized_verification)
+        minimum_verification = int(self.verification_min_retained_results_per_chain)
+        if minimum_verification <= 0:
+            raise ValueError(
+                "verification_min_retained_results_per_chain must be positive"
+            )
+        verification_rhat_max = float(self.verification_rhat_max)
+        if not np.isfinite(verification_rhat_max) or verification_rhat_max <= 1.0:
+            raise ValueError("verification_rhat_max must be finite and greater than 1")
+        if require_modern:
+            if chain_count != 4:
+                raise ValueError(
+                    "modern rank-normalized verification requires exactly four chains"
+                )
+            if int(self.verification_num_results) < minimum_verification:
+                raise ValueError(
+                    "modern rank-normalized verification requires at least the "
+                    "configured retained results per chain"
+                )
+        object.__setattr__(
+            self,
+            "require_modern_rank_normalized_verification",
+            require_modern,
+        )
+        object.__setattr__(
+            self,
+            "verification_min_retained_results_per_chain",
+            minimum_verification,
+        )
+        object.__setattr__(self, "verification_rhat_max", verification_rhat_max)
         object.__setattr__(self, "tune_seed_base", _validate_seed(self.tune_seed_base))
         screen_seed = _validate_seed(self.screen_seed_base)
         verification_seed = _validate_seed(self.verification_seed_base)
@@ -228,6 +276,8 @@ class FixedTransportHMCKernelTuningConfig:
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
             "repair_band": self.repair_band,
+            "maximum_absolute_energy_error": self.maximum_absolute_energy_error,
+            "proposal_dynamics_identity": self.proposal_dynamics_identity,
             "step_repair_factor": self.step_repair_factor,
             "step_repair_min_directional_factor": (
                 self.step_repair_min_directional_factor
@@ -238,6 +288,13 @@ class FixedTransportHMCKernelTuningConfig:
             "screen_num_burnin_steps": self.screen_num_burnin_steps,
             "verification_num_results": self.verification_num_results,
             "verification_num_burnin_steps": self.verification_num_burnin_steps,
+            "require_modern_rank_normalized_verification": (
+                self.require_modern_rank_normalized_verification
+            ),
+            "verification_min_retained_results_per_chain": (
+                self.verification_min_retained_results_per_chain
+            ),
+            "verification_rhat_max": self.verification_rhat_max,
             "tune_seed_base": self.tune_seed_base,
             "screen_seed_base": self.screen_seed_base,
             "verification_seed_base": self.verification_seed_base,
@@ -697,17 +754,26 @@ def _run_fixed_transport_candidate_attempts(
     if selected_scale is None:
         return [], selection_payload
     selected_attempt = attempts[-1]
+    verification = _run_verification(
+        adapter=transformed_adapter,
+        initial_position=initial_position,
+        step_size=float(selected_attempt["initial_step_size"]),
+        num_leapfrog_steps=int(pilot_leapfrog),
+        candidate_index=0,
+        config=config,
+        run_full_chain=run_full_chain,
+    )
     candidate = FixedTransportHMCCandidateResult(
         candidate_index=0,
         num_leapfrog_steps=int(pilot_leapfrog),
         ladder_result=None,
-        verification_config_payload=probe["config_payload"],
-        verification_diagnostics=probe["diagnostics"],
-        final_status=probe["final_status"],
-        diagnostic_role=probe["diagnostic_role"],
+        verification_config_payload=verification["config_payload"],
+        verification_diagnostics=verification["diagnostics"],
+        final_status=verification["final_status"],
+        diagnostic_role=verification["diagnostic_role"],
         fixed_kernel_step_size=float(selected_attempt["initial_step_size"]),
-        hard_vetoes=probe["hard_vetoes"],
-        repair_triggers=probe["repair_triggers"],
+        hard_vetoes=verification["hard_vetoes"],
+        repair_triggers=verification["repair_triggers"],
     )
     return [candidate], selection_payload
 
@@ -730,6 +796,7 @@ def _run_fixed_grid_scale_probe(
         candidate_index=10_000 + int(attempt_index),
         config=config,
         run_full_chain=run_full_chain,
+        probe_only=True,
     )
 
 
@@ -918,13 +985,23 @@ def _run_verification(
     candidate_index: int,
     config: FixedTransportHMCKernelTuningConfig,
     run_full_chain: RunFullChainFn,
+    probe_only: bool = False,
 ) -> Mapping[str, Any]:
+    seed_base = config.screen_seed_base if probe_only else config.verification_seed_base
+    num_results = (
+        config.screen_num_results if probe_only else config.verification_num_results
+    )
+    num_burnin_steps = (
+        config.screen_num_burnin_steps
+        if probe_only
+        else config.verification_num_burnin_steps
+    )
     verification_config = FullChainHMCConfig(
-        num_results=config.verification_num_results,
-        num_burnin_steps=config.verification_num_burnin_steps,
+        num_results=num_results,
+        num_burnin_steps=num_burnin_steps,
         step_size=step_size,
         num_leapfrog_steps=num_leapfrog_steps,
-        seed=_offset_seed(config.verification_seed_base, candidate_index),
+        seed=_offset_seed(seed_base, candidate_index),
         use_xla=config.use_xla,
         trace_policy="standard",
         target_status_trace_policy=config.target_status_trace_policy,
@@ -938,12 +1015,24 @@ def _run_verification(
     run_error: Exception | None = None
     try:
         run_result = run_full_chain(adapter, initial_state, verification_config)
-        diagnostics = _verification_diagnostics(run_result)
+        diagnostics = _verification_diagnostics(
+            run_result,
+            adapter=adapter,
+            config=config,
+            require_modern=bool(
+                config.require_modern_rank_normalized_verification and not probe_only
+            ),
+        )
     except Exception as exc:  # noqa: BLE001 - verification is fail-closed.
         run_error = exc
         diagnostics = _error_diagnostics(exc)
     diagnostics = dict(diagnostics)
-    diagnostics["diagnostic_context"] = "fixed_transport_fresh_verification"
+    diagnostics["diagnostic_context"] = (
+        "fixed_transport_scale_selection_probe"
+        if probe_only
+        else "fixed_transport_fresh_verification"
+    )
+    diagnostics["probe_only"] = bool(probe_only)
     diagnostics["initial_state_shape"] = tuple(int(item) for item in initial_state.shape)
     diagnostics["rank2_chain_batched_initial_state"] = True
     diagnostics["nonclaims"] = FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS
@@ -951,6 +1040,9 @@ def _run_verification(
         config,
         diagnostics=diagnostics,
         run_error=run_error,
+        require_modern=bool(
+            config.require_modern_rank_normalized_verification and not probe_only
+        ),
     )
     return {
         "config_payload": verification_config.signature_payload(),
@@ -962,11 +1054,20 @@ def _run_verification(
     }
 
 
-def _verification_diagnostics(run_result: FullChainHMCRunResult) -> Mapping[str, Any]:
+def _verification_diagnostics(
+    run_result: FullChainHMCRunResult,
+    *,
+    adapter: FixedTransportValueScoreAdapter,
+    config: FixedTransportHMCKernelTuningConfig,
+    require_modern: bool,
+) -> Mapping[str, Any]:
     diagnostics = dict(run_result.diagnostics)
     trace = dict(run_result.trace)
     payload: dict[str, Any] = {
         "acceptance_rate": _scalar_or_none(diagnostics.get("acceptance_rate")),
+        "binary_acceptance_rate": _scalar_or_none(
+            diagnostics.get("binary_acceptance_rate")
+        ),
         "finite_sample_count": _int_or_none(diagnostics.get("finite_sample_count")),
         "nonfinite_sample_count": _int_or_none(diagnostics.get("nonfinite_sample_count")),
         "final_step_size": _scalar_or_none(diagnostics.get("final_step_size")),
@@ -975,12 +1076,28 @@ def _verification_diagnostics(run_result: FullChainHMCRunResult) -> Mapping[str,
         "trace_policy": diagnostics.get("trace_policy"),
         "divergence_status": diagnostics.get("divergence_status"),
         "divergence_count": _int_or_none(diagnostics.get("divergence_count")),
+        "target_status_telemetry": _json_ready(
+            diagnostics.get("target_status_telemetry")
+        ),
         "runtime_metadata": _json_ready(run_result.metadata),
         "raw_diagnostics": _json_ready(diagnostics),
     }
     if "log_accept_ratio" in trace:
         log_accept = np.asarray(_tensor_to_numpy(trace["log_accept_ratio"]), dtype=float)
         finite = np.isfinite(log_accept)
+        if np.any(finite):
+            payload["acceptance_rate"] = float(
+                np.mean(np.exp(np.minimum(log_accept[finite], 0.0)))
+            )
+            if "is_accepted" in trace:
+                payload["binary_acceptance_rate"] = float(
+                    np.mean(
+                        np.asarray(
+                            _tensor_to_numpy(trace["is_accepted"]),
+                            dtype=bool,
+                        )
+                    )
+                )
         payload["log_accept_ratio_finite"] = bool(np.all(finite))
         payload["max_abs_log_accept_ratio"] = (
             None if not np.any(finite) else float(np.max(np.abs(log_accept[finite])))
@@ -996,6 +1113,25 @@ def _verification_diagnostics(run_result: FullChainHMCRunResult) -> Mapping[str,
     finite_by_sample = np.all(np.isfinite(samples), axis=-1)
     payload["samples_all_finite"] = bool(np.all(finite_by_sample))
     payload["sample_shape"] = tuple(int(item) for item in samples.shape)
+    if require_modern:
+        raw_samples = _map_transformed_samples_to_target_coordinates(
+            adapter,
+            samples,
+        )
+        modern = rank_normalized_split_rhat_summary(
+            raw_samples,
+            rhat_max=config.verification_rhat_max,
+        )
+        payload["modern_rank_normalized_verification"] = _json_ready(modern)
+        payload["modern_verification_coordinate_system"] = "raw_target_coordinates"
+        payload["modern_verification_parameter_names"] = _parameter_names(
+            adapter.base_adapter,
+            adapter.parameter_dim,
+        )
+    else:
+        payload["modern_rank_normalized_verification"] = None
+        payload["modern_verification_coordinate_system"] = None
+        payload["modern_verification_parameter_names"] = None
     return payload
 
 
@@ -1004,6 +1140,7 @@ def _classify_verification(
     *,
     diagnostics: Mapping[str, Any],
     run_error: Exception | None,
+    require_modern: bool,
 ) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
     hard_vetoes: list[str] = []
     if run_error is not None:
@@ -1013,10 +1150,38 @@ def _classify_verification(
         hard_vetoes.append("verification_acceptance_missing_or_nonfinite")
     if diagnostics.get("log_accept_ratio_finite") is not True:
         hard_vetoes.append("verification_log_accept_nonfinite_or_missing")
+    maximum_energy = diagnostics.get("max_abs_log_accept_ratio")
+    if not _finite_number(maximum_energy):
+        hard_vetoes.append("verification_energy_error_missing_or_nonfinite")
+    elif float(maximum_energy) > config.maximum_absolute_energy_error:
+        hard_vetoes.append("verification_energy_error_exceeds_limit")
     if diagnostics.get("samples_all_finite") is not True:
         hard_vetoes.append("verification_samples_nonfinite_or_missing")
     if diagnostics.get("target_log_prob_finite") is False:
         hard_vetoes.append("verification_target_log_prob_nonfinite")
+    divergence_count = _int_or_none(diagnostics.get("divergence_count"))
+    if divergence_count is not None and divergence_count > 0:
+        hard_vetoes.append("verification_native_divergence_detected")
+    telemetry = diagnostics.get("target_status_telemetry")
+    if config.target_status_trace_policy != "none":
+        if not isinstance(telemetry, Mapping):
+            hard_vetoes.append("verification_target_status_telemetry_missing")
+        elif _bool_or_none(telemetry.get("telemetry_failure_veto")) is not False:
+            hard_vetoes.append("verification_target_status_telemetry_failure")
+    if require_modern:
+        shape = diagnostics.get("sample_shape")
+        if not isinstance(shape, (tuple, list)) or len(shape) != 3:
+            hard_vetoes.append("verification_sample_shape_invalid_for_modern_rhat")
+        else:
+            if int(shape[0]) < config.verification_min_retained_results_per_chain:
+                hard_vetoes.append("verification_retained_draw_count_below_minimum")
+            if int(shape[1]) != 4:
+                hard_vetoes.append("verification_chain_count_not_exactly_four")
+        modern = diagnostics.get("modern_rank_normalized_verification")
+        if not isinstance(modern, Mapping):
+            hard_vetoes.append("verification_modern_rhat_missing")
+        elif modern.get("passed") is not True:
+            hard_vetoes.append("verification_modern_rank_folded_rhat_failed")
     if _finite_number(acceptance) and not (
         config.repair_band[0] <= float(acceptance) <= config.repair_band[1]
     ):
@@ -1087,10 +1252,20 @@ def _final_kernel_payload(
         "num_leapfrog_steps": int(selected_candidate.num_leapfrog_steps),
         "target_accept_prob": config.target_accept_prob,
         "acceptance_band": config.acceptance_band,
+        "maximum_absolute_energy_error": config.maximum_absolute_energy_error,
+        "proposal_dynamics_identity": config.proposal_dynamics_identity,
         "selected_candidate_index": selected_candidate.candidate_index,
         "selected_candidate_artifact_hash": selected_candidate.artifact_hash,
         "verification_config_payload": selected_candidate.verification_config_payload,
         "verification_diagnostics": selected_candidate.verification_diagnostics,
+        "modern_rank_normalized_verification_required": (
+            config.require_modern_rank_normalized_verification
+        ),
+        "modern_rhat_definition": (
+            RANK_NORMALIZED_SPLIT_RHAT_DEFINITION
+            if config.require_modern_rank_normalized_verification
+            else None
+        ),
         "rank2_chain_batched_target_required": True,
         "windowed_mass_adaptation_used": False,
         "mass_adaptation_used": False,
@@ -1174,8 +1349,39 @@ def _diagnostic_roles() -> Mapping[str, str]:
         "candidate_ladder": "step_tuning_screen",
         "fresh_verification": "handoff_promotion_screen",
         "acceptance": "promotion_screen_and_repair_trigger",
+        "modern_rank_folded_rhat": "required_when_configured_handoff_promotion_screen",
         "runtime": "explanatory_diagnostic",
     }
+
+
+def _map_transformed_samples_to_target_coordinates(
+    adapter: FixedTransportValueScoreAdapter,
+    samples: np.ndarray,
+) -> np.ndarray:
+    if samples.ndim != 3:
+        raise ValueError("verification samples must have shape [draw, chain, parameter]")
+    draw_count, chain_count, parameter_dim = samples.shape
+    if parameter_dim != adapter.parameter_dim:
+        raise ValueError("verification sample parameter dimension mismatch")
+    flat = tf.convert_to_tensor(
+        samples.reshape(draw_count * chain_count, parameter_dim),
+        dtype=tf.float64,
+    )
+    raw = adapter.transport.forward_batch(flat)
+    raw_array = np.asarray(_tensor_to_numpy(raw), dtype=float)
+    if raw_array.shape != (draw_count * chain_count, parameter_dim):
+        raise ValueError("fixed transport raw verification shape mismatch")
+    return raw_array.reshape(draw_count, chain_count, parameter_dim)
+
+
+def _parameter_names(adapter: Any, parameter_dim: int) -> tuple[str, ...]:
+    names = getattr(adapter, "parameter_names", None)
+    if names is not None:
+        values = names() if callable(names) else names
+        result = tuple(str(item) for item in values)
+        if len(result) == parameter_dim:
+            return result
+    return tuple(f"parameter_{index}" for index in range(parameter_dim))
 
 
 def _offset_seed(seed: tuple[int, int], offset: int) -> tuple[int, int]:

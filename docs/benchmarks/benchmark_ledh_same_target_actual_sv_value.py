@@ -2,8 +2,8 @@
 
 This runner targets the actual-SV row
 ``zhao_cui_sv_actual_nongaussian_T1000``.  By default it emits a tiny
-``tiny_executed_not_full_row`` adapter-smoke artifact.  Full row admission
-requires the explicit ``--run-scope full-row-admission`` guard and exact
+historical raw-barycentric adapter-smoke artifact. Full-row diagnostics require
+the explicit ``--run-scope full-row-diagnostic`` guard and exact
 ``N=10000,T=1000`` settings.
 
 The target correction is exact transformed actual SV:
@@ -50,10 +50,14 @@ from bayesfilter.highdim.ledh_forward_contract import (
     ACTUAL_SV_ROW_ID,
     LEDH_FORWARD_ADMISSION_STATUS_ADMITTED,
     LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_NONFINITE,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_FORWARD_ADMISSION_STATUS_TINY,
     LEDH_FORWARD_SCALAR_ARTIFACT_SCHEMA_VERSION,
     make_actual_sv_forward_contract,
     validate_ledh_forward_scalar_artifact,
+)
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
 )
 from bayesfilter.highdim.models import StochasticVolatilitySSM
 from bayesfilter.highdim.sv_mixture_cut4 import (
@@ -119,7 +123,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument(
         "--run-scope",
-        choices=("tiny-smoke", "full-row-admission"),
+        choices=("tiny-smoke", "full-row-diagnostic"),
         default="tiny-smoke",
     )
     parser.add_argument("--batch-seeds", default="81120")
@@ -149,6 +153,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--expect-device-kind", choices=("any", "cpu", "gpu"), default="gpu")
     parser.add_argument("--output", required=True)
     parser.add_argument("--markdown-output", default=None)
+    parser.add_argument("--historical-raw-diagnostic", action="store_true")
     args = parser.parse_args()
     args.batch_seeds = _parse_int_csv(args.batch_seeds)
     if args.time_steps <= 0 or args.time_steps > FULL_ROW_TIME_STEPS:
@@ -165,9 +170,9 @@ def _parse_args() -> argparse.Namespace:
         raise ValueError("chunk sizes must be positive")
     if args.run_scope == "tiny-smoke" and _full_row_requested(args):
         raise ValueError("adapter smoke runner must not run the full actual-SV row")
-    if args.run_scope == "full-row-admission" and not _exact_full_row_requested(args):
+    if args.run_scope == "full-row-diagnostic" and not _exact_full_row_requested(args):
         raise ValueError(
-            "full-row-admission requires exact actual-SV full row settings: "
+            "full-row-diagnostic requires exact actual-SV full row settings: "
             "T=1000, N=10000, seeds=81120,81121,81122,81123,81124"
         )
     return args
@@ -691,7 +696,11 @@ def _write_markdown(path: Path, result: dict[str, Any], json_path: Path) -> None
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="actual-SV raw-barycentric value runner"
+    )
     precision = _configure_precision(args)
     physical_gpus, logical_gpus = _configure_gpus()
     tensors, actual_sv_semantics = _build_actual_sv_tensors(args)
@@ -753,7 +762,7 @@ def main() -> None:
             and tf.reduce_all(tf.math.is_finite(ess_by_time)).numpy()
             and tf.reduce_all(tf.math.is_finite(final_particles)).numpy()
         )
-    full_row_scope = args.run_scope == "full-row-admission"
+    full_row_scope = args.run_scope == "full-row-diagnostic"
     forward_contract = make_actual_sv_forward_contract(
         time_steps=args.time_steps,
         num_particles=args.num_particles,
@@ -836,7 +845,7 @@ def main() -> None:
         "log_likelihood_by_seed": log_likelihood_values,
         "average_log_likelihood_by_seed": average_values,
         "finite_output": finite_output,
-        "admission_status": LEDH_FORWARD_ADMISSION_STATUS_TINY,
+        "admission_status": LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
         "normalization_checks": {
             "row_id": True,
             "seed_count_matches_values": len(log_likelihood_values) == len(args.batch_seeds),
@@ -854,16 +863,10 @@ def main() -> None:
         },
         "nonclaims": list(FULL_ROW_NONCLAIMS if full_row_scope else TINY_NONCLAIMS),
     }
-    if full_row_scope:
-        artifact["admission_status"] = (
-            LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
-            if finite_output
-            else LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_NONFINITE
-        )
     normalized_core = validate_ledh_forward_scalar_artifact(
         artifact,
         expected_row_id=ACTUAL_SV_ROW_ID,
-        require_admitted=full_row_scope,
+        require_admitted=False,
     )
     artifact["validator_normalized_core"] = normalized_core
 

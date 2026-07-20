@@ -650,6 +650,7 @@ def _write_markdown(path: Path, result: dict[str, Any], json_path: Path) -> None
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     physical_gpus, logical_gpus = _configure_gpus()
     fixture = _stable_fixture(args)

@@ -44,6 +44,7 @@ def _args(*, dtype: str = "float64", transport_ad_mode: str = "full") -> argpars
         fd_step=1.0e-4 if dtype == "float64" else 1.0e-3,
         score_fd_atol=2.0e-4 if dtype == "float64" else 1.0e-1,
         score_fd_rtol=2.0e-3 if dtype == "float64" else 5.0e-2,
+        historical_raw_diagnostic=True,
     )
 
 
@@ -58,7 +59,8 @@ def test_phase4_fixed_sir_manual_score_matches_same_scalar_directional_fd() -> N
     assert fd["status"] == "pass"
     assert fd["row_id"] == FIXED_SIR_AUSTRIA_ROW_ID
     assert fd["target_scope"] == MAIN_OBSERVED_DATA_ROW_SCOPE
-    assert base["score_route"] == fixed_sir.FIXED_SIR_MANUAL_SCORE_ROUTE_ID
+    assert base["score_route"] == fixed_sir.FIXED_SIR_MEMORY_STYLE_SCORE_ROUTE_ID
+    assert base["historical_manual_score_route"] == fixed_sir.FIXED_SIR_MANUAL_SCORE_ROUTE_ID
     assert base["value_score_route_status"] == "same_route_value_score"
     assert base["value_score_same_transport_algorithm"] is True
     assert base["old_parameterized_route_status"] == "historical_diagnostic_only"

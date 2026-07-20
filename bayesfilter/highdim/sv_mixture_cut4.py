@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import product
 from types import MappingProxyType
 from typing import Mapping
@@ -145,6 +145,9 @@ class ExactTransformedSVSSM:
 
     sigma: float | tf.Tensor = 1.0
     parameterization: str = "synthetic_unconstrained"
+    _base_model: StochasticVolatilitySSM = field(
+        init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         sigma = tf.convert_to_tensor(self.sigma, dtype=tf.float64)
@@ -155,6 +158,14 @@ class ExactTransformedSVSSM:
         if self.parameterization != "synthetic_unconstrained":
             raise ValueError("ExactTransformedSVSSM currently supports synthetic_unconstrained")
         object.__setattr__(self, "sigma", sigma)
+        object.__setattr__(
+            self,
+            "_base_model",
+            StochasticVolatilitySSM(
+                sigma=sigma,
+                parameterization=self.parameterization,
+            ),
+        )
 
     def parameter_dim(self) -> int:
         return 2
@@ -166,28 +177,16 @@ class ExactTransformedSVSSM:
         return 1
 
     def physical_parameters(self, theta: tf.Tensor) -> Mapping[str, tf.Tensor]:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).physical_parameters(theta)
+        return self._base_model.physical_parameters(theta)
 
     def unconstrained_from_physical(self, gamma: float | tf.Tensor, beta: float | tf.Tensor) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).unconstrained_from_physical(gamma=gamma, beta=beta)
+        return self._base_model.unconstrained_from_physical(gamma=gamma, beta=beta)
 
     def initial_log_density(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).initial_log_density(theta, x0)
+        return self._base_model.initial_log_density(theta, x0)
 
     def initial_log_density_parameter_score(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).initial_log_density_parameter_score(theta, x0)
+        return self._base_model.initial_log_density_parameter_score(theta, x0)
 
     def transition_log_density(
         self,
@@ -196,10 +195,7 @@ class ExactTransformedSVSSM:
         x_next: tf.Tensor,
         t: int,
     ) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).transition_log_density(theta, x_prev, x_next, t=t)
+        return self._base_model.transition_log_density(theta, x_prev, x_next, t=t)
 
     def transition_log_density_parameter_score(
         self,
@@ -208,10 +204,9 @@ class ExactTransformedSVSSM:
         x_next: tf.Tensor,
         t: int,
     ) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).transition_log_density_parameter_score(theta, x_prev, x_next, t=t)
+        return self._base_model.transition_log_density_parameter_score(
+            theta, x_prev, x_next, t=t
+        )
 
     def observation_log_density(
         self,
@@ -266,6 +261,9 @@ class KSCMixtureTransformedSVSSM:
     mixture: SVLogChiSquareGaussianMixture | None = None
     transform_offset: float | tf.Tensor = 1e-8
     parameterization: str = "synthetic_unconstrained"
+    _base_model: StochasticVolatilitySSM = field(
+        init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         sigma = tf.convert_to_tensor(self.sigma, dtype=tf.float64)
@@ -284,6 +282,14 @@ class KSCMixtureTransformedSVSSM:
         object.__setattr__(self, "sigma", sigma)
         object.__setattr__(self, "mixture", mixture)
         object.__setattr__(self, "transform_offset", transform_offset)
+        object.__setattr__(
+            self,
+            "_base_model",
+            StochasticVolatilitySSM(
+                sigma=sigma,
+                parameterization=self.parameterization,
+            ),
+        )
 
     def parameter_dim(self) -> int:
         return 2
@@ -295,28 +301,16 @@ class KSCMixtureTransformedSVSSM:
         return 1
 
     def physical_parameters(self, theta: tf.Tensor) -> Mapping[str, tf.Tensor]:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).physical_parameters(theta)
+        return self._base_model.physical_parameters(theta)
 
     def unconstrained_from_physical(self, gamma: float | tf.Tensor, beta: float | tf.Tensor) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).unconstrained_from_physical(gamma=gamma, beta=beta)
+        return self._base_model.unconstrained_from_physical(gamma=gamma, beta=beta)
 
     def initial_log_density(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).initial_log_density(theta, x0)
+        return self._base_model.initial_log_density(theta, x0)
 
     def initial_log_density_parameter_score(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).initial_log_density_parameter_score(theta, x0)
+        return self._base_model.initial_log_density_parameter_score(theta, x0)
 
     def transition_log_density(
         self,
@@ -325,10 +319,7 @@ class KSCMixtureTransformedSVSSM:
         x_next: tf.Tensor,
         t: int,
     ) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).transition_log_density(theta, x_prev, x_next, t=t)
+        return self._base_model.transition_log_density(theta, x_prev, x_next, t=t)
 
     def transition_log_density_parameter_score(
         self,
@@ -337,10 +328,9 @@ class KSCMixtureTransformedSVSSM:
         x_next: tf.Tensor,
         t: int,
     ) -> tf.Tensor:
-        return StochasticVolatilitySSM(
-            sigma=self.sigma,
-            parameterization=self.parameterization,
-        ).transition_log_density_parameter_score(theta, x_prev, x_next, t=t)
+        return self._base_model.transition_log_density_parameter_score(
+            theta, x_prev, x_next, t=t
+        )
 
     def observation_log_density(
         self,
@@ -2274,9 +2264,13 @@ def _as_row_matrix(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
         tensor = tensor[:, tf.newaxis]
     if tensor.shape.rank != 2 or int(tensor.shape[1]) != int(width):
         raise ValueError(f"{name} must have shape [n, {int(width)}]")
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-        raise ValueError(f"{name} must be finite")
-    return tensor
+    if tf.executing_eagerly():
+        if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
+            raise ValueError(f"{name} must be finite")
+        return tensor
+    assertion = tf.debugging.assert_all_finite(tensor, f"{name} must be finite")
+    with tf.control_dependencies([assertion]):
+        return tf.identity(tensor)
 
 
 def _validate_panel_parameters(gamma: tf.Tensor, beta: tf.Tensor, sigma: tf.Tensor) -> None:

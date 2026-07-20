@@ -8,7 +8,7 @@ import pytest
 
 from bayesfilter.highdim.ledh_forward_contract import (
     KSC_SV_ROW_ID,
-    LEDH_FORWARD_ADMISSION_STATUS_TINY,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD,
     validate_ledh_forward_scalar_artifact,
 )
@@ -32,7 +32,7 @@ def test_phase7_ksc_sv_tiny_forward_scalar_artifact_replays_without_admission() 
     assert normalized["row_id"] == KSC_SV_ROW_ID
     assert normalized["target_scalar"] == LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD
     assert normalized["target_output_tensor_field"] == "log_likelihood"
-    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_TINY
+    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
     assert normalized["num_particles"] == 128
     assert normalized["time_steps"] == 4
     assert normalized["batch_seeds"] == [81120]

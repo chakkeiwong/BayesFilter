@@ -21,6 +21,8 @@ from dataclasses import dataclass
 
 import tensorflow as tf
 
+from bayesfilter.highdim.transport_chunk_policy import resolve_transport_chunks
+
 from experiments.dpf_implementation.tf_tfp.filters.experimental_batched_ledh_pfpf_ot_tf import (
     DTYPE,
     AnnealedTransportWarmstartStateTF,
@@ -293,8 +295,8 @@ def streaming_batched_ledh_pfpf_ot_value_core_tf(
     transport_gradient_mode: str = "raw",
     transport_plan_mode: str = "streaming",
     transport_ad_mode: str = "stabilized",
-    row_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
-    col_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
+    row_chunk_size: int | None = None,
+    col_chunk_size: int | None = None,
     particle_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
     skip_transport_when_no_active: bool = True,
     return_history: bool = False,
@@ -304,8 +306,8 @@ def streaming_batched_ledh_pfpf_ot_value_core_tf(
 
     if transport_plan_mode not in {"streaming", "dense"}:
         raise ValueError("transport_plan_mode must be 'streaming' or 'dense'")
-    if row_chunk_size <= 0 or col_chunk_size <= 0 or particle_chunk_size <= 0:
-        raise ValueError("chunk sizes must be positive")
+    if particle_chunk_size <= 0:
+        raise ValueError("particle_chunk_size must be positive")
     if (pre_flow_particles is None) == (pre_flow_step_fn is None):
         raise ValueError("provide exactly one of pre_flow_particles or pre_flow_step_fn")
 
@@ -317,6 +319,13 @@ def streaming_batched_ledh_pfpf_ot_value_core_tf(
     _require_static_rank(fixed_resampling_mask, 2, "fixed_resampling_mask")
 
     batch_size, num_particles, state_dim = _static_shape(particles, "initial_particles")
+    chunks = resolve_transport_chunks(
+        num_particles,
+        row_chunk_size=row_chunk_size,
+        col_chunk_size=col_chunk_size,
+    )
+    row_chunk_size = chunks.row_chunk_size
+    col_chunk_size = chunks.col_chunk_size
     time_steps, _observation_dim = _static_shape(observations, "observations")
     expected_mask_shape = (batch_size, time_steps)
     if _static_shape(fixed_resampling_mask, "fixed_resampling_mask") != expected_mask_shape:

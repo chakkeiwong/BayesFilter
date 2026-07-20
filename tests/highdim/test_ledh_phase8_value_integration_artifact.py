@@ -4,12 +4,15 @@ import json
 import math
 from pathlib import Path
 
+import pytest
+
 from bayesfilter.highdim.ledh_forward_contract import (
     ACTUAL_SV_ROW_ID,
     FIXED_SIR_AUSTRIA_ROW_ID,
     GENERALIZED_SV_ROW_ID,
     KSC_SV_ROW_ID,
     LEDH_FORWARD_ADMISSION_STATUS_ADMITTED,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD,
     LGSSM_M3_T50_ROW_ID,
     PARAMETERIZED_SIR_DIAGNOSTIC_ROW_ID,
@@ -55,7 +58,7 @@ FORBIDDEN_SCORE_KEYS = {
 }
 
 
-def test_phase8_value_integration_artifact_has_only_admitted_main_rows() -> None:
+def test_phase8_value_integration_artifact_preserves_historical_main_rows() -> None:
     artifact = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
 
     assert artifact["schema_version"] == (
@@ -97,12 +100,19 @@ def test_phase8_value_integration_artifact_has_only_admitted_main_rows() -> None
         normalized = validate_ledh_forward_scalar_artifact(
             source,
             expected_row_id=row_id,
-            require_admitted=True,
+            require_admitted=False,
         )
+        assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
         assert row["log_likelihood_by_seed"] == normalized["log_likelihood_by_seed"]
         assert row["average_log_likelihood_by_seed"] == normalized[
             "average_log_likelihood_by_seed"
         ]
+        with pytest.raises(ValueError, match="cannot be canonically admitted"):
+            validate_ledh_forward_scalar_artifact(
+                source,
+                expected_row_id=row_id,
+                require_admitted=True,
+            )
 
 
 def test_phase8_value_integration_preserves_ksc_surrogate_boundary() -> None:

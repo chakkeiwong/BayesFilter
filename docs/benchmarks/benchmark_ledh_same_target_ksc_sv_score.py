@@ -24,7 +24,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 
 _PRE_DEVICE_SCOPE = os.environ.get("BAYESFILTER_LEDHD_SCORE_DEVICE_SCOPE")
@@ -49,12 +49,17 @@ from bayesfilter.highdim.ledh_forward_contract import (
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN,
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_COMPACT_KSC_SV_PROVENANCE,
     LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
     LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
     validate_ledh_score_artifact,
+    validate_ledh_score_production_precision,
+)
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
 )
 from docs.benchmarks import benchmark_ledh_same_target_actual_sv_score as actual_score
 from docs.benchmarks import benchmark_ledh_same_target_ksc_sv_value as value_mod
@@ -67,7 +72,7 @@ from experiments.dpf_implementation.tf_tfp.filters import (
 from experiments.dpf_implementation.tf_tfp.resampling import annealed_transport_tf
 
 
-DTYPE = tf.float64
+DTYPE = tf.float32
 PARAMETER_NAMES = SV_SYNTHETIC_PARAMETER_ORDER
 TRUTH_THETA = tuple(value_mod.TRUTH_THETA)
 KSC_SV_COMPACT_SCORE_ROUTE_ID = LEDH_SCORE_COMPACT_KSC_SV_PROVENANCE
@@ -79,26 +84,38 @@ _STD_NORMAL64 = tfp.distributions.Normal(
 
 def _configure_precision(args: argparse.Namespace) -> dict[str, Any]:
     global DTYPE
-    DTYPE = tf.float64 if getattr(args, "dtype", "float64") == "float64" else tf.float32
+    dtype_name = getattr(args, "dtype", "float32")
+    tf32_mode = getattr(args, "tf32_mode", "enabled")
+    DTYPE = tf.float64 if dtype_name == "float64" else tf.float32
     value_mod.DTYPE = DTYPE
     actual_score.DTYPE = DTYPE
     core_tf.DTYPE = DTYPE
     streaming_tf.DTYPE = DTYPE
     annealed_transport_tf.DTYPE = DTYPE
-    if getattr(args, "tf32_mode", "default") != "default":
-        tf.config.experimental.enable_tensor_float_32_execution(args.tf32_mode == "enabled")
+    if tf32_mode != "default":
+        tf.config.experimental.enable_tensor_float_32_execution(tf32_mode == "enabled")
     metadata = core_tf.precision_policy_metadata()
     metadata.update(
         {
-            "dtype": getattr(args, "dtype", "float64"),
+            "dtype": dtype_name,
             "tf_dtype": DTYPE.name,
-            "tf32_mode": getattr(args, "tf32_mode", "default"),
+            "tf32_mode": tf32_mode,
             "tf32_execution_enabled": bool(
                 tf.config.experimental.tensor_float_32_execution_enabled()
             ),
         }
     )
     return metadata
+
+
+def _score_precision_metadata(precision: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "dtype": str(precision.get("dtype")),
+        "active_dtype": str(precision.get("active_dtype")),
+        "tf_dtype": str(precision.get("tf_dtype")),
+        "tf32_mode": str(precision.get("tf32_mode")),
+        "tf32_execution_enabled": bool(precision.get("tf32_execution_enabled")),
+    }
 
 
 def _as_theta(theta: tf.Tensor | Sequence[float]) -> tf.Tensor:
@@ -172,6 +189,9 @@ def _make_proposal_noise_tensor(args: argparse.Namespace) -> tf.Tensor:
 
 
 def _require_compact_score_args(args: argparse.Namespace) -> None:
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="KSC-SV raw value/score route"
+    )
     if args.transport_plan_mode != "streaming":
         raise ValueError("KSC-SV compact score requires streaming transport")
     if args.transport_ad_mode != "full":
@@ -579,6 +599,7 @@ def _initial_particles_and_jvp(
     gamma: tf.Tensor,
     sigma: tf.Tensor,
     d_gamma: tf.Tensor,
+    initial_noise: tf.Tensor | None = None,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     batch_size = len(args.batch_seeds)
     num_particles = int(args.num_particles)
@@ -590,7 +611,11 @@ def _initial_particles_and_jvp(
     d_stationary_scale = d_stationary_variance / (
         tf.constant(2.0, dtype=DTYPE) * stationary_scale
     )
-    initial_noise = _make_initial_noise_tensor(args)
+    initial_noise = (
+        _make_initial_noise_tensor(args)
+        if initial_noise is None
+        else tf.convert_to_tensor(initial_noise, dtype=DTYPE)
+    )
     particles = stationary_scale * initial_noise
     d_particles = initial_noise[:, :, :, None] * tf.reshape(
         d_stationary_scale,
@@ -603,26 +628,43 @@ def _initial_particles_and_jvp(
 
 def _compact_value_and_score_from_components(
     args: argparse.Namespace,
-    theta_values: Sequence[float],
+    theta_values: tf.Tensor | Sequence[float],
+    *,
+    prepared_tensors: Mapping[str, tf.Tensor] | None = None,
+    prepared_initial_noise: tf.Tensor | None = None,
+    prepared_proposal_noise: tf.Tensor | None = None,
 ) -> dict[str, tf.Tensor]:
     """KSC-SV same-scalar score with compact forward sensitivity."""
 
     _configure_precision(args)
     _require_compact_score_args(args)
-    theta = tf.constant([float(value) for value in theta_values], dtype=DTYPE)
+    theta = _as_theta(theta_values)
     gamma, beta, d_gamma, _d_beta = _gamma_beta(theta)
     sigma = tf.constant(1.0, dtype=DTYPE)
     stationary_variance = _stationary_variance(gamma, sigma)
     d_stationary_variance = _stationary_variance_jvp(gamma, sigma, d_gamma)
-    tensors, _semantics = _common_tensors(args)
+    if prepared_tensors is None:
+        tensors, _semantics = _common_tensors(args)
+    else:
+        tensors = dict(prepared_tensors)
     observations = tensors["observations"]
     fixed_resampling_mask = tensors["fixed_resampling_mask"]
     flow_observation_covariance = tensors["flow_observation_covariance"]
     mixture_weights = tensors["mixture_weights"]
     mixture_means = tensors["mixture_means"]
     mixture_variances = tensors["mixture_variances"]
-    proposal_noise = _make_proposal_noise_tensor(args)
-    particles, d_particles = _initial_particles_and_jvp(args, gamma, sigma, d_gamma)
+    proposal_noise = (
+        _make_proposal_noise_tensor(args)
+        if prepared_proposal_noise is None
+        else tf.convert_to_tensor(prepared_proposal_noise, dtype=DTYPE)
+    )
+    particles, d_particles = _initial_particles_and_jvp(
+        args,
+        gamma,
+        sigma,
+        d_gamma,
+        prepared_initial_noise,
+    )
     batch_size = len(args.batch_seeds)
     num_particles = int(args.num_particles)
     param_dim = len(PARAMETER_NAMES)
@@ -748,27 +790,57 @@ def _compact_value_and_score_from_components(
         "score_route": KSC_SV_COMPACT_SCORE_ROUTE_ID,
         "no_autodiff_score_route": True,
         "value_score_route_status": "same_route_value_score",
+        "batch_seeds": [int(seed) for seed in args.batch_seeds],
+        "time_steps": int(args.time_steps),
+        "num_particles": int(args.num_particles),
+        "transport": {
+            "value_core_mode": "compact_forward_sensitivity_same_scalar",
+            "transport_plan_mode": args.transport_plan_mode,
+            "transport_ad_mode": args.transport_ad_mode,
+            "gradient_mode": args.transport_gradient_mode,
+            "row_chunk_size": int(args.row_chunk_size),
+            "col_chunk_size": int(args.col_chunk_size),
+            "particle_chunk_size": int(args.particle_chunk_size),
+            "sinkhorn_iterations": int(args.sinkhorn_iterations),
+            "sinkhorn_epsilon": float(args.sinkhorn_epsilon),
+            "dense_transport_matrix_materialized": False,
+        },
     }
 
 
 def _manual_value_only_from_components(
     args: argparse.Namespace,
-    theta_values: Sequence[float],
+    theta_values: tf.Tensor | Sequence[float],
+    *,
+    prepared_tensors: Mapping[str, tf.Tensor] | None = None,
+    prepared_initial_noise: tf.Tensor | None = None,
+    prepared_proposal_noise: tf.Tensor | None = None,
 ) -> dict[str, tf.Tensor]:
     _configure_precision(args)
     _require_compact_score_args(args)
-    theta = tf.constant([float(value) for value in theta_values], dtype=DTYPE)
+    theta = _as_theta(theta_values)
     gamma, beta, _d_gamma, _d_beta = _gamma_beta(theta)
     sigma = tf.constant(1.0, dtype=DTYPE)
-    tensors, _semantics = _common_tensors(args)
+    if prepared_tensors is None:
+        tensors, _semantics = _common_tensors(args)
+    else:
+        tensors = dict(prepared_tensors)
     observations = tensors["observations"]
     fixed_resampling_mask = tensors["fixed_resampling_mask"]
     flow_observation_covariance = tensors["flow_observation_covariance"]
     mixture_weights = tensors["mixture_weights"]
     mixture_means = tensors["mixture_means"]
     mixture_variances = tensors["mixture_variances"]
-    proposal_noise = _make_proposal_noise_tensor(args)
-    initial_noise = _make_initial_noise_tensor(args)
+    proposal_noise = (
+        _make_proposal_noise_tensor(args)
+        if prepared_proposal_noise is None
+        else tf.convert_to_tensor(prepared_proposal_noise, dtype=DTYPE)
+    )
+    initial_noise = (
+        _make_initial_noise_tensor(args)
+        if prepared_initial_noise is None
+        else tf.convert_to_tensor(prepared_initial_noise, dtype=DTYPE)
+    )
     stationary_variance = _stationary_variance(gamma, sigma)
     stationary_scale = tf.sqrt(stationary_variance)
     particles = stationary_scale * initial_noise
@@ -861,16 +933,67 @@ def _manual_value_only_from_components(
     return {"objective": tf.reduce_mean(log_likelihood), "log_likelihood": log_likelihood}
 
 
+def _prepare_compact_xla_inputs(args: argparse.Namespace) -> dict[str, Any]:
+    _configure_precision(args)
+    _require_compact_score_args(args)
+    if len(args.batch_seeds) != 1:
+        raise ValueError("KSC-SV XLA score shards require exactly one seed")
+    tensors, semantics = _common_tensors(args)
+    return {
+        "tensors": tensors,
+        "initial_noise": _make_initial_noise_tensor(args),
+        "proposal_noise": _make_proposal_noise_tensor(args),
+        "semantics": semantics,
+    }
+
+
+def _compact_score_tensor_outputs(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    prepared: Mapping[str, Any],
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    result = _compact_value_and_score_from_components(
+        args,
+        theta,
+        prepared_tensors=prepared["tensors"],
+        prepared_initial_noise=prepared["initial_noise"],
+        prepared_proposal_noise=prepared["proposal_noise"],
+    )
+    return (
+        result["objective"],
+        result["log_likelihood"],
+        result["gradient_tensor"],
+        result["per_seed_gradient"],
+    )
+
+
+def _value_tensor_outputs(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    prepared: Mapping[str, Any],
+) -> tuple[tf.Tensor, tf.Tensor]:
+    result = _manual_value_only_from_components(
+        args,
+        theta,
+        prepared_tensors=prepared["tensors"],
+        prepared_initial_noise=prepared["initial_noise"],
+        prepared_proposal_noise=prepared["proposal_noise"],
+    )
+    return result["objective"], result["log_likelihood"]
+
+
 def _single_seed_args(args: argparse.Namespace, seed: int) -> argparse.Namespace:
     clone = copy.copy(args)
     clone.batch_seeds = [int(seed)]
     return clone
 
 
-def _manual_value_and_score_across_seeds(
+def _compact_value_and_score_across_seeds(
     args: argparse.Namespace,
     theta_values: Sequence[float],
 ) -> dict[str, tf.Tensor]:
+    """Evaluate the compact score sequentially across fixed-randomness seeds."""
+
     seed_results = [
         _compact_value_and_score_from_components(_single_seed_args(args, seed), theta_values)
         for seed in args.batch_seeds
@@ -888,13 +1011,27 @@ def _manual_value_and_score_across_seeds(
         "score_route": KSC_SV_COMPACT_SCORE_ROUTE_ID,
         "no_autodiff_score_route": True,
         "value_score_route_status": "same_route_value_score",
+        "batch_seeds": [int(seed) for seed in args.batch_seeds],
+        "time_steps": int(args.time_steps),
+        "num_particles": int(args.num_particles),
     }
 
 
-def _manual_objective_across_seeds(
+def _manual_value_and_score_across_seeds(
+    args: argparse.Namespace,
+    theta_values: Sequence[float],
+) -> dict[str, tf.Tensor]:
+    """Compatibility alias for the compact sequential-seed score route."""
+
+    return _compact_value_and_score_across_seeds(args, theta_values)
+
+
+def _value_objective_across_seeds(
     args: argparse.Namespace,
     theta_values: Sequence[float],
 ) -> tf.Tensor:
+    """Value-only same-scalar objective used for finite differences."""
+
     seed_values = [
         _manual_value_only_from_components(_single_seed_args(args, seed), theta_values)[
             "log_likelihood"
@@ -912,18 +1049,18 @@ def _coordinate_fd_score_diagnostic(
     atol: float = 5.0e-3,
     rtol: float = 5.0e-3,
 ) -> dict[str, Any]:
-    _configure_precision(args)
+    precision = _configure_precision(args)
     theta = tf.constant([float(value) for value in theta_values], dtype=DTYPE)
     step = tf.constant(float(fd_step), dtype=DTYPE)
-    base = _manual_value_and_score_across_seeds(args, theta.numpy().tolist())
+    base = _compact_value_and_score_across_seeds(args, theta.numpy().tolist())
     fd_values = []
     for index in range(len(PARAMETER_NAMES)):
         basis = tf.one_hot(index, len(PARAMETER_NAMES), dtype=DTYPE)
-        plus_objective = _manual_objective_across_seeds(
+        plus_objective = _value_objective_across_seeds(
             args,
             (theta + step * basis).numpy().tolist(),
         )
-        minus_objective = _manual_objective_across_seeds(
+        minus_objective = _value_objective_across_seeds(
             args,
             (theta - step * basis).numpy().tolist(),
         )
@@ -956,6 +1093,7 @@ def _coordinate_fd_score_diagnostic(
         "base": base,
         "parameter_names": list(PARAMETER_NAMES),
         "fd_step": float(fd_step),
+        "score_precision": _score_precision_metadata(precision),
     }
 
 
@@ -970,12 +1108,25 @@ def _score_artifact_from_diagnostic(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=KSC_SV_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
-    base = diagnostic["base"]
+    base_raw = diagnostic.get("base")
+    if not isinstance(base_raw, Mapping):
+        raise ValueError("KSC-SV compact diagnostic must include base mapping")
+    base = base_raw
+    if base.get("score_route") != KSC_SV_COMPACT_SCORE_ROUTE_ID:
+        raise ValueError("KSC-SV compact diagnostic must use compact score route")
+    if base.get("no_autodiff_score_route") is not True:
+        raise ValueError("KSC-SV compact diagnostic must declare no_autodiff_score_route")
+    if base.get("value_score_route_status") != LEDH_SCORE_VALUE_ROUTE_STATUS_SAME:
+        raise ValueError("KSC-SV compact diagnostic must be same_route_value_score")
+    if tuple(diagnostic.get("parameter_names", ())) != tuple(PARAMETER_NAMES):
+        raise ValueError("KSC-SV compact diagnostic parameter_names must match parameter order")
     score = tf.convert_to_tensor(base["gradient_tensor"], dtype=DTYPE)
     memory = dict(memory_diagnostics or {})
     memory_pass = bool(memory.get("n10000_memory_pass") is True)
+    if "source" not in memory and memory:
+        memory["source"] = "trusted_gpu_score_memory_artifact"
     if require_all_parameter_correctness:
         if diagnostic.get("status") != "pass":
             raise ValueError("KSC-SV all-parameter correctness status must pass")
@@ -983,6 +1134,14 @@ def _score_artifact_from_diagnostic(
             raise ValueError("KSC-SV all-parameter correctness parameter_names mismatch")
         if not memory_pass:
             raise ValueError("KSC-SV full admission requires N=10000 memory pass")
+        if int(base.get("num_particles", -1)) != int(value_core["num_particles"]):
+            raise ValueError("KSC-SV compact full admission requires N=10000 diagnostic shape")
+        if int(base.get("time_steps", -1)) != int(value_core["time_steps"]):
+            raise ValueError("KSC-SV compact full admission requires full time_steps")
+        if tuple(int(seed) for seed in base.get("batch_seeds", ())) != tuple(
+            int(seed) for seed in value_core["batch_seeds"]
+        ):
+            raise ValueError("KSC-SV compact full admission requires full batch_seeds")
     artifact = {
         "schema_version": LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
         "row_id": KSC_SV_ROW_ID,
@@ -1014,20 +1173,21 @@ def _score_artifact_from_diagnostic(
             "rtol": float(diagnostic.get("rtol", math.nan)),
         },
         "score_admission_status": (
-            LEDH_SCORE_ADMISSION_STATUS_FULL
-            if require_all_parameter_correctness
-            else LEDH_SCORE_ADMISSION_STATUS_TINY
+            LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
             if diagnostic.get("status") == "pass"
             else LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN
+        ),
+        "score_precision": _score_precision_metadata(
+            diagnostic.get("score_precision", {})
         ),
         "memory_diagnostics": memory,
     }
     if require_all_parameter_correctness:
-        validate_ledh_score_artifact(
-            artifact,
-            source_value_artifact=source_value_artifact,
-            expected_row_id=KSC_SV_ROW_ID,
-            require_admitted=True,
+        validate_ledh_score_production_precision(
+            _score_precision_metadata(diagnostic.get("score_precision", {}))
+        )
+        raise ValueError(
+            "KSC-SV raw-barycentric score route is historical diagnostic only"
         )
     return artifact
 
@@ -1060,15 +1220,15 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--row-chunk-size", type=int, default=64)
     parser.add_argument("--col-chunk-size", type=int, default=64)
     parser.add_argument("--particle-chunk-size", type=int, default=64)
-    parser.add_argument("--dtype", choices=("float64", "float32"), default="float64")
-    parser.add_argument("--tf32-mode", choices=("default", "enabled", "disabled"), default="disabled")
+    parser.add_argument("--dtype", choices=("float64", "float32"), default="float32")
+    parser.add_argument("--tf32-mode", choices=("default", "enabled", "disabled"), default="enabled")
     parser.add_argument("--fd-step", type=float, default=1.0e-4)
     parser.add_argument("--score-fd-atol", type=float, default=5.0e-3)
     parser.add_argument("--score-fd-rtol", type=float, default=5.0e-3)
     parser.add_argument("--source-value-artifact", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--markdown-output", default=None)
-    parser.add_argument("--admit-full", action="store_true")
+    parser.add_argument("--historical-raw-diagnostic", action="store_true")
     parser.add_argument("--memory-budget-mib", type=float, default=14000.0)
     args = parser.parse_args()
     args.batch_seeds = _parse_int_csv(args.batch_seeds)
@@ -1076,14 +1236,6 @@ def _parse_args() -> argparse.Namespace:
         raise ValueError("time_steps must be positive and num_particles must exceed one")
     if args.row_chunk_size <= 0 or args.col_chunk_size <= 0 or args.particle_chunk_size <= 0:
         raise ValueError("chunk sizes must be positive")
-    if args.admit_full:
-        exact_full = (
-            tuple(args.batch_seeds) == tuple(value_mod.FULL_ROW_BATCH_SEEDS)
-            and int(args.num_particles) == value_mod.FULL_ROW_NUM_PARTICLES
-            and int(args.time_steps) == value_mod.FULL_ROW_TIME_STEPS
-        )
-        if not exact_full:
-            raise ValueError("full score admission requires exact KSC-SV full-row shape")
     return args
 
 
@@ -1128,6 +1280,7 @@ def _write_markdown(path: Path, artifact: dict[str, Any], json_path: Path) -> No
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     source_path = Path(args.source_value_artifact)
     source_value = json.loads(source_path.read_text(encoding="utf-8"))
@@ -1142,8 +1295,7 @@ def main() -> None:
     elapsed = time.perf_counter() - start
     peak_mib = _gpu_memory_peak_mib()
     memory_pass = (
-        bool(args.admit_full)
-        and peak_mib is not None
+        peak_mib is not None
         and peak_mib <= float(args.memory_budget_mib)
     )
     memory = {
@@ -1155,7 +1307,7 @@ def main() -> None:
         diagnostic,
         source_value_artifact=source_value,
         source_value_artifact_path=str(source_path),
-        require_all_parameter_correctness=bool(args.admit_full),
+        require_all_parameter_correctness=False,
         memory_diagnostics=memory,
     )
     artifact.update(

@@ -795,6 +795,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = parse_args()
     started_at = dt.datetime.now(tz=dt.timezone.utc).isoformat()
     gpu_rows = _preflight(args)

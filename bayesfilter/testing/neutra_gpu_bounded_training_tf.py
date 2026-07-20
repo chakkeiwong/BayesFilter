@@ -1,13 +1,9 @@
-"""Bounded GPU/XLA-only NeuTra optimizer-training gate for LGSSM targets.
+"""Retired bounded GPU/XLA NeuTra optimizer fixture for LGSSM targets.
 
-This Phase 16 fixture runs a small affine-diagonal NeuTra-style optimizer
-training loop for one admitted non-DSGE route.  It is deliberately narrower
-than a full transport-training or HMC-validation workflow: no HMC, no external
-sample generation, no broad XLA/JIT claim, and no posterior correctness claim.
-
-The live route is manual-score only and requires ``jit_compile=True``.  The old
-Phase 10 non-XLA training artifact remains historical context only and must not
-be used as a promotion or packaging source after the Phase 14A/15 policy repair.
+The historical implementation lacked a repository-bound batch-native target
+and is non-executable migration evidence. The public entry point rejects before
+GPU initialization or artifact writes. Use
+``bayesfilter.inference.neutra_training`` for live GPU/XLA training.
 """
 
 from __future__ import annotations
@@ -129,11 +125,25 @@ class NeuTraGPUBoundedTrainingConfig:
 def run_neutra_gpu_bounded_training(
     config: NeuTraGPUBoundedTrainingConfig | None = None,
 ) -> Mapping[str, Any]:
-    """Run Phase 16 bounded optimizer training and write the state artifact."""
+    """Reject the retired optimizer fixture before GPU or artifact side effects."""
 
     cfg = NeuTraGPUBoundedTrainingConfig() if config is None else config
-    start = time.monotonic()
     _validate_config(cfg)
+    raise NeuTraGPUBoundedTrainingError(
+        "retired migration debt: Phase 16 lacks a repository-bound batch-native "
+        "target and cannot perform NeuTra optimizer updates"
+    )
+
+
+def _historical_run_neutra_gpu_bounded_training(
+    cfg: NeuTraGPUBoundedTrainingConfig,
+) -> Mapping[str, Any]:
+    """Preserve the old source as unreachable migration evidence."""
+
+    raise NeuTraGPUBoundedTrainingError(
+        "historical implementation is non-executable migration evidence"
+    )
+    start = time.monotonic()
     previous_soft_placement = tf.config.get_soft_device_placement()
     if cfg.disallow_soft_placement:
         tf.config.set_soft_device_placement(False)

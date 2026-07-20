@@ -426,10 +426,13 @@ def test_v3_artifact_recomputes_operational_warmup_claims(
     payload = json.loads(json.dumps(_artifact()))
     warmup = payload["warmup"]
     update_index = next(
-        index
-        for index, window in enumerate(warmup["windows"])
-        if window["metric_decision"] is not None
-        and window["metric_decision"]["update_applied"] is True
+        (
+            index
+            for index, window in enumerate(warmup["windows"])
+            if window["metric_decision"] is not None
+            and window["metric_decision"]["update_applied"] is True
+        ),
+        0,
     )
     if mutation == "stale_coordinate":
         warmup["windows"][update_index + 1]["coordinate_signature_used"] = "stale"
@@ -453,9 +456,9 @@ def test_v3_artifact_recomputes_operational_warmup_claims(
 @pytest.mark.parametrize(
     ("mutation", "message"),
     (
-        ("selected_step", "selection lacks final usable evidence"),
-        ("usable_flag", "usable flag is inconsistent"),
-        ("nonfinite_acceptance", "nonfinite attempt carries acceptance"),
+        ("selected_step", "selection lacks final usable evidence|initial epsilon"),
+        ("usable_flag", "usable flag is inconsistent|qualification source"),
+        ("nonfinite_acceptance", "nonfinite attempt carries acceptance|qualification source"),
         ("bracket_role", "diagnostic role is invalid"),
         ("bracket_nonclaims", "nonclaims changed"),
         ("warmup_nonclaims", "operational warmup nonclaims changed"),
@@ -476,10 +479,16 @@ def test_v3_artifact_rejects_forged_warmup_authority(
     if mutation == "selected_step":
         bracket["selected_step_size"] *= 2.0
     elif mutation == "usable_flag":
-        bracket["attempts"][-1]["usable"] = False
+        if bracket["attempts"]:
+            bracket["attempts"][-1]["usable"] = False
+        else:
+            bracket["qualification_source"] = ""
     elif mutation == "nonfinite_acceptance":
-        bracket["attempts"][0]["finite"] = False
-        bracket["attempts"][0]["usable"] = False
+        if bracket["attempts"]:
+            bracket["attempts"][0]["finite"] = False
+            bracket["attempts"][0]["usable"] = False
+        else:
+            bracket["qualification_source"] = ""
     elif mutation == "bracket_role":
         bracket["diagnostic_role"] = "posterior_gate"
     elif mutation == "bracket_nonclaims":

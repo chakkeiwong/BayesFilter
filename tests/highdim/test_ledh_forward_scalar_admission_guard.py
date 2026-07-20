@@ -6,6 +6,7 @@ from bayesfilter.highdim.ledh_forward_contract import (
     ACTUAL_SV_ROW_ID,
     KSC_SV_ROW_ID,
     LEDH_FORWARD_ADMISSION_STATUS_ADMITTED,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_FORWARD_ADMISSION_STATUS_TINY,
     LEDH_FORWARD_SCALAR_ARTIFACT_SCHEMA_VERSION,
     LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD,
@@ -65,13 +66,13 @@ def _canonical_artifact(
     }
 
 
-def test_forward_scalar_artifact_admits_only_executable_log_likelihood_values() -> None:
+def test_v1_forward_scalar_artifact_is_readable_but_canonically_ineligible() -> None:
     artifact = _canonical_artifact()
 
     normalized = validate_ledh_forward_scalar_artifact(
         artifact,
         expected_row_id=LGSSM_M3_T50_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
     assert normalized["row_id"] == LGSSM_M3_T50_ROW_ID
@@ -82,7 +83,14 @@ def test_forward_scalar_artifact_admits_only_executable_log_likelihood_values() 
     assert normalized["target_scalar"] == LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD
     assert normalized["target_output_tensor_field"] == "log_likelihood"
     assert normalized["log_likelihood_by_seed"] == [-135.9, -136.1]
-    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
+    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
+    assert normalized["canonical_admission_eligible"] is False
+    with pytest.raises(ValueError, match="lacks factory-issued Contract E"):
+        validate_ledh_forward_scalar_artifact(
+            artifact,
+            expected_row_id=LGSSM_M3_T50_ROW_ID,
+            require_admitted=True,
+        )
 
 
 def test_metadata_only_forward_contract_cannot_be_value_admission() -> None:
@@ -164,7 +172,7 @@ def test_tiny_executed_artifact_validates_but_cannot_be_required_admission() -> 
     artifact["average_log_likelihood_by_seed"] = [-4.58]
 
     normalized = validate_ledh_forward_scalar_artifact(artifact)
-    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_TINY
+    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
     with pytest.raises(ValueError, match="not admitted"):
         validate_ledh_forward_scalar_artifact(artifact, require_admitted=True)
 

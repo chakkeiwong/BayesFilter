@@ -185,14 +185,37 @@ def _validate_reasonable_epsilon_payload(
 ) -> float:
     if not isinstance(payload, Mapping):
         raise ValueError(f"{name} is missing")
-    expected_fields = {
+    base_fields = {
         "status",
         "selected_step_size",
         "attempts",
         "diagnostic_role",
         "nonclaims",
     }
-    if set(payload) != expected_fields or payload.get("status") != "passed":
+    status = payload.get("status")
+    if status == "externally_qualified":
+        expected_fields = base_fields | {"qualification_source"}
+        if set(payload) != expected_fields:
+            raise ValueError(f"{name} field set or status is invalid")
+        source = payload.get("qualification_source")
+        if not isinstance(source, str) or not source.strip():
+            raise ValueError(f"{name} qualification source is missing")
+        attempts = payload.get("attempts")
+        if not isinstance(attempts, (tuple, list)) or attempts:
+            raise ValueError(f"{name} externally qualified attempts are invalid")
+        _finite_real(
+            payload.get("selected_step_size"),
+            name=f"{name} selected_step_size",
+            positive=True,
+        )
+        if payload.get("diagnostic_role") != "reasonable_epsilon_engineering_bracket":
+            raise ValueError(f"{name} diagnostic role is invalid")
+        if tuple(str(item) for item in payload.get("nonclaims", ())) != (
+            OPERATIONAL_WARMUP_NONCLAIMS
+        ):
+            raise ValueError(f"{name} nonclaims changed")
+        return float(payload["selected_step_size"])
+    if set(payload) != base_fields or status != "passed":
         raise ValueError(f"{name} field set or status is invalid")
     if payload.get("diagnostic_role") != "reasonable_epsilon_engineering_bracket":
         raise ValueError(f"{name} diagnostic role is invalid")
@@ -325,7 +348,7 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
     config = warmup.get("config")
     if not isinstance(config, Mapping):
         raise ValueError("operational warmup config is missing")
-    config_fields = {
+    required_config_fields = {
         "warmup_steps",
         "initial_buffer",
         "final_buffer",
@@ -339,7 +362,10 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
         "step_size_ceiling",
         "step_adaptation_rate",
     }
-    if set(config) != config_fields:
+    optional_config_fields = {"mass_policy"}
+    if not required_config_fields <= set(config) or (
+        set(config) - required_config_fields - optional_config_fields
+    ):
         raise ValueError("operational warmup config field set is invalid")
     integer_config = {
         name: _strict_scalar_integer(
@@ -380,6 +406,7 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
             config.get("step_adaptation_rate"),
             name="warmup config step_adaptation_rate",
         ),
+        mass_policy=str(config.get("mass_policy", "windowed_adaptive")),
         **optional_real_config,
     )
     configured_steps = typed_config.warmup_steps
@@ -405,6 +432,11 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
         "target_status_trace_policy",
         "target_status_failure_count",
         "max_abs_log_accept_energy_proxy",
+        "step_size_upper_bound",
+        "maximum_bounded_next_step_size",
+        "maximum_proposed_step_size",
+        "maximum_consumed_step_size",
+        "step_ceiling_hit_count",
         "metric_decision",
         "next_coordinate_signature",
         "next_metric_signature",
@@ -508,6 +540,36 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
         )
         if proxy < 0.0:
             raise ValueError("warmup log-accept proxy must be nonnegative")
+        step_upper_bound = _finite_real(
+            raw_window.get("step_size_upper_bound"),
+            name="warmup step_size_upper_bound",
+            positive=True,
+        )
+        maximum_bounded = _finite_real(
+            raw_window.get("maximum_bounded_next_step_size"),
+            name="warmup maximum_bounded_next_step_size",
+            positive=True,
+        )
+        maximum_proposed = _finite_real(
+            raw_window.get("maximum_proposed_step_size"),
+            name="warmup maximum_proposed_step_size",
+            positive=True,
+        )
+        maximum_consumed = _finite_real(
+            raw_window.get("maximum_consumed_step_size"),
+            name="warmup maximum_consumed_step_size",
+            positive=True,
+        )
+        if maximum_bounded > step_upper_bound * (1.0 + 1.0e-12):
+            raise ValueError("warmup bounded step exceeds its ceiling")
+        if maximum_consumed > step_upper_bound * (1.0 + 1.0e-12):
+            raise ValueError("warmup consumed step exceeds its ceiling")
+        ceiling_hits = _strict_scalar_integer(
+            raw_window.get("step_ceiling_hit_count"),
+            name="warmup step_ceiling_hit_count",
+        )
+        if ceiling_hits < 0:
+            raise ValueError("warmup step ceiling hit count must be nonnegative")
         divergence_status = str(raw_window.get("native_divergence_status", ""))
         divergence_count = raw_window.get("native_divergence_count")
         if divergence_status == "available":
@@ -581,6 +643,7 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
                 "dense_update",
                 "diagonal_fallback",
                 "no_update_insufficient_metric_evidence",
+                "candidate_metric_rejected",
             }:
                 raise ValueError("warmup metric decision outcome is invalid")
         if update_applied:
@@ -590,7 +653,8 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
                 raise ValueError("warmup metric update lacks next signatures")
             if (
                 not isinstance(next_reasonable, Mapping)
-                or next_reasonable.get("status") != "passed"
+                or next_reasonable.get("status")
+                not in {"passed", "externally_qualified"}
             ):
                 raise ValueError("warmup metric update lacks epsilon rebracketing")
             next_step = _validate_reasonable_epsilon_payload(

@@ -144,7 +144,9 @@ def _fake_result(
     acceptance_count = int(round(float(acceptance) * int(num_results)))
     acceptance_trace = np.zeros(int(num_results), dtype=bool)
     acceptance_trace[:acceptance_count] = True
-    log_accept = np.linspace(-0.2, 0.1, int(num_results))
+    probability = min(max(float(acceptance), 0.0), 1.0)
+    log_probability = float(np.log(probability)) if probability > 0.0 else -np.inf
+    log_accept = np.full(int(num_results), log_probability, dtype=float)
     if not finite_log_accept:
         log_accept[-1] = np.nan
     target_log_prob = -0.5 * np.sum(np.square(sample_array), axis=-1)

@@ -43,6 +43,7 @@ from bayesfilter.highdim.ledh_forward_contract import (
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN,
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_COMPACT_PREDATOR_PREY_PROVENANCE,
@@ -50,6 +51,10 @@ from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
     LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
     validate_ledh_score_artifact,
+    validate_ledh_score_production_precision,
+)
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
 )
 from docs.benchmarks import benchmark_ledh_same_target_predator_prey_value as value_mod
 from docs.benchmarks import benchmark_p8p_parameterized_sir_gradient as p8p
@@ -70,6 +75,10 @@ TRUTH_THETA = (0.6, 114.0, 25.0, 0.3, 0.5, 0.5)
 MANUAL_SCORE_COMPONENT_NAMES = (
     "transition_mean_total",
 )
+
+_PREDATOR_PREY_MODEL = highdim.p30_predator_prey_fixture_model()
+_PREDATOR_PREY_DELTA = _PREDATOR_PREY_MODEL.delta
+_PREDATOR_PREY_RK4_SUBSTEPS = int(_PREDATOR_PREY_MODEL._rk4_substeps)  # noqa: SLF001
 
 
 def _configure_precision(args: argparse.Namespace) -> dict[str, Any]:
@@ -279,10 +288,12 @@ def _predator_prey_transition_mean_with_aux_tf(
     theta: tf.Tensor,
     state: tf.Tensor,
 ) -> tuple[tf.Tensor, dict[str, tf.Tensor]]:
-    model = highdim.p30_predator_prey_fixture_model()
     theta = _as_theta(theta)
     running = _as_state_matrix(state)
-    step = tf.cast(model.delta, DTYPE) / tf.cast(int(model._rk4_substeps), DTYPE)
+    step = tf.cast(_PREDATOR_PREY_DELTA, DTYPE) / tf.cast(
+        _PREDATOR_PREY_RK4_SUBSTEPS,
+        DTYPE,
+    )
     aux_rows: dict[str, list[tf.Tensor]] = {
         "state": [],
         "k1": [],
@@ -292,7 +303,7 @@ def _predator_prey_transition_mean_with_aux_tf(
         "k3": [],
         "k4_input": [],
     }
-    for _ in range(int(model._rk4_substeps)):
+    for _ in range(_PREDATOR_PREY_RK4_SUBSTEPS):
         running, aux = _predator_prey_rk4_step_with_aux_tf(theta, running, step)
         for key, value in aux.items():
             aux_rows[key].append(value)
@@ -304,12 +315,14 @@ def _predator_prey_transition_mean_vjp_tf(
     aux: dict[str, tf.Tensor],
     upstream: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    model = highdim.p30_predator_prey_fixture_model()
     theta = _as_theta(theta)
     bar_state = _as_state_matrix(upstream)
     bar_theta = tf.zeros([len(PARAMETER_NAMES)], dtype=DTYPE)
-    step = tf.cast(model.delta, DTYPE) / tf.cast(int(model._rk4_substeps), DTYPE)
-    for index in range(int(model._rk4_substeps) - 1, -1, -1):
+    step = tf.cast(_PREDATOR_PREY_DELTA, DTYPE) / tf.cast(
+        _PREDATOR_PREY_RK4_SUBSTEPS,
+        DTYPE,
+    )
+    for index in range(_PREDATOR_PREY_RK4_SUBSTEPS - 1, -1, -1):
         step_aux = {key: value[index] for key, value in aux.items()}
         bar_state, theta_part = _predator_prey_rk4_step_vjp_tf(
             theta,
@@ -367,6 +380,9 @@ def _make_transition_noise_tensor(args: argparse.Namespace) -> tf.Tensor:
 
 
 def _require_manual_score_args(args: argparse.Namespace) -> None:
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="predator-prey raw value/score route"
+    )
     if args.transport_plan_mode != "streaming":
         raise ValueError("predator-prey score repair requires streaming transport")
     if args.transport_ad_mode != "full":
@@ -604,7 +620,10 @@ def _manual_value_and_score_from_components(
 
 def _manual_value_only_from_components(
     args: argparse.Namespace,
-    theta_values: list[float] | tuple[float, ...],
+    theta_values: tf.Tensor | list[float] | tuple[float, ...],
+    *,
+    prepared_tensors: Mapping[str, tf.Tensor] | None = None,
+    prepared_transition_noise: tf.Tensor | None = None,
 ) -> dict[str, tf.Tensor]:
     """Forward-only value for same-scalar finite differences."""
 
@@ -612,14 +631,21 @@ def _manual_value_only_from_components(
     _require_manual_score_args(args)
     if len(args.batch_seeds) != 1:
         raise ValueError("predator-prey score repair evaluates one seed at a time")
-    theta = tf.constant([float(value) for value in theta_values], dtype=DTYPE)
-    tensors, _semantics = value_mod._build_predator_prey_tensors(args)  # noqa: SLF001
+    theta = _as_theta(theta_values)
+    if prepared_tensors is None:
+        tensors, _semantics = value_mod._build_predator_prey_tensors(args)  # noqa: SLF001
+    else:
+        tensors = dict(prepared_tensors)
     observations = tf.cast(tensors["observations"], DTYPE)
     fixed_resampling_mask = tf.convert_to_tensor(tensors["fixed_resampling_mask"], dtype=tf.bool)
     transition_covariance = tf.cast(tensors["transition_covariance"], DTYPE)
     observation_covariance = tf.cast(tensors["observation_covariance"], DTYPE)
     process_chol = tf.linalg.cholesky(transition_covariance)
-    transition_noise = _make_transition_noise_tensor(args)
+    transition_noise = (
+        _make_transition_noise_tensor(args)
+        if prepared_transition_noise is None
+        else tf.convert_to_tensor(prepared_transition_noise, dtype=DTYPE)
+    )
     particles = tf.cast(tensors["initial_particles"], DTYPE)
     batch_size = int(particles.shape[0])
     num_particles = int(particles.shape[1])
@@ -934,14 +960,16 @@ def _predator_prey_transition_mean_jvp_tf(
     state: tf.Tensor,
     d_state: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    model = highdim.p30_predator_prey_fixture_model()
     theta = _as_theta(theta)
     running = _as_state_matrix(state)
     d_running = tf.convert_to_tensor(d_state, dtype=DTYPE)
-    step = tf.cast(model.delta, DTYPE) / tf.cast(int(model._rk4_substeps), DTYPE)
+    step = tf.cast(_PREDATOR_PREY_DELTA, DTYPE) / tf.cast(
+        _PREDATOR_PREY_RK4_SUBSTEPS,
+        DTYPE,
+    )
     half = tf.constant(0.5, dtype=DTYPE)
     sixth = step / tf.constant(6.0, dtype=DTYPE)
-    for _ in range(int(model._rk4_substeps)):
+    for _ in range(_PREDATOR_PREY_RK4_SUBSTEPS):
         k1, d_k1 = _predator_prey_rhs_jvp_tf(theta, running, d_running)
         k2_input = running + half * step * k1
         d_k2_input = d_running + half * step * d_k1
@@ -1042,20 +1070,30 @@ def _compact_ledh_flow_jvp_tf(
 
 def _compact_value_and_score_from_components(
     args: argparse.Namespace,
-    theta_values: list[float] | tuple[float, ...],
+    theta_values: tf.Tensor | list[float] | tuple[float, ...],
+    *,
+    prepared_tensors: Mapping[str, tf.Tensor] | None = None,
+    prepared_transition_noise: tf.Tensor | None = None,
 ) -> dict[str, tf.Tensor]:
     """Predator-prey same-scalar score with compact forward sensitivity."""
 
     _configure_precision(args)
     _require_manual_score_args(args)
-    theta = tf.constant([float(value) for value in theta_values], dtype=DTYPE)
-    tensors, _semantics = value_mod._build_predator_prey_tensors(args)  # noqa: SLF001
+    theta = _as_theta(theta_values)
+    if prepared_tensors is None:
+        tensors, _semantics = value_mod._build_predator_prey_tensors(args)  # noqa: SLF001
+    else:
+        tensors = dict(prepared_tensors)
     observations = tf.cast(tensors["observations"], DTYPE)
     fixed_resampling_mask = tf.convert_to_tensor(tensors["fixed_resampling_mask"], dtype=tf.bool)
     transition_covariance = tf.cast(tensors["transition_covariance"], DTYPE)
     observation_covariance = tf.cast(tensors["observation_covariance"], DTYPE)
     process_chol = tf.linalg.cholesky(transition_covariance)
-    transition_noise = _make_transition_noise_tensor(args)
+    transition_noise = (
+        _make_transition_noise_tensor(args)
+        if prepared_transition_noise is None
+        else tf.convert_to_tensor(prepared_transition_noise, dtype=DTYPE)
+    )
     particles = tf.cast(tensors["initial_particles"], DTYPE)
     batch_size = int(particles.shape[0])
     num_particles = int(particles.shape[1])
@@ -1163,10 +1201,88 @@ def _compact_value_and_score_from_components(
     }
 
 
+def _prepare_compact_xla_inputs(args: argparse.Namespace) -> dict[str, Any]:
+    _configure_precision(args)
+    _require_manual_score_args(args)
+    if len(args.batch_seeds) != 1:
+        raise ValueError("predator-prey XLA score shards require exactly one seed")
+    tensors, semantics = value_mod._build_predator_prey_tensors(args)  # noqa: SLF001
+    return {
+        "tensors": tensors,
+        "transition_noise": _make_transition_noise_tensor(args),
+        "semantics": semantics,
+    }
+
+
+def _compact_score_tensor_outputs(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    prepared: Mapping[str, Any],
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    result = _compact_value_and_score_from_components(
+        args,
+        theta,
+        prepared_tensors=prepared["tensors"],
+        prepared_transition_noise=prepared["transition_noise"],
+    )
+    return (
+        result["objective"],
+        result["log_likelihood"],
+        result["gradient_tensor"],
+        result["per_seed_gradient"],
+    )
+
+
+def _value_tensor_outputs(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    prepared: Mapping[str, Any],
+) -> tuple[tf.Tensor, tf.Tensor]:
+    result = _manual_value_only_from_components(
+        args,
+        theta,
+        prepared_tensors=prepared["tensors"],
+        prepared_transition_noise=prepared["transition_noise"],
+    )
+    return result["objective"], result["log_likelihood"]
+
+
 def _single_seed_args(args: argparse.Namespace, seed: int) -> argparse.Namespace:
     clone = copy.copy(args)
     clone.batch_seeds = [int(seed)]
     return clone
+
+
+def _compact_value_and_score_across_seeds(
+    args: argparse.Namespace,
+    theta_values: list[float] | tuple[float, ...],
+) -> dict[str, tf.Tensor]:
+    """Evaluate the compact score sequentially across fixed-randomness seeds."""
+
+    seed_results = [
+        _compact_value_and_score_from_components(
+            _single_seed_args(args, seed),
+            theta_values,
+        )
+        for seed in args.batch_seeds
+    ]
+    log_likelihood = tf.concat([result["log_likelihood"] for result in seed_results], axis=0)
+    per_seed_gradient = tf.stack(
+        [tf.reshape(result["gradient_tensor"], [-1]) for result in seed_results],
+        axis=0,
+    )
+    return {
+        "objective": tf.reduce_mean(log_likelihood),
+        "log_likelihood": log_likelihood,
+        "gradient_tensor": tf.reduce_mean(per_seed_gradient, axis=0),
+        "per_seed_gradient": per_seed_gradient,
+        "score_route": PREDATOR_PREY_COMPACT_SCORE_ROUTE_ID,
+        "no_autodiff_score_route": True,
+        "value_score_route_status": "same_route_value_score",
+        "batch_seeds": [int(seed) for seed in args.batch_seeds],
+        "time_steps": int(args.time_steps),
+        "num_particles": int(args.num_particles),
+    }
 
 
 def _manual_value_and_score_across_seeds(
@@ -1233,7 +1349,7 @@ def _coordinate_fd_score_diagnostic(
     precision = _configure_precision(args)
     theta = tf.constant([float(value) for value in theta_values], dtype=DTYPE)
     step = tf.constant(float(fd_step), dtype=DTYPE)
-    base = _compact_value_and_score_from_components(args, theta.numpy().tolist())
+    base = _compact_value_and_score_across_seeds(args, theta.numpy().tolist())
     fd_values = []
     for index in range(len(PARAMETER_NAMES)):
         basis = tf.one_hot(index, len(PARAMETER_NAMES), dtype=DTYPE)
@@ -1289,7 +1405,7 @@ def _score_artifact_from_diagnostic(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=PREDATOR_PREY_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
     base_raw = diagnostic.get("base")
     if not isinstance(base_raw, Mapping):
@@ -1358,9 +1474,7 @@ def _score_artifact_from_diagnostic(
         "uses_stopped_partial_derivative": False,
         "score_correctness": score_correctness,
         "score_admission_status": (
-            LEDH_SCORE_ADMISSION_STATUS_FULL
-            if require_all_parameter_correctness
-            else LEDH_SCORE_ADMISSION_STATUS_TINY
+            LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
             if diagnostic.get("status") == "pass"
             else LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN
         ),
@@ -1370,11 +1484,11 @@ def _score_artifact_from_diagnostic(
         "memory_diagnostics": memory,
     }
     if require_all_parameter_correctness:
-        validate_ledh_score_artifact(
-            artifact,
-            source_value_artifact=source_value_artifact,
-            expected_row_id=PREDATOR_PREY_ROW_ID,
-            require_admitted=True,
+        validate_ledh_score_production_precision(
+            _score_precision_metadata(diagnostic.get("score_precision", {}))
+        )
+        raise ValueError(
+            "predator-prey raw-barycentric score route is historical diagnostic only"
         )
     return artifact
 
@@ -1421,7 +1535,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--source-value-artifact", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--markdown-output", default=None)
-    parser.add_argument("--admit-full", action="store_true")
+    parser.add_argument("--historical-raw-diagnostic", action="store_true")
     parser.add_argument("--memory-budget-mib", type=float, default=14000.0)
     args = parser.parse_args()
     args.batch_seeds = _parse_int_csv(args.batch_seeds)
@@ -1471,6 +1585,7 @@ def _write_markdown(path: Path, artifact: dict[str, Any], json_path: Path) -> No
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     source_path = Path(args.source_value_artifact)
     source_value = json.loads(source_path.read_text(encoding="utf-8"))
@@ -1486,8 +1601,7 @@ def main() -> None:
     diagnostic["parameter_names"] = list(PARAMETER_NAMES)
     peak_mib = _gpu_memory_peak_mib()
     memory_pass = (
-        bool(args.admit_full)
-        and peak_mib is not None
+        peak_mib is not None
         and peak_mib <= float(args.memory_budget_mib)
     )
     memory = {
@@ -1499,7 +1613,7 @@ def main() -> None:
         diagnostic,
         source_value_artifact=source_value,
         source_value_artifact_path=str(source_path),
-        require_all_parameter_correctness=bool(args.admit_full),
+        require_all_parameter_correctness=False,
         memory_diagnostics=memory,
     )
     artifact.update(

@@ -236,6 +236,7 @@ def _write_markdown(path: Path, result: dict[str, Any], json_path: Path) -> None
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     output = Path(args.output)
     artifact_dir = Path(args.artifact_dir) if args.artifact_dir else output.parent / "ledh_pfpf_ot_efficiency_children"

@@ -12,8 +12,7 @@ import pytest
 
 from bayesfilter.highdim.ledh_forward_contract import LGSSM_M3_T50_ROW_ID
 from bayesfilter.highdim.ledh_score_contract import (
-    LEDH_SCORE_ADMISSION_STATUS_FULL,
-    LEDH_SCORE_ADMISSION_STATUS_TINY,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     validate_ledh_score_artifact,
 )
 from docs.benchmarks import benchmark_ledh_same_target_lgssm_m3_t50_value as lgssm
@@ -205,17 +204,24 @@ def test_phase2_lgssm_raw_full_score_normalizes_to_score_schema() -> None:
         score_artifact,
         source_value_artifact=value_artifact,
         expected_row_id=LGSSM_M3_T50_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
-    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_FULL
+    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert normalized["score_derivative_provenance"] == lgssm.COMPACT_SCORE_ROUTE_ID
     assert normalized["score_parameter_names"] == list(lgssm.PARAMETER_NAMES)
-    assert normalized["score_precision"]["dtype"] == "float32"
-    assert normalized["score_precision"]["tf32_execution_enabled"] is True
+    assert score_artifact["score_precision"]["dtype"] == "float32"
+    assert score_artifact["score_precision"]["tf32_execution_enabled"] is True
     assert normalized["memory_diagnostics"]["n10000_memory_pass"] is True
     assert normalized["score_correctness"]["tf32_mode"] == "disabled"
     assert normalized["score_correctness"]["uses_disclosed_separate_precision_arm"] is True
+    with pytest.raises(ValueError, match="not admitted"):
+        validate_ledh_score_artifact(
+            score_artifact,
+            source_value_artifact=value_artifact,
+            expected_row_id=LGSSM_M3_T50_ROW_ID,
+            require_admitted=True,
+        )
 
 
 def test_phase2_lgssm_score_artifact_memory_uses_score_route_peak_not_value_peak() -> None:
@@ -230,7 +236,7 @@ def test_phase2_lgssm_score_artifact_memory_uses_score_route_peak_not_value_peak
         source_value_artifact_path=LGSSM_VALUE_REL,
     )
 
-    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_FULL
+    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert score_artifact["score_precision"]["tf32_mode"] == "enabled"
     assert score_artifact["memory_diagnostics"]["source"] == "score_gpu_memory_info_after"
     assert score_artifact["memory_diagnostics"]["peak_mib"] == 512.0
@@ -248,7 +254,7 @@ def test_phase2_lgssm_score_artifact_rejects_missing_score_memory_even_if_value_
         source_value_artifact_path=LGSSM_VALUE_REL,
     )
 
-    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_TINY
+    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert score_artifact["memory_diagnostics"]["n10000_memory_pass"] is False
     assert score_artifact["memory_diagnostics"]["source"] is None
     with pytest.raises(ValueError, match="not admitted"):
@@ -299,7 +305,7 @@ def test_phase2_lgssm_historical_t2_memory_artifact_is_not_admitted_schema() -> 
         )
 
 
-def test_phase2_lgssm_adapter_keeps_cpu_or_memory_miss_as_tiny_not_admitted() -> None:
+def test_phase2_lgssm_adapter_keeps_cpu_or_memory_miss_historical() -> None:
     raw = copy.deepcopy(_raw_full_score_result())
     raw["runtime_gate_applicable"] = False
 
@@ -309,7 +315,7 @@ def test_phase2_lgssm_adapter_keeps_cpu_or_memory_miss_as_tiny_not_admitted() ->
         source_value_artifact_path=LGSSM_VALUE_REL,
     )
 
-    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_TINY
+    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     with pytest.raises(ValueError, match="not admitted"):
         validate_ledh_score_artifact(
             score_artifact,
@@ -319,7 +325,7 @@ def test_phase2_lgssm_adapter_keeps_cpu_or_memory_miss_as_tiny_not_admitted() ->
         )
 
 
-def test_phase2_lgssm_adapter_demotes_legacy_memory_style_status_to_tiny() -> None:
+def test_phase2_lgssm_adapter_demotes_legacy_memory_style_status_to_historical() -> None:
     raw = copy.deepcopy(_raw_full_score_result())
     raw["score_admission_status"] = lgssm.RAW_MEMORY_STYLE_ADMITTED_STATUS
 
@@ -329,7 +335,7 @@ def test_phase2_lgssm_adapter_demotes_legacy_memory_style_status_to_tiny() -> No
         source_value_artifact_path=LGSSM_VALUE_REL,
     )
 
-    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_TINY
+    assert score_artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     with pytest.raises(ValueError, match="not admitted"):
         validate_ledh_score_artifact(
             score_artifact,
@@ -390,7 +396,7 @@ def test_phase2_lgssm_adapter_rejects_outer_nested_score_mismatch() -> None:
         )
 
 
-def test_phase2v_lgssm_shard_aggregation_admits_only_full_fixed_seed_set() -> None:
+def test_phase2v_lgssm_shard_aggregation_preserves_historical_fixed_seed_set() -> None:
     shards = [_raw_score_shard(seed) for seed in lgssm.FULL_ROW_BATCH_SEEDS]
     aggregate = lgssm._aggregate_lgssm_score_shards(
         shards,
@@ -403,17 +409,24 @@ def test_phase2v_lgssm_shard_aggregation_admits_only_full_fixed_seed_set() -> No
         score_artifact,
         source_value_artifact=_load_value(),
         expected_row_id=LGSSM_M3_T50_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
-    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_FULL
-    assert normalized["score_precision"]["tf32_mode"] == "enabled"
+    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
+    assert score_artifact["score_precision"]["tf32_mode"] == "enabled"
     assert aggregate["execution_strategy"]["kind"] == "seed_sharded_trusted_gpu_processes"
     assert aggregate["execution_strategy"]["segmented_execution_disclosed"] is True
     assert aggregate["execution_strategy"]["monolithic_batch_memory_claim"] is False
     assert aggregate["memory_diagnostics"]["source"] == "max_per_seed_score_gpu_memory_info_after"
     assert aggregate["memory_diagnostics"]["peak_mib"] == 516.0
     assert aggregate["batch_seeds"] == list(lgssm.FULL_ROW_BATCH_SEEDS)
+    with pytest.raises(ValueError, match="not admitted"):
+        validate_ledh_score_artifact(
+            score_artifact,
+            source_value_artifact=_load_value(),
+            expected_row_id=LGSSM_M3_T50_ROW_ID,
+            require_admitted=True,
+        )
 
 
 def test_phase2v_lgssm_shard_aggregation_rejects_missing_duplicate_or_admitted_shard() -> None:
@@ -496,6 +509,7 @@ def test_phase2v_lgssm_shard_aggregation_matches_direct_batch_arithmetic_mean() 
         dtype="float64",
         tf32_mode="disabled",
         score_mode="compact-sensitivity",
+        historical_raw_diagnostic=True,
     )
     lgssm._configure_precision(args)
     theta = lgssm.tf.constant(lgssm.TRUTH_THETA, dtype=lgssm.DTYPE)

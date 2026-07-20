@@ -8,11 +8,12 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_forward_contract import (
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     PREDATOR_PREY_ROW_ID,
     validate_ledh_forward_scalar_artifact,
 )
 from bayesfilter.highdim.ledh_score_contract import (
-    LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
@@ -58,6 +59,7 @@ def _tiny_score_args():
         particle_chunk_size = 2
         dtype = "float64"
         tf32_mode = "disabled"
+        historical_raw_diagnostic = True
 
     return Args()
 
@@ -118,17 +120,18 @@ def _directional_only_score_artifact() -> dict:
     }
 
 
-def test_phase4_predator_prey_value_artifact_is_admitted_but_not_score_artifact() -> None:
+def test_phase4_predator_prey_value_artifact_is_historical_not_score_artifact() -> None:
     value = _load_value()
     normalized = validate_ledh_forward_scalar_artifact(
         value,
         expected_row_id=PREDATOR_PREY_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
     assert normalized["row_id"] == PREDATOR_PREY_ROW_ID
     assert normalized["target_scalar"] == "observed_data_log_likelihood_estimator"
     assert normalized["target_output_tensor_field"] == "log_likelihood"
+    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
     with pytest.raises(ValueError, match="score artifact schema_version"):
         validate_ledh_score_artifact(
             value,
@@ -279,6 +282,7 @@ def test_phase4_predator_prey_default_score_source_uses_compact_not_reverse_reco
     source = "\n".join(
         [
             inspect.getsource(score_module._compact_value_and_score_from_components),  # noqa: SLF001
+            inspect.getsource(score_module._compact_value_and_score_across_seeds),  # noqa: SLF001
             inspect.getsource(score_module._coordinate_fd_score_diagnostic),  # noqa: SLF001
             inspect.getsource(score_module._score_artifact_from_diagnostic),  # noqa: SLF001
         ]
@@ -292,6 +296,59 @@ def test_phase4_predator_prey_default_score_source_uses_compact_not_reverse_reco
     assert "_transport_vjp_tf" not in source
     assert "GradientTape" not in source
     assert "ForwardAccumulator" not in source
+
+
+def test_phase4_predator_prey_coordinate_fd_evaluates_compact_score_per_seed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    args = _tiny_score_args()
+    args.batch_seeds = [81120, 81121]
+    compact_seeds = []
+    value_seeds = []
+    expected_score = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=tf.float64)
+
+    def fake_compact(_args, theta_values):
+        assert len(_args.batch_seeds) == 1
+        compact_seeds.append(int(_args.batch_seeds[0]))
+        theta = tf.convert_to_tensor(theta_values, dtype=tf.float64)
+        objective = tf.reduce_sum(theta * expected_score)
+        return {
+            "objective": objective,
+            "log_likelihood": tf.reshape(objective, [1]),
+            "gradient_tensor": expected_score,
+            "score_route": score_module.PREDATOR_PREY_COMPACT_SCORE_ROUTE_ID,
+            "no_autodiff_score_route": True,
+            "value_score_route_status": "same_route_value_score",
+            "batch_seeds": list(_args.batch_seeds),
+            "time_steps": int(_args.time_steps),
+            "num_particles": int(_args.num_particles),
+        }
+
+    def fake_value(_args, theta_values):
+        assert len(_args.batch_seeds) == 1
+        value_seeds.append(int(_args.batch_seeds[0]))
+        theta = tf.convert_to_tensor(theta_values, dtype=tf.float64)
+        return {"log_likelihood": tf.reshape(tf.reduce_sum(theta * expected_score), [1])}
+
+    def forbidden_historical(*_args, **_kwargs):
+        raise AssertionError("historical predator-prey score route must not be used")
+
+    monkeypatch.setattr(score_module, "_compact_value_and_score_from_components", fake_compact)
+    monkeypatch.setattr(score_module, "_manual_value_only_from_components", fake_value)
+    monkeypatch.setattr(score_module, "_manual_value_and_score_across_seeds", forbidden_historical)
+    monkeypatch.setattr(score_module, "_manual_value_and_score_from_components", forbidden_historical)
+
+    diagnostic = score_module._coordinate_fd_score_diagnostic(  # noqa: SLF001
+        args,
+        [0.0] * len(PARAMETER_NAMES),
+        fd_step=1.0e-3,
+        atol=1.0e-8,
+        rtol=1.0e-8,
+    )
+
+    assert diagnostic["status"] == "pass"
+    assert compact_seeds == args.batch_seeds
+    assert value_seeds == args.batch_seeds * (2 * len(PARAMETER_NAMES))
 
 
 def test_phase4_predator_prey_cli_defaults_to_production_score_precision() -> None:
@@ -358,7 +415,7 @@ def test_phase4_predator_prey_tiny_total_score_artifact_is_not_admitted() -> Non
         require_all_parameter_correctness=False,
     )
 
-    assert artifact["score_admission_status"] == "tiny_score_diagnostic_not_admitted"
+    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert artifact["score_derivative_provenance"] == score_module.PREDATOR_PREY_COMPACT_SCORE_ROUTE_ID
     assert artifact["score_precision"]["dtype"] == "float64"
     assert artifact["score_parameter_names"] == list(score_module.PARAMETER_NAMES)
@@ -435,29 +492,20 @@ def test_phase4_predator_prey_full_admission_requires_production_precision() -> 
         )
 
 
-def test_phase4_predator_prey_full_admission_accepts_compact_production_fixture() -> None:
-    artifact = score_module._score_artifact_from_diagnostic(  # noqa: SLF001
-        _production_full_diagnostic_from_tiny(),
-        source_value_artifact=_load_value(),
-        source_value_artifact_path=PREDATOR_PREY_VALUE_REL,
-        require_all_parameter_correctness=True,
-        memory_diagnostics={
-            "n10000_memory_pass": True,
-            "source": "trusted_gpu_score_memory_artifact",
-            "peak_mib": 512.0,
-            "budget_mib": 14000.0,
-        },
-    )
-
-    normalized = validate_ledh_score_artifact(
-        artifact,
-        source_value_artifact=_load_value(),
-        expected_row_id=PREDATOR_PREY_ROW_ID,
-        require_admitted=True,
-    )
-    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_FULL
-    assert normalized["score_derivative_provenance"] == score_module.PREDATOR_PREY_COMPACT_SCORE_ROUTE_ID
-    assert normalized["score_precision"]["tf32_mode"] == "enabled"
+def test_phase4_predator_prey_full_shaped_fixture_is_historical_only() -> None:
+    with pytest.raises(ValueError, match="historical diagnostic only"):
+        score_module._score_artifact_from_diagnostic(  # noqa: SLF001
+            _production_full_diagnostic_from_tiny(),
+            source_value_artifact=_load_value(),
+            source_value_artifact_path=PREDATOR_PREY_VALUE_REL,
+            require_all_parameter_correctness=True,
+            memory_diagnostics={
+                "n10000_memory_pass": True,
+                "source": "trusted_gpu_score_memory_artifact",
+                "peak_mib": 512.0,
+                "budget_mib": 14000.0,
+            },
+        )
 
 
 @pytest.mark.parametrize(

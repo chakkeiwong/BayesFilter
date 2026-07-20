@@ -27,6 +27,9 @@ Date: 2026-07-10
 ## Code Changes
 
 - `docs/benchmarks/benchmark_ledh_same_target_fixed_sir_score.py`
+  - Phase 8 audit repair: finite-difference perturbations now call the
+    value-only `p8p._objective_from_components` route instead of recomputing
+    compact tangents.
   - Added compact score precision propagation from diagnostic precision metadata.
   - Required compact diagnostic base to declare compact score route,
     `no_autodiff_score_route`, and same-route value/score status before artifact
@@ -76,6 +79,18 @@ result and Phase 4 predator-prey subplan require substitute read-only review
 before Phase 4 execution.
 
 Review status at result write: pending.
+
+Phase 8 cross-model audit update: the original focused suite proved numerical
+agreement but did not distinguish whether FD perturbations recomputed the score
+route. That route was wrong relative to the master-program value-only FD
+invariant and has been repaired. The fixed-SIR gate requires refreshed focused
+tests before it is current again.
+
+Phase 8 execution-policy repair update: compact score and value-only FD now run
+sequentially per fixed seed. A two-seed monkeypatch test requires one compact
+component invocation per seed, preserves seed order, and forbids the historical
+fixed-SIR diagnostic. The refreshed LGSSM/fixed-SIR shard passed `39 passed, 2
+warnings in 77.47s`.
 
 ## Plain-Language Gate
 

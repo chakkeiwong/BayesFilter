@@ -46,6 +46,22 @@ def test_identity_geometry_formula_returns_finite_kernel() -> None:
     assert result.payload()["reports_tuning_success"] is False
 
 
+def test_fixed_identity_geometry_ignores_supplied_hints_and_records_policy() -> None:
+    result = initialize_hmc_kernel_geometry(
+        adapter=Adapter(),
+        initial_position=np.zeros(2),
+        config=HMCGeometryInitializationConfig(
+            covariance_jitter=0.0,
+            mass_policy="fixed_identity",
+        ),
+        initial_covariance=np.diag([3.0, 7.0]),
+        parameter_scales=np.array([4.0, 5.0]),
+    )
+    np.testing.assert_allclose(result.mass_artifact.covariance, np.eye(2))
+    assert result.config.mass_policy == "fixed_identity"
+    assert result.payload()["config"]["mass_policy"] == "fixed_identity"
+
+
 def test_negative_hessian_takes_precedence_over_covariance_and_scales() -> None:
     result = initialize_hmc_kernel_geometry(
         adapter=Adapter(),

@@ -19,6 +19,20 @@ from bayesfilter.inference.neutra_artifacts import (
     finalize_dense_iaf_neutra_artifact_payload,
 )
 
+# The plain dense-IAF campaign API is retained in a separate compatibility
+# module for existing end-to-end and PP-UKF lanes.  The current trainer above
+# remains the default named-family training implementation.
+from bayesfilter.inference.neutra_training_legacy import (
+    NeuTraTrainingError,
+    PlainDenseIAFSegmentedTrainingResult,
+    PlainDenseIAFTrainingConfig,
+    PlainDenseIAFTrainingResult,
+    PlainDenseIAFTransport,
+    restore_plain_dense_iaf_flow,
+    train_plain_dense_iaf,
+    train_plain_dense_iaf_infrastructure_segments,
+)
+
 
 NEUTRA_TRAINING_NONCLAIMS = (
     "reverse-KL trainer engineering surface only",
@@ -46,10 +60,6 @@ COMPOSED_NEUTRA_FAMILIES = frozenset(
 DSGE_PAPER_TRAINING_STEPS = 5000
 DSGE_PAPER_TRAINING_BATCH_SIZE = 480
 DSGE_PAPER_LR_BOUNDARIES = (999, 3999)
-
-
-class NeuTraTrainingError(RuntimeError):
-    """Raised when the reverse-KL trainer contract fails."""
 
 
 @dataclass(frozen=True)

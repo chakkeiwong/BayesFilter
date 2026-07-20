@@ -1314,42 +1314,47 @@ covariances; see, for example, \citet{higham2002accuracy}.
 A practical differentiable variant is therefore to replace the support-exact
 eigensystem route by a strictly positive definite, ridged Cholesky gauge.  This
 is a different numerical contract, not a proof that the eigensystem contract was
-unnecessary.  Choose user-visible ridge parameters
-\(\lambda_{\rm abs}>0\) and \(\lambda_{\rm rel}\ge0\), and set
+unnecessary.  For the canonical BayesFilter route, the realized scalar ridge
+\(\lambda>0\) is selected outside the candidate-dependent differentiated
+callable, stored with the prepared inputs, and bound into route identity.  The
+same value is used for the value, gradient, finite-difference center, and every
+finite-difference endpoint.  Candidate-dependent ridge escalation followed by a
+stopped derivative computes a different gradient and is wrong relative to the
+canonical total-gradient claim.  A failed Cholesky factor or nonpositive factor
+diagonal is an invalid-chart veto, not a trigger for an undisclosed fallback or
+escalation.
+
+The canonical route fixes \(\rho=1\).  In row-vector storage, let the prepared,
+parameter-independent residual design be
+\(\Xi\in\mathbb R^{N\times d_x}\), with \(\mathbf 1^\top\Xi=0\).  Its realized
+entries, not merely a seed distribution, are part of the finite target.  For
+source rows \(X_i\), normalized probabilities \(w_i\), and row-quotient rows
+\(Y_i^+\), define the population moments
+\begin{align}
+  \mu_w&:=\sum_iw_iX_i,&
+  \Sigma_w&:=\sum_iw_i(X_i-\mu_w)(X_i-\mu_w)^\top,\\
+  \bar Y^+&:=N^{-1}\sum_iY_i^+,&
+  \Sigma_+&:=N^{-1}\sum_i(Y_i^+-\bar Y^+)(Y_i^+-\bar Y^+)^\top,
+\end{align}
+and \(G_+:=\operatorname{sym}(\Sigma_w-\Sigma_+)\).  Then define
 \begin{equation}
 \label{eq:bf-eot-contract-e-chol-ridge}
-  \lambda_0
-  :=
-  \max\!\left\{
-    \lambda_{\rm abs},
-    \lambda_{\rm rel}\frac{\operatorname{tr}(\Sigma_w)}{d_x}
-  \right\}.
-\end{equation}
-The implementation should then use a bounded escalation policy
-\(\lambda_k=\lambda_0\gamma^k\), \(\gamma>1\), stopping if the Cholesky factors
-below are not finite or do not have positive diagonal entries after the allowed
-attempts.  The actual \(\lambda_k\) used is part of the algorithm output.  It is
-not harmless metadata: too small a ridge can make the triangular solve explode,
-while too large a ridge changes the reset into a biased full-rank covariance
-contract.
-
-With \(\lambda=\lambda_k\), define
-\[
-  B_\lambda
-  :=
-  \sqrt{\rho}\,\operatorname{chol}(G_+ + \lambda I),
+  B_\lambda:=\operatorname{chol}(G_+ + \lambda I),
   \qquad
-  \widetilde Y
-  :=
-  Y^+ + B_\lambda\Xi .
-\]
+  \widetilde Y:=Y^+ + \Xi B_\lambda^\top .
+\end{equation}
+All source and equal-weight covariances in this route are population empirical
+covariances with denominator \(N\), not \(N-1\).  The factor
+\(\sqrt{N/(N-1)}\), when used to construct \(\Xi\) from centered Gaussian
+noise, standardizes that fixed design in expectation and does not change the
+covariance convention.
 Then form
 \[
   \widetilde\Sigma
   :=
   \frac1N
-  (\widetilde Y-\bar{\widetilde y}\mathbf 1^\top)
-  (\widetilde Y-\bar{\widetilde y}\mathbf 1^\top)^\top ,
+  (\widetilde Y-\mathbf 1\bar{\widetilde y}^\top)^\top
+  (\widetilde Y-\mathbf 1\bar{\widetilde y}^\top) ,
   \qquad
   L_w:=\operatorname{chol}(\Sigma_w+\lambda I),
   \qquad
@@ -1365,9 +1370,9 @@ triangular-solve operator
   \qquad
   Y^\star_\lambda
   :=
-  \mu_w\mathbf 1^\top
+  \mathbf 1\mu_w^\top
   +
-  A_\lambda(\widetilde Y-\bar{\widetilde y}\mathbf 1^\top).
+  (\widetilde Y-\mathbf 1\bar{\widetilde y}^\top)A_\lambda^\top.
 \end{equation}
 The recentering in \eqref{eq:bf-eot-contract-e-chol-affine} is essential: it is
 what preserves the target mean independently of the ridge.
@@ -1385,8 +1390,8 @@ and \(Y^\star_\lambda\) has equal-weight mean \(\mu_w\).  The covariance of
 \(Y^\star_\lambda\) around \(\mu_w\) satisfies
 \[
   \frac1N
-  (Y^\star_\lambda-\mu_w\mathbf 1^\top)
-  (Y^\star_\lambda-\mu_w\mathbf 1^\top)^\top
+  (Y^\star_\lambda-\mathbf 1\mu_w^\top)^\top
+  (Y^\star_\lambda-\mathbf 1\mu_w^\top)
   -
   \Sigma_w
   =
@@ -1414,14 +1419,41 @@ Subtracting
 unridged covariance residual.
 \end{proof}
 
-Contract E--Chol should be opt-in until its value and gradient behavior has
-been tested beyond tiny reset fixtures.  Its advantage is that the manual VJP
-can be written through Cholesky factors and triangular solves, without
-eigenvector gauges or rank-switching projectors.  Its cost is the explicit
-\(\lambda\)-bias above.  A user-facing function must therefore expose
-\(\lambda_{\rm abs}\), \(\lambda_{\rm rel}\), escalation multiplier, and maximum
-attempts; it must record the realized ridge and the covariance residual; and it
-must warn that the ridge is a tuning parameter, not a universal constant.
+Contract E--Chol is the only reset semantics eligible for canonical BayesFilter
+value, total-gradient, score-admission, leaderboard, default, or HMC-facing
+status.  This selection does not establish that the route has passed those
+scientific gates.  Its advantage is that the derivative can be written through
+Cholesky factors and triangular solves, without eigenvector gauges or
+rank-switching projectors.  Its cost is the explicit \(\lambda\)-bias above.
+Artifacts must report the prepared realized ridge, the exact ridged-identity
+residual, and the separate raw-covariance residual.  The proposition proves the
+ridged identity; calling the raw covariance exactly restored when
+\(\lambda>0\) is wrong.
+
+The positive finite transport feeding this reset must also be interpreted
+literally.  If the fixed-iteration streaming solver emits a numerator and row
+mass
+\[
+  Q_i=\sum_j P_{ij}X_j,\qquad M_i=\sum_j P_{ij},
+\]
+then the transported cloud is
+\begin{equation}
+\label{eq:bf-eot-contract-e-row-quotient}
+  Y_i^+=Q_i/M_i.
+\end{equation}
+There is no row-mass floor in the canonical target.  Each \(M_i\) must be finite
+and positive.  Treating \(Q_i\) as the cloud merely because the finite solver
+intends unit row mass changes both the value and its derivative.
+
+At each filtering time the declared transition and finite LEDH flow are applied
+first, corrected log weights and the current observed-data likelihood increment
+are then computed, and only afterward is an active reset applied.  The reset
+affects later increments through the carried cloud; it does not modify the
+already-computed current increment.  Active branches carry
+\(Y^\star_\lambda\) with uniform log weights.  Inactive branches carry the
+flowed cloud with its normalized log weights.  The reset mask, prepared residual
+design, ridge, Sinkhorn schedule, and chunk sizes are fixed parts of the finite
+program.
 
 \paragraph{Contract F: no reset or delayed reset.}
 If the effective sample size is acceptable, carry the weighted cloud forward and
@@ -1430,6 +1462,397 @@ It does not solve weight degeneracy in long horizons or high dimensions, but it 
 a clean diagnostic: if a no-reset weighted route agrees with an exact LGSSM
 comparator while the barycentric route fails, the reset contract rather than the
 transition or likelihood code is implicated.
+
+\section{Why the current reset can accumulate bias}
+\label{sec:bf-eot-contract-e-bias}
+
+Contract~E--Chol is a declared finite filtering program, not an identity for the
+exact filtering distribution.  At time \(t\), the flowed particles \(x_{t,i}\)
+and previous weights \(w_{t-1,i}\) first form
+\begin{equation}
+\label{eq:bf-eot-finite-increment}
+ r_{t,i}=w_{t-1,i}\,
+ \frac{p_\theta(x_{t,i}\mid x_{t-1,i})
+       g_\theta(y_t\mid x_{t,i})}
+      {q_\theta(x_{t,i}\mid x_{t-1,i})},
+ \qquad
+ \widehat\ell_t^N=\log\sum_i r_{t,i},
+\end{equation}
+where the implemented flow Jacobian is included in the ratio.  Only after this
+increment has been accumulated does an active reset replace the cloud.  The
+reset therefore cannot change the already computed increment, but it can change
+all later increments through the carried particles.
+
+There are four separate approximation layers: finite-particle log normalization;
+finite entropic Sinkhorn iteration; barycentric projection; and the residual/
+affine reset.  Marginal residuals certify only the finite coupling calculation.
+They do not remove the barycentric covariance contraction, the finite log-sum
+bias, or the loss of higher-order shape information.  Repeated resets can feed
+these local errors into later nonlinear transition and observation functionals.
+The LGSSM is therefore a controlled diagnostic for this mechanism, not the
+scientific endpoint for which the method is intended.
+
+\section{A non-fused cubature residual Contract E candidate}
+\label{sec:bf-eot-cubature-residual}
+
+This candidate retains the original staged route.  It does not solve a joint
+OT--moment optimization.  The coupling, barycentric quotient, residual stage,
+and Cholesky restoration remain separate finite maps; only the prepared
+residual design is changed.
+
+Let \(d,M\in\mathbb N\), let \(N=2dM\), and use the population-covariance
+convention (denominator \(N\)) throughout this section.  The reset is defined
+on a fixed finite-arithmetic branch: the row ordering, the branch of every
+Cholesky factor, the ridge \(\lambda>0\), and all Sinkhorn controls are fixed
+and independent of the model parameter for the derivative statement below.
+The particle-count condition is therefore
+\begin{equation}
+\label{eq:bf-eot-cubature-particle-count}
+ N=2dM.
+\end{equation}
+Define the standardized spherical--radial cubature directions
+\begin{equation}
+\label{eq:bf-eot-cubature-directions}
+ \xi_{a,+}=\sqrt d\,e_a,\qquad
+ \xi_{a,-}=-\sqrt d\,e_a,
+ \qquad a=1,\ldots,d,
+\end{equation}
+and \(D_c=\sqrt d\begin{bmatrix}I_d\\-I_d\end{bmatrix}\).  Let
+\(\Xi_c\in\mathbb R^{N\times d}\) repeat every row of \(D_c\) exactly \(M\)
+times.  The row order and any fixed independent permutation are part of the
+finite route identity.
+
+\begin{proposition}[Cubature design moments]
+\label{prop:bf-eot-cubature-design-moments}
+For \(\mathbf 1_N\in\mathbb R^N\), the replicated design
+\(\Xi_c\in\mathbb R^{N\times d}\) satisfies
+\begin{equation}
+ \frac1N\mathbf1^\top\Xi_c=0,
+ \qquad
+ \frac1N\Xi_c^\top\Xi_c=I_d.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Opposite directions cancel in every coordinate, so the row sum is zero.  Also
+\(D_c^\top D_c=d(I_d+I_d)=2dI_d\).  Repeating the block \(M\) times and using
+\(N=2dM\) gives
+\[
+ N^{-1}\Xi_c^\top\Xi_c=(2dM)^{-1}M(2dI_d)=I_d.
+\]
+\end{proof}
+
+\begin{proposition}[Affine cubature moment preservation]
+\label{prop:bf-eot-cubature-affine-moments}
+Let \(a_r=1/N\) and let \(\xi_r\) be the rows of \(\Xi_c\).  For any
+  \(m\in\mathbb R^d\), \(L\in\mathbb R^{d\times d}\), \(F\in\mathbb R^{p\times
+d}\), and \(b\in\mathbb R^p\), the cubature rule obeys
+\begin{align}
+ \sum_{r=1}^N a_r\{F(m+L\xi_r)+b\}&=Fm+b,\\
+ \sum_{r=1}^N a_r (FL\xi_r)(FL\xi_r)^\top&=FL\,L^\top F^\top.
+\end{align}
+\end{proposition}
+
+\begin{proof}
+The first identity is \(F m+b+FL(N^{-1}\Xi_c^\top\mathbf 1_N)\),
+which equals \(Fm+b\) by Proposition~\ref{prop:bf-eot-cubature-design-moments}.
+For the second identity, factor out \(FL\) and \(L^\top F^\top\), then use
+\(N^{-1}\Xi_c^\top\Xi_c=I_d\).  Thus the rule is exact for the first two
+moments of every affine image of a standardized Gaussian moment pair.  This
+standalone statement does not imply that the particle log-sum likelihood is
+unbiased.
+\end{proof}
+
+The OT stage is unchanged.  For flowed source particles \(x_j\) and normalized
+probabilities \(\alpha_j\), write the equal-target coupling as \(\Pi\), with
+source marginal \(\alpha\) and target marginal \(u_i=1/N\).  The implementation
+uses \(\Gamma=N\Pi\), so
+\begin{equation}
+\label{eq:bf-eot-cubature-marginals}
+ \Gamma\mathbf1=\mathbf1,
+ \qquad
+ \Gamma^\top\mathbf1=N\alpha,
+\end{equation}
+up to recorded finite-Sinkhorn residuals, and the barycentric output is
+\begin{equation}
+\label{eq:bf-eot-cubature-barycentric}
+ Y_i^+=\sum_j\Gamma_{ij}x_j.
+\end{equation}
+Cubature is not an OT target in this candidate; it enters only after
+\eqref{eq:bf-eot-cubature-barycentric}.
+
+Define
+\begin{align}
+ \mu_w&=\sum_j\alpha_jx_j,&
+ \Sigma_w&=\sum_j\alpha_j(x_j-\mu_w)(x_j-\mu_w)^\top,\\
+ \bar Y^+&=N^{-1}\sum_iY_i^+,&
+ \Sigma_+&=N^{-1}\sum_i(Y_i^+-\bar Y^+)(Y_i^+-\bar Y^+)^\top.
+\end{align}
+Set \(G=\operatorname{sym}(\Sigma_w-\Sigma_+)\) and
+\(B=\operatorname{chol}(G+\lambda I)\), \(\lambda>0\), then inject
+\begin{equation}
+\label{eq:bf-eot-cubature-injected}
+ \widetilde Y=Y^++\Xi_cB^\top.
+\end{equation}
+Let \(\widetilde\Sigma\) be its population covariance and define
+\begin{equation}
+\label{eq:bf-eot-cubature-affine}
+ L_w=\operatorname{chol}(\Sigma_w+\lambda I),\quad
+ L_{\widetilde Y}=\operatorname{chol}(\widetilde\Sigma+\lambda I),\quad
+ A_c=L_wL_{\widetilde Y}^{-1},
+\end{equation}
+where the inverse denotes a triangular solve.  The reset is
+\begin{equation}
+ X_i^{E,c}=\mu_w+(\widetilde Y_i-\bar{\widetilde Y})A_c^\top.
+\end{equation}
+
+\begin{proposition}[Mean and ridged covariance]
+\label{prop:bf-eot-cubature-restoration}
+Assume \(G+\lambda I_d\), \(\Sigma_w+\lambda I_d\), and
+\(\widetilde\Sigma+\lambda I_d\) are strictly positive definite, so that all
+three displayed Cholesky factors exist.  The equal-weight output
+\(X^{E,c}\in\mathbb R^{N\times d}\) has mean \(\mu_w\) and satisfies
+\begin{equation}
+ A_c(\widetilde\Sigma+\lambda I)A_c^\top=\Sigma_w+\lambda I,
+ \qquad
+ \Sigma_{E,c}-\Sigma_w=\lambda(I-A_cA_c^\top).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Because \(\bar{\widetilde Y}=N^{-1}\sum_i\widetilde Y_i\), the centered output
+rows sum to zero, and its population covariance is
+\(\Sigma_{E,c}=A_c\widetilde\Sigma A_c^\top\).  With
+\(L_wL_w^\top=\Sigma_w+\lambda I_d\) and
+\(L_{\widetilde Y}L_{\widetilde Y}^\top=\widetilde\Sigma+\lambda I_d\),
+\begin{align*}
+A_c(\widetilde\Sigma+\lambda I_d)A_c^\top
+&=L_wL_{\widetilde Y}^{-1}L_{\widetilde Y}L_{\widetilde Y}^\top
+  L_{\widetilde Y}^{-\top}L_w^\top\\
+&=L_wL_w^\top=\Sigma_w+\lambda I_d.
+\end{align*}
+Subtracting \(\lambda A_cA_c^\top\) from both sides gives
+\(\Sigma_{E,c}-\Sigma_w=\lambda(I_d-A_cA_c^\top)\).
+\end{proof}
+
+The proposition concerns the finite weighted empirical target \(\Sigma_w\), not
+the exact filtering covariance.  To make the role of the second stage explicit,
+write \(Y_c^+=Y^+-\bar Y^+\) and
+\(C_{+c}=N^{-1}(Y_c^+)^\top\Xi_c\).  Proposition
+\ref{prop:bf-eot-cubature-design-moments} gives
+\begin{equation}
+\label{eq:bf-eot-cubature-realized-covariance}
+\widetilde\Sigma
+ =\Sigma_+ + C_{+c}B^\top + BC_{+c}^\top + BB^\top.
+\end{equation}
+Thus \(B=\operatorname{chol}(G+\lambda I_d)\) is not by itself a covariance
+correction unless \(C_{+c}=0\).  The subsequent \(A_c\) uses the realized
+\(\widetilde\Sigma\), including both cross terms, and is the operation that
+establishes the ridged identity.
+
+\begin{proposition}[Current likelihood and total-score boundary]
+\label{prop:bf-eot-cubature-likelihood-score}
+If the cubature residual reset is applied after the current increment
+\eqref{eq:bf-eot-finite-increment}, that increment is exactly unchanged relative
+to canonical Contract~E.  On a fixed finite-arithmetic branch, with parameter-
+independent \(\lambda\) and \(\Xi_c\), differentiating every dependency through
+the staged map gives the total derivative of the new cubature-residual finite
+likelihood scalar.
+\end{proposition}
+
+\begin{proof}
+The current increment depends only on pre-reset particles, weights, densities,
+and the flow Jacobian.  The full scalar is a composition through
+\((x,\alpha,\Pi,Y^+,\mu_w,\Sigma_w,\widetilde\Sigma,A_c,X^{E,c})\).  Since
+\(d\Xi_c=d\lambda=0\), the ordinary chain rule through the fixed SPD Cholesky
+branches gives the total derivative of every later increment.  This proves a
+same-scalar derivative statement for the new finite program, not an
+exact-posterior score statement.
+\end{proof}
+
+For affine maps \(f(x)=Fx+b\) and \(h(x)=Hx+c\), the preceding affine-moment
+proposition gives exact transformed means and covariances for the standalone
+cubature rule.  A cubature Gaussian filter therefore agrees with the
+corresponding Kalman moment recursion up to arithmetic error when its input is
+represented by that rule.  The staged particle route still has finite-particle,
+finite-Sinkhorn, barycentric, and reset approximations; this does not make its
+particle log-sum estimator unbiased for the Kalman likelihood.
+
+\section{Generalized unscented transformation candidate}
+\label{sec:bf-eot-genut}
+
+Ebeigbe et al.~\cite{ebeigbe2025genut} propose a $2d+1$ point generalized
+unscented transform (GenUT).  It matches mean and covariance and uses the
+remaining degrees of freedom to match each coordinate's standardized third and
+fourth central moments.  This is attractive for non-Gaussian nonlinear models,
+but it is not a full higher-order empirical distribution: for correlated states
+only selected diagonal moments in a chosen square-root coordinate system are
+matched.
+
+Let \(m\in\mathbb R^d\), \(C\in\mathbb R^{d\times d}\) be nonsingular with
+\(CC^\top=P\succ0\), and let \(Z=C^{-1}(X-m)\).  Define the coordinate moments
+\begin{equation}
+ s_a=\mathbb E[Z_a^3],\qquad k_a=\mathbb E[Z_a^4].
+\end{equation}
+For each axis use standardized points \(0,-u_ae_a,+v_ae_a\), with weights
+\(w_0,b_a,c_a\).  The axis constraints are
+\begin{align}
+ -b_au_a+c_av_a&=0,&
+ b_au_a^2+c_av_a^2&=1,\\
+ -b_au_a^3+c_av_a^3&=s_a,&
+ b_au_a^4+c_av_a^4&=k_a.
+\end{align}
+
+\begin{proposition}[GenUT axis construction]
+\label{prop:bf-eot-genut-axis}
+Fix an axis \(a\).  If \(k_a>s_a^2\), set
+\begin{equation}
+ u_a=\frac{-s_a+\sqrt{4k_a-3s_a^2}}2,
+ \qquad v_a=u_a+s_a,
+ \qquad c_a=\frac1{v_a(u_a+v_a)},
+ \qquad b_a=\frac1{u_a(u_a+v_a)}.
+\end{equation}
+Then the four axis constraints hold.  Setting
+\(w_0=1-\sum_a(b_a+c_a)\) normalizes the rule, but \(w_0\) is not guaranteed
+to be nonnegative.
+\end{proposition}
+
+\begin{proof}
+The first constraint gives \(b_a=c_av_a/u_a\).  Substitution into the second
+gives \(c_av_a(u_a+v_a)=1\).  The third therefore reduces to
+\(v_a-u_a=s_a\).  Substitution into the fourth yields
+\(u_a^2+s_au_a+s_a^2-k_a=0\), whose positive root is the displayed \(u_a\).
+The expression for \(v_a\) and the weights then follow from the first two
+constraints.  Since \(\sqrt{4k_a-3s_a^2}>|s_a|\), both \(u_a\) and \(v_a\) are
+strictly positive, and therefore \(b_a,c_a>0\).  The central weight supplies
+the remaining normalization.  The condition \(k_a>s_a^2\) ensures a real,
+positive axis construction, but it says nothing about \(w_0\).
+\end{proof}
+
+\begin{proposition}[GenUT moment identities]
+\label{prop:bf-eot-genut-moments}
+Define \(2d+1\) points \(z_0=0\), \(z_{a,-}=-u_ae_a\), and
+\(z_{a,+}=v_ae_a\), with weights \(w_0,b_a,c_a\), and assume
+\(w_0=1-\sum_a(b_a+c_a)\) is finite.  Then the GenUT rule has zero mean,
+identity covariance, diagonal third moments \(s_a\), and diagonal fourth
+moments \(k_a\) in whitened coordinates.  The physical points
+\(x_r=m+Cz_r\) therefore have mean \(m\) and covariance \(P\).
+\end{proposition}
+
+\begin{proof}
+Normalization is the definition of \(w_0\).  For the mean, each axis contributes
+\((-b_au_a+c_av_a)e_a=0\).  For the covariance, off-diagonal entries vanish
+because every noncentral point has only one nonzero coordinate, while the
+\(a\)-th diagonal entry is \(b_au_a^2+c_av_a^2=1\).  The diagonal third and
+fourth entries are exactly the last two axis equations; mixed third/fourth
+entries involving two distinct coordinates vanish for this rule.  Finally,
+\(\sum_r w_r(m+Cz_r)=m+C\sum_r w_rz_r=m\), and
+\(\sum_r w_r(x_r-m)(x_r-m)^\top
+=C(\sum_r w_rz_rz_r^\top)C^\top=CC^\top=P\).
+\end{proof}
+
+\begin{proposition}[GenUT positivity and representation boundary]
+\label{prop:bf-eot-genut-positivity}
+Under \(k_a>s_a^2\), the noncentral weights \(b_a,c_a\) are positive.  The
+full GenUT rule is a positive probability rule if and only if
+\(w_0\ge0\).  It can be represented exactly as an equal-weight \(N\)-row
+design by replication only when all its positive weights are rational with a
+common denominator dividing \(N\) (or when an explicitly declared positive
+approximation is used).  A negative \(w_0\) is a signed quadrature rule and
+cannot be used as a positive entropic-OT marginal.
+\end{proposition}
+
+\begin{proof}
+The positivity of \(b_a,c_a\) follows from the strict positivity of
+\(u_a,v_a,u_a+v_a\).  Since the weights sum to one, nonnegativity of all
+weights is equivalent to \(w_0\ge0\).  Exact equal-weight replication assigns
+each row mass \(1/N\), so a weight \(q\) is representable by rows precisely
+when \(Nq\) is a nonnegative integer; a common denominator gives the stated
+condition.  Signed masses violate the positive-marginal assumptions of
+entropic OT.
+\end{proof}
+
+For a feasible positive GenUT residual design \(\Xi_g\), obtained by mapping the whitened points \(z_r\) through the declared square root and then using an exact positive equal-weight replication when the condition in Proposition~\ref{prop:bf-eot-genut-positivity} holds, define
+\begin{equation}
+ \widetilde Y_g=Y^++\Xi_gB_g^\top,
+ \qquad B_g=\operatorname{chol}(G_g+\lambda I),
+\end{equation}
+where the displayed Cholesky argument is assumed strictly positive definite.
+Apply the same Cholesky restoration as in
+\eqref{eq:bf-eot-cubature-affine}.  This is the GenUT residual candidate.  Its
+current likelihood increment is unchanged because the reset is post-increment.
+The variance statement is the same ridged identity as in
+Proposition~\ref{prop:bf-eot-cubature-restoration}, with \(c\) replaced by
+\(g\), provided the realized \(\widetilde\Sigma_g\) is used.  Its total score is
+the total derivative of the new finite route when the empirical
+third/fourth moments, square-root gauge, point coordinates, weights, and
+restoration are all differentiated.  Neither future likelihood equality nor
+exact posterior variance/score equality follows.
+
+\begin{proposition}[Value, variance, and score for both staged residuals]
+\label{prop:bf-eot-both-residual-boundary}
+Let \(q\in\{c,g\}\) denote either the cubature residual or a feasible positive
+GenUT residual, and let \(R_q\) be its post-increment reset.  Assume all
+Cholesky arguments are strictly positive definite and the parameter is inside
+a fixed differentiable branch.  Then:
+\begin{enumerate}[label=(\roman*)]
+\item the current finite likelihood increment \(\widehat\ell_t^N\) in
+\eqref{eq:bf-eot-finite-increment} is identical before and after replacing the
+canonical reset by \(R_q\);
+\item the reset mean is \(\mu_w\), and its population covariance obeys
+\[
+\Sigma_{R_q}+\lambda A_qA_q^\top=\Sigma_w+\lambda I_d,
+\]
+so the un-ridged covariance equals \(\Sigma_w\) only in the special case
+\(A_qA_q^\top=I_d\) (or in the zero-ridge limit when that limit exists);
+\item differentiating the complete staged computation gives the total
+derivative of the complete finite likelihood scalar generated by \(R_q\),
+including the derivatives of the OT map, moment maps, residual design,
+Cholesky factors, and all later recursion.
+\end{enumerate}
+The proposition does not assert equality with the exact filtering likelihood,
+exact filtering variance, or exact filtering score.  Except in a special
+insensitivity case, the full future likelihood scalar for \(R_c\) or \(R_g\) is
+different from canonical Contract~E because the carried cloud differs.
+\end{proposition}
+
+\begin{proof}
+The reset is evaluated after \(\widehat\ell_t^N\), so item (i) is a direct
+statement about program order.  Item (ii) is the proof of
+Proposition~\ref{prop:bf-eot-cubature-restoration}; the same algebra applies to
+any \(q\) whose realized centered design and affine restoration are used.  For
+item (iii), on a fixed branch the finite filter is a composition of
+differentiable maps.  The chain rule therefore gives the derivative of the
+same scalar.  A later increment is a function of the carried reset cloud, so
+there is no reason for it to agree with the canonical value unless the later
+functional is insensitive to the changed directions.  This is a finite-program
+statement, not an exact filtering theorem.
+\end{proof}
+
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{0.20\textwidth} p{0.22\textwidth} p{0.22\textwidth} p{0.24\textwidth}@{}}
+\toprule
+Property & Cubature residual & Feasible positive GenUT residual & Exactness boundary \\
+\midrule
+Current likelihood increment & unchanged & unchanged & reset is post-increment; this is a program-order identity \\
+Reset mean & \(\mu_w\) & \(\mu_w\) & finite empirical target only \\
+Reset variance & same ridged identity & same ridged identity & exact \(\Sigma_w\) only without the ridge residual \\
+Higher moments & symmetric second-order design & selected whitened diagonal \(s_a,k_a\) when feasible & neither matches the full correlated filtering law \\
+Full future likelihood & generally changed & generally changed & carried cloud changes downstream increments \\
+Score & total derivative of cubature finite scalar & total derivative of GenUT finite scalar & not an exact-posterior score claim \\
+\bottomrule
+\end{tabular}
+\setlength{\tabcolsep}{6pt}
+\normalsize
+\end{center}
+
+The constrained GenUT variant in the paper moves points toward support bounds.
+That operation preserves second-order constraints only under its stated
+re-solving rules and generally sacrifices exact fourth-moment matching.  A
+parameter-dependent constraint slack is therefore a new route control and must
+be included in the route identity and derivative graph.
 
 \begin{center}
 \scriptsize

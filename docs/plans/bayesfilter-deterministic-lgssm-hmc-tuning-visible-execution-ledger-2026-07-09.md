@@ -1242,3 +1242,95 @@ Next action:
 - Stop at the Phase 7 approval boundary.
 - Do not start burn-in or retained sampling until the user explicitly approves
   Phase 7 runtime.
+
+## 2026-07-11T03:53:34+08:00 - Phase 7 Repair Plan Execution Stop
+
+Status: `BLOCKED_PHASE7_PREFLIGHT_HASH_CONTRACT_MISMATCH`.
+
+Plan and review state:
+
+- Repair/execution plan:
+  `docs/plans/bayesfilter-deterministic-lgssm-hmc-phase7-repair-and-execution-plan-2026-07-11.md`.
+- Claude one-path review was rejected before execution by the managed
+  external-disclosure policy; it was not retried or broadened.
+- Fresh substitute plan and implementation reviews both ended
+  `VERDICT: AGREE`.
+- Implementation gates passed: public API `36 passed`; broad focused suite
+  `164 passed`; compilation, independent rank-reference, forbidden-route scan,
+  and `git diff --check` passed.
+
+Executed command:
+
+```text
+CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-bayesfilter-phase7-refresh \
+python docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py \
+  --stage kernel_tuning \
+  > /tmp/bayesfilter-phase7-phase6-refresh.log 2>&1
+```
+
+Result:
+
+- Exit code: `0`.
+- Phase 6 refresh: `passed=true`, `final_status=passed`, `xla_confirmed=true`,
+  `jit_compile=true`, `hard_vetoes=[]`.
+- CPU-only choice was intentional with `CUDA_VISIBLE_DEVICES=-1`; host XLA
+  compilation was observed.
+- Private replay was persisted and its public reference verifies.
+- Pinned config, fixture, XLA, geometry, mass, adapter, and selected-step hashes
+  matched.
+- Public final-kernel hash mismatched:
+  expected `8ddf25a3b572893e19e814fad5ca5b6150718e36f760c159b47db1231d92ffff`,
+  observed `07910941750ad6b882d357411c8ed9a1faa36b886f6125e78af8306ccdae7fbf`.
+- Private-loop final-kernel hash mismatched:
+  expected `391558a9b5f4cdc1b9dff9a5e9bceba668dedded7298c1d8c76daea42f42039a`,
+  observed `2823e20048c0969b79931604462ba142a34aed06fd8cfab3baf03eab89c0168f`.
+- Selected-trajectory hash mismatched:
+  expected `6eaf7a563353b278a71dcfbe2515fda6d46c47ab2e38996b6b61fab1bbbd13b3`,
+  observed `3f4b33680ed1e8365670772afe313e479a3a43a4a1c3f2ac2a77c49795aeb04b`.
+- Selected-step hash remained
+  `ec7db59e51465eee95658167e1f7596e21d9ab0efdac11f54c2d397aa270ab40`.
+
+Classification:
+
+- The committed and refreshed private event artifacts agree on every selected
+  HMC mechanics field available in both records.
+- Current `handoff_screen_policy` provenance entered hashed stage payloads and
+  changed stage lineage, the selected-trajectory hash, and downstream kernel
+  hashes.
+- This is an engineering hash-contract/baseline-migration blocker. It is not
+  evidence of target invalidity, tuning failure, convergence failure, or
+  scientific-direction failure.
+- The old full private replay was not persisted, so complete private-payload
+  identity is not checked. Similar or equal descriptive diagnostics cannot
+  replace the exact predeclared hash gate.
+
+Artifacts:
+
+- Refreshed public kernel file SHA-256:
+  `e95f1197862192ce8436ffe21ec9926519de3810d6bff4d4397a8b9caa590f43`.
+- Refreshed private replay file SHA-256:
+  `40c6a8d2cea8c55b5e923dace2bc3500a274b29a4abdd3ceed5b83c773f9ac0c`.
+- Public tuning result file SHA-256:
+  `6fb7b1daf8e966f0f02e3fac2fb40e2a7f6d8626a025124e81f7cd92e93d2767`.
+- Public progress file SHA-256:
+  `e4cf7f42f7a2b921159d92b6279bceb0edc72c4fb0b5dc4610e8829fa6d1afe0`.
+- Refresh log SHA-256:
+  `703e9e198e2be803d4243ae2654a9056ed6b9a7acaac770765e2453d5b80196a`.
+- Phase 7 blocker/result:
+  `docs/plans/bayesfilter-deterministic-lgssm-hmc-tuning-phase7-burnin-sampling-result-2026-07-09.md`.
+
+Gate and next action:
+
+- P7G: `BLOCK_PRIVATE_REPLAY_REFRESH_HASH_MISMATCH`.
+- P7H smoke: not executed.
+- P7I serious Phase 7: not executed.
+- Phase 8: not executed.
+- Closeout focused suite: `34 passed, 2 warnings`; structured blocker hash and
+  JSON validation passed; Phase 7 scoped `git diff --check` passed.
+- Fresh bounded blocker-result substitute review ended `VERDICT: AGREE`:
+  `docs/reviews/bayesfilter-deterministic-lgssm-hmc-phase7-preflight-blocker-codex-substitute-review-2026-07-11.md`.
+- Next smallest repair: review a baseline-migration subplan that defines a
+  versioned semantic HMC-mechanics identity independent of descriptive policy
+  provenance, proves it against the committed private event plus refreshed
+  replay, and only then decides whether the refreshed hashes may replace the
+  stale Phase 6AA pins. Do not repin or launch Phase 7 manually.

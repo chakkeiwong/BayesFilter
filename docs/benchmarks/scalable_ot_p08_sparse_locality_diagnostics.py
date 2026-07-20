@@ -607,6 +607,7 @@ def _write_markdown(result: dict[str, Any], path: Path) -> None:
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     result = _build_result(args)
     output = Path(args.output)

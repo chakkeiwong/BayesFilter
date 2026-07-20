@@ -444,11 +444,15 @@ validation ladder have been passed.
 \label{sec:bf-dpf-hmc-hnn-surrogates}
 
 Surrogate-HMC and Hamiltonian-neural-network ideas address a different point in
-the inference stack \citep{greydanus2019hamiltonian,hoffman2019neutra,parno2018transport}.  They attempt to improve
-movement through an already chosen target, or to use a surrogate proposal that
-is later corrected against that target.  DPF methods may instead alter the
-filtering likelihood itself through flow approximation, relaxed resampling, or
-learned transport.  The distinction is operational:
+the inference stack
+\citep{greydanus2019hamiltonian,dhulipala2022latent,hoffman2019neutra,parno2018transport}.
+Chapter~\ref{ch:bf-hnn-surrogate-hmc} gives the complete construction, proves
+the discrete proposal conditions, and explains why a true endpoint likelihood
+value is not by itself a universal correction.  These methods attempt to
+improve movement through an already chosen target, or to use a surrogate
+proposal that is later corrected against that target.  DPF methods may instead
+alter the filtering likelihood itself through flow approximation, relaxed
+resampling, or learned transport.  The distinction is operational:
 \begin{itemize}
   \item a corrected surrogate-HMC proposal can preserve the intended target if
     the correction evaluates that target and the proposal assumptions hold;

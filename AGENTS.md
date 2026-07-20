@@ -1,91 +1,198 @@
 # BayesFilter Agent Governance
 
-## Academic Risk-Tier Workflow
+## Academic Research Governance Profile
 
-Owner directive, 2026-07-13: BayesFilter is an academic research repository.
-Use governance proportional to the actual scientific, computational, and
-external-impact risk. Progress on engineering and scientific questions should
-not be blocked by security ceremony that does not mitigate a credible risk for
-the task.
+Owner directive, 2026-07-13: BayesFilter is a trusted local academic research
+repository. Governance must prioritize scientific validity, reproducibility,
+bounded compute, and research progress. It must not import production-service
+security ceremony without a concrete threat that applies to the work.
 
-This section governs planning, artifact, and review depth unless a stricter
-domain-specific section below applies. It supersedes older BayesFilter plans and
-runbooks that require a dedicated subplan, frozen hash, authorized snapshot,
-finite write-set manifest, custom guard, or repeated Claude/Codex review for
-every diagnostic or phase. Those older documents remain historical evidence;
-they are not active execution policy unless the user explicitly reactivates
-them after this directive.
+This section supersedes older BayesFilter plans, runbooks, and implementation
+notes where they require procedural controls that are stricter than this
+profile. Preserve historical artifacts, but do not treat their old launch gates
+as active authority requirements for new work.
 
-### Tier 1: Routine Academic Engineering
+### Proportional Risk Model
 
-Use Tier 1 for read-only investigation, focused debugging, reversible local
-source/test edits, import/shape/compile smokes, and targeted checks expected to
-finish in about five minutes and not used for a scientific or default-policy
-claim.
+The default threat model is accidental error in a trusted local workspace, not
+an adversarial multi-tenant service. The controls that remain strict are:
 
-- A short working plan in the conversation is sufficient.
-- Run the smallest relevant check and report its result.
-- No plan file, phase subplan, external review, hash ledger, authorized
-  snapshot, run manifest, custom filesystem/import guard, or result table is
-  required unless it directly answers the engineering question.
-- Ordinary source inspection, including installed dependency source, does not
-  require a separate source-proof phase.
+- scientific question, baseline, success criteria, vetoes, and nonclaims;
+- mathematical, numerical, and statistical validity;
+- exact commands, environment, seeds, hardware, wall time, and artifact paths
+  for serious runs;
+- unique versioned output directories that do not overwrite prior evidence;
+- bounded compute and attempt budgets;
+- secrets, private data, external publication, package/environment mutation,
+  destructive operations, and other irreversible or externally visible acts;
+  and
+- platform or sandbox permissions that the agent cannot waive.
 
-### Tier 2: Material Research Engineering
+Absent a documented concrete adversarial risk or an explicit user request, do
+not create or require:
 
-Use Tier 2 for numerical algorithm changes, differentiable-path changes,
-benchmarks or diagnostics expected to exceed about five minutes, GPU/XLA runs,
-meaningful method comparisons, or experiments that guide research direction.
+- hash-bound natural-language approval statements;
+- one-use authority, launch-claim, or approval-token files;
+- inode, descriptor, hard-link, immutable-empty-file, or crash-durable output
+  reservation protocols;
+- custom cryptographic schemas when Git provenance, ordinary SHA-256 checksums,
+  and versioned artifacts answer the research-integrity question;
+- separate approval for each local retry when the scientific contract and
+  campaign budget are unchanged; or
+- mandatory review chains for each proposal, manifest, subplan, result, and
+  handoff.
 
-- Maintain one concise live plan under `docs/plans`. It should state the
-  question, exact baseline, candidate mechanism, pass/promotion criterion,
-  vetoes, explanatory diagnostics, commands/environment, resource stop, result
-  artifact, and nonclaims.
-- Perform the skeptical pre-execution audit and evidence contract required by
-  the global policy. Record them in that live plan; do not create a separate
-  governance phase.
-- Use one result or reset note after meaningful evidence. Preserve exact
-  commands, environment/device/JIT settings, seeds when applicable, wall time,
-  and output paths.
-- Review is required only when the work changes mathematical/numerical logic,
-  a public API or default, or supports a material scientific conclusion. Use
-  one focused review followed by a repair/recheck when needed. Repeated
-  convergence rounds are not the default.
-- A failed candidate is a repair signal, not an automatic stop for the research
-  direction. Continue to the next smallest discriminating repair unless an
-  evidence-validity, resource, safety, or authority veto fires.
+These mechanisms may be used only when the plan identifies the applicable
+threat, explains why ordinary academic reproducibility controls are
+insufficient, and shows that the added ceremony is proportionate.
 
-### Tier 3: High-Impact Or Irreversible Work
+### Execution Tiers
 
-Use Tier 3 for destructive operations, dependency or model-file changes,
-network/external disclosure, releases, public/default-policy promotion,
-expensive overnight or large-sweep execution, consequential scientific claims,
-or actions that affect systems or people outside the repository.
+1. Routine local work: implementation, unit tests, focused diagnostics, import
+   checks, and short smokes need no special governance approval beyond the
+   user's task and normal tool permissions.
+2. Serious local research campaigns: use one concise experiment plan with an
+   evidence contract, compute/attempt budget, versioned output root, and stop
+   conditions. A plain-language user request to execute or resume that plan is
+   sufficient campaign authorization. No magic wording or manifest hash is
+   required.
+3. External or irreversible work: require explicit human approval for public
+   release, external messages or publication, credentials/secrets, paid or
+   materially expanded compute, package/environment changes with broad impact,
+   destructive operations, or a material change in scientific/product
+   direction.
 
-- Use an explicit reviewed plan and obtain human/tool approval where required.
-- State budgets, cancellation and cleanup behavior, external effects, and
-  promotion evidence prospectively.
-- Review and artifacts should be detailed enough for the concrete risk, but a
-  Tier 3 program still does not require a new subplan for every internal step.
+Within an authorized serious campaign, a localized infrastructure or harness
+failure may be repaired and retried automatically when all of the following
+remain unchanged: scientific target, data, method, promotion criteria, vetoes,
+hardware class, privacy boundary, and total campaign budget. Record the failure,
+repair, and retry in the campaign result. Reapproval is required only when one
+of those boundaries changes.
 
-### Proportional Artifact And Review Rules
+### Review Proportionality
 
-- Hash immutable inputs or outputs only when identity matters to reproducibility
-  or comparison integrity. Do not hash every intermediate document or log.
-- Use dirty-worktree snapshots, finite write sets, or custom guards only when a
-  credible concurrent-write, provenance, or boundary risk justifies them.
-  Normal Git status inspection and preservation of unrelated changes are
-  sufficient otherwise.
-- Claude is optional, read-only, and advisory. Use it only when explicitly
-  requested or when a material independent review is worth the disclosure and
-  latency. Native focused review is sufficient for ordinary academic work.
-- Do not let review mechanics replace decisive experiments. Prefer a bounded
-  counterfactual that can falsify a hypothesis over increasingly elaborate
-  offline provenance arguments.
-- All tiers retain the global scientific evidence rules, statistical humility,
-  mathematical sourcing, GPU trust requirements, unrelated-worktree
-  protection, and prohibitions on unsupported correctness, performance,
-  readiness, or scientific claims.
+Review is advisory by default. Use it where independent scrutiny materially
+reduces scientific or engineering risk, especially for source-faithfulness,
+publication-grade claims, major API/default changes, expensive campaigns, or
+user-requested review. One material plan review and one terminal result review
+are normally enough. Reviewer unavailability or a procedural documentation
+disagreement must not block trusted local research when the scientific plan,
+focused checks, budget, and artifacts are adequate; record the limitation and
+continue.
+
+This profile does not weaken any scientific evidence standard below. It
+separates scientific rigor from launch-security ceremony.
+
+## Contract E Canonical LEDH Reset Policy
+
+Owner directive, 2026-07-13: Contract E--Chol is the only LEDH reset semantics
+eligible for canonical value, total-gradient, score-admission, leaderboard,
+default-readiness, or HMC-facing status. The frozen reset identifier is
+`contract_e_chol_v1`. The frozen total-derivative composition identifier is
+`contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1`.
+
+Raw-barycentric reset routes are historical diagnostics and are wrong relative
+to this canonical target. This includes compact forward-sensitivity routes and
+full-history/manual reverse routes, even when their derivative is algebraically
+correct for the raw-barycentric scalar. They must emit or normalize to
+`historical_raw_barycentric_diagnostic_only` and must never be used as a fallback
+when Contract E is unavailable or fails a gate.
+
+All v1 LEDH forward and score artifact schemas predate reset identity and cannot
+prove which reset callable executed. They are therefore ineligible for canonical
+admission, default selection, leaderboard contribution, and HMC-facing use.
+Existing v1 artifacts remain readable as historical evidence but must not be
+silently upgraded. Adding caller-supplied fields such as `reset_contract_id` to a
+v1 payload does not make it admissible.
+
+Canonical identity must be issued by a non-overridable repository-owned route
+factory from the actual callable and settings. Callers may not stamp, override,
+or self-attest canonical route identity. The identity must bind at least reset
+semantics, row-mass normalization, fixed residual design, ridge policy and
+realized input, derivative composition, prepared-input identity, and source
+dependency closure.
+
+The claimed canonical gradient is the total derivative of the same finite
+value program. Contract E depends directly on source-cloud moments and weights
+as well as on the transported cloud, so its pullback must include
+`G_X = G_X^moments + G_X^transport` and
+`G_w = G_w^moments + G_w^transport`, plus any declared residual-design or ridge
+dependence. A transported-cloud-only adjoint is a partial derivative and is
+wrong relative to the canonical total-gradient claim.
+
+This policy selects the only route eligible to seek admission. It does not by
+itself establish implementation correctness, covariance restoration, Kalman
+agreement, nonlinear validity, production feasibility, HMC readiness,
+leaderboard completeness, or scientific validity; those remain evidence gates.
+
+## LEDH Per-Scope Tuning Policy
+
+Owner directive, 2026-07-19: every claim-bearing LEDH run must have an offline
+tuning step for its own execution scope before its final claim or leaderboard
+run. There is no universally applicable LEDH numerical or feature setting.
+
+A tuning scope binds at least the model/target identity, LEDH route and reset
+family, observation horizon and prepared-data regime, particle count, state and
+parameter dimensions, dtype/TF32/backend, chunk policy, and the complete family
+of tunable controls used by that route. A change to any bound field creates a
+new tuning scope. In particular, a setting selected at one horizon, such as
+`T=10`, is not tuned for another horizon, such as `T=50`, even for the same
+model.
+
+Prior settings from another model or scope may seed the first candidate only.
+They are warm starts, not defaults or promotion evidence. Each route must tune
+its own controls: annealed-Sinkhorn/terminal-balance counts for the streaming OT
+route; feature, basis, lookahead, chart, ridge/KKT, or other applicable controls
+for Contract E--TP and other LEDH routes. Do not force unrelated routes into a
+shared parameter vocabulary.
+
+The tuning procedure must use disjoint calibration/validation data and freeze
+the selected controls before an untouched claim run. The claim run must consume
+a repository-issued tuning artifact whose scope identity exactly matches the
+claim scope; fail closed on a missing, stale, mismatched, caller-stamped, or
+cross-model artifact. Runtime or parameter-dependent retuning inside HMC remains
+forbidden.
+
+A failed tuned candidate or untouched claim is a repair trigger for fresh
+scope-specific tuning under the remaining campaign budget. It is not a reason
+to transfer a setting, relax a gate, tune on the failed claim data, skip tuning
+for later models, or reject the LEDH research direction. Preserve the failed
+claim as holdout evidence and use fresh tuning partitions.
+
+## DPF Transport Chunk Policy
+
+Owner directive, 2026-07-18, supported by the June 24 GPU/XLA exact-tiling
+artifacts: active DPF transport canonical, candidate, benchmark, leaderboard,
+and production-target routes must use policy
+`dpf_transport_exact_divisor_cap3000_v1` from
+`bayesfilter.highdim.transport_chunk_policy`.
+
+For particle count `N` and row/column chunk extent `K`:
+
+- row and column chunks must be equal;
+- `K` must divide `N`, giving an exact `(N/K) x (N/K)` block grid;
+- for `N <= 3000`, `K=N`, so the grid is `1 x 1`;
+- for `N > 3000`, `K` is the largest divisor of `N` not exceeding 3000; and
+- if no divisor greater than 1 exists under that cap, fail closed. Never fall
+  back to a tiny fixture chunk or an independently chosen local default.
+
+Required examples are `N=1000 -> K=1000`, `N=1024 -> K=1024`,
+`N=10000 -> K=2500`, and `N=10240 -> K=2560`. Selection and validation happen
+at configuration time before TensorFlow tracing; do not implement the selector
+inside an XLA graph.
+
+All contrary chunk policies, constants, CLI defaults, plans, and results are
+historical and wrong relative to this policy. Historical files remain preserved
+only as archival provenance. They are not eligible even as diagnostic,
+comparison, tuning, timing, admission, or scientific evidence for a new run.
+Primitive unit tests may use small arrays only when they still obey `K=N`; that
+tests mechanics and does not define an alternative chunk policy.
+
+The repository-owned selector is non-overridable for active canonical and
+candidate routes. Caller-supplied row/column values must be validated against
+it and rejected on mismatch. A new chunk rule requires a new reviewed policy
+identifier and evidence; editing a benchmark constant or copying a historical
+fixture cannot change this policy.
 
 ## Default Implementation Backend
 
@@ -98,6 +205,40 @@ The BayesFilter repository default execution target is GPU.  CPU-only execution
 is allowed for explicit reference checks, small smoke tests, debugging, and
 sandbox-safe diagnostics, but it must not be described as the default
 production target unless a reviewed plan explicitly changes this policy.
+
+### TensorFlow GPU Memory Allocation Policy
+
+Owner directive, 2026-07-14: BayesFilter TensorFlow GPU processes must disable
+eager whole-device memory reservation. The default configuration is memory
+growth on every visible physical GPU, applied and verified before TensorFlow
+creates a logical GPU or initializes any GPU tensor, operation, or compiler
+context.
+
+- Prefer setting `TF_FORCE_GPU_ALLOW_GROWTH=true` before TensorFlow import and
+  also call the repository memory-policy helper to set and verify growth on
+  every visible physical GPU.
+- Serious, candidate, benchmark, training, HMC, and production-target GPU runs
+  must fail closed if memory growth cannot be configured or verified before
+  device initialization. Do not silently catch and ignore the failure.
+- Serious run manifests must record the memory-policy schema/mode, every
+  physical device and its verified growth value, and whether a logical-device
+  memory limit was used.
+- Memory growth prevents TensorFlow from reserving almost all device memory at
+  startup. It is not a hard cap: TensorFlow may grow to use most or all
+  available memory and normally retains allocations for process-local reuse.
+- When a run must guarantee memory remains available to another process, use a
+  reviewed logical-device `memory_limit` configured before initialization.
+  TensorFlow does not allow memory growth and virtual-device memory limits on
+  the same physical device, so the manifest must identify this explicit
+  `logical_device_memory_limit` exception instead of claiming growth.
+- Exclusive whole-device preallocation is non-default and requires a reviewed
+  exception stating why growth or a logical-device limit is unsuitable. A
+  performance preference alone is not sufficient to make silent whole-device
+  reservation the repository default.
+
+Historical GPU artifacts remain valid under the policy active when they were
+created, but they do not prove the new memory-policy field. New serious GPU
+artifacts must record it.
 
 ## NeuTra Execution Target Policy
 
@@ -113,6 +254,64 @@ exception must not be described as the default, serious, production, or
 preferred NeuTra training route, and it must not support claims about learned
 transport quality, HMC readiness, posterior correctness, production readiness,
 or scientific validity.
+
+### NeuTra HMC Sequential Sampling Default
+
+Owner directive, 2026-07-15: the canonical claim-bearing NeuTra HMC policy is
+`bayesfilter_neutra_sequential_hmc_v1`. New serious, confirmatory, posterior,
+robustness, or default-readiness NeuTra HMC routes must use the shared
+TensorFlow/TFP sequential controller under `bayesfilter.inference.neutra_hmc`.
+
+- Retain and archive every warm-up chunk, but exclude all warm-up draws from
+  posterior estimates.
+- Check warm-up readiness on a predeclared recent window using the maximum of
+  rank-normalized split and folded rank-normalized split R-hat. The default is
+  at least 2,000 warm-up transitions per chain, latest 1,000-transition window,
+  threshold `<=1.05`, and maximum 10,000 per chain.
+- Grow retained sampling cumulatively. Tuning admission uses modern R-hat
+  `<=1.01`; confirmation additionally uses declared bulk/tail ESS and downstream
+  posterior gates. The retained maximum is 10,000 per chain.
+- Apply finite state/target/log-acceptance, target-status, all-chain movement,
+  and declared energy-error vetoes to every chunk. Acceptance is nomination or
+  explanation only, never convergence evidence.
+- Fixed discarded burn-in and fixed terminal sample counts are allowed only in
+  explicitly classified historical, mechanics, smoke, reference, or debugging
+  routes whose nonclaims forbid convergence and posterior promotion.
+
+The committed NeuTra-HMC route ledger and its discovery/enforcement test are a
+persistent default guard. Every qualifying repository-owned Python route must
+be classified exactly once. Unledgered routes, stale or duplicate ledger paths,
+and active routes that bypass the shared controller are test failures.
+
+### NeuTra Batch-Native Training Requirement
+
+Owner directive, 2026-07-14: all BayesFilter NeuTra training must be batched.
+Every optimization update must consume a batch with more than one sample, and
+the transport forward/log-determinant computation, target value/score
+evaluation, loss reduction, gradient calculation, and optimizer update must
+preserve that batch dimension in TensorFlow/XLA.
+
+A Python loop over samples, repeated scalar target calls, or a `tf.map_fn`,
+`tf.vectorized_map`, or `tf.while_loop` that merely applies a scalar target
+implementation independently to each training row does not by itself satisfy
+this requirement. An eligible target route must use batch-native tensor and
+linear-algebra operations across the leading sample dimension, or explicitly
+shard the batch across persistent multicore workers where each worker evaluates
+a batched target shard. The latter is a CPU value/score generation lane feeding
+GPU transport training, not permission for scalar workers.
+
+Scalar and row-mapped target routes may remain as independent parity authorities,
+tiny reference diagnostics, or debugging aids, but they must not update NeuTra
+parameters and must not be described as training routes. A smoke or CPU-only
+exception remains subject to the batching requirement if it performs an
+optimizer update.
+
+Serious NeuTra plans and result artifacts must record the training batch size,
+batch-native target backend, device placement, XLA status, and whether any
+sample-wise loop or scalar fallback was used. A scalar fallback, batch size of
+one, or row-mapped scalar target is a hard training veto. Existing NeuTra paths
+that violate this rule are migration debt and are ineligible for new serious
+training until repaired; historical artifacts remain historical evidence.
 
 NeuTra sample generation is a separate execution lane.  Pre-generating replay
 samples, target/evaluation samples, proposal clouds, or training datasets should
@@ -137,14 +336,39 @@ not by itself certify posterior correctness, HMC readiness, statistical
 superiority, dense Sinkhorn equivalence, or broad scientific validity.  Those
 claims still require their stated evidence gates and artifacts.
 
-New BayesFilter-owned algorithmic code must not use NumPy as its implementation
-backend.  NumPy is allowed only for:
+## NumPy Diagnostic-Only Policy
 
-- independent reference solutions;
-- comparison fixtures;
-- closed-form sanity checks;
-- serialization, reporting, and lightweight data inspection;
-- narrowly reviewed exceptions recorded in a plan or result artifact.
+Owner directive, 2026-07-14: BayesFilter code must not import or use NumPy
+outside an explicitly diagnostic or independent-reference role. TensorFlow and
+TensorFlow Probability are the array, numerical, statistical, training,
+inference, and algorithmic backends for this repository.
+
+NumPy is permitted only in code whose diagnostic status is explicit in its
+path, name, or module documentation, including:
+
+- tests and comparison fixtures;
+- independent reference solutions and closed-form or finite-difference checks;
+- post-run inspection, reporting, and diagnostic benchmark analysis; and
+- historical diagnostic readers that cannot affect runtime decisions.
+
+NumPy is forbidden in production or candidate runtime paths, training and data
+pipelines, inference and tuning implementations, selection or admission logic,
+artifact/manifest construction, and executable benchmark kernels. Serialization
+and ordinary reporting are not blanket exceptions: use TensorFlow operations and
+Python standard-library types instead. A TensorFlow tensor may be materialized
+at a host-side assertion, diagnostic, or artifact boundary, but the materialized
+value must not become a NumPy numerical-computation path.
+
+Diagnostic/reference NumPy code must not be imported by an admitted runtime
+path, and its outputs cannot establish production, default-readiness, HMC, or
+scientific status without an eligible TensorFlow/TFP computation. A narrowly
+reviewed exception requires explicit owner approval; recording an exception in
+a plan alone is insufficient.
+
+Existing non-diagnostic NumPy imports are migration debt, not precedent. Do not
+add new violations. When modifying a legacy non-diagnostic module, remove its
+NumPy dependency from the touched execution path or record and execute a bounded
+migration before promoting that path.
 
 Differentiable or gradient-bearing implementation paths must use TensorFlow /
 TensorFlow Probability unless a reviewed plan explicitly authorizes another
@@ -156,11 +380,11 @@ paths.
 
 ## Evidence Discipline
 
-Reference, comparison, prototype, smoke, and reporting code must not be
-represented as the BayesFilter default implementation.  If an experimental lane
-uses NumPy for a prototype or comparator, the artifact must say so explicitly
-and must preserve the gap to a TensorFlow / TensorFlow Probability
-implementation.
+Reference, comparison, smoke, and diagnostic-reporting code must not be
+represented as the BayesFilter default implementation. If an explicitly
+diagnostic lane uses NumPy for a reference or comparator, the artifact must say
+so and preserve the gap to a TensorFlow / TensorFlow Probability implementation.
+NumPy prototypes are not eligible runtime candidates.
 
 GPU-oriented LEDH-PFPF-OT TF32 is now the default production target by owner
 directive.  Evidence artifacts may still record unresolved scientific or HMC

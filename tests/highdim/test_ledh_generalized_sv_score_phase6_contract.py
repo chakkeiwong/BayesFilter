@@ -9,9 +9,13 @@ import tensorflow as tf
 
 from bayesfilter.highdim.ledh_forward_contract import (
     GENERALIZED_SV_ROW_ID,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     validate_ledh_forward_scalar_artifact,
 )
-from bayesfilter.highdim.ledh_score_contract import validate_ledh_score_artifact
+from bayesfilter.highdim.ledh_score_contract import (
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
+    validate_ledh_score_artifact,
+)
 from docs.benchmarks import benchmark_ledh_same_target_generalized_sv_score as score_module
 from experiments.dpf_implementation.tf_tfp.filters import (
     experimental_batched_ledh_pfpf_ot_tf as core_tf,
@@ -55,16 +59,56 @@ def _tiny_score_args():
         fd_step = 1.0e-5
         score_fd_atol = 1.0e-3
         score_fd_rtol = 2.0e-3
+        historical_raw_diagnostic = True
 
     return Args()
 
 
-def test_phase6_generalized_sv_value_artifact_is_admitted_but_not_score_artifact() -> None:
+def _production_full_diagnostic_fixture() -> dict:
+    return {
+        "status": "pass",
+        "base": {
+            "gradient_tensor": tf.zeros(
+                [len(PARAMETER_NAMES)], dtype=score_module.DTYPE
+            ),
+            "score_route": score_module.GENERALIZED_SV_COMPACT_SCORE_ROUTE_ID,
+            "no_autodiff_score_route": True,
+            "value_score_route_status": "same_route_value_score",
+            "num_particles": 10000,
+            "time_steps": 1008,
+            "batch_seeds": [81120, 81121, 81122, 81123, 81124],
+        },
+        "max_abs_error": tf.constant(0.0, dtype=score_module.DTYPE),
+        "max_rel_error": tf.constant(0.0, dtype=score_module.DTYPE),
+        "parameter_names": list(PARAMETER_NAMES),
+        "fd_step": 1.0e-5,
+        "atol": 1.0e-3,
+        "rtol": 2.0e-3,
+        "score_precision": {
+            "dtype": "float32",
+            "active_dtype": "float32",
+            "tf_dtype": "float32",
+            "tf32_mode": "enabled",
+            "tf32_execution_enabled": True,
+        },
+    }
+
+
+def _trusted_memory_fixture() -> dict:
+    return {
+        "n10000_memory_pass": True,
+        "source": "trusted_gpu_score_memory_artifact",
+        "peak_mib": 512.0,
+        "budget_mib": 14000.0,
+    }
+
+
+def test_phase6_generalized_sv_value_artifact_is_historical_but_not_score_artifact() -> None:
     value = _load_value()
     normalized = validate_ledh_forward_scalar_artifact(
         value,
         expected_row_id=GENERALIZED_SV_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
     assert normalized["row_id"] == GENERALIZED_SV_ROW_ID
@@ -73,6 +117,7 @@ def test_phase6_generalized_sv_value_artifact_is_admitted_but_not_score_artifact
     assert normalized["target_observation_policy"] == "source_route_prior_mean_generalized_sv"
     assert normalized["theta_coordinate_system"] == "source_route_active_transformed_prior_mean"
     assert tuple(normalized["forward_contract"]["theta_contract"]["parameter_order"]) == PARAMETER_NAMES
+    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
     with pytest.raises(ValueError, match="score artifact schema_version"):
         validate_ledh_score_artifact(
             value,
@@ -88,7 +133,7 @@ def test_phase6_generalized_sv_tiny_total_score_runs_under_no_autodiff_sentinel(
         score_module.tf,
         route_id="phase6_generalized_sv_tiny_total_score",
     ):
-        result = score_module._manual_value_and_score_across_seeds(  # noqa: SLF001
+        result = score_module._compact_value_and_score_across_seeds(  # noqa: SLF001
             args,
             list(score_module.TRUTH_THETA),
         )
@@ -104,18 +149,78 @@ def test_phase6_generalized_sv_compact_default_source_has_no_reverse_records_or_
     source = "\n".join(
         [
             inspect.getsource(score_module._compact_value_and_score_from_components),  # noqa: SLF001
-            inspect.getsource(score_module._manual_value_and_score_across_seeds),  # noqa: SLF001
+            inspect.getsource(score_module._compact_value_and_score_across_seeds),  # noqa: SLF001
             inspect.getsource(score_module._coordinate_fd_score_diagnostic),  # noqa: SLF001
             inspect.getsource(score_module._score_artifact_from_diagnostic),  # noqa: SLF001
         ]
     )
 
+    assert "_compact_value_and_score_across_seeds" in source
+    assert "_manual_value_and_score_across_seeds" not in source
     assert "records.append" not in source
     assert "reversed(records)" not in source
     assert "_transport_vjp_tf" not in source
     assert "GradientTape" not in source
     assert "ForwardAccumulator" not in source
     assert "stop_gradient" not in source
+
+
+def test_phase6_generalized_sv_coordinate_fd_uses_compact_score_and_value_only_fd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    args = _tiny_score_args()
+    args.batch_seeds = [81120, 81121]
+    calls = {"compact": 0, "value": 0}
+    expected_score = tf.constant([1.0, 2.0, 3.0], dtype=tf.float64)
+
+    def fake_compact(_args, _theta_values):
+        calls["compact"] += 1
+        return {
+            "log_likelihood": tf.constant([0.0], dtype=tf.float64),
+            "gradient_tensor": expected_score,
+            "score_route": score_module.GENERALIZED_SV_COMPACT_SCORE_ROUTE_ID,
+            "no_autodiff_score_route": True,
+            "value_score_route_status": "same_route_value_score",
+            "batch_seeds": list(_args.batch_seeds),
+            "time_steps": int(_args.time_steps),
+            "num_particles": int(_args.num_particles),
+        }
+
+    def fake_value(_args, theta_values):
+        calls["value"] += 1
+        theta = tf.convert_to_tensor(theta_values, dtype=tf.float64)
+        return tf.reduce_sum(theta * expected_score)
+
+    def forbidden_wrapper(*_args, **_kwargs):
+        raise AssertionError("compatibility wrapper must not be the default score base")
+
+    monkeypatch.setattr(score_module, "_compact_value_and_score_from_components", fake_compact)
+    monkeypatch.setattr(score_module, "_value_objective_across_seeds", fake_value)
+    monkeypatch.setattr(score_module, "_manual_value_and_score_across_seeds", forbidden_wrapper)
+
+    diagnostic = score_module._coordinate_fd_score_diagnostic(  # noqa: SLF001
+        args,
+        list(score_module.TRUTH_THETA),
+        fd_step=1.0e-5,
+        atol=1.0e-8,
+        rtol=1.0e-8,
+    )
+
+    assert diagnostic["status"] == "pass"
+    assert calls == {
+        "compact": len(args.batch_seeds),
+        "value": 2 * len(PARAMETER_NAMES),
+    }
+
+
+def test_phase6_generalized_sv_cli_defaults_to_production_score_precision() -> None:
+    source = inspect.getsource(score_module._parse_args)  # noqa: SLF001
+
+    assert 'parser.add_argument("--dtype", choices=("float64", "float32"), default="float32")' in source
+    assert (
+        'parser.add_argument("--tf32-mode", choices=("default", "enabled", "disabled"), default="enabled")'
+        in source
+    )
 
 
 def test_phase6_generalized_sv_compact_score_objective_matches_value_route() -> None:
@@ -192,8 +297,9 @@ def test_phase6_generalized_sv_tiny_total_score_artifact_is_not_admitted() -> No
         },
     )
 
-    assert artifact["score_admission_status"] == "tiny_score_diagnostic_not_admitted"
+    assert artifact["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert artifact["score_derivative_provenance"] == score_module.GENERALIZED_SV_COMPACT_SCORE_ROUTE_ID
+    assert artifact["score_precision"]["dtype"] == "float64"
     assert artifact["score_parameter_names"] == list(PARAMETER_NAMES)
     assert artifact["target_observation_policy"] == "source_route_prior_mean_generalized_sv"
     with pytest.raises(ValueError, match="not admitted"):
@@ -249,6 +355,88 @@ def test_phase6_generalized_sv_full_admission_requires_memory_and_full_shape() -
             source_value_artifact_path=GENERALIZED_SV_VALUE_REL,
             require_all_parameter_correctness=True,
             memory_diagnostics={"n10000_memory_pass": False, "peak_mib": None},
+        )
+
+
+def test_phase6_generalized_sv_full_admission_requires_production_precision() -> None:
+    diagnostic = _production_full_diagnostic_fixture()
+    diagnostic["score_precision"]["tf32_mode"] = "disabled"
+    diagnostic["score_precision"]["tf32_execution_enabled"] = False
+
+    with pytest.raises(ValueError, match="score_precision.tf32_mode"):
+        score_module._score_artifact_from_diagnostic(  # noqa: SLF001
+            diagnostic,
+            source_value_artifact=_load_value(),
+            source_value_artifact_path=GENERALIZED_SV_VALUE_REL,
+            require_all_parameter_correctness=True,
+            memory_diagnostics=_trusted_memory_fixture(),
+        )
+
+
+def test_phase6_generalized_sv_full_shaped_fixture_is_historical_only() -> None:
+    with pytest.raises(ValueError, match="historical diagnostic only"):
+        score_module._score_artifact_from_diagnostic(  # noqa: SLF001
+            _production_full_diagnostic_fixture(),
+            source_value_artifact=_load_value(),
+            source_value_artifact_path=GENERALIZED_SV_VALUE_REL,
+            require_all_parameter_correctness=True,
+            memory_diagnostics=_trusted_memory_fixture(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("base_key", "base_value", "match"),
+    [
+        (
+            "score_route",
+            "manual_total_vjp_no_autodiff_same_scalar_generalized_sv_ledh_pfpf_ot",
+            "compact score route",
+        ),
+        ("no_autodiff_score_route", False, "no_autodiff_score_route"),
+        ("value_score_route_status", "different_route", "same_route_value_score"),
+    ],
+)
+def test_phase6_generalized_sv_full_admission_rejects_nested_relabeling(
+    base_key: str,
+    base_value,
+    match: str,
+) -> None:
+    diagnostic = _production_full_diagnostic_fixture()
+    diagnostic["base"][base_key] = base_value
+
+    with pytest.raises(ValueError, match=match):
+        score_module._score_artifact_from_diagnostic(  # noqa: SLF001
+            diagnostic,
+            source_value_artifact=_load_value(),
+            source_value_artifact_path=GENERALIZED_SV_VALUE_REL,
+            require_all_parameter_correctness=True,
+            memory_diagnostics=_trusted_memory_fixture(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("base_key", "base_value", "match"),
+    [
+        ("num_particles", 8, "N=10000 diagnostic shape"),
+        ("time_steps", 2, "full time_steps"),
+        ("batch_seeds", [81120], "full batch_seeds"),
+    ],
+)
+def test_phase6_generalized_sv_full_admission_requires_row_matched_diagnostic(
+    base_key: str,
+    base_value,
+    match: str,
+) -> None:
+    diagnostic = _production_full_diagnostic_fixture()
+    diagnostic["base"][base_key] = base_value
+
+    with pytest.raises(ValueError, match=match):
+        score_module._score_artifact_from_diagnostic(  # noqa: SLF001
+            diagnostic,
+            source_value_artifact=_load_value(),
+            source_value_artifact_path=GENERALIZED_SV_VALUE_REL,
+            require_all_parameter_correctness=True,
+            memory_diagnostics=_trusted_memory_fixture(),
         )
 
 

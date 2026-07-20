@@ -13,6 +13,7 @@ from bayesfilter.testing.neutra_gpu_bounded_training_tf import (
     NEUTRA_GPU_BOUNDED_TRAINING_NONCLAIMS,
     NeuTraGPUBoundedTrainingConfig,
     NeuTraGPUBoundedTrainingError,
+    _historical_run_neutra_gpu_bounded_training,
     phase10_error_payload,
     run_neutra_gpu_bounded_training,
 )
@@ -70,6 +71,25 @@ def test_phase10_rejects_non_xla_runtime(tmp_path, monkeypatch) -> None:
                 artifact_dir=tmp_path,
             )
         )
+
+
+def test_phase16_retired_route_rejects_before_artifact_write(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    config = NeuTraGPUBoundedTrainingConfig(artifact_dir=tmp_path)
+
+    with pytest.raises(NeuTraGPUBoundedTrainingError, match="retired migration debt"):
+        run_neutra_gpu_bounded_training(config)
+
+    assert not config.training_state_path.exists()
+
+
+def test_phase16_historical_body_is_non_executable(tmp_path) -> None:
+    config = NeuTraGPUBoundedTrainingConfig(artifact_dir=tmp_path)
+
+    with pytest.raises(NeuTraGPUBoundedTrainingError, match="non-executable"):
+        _historical_run_neutra_gpu_bounded_training(config)
+
+    assert not config.training_state_path.exists()
 
 
 def test_phase10_rejects_non_lgssm_admitted_route(tmp_path, monkeypatch) -> None:

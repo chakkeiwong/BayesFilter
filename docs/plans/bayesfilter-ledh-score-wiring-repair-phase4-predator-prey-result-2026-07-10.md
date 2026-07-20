@@ -42,6 +42,12 @@ Status: `PASSED_PREDATOR_PREY_COMPACT_WIRING_GATE`
 - Preserved `_manual_value_and_score_from_components` and
   `_manual_value_and_score_across_seeds` as historical diagnostic-only routes.
 
+Phase 8 execution-policy repair added
+`_compact_value_and_score_across_seeds`. The default diagnostic now invokes the
+compact component once per seed in fixed order; FD values already used the same
+sequential schedule. The refreshed predator-prey/actual-SV shard passed `45
+passed, 2 warnings in 175.38s`.
+
 ## Local Checks
 
 ```bash

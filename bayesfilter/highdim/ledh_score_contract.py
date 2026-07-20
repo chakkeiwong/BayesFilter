@@ -34,6 +34,13 @@ LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR = (
 LEDH_SCORE_ADMISSION_STATUS_FULL = "n10000_same_target_no_tape_score_admitted"
 LEDH_SCORE_ADMISSION_STATUS_TINY = "tiny_score_diagnostic_not_admitted"
 LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN = "blocked_score_not_run"
+LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW = (
+    "historical_raw_barycentric_diagnostic_only"
+)
+LEDH_SCORE_V1_CANONICAL_ADMISSION_REVOKED = (
+    "LEDH score artifact v1 full admission is revoked because it lacks "
+    "factory-issued Contract E route identity"
+)
 LEDH_SCORE_VALUE_ROUTE_STATUS_SAME = "same_route_value_score"
 LEDH_SCORE_PRODUCTION_DTYPE = "float32"
 LEDH_SCORE_PRODUCTION_TF32_MODE = "enabled"
@@ -43,6 +50,7 @@ _ALLOWED_SCORE_ADMISSION_STATUSES = frozenset(
         LEDH_SCORE_ADMISSION_STATUS_FULL,
         LEDH_SCORE_ADMISSION_STATUS_TINY,
         LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN,
+        LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     }
 )
 LEDH_SCORE_COMPACT_LGSSM_PROVENANCE = (
@@ -75,7 +83,7 @@ LEDH_SCORE_MEMORY_STYLE_PREDATOR_PREY_PROVENANCE = (
 LEDH_SCORE_MEMORY_STYLE_ACTUAL_SV_PROVENANCE = (
     "memory_style_reverse_vjp_no_autodiff_same_scalar_actual_sv_ledh_pfpf_ot"
 )
-_COMPACT_ADMISSIBLE_NO_TAPE_PROVENANCE = frozenset(
+_HISTORICAL_COMPACT_NO_TAPE_PROVENANCE = frozenset(
     {
         LEDH_SCORE_COMPACT_LGSSM_PROVENANCE,
         LEDH_SCORE_COMPACT_ACTUAL_SV_PROVENANCE,
@@ -107,7 +115,7 @@ _HISTORICAL_DIAGNOSTIC_NO_TAPE_PROVENANCE = frozenset(
     }
 )
 _ALLOWED_NO_TAPE_PROVENANCE = (
-    _COMPACT_ADMISSIBLE_NO_TAPE_PROVENANCE
+    _HISTORICAL_COMPACT_NO_TAPE_PROVENANCE
     | _HISTORICAL_DIAGNOSTIC_NO_TAPE_PROVENANCE
 )
 _FORBIDDEN_DERIVATIVE_PROVENANCE_TOKENS = (
@@ -249,8 +257,16 @@ def validate_ledh_score_artifact(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=expected_row_id,
-        require_admitted=True,
+        require_admitted=False,
     )
+    if (
+        value_core["source_claimed_admission_status"]
+        != LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
+    ):
+        raise ValueError(
+            "historical v1 score artifacts require a formerly full-scale v1 "
+            "source value artifact"
+        )
 
     row_id = _require_text("row_id", payload.get("row_id"))
     if row_id != value_core["row_id"]:
@@ -326,11 +342,15 @@ def validate_ledh_score_artifact(
     if correctness_kind not in {"same_scalar_finite_difference", "exact_reference"}:
         raise ValueError("score correctness kind must be same-scalar FD or exact reference")
 
-    admission_status = _require_text("score_admission_status", payload.get("score_admission_status"))
-    if admission_status not in _ALLOWED_SCORE_ADMISSION_STATUSES:
-        raise ValueError(f"unsupported score_admission_status: {admission_status}")
+    claimed_admission_status = _require_text(
+        "score_admission_status", payload.get("score_admission_status")
+    )
+    if claimed_admission_status not in _ALLOWED_SCORE_ADMISSION_STATUSES:
+        raise ValueError(
+            f"unsupported score_admission_status: {claimed_admission_status}"
+        )
     if (
-        admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
+        claimed_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
         and derivative_provenance in _HISTORICAL_DIAGNOSTIC_NO_TAPE_PROVENANCE
     ):
         raise ValueError(
@@ -338,11 +358,11 @@ def validate_ledh_score_artifact(
             "be full LEDH score admission; compact no-tape recurrence is required"
         )
     if (
-        admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
-        and derivative_provenance not in _COMPACT_ADMISSIBLE_NO_TAPE_PROVENANCE
+        claimed_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
+        and derivative_provenance not in _HISTORICAL_COMPACT_NO_TAPE_PROVENANCE
     ):
         raise ValueError("full LEDH score admission requires compact no-tape provenance")
-    if admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL:
+    if claimed_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL:
         expected_compact_provenance = _ROW_COMPACT_PROVENANCE.get(row_id)
         if expected_compact_provenance is None:
             raise ValueError("full LEDH score admission requires known row compact provenance")
@@ -351,7 +371,7 @@ def validate_ledh_score_artifact(
                 "full LEDH score admission requires row-matched compact provenance"
             )
     if (
-        admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
+        claimed_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
         and correctness_kind != "same_scalar_finite_difference"
     ):
         raise ValueError(
@@ -359,21 +379,21 @@ def validate_ledh_score_artifact(
             "correctness; exact references are diagnostic only unless a reviewed "
             "contract proves they are the same realized finite-N LEDH scalar"
         )
-    if require_admitted and admission_status != LEDH_SCORE_ADMISSION_STATUS_FULL:
-        raise ValueError("score artifact is not admitted")
-
     source_path = _require_text("source_value_artifact", payload.get("source_value_artifact"))
     if not source_path.endswith(".json"):
         raise ValueError("source_value_artifact must name a JSON artifact path")
 
     memory = _require_mapping("memory_diagnostics", payload.get("memory_diagnostics", {}))
     precision = None
-    if admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL:
+    if claimed_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL:
         precision = validate_ledh_score_production_precision(
             _require_mapping("score_precision", payload.get("score_precision")),
         )
-        if value_core["admission_status"] != LEDH_FORWARD_ADMISSION_STATUS_ADMITTED:
-            raise ValueError("full score admission requires admitted source value artifact")
+        if (
+            value_core["source_claimed_admission_status"]
+            != LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
+        ):
+            raise ValueError("historical full score requires a formerly admitted v1 value")
         if value_core["num_particles"] < 10000:
             raise ValueError("full score admission requires N>=10000 source value artifact")
         _require_bool_true("memory_diagnostics.n10000_memory_pass", memory.get("n10000_memory_pass"))
@@ -393,15 +413,29 @@ def validate_ledh_score_artifact(
             raise ValueError("memory_diagnostics.budget_mib must be finite for full score admission")
         if peak_mib > budget_mib:
             raise ValueError("memory_diagnostics peak_mib exceeds budget_mib")
-    else:
-        if require_admitted:
-            raise ValueError("score artifact is not admitted")
+    admission_status = (
+        LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
+        if claimed_admission_status
+        in {
+            LEDH_SCORE_ADMISSION_STATUS_FULL,
+            LEDH_SCORE_ADMISSION_STATUS_TINY,
+            LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
+        }
+        else claimed_admission_status
+    )
 
     if row_id.endswith("ksc_gaussian_mixture_surrogate_T1000"):
         _require_bool_false(
             "claims_exact_native_actual_sv_likelihood",
             payload.get("claims_exact_native_actual_sv_likelihood", False),
         )
+    if (
+        require_admitted
+        and claimed_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
+    ):
+        raise ValueError(LEDH_SCORE_V1_CANONICAL_ADMISSION_REVOKED)
+    if require_admitted:
+        raise ValueError("score artifact is not admitted")
 
     return {
         "schema_version": LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
@@ -420,7 +454,10 @@ def validate_ledh_score_artifact(
         "no_autodiff_score_route": True,
         "score_correctness": dict(fd_or_exact),
         "score_admission_status": admission_status,
+        "source_claimed_score_admission_status": claimed_admission_status,
         "memory_diagnostics": dict(memory),
         "score_precision": precision,
-        "admitted": admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL,
+        "admitted": False,
+        "canonical_admission_eligible": False,
+        "historical_status": LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     }

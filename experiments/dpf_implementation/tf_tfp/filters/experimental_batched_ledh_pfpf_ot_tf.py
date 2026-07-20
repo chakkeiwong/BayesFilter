@@ -15,6 +15,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.highdim.transport_chunk_policy import resolve_transport_chunks
+
 from experiments.dpf_implementation.tf_tfp.resampling import annealed_transport_tf
 from experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf import (
     AnnealedTransportWarmstartStateTF,
@@ -82,10 +84,13 @@ def _manual_dense_finite_steps(max_iterations: int | tf.Tensor) -> int:
     value = tf.get_static_value(max_iterations)
     if value is None:
         raise ValueError("manual dense finite route requires static max_iterations")
-    steps = int(value)
-    if steps <= 0:
+    max_iterations_value = int(value)
+    if max_iterations_value <= 0:
         raise ValueError("manual dense finite route requires positive max_iterations")
-    return steps
+    # The raw Sinkhorn loop initializes its potentials before the loop and uses
+    # `i < max_iter - 1`, so its maximum number of annealing updates is one less
+    # than the public iteration cap. The manual JVP must replay that same map.
+    return max_iterations_value - 1
 
 
 def precision_policy_metadata() -> dict[str, Any]:
@@ -1359,8 +1364,8 @@ def batched_annealed_transport_core_tf(
     transport_gradient_mode: str = "filterflow_clipped",
     transport_plan_mode: str = "dense",
     transport_ad_mode: str = "stabilized",
-    row_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
-    col_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
+    row_chunk_size: int | None = None,
+    col_chunk_size: int | None = None,
     warmstart_state: AnnealedTransportWarmstartStateTF | None = None,
 ) -> BatchedAnnealedTransportTensors:
     """Apply annealed transport to fixed-mask rows without eager branch logic."""
@@ -1423,8 +1428,6 @@ def batched_annealed_transport_core_tf(
             MANUAL_STREAMING_BLOCKWISE_VJP_FINITE_TRANSPORT_GRADIENT_MODE,
         }:
             raise ValueError("streaming transport currently supports raw or manual streaming gradients only")
-    if row_chunk_size <= 0 or col_chunk_size <= 0:
-        raise ValueError("row_chunk_size and col_chunk_size must be positive")
     x = _to_float_tensor(particles, "particles")
     logw = _to_float_tensor(log_weights, "log_weights")
     mask = tf.reshape(tf.convert_to_tensor(fixed_resampling_mask, dtype=tf.bool), [-1])
@@ -1433,6 +1436,14 @@ def batched_annealed_transport_core_tf(
     _require_static_rank(mask, 1, "fixed_resampling_mask")
 
     batch_size, num_particles, _state_dim = _static_shape(x, "particles")
+    if transport_plan_mode == "streaming":
+        chunks = resolve_transport_chunks(
+            num_particles,
+            row_chunk_size=row_chunk_size,
+            col_chunk_size=col_chunk_size,
+        )
+        row_chunk_size = chunks.row_chunk_size
+        col_chunk_size = chunks.col_chunk_size
     _require_equal(
         _static_shape(logw, "log_weights")[0],
         batch_size,
@@ -1626,8 +1637,8 @@ def batched_ledh_pfpf_ot_value_core_tf(
     transport_gradient_mode: str = "filterflow_clipped",
     transport_plan_mode: str = "dense",
     transport_ad_mode: str = "stabilized",
-    row_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
-    col_chunk_size: int = DEFAULT_STREAMING_CHUNK_SIZE,
+    row_chunk_size: int | None = None,
+    col_chunk_size: int | None = None,
 ) -> BatchedLEDHPFPFOTValueTensors:
     """Run fixed-branch batched LEDH-PFPF-OT value recursion."""
 
@@ -1641,6 +1652,14 @@ def batched_ledh_pfpf_ot_value_core_tf(
     _require_static_rank(fixed_resampling_mask, 2, "fixed_resampling_mask")
 
     batch_size, num_particles, state_dim = _static_shape(particles, "initial_particles")
+    if transport_plan_mode == "streaming":
+        chunks = resolve_transport_chunks(
+            num_particles,
+            row_chunk_size=row_chunk_size,
+            col_chunk_size=col_chunk_size,
+        )
+        row_chunk_size = chunks.row_chunk_size
+        col_chunk_size = chunks.col_chunk_size
     time_steps, _observation_dim = _static_shape(observations, "observations")
     expected_pre_flow_shape = (batch_size, time_steps, num_particles, state_dim)
     pre_flow_shape = _static_shape(pre_flow_particles, "pre_flow_particles")

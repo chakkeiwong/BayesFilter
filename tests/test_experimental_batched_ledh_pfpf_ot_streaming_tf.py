@@ -149,8 +149,8 @@ def _baseline_value(fixture: dict[str, tf.Tensor]):
         sinkhorn_iterations=8,
         transport_gradient_mode="raw",
         transport_plan_mode="streaming",
-        row_chunk_size=2,
-        col_chunk_size=2,
+        row_chunk_size=4,
+        col_chunk_size=4,
     )
 
 
@@ -177,8 +177,8 @@ def _streaming_value(
         ),
         observation_log_density_fn=_observation_log_density,
         sinkhorn_iterations=8,
-        row_chunk_size=2,
-        col_chunk_size=2,
+        row_chunk_size=4,
+        col_chunk_size=4,
         particle_chunk_size=2,
         return_history=return_history,
     )
@@ -436,8 +436,8 @@ def test_streaming_transport_returns_no_dense_transport_matrix() -> None:
         max_iterations=8,
         transport_gradient_mode="raw",
         transport_plan_mode="streaming",
-        row_chunk_size=2,
-        col_chunk_size=2,
+        row_chunk_size=4,
+        col_chunk_size=4,
     )
     assert streaming.transport_matrix.shape == (1, 0, 0)
     np.testing.assert_allclose(

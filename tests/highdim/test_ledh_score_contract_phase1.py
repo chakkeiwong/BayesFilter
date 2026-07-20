@@ -13,6 +13,7 @@ from bayesfilter.highdim.ledh_forward_contract import (
 )
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_COMPACT_ACTUAL_SV_PROVENANCE,
@@ -163,32 +164,32 @@ def test_phase1_score_contract_accepts_tiny_not_admitted_lgssm_fixture() -> None
 
     assert normalized["row_id"] == LGSSM_M3_T50_ROW_ID
     assert normalized["admitted"] is False
-    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_TINY
+    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
 
 
-def test_phase1_score_contract_accepts_full_lgssm_fixture_with_memory_gate() -> None:
+def test_phase1_score_contract_normalizes_former_full_v1_as_historical() -> None:
     normalized = validate_ledh_score_artifact(
         _lgssm_score_fixture(admitted=True),
         source_value_artifact=_load(LGSSM_VALUE_PATH),
         expected_row_id=LGSSM_M3_T50_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
-    assert normalized["admitted"] is True
+    assert normalized["admitted"] is False
+    assert normalized["score_admission_status"] == LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     assert normalized["memory_diagnostics"]["n10000_memory_pass"] is True
 
 
-def test_phase1_score_contract_accepts_row_matched_compact_route_for_full_admission() -> None:
+def test_phase1_score_contract_rejects_row_matched_compact_v1_full_admission() -> None:
     artifact = _lgssm_score_fixture(admitted=True)
 
-    normalized = validate_ledh_score_artifact(
-        artifact,
-        source_value_artifact=_load(LGSSM_VALUE_PATH),
-        expected_row_id=LGSSM_M3_T50_ROW_ID,
-        require_admitted=True,
-    )
-
-    assert normalized["score_derivative_provenance"] == LEDH_SCORE_COMPACT_LGSSM_PROVENANCE
+    with pytest.raises(ValueError, match="full admission is revoked"):
+        validate_ledh_score_artifact(
+            artifact,
+            source_value_artifact=_load(LGSSM_VALUE_PATH),
+            expected_row_id=LGSSM_M3_T50_ROW_ID,
+            require_admitted=True,
+        )
 
 
 @pytest.mark.parametrize(

@@ -301,6 +301,42 @@ def test_windowed_mass_config_does_not_expose_hmc_mechanics() -> None:
     assert parameters.isdisjoint(forbidden)
 
 
+def test_fixed_identity_windowed_diagnostic_makes_no_mass_updates() -> None:
+    result = hmc_kernel_tuning.run_windowed_mass_adaptation_diagnostic(
+        hmc_kernel_tuning.HMCTuningPolicy.windowed_mass_adaptation(
+            num_adaptation_steps=12,
+            target_accept_prob=0.70,
+            source="tests.fixed_identity",
+        ),
+        config=hmc_kernel_tuning.WindowedMassAdaptationConfig(
+            warmup_steps=12,
+            initial_buffer=2,
+            final_buffer=2,
+            first_window_size=3,
+            min_window_samples=2,
+            covariance_jitter=0.0,
+            mass_policy="fixed_identity",
+        ),
+        initial_mass_artifact=hmc_kernel_tuning.PrecomputedMassArtifact.from_covariance(
+            position=np.zeros(2),
+            covariance=np.eye(2),
+            adapter_signature="kernel-windowed-mass-toy-gaussian-v1",
+            position_role="test",
+            covariance_source="test",
+            matrix_used_for_square_root="test",
+            source="tests",
+            jitter=0.0,
+            regularization_report={},
+            nonclaims=("test",),
+        ),
+        warmup_draws=_warmup_draws(12),
+        initial_step_size=0.1,
+    )
+    assert result.mass_updates == ()
+    assert result.final_mass_artifact_signature == result.initial_mass_artifact_signature
+    assert result.semantic_checks()["fixed_identity_signature_unchanged"] is True
+
+
 def test_windowed_mass_stage_runs_retained_draw_route_and_preserves_nonclaims() -> None:
     calls: list[tuple[int, int, float, int, bool]] = []
 

@@ -252,7 +252,7 @@ def test_fixed_size_chunk_runner_xla_compiles_tiny_contract() -> None:
     assert result.metadata["compile_trace_count"] == 1
 
 
-def test_sequential_verifier_does_not_stop_on_explanatory_rhat(monkeypatch) -> None:
+def test_sequential_verifier_fails_closed_when_modern_rhat_is_undefined(monkeypatch) -> None:
     import bayesfilter.inference.hmc as hmc_module
 
     class _ScriptedChunkRunner:
@@ -327,13 +327,18 @@ def test_sequential_verifier_does_not_stop_on_explanatory_rhat(monkeypatch) -> N
     assert result.cap_hit is True
     assert result.retained_sample_count == 6
     assert result.chunk_count == 3
-    assert result.max_finite_rhat <= 1.01
+    assert result.max_finite_rhat is None
     assert result.diagnostics["acceptance_evidence"]["decision"] == (
         "inconclusive_evidence"
     )
     assert result.diagnostics["rhat_role"] == (
-        "historical_explanatory_only_not_stopping_or_admission"
+        "fixed_kernel_convergence_gate_not_candidate_ranking"
     )
+    assert result.diagnostics["rhat_definition"] == (
+        "max(rank-normalized split R-hat, "
+        "folded rank-normalized split R-hat)"
+    )
+    assert result.diagnostics["max_finite_rhat"] is None
     assert result.diagnostics["privacy_contract"][
         "public_summary_contains_step_size"
     ] is False
@@ -565,7 +570,7 @@ def test_sequential_verifier_rejects_period_two_return_path(monkeypatch) -> None
         "trajectory:repair_resonance"
     ]
     assert result.diagnostics["rhat_role"] == (
-        "historical_explanatory_only_not_stopping_or_admission"
+        "fixed_kernel_convergence_gate_not_candidate_ranking"
     )
 
 
@@ -705,7 +710,8 @@ def test_sequential_verifier_private_retained_health_is_phase7_opt_in(
     assert diagnostics["acceptance_evidence_validity"] == expected_validity
     assert diagnostics["target_status_failure_count"] == expected_status_count
     if mode == "public_default":
-        assert result.passed is True
+        assert result.passed is False
+        assert result.cap_hit is True
         assert diagnostics["retained_target_health_policy"] == "disabled"
         assert diagnostics["target_score_health_passed"] is None
         assert diagnostics["retained_target_health_evaluated_draw_count"] == 0
@@ -737,15 +743,11 @@ def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
                 if current_state is not None
                 else tf.convert_to_tensor(self.initial_state, dtype=tf.float64)
             )
-            draw = tf.cast(
-                tf.range(draws) + draws * (self.call_count - 1),
-                tf.float64,
-            )[:, tf.newaxis, tf.newaxis]
-            chain = tf.cast(tf.range(4), tf.float64)[tf.newaxis, :, tf.newaxis]
-            direction = tf.constant(
-                [1.0, -0.5], dtype=tf.float64
-            )[tf.newaxis, tf.newaxis, :]
-            samples = draw * direction + chain
+            samples = tf.random.stateless_normal(
+                (draws, 4, 2),
+                seed=(20260713, self.call_count),
+                dtype=tf.float64,
+            )
             valid = tf.ones((draws,), dtype=tf.bool)
             diagnostics = {
                 "valid_sample_count": tf.constant(draws, dtype=tf.int32),
@@ -780,11 +782,11 @@ def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
     monkeypatch.setattr(hmc_module, "FixedSizeHMCChunkRunner", _ScriptedChunkRunner)
     verifier = build_sequential_rhat_hmc_verifier(
         ReviewedBatchedGaussianAdapter(),
-        tf.zeros((4, 2), dtype=tf.float64),
+        tf.zeros((2,), dtype=tf.float64),
         SequentialRHatHMCVerificationConfig(
-            check_interval=64,
-            max_results=192,
-            min_retained_results_for_pass=192,
+            check_interval=200,
+            max_results=600,
+            min_retained_results_for_pass=600,
             num_burnin_steps=0,
             step_size=0.05,
             num_leapfrog_steps=1,
@@ -799,12 +801,12 @@ def test_sequential_rhat_verifier_respects_minimum_retained_results_for_pass(
     result = verifier.run()
 
     assert result.passed is True
-    assert result.retained_sample_count == 192
+    assert result.retained_sample_count == 600
     assert result.chunk_count == 3
-    assert calls == [64, 64, 64]
-    assert result.diagnostics["min_retained_results_for_pass"] == 192
+    assert calls == [200, 200, 200]
+    assert result.diagnostics["min_retained_results_for_pass"] == 600
     assert result.diagnostics["minimum_retained_pass_gate_satisfied"] is True
-    assert result.metadata["min_retained_results_for_pass"] == 192
+    assert result.metadata["min_retained_results_for_pass"] == 600
 
 
 def test_sequential_rhat_verifier_stops_at_cap_when_rhat_fails(monkeypatch) -> None:

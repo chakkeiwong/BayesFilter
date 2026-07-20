@@ -486,6 +486,7 @@ class WindowedMassAdaptationConfig:
     step_size_floor: float = 1.0e-6
     step_size_ceiling: float = 10.0
     step_adaptation_rate: float = 0.05
+    mass_policy: str = "windowed_adaptive"
 
     def __post_init__(self) -> None:
         for name in (
@@ -543,6 +544,11 @@ class WindowedMassAdaptationConfig:
         step_rate = float(self.step_adaptation_rate)
         if not np.isfinite(step_rate) or step_rate < 0.0:
             raise ValueError("step_adaptation_rate must be finite and non-negative")
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
         object.__setattr__(self, "mass_shrinkage", shrinkage)
         object.__setattr__(self, "covariance_jitter", jitter)
         object.__setattr__(self, "eigenvalue_floor", floor)
@@ -550,6 +556,7 @@ class WindowedMassAdaptationConfig:
         object.__setattr__(self, "step_size_floor", step_floor)
         object.__setattr__(self, "step_size_ceiling", step_ceiling)
         object.__setattr__(self, "step_adaptation_rate", step_rate)
+        object.__setattr__(self, "mass_policy", mass_policy)
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -565,6 +572,7 @@ class WindowedMassAdaptationConfig:
             "step_size_floor": self.step_size_floor,
             "step_size_ceiling": self.step_size_ceiling,
             "step_adaptation_rate": self.step_adaptation_rate,
+            "mass_policy": self.mass_policy,
         }
 
 
@@ -773,11 +781,19 @@ class WindowedMassAdaptationResult:
         )
         return {
             "window_schedule_contiguous": _windows_are_contiguous(self.windows),
-            "mass_update_count_matches_slow_windows": slow_update_count
-            == len(self.mass_updates),
+            "mass_update_count_matches_slow_windows": (
+                slow_update_count == len(self.mass_updates)
+                if self.config.mass_policy == "windowed_adaptive"
+                else len(self.mass_updates) == 0
+            ),
             "every_update_has_dual_averaging_reset": reset_count
             == len(self.mass_updates),
             "final_mass_artifact_frozen_payload": bool(self.final_mass_artifact_signature),
+            "fixed_identity_signature_unchanged": (
+                self.config.mass_policy != "fixed_identity"
+                or self.final_mass_artifact_signature
+                == self.initial_mass_artifact_signature
+            ),
             "shrinkage_target_compatible": bool(self.compatibility.get("compatible")),
             "does_not_report_posterior_convergence": True,
         }
@@ -1504,7 +1520,7 @@ def run_windowed_mass_adaptation_diagnostic(
                 config=config,
             )
             step_trace.append(step)
-        if not window.update_mass:
+        if config.mass_policy == "fixed_identity" or not window.update_mass:
             continue
         welford = welford_covariance(draws[window.start : window.end])
         covariance = _shrink_covariance(

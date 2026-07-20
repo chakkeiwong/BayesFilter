@@ -36,6 +36,7 @@ def _args(*, transport_policy: str = "active-all") -> argparse.Namespace:
         score_fd_tf32_mode="match",
         dtype="float64",
         tf32_mode="disabled",
+        historical_raw_diagnostic=True,
     )
 
 
@@ -389,7 +390,7 @@ def test_phase4_lgssm_compact_score_matches_historical_full_history_reverse_diag
     )
 
 
-def test_phase4_lgssm_score_admission_promotes_compact_default_route() -> None:
+def test_phase4_lgssm_score_decision_demotes_compact_route_to_historical() -> None:
     compact = lgssm._score_admission_decision(
         score_mode="compact-sensitivity",
         fd_status="pass",
@@ -411,11 +412,14 @@ def test_phase4_lgssm_score_admission_promotes_compact_default_route() -> None:
         runtime_gate_applicable=True,
     )
 
-    assert compact["score_admission_status"] == lgssm.RAW_COMPACT_ADMITTED_STATUS
-    assert compact["score_status"] == "executed_same_target_compact_score_fd_pass_gpu_material"
+    assert (
+        compact["score_admission_status"]
+        == lgssm.LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
+    )
+    assert compact["score_status"] == "executed_historical_raw_compact_score_fd_pass"
     assert (
         compact_blocked["score_admission_status"]
-        == "blocked_material_gate_not_full_gpu_row"
+        == lgssm.LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
     )
     assert manual_historical["score_admission_status"] == "blocked_historical_full_history_route"
 

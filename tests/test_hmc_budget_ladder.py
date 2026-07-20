@@ -153,8 +153,12 @@ def _fake_result(
         ),
     }
     if include_log_accept_trace:
+        probability = min(float(acceptance), 1.0)
+        log_probability = (
+            float(np.log(probability)) if probability > 0.0 else -np.inf
+        )
         trace["log_accept_ratio"] = tf.constant(
-            [0.0, 0.1 if finite_log_accept else np.nan],
+            [log_probability, log_probability if finite_log_accept else np.nan],
             dtype=tf.float64,
         )
     if step_size is not None:
@@ -740,7 +744,8 @@ def test_budget_ladder_records_private_mechanics_summaries_when_log_accept_nonfi
     assert result.final_status == "hard_veto"
     diagnostics = result.rounds[0].screen_diagnostics
     assert diagnostics["log_accept_ratio_finite"] is False
-    assert diagnostics["log_accept_ratio_summary"]["nonfinite_count"] == 1
+    # Zero acceptance is represented by -inf, in addition to the injected NaN.
+    assert diagnostics["log_accept_ratio_summary"]["nonfinite_count"] == 2
     assert diagnostics["target_log_prob_finite"] is True
     assert diagnostics["proposed_target_log_prob_finite"] is False
     assert diagnostics["proposed_target_log_prob_summary"]["nonfinite_count"] == 1

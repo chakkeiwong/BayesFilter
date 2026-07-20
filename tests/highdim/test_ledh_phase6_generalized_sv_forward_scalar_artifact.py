@@ -4,9 +4,11 @@ import json
 import math
 from pathlib import Path
 
+import pytest
+
 from bayesfilter.highdim.ledh_forward_contract import (
     GENERALIZED_SV_ROW_ID,
-    LEDH_FORWARD_ADMISSION_STATUS_ADMITTED,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD,
     validate_ledh_forward_scalar_artifact,
 )
@@ -18,19 +20,19 @@ ARTIFACT_PATH = (
 )
 
 
-def test_phase6_generalized_sv_full_forward_scalar_artifact_replays_admission_gate() -> None:
+def test_phase6_generalized_sv_full_forward_scalar_artifact_replays_as_historical() -> None:
     artifact = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
 
     normalized = validate_ledh_forward_scalar_artifact(
         artifact,
         expected_row_id=GENERALIZED_SV_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
 
     assert normalized["row_id"] == GENERALIZED_SV_ROW_ID
     assert normalized["target_scalar"] == LEDH_TARGET_SCALAR_OBSERVED_DATA_LOG_LIKELIHOOD
     assert normalized["target_output_tensor_field"] == "log_likelihood"
-    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
+    assert normalized["admission_status"] == LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
     assert normalized["num_particles"] == 10000
     assert normalized["time_steps"] == 1008
     assert normalized["batch_seeds"] == [81120, 81121, 81122, 81123, 81124]
@@ -62,6 +64,12 @@ def test_phase6_generalized_sv_full_forward_scalar_artifact_replays_admission_ga
     assert artifact["normalization_checks"]["full_row_admission_scope"] is True
     assert artifact["output_devices"]
     assert all("GPU" in device.upper() for device in artifact["output_devices"])
+    with pytest.raises(ValueError, match="cannot be canonically admitted"):
+        validate_ledh_forward_scalar_artifact(
+            artifact,
+            expected_row_id=GENERALIZED_SV_ROW_ID,
+            require_admitted=True,
+        )
 
 
 def test_phase6_generalized_sv_full_artifact_nonclaims_exclude_score_and_substitutions() -> None:

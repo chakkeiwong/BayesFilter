@@ -2,7 +2,7 @@
 
 Date: 2026-07-09
 
-Status: `PHASE7_APPROVAL_BOUNDARY`
+Status: `BLOCKED_PHASE7_PREFLIGHT_HASH_CONTRACT_MISMATCH`
 
 ## Role Contract
 
@@ -65,14 +65,20 @@ summaries in chat. Full output is an artifact.
 
 ## Current Boundary
 
-Phase 6AA passed at the kernel-handoff level. The refreshed
-`kernel_tuning.json` has `passed=true`, confirmed XLA/JIT execution, no hard
-vetoes, and final kernel payload/hash. Phase 7 has not run.
+Phase 7 runtime approval was granted on 2026-07-11, but execution stopped at
+the Phase 6 private-replay refresh preflight. The refreshed Phase 6 run passed
+its own gate and preserved the pinned target/config/fixture/XLA/geometry/mass,
+adapter, and selected-step identities, but the selected-trajectory,
+private-loop-kernel, and public-kernel hashes did not equal the Phase 6AA pins.
 
-Do not start Phase 7 burn-in or retained sampling without explicit user
-approval. Phase 7 is the next runbook phase and must use the deterministic
-Python controller, CPU-hidden sample generation, XLA-only target path, and the
-predeclared R-hat/ESS/recovery gates.
+The mismatch is classified as an engineering hash-contract/baseline-migration
+blocker. The committed and refreshed private event artifacts agree on the
+available selected HMC mechanics, while current policy provenance changes the
+hashed payload lineage. Exact equality nevertheless remains a continuation
+veto under the reviewed Phase 7 plan. Do not run the tiny Phase 7 smoke or
+serious burn-in/retained sampling until a reviewed migration either proves and
+adopts a new semantic mechanics identity or restores the pinned artifact under
+the original hash schema. Phase 8 remains unapproved and unexecuted.
 
 ## Evidence Contract
 

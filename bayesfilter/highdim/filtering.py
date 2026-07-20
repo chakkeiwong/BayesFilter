@@ -1352,14 +1352,35 @@ def scalar_nonlinear_fixed_design_tt_score_path(
             retained_moment_order=retained_moment_order,
             retained_propagation_order=retained_propagation_order,
         )
-        base_hash = fixed_branch_compatibility_hash(
-            {
-                "sample_set_hash": value_result.branch_identity.hash.value,
-                "basis_hash": _product_basis_payload(product_basis),
-                "ranks": fit_config.ranks,
-                "sweep_order": fit_config.sweep_order,
-                "ridge": fit_config.ridge,
-            }
+        base_hash = _fixed_design_scalar_compatibility_hash(
+            value_result=value_result,
+            config=config,
+            product_basis=product_basis,
+            fit_config=fit_config,
+            observations=observation_matrix,
+            branch_seed_prefix=branch_seed_prefix,
+            initial_target_id=initial_target_id,
+            transition_target_id=transition_target_id,
+        )
+        plus_hash = _fixed_design_scalar_compatibility_hash(
+            value_result=plus_result,
+            config=config,
+            product_basis=product_basis,
+            fit_config=fit_config,
+            observations=observation_matrix,
+            branch_seed_prefix=branch_seed_prefix,
+            initial_target_id=initial_target_id,
+            transition_target_id=transition_target_id,
+        )
+        minus_hash = _fixed_design_scalar_compatibility_hash(
+            value_result=minus_result,
+            config=config,
+            product_basis=product_basis,
+            fit_config=fit_config,
+            observations=observation_matrix,
+            branch_seed_prefix=branch_seed_prefix,
+            initial_target_id=initial_target_id,
+            transition_target_id=transition_target_id,
         )
         fd_rows.append(
             make_finite_difference_row(
@@ -1367,8 +1388,8 @@ def scalar_nonlinear_fixed_design_tt_score_path(
                 h=float(h),
                 value_plus=plus_result.log_likelihood,
                 value_minus=minus_result.log_likelihood,
-                branch_hash_plus=base_hash if plus_result.branch_identity.hash.value else base_hash,
-                branch_hash_minus=base_hash if minus_result.branch_identity.hash.value else base_hash,
+                branch_hash_plus=plus_hash,
+                branch_hash_minus=minus_hash,
                 branch_hash_base=base_hash,
                 analytic_gradient=total_score,
             )
@@ -4707,6 +4728,67 @@ def _fixed_design_multistate_compatibility_hash(
             "step_count": len(value_result.steps),
             "step_value_paths": tuple(step.diagnostics.get("value_path") for step in value_result.steps),
             "step_target_ids": tuple(step.diagnostics.get("target_id") for step in value_result.steps),
+        }
+    )
+
+
+def _fixed_design_scalar_compatibility_hash(
+    *,
+    value_result: FixedBranchFilterResult,
+    config: FixedBranchFilterConfig,
+    product_basis: ProductBasis,
+    fit_config: FixedTTFitConfig,
+    observations: tf.Tensor,
+    branch_seed_prefix: str,
+    initial_target_id: str,
+    transition_target_id: str,
+) -> str:
+    """Hash realized scalar branch structure while excluding theta and values."""
+
+    observation_matrix = tf.convert_to_tensor(observations, dtype=tf.float64)
+    observation_count = int(observation_matrix.shape[0])
+    return fixed_branch_compatibility_hash(
+        {
+            "value_path": value_result.diagnostics.get("value_path"),
+            "promoted_horizon": value_result.diagnostics.get("promoted_horizon"),
+            "observation_count": observation_count,
+            "last_time_index": observation_count - 1,
+            "observation_shape": tuple(int(dim) for dim in observation_matrix.shape),
+            "product_basis": _product_basis_payload(product_basis),
+            "fit_ranks": fit_config.ranks,
+            "fit_sweep_order": fit_config.sweep_order,
+            "fit_ridge": fit_config.ridge,
+            "fit_max_sweeps": fit_config.max_sweeps,
+            "fit_quadrature_order": config.fit_quadrature_order,
+            "coordinate_maps": tuple(
+                coordinate_map.manifest_payload()
+                for coordinate_map in config.coordinate_maps
+            ),
+            "measure_convention": _measure_convention_payload(
+                config.measure_convention
+            ),
+            "initial_cores_hash": _core_values_hash(config.initial_cores),
+            "branch_seed_prefix": branch_seed_prefix,
+            "initial_target_id": initial_target_id,
+            "transition_target_id": transition_target_id,
+            "step_count": len(value_result.steps),
+            "step_value_paths": tuple(
+                step.diagnostics.get("value_path") for step in value_result.steps
+            ),
+            "step_target_ids": tuple(
+                step.diagnostics.get("target_id") for step in value_result.steps
+            ),
+            "step_fit_update_structure": tuple(
+                tuple(
+                    (
+                        update.get("sweep_index"),
+                        update.get("core_index"),
+                        update.get("status"),
+                    )
+                    for update in step.fit_result.core_update_statuses
+                )
+                for step in value_result.steps
+            ),
         }
     )
 

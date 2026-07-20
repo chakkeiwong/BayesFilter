@@ -11,8 +11,12 @@ import math
 from typing import Any, Mapping, Sequence
 
 from bayesfilter.highdim.ledh_forward_contract import validate_ledh_forward_scalar_artifact
+from bayesfilter.highdim.ledh_forward_contract import (
+    LEDH_FORWARD_ADMISSION_STATUS_ADMITTED,
+)
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
     LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
@@ -67,8 +71,16 @@ def build_ledh_score_artifact(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=expected_row_id,
-        require_admitted=True,
+        require_admitted=False,
     )
+    if (
+        value_core["source_claimed_admission_status"]
+        != LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
+    ):
+        raise ValueError(
+            "historical v1 score artifacts require a formerly full-scale v1 "
+            "source value artifact"
+        )
     source_path = str(source_value_artifact_path)
     parameter_names = _text_list("score_parameter_names", score_parameter_names)
     score_values = _finite_float_list("score", score)
@@ -106,11 +118,19 @@ def build_ledh_score_artifact(
     if extra_fields:
         artifact.update(dict(extra_fields))
 
-    should_require_admitted = (
-        score_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL
-        if require_admitted is None
-        else bool(require_admitted)
+    validate_ledh_score_artifact(
+        artifact,
+        source_value_artifact=source_value_artifact,
+        expected_row_id=expected_row_id,
+        require_admitted=False,
     )
+    if score_admission_status == LEDH_SCORE_ADMISSION_STATUS_FULL or require_admitted:
+        raise ValueError(
+            "LEDH score artifact v1 full admission is revoked; historical "
+            "raw-barycentric diagnostics cannot request admission"
+        )
+    artifact["score_admission_status"] = LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
+    should_require_admitted = False
     validate_ledh_score_artifact(
         artifact,
         source_value_artifact=source_value_artifact,

@@ -42,11 +42,15 @@ import tensorflow as tf
 from bayesfilter import highdim
 from bayesfilter.highdim.ledh_forward_contract import (
     LEDH_FORWARD_ADMISSION_STATUS_ADMITTED,
+    LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_FORWARD_ADMISSION_STATUS_TINY,
     LEDH_FORWARD_SCALAR_ARTIFACT_SCHEMA_VERSION,
     PREDATOR_PREY_ROW_ID,
     make_predator_prey_forward_contract,
     validate_ledh_forward_scalar_artifact,
+)
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
 )
 from experiments.dpf_implementation.tf_tfp.filters import (
     experimental_batched_ledh_pfpf_ot_streaming_tf as streaming_tf,
@@ -126,6 +130,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--expect-device-kind", choices=("any", "cpu", "gpu"), default="gpu")
     parser.add_argument("--output", required=True)
     parser.add_argument("--markdown-output", default=None)
+    parser.add_argument("--historical-raw-diagnostic", action="store_true")
     args = parser.parse_args()
     args.batch_seeds = _parse_int_csv(args.batch_seeds)
     if args.time_steps <= 0 or args.time_steps > FULL_ROW_TIME_STEPS:
@@ -443,7 +448,11 @@ def _write_markdown(path: Path, result: dict[str, Any], json_path: Path) -> None
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="predator-prey raw-barycentric value runner"
+    )
     precision = _configure_precision(args)
     physical_gpus, logical_gpus = _configure_gpus()
     tensors, predator_prey_semantics = _build_predator_prey_tensors(args)
@@ -588,11 +597,7 @@ def main() -> None:
         "log_likelihood_by_seed": log_likelihood_values,
         "average_log_likelihood_by_seed": average_values,
         "finite_output": finite_output,
-        "admission_status": (
-            LEDH_FORWARD_ADMISSION_STATUS_ADMITTED
-            if full_row and finite_output
-            else LEDH_FORWARD_ADMISSION_STATUS_TINY
-        ),
+        "admission_status": LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
         "normalization_checks": {
             "row_id": True,
             "batch_seeds": tuple(args.batch_seeds) == FULL_ROW_BATCH_SEEDS,
@@ -609,7 +614,7 @@ def main() -> None:
     normalized_core = validate_ledh_forward_scalar_artifact(
         artifact,
         expected_row_id=PREDATOR_PREY_ROW_ID,
-        require_admitted=full_row,
+        require_admitted=False,
     )
     artifact["validator_normalized_core"] = normalized_core
 

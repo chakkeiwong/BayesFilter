@@ -586,6 +586,7 @@ def _render_markdown(result: dict[str, Any]) -> str:
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
     start = time.perf_counter()
     precision = p8p._configure_precision(args)

@@ -44,6 +44,12 @@ Status: `PASSED_ACTUAL_SV_COMPACT_WIRING_GATE`
 - Preserved the transformed actual-SV observation policy and exact-native
   likelihood nonclaim.
 
+Phase 8 execution-policy repair added
+`_compact_value_and_score_across_seeds`. Both coordinate-FD score evaluation
+and the standalone `value-score-only` mode now invoke the compact component once
+per seed in fixed order. The refreshed predator-prey/actual-SV shard passed `45
+passed, 2 warnings in 175.38s`.
+
 ## Local Checks
 
 ```bash

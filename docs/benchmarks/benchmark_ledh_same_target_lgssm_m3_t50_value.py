@@ -54,6 +54,7 @@ from bayesfilter.highdim.ledh_forward_contract import (
 )
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_COMPACT_LGSSM_PROVENANCE,
@@ -61,6 +62,9 @@ from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
     LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
     validate_ledh_score_artifact,
+)
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
 )
 from bayesfilter.highdim.ledh_score_artifact import build_ledh_score_artifact
 from experiments.dpf_implementation.tf_tfp.filters import (
@@ -104,9 +108,9 @@ MANUAL_SCORE_ROUTE_ID = HISTORICAL_MANUAL_SCORE_ROUTE_ID
 # historical diagnostic.
 HISTORICAL_COMPACT_SCORE_ROUTE_ID = COMPACT_SCORE_ROUTE_ID
 SAME_SCALAR_ROUTE_ID = "same_target_lgssm_m3_t50_ledh_pfpf_ot_streaming_manual_total"
-RAW_COMPACT_ADMITTED_STATUS = "admitted_same_target_compact_score"
-RAW_MEMORY_STYLE_ADMITTED_STATUS = "admitted_same_target_memory_style_score"
-RAW_HISTORICAL_COMPACT_ADMITTED_STATUS = "legacy_historical_admitted_same_target_compact_score"
+RAW_COMPACT_ADMITTED_STATUS = LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
+RAW_MEMORY_STYLE_ADMITTED_STATUS = LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
+RAW_HISTORICAL_COMPACT_ADMITTED_STATUS = LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
 NONCLAIMS = (
     "not exact Kalman score evidence",
     "not HMC/NUTS readiness evidence",
@@ -205,6 +209,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--expect-device-kind", choices=("any", "cpu", "gpu"), default="gpu")
     parser.add_argument("--output", required=True)
     parser.add_argument("--markdown-output", default=None)
+    parser.add_argument("--historical-raw-diagnostic", action="store_true")
     parser.add_argument(
         "--aggregate-score-shards",
         default=None,
@@ -2193,6 +2198,9 @@ def _manual_score_diagnostic(
     args: argparse.Namespace,
     theta: tf.Tensor,
 ) -> dict[str, Any]:
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="LGSSM raw value/score route"
+    )
     tensors = _build_lgssm_manual_tensors(args, theta)
     stage = getattr(args, "score_diagnostic_stage", "score-and-fd")
     if stage == "fd-only":
@@ -2263,26 +2271,12 @@ def _score_admission_decision(
     score_memory_gate_applicable: bool = True,
 ) -> dict[str, str]:
     if score_mode == "compact-sensitivity":
-        if (
-            fd_status == "pass"
-            and same_target_full_row
-            and runtime_gate_applicable
-            and score_memory_gate_applicable
-        ):
-            return {
-                "score_status": "executed_same_target_compact_score_fd_pass_gpu_material",
-                "score_admission_status": RAW_COMPACT_ADMITTED_STATUS,
-                "nonclaim": (
-                    "score evidence is for the LEDH-PFPF-OT scalar, not the exact Kalman likelihood"
-                ),
-            }
         if fd_status == "pass":
             return {
-                "score_status": "executed_compact_score_fd_pass_but_material_gate_blocked",
-                "score_admission_status": "blocked_material_gate_not_full_gpu_row",
+                "score_status": "executed_historical_raw_compact_score_fd_pass",
+                "score_admission_status": LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
                 "nonclaim": (
-                    "compact total score passed same-scalar FD on this run but is not admitted "
-                    "as a full GPU leaderboard score"
+                    "raw-barycentric compact score is historical diagnostic evidence only"
                 ),
             }
         return {
@@ -2336,7 +2330,7 @@ def _lgssm_score_artifact_from_result(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
     row_id = str(result.get("row_id"))
     if row_id != ROW_ID or row_id != value_core["row_id"]:
@@ -2406,13 +2400,7 @@ def _lgssm_score_artifact_from_result(
 
     peak_mib, memory_source = _memory_peak_mib_from_result(result)
     memory_pass = peak_mib is not None and peak_mib <= float(memory_budget_mib)
-    full_admitted = bool(
-        result.get("score_admission_status") == RAW_COMPACT_ADMITTED_STATUS
-        and result.get("runtime_gate_applicable") is True
-        and result.get("score_runtime_gate_applicable") is True
-        and num_particles >= 10000
-        and memory_pass
-    )
+    full_admitted = False
     score_precision = _score_precision_metadata(
         _require_lgssm_mapping("LGSSM score result precision", result.get("precision"))
     )
@@ -2452,11 +2440,7 @@ def _lgssm_score_artifact_from_result(
                 "uses_disclosed_separate_precision_arm"
             ),
         },
-        "score_admission_status": (
-            LEDH_SCORE_ADMISSION_STATUS_FULL
-            if full_admitted
-            else LEDH_SCORE_ADMISSION_STATUS_TINY
-        ),
+        "score_admission_status": LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
         "score_precision": score_precision,
         "memory_diagnostics": {
             "n10000_memory_pass": bool(memory_pass),
@@ -2469,7 +2453,7 @@ def _lgssm_score_artifact_from_result(
         artifact,
         source_value_artifact=source_value_artifact,
         expected_row_id=ROW_ID,
-        require_admitted=full_admitted,
+        require_admitted=False,
     )
     return artifact
 
@@ -2770,7 +2754,7 @@ def _aggregate_lgssm_score_shards(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
     expected_batch_seeds = tuple(int(seed) for seed in value_core["batch_seeds"])
     if expected_batch_seeds != FULL_ROW_BATCH_SEEDS:
@@ -2787,7 +2771,7 @@ def _aggregate_lgssm_score_shards(
         require_gpu_runtime=True,
         memory_budget_mib=memory_budget_mib,
     )
-    admitted = bool(payload["memory_diagnostics"]["n10000_memory_pass"])
+    admitted = False
     artifact = build_ledh_score_artifact(
         source_value_artifact=source_value_artifact,
         source_value_artifact_path=source_value_artifact_path,
@@ -2796,9 +2780,7 @@ def _aggregate_lgssm_score_shards(
         score=payload["score"],
         score_derivative_provenance=COMPACT_SCORE_ROUTE_ID,
         score_correctness=payload["score_correctness"],
-        score_admission_status=(
-            LEDH_SCORE_ADMISSION_STATUS_FULL if admitted else LEDH_SCORE_ADMISSION_STATUS_TINY
-        ),
+        score_admission_status=LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
         memory_diagnostics=payload["memory_diagnostics"],
         score_precision={
             "dtype": "float32",
@@ -2817,7 +2799,7 @@ def _aggregate_lgssm_score_shards(
             },
             "aggregation": payload["aggregation"],
         },
-        require_admitted=admitted,
+        require_admitted=False,
     )
     return {
         "schema_version": "filter_bench.ledh_same_target_lgssm_m3_t50_score_sharded.v1",
@@ -2996,7 +2978,11 @@ def _write_score_aggregate_markdown(path: Path, result: dict[str, Any], json_pat
 
 
 def main() -> None:
+    raise RuntimeError("ARCHIVAL_WRONG_TRANSPORT_CHUNK_POLICY: this route is preserved only as provenance and cannot emit new evidence")
     args = _parse_args()
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="LGSSM raw value/score runner"
+    )
     output = Path(args.output)
     runner_started_monotonic = time.perf_counter()
     runner_started_utc = _dt.datetime.now(tz=_dt.timezone.utc).isoformat()

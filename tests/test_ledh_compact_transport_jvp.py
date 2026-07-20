@@ -7,11 +7,20 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import tensorflow as tf
 
+from experiments.dpf_implementation.tf_tfp.filters import (
+    experimental_batched_ledh_pfpf_ot_tf as core_tf,
+)
 from experiments.dpf_implementation.tf_tfp.resampling import annealed_transport_tf
 
 
 DTYPE = tf.float64
 ATOL = 2.0e-8
+
+
+def test_manual_finite_steps_match_raw_sinkhorn_loop_bound() -> None:
+    assert core_tf._manual_dense_finite_steps(1) == 0  # noqa: SLF001
+    assert core_tf._manual_dense_finite_steps(2) == 1  # noqa: SLF001
+    assert core_tf._manual_dense_finite_steps(10) == 9  # noqa: SLF001
 
 
 def _fixture() -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -239,6 +248,83 @@ def test_compact_total_transport_jvp_matches_tape_directional_oracle() -> None:
     tf.debugging.assert_near(transported, reference, atol=ATOL)
     tf.debugging.assert_near(row_residual, reference_residual, atol=ATOL)
     tf.debugging.assert_near(manual_directional, tape_directional, atol=ATOL)
+
+
+def test_transport_jvp_optional_mass_state_matches_ones_payload() -> None:
+    scaled_x, particles, logw, epsilon, epsilon0, scaling = _fixture()
+    param_dim = 2
+    d_scaled_x = _particle_tangent(scaled_x, scale=0.010, param_dim=param_dim)
+    d_particles = _particle_tangent(particles, scale=0.008, param_dim=param_dim)
+    d_logw = _weight_tangent(logw, scale=0.014, param_dim=param_dim)
+    d_epsilon0 = tf.constant([[0.013, -0.009]], dtype=DTYPE)
+    float_n = tf.cast(tf.shape(scaled_x)[1], DTYPE)
+    uniform = -tf.math.log(float_n) * tf.ones_like(logw)
+    zeros = tf.zeros_like(d_logw)
+    (
+        row_potential,
+        column_potential,
+        d_row_potential,
+        d_column_potential,
+        _running,
+        _d_running,
+    ) = annealed_transport_tf._filterflow_streaming_finite_sinkhorn_potentials_jvp_total(  # noqa: SLF001
+        logw,
+        uniform,
+        scaled_x,
+        d_logw,
+        zeros,
+        d_scaled_x,
+        d_epsilon0,
+        epsilon,
+        epsilon0,
+        scaling,
+        steps=2,
+        row_chunk_size=2,
+        col_chunk_size=2,
+    )
+    _, _, row_mass, d_row_mass = (
+        annealed_transport_tf._filterflow_streaming_transport_from_potentials_jvp(  # noqa: SLF001
+            scaled_x,
+            particles,
+            row_potential,
+            column_potential,
+            epsilon,
+            logw,
+            float_n,
+            d_scaled_x,
+            d_particles,
+            d_row_potential,
+            d_column_potential,
+            d_logw,
+            row_chunk_size=2,
+            col_chunk_size=2,
+            return_mass_state=True,
+        )
+    )
+    ones = tf.ones([1, 3, 1], DTYPE)
+    zero_ones_tangent = tf.zeros([1, 3, 1, param_dim], DTYPE)
+    ones_transport, d_ones_transport, _ = (
+        annealed_transport_tf._filterflow_streaming_transport_from_potentials_jvp(  # noqa: SLF001
+            scaled_x,
+            ones,
+            row_potential,
+            column_potential,
+            epsilon,
+            logw,
+            float_n,
+            d_scaled_x,
+            zero_ones_tangent,
+            d_row_potential,
+            d_column_potential,
+            d_logw,
+            row_chunk_size=2,
+            col_chunk_size=2,
+        )
+    )
+    tf.debugging.assert_near(row_mass, ones_transport[:, :, 0], atol=ATOL)
+    tf.debugging.assert_near(
+        d_row_mass, d_ones_transport[:, :, 0, :], atol=ATOL
+    )
 
 
 def test_compact_transport_jvp_production_helpers_have_no_tape() -> None:

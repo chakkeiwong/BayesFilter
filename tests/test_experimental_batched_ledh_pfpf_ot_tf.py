@@ -467,8 +467,8 @@ def test_batched_annealed_transport_streaming_matches_dense_without_matrix() -> 
         max_iterations=8,
         transport_gradient_mode="raw",
         transport_plan_mode="streaming",
-        row_chunk_size=2,
-        col_chunk_size=2,
+        row_chunk_size=4,
+        col_chunk_size=4,
     )
 
     assert streaming.transport_matrix.shape == (2, 0, 0)
@@ -633,8 +633,8 @@ def test_phase2_streaming_transport_tf_function_smoke() -> None:
             max_iterations=8,
             transport_gradient_mode="raw",
             transport_plan_mode="streaming",
-            row_chunk_size=2,
-            col_chunk_size=2,
+            row_chunk_size=4,
+            col_chunk_size=4,
         )
         return result.particles, result.log_weights, result.transport_matrix
 
@@ -797,8 +797,8 @@ def _run_value_with_transport_plan(
         sinkhorn_iterations=8,
         transport_gradient_mode="raw",
         transport_plan_mode=transport_plan_mode,
-        row_chunk_size=2,
-        col_chunk_size=2,
+        row_chunk_size=4,
+        col_chunk_size=4,
     )
 
 
@@ -1248,8 +1248,8 @@ def test_m6_manual_streaming_value_and_score_tiny_opt_in_smoke() -> None:
             sinkhorn_iterations=2,
             transport_gradient_mode=MANUAL_STREAMING_FINITE_TRANSPORT_GRADIENT_MODE,
             transport_plan_mode="streaming",
-            row_chunk_size=2,
-            col_chunk_size=2,
+            row_chunk_size=4,
+            col_chunk_size=4,
         )
 
     manual = batched_ledh_pfpf_ot_value_and_score_tf(theta, value_from_theta)
@@ -1308,8 +1308,8 @@ def test_s6_blockwise_manual_streaming_value_and_score_tiny_opt_in_smoke() -> No
             transport_gradient_mode=MANUAL_STREAMING_BLOCKWISE_VJP_FINITE_TRANSPORT_GRADIENT_MODE,
             transport_plan_mode="streaming",
             transport_ad_mode="stabilized",
-            row_chunk_size=2,
-            col_chunk_size=2,
+            row_chunk_size=4,
+            col_chunk_size=4,
         )
 
     manual = batched_ledh_pfpf_ot_value_and_score_tf(theta, value_from_theta)

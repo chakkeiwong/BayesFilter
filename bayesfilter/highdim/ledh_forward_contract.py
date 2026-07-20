@@ -36,6 +36,13 @@ LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_MISSING_RUNNER = "blocked_missing_current_
 LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_WRONG_TARGET = "blocked_wrong_target"
 LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_NONFINITE = "blocked_nonfinite"
 LEDH_FORWARD_ADMISSION_STATUS_METADATA_ONLY_BLOCKED = "metadata_only_blocked"
+LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW = (
+    "historical_raw_barycentric_diagnostic_only"
+)
+LEDH_FORWARD_V1_CANONICAL_ADMISSION_REVOKED = (
+    "LEDH forward artifact v1 lacks factory-issued Contract E route identity "
+    "and cannot be canonically admitted"
+)
 
 LGSSM_M3_T50_ROW_ID = "benchmark_lgssm_exact_oracle_m3_T50"
 ACTUAL_SV_ROW_ID = "zhao_cui_sv_actual_nongaussian_T1000"
@@ -81,6 +88,7 @@ _ALLOWED_FORWARD_ADMISSION_STATUSES = frozenset(
         LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_WRONG_TARGET,
         LEDH_FORWARD_ADMISSION_STATUS_BLOCKED_NONFINITE,
         LEDH_FORWARD_ADMISSION_STATUS_METADATA_ONLY_BLOCKED,
+        LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
     }
 )
 _ROW_TARGET_OBSERVATION_POLICIES = {
@@ -504,15 +512,24 @@ def validate_ledh_forward_scalar_artifact(
         raise ValueError("average_log_likelihood_by_seed length must match batch_seeds")
 
     _require_bool_true("finite_output", payload.get("finite_output"))
-    admission_status = _require_text("admission_status", payload.get("admission_status"))
-    if admission_status not in _ALLOWED_FORWARD_ADMISSION_STATUSES:
-        raise ValueError(f"unsupported admission_status: {admission_status}")
-    if admission_status == LEDH_FORWARD_ADMISSION_STATUS_ADMITTED:
+    claimed_admission_status = _require_text(
+        "admission_status", payload.get("admission_status")
+    )
+    if claimed_admission_status not in _ALLOWED_FORWARD_ADMISSION_STATUSES:
+        raise ValueError(f"unsupported admission_status: {claimed_admission_status}")
+    if claimed_admission_status == LEDH_FORWARD_ADMISSION_STATUS_ADMITTED:
         if not bool(contract["full_leaderboard_row"]):
             raise ValueError("admitted artifacts must use a full leaderboard row contract")
         if num_particles < 10000:
             raise ValueError("admitted artifacts must use at least 10000 particles")
-    if require_admitted and admission_status != LEDH_FORWARD_ADMISSION_STATUS_ADMITTED:
+        if require_admitted:
+            raise ValueError(LEDH_FORWARD_V1_CANONICAL_ADMISSION_REVOKED)
+        admission_status = LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
+    elif claimed_admission_status == LEDH_FORWARD_ADMISSION_STATUS_TINY:
+        admission_status = LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW
+    else:
+        admission_status = claimed_admission_status
+    if require_admitted:
         raise ValueError("artifact is not admitted")
 
     return {
@@ -536,6 +553,9 @@ def validate_ledh_forward_scalar_artifact(
         "average_log_likelihood_by_seed": list(average_log_likelihood_by_seed),
         "finite_output": True,
         "admission_status": admission_status,
+        "source_claimed_admission_status": claimed_admission_status,
+        "canonical_admission_eligible": False,
+        "historical_status": LEDH_FORWARD_ADMISSION_STATUS_HISTORICAL_RAW,
         "nonclaims": [str(item) for item in payload.get("nonclaims", ())],
     }
 

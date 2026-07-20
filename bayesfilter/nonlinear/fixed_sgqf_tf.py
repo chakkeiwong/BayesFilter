@@ -769,6 +769,58 @@ def tf_fixed_sgqf_cloud(
     )
 
 
+def tf_fixed_sgqf_level2_axis_cloud(
+    dim: int,
+    *,
+    zero_weight_tolerance: float = 1e-14,
+) -> TFFixedSGQFCloud:
+    """Build the exact level-2 Smolyak cloud without neighbor-key search.
+
+    At level two the merged cloud is available in closed form: the origin and
+    the two ``sqrt(3)`` points on every coordinate axis. This avoids the
+    generic merge routine's exponentially large tolerance-neighbor search.
+    """
+
+    dimension = int(dim)
+    tolerance = float(zero_weight_tolerance)
+    if dimension <= 0:
+        raise ValueError("dim must be positive")
+    if tolerance < 0.0:
+        raise ValueError("zero_weight_tolerance must be nonnegative")
+
+    radius = math.sqrt(3.0)
+    zero = (0.0,) * dimension
+    items: list[tuple[tuple[float, ...], float]] = [
+        (zero, 1.0 - float(dimension) / 3.0)
+    ]
+    for axis in range(dimension):
+        for sign in (-1.0, 1.0):
+            point = tuple(
+                sign * radius if index == axis else 0.0
+                for index in range(dimension)
+            )
+            items.append((point, 1.0 / 6.0))
+    items = [item for item in items if abs(item[1]) > tolerance]
+    items.sort(key=lambda item: item[0])
+
+    active_multi_indices = tf_fixed_sgqf_active_multi_indices(dimension, 2)
+    combination_coefficients = tuple(
+        tf_fixed_sgqf_combination_coefficient(dimension, 2, multi_index)
+        for multi_index in active_multi_indices
+    )
+    return TFFixedSGQFCloud(
+        dim=dimension,
+        sparse_level=2,
+        points=tf.constant([point for point, _weight in items], tf.float64),
+        weights=tf.constant([weight for _point, weight in items], tf.float64),
+        active_multi_indices=active_multi_indices,
+        combination_coefficients=combination_coefficients,
+        merge_tolerance=0.0,
+        zero_weight_tolerance=tolerance,
+        node_ordering="lexicographic",
+    )
+
+
 def tf_fixed_sgqf_branch_identity(
     cloud: TFFixedSGQFCloud,
     *,

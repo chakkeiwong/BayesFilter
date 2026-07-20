@@ -982,14 +982,14 @@ class RetainedSampleHMCArchiveConfig:
 
 @dataclass(frozen=True)
 class SequentialRHatHMCVerificationConfig:
-    """Sequential fixed-kernel HMC verifier with fixed acceptance checkpoints.
+    """Sequential fixed-kernel HMC verifier with fixed checkpoints.
 
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
-    dependence-aware acceptance evidence on private traces after each
-    checkpoint, and stops once that evidence supports a decision or the hard
-    result cap is reached.  The historical unsplit R-hat remains explanatory
-    only.  This is a tuning-verification gate, not a posterior-convergence
-    certificate.
+    dependence-aware acceptance evidence and rank-normalized split/folded R-hat
+    on private traces after each checkpoint. Out-of-band acceptance returns a
+    repair decision immediately; promotion requires both acceptance evidence
+    and the R-hat gate after the minimum retained count.
+    It is a tuning-verification gate, not a posterior-convergence certificate.
     """
 
     check_interval: int
@@ -5187,11 +5187,14 @@ class SequentialRHatHMCVerifier:
             minimum_retained_satisfied = retained_count >= int(
                 config.min_retained_results_for_pass
             )
-            if decision_reached and (
-                not acceptance_evidence.promotion_eligible
-                or minimum_retained_satisfied
+            if decision_reached and not acceptance_evidence.promotion_eligible:
+                break
+            if (
+                acceptance_evidence.promotion_eligible
+                and minimum_retained_satisfied
+                and bool(final_rhat["passed"])
             ):
-                passed = acceptance_evidence.promotion_eligible
+                passed = True
                 break
             chunk_index += 1
 
@@ -5200,7 +5203,8 @@ class SequentialRHatHMCVerifier:
             and retained_count >= config.max_results
             and acceptance_evidence is not None
             and acceptance_evidence.evidence_validity == "valid"
-            and acceptance_evidence.acceptance_decision == "inconclusive_evidence"
+            and acceptance_evidence.acceptance_decision
+            in {"passed", "inconclusive_evidence"}
         ):
             cap_hit = True
         runtime_s = time.perf_counter() - start
@@ -5216,8 +5220,15 @@ class SequentialRHatHMCVerifier:
             ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
-            "rhat_role": "historical_explanatory_only_not_stopping_or_admission",
+            "rhat_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+            "rhat_definition": final_rhat["rhat_definition"],
             "max_finite_rhat": final_rhat["max_finite_rhat"],
+            "max_rank_normalized_split_rhat": final_rhat[
+                "max_rank_normalized_split_rhat"
+            ],
+            "max_folded_rank_normalized_split_rhat": final_rhat[
+                "max_folded_rank_normalized_split_rhat"
+            ],
             "finite_rhat_count": int(final_rhat["finite_rhat_count"]),
             "nonfinite_rhat_count": int(final_rhat["nonfinite_rhat_count"]),
             "all_finite_rhat_at_or_below_threshold": bool(final_rhat["passed"]),
@@ -5348,6 +5359,13 @@ class SequentialRHatHMCVerifier:
             "chunk_count": len(chunk_summaries),
             "chain_count": int(config.chain_count),
             "rhat_threshold": float(config.rhat_threshold),
+            "rhat_definition": final_rhat["rhat_definition"],
+            "max_rank_normalized_split_rhat": final_rhat[
+                "max_rank_normalized_split_rhat"
+            ],
+            "max_folded_rank_normalized_split_rhat": final_rhat[
+                "max_folded_rank_normalized_split_rhat"
+            ],
             "checkpointing_enabled": checkpoint_writer_config is not None,
             "checkpoint_count": len(checkpoint_references),
             "checkpoint_references": tuple(checkpoint_references),
@@ -5661,6 +5679,12 @@ def _sequential_rhat_initial_chain_state(base: Any, chain_count: int) -> Any:
 def _empty_rhat_summary() -> Mapping[str, Any]:
     return {
         "passed": False,
+        "rhat_definition": (
+            "max(rank-normalized split R-hat, "
+            "folded rank-normalized split R-hat)"
+        ),
+        "max_rank_normalized_split_rhat": None,
+        "max_folded_rank_normalized_split_rhat": None,
         "max_finite_rhat": None,
         "finite_rhat_count": 0,
         "nonfinite_rhat_count": 0,
@@ -5672,35 +5696,35 @@ def _rhat_summary_from_retained_samples(
     *,
     threshold: float,
 ) -> Mapping[str, Any]:
-    """Compute split-free multi-chain R-hat summary for private samples."""
+    """Compute the shared modern multi-chain R-hat summary."""
 
     array = _private_tensor_to_numpy(samples)
     if array.ndim < 3:
         raise ValueError("R-hat samples must have shape (draw, chain, parameter...)")
     draw_count = int(array.shape[0])
     chain_count = int(array.shape[1])
-    if draw_count < 2:
+    if draw_count < 4:
         return _empty_rhat_summary()
     if chain_count < 2:
         raise ValueError("R-hat requires at least two chains")
     flat = np.reshape(array, (draw_count, chain_count, -1))
-    chain_means = np.mean(flat, axis=0)
-    chain_vars = np.var(flat, axis=0, ddof=1)
-    within = np.mean(chain_vars, axis=0)
-    between = draw_count * np.var(chain_means, axis=0, ddof=1)
-    marginal = ((draw_count - 1.0) / draw_count) * within + between / draw_count
-    with np.errstate(divide="ignore", invalid="ignore"):
-        rhat = np.sqrt(marginal / within)
-    finite = np.isfinite(rhat)
-    finite_count = int(np.sum(finite))
-    nonfinite_count = int(rhat.size - finite_count)
-    max_finite = None if finite_count == 0 else float(np.max(rhat[finite]))
-    passed = bool(finite_count > 0 and nonfinite_count == 0 and max_finite <= threshold)
+    from bayesfilter.inference.hmc_convergence import (
+        rank_normalized_split_rhat_summary,
+    )
+
+    summary = rank_normalized_split_rhat_summary(flat, rhat_max=threshold)
     return {
-        "passed": passed,
-        "max_finite_rhat": max_finite,
-        "finite_rhat_count": finite_count,
-        "nonfinite_rhat_count": nonfinite_count,
+        "passed": bool(summary["passed"]),
+        "rhat_definition": summary["rhat_definition"],
+        "max_rank_normalized_split_rhat": summary[
+            "max_rank_normalized_split_rhat"
+        ],
+        "max_folded_rank_normalized_split_rhat": summary[
+            "max_folded_rank_normalized_split_rhat"
+        ],
+        "max_finite_rhat": summary["max_finite_rhat"],
+        "finite_rhat_count": int(summary["finite_rhat_count"]),
+        "nonfinite_rhat_count": int(summary["nonfinite_rhat_count"]),
     }
 
 

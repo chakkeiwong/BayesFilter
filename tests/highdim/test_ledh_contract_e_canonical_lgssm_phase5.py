@@ -518,6 +518,45 @@ def test_float32_factory_uses_one_shared_value_and_score_core() -> None:
     tf.debugging.assert_all_finite(first["score"], "float32 score")
 
 
+def test_prepared_input_factory_matches_bound_factory_on_same_finite_program() -> None:
+    prepared = canonical._as_prepared_tensors(_prepared(), dtype=tf.float32)
+    theta = tf.constant(_convert(_fixture()["center_theta"]), tf.float32)
+    bound = canonical.make_canonical_value_and_score_tf(
+        prepared,
+        dtype=tf.float32,
+        jit_compile=False,
+        **SHORT_BALANCE_KWARGS,
+    )
+    prepared_input = canonical.make_canonical_prepared_value_and_score_tf(
+        batch_size=2,
+        time_steps=2,
+        num_particles=4,
+        dtype=tf.float32,
+        jit_compile=False,
+        **SHORT_BALANCE_KWARGS,
+    )
+    expected = bound(theta)
+    actual = prepared_input(theta, prepared)
+    for name in (
+        "objective",
+        "per_batch_log_likelihood",
+        "score",
+        "per_batch_score",
+        "valid_chart",
+        "reset_valid_history",
+        "quotient_marginal_valid_history",
+        "tv_column_error_history",
+        "maximum_row_error_history",
+        "work_sinkhorn_state_constructions",
+        "work_terminal_balance_state_constructions",
+        "work_transport_tile_sweeps",
+        "work_marginal_tile_sweeps",
+        "work_diagnostic_solver_reconstructions",
+    ):
+        tf.debugging.assert_equal(actual[name], expected[name])
+    assert len(prepared_input._list_all_concrete_functions_for_serialization()) == 1
+
+
 def test_factory_rejects_noncanonical_dtype() -> None:
     with pytest.raises(ValueError, match="float32 or float64"):
         canonical.make_canonical_value_and_score_tf(

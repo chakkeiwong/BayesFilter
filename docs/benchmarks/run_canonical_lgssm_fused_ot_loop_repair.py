@@ -36,7 +36,6 @@ EPSILON = 0.5
 SCALING = 0.9
 GPU_MEMORY_LIMIT_MIB = 8192
 ALLOWED_HORIZONS = (2, 10, 50)
-ALLOWED_PARTICLE_COUNTS = (128, 1024)
 ALLOWED_ARMS = ("all_active_contract_e", "no_reset_weighted")
 
 
@@ -69,12 +68,17 @@ def _parse_seeds(text: str) -> tuple[int, ...]:
 
 
 def _configure_gpu(dtype: tf.dtypes.DType) -> dict[str, Any]:
+    from bayesfilter.runtime.gpu_memory_policy import (
+        configure_tensorflow_gpu_memory_limit,
+    )
+
     physical = tf.config.list_physical_devices("GPU")
     if not physical:
         raise RuntimeError("trusted GPU execution requires one visible GPU")
-    tf.config.set_logical_device_configuration(
-        physical[0],
-        [tf.config.LogicalDeviceConfiguration(memory_limit=GPU_MEMORY_LIMIT_MIB)],
+    memory_policy = configure_tensorflow_gpu_memory_limit(
+        tf,
+        memory_limit_mib=GPU_MEMORY_LIMIT_MIB,
+        require_gpu=True,
     )
     logical = tf.config.list_logical_devices("GPU")
     if len(logical) != 1:
@@ -86,6 +90,7 @@ def _configure_gpu(dtype: tf.dtypes.DType) -> dict[str, Any]:
         "logical_devices": [device.name for device in logical],
         "memory_limit_mib": GPU_MEMORY_LIMIT_MIB,
         "memory_growth": False,
+        "memory_policy": dict(memory_policy),
         "jit_compile": True,
         "dtype": dtype.name,
         "tf32_enabled": tf32,
@@ -163,7 +168,10 @@ def _finite(result: dict[str, tf.Tensor]) -> bool:
 
 
 def _execute(
-    args: argparse.Namespace, *, configured_device: dict[str, Any] | None = None
+    args: argparse.Namespace,
+    *,
+    configured_device: dict[str, Any] | None = None,
+    compiled_prepared_callable: Any | None = None,
 ) -> dict[str, Any]:
     dtype = tf.float64 if args.dtype == "float64" else tf.float32
     device = configured_device or _configure_gpu(dtype)
@@ -176,6 +184,9 @@ def _execute(
 
     chunks = select_transport_chunks(args.num_particles)
     seeds = _parse_seeds(args.seeds)
+    sinkhorn_steps = getattr(args, "sinkhorn_steps", SINKHORN_STEPS)
+    if sinkhorn_steps <= 0 or args.balance_steps <= 0:
+        raise ValueError("sinkhorn_steps and balance_steps must be positive")
     raw_observations = _lgssm_dataset(DATASET_SEED)["observations"][: args.time_steps]
     active = args.arm == "all_active_contract_e"
     prepared_result = preparation.prepare_contract_e_lgssm_inputs(
@@ -186,7 +197,7 @@ def _execute(
         prepared_ridge=[[RIDGE] * args.time_steps for _ in seeds],
         epsilon=EPSILON,
         scaling=SCALING,
-        sinkhorn_steps=SINKHORN_STEPS,
+        sinkhorn_steps=sinkhorn_steps,
         balance_steps=args.balance_steps,
         row_chunk_size=chunks.row_chunk_size,
         col_chunk_size=chunks.col_chunk_size,
@@ -194,28 +205,58 @@ def _execute(
     )
     prepared = preparation.prepared_values(prepared_result)
     observations = prepared["observations"]
-    callable_ = canonical.make_canonical_value_and_score_tf(
-        prepared,
-        steps=SINKHORN_STEPS,
-        balance_steps=args.balance_steps,
-        row_chunk_size=chunks.row_chunk_size,
-        col_chunk_size=chunks.col_chunk_size,
-        jit_compile=True,
-        dtype=dtype,
-    )
+    if compiled_prepared_callable is None:
+        callable_ = canonical.make_canonical_value_and_score_tf(
+            prepared,
+            steps=sinkhorn_steps,
+            balance_steps=args.balance_steps,
+            row_chunk_size=chunks.row_chunk_size,
+            col_chunk_size=chunks.col_chunk_size,
+            jit_compile=True,
+            dtype=dtype,
+            cache_same_cloud_geometry=getattr(
+                args, "cache_same_cloud_geometry", False
+            ),
+        )
+
+        def invoke(theta_value: tf.Tensor) -> dict[str, tf.Tensor]:
+            return callable_(theta_value)
+    else:
+        callable_ = compiled_prepared_callable
+
+        def invoke(theta_value: tf.Tensor) -> dict[str, tf.Tensor]:
+            return callable_(theta_value, prepared)
     theta = tf.constant(THETA, dtype)
     trace_started = time.perf_counter()
-    concrete = callable_.get_concrete_function()
+    concrete = (
+        callable_.get_concrete_function()
+        if compiled_prepared_callable is None
+        else callable_.get_concrete_function(theta, prepared)
+    )
     trace_seconds = time.perf_counter() - trace_started
     first_started = time.perf_counter()
-    first = callable_(theta)
+    first = invoke(theta)
     _synchronize(first)
     first_seconds = time.perf_counter() - first_started
-    warm_started = time.perf_counter()
-    warm = callable_(theta)
-    _synchronize(warm)
-    warm_seconds = time.perf_counter() - warm_started
-    replay_equal = _serialized_equal(first, warm)
+    replay_checked = getattr(args, "include_replay_diagnostic", True)
+    warm_repetitions = getattr(args, "warm_repetitions", 1)
+    if warm_repetitions <= 0:
+        raise ValueError("warm_repetitions must be positive")
+    if replay_checked:
+        warm_execution_seconds = []
+        replay_equal: bool | None = True
+        for _ in range(warm_repetitions):
+            warm_started = time.perf_counter()
+            warm = invoke(theta)
+            _synchronize(warm)
+            warm_execution_seconds.append(time.perf_counter() - warm_started)
+            replay_equal = replay_equal and _serialized_equal(first, warm)
+        ordered_warm = sorted(warm_execution_seconds)
+        warm_seconds = ordered_warm[len(ordered_warm) // 2]
+    else:
+        warm_execution_seconds = []
+        warm_seconds = None
+        replay_equal = None
     finite = _finite(first)
     active_mask = first["active_reset_history"]
     if active:
@@ -239,7 +280,11 @@ def _execute(
         marginal_valid = True
         reset_valid = True
     chart_valid = bool(tf.reduce_all(first["valid_chart"]))
-    kalman_value, kalman_score = _kalman(observations, theta, canonical)
+    include_kalman = getattr(args, "include_kalman_diagnostic", True)
+    if include_kalman:
+        kalman_value, kalman_score = _kalman(observations, theta, canonical)
+    else:
+        kalman_value, kalman_score = None, None
     aggregate_value = float(first["objective"])
     aggregate_score = [float(item) for item in first["score"]]
     memory = tf.config.experimental.get_memory_info("GPU:0")
@@ -265,14 +310,18 @@ def _execute(
         )
     }
     expected_steps = args.time_steps if active else 0
+    expected_marginal_sweeps = (
+        expected_steps if active and chunks.row_blocks > 1 else 0
+    )
     work_valid = (
         work["sinkhorn_state_constructions"] == expected_steps
         and work["terminal_balance_state_constructions"] == expected_steps
         and work["transport_tile_sweeps"] == expected_steps
-        and work["marginal_tile_sweeps"] == 0
+        and work["marginal_tile_sweeps"] == expected_marginal_sweeps
         and work["diagnostic_solver_reconstructions"] == 0
     )
-    hard_valid = finite and replay_equal and chart_valid and marginal_valid and reset_valid and work_valid
+    replay_valid = replay_equal if replay_checked else True
+    hard_valid = finite and replay_valid and chart_valid and marginal_valid and reset_valid and work_valid
     return {
         "device": device,
         "git_commit": _git_commit(),
@@ -284,6 +333,11 @@ def _execute(
         "num_particles": args.num_particles,
         "estimator_seeds": list(seeds),
         "balance_steps": args.balance_steps,
+        "sinkhorn_steps": sinkhorn_steps,
+        "cache_same_cloud_geometry": getattr(
+            args, "cache_same_cloud_geometry", False
+        ),
+        "warm_repetitions": warm_repetitions,
         "preparation_identity": prepared_result["identity"],
         "theta": list(THETA),
         "per_seed_value": [float(item) for item in first["per_batch_log_likelihood"]],
@@ -292,18 +346,38 @@ def _execute(
         "aggregate_physical_score": aggregate_score,
         "kalman_value": kalman_value,
         "kalman_physical_score": kalman_score,
-        "value_difference_to_kalman": aggregate_value - kalman_value,
-        "physical_score_difference_to_kalman": [
-            candidate - oracle
-            for candidate, oracle in zip(aggregate_score, kalman_score, strict=True)
-        ],
+        "value_difference_to_kalman": (
+            aggregate_value - kalman_value if kalman_value is not None else None
+        ),
+        "physical_score_difference_to_kalman": (
+            [
+                candidate - oracle
+                for candidate, oracle in zip(
+                    aggregate_score, kalman_score, strict=True
+                )
+            ]
+            if kalman_score is not None
+            else None
+        ),
         "finite": finite,
+        "replay_checked": replay_checked,
         "bitwise_replay": replay_equal,
         "chart_valid": chart_valid,
         "marginal_valid": marginal_valid,
         "reset_valid": reset_valid,
         "maximum_tv_column_error": maximum_tv_column,
         "maximum_row_error": maximum_row_error,
+        "tv_column_error_by_seed_time": first[
+            "tv_column_error_history"
+        ].numpy().tolist(),
+        "maximum_row_error_by_seed_time": first[
+            "maximum_row_error_history"
+        ].numpy().tolist(),
+        "marginal_valid_by_seed_time": first[
+            "quotient_marginal_valid_history"
+        ].numpy().tolist(),
+        "reset_valid_by_seed_time": first["reset_valid_history"].numpy().tolist(),
+        "chart_valid_by_seed": first["valid_chart"].numpy().tolist(),
         "work": work,
         "work_valid": work_valid,
         "hard_valid": hard_valid,
@@ -311,6 +385,7 @@ def _execute(
             "trace": trace_seconds,
             "compile_plus_first_execution": first_seconds,
             "warm_execution": warm_seconds,
+            "warm_execution_repetitions": warm_execution_seconds,
         },
         "gpu_allocator_bytes": {name: int(value) for name, value in memory.items()},
         "graph": {
@@ -331,16 +406,33 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--attempt-id", required=True)
     parser.add_argument("--time-steps", type=int, choices=ALLOWED_HORIZONS, required=True)
-    parser.add_argument(
-        "--num-particles", type=int, choices=ALLOWED_PARTICLE_COUNTS, required=True
-    )
+    parser.add_argument("--num-particles", type=int, required=True)
     parser.add_argument("--seeds", required=True)
     parser.add_argument("--arm", choices=ALLOWED_ARMS, required=True)
     parser.add_argument("--balance-steps", type=int, required=True)
+    parser.add_argument("--sinkhorn-steps", type=int, default=SINKHORN_STEPS)
+    parser.add_argument("--warm-repetitions", type=int, default=1)
+    parser.add_argument(
+        "--cache-same-cloud-geometry",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--kalman-diagnostic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     parser.add_argument("--dtype", choices=("float32", "float64"), required=True)
     parser.add_argument("--campaign-id", default=CAMPAIGN_ID)
     parser.add_argument("--plan-path", default=PLAN_PATH)
     args = parser.parse_args()
+    if args.num_particles <= 1:
+        raise ValueError("num-particles must be greater than one")
+    if min(args.sinkhorn_steps, args.balance_steps, args.warm_repetitions) <= 0:
+        raise ValueError(
+            "sinkhorn-steps, balance-steps, and warm-repetitions must be positive"
+        )
+    args.include_kalman_diagnostic = args.kalman_diagnostic
     output = args.output.resolve()
     if output.exists():
         raise FileExistsError(f"refusing to overwrite {output}")

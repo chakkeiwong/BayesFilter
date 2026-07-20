@@ -315,7 +315,7 @@ def contract_e_cholesky_ridge_reset_fixed_ridge_vjp(
         solved_bar,
     )
 
-    target_cov_bar = cholesky_vjp(aux["target_chol"], target_chol_bar)
+    target_cov_from_affine_bar = cholesky_vjp(aux["target_chol"], target_chol_bar)
     tilde_cov_bar = cholesky_vjp(aux["tilde_chol"], tilde_chol_bar)
     y_tilde_bar = y_tilde_bar + uniform_moments_vjp(
         aux["y_tilde"],
@@ -327,7 +327,12 @@ def contract_e_cholesky_ridge_reset_fixed_ridge_vjp(
     xi_bar, b_matrix_bar = apply_batch_linear_rows_vjp(aux["xi"], aux["b_matrix"], y_tilde_bar)
     residual_chol_bar = sqrt_rho * b_matrix_bar
     gap_bar = cholesky_vjp(aux["residual_chol"], residual_chol_bar)
-    target_cov_bar = target_cov_bar + sym(gap_bar)
+    ridge_bar = (
+        tf.linalg.trace(gap_bar)
+        + tf.linalg.trace(target_cov_from_affine_bar)
+        + tf.linalg.trace(tilde_cov_bar)
+    )
+    target_cov_bar = target_cov_from_affine_bar + sym(gap_bar)
     plus_cov_bar = -sym(gap_bar)
 
     y_plus_bar = y_plus_from_tilde_bar + uniform_moments_vjp(
@@ -357,6 +362,7 @@ def contract_e_cholesky_ridge_reset_fixed_ridge_vjp(
         "weights": weights_bar,
         "matrix": matrix_bar,
         "residual_noise": residual_noise_bar,
+        "ridge": ridge_bar,
     }
 
 

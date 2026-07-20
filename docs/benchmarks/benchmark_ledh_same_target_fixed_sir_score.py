@@ -16,6 +16,7 @@ stopped-scale diagnostic route.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import platform
@@ -38,6 +39,7 @@ from bayesfilter.highdim.ledh_forward_contract import (
 from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN,
     LEDH_SCORE_ADMISSION_STATUS_FULL,
+    LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW,
     LEDH_SCORE_ADMISSION_STATUS_TINY,
     LEDH_SCORE_ARTIFACT_SCHEMA_VERSION,
     LEDH_SCORE_COMPACT_FIXED_SIR_PROVENANCE,
@@ -45,6 +47,10 @@ from bayesfilter.highdim.ledh_score_contract import (
     LEDH_SCORE_TARGET_KIND_REALIZED_FINITE_N_ESTIMATOR,
     LEDH_SCORE_VALUE_ROUTE_STATUS_SAME,
     validate_ledh_score_artifact,
+    validate_ledh_score_production_precision,
+)
+from bayesfilter.highdim.ledh_historical_raw_policy import (
+    require_historical_raw_diagnostic_opt_in,
 )
 from docs.benchmarks import benchmark_p8p_parameterized_sir_gradient as p8p
 
@@ -110,6 +116,9 @@ def _fixed_sir_forward_contract(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _require_fixed_sir_score_args(args: argparse.Namespace) -> None:
+    require_historical_raw_diagnostic_opt_in(
+        args, route_name="fixed-SIR raw value/score route"
+    )
     if args.transport_plan_mode != "streaming":
         raise ValueError("fixed-SIR admitted score requires streaming transport")
     if args.transport_ad_mode != "full":
@@ -133,6 +142,19 @@ def _theta_values(theta_values: Sequence[float] | None) -> list[float]:
     if len(values) != len(PARAMETER_NAMES):
         raise ValueError("fixed-SIR theta must have three log-scale entries")
     return values
+
+
+def _as_theta(theta: tf.Tensor | Sequence[float] | None) -> tf.Tensor:
+    values = [0.0, 0.0, 0.0] if theta is None else theta
+    tensor = tf.convert_to_tensor(values, dtype=p8p.DTYPE)
+    if tensor.shape.rank != 1 or int(tensor.shape[0]) != len(PARAMETER_NAMES):
+        raise ValueError("fixed-SIR theta must have shape [3]")
+    return tensor
+
+
+def _theta_components(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    tensor = _as_theta(theta)
+    return tensor[0], tensor[1], tensor[2]
 
 
 def _build_fixed_sir_tensors(
@@ -743,15 +765,20 @@ def _compact_ledh_flow_jvp_tf(
 
 def _compact_value_and_score_from_components(
     args: argparse.Namespace,
-    theta_values: Sequence[float] | None = None,
+    theta_values: tf.Tensor | Sequence[float] | None = None,
+    *,
+    prepared_tensors: Mapping[str, tf.Tensor] | None = None,
 ) -> dict[str, tf.Tensor]:
     """Compute fixed-SIR same-scalar score with compact forward sensitivity."""
 
     _configure_precision(args)
     _require_fixed_sir_score_args(args)
-    theta = _theta_values(theta_values)
-    tensors, _semantics = _build_fixed_sir_tensors(args)
-    scaled = p8p._scaled_parameters(p8p._theta_components(theta))  # noqa: SLF001
+    theta = _as_theta(theta_values)
+    if prepared_tensors is None:
+        tensors, _semantics = _build_fixed_sir_tensors(args)
+    else:
+        tensors = dict(prepared_tensors)
+    scaled = p8p._scaled_parameters(_theta_components(theta))  # noqa: SLF001
     kappa = tf.convert_to_tensor(scaled["kappa"], dtype=p8p.DTYPE)
     nu = tf.convert_to_tensor(scaled["nu"], dtype=p8p.DTYPE)
     observation_covariance = p8p._batch_matrix_parameter(  # noqa: SLF001
@@ -926,6 +953,122 @@ def _compact_value_and_score_from_components(
     }
 
 
+def _value_objective_from_components(
+    args: argparse.Namespace,
+    theta_values: tf.Tensor | Sequence[float] | None = None,
+    *,
+    prepared_tensors: Mapping[str, tf.Tensor] | None = None,
+) -> tf.Tensor:
+    """Value-only fixed-SIR objective used for finite differences."""
+
+    _configure_precision(args)
+    _require_fixed_sir_score_args(args)
+    if prepared_tensors is None:
+        tensors, _semantics = _build_fixed_sir_tensors(args)
+    else:
+        tensors = dict(prepared_tensors)
+    objective, _log_likelihood = p8p._objective_from_components(  # noqa: SLF001
+        tensors,
+        args,
+        _theta_components(_as_theta(theta_values)),
+    )
+    return objective
+
+
+def _prepare_compact_xla_inputs(
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    _configure_precision(args)
+    _require_fixed_sir_score_args(args)
+    if len(args.batch_seeds) != 1:
+        raise ValueError("fixed-SIR XLA score shards require exactly one seed")
+    tensors, semantics = _build_fixed_sir_tensors(args)
+    return {"tensors": tensors, "semantics": semantics}
+
+
+def _compact_score_tensor_outputs(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    prepared: Mapping[str, Any],
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    result = _compact_value_and_score_from_components(
+        args,
+        theta,
+        prepared_tensors=prepared["tensors"],
+    )
+    return (
+        result["objective"],
+        result["log_likelihood"],
+        result["gradient_tensor"],
+        result["per_seed_gradient"],
+    )
+
+
+def _value_tensor_outputs(
+    args: argparse.Namespace,
+    theta: tf.Tensor,
+    prepared: Mapping[str, Any],
+) -> tuple[tf.Tensor, tf.Tensor]:
+    _configure_precision(args)
+    _require_fixed_sir_score_args(args)
+    return p8p._objective_from_components(  # noqa: SLF001
+        dict(prepared["tensors"]),
+        args,
+        _theta_components(theta),
+    )
+
+
+def _single_seed_args(args: argparse.Namespace, seed: int) -> argparse.Namespace:
+    clone = copy.copy(args)
+    clone.batch_seeds = [int(seed)]
+    return clone
+
+
+def _compact_value_and_score_across_seeds(
+    args: argparse.Namespace,
+    theta_values: Sequence[float] | None = None,
+) -> dict[str, tf.Tensor]:
+    """Evaluate the compact score sequentially across fixed-randomness seeds."""
+
+    seed_results = [
+        _compact_value_and_score_from_components(
+            _single_seed_args(args, seed),
+            theta_values,
+        )
+        for seed in args.batch_seeds
+    ]
+    log_likelihood = tf.concat([result["log_likelihood"] for result in seed_results], axis=0)
+    per_seed_gradient = tf.stack(
+        [tf.reshape(result["gradient_tensor"], [-1]) for result in seed_results],
+        axis=0,
+    )
+    return {
+        "objective": tf.reduce_mean(log_likelihood),
+        "log_likelihood": log_likelihood,
+        "gradient_tensor": tf.reduce_mean(per_seed_gradient, axis=0),
+        "per_seed_gradient": per_seed_gradient,
+        "score_route": FIXED_SIR_COMPACT_SCORE_ROUTE_ID,
+        "no_autodiff_score_route": True,
+        "value_score_route_status": "same_route_value_score",
+        "batch_seeds": [int(seed) for seed in args.batch_seeds],
+        "time_steps": int(args.time_steps),
+        "num_particles": int(args.num_particles),
+    }
+
+
+def _value_objective_across_seeds(
+    args: argparse.Namespace,
+    theta_values: Sequence[float] | None = None,
+) -> tf.Tensor:
+    """Evaluate the value-only scalar sequentially across seeds."""
+
+    seed_values = [
+        _value_objective_from_components(_single_seed_args(args, seed), theta_values)
+        for seed in args.batch_seeds
+    ]
+    return tf.reduce_mean(tf.stack(seed_values))
+
+
 def _fixed_sir_compact_coordinate_fd_diagnostic(
     args: argparse.Namespace,
     theta_values: Sequence[float] | None = None,
@@ -935,13 +1078,22 @@ def _fixed_sir_compact_coordinate_fd_diagnostic(
     precision = _configure_precision(args)
     theta = tf.constant(_theta_values(theta_values), dtype=p8p.DTYPE)
     step = tf.constant(float(fd_step if fd_step is not None else args.fd_step), dtype=p8p.DTYPE)
-    base = _compact_value_and_score_from_components(args, theta.numpy().tolist())
+    base = _compact_value_and_score_across_seeds(args, theta.numpy().tolist())
     fd_values = []
     for index in range(len(PARAMETER_NAMES)):
         basis = tf.one_hot(index, len(PARAMETER_NAMES), dtype=p8p.DTYPE)
-        plus = _compact_value_and_score_from_components(args, (theta + step * basis).numpy().tolist())
-        minus = _compact_value_and_score_from_components(args, (theta - step * basis).numpy().tolist())
-        fd_values.append((plus["objective"] - minus["objective"]) / (tf.constant(2.0, dtype=p8p.DTYPE) * step))
+        plus_objective = _value_objective_across_seeds(
+            args,
+            (theta + step * basis).numpy().tolist(),
+        )
+        minus_objective = _value_objective_across_seeds(
+            args,
+            (theta - step * basis).numpy().tolist(),
+        )
+        fd_values.append(
+            (plus_objective - minus_objective)
+            / (tf.constant(2.0, dtype=p8p.DTYPE) * step)
+        )
     fd_score = tf.stack(fd_values)
     score = tf.convert_to_tensor(base["gradient_tensor"], dtype=p8p.DTYPE)
     abs_error = tf.abs(score - fd_score)
@@ -984,7 +1136,7 @@ def _fixed_sir_compact_score_artifact_from_diagnostic(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
     base_raw = diagnostic.get("base")
     if not isinstance(base_raw, Mapping):
@@ -1050,9 +1202,7 @@ def _fixed_sir_compact_score_artifact_from_diagnostic(
         "uses_stopped_partial_derivative": False,
         "score_correctness": score_correctness,
         "score_admission_status": (
-            LEDH_SCORE_ADMISSION_STATUS_FULL
-            if require_all_parameter_correctness
-            else LEDH_SCORE_ADMISSION_STATUS_TINY
+            LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
             if diagnostic.get("status") == "pass"
             else LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN
         ),
@@ -1062,11 +1212,11 @@ def _fixed_sir_compact_score_artifact_from_diagnostic(
         "memory_diagnostics": memory,
     }
     if require_all_parameter_correctness:
-        validate_ledh_score_artifact(
-            artifact,
-            source_value_artifact=source_value_artifact,
-            expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID,
-            require_admitted=True,
+        validate_ledh_score_production_precision(
+            _score_precision_metadata(diagnostic.get("score_precision", {}))
+        )
+        raise ValueError(
+            "fixed-SIR raw-barycentric score route is historical diagnostic only"
         )
     return artifact
 
@@ -1083,7 +1233,7 @@ def _fixed_sir_score_artifact_from_memory_result(
     value_core = validate_ledh_forward_scalar_artifact(
         source_value_artifact,
         expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID,
-        require_admitted=True,
+        require_admitted=False,
     )
     row_id = str(result.get("row_id"))
     if row_id != FIXED_SIR_AUSTRIA_ROW_ID:
@@ -1138,7 +1288,7 @@ def _fixed_sir_score_artifact_from_memory_result(
             "rel_error": float(result.get("rel_error")),
         },
         "score_admission_status": (
-            LEDH_SCORE_ADMISSION_STATUS_TINY
+            LEDH_SCORE_ADMISSION_STATUS_HISTORICAL_RAW
             if result.get("primary_pass") is True
             else LEDH_SCORE_ADMISSION_STATUS_BLOCKED_NOT_RUN
         ),
@@ -1149,11 +1299,4 @@ def _fixed_sir_score_artifact_from_memory_result(
             "budget_mib": budget_mib,
         },
     }
-    if require_all_parameter_correctness:
-        validate_ledh_score_artifact(
-            artifact,
-            source_value_artifact=source_value_artifact,
-            expected_row_id=FIXED_SIR_AUSTRIA_ROW_ID,
-            require_admitted=memory_pass,
-        )
     return artifact
