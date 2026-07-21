@@ -44,6 +44,17 @@ def test_projection_fits_unchanged_budget_and_binds_nine_guards():
     private, manifest = _source_payloads()
     projection = driver.prospective_guard_projection(private, manifest)
     assert projection["compatible_primary_l_values"] == (5, 9, 13, 18, 25)
+    assert projection["coverage_probe_l_values"] == (
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        17,
+        19,
+        24,
+    )
     assert projection["guard_l_values"] == (4, 6, 8, 10, 12, 14, 17, 19, 24)
     assert projection["guard_count"] == 9
     assert projection["guard_campaign_authorized"] is True

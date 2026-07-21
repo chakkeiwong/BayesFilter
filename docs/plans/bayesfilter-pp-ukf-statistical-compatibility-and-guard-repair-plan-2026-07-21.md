@@ -2,14 +2,31 @@
 
 Date: 2026-07-21
 
-Status: `COMPLETE_VIABLE_PAIR_SET`
+Status: `COMPLETE_EVIDENCE_WITH_PROMOTION_CORRECTION`
 
-Terminal result: the corrected classifier retained primaries
+Terminal evidence: the corrected classifier retained primaries
 `L=(5,9,13,18,25)` as statistically compatible and rejected only `L=3`.
-Fresh exact-epsilon guards established locally suitable neighborhoods for
-`L=(13,18,25)`. All nine guards completed; cumulative charged time was
-`13,750.560450 s`, below the unchanged `14,400 s` ceiling. See
+All nine exact-epsilon one-hop coverage probes completed; cumulative charged
+time was `13,750.560450 s`, below the unchanged `14,400 s` ceiling. The active
+next-round set is the union of compatible primaries and compatible coverage
+points: `L=(5,9,12,13,14,17,18,19,24,25)`. See
 `docs/plans/bayesfilter-pp-ukf-statistical-compatibility-and-guard-repair-result-2026-07-21.md`.
+
+## Active Interpretation Correction (2026-07-22)
+
+The one-hop evaluations are coverage points that fill holes in the primary
+grid. They are not a local-suitability guard or a veto on their parent. A
+compatible primary remains in the next round even when one or both inherited-
+epsilon coverage probes fail. A compatible coverage point is added as its own
+candidate. No ranking is performed.
+
+The corrected next-round values for the completed evidence are:
+
+```text
+(5, 9, 12, 13, 14, 17, 18, 19, 24, 25)
+```
+
+The failed coverage points `(4, 6, 8, 10)` are excluded individually.
 
 ## Objective
 
@@ -31,13 +48,13 @@ values, seeds, target, metric, transport, and state lineage do not. Its previous
 | Field | Binding decision |
 | --- | --- |
 | Main question | Which PP-UKF primary epsilon arms are statistically compatible with mean acceptance in `[0.65,0.75]`, after accounting for replication noise? |
-| Candidate | Each completed `(L, epsilon_L)` primary, followed by exact-epsilon one-hop guards for compatible primaries |
+| Candidate | Each completed `(L, epsilon_L)` primary, followed by exact-epsilon one-hop coverage probes for compatible primaries |
 | Claimed target | Mean Metropolis acceptance probability in `[0.65,0.75]`, centered nominally at `0.70` |
 | Statistical unit | Mean across four chains within each of three independently seeded final replications |
 | Working interval | Two-sided 90% Student-t interval over three replication means, `df=2`, critical value `2.919985580355516` |
 | Rejection criterion | `needs_lower_epsilon` only when interval upper bound is below `0.65`; `needs_higher_epsilon` only when interval lower bound is above `0.75` |
 | Nomination criterion | Interval overlaps `[0.65,0.75]`, with no hard veto; label `provisional_viable` |
-| Promotion veto | Existing hard target, state, movement, identity, lineage, artifact, or resource veto; incomplete primary or required-guard barrier |
+| Promotion veto | Existing hard target, state, movement, identity, lineage, artifact, or resource veto; incomplete primary or coverage barrier. A failed coverage point is not a parent-primary veto. |
 | Continuation veto | Cumulative charged wall time or staged projection exceeds `14,400 s`; reconstructed calibrated state or epsilon differs from the preserved primary artifact |
 | Explanatory only | Point mean, chain-level values, interval width, calibration path, and runtime |
 | Must not be concluded | Interval overlap does not prove the true acceptance is in-band, rank candidates, establish convergence, or authorize retained sampling |
@@ -57,7 +74,7 @@ values, seeds, target, metric, transport, and state lineage do not. Its previous
 - Guards use the parent's epsilon bit-for-bit, do not retune, start from the
   reconstructed matching parent state, and use three fresh 96-result screens
   after eight initialization transitions.
-- Every guard uses the same replication-mean 90% interval and overlap rule.
+- Every coverage probe uses the same replication-mean 90% interval and overlap rule.
 - No posterior or retained sampling is authorized.
 - Fresh artifact root:
   `docs/plans/artifacts/bayesfilter-pp-ukf-statistical-compatibility-guard-repair-20260721/`.
@@ -71,7 +88,7 @@ Use measured source times to project only the work made necessary by the
 corrected rule:
 
 - reconstruct calibration for statistically compatible parents only;
-- run the actual deduplicated exact-epsilon guard set;
+- run the actual deduplicated exact-epsilon coverage set;
 - separate one-time runner compilation from steady per-leapfrog execution;
 - apply a 25% margin to both components; and
 - stop before launch if projected cumulative time exceeds the ceiling.

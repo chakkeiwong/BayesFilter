@@ -1,9 +1,10 @@
-"""Operational broad fixed-mass HMC grid and neighbor-guard contracts.
+"""Operational broad fixed-mass HMC grid and one-hop coverage contracts.
 
 TensorFlow/TFP callbacks owned by the application perform HMC transitions,
 dual averaging, and fixed-kernel screens.  This module owns only immutable
 lineage, uncertainty-aware screen classification, the non-directional primary
-``L`` grid, exact-epsilon one-hop guards, and complete execution barriers.
+``L`` grid, exact-epsilon one-hop coverage probes, and complete execution
+barriers.
 
 All evidence handled here is discarded tuning evidence.  A viable pair is a
 candidate for later frozen-kernel validation, not a retained sampler, a ranked
@@ -33,6 +34,9 @@ PRIMARY_L_GRID = (3, 5, 9, 13, 18, 25)
 MIN_GUARD_L = 2
 MAX_L = 25
 PRIMARY_ROLE = "independently_tuned_primary"
+NEIGHBOR_COVERAGE_ROLE = "same_epsilon_neighbor_coverage"
+# Preserve the v1 serialized request role for historical lineage.  The active
+# scientific role is exposed separately as coverage, not parent promotion.
 GUARD_ROLE = "same_epsilon_neighbor_guard"
 MASS_UPDATE_DISPOSITIONS = (
     "dense_update",
@@ -696,9 +700,14 @@ class SameEpsilonNeighborGuardRequest:
 
     @property
     def signature(self) -> str:
-        return _signature("bayesfilter.same_epsilon_neighbor_guard_request.v1", self.payload())
+        return _signature(
+            "bayesfilter.same_epsilon_neighbor_guard_request.v1",
+            self.identity_payload(),
+        )
 
-    def payload(self) -> Mapping[str, Any]:
+    def identity_payload(self) -> Mapping[str, Any]:
+        """The unchanged v1 request identity payload."""
+
         return {
             "route": ROUTE_ID,
             "role": GUARD_ROLE,
@@ -713,6 +722,14 @@ class SameEpsilonNeighborGuardRequest:
             "lineage_signature": self.lineage_signature,
             "epsilon_retuned": False,
             "recursive_expansion_allowed": False,
+        }
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            **self.identity_payload(),
+            "scientific_role": NEIGHBOR_COVERAGE_ROLE,
+            "coverage_derived": True,
+            "parent_promotion_veto": False,
         }
 
 
@@ -733,14 +750,26 @@ class SameEpsilonNeighborGuard:
 
     @property
     def signature(self) -> str:
-        return _signature("bayesfilter.same_epsilon_neighbor_guard.v1", self.payload())
+        return _signature(
+            "bayesfilter.same_epsilon_neighbor_guard.v1",
+            self.identity_payload(),
+        )
 
-    def payload(self) -> Mapping[str, Any]:
+    def identity_payload(self) -> Mapping[str, Any]:
+        """The unchanged v1 guard identity payload."""
+
         return {
-            "request": self.request.payload(),
+            "request": self.request.identity_payload(),
             "evidence": self.evidence.payload(),
             "viable": self.viable,
             "independently_tuned": False,
+        }
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            **self.identity_payload(),
+            "coverage_derived": True,
+            "parent_promotion_veto": False,
         }
 
 
@@ -774,7 +803,12 @@ def expand_same_epsilon_neighbor_guards(
     policy: OperationalBroadGridPolicy,
     handoff: OperationalMassHandoff,
 ) -> tuple[SameEpsilonNeighborGuardRequest, ...]:
-    """Expand viable primaries once and deduplicate by complete guard pair."""
+    """Expand viable primaries once into exact-epsilon coverage probes.
+
+    These probes fill holes in the primary ``L`` grid.  Their result is
+    admitted independently into the next-round union when compatible; a
+    failed probe does not veto its compatible parent primary.
+    """
 
     if not handoff.grid_ready:
         raise ValueError("neighbor guards require a grid-ready mass handoff")
@@ -896,20 +930,86 @@ class OperationalBroadGridResult:
     def viable_guard_candidates(self) -> tuple[SameEpsilonNeighborGuard, ...]:
         return tuple(item for item in self.guard_candidates if item.viable)
 
+    @property
+    def viable_coverage_candidates(self) -> tuple[SameEpsilonNeighborGuard, ...]:
+        """Compatible one-hop probes; failures do not veto parent primaries."""
+
+        return self.viable_guard_candidates
+
+    @property
+    def coverage_barrier(self) -> OperationalBarrier:
+        """Compatibility alias naming the barrier's active scientific role."""
+
+        return self.guard_barrier
+
+    @property
+    def next_round_candidates(
+        self,
+    ) -> tuple[OperationalPrimaryCandidate | SameEpsilonNeighborGuard, ...]:
+        """Return the complete unranked primary-plus-coverage union.
+
+        A next-round set is exposed only after both execution barriers pass.
+        The one-hop probes contribute themselves when compatible; their
+        compatibility is never used to remove a compatible primary.
+        """
+
+        if (
+            not self.mass_handoff.grid_ready
+            or not self.primary_barrier.complete
+            or not self.guard_barrier.complete
+        ):
+            return ()
+        candidates = self.viable_primary_candidates + self.viable_coverage_candidates
+        return tuple(
+            sorted(
+                candidates,
+                key=lambda item: (
+                    item.request.num_leapfrog_steps,
+                    0 if isinstance(item, OperationalPrimaryCandidate) else 1,
+                    item.tuned_step_size.hex()
+                    if isinstance(item, OperationalPrimaryCandidate)
+                    else item.request.inherited_step_size.hex(),
+                ),
+            )
+        )
+
+    @property
+    def next_round_l_values(self) -> tuple[int, ...]:
+        """Sorted unique ``L`` values for the unranked next-round union."""
+
+        return tuple(
+            sorted(
+                {
+                    item.request.num_leapfrog_steps
+                    for item in self.next_round_candidates
+                }
+            )
+        )
+
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.operational_broad_grid.private.v1",
+            "schema": "bayesfilter.operational_broad_grid.private.v2",
             "route": ROUTE_ID,
             "policy": self.policy.payload(),
             "mass_handoff": self.mass_handoff.payload(),
             "primary_candidates": tuple(item.payload() for item in self.primary_candidates),
             "guard_candidates": tuple(item.payload() for item in self.guard_candidates),
+            "coverage_candidates": tuple(
+                item.payload() for item in self.guard_candidates
+            ),
             "primary_barrier": self.primary_barrier.payload(),
             "guard_barrier": self.guard_barrier.payload(),
+            "coverage_barrier": self.coverage_barrier.payload(),
             "disposition": self.disposition,
             "execution": self.execution.payload(),
             "viable_primary_count": len(self.viable_primary_candidates),
             "viable_guard_count": len(self.viable_guard_candidates),
+            "viable_coverage_count": len(self.viable_coverage_candidates),
+            "next_round_candidates": tuple(
+                item.payload() for item in self.next_round_candidates
+            ),
+            "next_round_l_values": self.next_round_l_values,
+            "next_round_candidate_count": len(self.next_round_candidates),
             "all_viable_pairs_preserved": True,
             "representative": None,
             "stochastic_ranking_performed": False,
@@ -920,7 +1020,7 @@ class OperationalBroadGridResult:
 
     def public_payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.operational_broad_grid.public.v1",
+            "schema": "bayesfilter.operational_broad_grid.public.v2",
             "route": ROUTE_ID,
             "disposition": self.disposition,
             "execution": self.execution.payload(),
@@ -931,6 +1031,30 @@ class OperationalBroadGridResult:
             "completed_guard_count": len(self.guard_barrier.completed_signatures),
             "viable_primary_count": len(self.viable_primary_candidates),
             "viable_guard_count": len(self.viable_guard_candidates),
+            "viable_coverage_count": len(self.viable_coverage_candidates),
+            "next_round_l_values": self.next_round_l_values,
+            "next_round_candidate_count": len(self.next_round_candidates),
+            "next_round_roles": tuple(
+                {
+                    "num_leapfrog_steps": item.request.num_leapfrog_steps,
+                    "role": (
+                        PRIMARY_ROLE
+                        if isinstance(item, OperationalPrimaryCandidate)
+                        else NEIGHBOR_COVERAGE_ROLE
+                    ),
+                    "parent_l_values": (
+                        ()
+                        if isinstance(item, OperationalPrimaryCandidate)
+                        else item.request.parent_l_values
+                    ),
+                    "epsilon_policy": (
+                        "independently_tuned"
+                        if isinstance(item, OperationalPrimaryCandidate)
+                        else "inherit_exact_primary_epsilon_no_retuning"
+                    ),
+                }
+                for item in self.next_round_candidates
+            ),
             "stochastic_ranking_performed": False,
             "retained_sampling_authorized": False,
             "raw_samples_exposed": False,

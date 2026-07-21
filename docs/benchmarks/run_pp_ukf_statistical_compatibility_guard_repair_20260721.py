@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reclassify PP-UKF primaries and run newly required exact-epsilon guards."""
+"""Reclassify PP-UKF primaries and run exact-epsilon coverage probes."""
 
 from __future__ import annotations
 
@@ -44,6 +44,7 @@ SOURCE_MANIFEST = SOURCE_ROOT / "run_manifest.json"
 CAMPAIGN_CAP_SECONDS = repair.CAMPAIGN_CAP_SECONDS
 PROJECTION_MARGIN = 1.25
 RUNNER_COMPILE_ALLOWANCE_SECONDS = 60.0
+EXPECTED_NEXT_ROUND_L_VALUES = (5, 9, 12, 13, 14, 17, 18, 19, 24, 25)
 
 
 def _source_classification_rows(
@@ -131,7 +132,7 @@ def prospective_guard_projection(
         )
         for event in steady_events
     )
-    guard_l_values = tuple(
+    coverage_probe_l_values = tuple(
         neighbor
         for parent in compatible_l
         for neighbor in (parent - 1, parent + 1)
@@ -141,7 +142,7 @@ def prospective_guard_projection(
         leapfrog
         * repair.REPLICATION_COUNT
         * (repair.FINAL_SCREEN_BURNIN + repair.FINAL_SCREEN_RESULTS)
-        for leapfrog in guard_l_values
+        for leapfrog in coverage_probe_l_values
     )
     unscaled = (
         reconstruction_seconds
@@ -152,10 +153,13 @@ def prospective_guard_projection(
     prior_charged = float(source_manifest["cumulative_charged_seconds"])
     cumulative = prior_charged + projected_new
     return {
-        "schema": "bayesfilter.pp_ukf.statistical_compatibility_guard_projection.v1",
+        "schema": "bayesfilter.pp_ukf.statistical_compatibility_guard_projection.v2",
         "compatible_primary_l_values": compatible_l,
-        "guard_l_values": guard_l_values,
-        "guard_count": len(guard_l_values),
+        "coverage_probe_l_values": coverage_probe_l_values,
+        # Historical aliases remain readable; these are coverage probes, not
+        # parent-promotion guard/veto values.
+        "guard_l_values": coverage_probe_l_values,
+        "guard_count": len(coverage_probe_l_values),
         "guard_transition_leapfrogs": guard_work,
         "reconstruction_seconds": reconstruction_seconds,
         "maximum_steady_seconds_per_leapfrog_transition": (
@@ -169,6 +173,7 @@ def prospective_guard_projection(
         "projected_cumulative_seconds": cumulative,
         "campaign_cap_seconds": CAMPAIGN_CAP_SECONDS,
         "guard_campaign_authorized": cumulative <= CAMPAIGN_CAP_SECONDS,
+        "coverage_campaign_authorized": cumulative <= CAMPAIGN_CAP_SECONDS,
     }
 
 
@@ -345,7 +350,7 @@ def run_campaign(args: argparse.Namespace) -> Mapping[str, Any]:
         primaries, policy=policy, handoff=handoff
     )
     if tuple(item.num_leapfrog_steps for item in guard_requests) != tuple(
-        projection["guard_l_values"]
+        projection["coverage_probe_l_values"]
     ):
         raise ValueError("runtime guard set changed")
     guards = []
@@ -394,10 +399,25 @@ def run_campaign(args: argparse.Namespace) -> Mapping[str, Any]:
         guard_candidates=guards,
         guard_failure_reasons=guard_failures,
     )
+    expected_next_round = tuple(
+        sorted(
+            {
+                item.request.num_leapfrog_steps
+                for item in result.next_round_candidates
+            }
+        )
+    )
+    if expected_next_round != result.next_round_l_values:
+        raise ValueError("next-round L values are not a unique candidate union")
+    if result.guard_barrier.complete and expected_next_round != EXPECTED_NEXT_ROUND_L_VALUES:
+        raise ValueError(
+            "PP-UKF next-round set changed: "
+            f"expected {EXPECTED_NEXT_ROUND_L_VALUES}, got {expected_next_round}"
+        )
     wall = time.perf_counter() - started
     status = result.disposition
     private_payload = {
-        "schema": "bayesfilter.pp_ukf.statistical_compatibility_guard_repair.private.v1",
+        "schema": "bayesfilter.pp_ukf.statistical_compatibility_guard_repair.private.v2",
         "status": status,
         "grid": result.payload(),
         "source_primary_artifact": SOURCE_PRIVATE,
@@ -407,9 +427,12 @@ def run_campaign(args: argparse.Namespace) -> Mapping[str, Any]:
         "events": callbacks.events,
         "resource_decision": projection,
         "all_tuning_draws_discarded": True,
+        "next_round_l_values": result.next_round_l_values,
+        "next_round_selection": "compatible_primaries_union_compatible_one_hop_coverage",
+        "next_round_ranking_performed": False,
     }
     public_payload = {
-        "schema": "bayesfilter.pp_ukf.statistical_compatibility_guard_repair.public.v1",
+        "schema": "bayesfilter.pp_ukf.statistical_compatibility_guard_repair.public.v2",
         "status": status,
         "grid": result.public_payload(),
         "resource_decision": projection,
@@ -417,6 +440,9 @@ def run_campaign(args: argparse.Namespace) -> Mapping[str, Any]:
         "retained_sampling_authorized": False,
         "statistical_ranking_supported": False,
         "compatibility_is_in_band_proof": False,
+        "next_round_l_values": result.next_round_l_values,
+        "next_round_selection": "compatible_primaries_union_compatible_one_hop_coverage",
+        "next_round_ranking_performed": False,
         "nonclaims": result.public_payload()["nonclaims"],
     }
     base._write_new_json(args.output_root / "private_result.json", private_payload)

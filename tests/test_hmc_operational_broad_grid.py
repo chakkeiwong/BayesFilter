@@ -223,6 +223,11 @@ def test_one_hop_guard_expansion_admits_l2_and_does_not_recurse():
     assert all(item.payload()["epsilon_retuned"] is False for item in guards)
     assert all(item.payload()["recursive_expansion_allowed"] is False for item in guards)
     assert all(item.payload()["role"] == GUARD_ROLE for item in guards)
+    assert all(
+        item.payload()["scientific_role"] == "same_epsilon_neighbor_coverage"
+        for item in guards
+    )
+    assert all(item.payload()["parent_promotion_veto"] is False for item in guards)
 
 
 def test_guard_pair_deduplication_keeps_distinct_epsilon_pairs():
@@ -349,6 +354,63 @@ def test_complete_barrier_preserves_every_viable_pair_without_ranking():
     assert result.guard_barrier.complete
     assert result.payload()["representative"] is None
     assert result.public_payload()["epsilon_values_exposed"] is False
+
+
+def test_next_round_union_keeps_compatible_primaries_and_coverage_points():
+    primary_viability = {3: False, 5: True, 9: True, 13: True, 18: True, 25: True}
+    primaries = tuple(
+        _primary(item, viable=primary_viability[item]) for item in PRIMARY_L_GRID
+    )
+    coverage_requests = expand_same_epsilon_neighbor_guards(
+        primaries, policy=POLICY, handoff=_handoff()
+    )
+    coverage_viability = {4: False, 6: False, 8: False, 10: False, 12: True, 14: True, 17: True, 19: True, 24: True}
+    guards = tuple(
+        _guard(request, viable=coverage_viability[request.num_leapfrog_steps])
+        for request in coverage_requests
+    )
+    result = assemble_operational_broad_grid_result(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_candidates=primaries,
+        guard_candidates=guards,
+    )
+    assert result.next_round_l_values == (5, 9, 12, 13, 14, 17, 18, 19, 24, 25)
+    assert tuple(
+        item.request.num_leapfrog_steps for item in result.next_round_candidates
+    ) == (5, 9, 12, 13, 14, 17, 18, 19, 24, 25)
+    assert all(
+        item.request.num_leapfrog_steps not in {4, 6, 8, 10}
+        for item in result.next_round_candidates
+    )
+    assert result.public_payload()["stochastic_ranking_performed"] is False
+    assert result.public_payload()["next_round_l_values"] == (
+        5, 9, 12, 13, 14, 17, 18, 19, 24, 25
+    )
+
+
+def test_failed_coverage_probe_does_not_veto_compatible_parent():
+    primaries = tuple(
+        _primary(item, viable=item != 3) for item in PRIMARY_L_GRID
+    )
+    requests = expand_same_epsilon_neighbor_guards(
+        primaries, policy=POLICY, handoff=_handoff()
+    )
+    guards = tuple(
+        _guard(request, viable=request.num_leapfrog_steps not in {4, 6})
+        for request in requests
+    )
+    result = assemble_operational_broad_grid_result(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_candidates=primaries,
+        guard_candidates=guards,
+    )
+    assert result.next_round_l_values == (5, 8, 9, 10, 12, 13, 14, 17, 18, 19, 24, 25)
+    assert 5 in result.next_round_l_values
+    assert 9 in result.next_round_l_values
+    assert 4 not in result.next_round_l_values
+    assert 6 not in result.next_round_l_values
 
 
 def test_incomplete_primary_barrier_is_not_promotable():

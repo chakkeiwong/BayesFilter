@@ -2,7 +2,22 @@
 
 Date: 2026-07-21
 
-Decision: `VIABLE_PAIR_SET_WITH_THREE_LOCALLY_SUITABLE_PRIMARIES`
+Decision: `NEXT_ROUND_UNION_WITH_FIVE_COMPATIBLE_PRIMARIES_AND_FIVE_COVERAGE_POINTS`
+
+## Active Promotion Correction (2026-07-22)
+
+The one-hop evaluations are coverage points, not parent-neighborhood guards.
+Their failures exclude only the failed `L` values; they do not remove a
+compatible primary. Therefore the active next-round set is the unranked union
+of compatible primaries and compatible coverage points:
+
+```text
+L=(5,9,12,13,14,17,18,19,24,25)
+```
+
+`L=(4,6,8,10)` are excluded as individually incompatible coverage points.
+The numerical evidence below is preserved as historical evidence, but the
+former statement that only `L=(13,18,25)` should advance is superseded.
 
 ## Outcome
 
@@ -19,9 +34,10 @@ is below `0.65`, rejects above only when the interval lower bound is above
 a tuning nomination, not proof that the true mean is in-band.
 
 Only `L=3` is statistically rejected. Primaries `L=(5,9,13,18,25)` are
-compatible. Fresh exact-epsilon one-hop guards show complete locally suitable
-neighborhoods for `L=(13,18,25)`. `L=5` and `L=9` remain compatible primaries
-but both of their guards are statistically outside the band.
+compatible. Fresh exact-epsilon one-hop coverage probes are compatible at
+`L=(12,14,17,19,24)` and incompatible at `L=(4,6,8,10)`. `L=5` and `L=9`
+therefore remain in the next-round set despite their failed neighboring
+coverage probes.
 
 ## Corrected Primary Results
 
@@ -39,9 +55,9 @@ replication-level intervals overlap the band and therefore do not support
 statistical rejection. Conversely, `L=3` remains below at both 90% and 95%
 working levels; its rejection is not an artifact of choosing 90%.
 
-## Fresh Guard Results
+## Fresh One-Hop Coverage Results
 
-| Parent L | Guard L | Exact inherited epsilon | Mean acceptance | 90% replication interval | Disposition |
+| Parent L | Coverage L | Exact inherited epsilon | Mean acceptance | 90% replication interval | Disposition |
 | ---: | ---: | ---: | ---: | --- | --- |
 | 5 | 4 | 0.845201109 | 0.82599 | `[0.77692,0.87507]` | `needs_higher_epsilon` |
 | 5 | 6 | 0.845201109 | 0.76484 | `[0.75459,0.77509]` | `needs_higher_epsilon` |
@@ -64,10 +80,10 @@ performed.
 | Corrected primary barrier | Passed, `6/6`; five compatible and one statistically below |
 | Statistical unit | Passed: three fresh seeded replication means, each aggregating four chain means |
 | Parent reconstruction | Passed, `5/5`; exact epsilon bits and calibrated-state hashes matched |
-| Exact-epsilon guard barrier | Passed, `9/9`; no retuning and no failures |
-| Compatible guard count | `5/9` |
-| Locally suitable primary neighborhoods | `L=13`, `L=18`, and boundary `L=25` |
-| Hard target/health veto | None in any primary or guard |
+| Exact-epsilon coverage barrier | Passed, `9/9`; no retuning and no failures |
+| Compatible coverage count | `5/9` |
+| Compatible next-round coverage points | `L=12`, `L=14`, `L=17`, `L=19`, and `L=24` |
+| Hard target/health veto | None in any primary or coverage point |
 | Native divergence | Not exposed by the TFP HMC kernel; zero divergence is not claimed |
 | GPU/XLA/memory policy | GPU and XLA active; float64; TF32 setting recorded; memory growth verified |
 | Guard repair wall time | `3,818.798120 s` |
@@ -84,27 +100,27 @@ No budget increase occurred.
 | Decision | Primary criterion status | Veto status | Main uncertainty | Next justified action | Not concluded |
 | --- | --- | --- | --- | --- | --- |
 | Reject only `L=3` | Its 90% interval is wholly below `0.65` | Statistical lower-side rejection; no target-health failure | Three replications remain a small sample | Do not carry its epsilon forward | No rejection of PP-UKF |
-| Retain `L=5,9,13,18,25` as compatible primaries | Every interval overlaps `[0.65,0.75]` | No hard veto | Overlap is compatibility, not in-band proof | Use guard results to assess local suitability | No ranking among primaries |
-| Reject local suitability for `L=5,9` | Both exact-epsilon neighbors are statistically outside | Guard-screen veto only | Independently retuned neighbors answer a different question | Do not use these primary neighborhoods for the next handoff | Their primaries are not statistically rejected |
-| Preserve `L=13,18,25` as locally suitable | Every admissible exact-epsilon neighbor is compatible | No primary or guard veto | Wide `df=2` intervals and no convergence evidence | These are eligible for a separately planned frozen-kernel validation | No retained-sampling authorization or default readiness |
+| Retain `L=5,9,13,18,25` as compatible primaries | Every interval overlaps `[0.65,0.75]` | No hard veto | Overlap is compatibility, not in-band proof | Add every compatible coverage point to the next-round union | No ranking among primaries |
+| Add coverage `L=12,14,17,19,24` | Each inherited-epsilon interval overlaps `[0.65,0.75]` | No coverage-point veto | Wide `df=2` intervals and no convergence evidence | Evaluate these `L` values in the next planned round | No parent-primary veto |
+| Exclude coverage `L=4,6,8,10` | Each interval is statistically separated from the band | Coverage-point rejection only | This says nothing about independently tuned epsilons there | Do not add these points to the next-round union | No rejection of PP-UKF or compatible parents |
 
 ## Inference Status
 
 | Evidence class | Status |
 | --- | --- |
-| Hard veto evidence | `L=3` statistically below; guards `L=4,6` above and `L=8,10` below; no implementation/target-health veto |
-| Statistically compatible candidates | Primaries `L=5,9,13,18,25`; guards `L=12,14,17,19,24` |
-| Statistically supported ranking | None; `L=13,18,25` are not ranked |
+| Hard veto evidence | `L=3` statistically below; coverage points `L=4,6` above and `L=8,10` below; no implementation/target-health veto |
+| Statistically compatible candidates | Primaries `L=5,9,13,18,25`; coverage points `L=12,14,17,19,24`; next-round union `L=5,9,12,13,14,17,18,19,24,25` |
+| Statistically supported ranking | None; the ten next-round values are not ranked |
 | Descriptive-only differences | Point means, epsilon values, interval widths, and runtime |
 | Default readiness | Not established |
-| Next evidence needed | Fresh frozen-kernel validation of the three locally suitable primaries, with convergence and posterior/reference gates declared before execution |
+| Next evidence needed | Fresh frozen-kernel validation of the ten unranked next-round candidates, with convergence and posterior/reference gates declared before execution |
 
 ## Evidence Ledgers
 
 | Ledger | Verdict |
 | --- | --- |
 | Engineering correctness | Passed corrected classifier tests, exact parent reconstruction, complete barriers, immutable source lineage, and terminal artifacts |
-| Numerical/sampler validity | Three primary neighborhoods survive bounded tuning compatibility; convergence and native divergence remain unavailable |
+| Numerical/sampler validity | Five primaries and five coverage points survive bounded tuning compatibility; convergence and native divergence remain unavailable |
 | Scientific interpretation | Evidence supports viable tuning candidates only; it neither ranks them nor establishes posterior correctness or PP-UKF scientific validity |
 
 ## Run Manifest
@@ -142,7 +158,7 @@ PYTHONPYCACHEPREFIX=/tmp/bayesfilter-pp-ukf-stat-pycache \
 The strongest alternative explanation is that three replications yield wide
 and assumption-sensitive intervals, allowing noisy arms to remain compatible.
 That is intentional under the user-specified rejection rule, but it means
-compatibility is weaker than proof. The fresh guard pattern adds discrimination:
+compatibility is weaker than proof. The fresh coverage pattern adds discrimination:
 `L=5` and `L=9` fail decisively on both sides, while all admissible guards for
 `L=13,18,25` overlap the target band.
 
