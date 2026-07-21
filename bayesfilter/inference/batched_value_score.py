@@ -480,6 +480,18 @@ class FixedTransportValueScoreAdapter:
         )
         self.batch_native = self.require_batch_native
         self.nonclaims = tuple(str(item) for item in nonclaims) or FIXED_TRANSPORT_NONCLAIMS
+        self.supports_retained_draw_batch = bool(
+            getattr(base_adapter, "supports_retained_draw_batch", False)
+        )
+        self.supports_retained_flat_batch = bool(
+            getattr(base_adapter, "supports_retained_flat_batch", False)
+        )
+        self.supports_retained_value_score_status = bool(
+            getattr(base_adapter, "supports_retained_value_score_status", False)
+            and callable(getattr(base_adapter, "log_prob_and_grad_status", None))
+        )
+        if self.supports_retained_draw_batch and self.supports_retained_flat_batch:
+            raise ValueError("base adapter cannot declare two retained batching contracts")
         self._transport_manifest = _transport_manifest_payload(transport)
         self._transport_manifest_hash = _stable_json_hash(self._transport_manifest)
         _require_transport_method(transport, "forward")
@@ -611,12 +623,22 @@ class FixedTransportValueScoreAdapter:
         )
 
     def log_prob_and_grad(self, z: Any) -> tuple[tf.Tensor, tf.Tensor]:
+        value, score = self._log_prob_and_grad_status(z)[:2]
+        return value, score
+
+    def _log_prob_and_grad_status(
+        self, z: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, Any] | None]:
         z_tensor = self._validate_z_tensor(z)
         if z_tensor.shape.rank == 2 and not self.require_batch_native:
             raise ValueError("batch-native transport is required for rank 2 z")
         u_tensor = self.latent_to_position(z_tensor)
         logdet_tensor = self.log_abs_det_jacobian(z_tensor)
-        value_u, score_u = self.base_adapter.log_prob_and_grad(u_tensor)
+        if self.supports_retained_value_score_status:
+            value_u, score_u, status = self.base_adapter.log_prob_and_grad_status(u_tensor)
+        else:
+            value_u, score_u = self.base_adapter.log_prob_and_grad(u_tensor)
+            status = None
         value_u_tensor = tf.convert_to_tensor(value_u, dtype=z_tensor.dtype)
         score_u_tensor = tf.convert_to_tensor(score_u, dtype=z_tensor.dtype)
         _validate_value_score_shapes(theta=u_tensor, value=value_u_tensor, score=score_u_tensor)
@@ -628,7 +650,17 @@ class FixedTransportValueScoreAdapter:
         value_z = value_u_tensor + logdet_tensor
         score_z = transport_score + logdet_score
         _validate_value_score_shapes(theta=z_tensor, value=value_z, score=score_z)
-        return value_z, score_z
+        return value_z, score_z, status
+
+    def log_prob_and_grad_status(
+        self, z: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, Any]]:
+        if not self.supports_retained_value_score_status:
+            raise TypeError("base adapter does not expose combined value/score/status")
+        value, score, status = self._log_prob_and_grad_status(z)
+        if not isinstance(status, Mapping):
+            raise TypeError("combined value/score/status target must return a mapping")
+        return value, score, dict(status)
 
     def log_prob_and_grad_batch(self, z_batch: Any) -> tuple[tf.Tensor, tf.Tensor]:
         if not self.require_batch_native:

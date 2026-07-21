@@ -26,6 +26,9 @@ from typing import Any, Callable, Mapping, Sequence
 
 
 ROUTE_ID = "operational_broad_fixed_mass_l_epsilon_grid_v1"
+CLASSIFICATION_POLICY_ID = "replication_mean_t90_band_compatibility_v1"
+WORKING_INTERVAL_LEVEL = 0.90
+WORKING_T_CRITICAL_DF2 = 2.919985580355516
 PRIMARY_L_GRID = (3, 5, 9, 13, 18, 25)
 MIN_GUARD_L = 2
 MAX_L = 25
@@ -33,6 +36,7 @@ PRIMARY_ROLE = "independently_tuned_primary"
 GUARD_ROLE = "same_epsilon_neighbor_guard"
 MASS_UPDATE_DISPOSITIONS = (
     "dense_update",
+    "fixed_identity",
     "diagonal_fallback",
     "no_update_insufficient_metric_evidence",
     "candidate_metric_rejected",
@@ -162,7 +166,8 @@ class OperationalBroadGridPolicy:
     confirmation_num_results: int
     chain_count: int = 4
     replication_count: int = 3
-    working_t_critical: float = 1.7958848187036691
+    working_interval_level: float = WORKING_INTERVAL_LEVEL
+    working_t_critical: float = WORKING_T_CRITICAL_DF2
     practical_region: tuple[float, float] = (0.65, 0.75)
     repair_region: tuple[float, float] = (0.55, 0.85)
     primary_l_grid: tuple[int, ...] = PRIMARY_L_GRID
@@ -190,9 +195,19 @@ class OperationalBroadGridPolicy:
         )
         if replications != 3:
             raise ValueError("the reviewed broad route requires three replications")
+        interval_level = float(self.working_interval_level)
         critical = float(self.working_t_critical)
+        if not 0.0 < interval_level < 1.0:
+            raise ValueError("working_interval_level must lie inside (0, 1)")
         if not math.isfinite(critical) or critical <= 0.0:
             raise ValueError("working_t_critical must be positive and finite")
+        if (
+            interval_level != WORKING_INTERVAL_LEVEL
+            or critical != WORKING_T_CRITICAL_DF2
+        ):
+            raise ValueError(
+                "classification policy requires the frozen 90% df=2 interval"
+            )
         practical = tuple(float(item) for item in self.practical_region)
         repair = tuple(float(item) for item in self.repair_region)
         if not (
@@ -206,6 +221,7 @@ class OperationalBroadGridPolicy:
         object.__setattr__(self, "confirmation_num_results", results)
         object.__setattr__(self, "chain_count", chains)
         object.__setattr__(self, "replication_count", replications)
+        object.__setattr__(self, "working_interval_level", interval_level)
         object.__setattr__(self, "working_t_critical", critical)
         object.__setattr__(self, "practical_region", practical)
         object.__setattr__(self, "repair_region", repair)
@@ -224,7 +240,10 @@ class OperationalBroadGridPolicy:
             "confirmation_num_results": self.confirmation_num_results,
             "chain_count": self.chain_count,
             "replication_count": self.replication_count,
+            "classification_policy_id": CLASSIFICATION_POLICY_ID,
+            "working_interval_level": self.working_interval_level,
             "working_t_critical": self.working_t_critical,
+            "working_interval_unit": "fresh_seeded_replication_mean_across_chains",
             "practical_region": self.practical_region,
             "repair_region": self.repair_region,
             "guard_expansion": "one_hop_nonrecursive",
@@ -356,6 +375,13 @@ class OperationalMassHandoff:
                 raise ValueError("dense_update cannot be labeled retained prior metric")
             if not equivalence:
                 raise ValueError("dense_update requires canonical/latent equivalence")
+        elif disposition == "fixed_identity":
+            if not retained:
+                raise ValueError("fixed_identity must retain the reviewed identity metric")
+            if not equivalence:
+                raise ValueError("fixed_identity requires canonical/latent equivalence")
+            if self.frozen_metric_signature != self.prior_metric_signature:
+                raise ValueError("fixed_identity metric signature changed")
         else:
             if not retained:
                 raise ValueError("non-dense update must retain the qualified prior metric")
@@ -364,9 +390,17 @@ class OperationalMassHandoff:
 
     @property
     def grid_ready(self) -> bool:
-        return (
+        dense_ready = (
             self.update_disposition == "dense_update"
             and not self.retained_prior_metric
+        )
+        fixed_identity_ready = (
+            self.update_disposition == "fixed_identity"
+            and self.retained_prior_metric
+            and self.frozen_metric_signature == self.prior_metric_signature
+        )
+        return bool(
+            (dense_ready or fixed_identity_ready)
             and self.latent_identity_equivalence_proven
         )
 
@@ -391,15 +425,19 @@ class OperationalMassHandoff:
                 self.latent_identity_equivalence_proven
             ),
             "grid_ready": self.grid_ready,
+            "fixed_identity_metric_preserved": (
+                self.update_disposition == "fixed_identity"
+            ),
             "identity_metric_substituted": False,
         }
 
 
 @dataclass(frozen=True)
 class OperationalPairEvidence:
-    """Uncertainty-aware tuning heuristic over fresh chain-run means."""
+    """Uncertainty-aware tuning heuristic over fresh replication means."""
 
     chain_run_means: tuple[float, ...]
+    replication_means: tuple[float, ...]
     grand_mean: float
     sample_standard_deviation: float
     standard_error: float
@@ -415,6 +453,7 @@ class OperationalPairEvidence:
     def payload(self) -> Mapping[str, Any]:
         return {
             "chain_run_means": self.chain_run_means,
+            "replication_means": self.replication_means,
             "grand_mean": self.grand_mean,
             "sample_standard_deviation": self.sample_standard_deviation,
             "standard_error": self.standard_error,
@@ -422,7 +461,18 @@ class OperationalPairEvidence:
             "disposition": self.disposition,
             "hard_rejection_reasons": self.hard_rejection_reasons,
             "evidence_signature": self.evidence_signature,
-            "working_interval_role": "bounded_tuning_heuristic_not_confidence_interval",
+            "classification_policy_id": CLASSIFICATION_POLICY_ID,
+            "working_interval_level": WORKING_INTERVAL_LEVEL,
+            "working_interval_unit": "fresh_seeded_replication_mean_across_chains",
+            "working_interval_role": (
+                "statistical_compatibility_heuristic_not_in_band_proof"
+            ),
+            "working_interval_limitations": (
+                "three_replications_only",
+                "shared_calibrated_start",
+                "student_t_working_model",
+                "no_convergence_claim",
+            ),
             "retained_sampling_authorized": False,
         }
 
@@ -434,7 +484,7 @@ def classify_operational_pair_evidence(
     policy: OperationalBroadGridPolicy,
     hard_rejection_reasons: Sequence[str] = (),
 ) -> OperationalPairEvidence:
-    """Classify fresh tuning screens without treating a point mean as a veto."""
+    """Classify whether replicated tuning evidence is compatible with the band."""
 
     if not isinstance(policy, OperationalBroadGridPolicy):
         raise TypeError("policy must be OperationalBroadGridPolicy")
@@ -446,26 +496,32 @@ def classify_operational_pair_evidence(
     reasons = tuple(dict.fromkeys(str(item) for item in hard_rejection_reasons))
     if any(not item for item in reasons):
         raise ValueError("hard rejection reasons must be non-empty")
-    mean = math.fsum(values) / len(values)
-    variance = math.fsum((item - mean) ** 2 for item in values) / (len(values) - 1)
+    replication_means = tuple(
+        math.fsum(values[start : start + policy.chain_count]) / policy.chain_count
+        for start in range(0, len(values), policy.chain_count)
+    )
+    if len(replication_means) != policy.replication_count:
+        raise ValueError("replication means are incomplete")
+    mean = math.fsum(replication_means) / len(replication_means)
+    variance = math.fsum(
+        (item - mean) ** 2 for item in replication_means
+    ) / (len(replication_means) - 1)
     standard_deviation = math.sqrt(max(0.0, variance))
-    standard_error = standard_deviation / math.sqrt(len(values))
+    standard_error = standard_deviation / math.sqrt(len(replication_means))
     half_width = policy.working_t_critical * standard_error
     interval = (max(0.0, mean - half_width), min(1.0, mean + half_width))
     practical_low, practical_high = policy.practical_region
-    repair_low, repair_high = policy.repair_region
     if reasons:
         disposition = "hard_rejected"
     elif interval[1] < practical_low:
         disposition = "needs_lower_epsilon"
     elif interval[0] > practical_high:
         disposition = "needs_higher_epsilon"
-    elif interval[0] >= repair_low and interval[1] <= repair_high:
-        disposition = "provisional_viable"
     else:
-        disposition = "unresolved_budget"
+        disposition = "provisional_viable"
     return OperationalPairEvidence(
         chain_run_means=values,
+        replication_means=replication_means,
         grand_mean=mean,
         sample_standard_deviation=standard_deviation,
         standard_error=standard_error,

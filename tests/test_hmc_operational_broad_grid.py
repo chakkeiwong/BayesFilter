@@ -60,6 +60,23 @@ def _handoff(*, disposition="dense_update", retained=False):
     )
 
 
+def _fixed_identity_handoff():
+    return OperationalMassHandoff(
+        update_disposition="fixed_identity",
+        prior_metric_signature="identity-metric",
+        frozen_metric_signature="identity-metric",
+        coordinate_signature="coordinate",
+        adapter_signature="adapter",
+        target_signature="target",
+        lineage_signature="lineage",
+        canonical_covariance_signature="identity-covariance",
+        latent_metric_signature="identity-metric",
+        metric_evidence_signature="fixed-identity-policy",
+        retained_prior_metric=True,
+        latent_identity_equivalence_proven=True,
+    )
+
+
 def _primary(l, *, epsilon=0.2, viable=True):
     request = OperationalPrimaryRequest(
         num_leapfrog_steps=l,
@@ -100,7 +117,47 @@ def _guard(request, *, viable=True):
 def test_exact_primary_grid_and_mass_handoff_gate():
     assert PRIMARY_L_GRID == (3, 5, 9, 13, 18, 25)
     assert primary_requests(POLICY, _handoff())
+    assert primary_requests(POLICY, _fixed_identity_handoff())
+    assert _fixed_identity_handoff().payload()["fixed_identity_metric_preserved"] is True
     assert primary_requests(POLICY, _handoff(disposition="diagonal_fallback", retained=True)) == ()
+
+
+def test_classification_policy_freezes_replication_t90_interval():
+    with pytest.raises(ValueError, match="frozen 90% df=2 interval"):
+        OperationalBroadGridPolicy(
+            root_seed=(20260720, 9100),
+            confirmation_num_results=128,
+            working_interval_level=0.95,
+        )
+    with pytest.raises(ValueError, match="frozen 90% df=2 interval"):
+        OperationalBroadGridPolicy(
+            root_seed=(20260720, 9100),
+            confirmation_num_results=128,
+            working_t_critical=4.302652729911275,
+        )
+
+
+def test_fixed_identity_handoff_rejects_metric_or_equivalence_drift():
+    payload = dict(
+        update_disposition="fixed_identity",
+        prior_metric_signature="identity-metric",
+        frozen_metric_signature="identity-metric",
+        coordinate_signature="coordinate",
+        adapter_signature="adapter",
+        target_signature="target",
+        lineage_signature="lineage",
+        canonical_covariance_signature="identity-covariance",
+        latent_metric_signature="identity-metric",
+        metric_evidence_signature="fixed-identity-policy",
+        retained_prior_metric=True,
+        latent_identity_equivalence_proven=True,
+    )
+    with pytest.raises(ValueError, match="metric signature changed"):
+        OperationalMassHandoff(**{**payload, "frozen_metric_signature": "drift"})
+    with pytest.raises(ValueError, match="canonical/latent equivalence"):
+        OperationalMassHandoff(
+            **{**payload, "latent_identity_equivalence_proven": False}
+        )
 
 
 def test_primary_and_guard_boundaries_are_strict():
@@ -192,6 +249,77 @@ def test_uncertainty_interval_can_preserve_noisy_candidate_and_hard_veto_wins():
         hard_rejection_reasons=("nonfinite_target_state",),
     )
     assert veto.disposition == "hard_rejected"
+
+
+def test_precise_mean_outside_practical_band_is_directional_not_viable():
+    above = classify_operational_pair_evidence(
+        chain_run_means=(0.7597853586512194,) * POLICY.evidence_unit_count,
+        evidence_signature="above-point-mean",
+        policy=POLICY,
+    )
+    below = classify_operational_pair_evidence(
+        chain_run_means=(0.649,) * POLICY.evidence_unit_count,
+        evidence_signature="below-point-mean",
+        policy=POLICY,
+    )
+    assert above.disposition == "needs_higher_epsilon"
+    assert below.disposition == "needs_lower_epsilon"
+
+
+def test_band_overlap_is_statistically_compatible_not_proof_of_in_band_mean():
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=(
+            0.54,
+            0.58,
+            0.62,
+            0.66,
+            0.68,
+            0.70,
+            0.72,
+            0.74,
+            0.74,
+            0.78,
+            0.82,
+            0.86,
+        ),
+        evidence_signature="boundary-crossing",
+        policy=POLICY,
+    )
+    assert POLICY.practical_region[0] <= evidence.grand_mean <= POLICY.practical_region[1]
+    assert evidence.working_interval[0] < POLICY.practical_region[0]
+    assert evidence.working_interval[1] > POLICY.practical_region[1]
+    assert evidence.disposition == "provisional_viable"
+    assert evidence.viable
+
+
+def test_uncertainty_uses_three_replication_means_not_twelve_chain_means():
+    evidence = classify_operational_pair_evidence(
+        chain_run_means=(
+            0.7792324023,
+            0.7792324023,
+            0.7792324023,
+            0.7792324023,
+            0.7565863617,
+            0.7565863617,
+            0.7565863617,
+            0.7565863617,
+            0.7774131189,
+            0.7774131189,
+            0.7774131189,
+            0.7774131189,
+        ),
+        evidence_signature="replication-unit",
+        policy=POLICY,
+    )
+    assert evidence.replication_means == pytest.approx(
+        (0.7792324023, 0.7565863617, 0.7774131189)
+    )
+    assert evidence.grand_mean > POLICY.practical_region[1]
+    assert evidence.working_interval[0] < POLICY.practical_region[1]
+    assert evidence.disposition == "provisional_viable"
+    assert evidence.payload()["working_interval_unit"] == (
+        "fresh_seeded_replication_mean_across_chains"
+    )
 
 
 def test_pair_local_guard_failure_does_not_erase_other_epsilon():
