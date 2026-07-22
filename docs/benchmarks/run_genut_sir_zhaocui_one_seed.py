@@ -92,7 +92,10 @@ def _dataset(horizon: int) -> dict[str, tf.Tensor]:
 
 
 def _genut(horizon: int, dataset: dict[str, tf.Tensor]) -> dict[str, object]:
-    adapter = reduced_sir_candidate_adapter(transition_before_first_observation=False)
+    adapter = reduced_sir_candidate_adapter(
+        transition_before_first_observation=False,
+        mechanics_fixture_only=True,
+    )
     design = replicate_positive_genut(gaussian_genut_design(dim=2), num_particles=N_PARTICLES)
 
     @tf.function(jit_compile=False)
@@ -214,8 +217,9 @@ def main() -> None:
         })
     result = {
         "schema_version": "bayesfilter.genut_sir_zhaocui_one_seed.v1",
-        "status": "diagnostic_only_same_target_one_seed",
-        "target_id": "reduced_continuous_preclip_sir_j1_v1",
+        "status": "historical_mechanics_fixture_only_not_model_comparison",
+        "target_id": "artificial_reduced_preclip_sir_j1_mechanics_fixture_v1",
+        "suite_eligibility": "ineligible_actual_model_suite",
         "seed": SEED,
         "theta": [0.0, 0.0, 0.0],
         "particle_count": N_PARTICLES,

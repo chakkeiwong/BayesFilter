@@ -44,9 +44,15 @@ OBSERVATION_MATRIX_VALUES = (
     (-0.1, 0.35, 0.9),
 )
 CONTROL_GRID = tuple(
-    {"epsilon": epsilon, "sinkhorn_steps": steps, "ridge": ridge}
+    {
+        "epsilon": epsilon,
+        "sinkhorn_steps": steps,
+        "balance_steps": balance_steps,
+        "ridge": ridge,
+    }
     for epsilon in (2.0, 4.0)
     for steps in (4, 8)
+    for balance_steps in (4, 8)
     for ridge in (1.0e-6, 1.0e-5)
 )
 DGP_SEEDS = {
@@ -245,6 +251,7 @@ def _make_evaluator(model: str, adapter: Any, controls: dict[str, object]):
                 design,
                 epsilon=float(controls["epsilon"]),
                 sinkhorn_steps=int(controls["sinkhorn_steps"]),
+                balance_steps=int(controls.get("balance_steps", 8)),
                 ridge=float(controls["ridge"]),
             )
 

@@ -20,7 +20,7 @@ import tensorflow as tf
 
 
 CUBATURE_GENUT_CANDIDATE_ROUTE_ID = (
-    "cubature_genut_nonfused_positive_ot_candidate_v1"
+    "cubature_genut_nonfused_positive_ot_row_quotient_candidate_v2"
 )
 CUBATURE_GENUT_CANDIDATE_FACTORY_ID = (
     "bayesfilter.highdim.cubature_genut_candidate_factory.v1"
@@ -47,6 +47,22 @@ _REPOSITORY_ADAPTER_REGISTRY = {
             "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
             "bayesfilter.highdim.cubature_genut_candidate:gaussian_genut_design",
             "bayesfilter.highdim.cubature_genut_candidate:replicate_positive_genut",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
+        ),
+    },
+    "chapter18b_structural_shared_primitives_v1": {
+        "callable_dependency_ids": (
+            "bayesfilter.highdim.cubature_genut_adapters:structural_ukf_candidate_adapter",
+            "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.cubature_genut_candidate:gaussian_genut_design",
+            "bayesfilter.highdim.cubature_genut_candidate:replicate_positive_genut",
+            "bayesfilter.testing.structural_ukf_neutra_target_design_tf:structural_source_chart_dtype",
+            "bayesfilter.testing.structural_ukf_neutra_target_design_tf:structural_transition_value_dtype",
+            "bayesfilter.testing.structural_ukf_neutra_target_design_tf:structural_transition_tangent_dtype",
+            "bayesfilter.testing.structural_ukf_neutra_target_design_tf:structural_transition_residual_dtype",
+            "bayesfilter.testing.structural_ukf_neutra_target_design_tf:structural_observation_log_density_dtype",
+            "bayesfilter.testing.structural_ukf_neutra_target_design_tf:structural_observation_log_density_tangent_dtype",
             "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
             "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
         ),

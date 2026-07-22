@@ -86,6 +86,235 @@ def exact_transformed_sv_candidate_adapter(*, sigma: float = 1.0) -> CandidateMo
     )
 
 
+def ksc_mixture_sv_candidate_adapter() -> CandidateModelAdapter:
+    """Build the scalar KSC transformed-SV Gaussian-mixture adapter.
+
+    The observations supplied to this adapter are ``log(y**2 + 1e-8)`` and
+    the parameter order is ``(gamma_unconstrained, log_beta)``.
+    """
+
+    weights = tf.constant(
+        [0.00730, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.25750],
+        tf.float32,
+    )
+    raw_locations = tf.constant(
+        [-10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819],
+        tf.float32,
+    )
+    means = raw_locations - tf.constant(1.2704, tf.float32)
+    variances = tf.constant(
+        [5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261],
+        tf.float32,
+    )
+    normalizer = tf.constant(1.0 / math.sqrt(2.0 * math.pi), tf.float32)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), tf.float32)
+
+    def physical(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        gamma = 0.5 * (
+            1.0 + tf.math.erf(theta[0] / tf.sqrt(tf.constant(2.0, tf.float32)))
+        )
+        dgamma = normalizer * tf.exp(-0.5 * tf.square(theta[0]))
+        return gamma, dgamma
+
+    def initial_value(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
+        gamma, _ = physical(theta)
+        return noise / tf.sqrt(1.0 - tf.square(gamma))
+
+    def initial_tangent(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
+        gamma, dgamma = physical(theta)
+        first = noise[:, 0] * gamma * dgamma / tf.pow(1.0 - tf.square(gamma), 1.5)
+        return tf.stack([first, tf.zeros_like(first)], axis=-1)[:, None, :]
+
+    def transition_value(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        noise: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        gamma, _ = physical(theta)
+        return gamma * particles + noise
+
+    def transition_tangent(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        noise: tf.Tensor,
+        particle_tangent: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del noise
+        gamma, dgamma = physical(theta)
+        first = dgamma * particles[:, 0] + gamma * particle_tangent[:, 0, 0]
+        second = gamma * particle_tangent[:, 0, 1]
+        return tf.stack([first, second], axis=-1)[:, None, :]
+
+    def component_terms(
+        theta: tf.Tensor, particles: tf.Tensor, observation: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        residual = (
+            observation[0]
+            - 2.0 * theta[1]
+            - particles[:, 0, None]
+            - means[None, :]
+        )
+        log_terms = (
+            tf.math.log(weights)[None, :]
+            - 0.5
+            * (
+                tf.square(residual) / variances[None, :]
+                + tf.math.log(variances)[None, :]
+                + log_two_pi
+            )
+        )
+        return residual, log_terms
+
+    def observation_value(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        observation: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        _, log_terms = component_terms(theta, particles, observation)
+        return tf.reduce_logsumexp(log_terms, axis=1)
+
+    def observation_tangent(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        particle_tangent: tf.Tensor,
+        observation: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        residual, log_terms = component_terms(theta, particles, observation)
+        responsibilities = tf.nn.softmax(log_terms, axis=1)
+        location_tangent = particle_tangent[:, 0, :] + tf.constant(
+            [0.0, 2.0], tf.float32
+        )[None, :]
+        component_location_score = residual / variances[None, :]
+        location_score = tf.reduce_sum(
+            responsibilities * component_location_score, axis=1
+        )
+        return location_score[:, None] * location_tangent
+
+    return CandidateModelAdapter(
+        state_dimension=1,
+        parameter_count=2,
+        initial_value=initial_value,
+        initial_tangent=initial_tangent,
+        transition_value=transition_value,
+        transition_tangent=transition_tangent,
+        observation_value=observation_value,
+        observation_tangent=observation_tangent,
+    )
+
+
+def generalized_sv_prior_mean_candidate_adapter() -> CandidateModelAdapter:
+    """Build the scalar generalized-SV prior-mean source-row adapter.
+
+    The parameter order is ``(z_gamma, log_tau, mu_over_tau)`` with
+    ``gamma=Phi(z_gamma)``, ``tau=exp(log_tau)`` and
+    ``mu=mu_over_tau*tau``.
+    """
+
+    normalizer = tf.constant(1.0 / math.sqrt(2.0 * math.pi), tf.float32)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), tf.float32)
+
+    def physical(
+        theta: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        gamma = 0.5 * (
+            1.0 + tf.math.erf(theta[0] / tf.sqrt(tf.constant(2.0, tf.float32)))
+        )
+        dgamma = normalizer * tf.exp(-0.5 * tf.square(theta[0]))
+        tau = tf.exp(theta[1])
+        mu = theta[2] * tau
+        dmu = tf.stack([tf.zeros_like(mu), mu, tau])
+        return gamma, dgamma, tau, mu, dmu
+
+    def initial_value(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
+        gamma, _, _, mu, _ = physical(theta)
+        return mu + noise / tf.sqrt(1.0 - tf.square(gamma))
+
+    def initial_tangent(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
+        gamma, dgamma, _, _, dmu = physical(theta)
+        dscale = gamma * dgamma / tf.pow(1.0 - tf.square(gamma), 1.5)
+        direct_scale = tf.stack([dscale, tf.zeros_like(dscale), tf.zeros_like(dscale)])
+        return dmu[None, None, :] + noise[:, :, None] * direct_scale[None, None, :]
+
+    def transition_value(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        noise: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        gamma, _, _, mu, _ = physical(theta)
+        return mu + gamma * (particles - mu) + noise
+
+    def transition_tangent(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        noise: tf.Tensor,
+        particle_tangent: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del noise
+        gamma, dgamma, _, mu, dmu = physical(theta)
+        gamma_direct = tf.stack(
+            [dgamma, tf.zeros_like(dgamma), tf.zeros_like(dgamma)]
+        )
+        direct = (
+            (particles[:, 0] - mu)[:, None] * gamma_direct[None, :]
+            + (1.0 - gamma) * dmu[None, :]
+        )
+        return (gamma * particle_tangent[:, 0, :] + direct)[:, None, :]
+
+    def observation_value(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        observation: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        _, _, tau, _, _ = physical(theta)
+        log_variance = tau * particles[:, 0]
+        return -0.5 * (
+            tf.square(observation[0]) * tf.exp(-log_variance)
+            + log_variance
+            + log_two_pi
+        )
+
+    def observation_tangent(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        particle_tangent: tf.Tensor,
+        observation: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        _, _, tau, _, _ = physical(theta)
+        log_variance = tau * particles[:, 0]
+        direct_tau = tf.constant([0.0, 1.0, 0.0], tf.float32)
+        log_variance_tangent = tau * (
+            particle_tangent[:, 0, :]
+            + particles[:, 0, None] * direct_tau[None, :]
+        )
+        log_variance_score = 0.5 * (
+            tf.square(observation[0]) * tf.exp(-log_variance) - 1.0
+        )
+        return log_variance_score[:, None] * log_variance_tangent
+
+    return CandidateModelAdapter(
+        state_dimension=1,
+        parameter_count=3,
+        initial_value=initial_value,
+        initial_tangent=initial_tangent,
+        transition_value=transition_value,
+        transition_tangent=transition_tangent,
+        observation_value=observation_value,
+        observation_tangent=observation_tangent,
+    )
+
+
 def diagonal_lgssm_candidate_adapter(
     *, observation_matrix: tf.Tensor
 ) -> CandidateModelAdapter:
@@ -195,16 +424,26 @@ def diagonal_lgssm_candidate_adapter(
 
 
 def reduced_sir_candidate_adapter(
-    *, transition_before_first_observation: bool = True
+    *,
+    transition_before_first_observation: bool = True,
+    mechanics_fixture_only: bool = False,
 ) -> CandidateModelAdapter:
-    """Build the two-state continuous preclip SIR feasibility adapter.
+    """Build the artificial two-state preclip SIR mechanics fixture.
 
     The state is ``(S, I)`` and the parameter order is
     ``(log_kappa_scale, log_nu_scale, log_obs_noise_scale)``.  This is an
-    explicit reduced diagnostic target, not the clipped Austria leaderboard
-    measure.  The RK4 state and parameter tangents are written directly so the
-    XLA candidate path does not call autodiff or Python sample loops.
+    explicit artificial boundary-stress fixture, not a reduced scientific model
+    and not the clipped Austria leaderboard measure.  Callers must opt into its
+    mechanics-only role so it cannot silently enter an actual-model suite.  The
+    RK4 state and parameter tangents are written directly so the XLA candidate
+    path does not call autodiff or Python sample loops.
     """
+
+    if not mechanics_fixture_only:
+        raise ValueError(
+            "reduced SIR is an artificial mechanics fixture; pass "
+            "mechanics_fixture_only=True only for local algebra/mechanics tests"
+        )
 
     base_kappa = tf.constant(0.1, tf.float32)
     base_nu = tf.constant(1.0, tf.float32)
@@ -251,20 +490,33 @@ def reduced_sir_candidate_adapter(
         theta: tf.Tensor, state: tf.Tensor, tangent: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
         step = tf.constant(0.005, tf.float32)
-        k1, d1 = rhs_with_tangent(theta, state, tangent)
-        state2 = state + 0.5 * step * k1
-        tangent2 = tangent + 0.5 * step * d1
-        k2, d2 = rhs_with_tangent(theta, state2, tangent2)
-        state3 = state + 0.5 * step * k2
-        tangent3 = tangent + 0.5 * step * d2
-        k3, d3 = rhs_with_tangent(theta, state3, tangent3)
-        state4 = state + step * k3
-        tangent4 = tangent + step * d3
-        k4, d4 = rhs_with_tangent(theta, state4, tangent4)
-        return (
-            state + (step / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4),
-            tangent + (step / 6.0) * (d1 + 2.0 * d2 + 2.0 * d3 + d4),
+        def body(index, current_state, current_tangent):
+            k1, d1 = rhs_with_tangent(theta, current_state, current_tangent)
+            state2 = current_state + 0.5 * step * k1
+            tangent2 = current_tangent + 0.5 * step * d1
+            k2, d2 = rhs_with_tangent(theta, state2, tangent2)
+            state3 = current_state + 0.5 * step * k2
+            tangent3 = current_tangent + 0.5 * step * d2
+            k3, d3 = rhs_with_tangent(theta, state3, tangent3)
+            state4 = current_state + step * k3
+            tangent4 = current_tangent + step * d3
+            k4, d4 = rhs_with_tangent(theta, state4, tangent4)
+            return (
+                index + 1,
+                current_state
+                + (step / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4),
+                current_tangent
+                + (step / 6.0) * (d1 + 2.0 * d2 + 2.0 * d3 + d4),
+            )
+
+        _, final_state, final_tangent = tf.while_loop(
+            lambda index, *_: index < 4,
+            body,
+            (tf.zeros([], tf.int32), state, tangent),
+            maximum_iterations=4,
+            parallel_iterations=1,
         )
+        return final_state, final_tangent
 
     def initial_value(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
         del theta
@@ -484,9 +736,107 @@ def predator_prey_candidate_adapter() -> CandidateModelAdapter:
     )
 
 
+def structural_ukf_candidate_adapter() -> CandidateModelAdapter:
+    """Adapt the established Chapter 18b target without duplicating its law."""
+
+    from bayesfilter.testing.structural_ukf_neutra_target_design_tf import (
+        structural_observation_log_density_dtype,
+        structural_observation_log_density_tangent_dtype,
+        structural_transition_residual_dtype,
+        structural_transition_tangent_dtype,
+        structural_transition_value_dtype,
+    )
+
+    def initial_value(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
+        del theta
+        return noise * tf.constant([0.2, 0.3], noise.dtype)[None, :]
+
+    def initial_tangent(theta: tf.Tensor, noise: tf.Tensor) -> tf.Tensor:
+        del theta
+        return tf.zeros([tf.shape(noise)[0], 2, 5], noise.dtype)
+
+    def transition_value(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        noise: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        return structural_transition_value_dtype(
+            theta[None, :], particles[None, :, :], noise[None, :, :]
+        )[0]
+
+    def transition_tangent(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        noise: tf.Tensor,
+        particle_tangent: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        return structural_transition_tangent_dtype(
+            theta[None, :],
+            particles[None, :, :],
+            noise[None, :, :],
+            particle_tangent[None, :, :, :],
+        )[0]
+
+    def observation_value(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        observation: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        return structural_observation_log_density_dtype(
+            theta[None, :], particles[None, :, :], observation[None, :]
+        )[0]
+
+    def observation_tangent(
+        theta: tf.Tensor,
+        particles: tf.Tensor,
+        particle_tangent: tf.Tensor,
+        observation: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        return structural_observation_log_density_tangent_dtype(
+            theta[None, :],
+            particles[None, :, :],
+            particle_tangent[None, :, :, :],
+            observation[None, :],
+        )[0]
+
+    def transition_residual(
+        theta: tf.Tensor,
+        previous: tf.Tensor,
+        current: tf.Tensor,
+        _time: tf.Tensor,
+    ) -> tf.Tensor:
+        del _time
+        return structural_transition_residual_dtype(
+            theta[None, :], previous[None, :, :], current[None, :, :]
+        )[0]
+
+    return CandidateModelAdapter(
+        state_dimension=2,
+        parameter_count=5,
+        initial_value=initial_value,
+        initial_tangent=initial_tangent,
+        transition_value=transition_value,
+        transition_tangent=transition_tangent,
+        observation_value=observation_value,
+        observation_tangent=observation_tangent,
+        transition_residual=transition_residual,
+    )
+
+
 __all__ = [
     "diagonal_lgssm_candidate_adapter",
     "exact_transformed_sv_candidate_adapter",
+    "generalized_sv_prior_mean_candidate_adapter",
+    "ksc_mixture_sv_candidate_adapter",
     "reduced_sir_candidate_adapter",
     "predator_prey_candidate_adapter",
+    "structural_ukf_candidate_adapter",
 ]

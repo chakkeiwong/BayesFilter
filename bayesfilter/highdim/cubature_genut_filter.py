@@ -17,6 +17,7 @@ TransitionValue = Callable[[Tensor, Tensor, Tensor, Tensor], Tensor]
 TransitionTangent = Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor]
 ObservationValue = Callable[[Tensor, Tensor, Tensor, Tensor], Tensor]
 ObservationTangent = Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor]
+TransitionResidual = Callable[[Tensor, Tensor, Tensor, Tensor], Tensor]
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class CandidateModelAdapter:
     transition_tangent: TransitionTangent
     observation_value: ObservationValue
     observation_tangent: ObservationTangent
+    transition_residual: TransitionResidual | None = None
 
     def __post_init__(self) -> None:
         if self.state_dimension < 1 or self.parameter_count < 1:
@@ -45,7 +47,39 @@ def _sinkhorn_barycentric_jvp(
     *,
     epsilon: float,
     sinkhorn_steps: int,
+    balance_steps: int = 8,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    result = _sinkhorn_barycentric_jvp_core(
+        particles,
+        weights,
+        particle_tangent,
+        weight_tangent,
+        epsilon=epsilon,
+        sinkhorn_steps=sinkhorn_steps,
+        balance_steps=balance_steps,
+    )
+    return (
+        result["particles"],
+        result["particles_tangent"],
+        result["maximum_raw_row_residual"],
+        result["maximum_post_quotient_column_residual"],
+    )
+
+
+def _sinkhorn_barycentric_jvp_core(
+    particles: Tensor,
+    weights: Tensor,
+    particle_tangent: Tensor,
+    weight_tangent: Tensor,
+    *,
+    epsilon: float,
+    sinkhorn_steps: int,
+    balance_steps: int,
+) -> dict[str, Tensor]:
+    """Return the finite Sinkhorn row quotient and its total JVP."""
+
+    if epsilon <= 0.0 or sinkhorn_steps <= 0 or balance_steps < 0:
+        raise ValueError("epsilon and Sinkhorn counts must be valid")
     deltas = particles[:, None, :] - particles[None, :, :]
     delta_tangent = particle_tangent[:, None, :, :] - particle_tangent[None, :, :, :]
     cost = tf.reduce_sum(tf.square(deltas), axis=-1)
@@ -121,22 +155,74 @@ def _sinkhorn_barycentric_jvp(
         ),
         parallel_iterations=1,
     )
+    # Fixed terminal-epsilon IPFP refinement is a separate tuned control.  It
+    # uses the same finite updates and therefore the same explicit JVP.
+    _, left, right, left_tangent, right_tangent = tf.while_loop(
+        lambda index, *_: index < tf.cast(balance_steps, tf.int32),
+        sinkhorn_body,
+        (
+            tf.zeros([], tf.int32),
+            left,
+            right,
+            left_tangent,
+            right_tangent,
+        ),
+        parallel_iterations=1,
+    )
     coupling = left[:, None] * kernel * right[None, :]
     coupling_tangent = (
         left_tangent[:, None, :] * kernel[:, :, None] * right[None, :, None]
         + left[:, None, None] * kernel_tangent * right[None, :, None]
         + left[:, None, None] * kernel[:, :, None] * right_tangent[None, :, :]
     )
-    gamma = tf.cast(n, particles.dtype) * coupling
-    gamma_tangent = tf.cast(n, particles.dtype) * coupling_tangent
-    barycentric = gamma @ particles
-    barycentric_tangent = (
-        tf.einsum("ijp,jd->idp", gamma_tangent, particles)
-        + tf.einsum("ij,jdp->idp", gamma, particle_tangent)
+    row_mass = tf.reduce_sum(coupling, axis=1)
+    row_mass_tangent = tf.reduce_sum(coupling_tangent, axis=1)
+    numerator = coupling @ particles
+    numerator_tangent = (
+        tf.einsum("ijp,jd->idp", coupling_tangent, particles)
+        + tf.einsum("ij,jdp->idp", coupling, particle_tangent)
     )
-    row_residual = tf.reduce_max(tf.abs(tf.reduce_sum(coupling, axis=1) - uniform))
-    col_residual = tf.reduce_max(tf.abs(tf.reduce_sum(coupling, axis=0) - weights))
-    return barycentric, barycentric_tangent, row_residual, col_residual
+    barycentric = numerator / row_mass[:, None]
+    barycentric_tangent = (
+        numerator_tangent
+        - barycentric[:, :, None] * row_mass_tangent[:, None, :]
+    ) / row_mass[:, None, None]
+    quotient_coupling = uniform[:, None] * coupling / row_mass[:, None]
+    quotient_column_mass = tf.reduce_sum(quotient_coupling, axis=0)
+    quotient_column_residual = quotient_column_mass - weights
+    row_mass_finite = tf.reduce_all(tf.math.is_finite(row_mass))
+    row_mass_positive = tf.reduce_all(row_mass > tiny)
+    quotient_finite = tf.reduce_all(tf.math.is_finite(barycentric)) & tf.reduce_all(
+        tf.math.is_finite(barycentric_tangent)
+    )
+    post_quotient_column_tv_error = 0.5 * tf.reduce_sum(
+        tf.abs(quotient_column_residual)
+    )
+    marginal_valid = (
+        row_mass_finite
+        & row_mass_positive
+        & quotient_finite
+        & (post_quotient_column_tv_error <= tf.cast(1.0e-4, particles.dtype))
+    )
+    return {
+        "particles": barycentric,
+        "particles_tangent": barycentric_tangent,
+        "coupling": coupling,
+        "coupling_tangent": coupling_tangent,
+        "row_mass": row_mass,
+        "row_mass_tangent": row_mass_tangent,
+        "minimum_row_mass": tf.reduce_min(row_mass),
+        "quotient_column_mass": quotient_column_mass,
+        "maximum_raw_row_residual": tf.reduce_max(tf.abs(row_mass - uniform)),
+        "maximum_raw_column_residual": tf.reduce_max(
+            tf.abs(tf.reduce_sum(coupling, axis=0) - weights)
+        ),
+        "maximum_post_quotient_column_residual": tf.reduce_max(
+            tf.abs(quotient_column_residual)
+        ),
+        "post_quotient_column_tv_error": post_quotient_column_tv_error,
+        "marginal_valid": marginal_valid,
+    }
 
 
 def _restore_cloud_jvp(
@@ -148,15 +234,59 @@ def _restore_cloud_jvp(
     *,
     epsilon: float,
     sinkhorn_steps: int,
+    balance_steps: int = 8,
     ridge: float,
     parameter_count: int,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-    barycentric, barycentric_tangent, row_residual, col_residual = (
-        _sinkhorn_barycentric_jvp(
-            particles, weights, particle_tangent, weight_tangent,
-            epsilon=epsilon, sinkhorn_steps=sinkhorn_steps,
-        )
+    result = _restore_cloud_jvp_core(
+        particles,
+        weights,
+        particle_tangent,
+        weight_tangent,
+        design,
+        epsilon=epsilon,
+        sinkhorn_steps=sinkhorn_steps,
+        balance_steps=balance_steps,
+        ridge=ridge,
+        parameter_count=parameter_count,
     )
+    return (
+        result["particles"],
+        result["particles_tangent"],
+        result["mean_residual"],
+        tf.stack(
+            [
+                result["maximum_raw_row_residual"],
+                result["maximum_post_quotient_column_residual"],
+            ]
+        ),
+    )
+
+
+def _restore_cloud_jvp_core(
+    particles: Tensor,
+    weights: Tensor,
+    particle_tangent: Tensor,
+    weight_tangent: Tensor,
+    design: Tensor,
+    *,
+    epsilon: float,
+    sinkhorn_steps: int,
+    balance_steps: int,
+    ridge: float,
+    parameter_count: int,
+) -> dict[str, Tensor]:
+    transport = _sinkhorn_barycentric_jvp_core(
+        particles,
+        weights,
+        particle_tangent,
+        weight_tangent,
+        epsilon=epsilon,
+        sinkhorn_steps=sinkhorn_steps,
+        balance_steps=balance_steps,
+    )
+    barycentric = transport["particles"]
+    barycentric_tangent = transport["particles_tangent"]
     source = particles[None, :, :]
     source_weights = weights[None, :]
     transported = barycentric[None, :, :]
@@ -180,6 +310,46 @@ def _restore_cloud_jvp(
         tf.stack([parameter_count_tensor, tf.shape(residual_design)[1], tf.shape(residual_design)[2]]),
     )
     ridge_batch = tf.broadcast_to(ridge_tensor, tf.reshape(parameter_count_tensor, [1]))
+    target_mean = tf.reduce_sum(weights[:, None] * particles, axis=0)
+    target_mean_tangent = tf.reduce_sum(
+        weight_tangent[:, None, :] * particles[:, :, None]
+        + weights[:, None, None] * particle_tangent,
+        axis=0,
+    )
+    centered_source = particles - target_mean[None, :]
+    target_cov = tf.einsum(
+        "n,ni,nj->ij", weights, centered_source, centered_source
+    )
+    centered_transported = barycentric - tf.reduce_mean(barycentric, axis=0)[None, :]
+    transported_cov = tf.einsum(
+        "ni,nj->ij", centered_transported, centered_transported
+    ) / tf.cast(tf.shape(particles)[0], particles.dtype)
+    covariance_gap = 0.5 * (
+        target_cov - transported_cov
+        + tf.transpose(target_cov - transported_cov)
+    )
+    minimum_gap_eigenvalue = tf.reduce_min(tf.linalg.eigvalsh(covariance_gap))
+    gap_valid = tf.math.is_finite(minimum_gap_eigenvalue) & (
+        minimum_gap_eigenvalue + tf.cast(ridge, particles.dtype) > 0.0
+    )
+    pre_reset_valid = transport["marginal_valid"] & gap_valid
+    safe_barycentric = tf.where(
+        pre_reset_valid,
+        barycentric,
+        tf.broadcast_to(target_mean[None, :], tf.shape(barycentric)),
+    )
+    safe_barycentric_tangent = tf.where(
+        pre_reset_valid,
+        barycentric_tangent,
+        tf.broadcast_to(
+            target_mean_tangent[None, :, :], tf.shape(barycentric_tangent)
+        ),
+    )
+    transported = safe_barycentric[None, :, :]
+    transported_batch = tf.broadcast_to(
+        transported,
+        tf.stack([parameter_count_tensor, tf.shape(transported)[1], tf.shape(transported)[2]]),
+    )
     forward_batch = reset._contract_e_chol_cloud_forward_core(  # noqa: SLF001
         source_batch,
         source_weights_batch,
@@ -196,7 +366,7 @@ def _restore_cloud_jvp(
         ridge_batch,
         tf.transpose(particle_tangent, [2, 0, 1]),
         tf.transpose(weight_tangent, [1, 0]),
-        tf.transpose(barycentric_tangent, [2, 0, 1]),
+        tf.transpose(safe_barycentric_tangent, [2, 0, 1]),
         tf.zeros_like(design_batch),
         tf.zeros_like(ridge_batch),
     )["particles"]
@@ -204,12 +374,33 @@ def _restore_cloud_jvp(
     forward = reset._contract_e_chol_cloud_forward_core(  # noqa: SLF001
         source, source_weights, transported, residual_design, ridge_tensor
     )
-    return (
-        forward["particles"][0],
-        restored_tangent,
-        tf.reduce_max(tf.abs(forward["mean_residual"])),
-        tf.stack([row_residual, col_residual]),
+    reset_valid = (
+        pre_reset_valid
+        & forward["finite"][0]
+        & forward["factor_diagonal_positive"][0]
+        & tf.reduce_all(forward_batch["finite"])
+        & tf.reduce_all(forward_batch["factor_diagonal_positive"])
+        & tf.reduce_all(tf.math.is_finite(restored_tangent))
     )
+    return {
+        "particles": forward["particles"][0],
+        "particles_tangent": restored_tangent,
+        "mean_residual": tf.reduce_max(tf.abs(forward["mean_residual"])),
+        "minimum_gap_eigenvalue": minimum_gap_eigenvalue,
+        "gap_valid": gap_valid,
+        "reset_valid": reset_valid,
+        **{
+            name: transport[name]
+            for name in (
+                "minimum_row_mass",
+                "maximum_raw_row_residual",
+                "maximum_raw_column_residual",
+                "maximum_post_quotient_column_residual",
+                "post_quotient_column_tv_error",
+                "marginal_valid",
+            )
+        },
+    }
 
 
 def finite_value_score(
@@ -222,6 +413,7 @@ def finite_value_score(
     *,
     epsilon: float = 2.0,
     sinkhorn_steps: int = 8,
+    balance_steps: int = 8,
     ridge: float = 1.0e-5,
     transition_before_first_observation: bool = True,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
@@ -245,6 +437,11 @@ def finite_value_score(
     score = tf.zeros([parameter_count], theta.dtype)
     max_mean = tf.zeros([], theta.dtype)
     max_marginal = tf.zeros([2], theta.dtype)
+    max_transition_residual = tf.zeros([], theta.dtype)
+    program_valid = tf.constant(True)
+    minimum_row_mass = tf.constant(float("inf"), theta.dtype)
+    maximum_column_tv_error = tf.zeros([], theta.dtype)
+    minimum_gap_eigenvalue = tf.constant(float("inf"), theta.dtype)
     horizon = tf.shape(observations)[0]
     increments = tf.TensorArray(theta.dtype, size=horizon, element_shape=())
     score_increments = tf.TensorArray(
@@ -261,6 +458,11 @@ def finite_value_score(
         score_value: Tensor,
         max_mean_value: Tensor,
         max_marginal_value: Tensor,
+        max_transition_residual_value: Tensor,
+        program_valid_value: Tensor,
+        minimum_row_mass_value: Tensor,
+        maximum_column_tv_error_value: Tensor,
+        minimum_gap_eigenvalue_value: Tensor,
         increments_value: tf.TensorArray,
         score_increments_value: tf.TensorArray,
     ):
@@ -284,6 +486,20 @@ def finite_value_score(
             ),
             lambda: particle_tangent_value,
         )
+        if adapter.transition_residual is None:
+            transition_residual = tf.zeros([], theta.dtype)
+        else:
+            transition_residual = tf.cond(
+                transition,
+                lambda: tf.reduce_max(
+                    tf.abs(
+                        adapter.transition_residual(
+                            theta, particles_value, particles_next, time_tensor
+                        )
+                    )
+                ),
+                lambda: tf.zeros([], theta.dtype),
+            )
         observation = observations[time_index]
         log_likelihood = adapter.observation_value(
             theta, particles_next, observation, time_tensor
@@ -303,9 +519,25 @@ def finite_value_score(
         normalized_weight_tangent = normalized_weights[:, None] * (
             log_weight_tangent - increment_tangent[None, :]
         )
+        stage_valid = tf.reduce_all(
+            tf.stack(
+                [
+                    tf.reduce_all(tf.math.is_finite(particles_next)),
+                    tf.reduce_all(tf.math.is_finite(particle_tangent_next)),
+                    tf.math.is_finite(transition_residual),
+                    tf.reduce_all(tf.math.is_finite(log_likelihood)),
+                    tf.reduce_all(tf.math.is_finite(log_likelihood_tangent)),
+                    tf.math.is_finite(increment),
+                    tf.reduce_all(tf.math.is_finite(normalized_weights)),
+                    tf.reduce_all(tf.math.is_finite(normalized_weight_tangent)),
+                    tf.reduce_all(normalized_weights >= 0.0),
+                    tf.abs(tf.reduce_sum(normalized_weights) - 1.0)
+                    <= tf.cast(1.0e-4, theta.dtype),
+                ]
+            )
+        )
         current_design = design if design.shape.rank == 2 else design[time_index]
-        restored_particles, restored_tangent, mean_residual, marginal = (
-            _restore_cloud_jvp(
+        restored = _restore_cloud_jvp_core(
                 particles_next,
                 normalized_weights,
                 particle_tangent_next,
@@ -313,9 +545,23 @@ def finite_value_score(
                 current_design,
                 epsilon=epsilon,
                 sinkhorn_steps=sinkhorn_steps,
+                balance_steps=balance_steps,
                 ridge=ridge,
                 parameter_count=parameter_count,
-            )
+        )
+        step_valid = stage_valid & restored["reset_valid"]
+        restored_particles = tf.where(step_valid, restored["particles"], particles_value)
+        restored_tangent = tf.where(
+            step_valid,
+            restored["particles_tangent"],
+            particle_tangent_value,
+        )
+        mean_residual = restored["mean_residual"]
+        marginal = tf.stack(
+            [
+                restored["maximum_raw_row_residual"],
+                restored["maximum_post_quotient_column_residual"],
+            ]
         )
         uniform_weights = tf.fill(
             [n_static], tf.cast(1.0, theta.dtype) / tf.cast(n, theta.dtype)
@@ -326,10 +572,22 @@ def finite_value_score(
             restored_tangent,
             uniform_weights,
             tf.zeros_like(weight_tangent_value),
-            total_value + increment,
-            score_value + increment_tangent,
+            total_value + tf.where(stage_valid, increment, tf.zeros_like(increment)),
+            score_value
+            + tf.where(stage_valid, increment_tangent, tf.zeros_like(increment_tangent)),
             tf.maximum(max_mean_value, mean_residual),
             tf.maximum(max_marginal_value, marginal),
+            tf.maximum(max_transition_residual_value, transition_residual),
+            program_valid_value & step_valid,
+            tf.minimum(minimum_row_mass_value, restored["minimum_row_mass"]),
+            tf.maximum(
+                maximum_column_tv_error_value,
+                restored["post_quotient_column_tv_error"],
+            ),
+            tf.minimum(
+                minimum_gap_eigenvalue_value,
+                restored["minimum_gap_eigenvalue"],
+            ),
             increments_value.write(time_index, increment),
             score_increments_value.write(time_index, increment_tangent),
         )
@@ -344,6 +602,11 @@ def finite_value_score(
         score,
         max_mean,
         max_marginal,
+        max_transition_residual,
+        program_valid,
+        minimum_row_mass,
+        maximum_column_tv_error,
+        minimum_gap_eigenvalue,
         increments,
         score_increments,
     ) = tf.while_loop(
@@ -359,6 +622,11 @@ def finite_value_score(
             score,
             max_mean,
             max_marginal,
+            max_transition_residual,
+            program_valid,
+            minimum_row_mass,
+            maximum_column_tv_error,
+            minimum_gap_eigenvalue,
             increments,
             score_increments,
         ),
@@ -368,10 +636,20 @@ def finite_value_score(
         "max_mean_residual": max_mean,
         "max_row_residual": max_marginal[0],
         "max_col_residual": max_marginal[1],
+        "max_transition_residual": max_transition_residual,
+        "program_valid": program_valid,
+        "minimum_row_mass": minimum_row_mass,
+        "maximum_post_quotient_column_tv_error": maximum_column_tv_error,
+        "minimum_covariance_gap_eigenvalue": minimum_gap_eigenvalue,
         "value_increments": increments.stack(),
         "score_increments": score_increments.stack(),
     }
-    return total, score, diagnostics
+    nan_value = tf.constant(float("nan"), theta.dtype)
+    return (
+        tf.where(program_valid, total, nan_value),
+        tf.where(program_valid, score, tf.fill([parameter_count], nan_value)),
+        diagnostics,
+    )
 
 
 __all__ = ["CandidateModelAdapter", "finite_value_score"]

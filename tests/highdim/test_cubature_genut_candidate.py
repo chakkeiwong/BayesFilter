@@ -216,3 +216,33 @@ def test_repository_candidate_identity_supports_predator_prey_adapter():
         dict(identity.controls)["adapter_id"]
         == "predator_prey_additive_gaussian_v1"
     )
+
+
+def test_repository_candidate_identity_binds_chapter18b_structural_primitives():
+    scope = CandidateRouteScope(
+        model_id="chapter18b_quadratic_structural",
+        target_id="STR-UKF-five-probit-T100-structural-innovation-v1",
+        horizon=100,
+        particle_count=1002,
+        state_dimension=2,
+        parameter_count=5,
+        dtype="float32",
+        tf32_enabled=True,
+        jit_compile=True,
+        design_family="genut",
+        control_family_id="str_ukf_genut_controls_v1",
+    )
+    identity = issue_repository_candidate_route_identity(
+        scope,
+        prepared_data_id="sha256:frozen-structural-observations",
+        residual_design_id="gaussian_genut_dim2_equal_mass_n1002_v1",
+        controls={"epsilon": "4", "sinkhorn_steps": "4", "ridge": "1e-6"},
+        adapter_id="chapter18b_structural_shared_primitives_v1",
+    )
+    validate_repository_candidate_route_identity(identity)
+    assert dict(identity.controls)["adapter_id"] == (
+        "chapter18b_structural_shared_primitives_v1"
+    )
+    dependencies = set(identity.callable_dependency_ids)
+    assert any("structural_transition_residual_dtype" in item for item in dependencies)
+    assert any("structural_observation_log_density_tangent_dtype" in item for item in dependencies)

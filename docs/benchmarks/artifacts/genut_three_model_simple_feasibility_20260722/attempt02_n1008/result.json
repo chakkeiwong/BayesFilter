@@ -1,0 +1,625 @@
+{
+  "campaign_id": "genut-three-model-simple-feasibility-20260722-attempt02-n1008",
+  "controls": {
+    "epsilon": 2.0,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8
+  },
+  "design": "Gaussian_GenUT_replicated_positive_equal_mass",
+  "device": {
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "hard_veto_screen": "passed for all three short-prefix phases",
+  "horizon": 10,
+  "nonclaims": [
+    "statistical superiority",
+    "accuracy certification",
+    "leaderboard admission",
+    "default promotion",
+    "HMC readiness",
+    "full-horizon validity"
+  ],
+  "particle_count": 1008,
+  "phase_order": [
+    "reduced_continuous_preclip_sir_j1_v1",
+    "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000"
+  ],
+  "phases": [
+    {
+      "canonical_leaderboard_row": false,
+      "comparators": {
+        "dense_manual_score": {
+          "configuration": {
+            "order": 29,
+            "radius": 7.0,
+            "rule": "split_gauss_legendre"
+          },
+          "dtype": "float64",
+          "elapsed_seconds": 9.36000231601065,
+          "maximum_boundary_mass": 5.910803750412686e-13,
+          "role": "same_target_accuracy_anchor",
+          "route_id": "dense_latent_sir_split_gauss_legendre_manual_score",
+          "score": [
+            -0.004605806472455861,
+            0.064172346167723,
+            2.2132342579662017
+          ],
+          "value": -10.859124073211568
+        }
+      },
+      "comparisons": {
+        "dense_manual_score": {
+          "score_difference_genut_minus_comparator": [
+            -0.0004985900197869517,
+            0.005284752673944182,
+            1.873244929045517
+          ],
+          "value_difference_genut_minus_comparator": -0.7405940206605024
+        }
+      },
+      "explicit_non_substitution": "not_spatial_sir_austria_j9_T20",
+      "genut": {
+        "allocator": {
+          "current_bytes": 112640,
+          "peak_bytes": 100796160
+        },
+        "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+        "diagnostic_gate": {
+          "finite": true,
+          "same_scalar_fd_scaled_error_at_most_5pct": true,
+          "transport_residual_at_most_1e-4": true
+        },
+        "dtype": "float32",
+        "finite": true,
+        "jit_compile": true,
+        "max_col_residual": 1.0214745998382568e-05,
+        "max_mean_residual": 7.152557373046875e-07,
+        "max_row_residual": 1.1816155165433884e-07,
+        "route_id": "cubature_genut_nonfused_positive_ot_candidate_v1",
+        "same_scalar_fd": {
+          "absolute_errors": [
+            0.0003792303614318371,
+            0.0003157109022140503,
+            0.0030841827392578125
+          ],
+          "maximum_scaled_error": 0.0007552986512524085,
+          "role": "diagnostic_only_not_runtime_score",
+          "scaled_errors": [
+            0.0003792303614318371,
+            0.0003157109022140503,
+            0.0007552986512524085
+          ],
+          "score": [
+            -0.00548362685367465,
+            0.06914138793945312,
+            4.083395004272461
+          ],
+          "steps": [
+            0.0020000000949949026,
+            0.0020000000949949026,
+            0.0020000000949949026
+          ]
+        },
+        "score": [
+          -0.005104396492242813,
+          0.06945709884166718,
+          4.086479187011719
+        ],
+        "score_increments": [
+          [
+            0.0,
+            0.0,
+            -0.33862540125846863
+          ],
+          [
+            -0.0002090029593091458,
+            0.00878673605620861,
+            -0.1986120641231537
+          ],
+          [
+            -4.3716590880649164e-07,
+            0.001638705376535654,
+            -0.4554334282875061
+          ],
+          [
+            -0.0005297306925058365,
+            0.01092162448912859,
+            -0.2615160346031189
+          ],
+          [
+            -0.00027406716253608465,
+            0.005283127073198557,
+            -0.5761187076568604
+          ],
+          [
+            0.0001443729124730453,
+            -0.0035070376470685005,
+            0.9951620697975159
+          ],
+          [
+            -0.0020144041627645493,
+            0.025154683738946915,
+            0.9748842716217041
+          ],
+          [
+            6.077721991459839e-06,
+            0.0005744497757405043,
+            0.1225009486079216
+          ],
+          [
+            -5.714555663871579e-05,
+            0.0009621262433938682,
+            -0.5481967926025391
+          ],
+          [
+            -0.0021700598299503326,
+            0.019642680883407593,
+            4.372434139251709
+          ]
+        ],
+        "tf32": true,
+        "timing_seconds": {
+          "compile_and_main_evaluation": 5.726825266989181,
+          "finite_difference_audit": 0.13666085098520853
+        },
+        "transition_before_first_observation": false,
+        "value": -11.59971809387207,
+        "value_increments": [
+          -0.5254988670349121,
+          -0.6118254661560059,
+          -0.509577751159668,
+          -0.6929545402526855,
+          -0.4951167106628418,
+          -1.6284136772155762,
+          -1.3629040718078613,
+          -0.8542361259460449,
+          -0.5074148178100586,
+          -4.411776065826416
+        ]
+      },
+      "horizon": 10,
+      "model_id": "reduced_continuous_preclip_sir_j1_v1",
+      "nonclaims": [
+        "canonical Austria SIR",
+        "leaderboard admission",
+        "method ranking",
+        "default promotion"
+      ],
+      "observations_sha256": "db38bfd5253f644bfe2eb2d92ff1d37ed5e7b425c427454b3d27feefb58c4a54",
+      "parameter_order": [
+        "log_kappa_scale",
+        "log_nu_scale",
+        "log_obs_noise_scale"
+      ],
+      "particle_count": 1008,
+      "phase": 1,
+      "phase_gate": {
+        "dense_boundary_mass_at_most_1e-8": true,
+        "genut_gate_passed": true
+      },
+      "seed": 97001,
+      "status": "diagnostic_feasibility_pass",
+      "target_timing": "stationary_initial_draw_then_y0_before_first_transition",
+      "theta": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "canonical_dataset_prefix": true,
+      "comparators": {
+        "zhao_cui_fixed_branch": {
+          "dtype": "float64",
+          "elapsed_seconds": 18.2180773220025,
+          "finite": true,
+          "role": "same_target_diagnostic_not_oracle",
+          "route_id": "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+          "score": [
+            -0.12547016510243214,
+            -0.15484276223278626,
+            0.02226093458781045
+          ],
+          "score_backend": "analytical_model_parameter_score_methods_only",
+          "value": -16.01987295902102
+        }
+      },
+      "comparisons": {
+        "zhao_cui_fixed_branch": {
+          "score_difference_genut_minus_comparator": [
+            0.01769414165491856,
+            0.0006330590257702662,
+            -0.0004764502013663574
+          ],
+          "value_difference_genut_minus_comparator": 0.0037119940551981756
+        }
+      },
+      "genut": {
+        "allocator": {
+          "current_bytes": 201216,
+          "peak_bytes": 75464704
+        },
+        "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+        "diagnostic_gate": {
+          "finite": true,
+          "same_scalar_fd_scaled_error_at_most_5pct": true,
+          "transport_residual_at_most_1e-4": true
+        },
+        "dtype": "float32",
+        "finite": true,
+        "jit_compile": true,
+        "max_col_residual": 1.0847579687833786e-06,
+        "max_mean_residual": 1.1920928955078125e-07,
+        "max_row_residual": 1.069856807589531e-07,
+        "route_id": "cubature_genut_nonfused_positive_ot_candidate_v1",
+        "same_scalar_fd": {
+          "absolute_errors": [
+            1.0833144187927246e-05,
+            0.0002855360507965088,
+            0.00032681412994861603
+          ],
+          "maximum_scaled_error": 0.00032681412994861603,
+          "role": "diagnostic_only_not_runtime_score",
+          "scaled_errors": [
+            1.0833144187927246e-05,
+            0.0002855360507965088,
+            0.00032681412994861603
+          ],
+          "score": [
+            -0.10776519030332565,
+            -0.1544952392578125,
+            0.021457670256495476
+          ],
+          "steps": [
+            0.0020000000949949026,
+            0.0020000000949949026,
+            0.0020000000949949026
+          ]
+        },
+        "score": [
+          -0.10777602344751358,
+          -0.154209703207016,
+          0.021784484386444092
+        ],
+        "score_increments": [
+          [
+            -0.006283912807703018,
+            -0.008536973968148232,
+            -0.005107180215418339
+          ],
+          [
+            -0.0018341548275202513,
+            -0.0023206165060400963,
+            -0.004246900323778391
+          ],
+          [
+            0.010203404352068901,
+            0.010016486048698425,
+            -0.00508683267980814
+          ],
+          [
+            -0.07075199484825134,
+            -0.08314050734043121,
+            0.01071719266474247
+          ],
+          [
+            -0.024859629571437836,
+            -0.029789401218295097,
+            0.010168202221393585
+          ],
+          [
+            -0.019405875355005264,
+            -0.025839783251285553,
+            -0.0054697077721357346
+          ],
+          [
+            0.022074218839406967,
+            0.020316265523433685,
+            0.015895826742053032
+          ],
+          [
+            -0.04450146108865738,
+            -0.04655007645487785,
+            -0.006488922983407974
+          ],
+          [
+            0.07876250147819519,
+            0.06460583209991455,
+            0.01588902249932289
+          ],
+          [
+            -0.05117911845445633,
+            -0.05297093093395233,
+            -0.004486214369535446
+          ]
+        ],
+        "tf32": true,
+        "timing_seconds": {
+          "compile_and_main_evaluation": 2.5786012040043715,
+          "finite_difference_audit": 0.20405681498232298
+        },
+        "transition_before_first_observation": false,
+        "value": -16.01616096496582,
+        "value_increments": [
+          -1.094071865081787,
+          -1.137181282043457,
+          -1.074815273284912,
+          -2.137990951538086,
+          -2.1576485633850098,
+          -1.0388751029968262,
+          -2.629420280456543,
+          -0.9573931694030762,
+          -2.6768546104431152,
+          -1.1119098663330078
+        ]
+      },
+      "horizon": 10,
+      "model_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "nonclaims": [
+        "Zhao-Cui oracle",
+        "full T1008 validity",
+        "leaderboard admission",
+        "method ranking",
+        "default promotion"
+      ],
+      "observations_sha256": "857743a1787fdd423747c540ab108bb93a036515861a666eb52e3d9cf374ce47",
+      "parameter_order": [
+        "z_gamma",
+        "log_tau",
+        "mu_over_tau"
+      ],
+      "particle_count": 1008,
+      "phase": 2,
+      "phase_gate": {
+        "comparator_finite": true,
+        "genut_gate_passed": true
+      },
+      "seed": 81105,
+      "status": "diagnostic_feasibility_pass",
+      "target_timing": "stationary_initial_draw_then_y0_before_first_transition",
+      "theta": [
+        1.0824114084243774,
+        -2.076793670654297,
+        0.0
+      ]
+    },
+    {
+      "canonical_dataset_prefix": true,
+      "comparators": {
+        "fixed_sgqf": {
+          "dtype": "float64",
+          "elapsed_seconds": 2.091151214990532,
+          "finite": true,
+          "role": "same_KSC_surrogate_diagnostic_not_exact_SV_oracle",
+          "route_id": "fixed_sgqf_independent_panel_ksc_mixture",
+          "score": [
+            -0.692474876700316,
+            0.6095781629434605
+          ],
+          "score_backend": "analytical_recursive_score",
+          "value": -19.95094160769026
+        },
+        "principal_sqrt_ukf": {
+          "dtype": "float64",
+          "elapsed_seconds": 3.5551840769767296,
+          "finite": true,
+          "role": "same_KSC_surrogate_diagnostic_not_exact_SV_oracle",
+          "route_id": "principal_sqrt_ukf_independent_panel_ksc_mixture",
+          "score": [
+            -0.6924748767003159,
+            0.6095781629434573
+          ],
+          "score_backend": "analytical_recursive_score",
+          "value": -19.95094160769026
+        }
+      },
+      "comparisons": {
+        "fixed_sgqf": {
+          "score_difference_genut_minus_comparator": [
+            0.016401742754850956,
+            -0.10206171921405982
+          ],
+          "value_difference_genut_minus_comparator": -0.017886593603684275
+        },
+        "principal_sqrt_ukf": {
+          "score_difference_genut_minus_comparator": [
+            0.016401742754850845,
+            -0.10206171921405671
+          ],
+          "value_difference_genut_minus_comparator": -0.017886593603684275
+        }
+      },
+      "genut": {
+        "allocator": {
+          "current_bytes": 212480,
+          "peak_bytes": 75462656
+        },
+        "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+        "diagnostic_gate": {
+          "finite": true,
+          "same_scalar_fd_scaled_error_at_most_5pct": true,
+          "transport_residual_at_most_1e-4": true
+        },
+        "dtype": "float32",
+        "finite": true,
+        "jit_compile": true,
+        "max_col_residual": 2.5192275643348694e-06,
+        "max_mean_residual": 5.960464477539063e-08,
+        "max_row_residual": 1.1385418474674225e-07,
+        "route_id": "cubature_genut_nonfused_positive_ot_candidate_v1",
+        "same_scalar_fd": {
+          "absolute_errors": [
+            8.189678192138672e-05,
+            0.00016170740127563477
+          ],
+          "maximum_scaled_error": 0.00016170740127563477,
+          "role": "diagnostic_only_not_runtime_score",
+          "scaled_errors": [
+            8.189678192138672e-05,
+            0.00016170740127563477
+          ],
+          "score": [
+            -0.6761550307273865,
+            0.507354736328125
+          ],
+          "steps": [
+            0.0020000000949949026,
+            0.0020000000949949026
+          ]
+        },
+        "score": [
+          -0.6760731339454651,
+          0.5075164437294006
+        ],
+        "score_increments": [
+          [
+            -0.10994245857000351,
+            -0.3163546025753021
+          ],
+          [
+            -0.0931113213300705,
+            0.775789737701416
+          ],
+          [
+            -0.10540995001792908,
+            -0.48098528385162354
+          ],
+          [
+            -0.09263043850660324,
+            0.06073097139596939
+          ],
+          [
+            -0.044057853519916534,
+            -0.30124807357788086
+          ],
+          [
+            0.1074799969792366,
+            -0.6061092615127563
+          ],
+          [
+            -0.25943005084991455,
+            0.5463928580284119
+          ],
+          [
+            -0.06847627460956573,
+            0.31365513801574707
+          ],
+          [
+            -0.03632818162441254,
+            0.05182505398988724
+          ],
+          [
+            0.025833390653133392,
+            0.4638199210166931
+          ]
+        ],
+        "tf32": true,
+        "timing_seconds": {
+          "compile_and_main_evaluation": 2.553311230003601,
+          "finite_difference_audit": 0.15361827198648825
+        },
+        "transition_before_first_observation": false,
+        "value": -19.968828201293945,
+        "value_increments": [
+          -1.7599544525146484,
+          -2.0109481811523438,
+          -2.1888513565063477,
+          -1.6960906982421875,
+          -1.7772297859191895,
+          -3.4350967407226562,
+          -1.847376823425293,
+          -1.7417292594909668,
+          -1.6370248794555664,
+          -1.8745245933532715
+        ]
+      },
+      "horizon": 10,
+      "model_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "nonclaims": [
+        "exact native SV likelihood",
+        "KSC importance reweighting",
+        "full T1000 validity",
+        "leaderboard admission",
+        "method ranking",
+        "default promotion"
+      ],
+      "parameter_order": [
+        "z_gamma",
+        "log_beta"
+      ],
+      "particle_count": 1008,
+      "phase": 3,
+      "phase_gate": {
+        "comparators_finite": true,
+        "genut_gate_passed": true
+      },
+      "raw_observations_sha256": "d49b1fee3c804a529f8fbbace307dc8bb7db38e599383fd0e0097c46990b04b8",
+      "seed": 81101,
+      "status": "diagnostic_feasibility_pass",
+      "target_observation_policy": "log_y_squared_plus_1e-8_seven_component_KSC_mixture",
+      "target_timing": "stationary_initial_draw_then_y0_before_first_transition",
+      "theta": [
+        0.25334709882736206,
+        -0.9162907600402832
+      ],
+      "transformed_observations_sha256": "cbb999a06abe0c1d50a3287a873f46c308930ef6c6d045244aa4cb4e9d842a19"
+    }
+  ],
+  "research_question": "short-prefix GenUT value/recursive-score feasibility and same-target comparison",
+  "run_manifest": {
+    "command": "TF_FORCE_GPU_ALLOW_GROWTH=true python docs/benchmarks/run_genut_three_model_simple_feasibility.py",
+    "dtype": "float32 GenUT; float64 diagnostic comparators",
+    "environment": "tf-gpu",
+    "git_commit": "71f659aa2620adfaa9fdb34d66c0816543365c82",
+    "git_worktree_clean": false,
+    "hardware": [
+      "/device:GPU:0"
+    ],
+    "plan": "docs/plans/bayesfilter-genut-three-model-simple-feasibility-plan-2026-07-22.md",
+    "python": "3.11.14",
+    "result": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/genut_three_model_simple_feasibility_20260722/attempt02_n1008/result.json",
+    "seeds": [
+      97001,
+      81105,
+      81101
+    ],
+    "tensorflow": "2.19.1",
+    "tf32": true,
+    "wall_time_seconds": 51.72419136800454,
+    "xla": true
+  },
+  "schema_version": "bayesfilter.genut_three_model_simple_feasibility.v1",
+  "statistical_interpretation": {
+    "descriptive_only": "all observed value, score, and runtime differences",
+    "hard_veto_evidence": "passed for all three short-prefix phases",
+    "next_evidence": "target-specific tuning and multi-seed/particle ladders before full-horizon untouched runs",
+    "statistically_supported_ranking": null,
+    "viable_candidates": [
+      "reduced_continuous_preclip_sir_j1_v1",
+      "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000"
+    ]
+  },
+  "status": "diagnostic_feasibility_pass_all_three"
+}

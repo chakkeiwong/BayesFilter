@@ -25,8 +25,8 @@ TARGET_CLASS = "deterministic_fixed_branch_approximate_likelihood"
 MEASURE_ID = "full_state_lebesgue_v1"
 SCORE_BACKEND_ID = "analytical_parameter_score_no_autodiff_v1"
 IDENTITY_ROLE = "reproducibility_fingerprint_not_admission"
-TTSIRT_COMPILER_ID = "zhao_cui_fixed_ttsirt_prefix_conditioned_branch_compiler_v1"
-TTSIRT_COMPILER_CLASSIFICATION = "fixed_hmc_adaptation"
+TTSIRT_COMPILER_ID = "zhao_cui_fixed_ttsirt_prefix_conditioned_branch_compiler_v2"
+TTSIRT_COMPILER_CLASSIFICATION = "extension_or_invention"
 
 
 @dataclass(frozen=True)
@@ -298,7 +298,8 @@ def compile_fixed_ttsirt_proposal_branch(
     Zhao-Cui order the forward-map target as `(current, theta, previous)` and
     integrate from the left for their upper conditional map.  The local
     transport supports natural prefix conditioning, so this compiler stores
-    `(previous, current)`.  That reordering is a fixed-HMC adaptation.
+    `(previous, current)`.  That reordering is an extension, while freezing
+    the source sampling operations is the fixed-HMC adaptation.
     """
 
     if not tf.executing_eagerly():
@@ -442,8 +443,62 @@ def compile_fixed_ttsirt_proposal_branch(
     manifest = {
         "compiler_route_id": TTSIRT_COMPILER_ID,
         "classification": TTSIRT_COMPILER_CLASSIFICATION,
+        "classification_correction": (
+            "v2 classifies the reordered finite-grid compiler as an extension; "
+            "v1 incorrectly classified the whole compiler as a fixed_hmc_adaptation"
+        ),
         "axis_order": ("x_previous", "x_current"),
         "axis_order_relation_to_zhao_cui": "reordered_for_local_prefix_conditioning",
+        "operation_classifications": {
+            "squared_tt_defensive_density": {
+                "classification": "source_faithful",
+                "paper_anchor": (
+                    ".localresources/papers/"
+                    "zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:539-573"
+                ),
+                "author_source_anchor": (
+                    "third_party/audit/zhao_cui_tensor_ssm_p10/source/"
+                    "deep-tensor.dev/src/SIRT.m:74-85"
+                ),
+                "scope": "operation only; the selected defensive mass is locally tuned",
+            },
+            "paired_core_prefix_conditional": {
+                "classification": "source_faithful",
+                "paper_anchor": (
+                    ".localresources/papers/"
+                    "zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:592-670"
+                ),
+                "author_source_anchor": (
+                    "third_party/audit/zhao_cui_tensor_ssm_p10/source/"
+                    "deep-tensor.dev/src/@TTSIRT/eval_cirt_reference.m:43-100"
+                ),
+                "scope": "generic prefix-conditional TT operation, not filtering axis order",
+            },
+            "frozen_randomness_and_settings": {
+                "classification": "fixed_hmc_adaptation",
+                "paper_anchor": (
+                    ".localresources/papers/"
+                    "zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:890-924"
+                ),
+                "author_source_anchor": (
+                    "third_party/audit/zhao_cui_tensor_ssm_p10/source/"
+                    "models/full_sol.m:21-43"
+                ),
+                "scope": "freezes the cited sampling and correction route",
+            },
+            "previous_current_prefix_axis_order": {
+                "classification": "extension_or_invention",
+                "reason": "the Zhao-Cui filtering route uses a different variable order",
+            },
+            "finite_grid_trapezoid_bisection_inverse": {
+                "classification": "extension_or_invention",
+                "reason": "not the paper's algebraic CDF or author CDFconstructor route",
+            },
+            "fixed_branch_apf_value_and_score": {
+                "classification": "extension_or_invention",
+                "reason": "BayesFilter finite-likelihood and analytical-score program",
+            },
+        },
         "branch_id": branch.branch_id,
         "coordinate_map": coordinate_map.manifest_payload(),
         "initial_transport": initial_transport.manifest_payload(),
@@ -454,6 +509,7 @@ def compile_fixed_ttsirt_proposal_branch(
         "production_kr_closure": False,
         "nonclaims": (
             "no source-faithful variable-order claim",
+            "no source-faithful finite-grid inverse claim",
             "no production KR closure",
             "no randomized-estimator unbiasedness claim from finite grid inversion",
             "no HMC or default-readiness claim",

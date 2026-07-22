@@ -10,6 +10,7 @@ from bayesfilter.highdim.cubature_genut_filter import (
     CandidateModelAdapter,
     _restore_cloud_jvp,
     _sinkhorn_barycentric_jvp,
+    _sinkhorn_barycentric_jvp_core,
     finite_value_score,
 )
 
@@ -121,6 +122,60 @@ def test_sinkhorn_barycentric_jvp_matches_forward_accumulator():
     tf.debugging.assert_near(manual, automatic, atol=1e-10, rtol=1e-10)
 
 
+def test_realized_row_quotient_stays_inside_source_convex_hull():
+    particles = tf.constant([[-4.0], [-0.5], [1.0], [3.0]], tf.float64)
+    weights = tf.constant([0.001, 0.002, 0.007, 0.99], tf.float64)
+    result = _sinkhorn_barycentric_jvp_core(
+        particles,
+        weights,
+        tf.zeros([4, 1, 1], tf.float64),
+        tf.zeros([4, 1], tf.float64),
+        epsilon=0.1,
+        sinkhorn_steps=1,
+        balance_steps=0,
+    )
+    quotient = result["particles"][:, 0]
+    old_substitution = 4.0 * tf.linalg.matvec(result["coupling"], particles[:, 0])
+    tf.debugging.assert_greater_equal(quotient, tf.reduce_min(particles))
+    tf.debugging.assert_less_equal(quotient, tf.reduce_max(particles))
+    assert bool(
+        tf.reduce_any(
+            (old_substitution < tf.reduce_min(particles))
+            | (old_substitution > tf.reduce_max(particles))
+        ).numpy()
+    )
+
+
+def test_terminal_balance_reduces_post_quotient_column_error():
+    particles = tf.constant([[-4.0], [-0.5], [1.0], [3.0]], tf.float64)
+    weights = tf.constant([0.001, 0.002, 0.007, 0.99], tf.float64)
+    zeros = tf.zeros([4, 1, 1], tf.float64)
+    zero_weights = tf.zeros([4, 1], tf.float64)
+    unbalanced = _sinkhorn_barycentric_jvp_core(
+        particles,
+        weights,
+        zeros,
+        zero_weights,
+        epsilon=0.1,
+        sinkhorn_steps=1,
+        balance_steps=0,
+    )
+    balanced = _sinkhorn_barycentric_jvp_core(
+        particles,
+        weights,
+        zeros,
+        zero_weights,
+        epsilon=0.1,
+        sinkhorn_steps=1,
+        balance_steps=64,
+    )
+    tf.debugging.assert_less(
+        balanced["post_quotient_column_tv_error"],
+        unbalanced["post_quotient_column_tv_error"],
+    )
+    tf.debugging.assert_positive(balanced["minimum_row_mass"])
+
+
 def test_composed_restore_jvp_matches_forward_accumulator():
     particles = tf.constant([[-1.2], [-0.3], [0.4], [1.1]], tf.float64)
     weights = tf.constant([0.15, 0.20, 0.30, 0.35], tf.float64)
@@ -160,6 +215,28 @@ def test_generic_core_replays_and_has_no_autodiff_or_runtime_fd():
     source = inspect.getsource(finite_value_score)
     assert "GradientTape" not in source
     assert "ForwardAccumulator" not in source
+
+
+def test_invalid_finite_program_is_returned_as_nonfinite_not_consumed():
+    theta = tf.constant([0.2, -0.1], tf.float32)
+    observations = tf.constant([[0.1]], tf.float32)
+    initial_noise = tf.random.stateless_normal([12, 1], seed=[51, 52])
+    process_noise = tf.random.stateless_normal([1, 12, 1], seed=[53, 54])
+    design = cubature_design(dim=1, num_particles=12)
+    value, score, diagnostics = finite_value_score(
+        _adapter(),
+        theta,
+        observations,
+        initial_noise,
+        process_noise,
+        design,
+        epsilon=0.01,
+        sinkhorn_steps=1,
+        balance_steps=0,
+    )
+    if not bool(diagnostics["program_valid"].numpy()):
+        assert not bool(tf.math.is_finite(value).numpy())
+        assert not bool(tf.reduce_all(tf.math.is_finite(score)).numpy())
 
 
 def test_candidate_xla_core_has_no_python_loop_or_host_numeric_path():

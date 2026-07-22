@@ -52,9 +52,15 @@ RESIDUAL_TOLERANCE = 5.0e-4
 FD_RELATIVE_TOLERANCE = 5.0e-2
 SCORE_SCALES = (50.0, 25.0, 2.0, 1.0, 25.0, 10.0, 10.0)
 CONTROL_GRID = tuple(
-    {"epsilon": epsilon, "sinkhorn_steps": steps, "ridge": ridge}
+    {
+        "epsilon": epsilon,
+        "sinkhorn_steps": steps,
+        "balance_steps": balance_steps,
+        "ridge": ridge,
+    }
     for epsilon in (2.0, 4.0)
     for steps in (4, 8)
+    for balance_steps in (4, 8)
     for ridge in (1.0e-6, 1.0e-5)
 )
 DGP_SEEDS = {
@@ -154,6 +160,7 @@ def _make_genut_evaluator(
                 design,
                 epsilon=float(controls["epsilon"]),
                 sinkhorn_steps=int(controls["sinkhorn_steps"]),
+                balance_steps=int(controls.get("balance_steps", 8)),
                 ridge=float(controls["ridge"]),
                 transition_before_first_observation=False,
             )
@@ -551,7 +558,7 @@ def _route_identity(
             tf32_enabled=True,
             jit_compile=True,
             design_family="genut",
-            control_family_id="predator_prey_genut_controls_v1",
+            control_family_id="predator_prey_genut_row_quotient_controls_v2",
         ),
         prepared_data_id=f"sha256:{observation_hash}",
         residual_design_id=(

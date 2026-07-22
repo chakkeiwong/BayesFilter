@@ -111,7 +111,7 @@ def _make_evaluator(horizon: int, controls: dict[str, object]):
     from bayesfilter.highdim.cubature_genut_adapters import reduced_sir_candidate_adapter
     from bayesfilter.highdim.cubature_genut_filter import finite_value_score
 
-    adapter = reduced_sir_candidate_adapter()
+    adapter = reduced_sir_candidate_adapter(mechanics_fixture_only=True)
 
     @tf.function(jit_compile=True, reduce_retracing=True)
     def evaluate(theta, observations, initial_noise, process_noise, design):
@@ -208,8 +208,9 @@ def main() -> None:
     result = {
         "schema_version": "bayesfilter.genut_sir_feasibility.v1",
         "campaign_id": "genut-sir-feasibility-20260722-attempt01",
-        "status": "diagnostic_only_feasible",
-        "target_id": "reduced_continuous_preclip_sir_j1_v1",
+        "status": "historical_mechanics_fixture_only_not_model_feasibility",
+        "target_id": "artificial_reduced_preclip_sir_j1_mechanics_fixture_v1",
+        "suite_eligibility": "ineligible_actual_model_suite",
         "target_measure_note": "preclip filtering state with physical infectious observation; not clipped Austria source measure",
         "parameter_order": ["log_kappa_scale", "log_nu_scale", "log_obs_noise_scale"],
         "truth_theta": [0.0, 0.0, 0.0],

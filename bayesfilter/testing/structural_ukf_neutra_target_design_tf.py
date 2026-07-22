@@ -82,13 +82,24 @@ def structural_truth_source() -> tf.Tensor:
 
 def structural_source_chart(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
     values = _rank2_theta(theta)
-    probabilities = 0.5 * (1.0 + tf.math.erf(values / _SQRT_TWO))
-    density = tf.exp(-0.5 * tf.square(values) - 0.5 * _LOG_TWO_PI)
-    physical = STRUCTURAL_PARAMETER_LOWER[None, :] + (
-        STRUCTURAL_PARAMETER_WIDTH[None, :] * probabilities
-    )
-    derivative = STRUCTURAL_PARAMETER_WIDTH[None, :] * density
-    return physical, derivative
+    return structural_source_chart_dtype(values)
+
+
+def structural_source_chart_dtype(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
+    """Apply the established source chart without changing the input dtype."""
+
+    values = tf.convert_to_tensor(theta)
+    if values.shape.rank != 2 or values.shape[-1] != 5:
+        raise ValueError("structural target requires theta shape [batch, 5]")
+    if not values.dtype.is_floating:
+        raise ValueError("structural target requires floating-point theta")
+    lower = tf.cast(STRUCTURAL_PARAMETER_LOWER, values.dtype)
+    width = tf.cast(STRUCTURAL_PARAMETER_WIDTH, values.dtype)
+    sqrt_two = tf.sqrt(tf.constant(2.0, values.dtype))
+    log_two_pi = tf.math.log(tf.constant(2.0 * math.pi, values.dtype))
+    probabilities = 0.5 * (1.0 + tf.math.erf(values / sqrt_two))
+    density = tf.exp(-0.5 * tf.square(values) - 0.5 * log_two_pi)
+    return lower[None, :] + width[None, :] * probabilities, width[None, :] * density
 
 
 def structural_source_uniform_prior_value_score(
@@ -240,11 +251,76 @@ def structural_transition_value(
     values = _rank2_theta(theta)
     previous = tf.convert_to_tensor(previous_points, tf.float64)
     innovation = tf.convert_to_tensor(innovation_points, tf.float64)
-    physical, _derivative = structural_source_chart(values)
+    return structural_transition_value_dtype(values, previous, innovation)
+
+
+def structural_transition_value_dtype(
+    theta: Any, previous_points: tf.Tensor, innovation_points: tf.Tensor
+) -> tf.Tensor:
+    """Evaluate the Chapter 18b transition in the caller's floating dtype."""
+
+    values = tf.convert_to_tensor(theta)
+    previous = tf.convert_to_tensor(previous_points, dtype=values.dtype)
+    innovation = tf.convert_to_tensor(innovation_points, dtype=values.dtype)
+    if values.shape.rank != 2 or values.shape[-1] != 5:
+        raise ValueError("structural target requires theta shape [batch, 5]")
+    if previous.shape.rank != 3 or previous.shape[-1] != 2:
+        raise ValueError("structural previous points require shape [batch, points, 2]")
+    if innovation.shape.rank != 3 or innovation.shape[-1] != 1:
+        raise ValueError("structural innovations require shape [batch, points, 1]")
+    physical, _derivative = structural_source_chart_dtype(values)
     rho, sigma, phi, gamma, _observation_variance = tf.unstack(physical, axis=1)
     m_value = rho[:, None] * previous[:, :, 0] + sigma[:, None] * innovation[:, :, 0]
     k_value = phi[:, None] * previous[:, :, 1] + gamma[:, None] * tf.square(m_value)
     return tf.stack([m_value, k_value], axis=2)
+
+
+def structural_transition_tangent_dtype(
+    theta: Any,
+    previous_points: tf.Tensor,
+    innovation_points: tf.Tensor,
+    previous_tangent: tf.Tensor,
+) -> tf.Tensor:
+    """Propagate the total source-coordinate tangent of the structural law."""
+
+    values = tf.convert_to_tensor(theta)
+    previous = tf.convert_to_tensor(previous_points, dtype=values.dtype)
+    innovation = tf.convert_to_tensor(innovation_points, dtype=values.dtype)
+    tangent = tf.convert_to_tensor(previous_tangent, dtype=values.dtype)
+    if tangent.shape.rank != 4 or tangent.shape[-2:] != (2, 5):
+        raise ValueError(
+            "structural previous tangent requires shape [batch, points, 2, 5]"
+        )
+    physical, dphysical = structural_source_chart_dtype(values)
+    rho, sigma, phi, gamma, _observation_variance = tf.unstack(physical, axis=1)
+    next_points = structural_transition_value_dtype(values, previous, innovation)
+    basis = tf.eye(5, dtype=values.dtype)
+    direct_m = (
+        previous[:, :, 0, None]
+        * dphysical[:, 0, None, None]
+        * basis[0][None, None, :]
+        + innovation[:, :, 0, None]
+        * dphysical[:, 1, None, None]
+        * basis[1][None, None, :]
+    )
+    m_tangent = rho[:, None, None] * tangent[:, :, 0, :] + direct_m
+    direct_k = (
+        previous[:, :, 1, None]
+        * dphysical[:, 2, None, None]
+        * basis[2][None, None, :]
+        + tf.square(next_points[:, :, 0, None])
+        * dphysical[:, 3, None, None]
+        * basis[3][None, None, :]
+    )
+    k_tangent = (
+        phi[:, None, None] * tangent[:, :, 1, :]
+        + 2.0
+        * gamma[:, None, None]
+        * next_points[:, :, 0, None]
+        * m_tangent
+        + direct_k
+    )
+    return tf.stack([m_tangent, k_tangent], axis=2)
 
 
 def structural_transition_residual(
@@ -252,13 +328,77 @@ def structural_transition_residual(
     previous_points: tf.Tensor,
     next_points: tf.Tensor,
 ) -> tf.Tensor:
-    physical, _derivative = structural_source_chart(theta)
+    return structural_transition_residual_dtype(theta, previous_points, next_points)
+
+
+def structural_transition_residual_dtype(
+    theta: Any,
+    previous_points: tf.Tensor,
+    next_points: tf.Tensor,
+) -> tf.Tensor:
+    """Return the pointwise Chapter 18b support residual in the input dtype."""
+
+    values = tf.convert_to_tensor(theta)
+    previous = tf.convert_to_tensor(previous_points, dtype=values.dtype)
+    next_values = tf.convert_to_tensor(next_points, dtype=values.dtype)
+    physical, _derivative = structural_source_chart_dtype(values)
     _rho, _sigma, phi, gamma, _observation_variance = tf.unstack(physical, axis=1)
     return (
-        next_points[:, :, 1]
-        - phi[:, None] * previous_points[:, :, 1]
-        - gamma[:, None] * tf.square(next_points[:, :, 0])
+        next_values[:, :, 1]
+        - phi[:, None] * previous[:, :, 1]
+        - gamma[:, None] * tf.square(next_values[:, :, 0])
     )[:, :, None]
+
+
+def structural_observation_log_density_dtype(
+    theta: Any, state_points: tf.Tensor, observation: tf.Tensor
+) -> tf.Tensor:
+    """Evaluate the established scalar observation density pointwise."""
+
+    values = tf.convert_to_tensor(theta)
+    states = tf.convert_to_tensor(state_points, dtype=values.dtype)
+    observed = tf.convert_to_tensor(observation, dtype=values.dtype)
+    physical, _derivative = structural_source_chart_dtype(values)
+    observation_variance = physical[:, 4, None]
+    residual = observed[:, None, 0] - tf.reduce_sum(states, axis=2)
+    log_two_pi = tf.math.log(tf.constant(2.0 * math.pi, values.dtype))
+    return -0.5 * (
+        tf.square(residual) / observation_variance
+        + tf.math.log(observation_variance)
+        + log_two_pi
+    )
+
+
+def structural_observation_log_density_tangent_dtype(
+    theta: Any,
+    state_points: tf.Tensor,
+    state_tangent: tf.Tensor,
+    observation: tf.Tensor,
+) -> tf.Tensor:
+    """Return the total source-coordinate tangent of the observation density."""
+
+    values = tf.convert_to_tensor(theta)
+    states = tf.convert_to_tensor(state_points, dtype=values.dtype)
+    tangent = tf.convert_to_tensor(state_tangent, dtype=values.dtype)
+    observed = tf.convert_to_tensor(observation, dtype=values.dtype)
+    physical, dphysical = structural_source_chart_dtype(values)
+    observation_variance = physical[:, 4, None]
+    residual = observed[:, None, 0] - tf.reduce_sum(states, axis=2)
+    state_term = (
+        residual[:, :, None]
+        / observation_variance[:, :, None]
+        * tf.reduce_sum(tangent, axis=2)
+    )
+    variance_score = 0.5 * (
+        tf.square(residual) / tf.square(observation_variance)
+        - 1.0 / observation_variance
+    )
+    variance_term = (
+        variance_score[:, :, None]
+        * dphysical[:, 4, None, None]
+        * tf.eye(5, dtype=values.dtype)[4][None, None, :]
+    )
+    return state_term + variance_term
 
 
 def _initial_observation_update(

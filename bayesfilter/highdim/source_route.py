@@ -2029,7 +2029,7 @@ def p83_minimal_transport_slice_readiness(
         blockers.append("missing_numerical_grid_cdf_backend")
     if (
         str(transport.get("conditional_cdf_route_class", ""))
-        != "fixed_hmc_adaptation_diagnostic_approximation"
+        != "extension_or_invention_diagnostic_approximation"
     ):
         blockers.append("missing_diagnostic_cdf_route_class")
     if transport.get("production_kr_closure") is not False:

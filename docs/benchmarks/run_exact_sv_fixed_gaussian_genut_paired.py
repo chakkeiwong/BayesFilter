@@ -35,6 +35,7 @@ DESIGN_FAMILIES = ("cubature", "fixed_gaussian_genut")
 CLAIM_SEEDS = tuple(range(3620, 3636))
 THETA_VALUES = (0.25, -0.15)
 EPSILON = 2.0
+BALANCE_STEPS = 8
 RIDGE = 1.0e-5
 POINTWISE_T_95_DF15 = 2.131449545559323
 SCORE_FAMILYWISE_T_95_DF15 = 2.4898797034798923
@@ -173,6 +174,7 @@ def _make_candidate(adapter: Any, *, particle_count: int, sinkhorn_steps: int):
                 design,
                 epsilon=EPSILON,
                 sinkhorn_steps=sinkhorn_steps,
+                balance_steps=BALANCE_STEPS,
                 ridge=RIDGE,
             )
 
