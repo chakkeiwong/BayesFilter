@@ -1,0 +1,2062 @@
+                                                                          Differentiable Particle Filtering
+                                                                       without Modifying the Forward Pass
+
+
+
+                                                                   Adam Ścibior1,2                             Frank Wood1,2,3
+                                                                 ascibior@cs.ubc.ca                            fwood@cs.ubc.ca
+                                                        1                        2                                             3
+                                                          Inverted AI              University of British Columbia                Mila
+arXiv:2106.10314v2 [stat.ML] 19 Oct 2021
+
+
+
+
+                                                                 Abstract                             allowing particle filters to adaptively focus computa-
+                                                                                                      tional resources on promising paths cause problems for
+                                               Particle filters are not compatible with au-           automatic differentiation, with the usual algorithms
+                                               tomatic differentiation due to the presence            producing gradient estimators that suffer from exces-
+                                               of discrete resampling steps. While known              sive variance. In current practice, the dependence of
+                                               estimators for the score function, based on            the resampling probabilities on model parameters is
+                                               Fisher’s identity, can be computed using par-          typically ignored [Le et al., 2018a, Maddison et al.,
+                                               ticle filters, up to this point they required          2017, Naesseth et al., 2018], introducing bias that was
+                                               manual implementation. In this paper we                shown not to vanish asymptotically [Corenflos et al.,
+                                               show that such estimators can be computed              2021] and impede learning.
+                                               using automatic differentiation, after introduc-       Several recent articles [Corenflos et al., 2021, Zhu et al.,
+                                               ing a simple correction to the particle weights.       2020, Karkus et al., 2018] have proposed continuous
+                                               This correction utilizes the stop-gradient op-         relaxations of the discrete resampling steps to avoid this
+                                               erator and does not modify the particle filter         problem, with different trade-offs and varying degrees
+                                               operation on the forward pass, while also be-          of complexity, as discussed in detail in Section 6. At
+                                               ing cheap and easy to compute. Surprisingly,           the same time, there exist consistent estimators of the
+                                               with the same correction automatic differenti-         gradient of log-marginal likelihood that can be obtained
+                                               ation also produces good estimators for gradi-         with usual discrete resampling [Poyiadjis et al., 2011],
+                                               ents of expectations under the posterior. We           but until now these could not be obtained by applying
+                                               can therefore regard our method as a general           AD to the log-marginal likelihood estimator produced
+                                               recipe for making particle filters differentiable.     by a particle filter.
+                                               We additionally show that it produces desired
+                                               estimators for second-order derivatives and            In this work we show that a simple and computation-
+                                               how to extend it to further reduce variance            ally inexpensive modification to an otherwise entirely
+                                               at the expense of additional computation.              standard “basic” particle filter implementation allows
+                                                                                                      AD to produce the estimators derived by Poyiadjis
+                                                                                                      et al. [2011]. The modification, shown in Algorithm 1,
+                                                                                                      can be thought of as stopping the gradients of weights
+                                           1   Introduction                                           flowing into the resampling distribution, instead direct-
+                                                                                                      ing them into the resulting weights. Crucially, it does
+                                           Sequential latent variable models can be learned by gra-
+                                                                                                      not modify the estimators produced by the particle
+                                           dient ascent, applying automatic differentiation (AD)
+                                                                                                      filter on the forward pass, only changing the gradients
+                                           to the log-marginal likelihood estimators obtained with
+                                                                                                      computed by AD. We also show that with our modi-
+                                           particle filters. Examples include robotic localization
+                                                                                                      fication AD produces sensible, easy to interpret, and
+                                           [Jonschkowski et al., 2018], world-modeling in rein-
+                                                                                                      consistent estimators for gradients of expectations un-
+                                           forcement learning [Igl et al., 2018], and deep gener-
+                                                                                                      der the posterior, which are additionally unbiased if the
+                                           ative modeling of music and speech [Maddison et al.,
+                                                                                                      estimator obtained on the forward pass is unbiased. We
+                                           2017]. Unfortunately, the discrete resampling steps
+                                                                                                      can therefore regard our modification as a general tech-
+                                                                                                      nique for making a particle filter differentiable, without
+                                                                                                      modifying its behavior on the forward pass. While ex-
+                                                                                                      isting differentiable resampling mechanisms have their
+                                           Preliminary work.                                          merits, the simplicity of our approach is unmatched,
+                      Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+so we advocate trying it first before attempting more                   In this section we introduce a minimal formalism re-
+sophisticated alternatives.                                             quired to reason about gradient estimators produced by
+                                                                        AD from complex expressions involving stop-gradient.1
+Additionally, in Section 4 we show that our results ex-
+                                                                        Following Foerster et al. [2018], we denote the stop-
+tend to higher-order derivatives computed by repeated
+                                                                        gradient with a ⊥, for example ∇⊥ (x) = 0.
+AD and that the same method applies to marginal
+particle filters [Klaas et al., 2012], recovering the more              We refer to expressions containing stop-gradient as sur-
+expensive but lower variance estimator proposed by                      rogate expressions and we need to distinguish between
+Poyiadjis et al. [2011]. We also briefly discuss the prob-              the results obtained by evaluating them on the forward
+lem of jointly learning a proposal distribution with the                pass and the expressions obtained by applying AD.
+model, which is largely left for future work.                           Following van Krieken et al. [2021], we denote evalua-
+                                                                        tion of an expression E with an overhead right arrow
+                                                                        →
+                                                                        −
+                                                                        E . Operationally, evaluation removes all instances of
+2     Preliminaries
+                                                                        stop-gradient, provided that no gradient operator is
+                                                                        acting on them. Gradients satisfy the usual chain rules,
+We assume familiarity with automatic differentiation
+                                                                        except that gradients of any expression wrapped in
+[Baydin et al., 2018], including its application to
+                                                                        stop-gradient are zero. The key equations are:
+stochastic computations [Schulman et al., 2016], but
+provide some additional exposition to those and other                              −−−−−−−−−−→               −
+                                                                                                             →            −
+                                                                                                                          →
+                                                                                   f (E1 , . . . , En ) = f (E1 , . . . , E2 )   (2)
+topics in the supplementary materials.                                                         −−−→ →     −
+                                                                                               ⊥ (E) = E                         (3)
+2.1    Particle filters                                                                    ∇⊥ (E) = 0                            (4)
+                                                                                              −−→
+                                                                                              ∇E = ∇E              if ⊥ ∈
+                                                                                                                        / E,     (5)
+We assume familiarity with particle filters [Chopin and
+Papaspiliopoulos, 2020, Doucet and Johansen, 2009,                      where f is some fixed differentiable function and ⊥ ∈
+                                                                                                                            /E
+Doucet et al., 2001], using notation defined in Algo-                   means that stop-gradient is not applied anywhere in
+rithm 1. Our results apply with any choice of the                       expression E, including its subexpressions. Crucially,
+resampling scheme R [Murray et al., 2016].                                           →
+                                                                                     −      −−→       −→      −
+                                                                                                              →
+                                                                        in general ∇ E 6= ∇E, and E1 = E2 does not imply
+                                                                        −−→ −−→
+We assume that standard conditions for the exist-                       ∇E1 = ∇E2 .
+ing convergence results [Moral, 2004, Chopin and Pa-
+                                                                        We use this calculus to derive formulas for estimators
+paspiliopoulos, 2020] are satisfied, specifically for con-
+                                                                        obtained by algorithms utilizing stop-gradient in auto-
+sistency of estimators of the log-marginal likelihood and
+                                                                        matic differentiation, which we generally accomplish
+expectations under the posterior, and for unbiasedness
+                                                                        by using the rules above, along with the chain rule
+of estimators of expectations under the unnormalized
+                                                                        for the gradient operator, to push the gradients inside,
+posterior. For score function estimation with particle
+                                                                        past any stop-gradient operators, and then evaluating
+filters, we use the estimators derived by Poyiadjis et al.
+                                                                        the resulting expression. Note that in this calculus
+[2011] using Fisher’s identity, in particular
+                                                                        the gradient operator produces expressions rather than
+                          N                                             values, so that we can model repeated automatic dif-
+                                                                        ferentiation. Expressions without stop-gradient can be
+                          X
+    ∇θ log pθ (y1:T ) ≈         wiT ∇θ log pθ (x̃i1:T , y1:T ),   (1)
+                          i=1                                           equated with their usual interpretations. Throughout
+                                                                        the paper we are careful to avoid using integrals of ex-
+where x̃i1:t is the ancestral lineage of a particle i at time           pressions involving stop-gradient, as we consider those
+                                                           ai           undefined. We also present a short tutorial on using
+t, satisfying the recursive equation x̃i1:t = (x̃1:t−1
+                                                    t
+                                                       , xit ).
+Our key contribution is a construction that enables                     this calculus in the appendix.
+obtaining this estimator through automatic differentia-                 Surrogate expressions are commonly used when
+tion of the log Ẑ estimate from a particle filter, without             computing gradients of computation involving non-
+affecting estimators produced on the forward pass.                      reparameterizable random variables, which is typi-
+                                                                        cally implemented using surrogates of the form fθ (x) +
+2.2    The stop-gradient operator                                       ⊥ (fθ (x)) log pθ (x). The resulting gradient estimator is
+                                                                        known in the reinforcement learning literature as RE-
+The stop-gradient operator is a standard compo-                         INFORCE [Williams, 1992], and more broadly referred
+nent of automatic differentiation libraries, called                     to as the score function method or the likelihood ratio
+stop_gradient in Tensorflow and detach in PyTorch,                         1
+                                                                            Note that there doesn’t exist a R → R function with
+producing an expression that evaluates to its normal                    the properties of stop-gradient, so extra care needs to be
+value on the forward pass but produces no gradient.                     taken when manipulating expressions containing it.
+                                            Adam Ścibior, Frank Wood
+
+
+Algorithm 1 Forward pass of the standard particle filter (left), compared with our differentiable particle filter
+(right). The crucial modification required by our method is highlighted in yellow, where the ⊥ denotes the
+stop-gradient operator. The application of stop-gradient inside the resampling function is typically redundant,
+because automatic differentiation libraries do not propagate gradients through samples from discrete distributions.
+We choose the symbol v to denote the weights of the differentiable particle filter, to distinguish them from the
+traditionally computed weights in the equations throughout the paper. Where i is not bounded it denotes an
+operation applied across all i ∈ 1 : N , and we use colons to index sequences, e.g. x1:T = (x1 , . . . , xT ).
+                                                       function DPF(p, q, N , T )
+   function PF(p, q, N , T )
+        i                                                  xi0 ∼ p(x0 )
+      x0 ∼ p(x0 )
+                                                           v0i = v i0 = N1
+      w0i = wi0 = N1
+                                                           for t ∈ 1 : T do
+      for t ∈ 1 : T do
+                                                               if resampling condition              then
+          if resampling condition then
+                1:N             1:N                                  a1:N
+                                                                        t     ∼ R(⊥ v 1:N      t−1 )
+               at ∼ R(wt−1 )
+                                                                                      ait
+                                                                                                  i 
+                                                                                                    at
+               w̃ti = N1                                             ṽti = N1 v t−1       /⊥ v t−1
+          else
+                                                               else
+               ait = i
+                  i     i                                            ait = i
+               w̃t = wt−1
+                           ait
+                                                                     ṽti = v it−1
+          xit ∼ qφ (xt |xt−1     )                                i                  ait
+                                      a i                      x  t ∼    q φ (x t |x t−1 )
+             i      i   pθ (xit ,yt |xt−1
+                                        t )
+                                                                                              ai
+          wt = w̃t−1                 ai                          i         i   pθ (xit ,yt |xt−1t )
+                                 i    t
+                          qφ (xt |xt−1 )                       vt = ṽt−1                   a i
+                    PN                                                            qφ (xi |x t )
+          Wt = i=1 wti                                                   PN i t t−1
+                                                               Vt = i=1 vt
+          wit = wti /Wt
+               QT                                              v it = vti /Vt
+      ẐPF = t=1 Wt                                                      QT
+                                                           ẐDPF = t=1 Vt
+
+
+method [Fu, 2006]. We refrain from using those terms to      versions of a particle filter, namely the standard im-
+avoid confusion with the score function ∇θ log pθ (y1:T )    plementation (PF) and our modified version (DPF),
+and the likelihood pθ (y1:T ) associated with the sequen-    contrasted in Algorithm 1. To avoid further compli-
+tial latent variable model. Foerster et al. [2018] provide   cating notation, throughout the paper we assume that
+a method for constructing alternative surrogates, called     resampling is performed at each time step. These two
+DiCE, which produces the same gradient estimators but        particle filters are equivalent on the forward pass, in
+                                                                          −
+                                                                          →      →
+                                                                                 −      −−→     −−−→
+has the additional advantage of preserving the results       particular wti = vti and ẐPF= ẐDPF
+of evaluating the forward pass, as well as producing                                             , and similarly
+                                                                  i          i
+unbiased estimators for derivatives of higher order. As      ⊥ wt = ⊥ vt and ⊥ ẐPF = ⊥ ẐDPF . The dis-
+an illustrative example, we use the calculus introduced      tinction is only material when computing gradients of
+above to compute the gradient estimator produced by          such expressions, when that is not the case we some-
+DiCE                                                         times drop the subscript and simply write Ẑ to avoid
+         −−−−−−−−−−−−−−−−→                                 clutter.
+                  pθ (x)
+         ∇θ                fθ (x) =                    (6)
+                ⊥ (pθ (x))                                   3.1   Estimating the score function
+               −−−−−−→ −−−−−−→
+                ∇θ pθ (x)        pθ (x)
+         fθ (x)             +           ∇θ fθ (x) =          To provide a gentle exposition, we first consider simple
+                ⊥ (pθ (x)) ⊥ (pθ (x))
+                                                             importance sampling in a non-sequential latent variable
+         fθ (x)∇θ log pθ (x) + ∇θ fθ (x).                    model, without any resampling or ancestral variables.
+Since it produces the same gradient estimators as RE-        A simple way to obtain score function estimates is
+INFORCE, a.k.a. the score function method, a.k.a. the        to apply automatic differentiation to a program that
+likelihood ratio method, we use the name DiCE                estimates the log-marginal likelihood with importance
+throughout the paper to encapsulate all those methods.       sampling, as is done in IWAE [Burda et al., 2016]. The
+                                                             forward pass of such a program defines the following
+                                                             objective
+3    Method
+                                                                                           "      N
+                                                                                                               #
+                                                                                               1 X pθ (xi , y)
+In this section we derive and analyze the gradient es-              LIWAE =      E         log                   .   (7)
+                                                                              xi ∼qφ (x)       N i=1 qφ (xi )
+timators obtained by applying AD to two different
+                         Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+Automatic differentiation then computes gradients with                    should be applied to it, in particular if it can not be
+respect to the model parameters θ as                                      reparameterized. In IWAE, or sequential importance
+                        "N                      #                         sampling, this problem is usually avoided by having
+                         X
+                               i           i                              separate parameters for the proposal distribution. In
+   ∇θ LIWAE =     E          w ∇θ log pθ (x , y) , (8)
+                i   x ∼qφ (x)                                             particle filters, however, even if the proposal distribu-
+                                 i=1
+                                                                          tion uses separate parameters, the computation involves
+                     i
+where wi = pqθφ(x(x,y) and wi = wi /
+                                             PN     j                     discrete ancestral indices, which are sampled accord-
+                   i)                          j=1 w .
+                                                                          ing to weights, which in turn depend on the model
+This is exactly the same estimator we would obtain by                     parameters. Stopping those gradients changes the re-
+using Fisher’s identity with a self-normalizing impor-                    sampling distribution, which requires multiplying the
+tance sampler to approximate the posterior. However,                      post-resampling weight with the ratio of correspond-
+the two methods are no longer equivalent if the pro-                      ing densities  [Liu, 2004, Section 3.4.4], in this case
+                                                                           ai          ai
+                                                                                  
+posal distribution also depends on model parameters,                      v t−1
+                                                                             t
+                                                                                /⊥ v t−1
+                                                                                      t
+                                                                                         . With DPF as defined in Algorithm 1,
+such as when using the prior pθ (x) as the proposal. Ap-
+                                                                          we have
+plying Fisher’s identity produces the same estimator as
+Eq. 8 whether q depends on θ or not. With automatic                             −−−−−−−−→ X    N
+differentiation, since the sampling distribution depends                        ∇θ log ẐDPF =   wiT ∇θ log pθ (x̃i1:T , y1:T ),          (13)
+on θ and assuming it can not be reparameterized, we                                               i=1
+use DiCE and obtain the following gradient estimator
+                                                                          recovering the estimator from Eq. 1. Detailed calcu-
+                                                                          lations are presented in the supplementary materials.
+          N                         N                                     This is known to be a consistent estimator of the score
+          X                         X                 pθ (xi , y)         function [Poyiadjis et al., 2011] and we obtain it by
+ log Ẑ         ∇θ log qθ (xi ) +         wi ∇θ log               , (9)
+          i=1                       i=1
+                                                       qθ (xi )           applying AD to a log-likelihood estimator produced by
+                 PN                                                       a particle filter with minor correction to its weights.
+                         i
+where Ẑ =       i=1 w . The first term inside the ex-                    Those corrections are easy to implement, their compu-
+pectation is the problematic one, and it tends to ei-                     tational overhead is small, and they do not affect the
+ther be dropped, introducing bias, or necessitates the                    estimators produced on the forward pass.
+use of baselines or other variance reduction meth-
+                                                                          In contrast, applying AD to a standard PF implemen-
+ods. When gradients of q are stopped, the first
+                                                                          tation, using DiCE to account for the dependence of
+term disappears, along with the denominator in the
+                                                                          resampling distribution on θ, produces the following
+second one, recovering the estimator from Eq. 8.
+                                                                          gradient estimators [Le et al., 2018a, Eq. 31]
+We can show this formally using the calculus intro-
+duced in Section 2.2. We introduce         a stop-gradient                  −−−
+                                                                               −−−−−−−−−−−−−−−−−−−−→       
+                                                                                  T Y N     ait
+                                    
+weight v i = pθ (xi , y)/⊥ qθ (xi ) to distinguish it from                       Y        w
+wi = pθ (xi , y)/qθ (xi ), noting that they evaluate to the                 ∇θ            t i  log ẐPF  =                            (14)
+                                                                                              at
+                                            →
+                                            −                                    t=1 i=1 ⊥ wt
+same value on the forward pass, that is v i = wi . Then
+                                                                                       N X
+                                                                                         T
+    −−−−−−−−−−−−−−−−−→ −−−−−−−−−−−→                                                    X
+                  N                               N                         log ẐPF             ∇θ log wit + ∇θ log ẐPF =               (15)
+               1 X pθ (xi , y)               1 X i
+    ∇θ log                       =  ∇ θ log          v           (10)                  i=1 t=1
+              N i=1 ⊥ (qθ (xi ))            N i=1                           N X
+                                                                              T
+                                                                                                                                     ai
+                                                                            X
+    −−−P−−N−−−−−→ −N−−−−−−→                                                            log Ẑ ∇θ log wit + wit ∇θ log pθ (xit , yt |xt−1
+                                                                                                                                      t
+                                                                                                                                         ).
+     1                i   X ∇θ v i
+            i=1 ∇θ v                                                         i=1 t=1
+     N
+                        =     vi i =                             (11)
+       1
+          P   N
+                  v i            v                                                                                                        (16)
+       N      i=1         i=1
+    −−−−−−−−−−→
+    XN                    XN                                              The first term is typically dropped due to high-variance,
+         v i ∇θ log v i =     wi ∇θ log pθ (xi , y).             (12)     introducing bias which was shown not to disappear
+    i=1                    i=1                                            in the infinite particle limit [Corenflos et al., 2021].
+                                                                          Comparing with Eq. 13, this estimator does not track
+We emphasize that the use of this estimator is justified
+                                                                          dependencies across time beyond a single step.
+by Fisher’s identity, independently of any stop-gradient
+considerations required to obtain it through automatic
+differentiation. This lets us access known theoretical                    3.2     Estimating expectations
+results, in particular implying consistency under stan-
+                                                                          While our primary goal is to obtain score function
+dard assumptions.
+                                                                          estimates by applying AD to log-likelihood estimates,
+Those results suggests that when the proposal distri-                     particle filters can also be used to estimate expectations
+bution depends on the model parameters, stop-gradient                     under filtering or smoothing distributions and we can
+                                                               Adam Ścibior, Frank Wood
+
+
+apply AD to estimate gradients of such expectations as                           unnormalized posterior. Differentiating through DPF,
+well. In this section we show that with the same DPF                             we obtain the following gradient estimator
+implementation, shown in Algorithm 1, AD produces
+                                                                                                                                −−−−−−−−−−−−−−−−−→
+sensible and easy to interpret gradient estimators with                                                                                  N
+                                                                                                                                         X
+desirable theoretical properties. In the main text we                            ∇θ              E              [Zfθ (x1:T )] ≈ ∇θ ẐDPF   v iT fθ (x̃i1:T ) =
+                                                                                       x1:T ∼pθ (x1:T |y1:T )
+only state the results, providing derivations and proofs                                                                                   i=1
+in the supplementary materials.                                                                                                                     (20)
+                                                                                      N
+Consider a function fθ : X T → R, differentiable in θ for                             X
+                                                                                            wiT fθ (x̃i1:T )∇θ log pθ (x̃i1:T , y1:T ) + ∇θ fθ (x̃i1:T ) .
+                                                                                                                                                        
+                                                                                 Ẑ
+all x1:T . A particle filter yields a consistent estimator
+                                                                                      i=1
+for its expectation under the posterior                                                                                                             (21)
+            N
+            X                                                                    This very similar to Eq. 18, only without the baseline
+    lim             wiT fθ (x̃i1:T ) =           E            [fθ (x1:T )] .
+   N →∞                                  x∼pθ (x1:T |y1:T )                      f θ and it is multiplied by the marginal likelihood esti-
+            i=1
+                                                                          (17)   mate Ẑ. It is both consistent and unbiased, as proven
+                                                                                 in the supplementary materials.
+Applying AD to DPF produces the following consistent                             We compare it with the estimator obtained with PF
+estimator for the gradient of this expectation                                   and DiCE, which is also consistent and unbiased, but
+                                                                                 suffers from credit assignment problems
+                                           −−−−−−−−−−−−−→
+                                              XN
+  ∇θ              E         [fθ (x1:T )] ≈ ∇θ    v iT fθ (x̃i1:T ) =             ∇θ               E             [Zfθ (x1:T )] ≈
+       x∼pθ (x1:T |y1:T )                                                              x1:T ∼pθ (x1:T |y1:T )
+                                                     i=1
+                                                                                      N
+  N                                                                                   X
+                                                                                            wiT ∇θ fθ (x̃i1:T ) + fθ (x̃i1:T ) − f θ ∇θ log wTi +
+                                                                                                                                             
+                                                                                 Ẑ
+  X
+        wiT       ∇θ fθ (x̃i1:T )+
+                                                                                      i=1
+  i=1
+                                                                                                  N
+                                                                                                 T X
+        fθ (x̃i1:T ) − f θ ∇θ log pθ (x̃i1:T , y1:T ) ,                                                               ai
+                                                                                                X
+                                                                          (18)           Ẑf θ             ∇θ log wt−1
+                                                                                                                    t
+                                                                                                                       .                            (22)
+                                                                                                 t=1 i=1
+              PN
+where fθ = i=1 wiT fθ (x̃i1:T ). The first term is the
+average value of the partial derivative of fθ at the loca-                       4      Extensions
+tions specified by surviving particles, while the second
+one can be interpreted as a DiCE-like log-derivative                             4.1        Handling proposal distributions
+correction under the posterior distribution of the full
+ancestral lineage, with a variance-reducing baseline                             So far we have only considered gradients with respect
+provided by the average value of fθ obtained on the                              to model parameters θ. However, it is often desirable
+forward pass.                                                                    to jointly learn separate parameters φ of the proposal
+                                                                                 distributions. Doing this requires reparameterizing qφ ,
+In contrast, applying AD to the standard PF imple-                                                                                           ai
+mentation with DiCE yields                                                       which we assume to be given by xit = hφ (it , xt−1t
+                                                                                                                                      ) with
+                                                                                  i
+                                                                                 t ∼ N (0, 1). This induces a reparameterization across
+        T X
+        X N
+                                  ai
+                                          N
+                                          X                                      the entire ancestral lineage x̃i1:T = h̃φ (˜i1:T ), which
+   fθ                 ∇θ log wt−1
+                               t
+                                  +              wiT ∇θ fθ (x̃i1:T ) +           provides convenient notation. We then compute the
+         t=1 i=1                           i=1                                   result of applying automatic differentiation to log ẐDPF
+                                                                  !
+                                                     ai
+       fθ (x̃i1:T ) − f θ
+                            
+                                ∇θ log pθ (xT , yT |xTT−1 )           .   (19)    −−−−−−−−→ X     N
+                                                                                                                         i1:T ), y1:T )
+                                                                                                                pθ (h̃φ (˜
+                                                                                  ∇φ log ẐDPF =     wiT ∇φ log                          . (23)
+                                                                                                 i=1
+                                                                                                                   qφ (h̃φ (˜i1:T ))
+Once again, this estimators suffers from a credit assign-
+ment problem. Gradients of resampling probabilities                              This is very similar to the gradients ∇φ LIWAE [Burda
+for particles from time steps other than the last one are                        et al., 2016, Eq. 14], the only difference being that the
+all given equal weight, regardless of how the particle                           trajectories are sampled from the particle filter rather
+performed subsequently.                                                          then directly from the proposal. We can therefore
+All the gradient estimators considered so far were bi-                           reasonably expect those gradients to provide learning
+ased, which is to be expected given that they were                               signal for φ, although it is unclear whether it would
+                                                                                                 −−−−−−−→
+obtained by differentiating biased estimators from the                           be better than ∇φ log ẐPF [Le et al., 2018a, Maddison
+forward pass. However, particle filters are known to                             et al., 2017, Naesseth et al., 2018] due to particle degen-
+produce unbiased estimators for expectations under the                           eracy problems. Our initial experiments in this regard,
+                         Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+presented in Section 5.2, were inconclusive, so we leave                  a discrete distribution, which introduces bias in the gra-
+this question for future work.                                            dients. This bias can be avoided with the stop-gradient
+                                                                          corrections of DPF2, but that potentially introduces
+In some settings, particularly when using the bootstrap
+                                                                          problems with particle degeneracy, much like in the
+particle filter, the proposal is derived from model pa-
+                                                                          normal particle filter. The second method is to repa-
+rameters. For the reasons discussed in Section 3.1, in
+                                                                          rameterize the mixture distribution using cumulative
+such settings we recommend applying stop-gradient to
+                                                                          distribution functions [Graves, 2016]. In this method
+the proposal throughout the program. This was done
+                                                                          there is still a choice of whether to stop gradients and
+by Le et al. [2018a, Section 5.1] without theoretical
+                                                                          reparameterize a mixture with fixed weights and it is
+justification and we do it in our experiments as well.
+                                                                          not clear whether that would perform better or worse.
+4.2      Reducing variance with additional
+                                                                          4.3       Higher-order derivatives
+         computation
+                                                                          While in most applications we are interested in first-
+Poyiadjis et al. [2011] have shown that the variance of
+                                                                          order derivatives, we can apply automatic differentia-
+score function estimators from Eq. 1 grows quadrati-
+                                                                          tion repeatedly to obtain derivatives of higher orders.
+cally with sequence length, but can be reduced to linear
+                                                                          Poyiadjis et al. [2011] show that the Hessian of the
+using what is now known as the marginal particle filter
+                                                                          log-marginal likelihood can be approximated with a
+[Klaas et al., 2012]. We obtain this reduced-variance
+                                                                          particle filter using Louis’ identity
+estimator with AD by stopping the gradients of the mix-
+ture component weights in the proposal distribution.                      ∇2θ log pθ (y1:T ) ≈                                                  (26)
+This modification is shown in Algorithm 2.                                    N X
+                                                                                N
+                                                                              X
+Poyiadjis et al. [2011, Eq. 20] define their reduced-                     −             wiT wjT ∇θ log pθ (x̃i1:T , y1:T )∇θ log pθ (x̃i1:T , y1:T )T
+variance score function estimator as                                          i=1 j=1
+                                                                              N
+                                       N                                      X
+                 ∇θ log pθ (y1:T ) ≈
+                                       X
+                                             wiT ᾱTi ,         (24)      +         wiT ∇2θ log pθ (x̃i1:T , y1:T )+
+                                                                              i=1
+                                       i=1                                                                                                  !
+using the marginal particle filter and the following                            ∇θ log pθ (x̃i1:T , , y1:T )∇θ log pθ (x̃i1:T , , y1:T )T       ,
+recursive definition of ᾱ
+  i                 1                                                     where superscript T denotes transpose. This is ex-
+ᾱt+1 = PN       j              j
+                                                (25)
+                          i
+           j=1 w t+1 pθ (xt+1 |xt )                                       actly the estimator obtained by applying AD twice
+                                                                                                    −−−−−−−−→
+  N
+  X                                                                     to DPF, specifically from ∇2θ log ẐDPF , as we show in
+         wjt+1 pθ (xit+1 |xjt ) ᾱtj + ∇θ log pθ (xit+1 , yt+1 |xjt ) .   the supplementary materials. Furthermore, Hessian-
+   j=1                                                                    vector products can be computed with reduced memory
+In the supplementary materials we show that                               requirements in the usual fashion.
+−−−−−−−−−→
+∇θ log ẐDPF2 produces the same estimator.                                We can similarly derive higher-order derivatives for
+                                                                          expectations under the posterior. We conjecture that
+The marginal particle filter avoids issues with parti-                    DPF with automatic differentiation provides unbiased
+cle degeneracy, at the expense of not producing joint                     estimators for derivatives of any order of expectations
+samples x̃i1:T . This means that it is not suitable for                   under the unnormalized posterior, similarly to how
+estimating expectations of arbitrary functions under                      DiCE produces unbiased estimators for derivatives of
+the smoothing density, but on the flipside it achieves                    any order, leaving the proof for future work.
+linear scaling of variance with T for estimating the
+score function. Its computational cost is quadratic in
+the number of particles, since the mixture densities                      5     Experiments
+need to be evaluated for each particle separately. As
+shown by Poyiadjis et al. [2011], this trade-off is always                In our experiments we focus on the task of model
+favorable for sufficiently large T .                                      learning using the score function estimators given by
+                                                                          −−−−−−−−→
+                                                                          ∇θ log ẐDPF . We show that DPF outperforms PF on
+Lai et al. [2021] propose to use the marginal particle
+                                                                          model learning, while the results for jointly learning
+filter to jointly learn proposal parameters φ. Regardless
+                                                                          the model and the proposal are open for interpretation.
+of whether stop-gradients are applied, the key consid-
+eration is how to reparameterize sampling from the                        We use the following baselines: sequential importance
+mixture proposal. Lai et al. [2021] consider two meth-                    sampling without resampling (SIS), biased particle fil-
+ods. The first draws the mixture component first from                     ter ignoring the gradients resulting from resampling
+                                               Adam Ścibior, Frank Wood
+
+
+Algorithm 2 The marginal particle filter in the usual formulation (left) and in our differentiable formulation
+(right). When estimating the score function, DPF2 reduces variance from quadratic to linear in T . The
+computational cost increases from linear to quadratic in N .
+   function PF2(p, q, N , T )                            function DPF2(p, q, N , T )
+      xi0 ∼ p(x0 )                                           xi0 ∼ p(x0 )
+      w0i = wi0 = N1                                         v0i = v i0 = N1
+      for t ∈ 1 : T do                                       for t ∈ 1 : T do 
+                                                                                                  ait
+                                                                        PN             
+                                                                   i               j
+           i
+          x ∼
+               P   N   j        ai
+                     v q (x |x , y )
+                                 t                               x t ∼     j=1 ⊥ v t−1   qφ (xt |xt−1 , yt )
+           t   j=1 t−1 φ t t−1 t
+                PN    i        n       i                                           PN
+          n   1 Pi=1 wt−1 pθ (xt ,yt |xt−1 )                                             vi    p (xn ,y |xi   )
+         wt = N N wi q (xn |xi ,y )                                vtn = N1 PN i=1      t−1    θ   t   t t−1
+
+                                                                                  i=1 ⊥(v t−1 ) qφ (xt |xt−1 ,yt )
+                           φ             t                                                i          n i
+                    i=1   t−1     t   t−1
+                PN
+          Wt = i=1 wti                                                    PN
+                                                                   Vt = i=1 vti
+          wit = wti /Wt                                            v it = vti /Vt
+               QT
+      ẐPF2 = t=1 Wt                                                       QT
+                                                                ẐDPF2 = t=1 Vt
+
+
+(PF), and a particle filter with DiCE for ancestral vari-   but ultimately achieving better test set performance.
+ables (PF-SF). We refer to our method as DPF-SGR,           It is unclear to us what general conclusions can be
+for “stop-gradient resampling”, to distinguish it from      drawn from this experiment regarding the suitability
+other versions of differentiable particle filterning pro-   of DPF-SGR for learning the proposal, other than that
+posed in the literature. We borrow the experimental         it warrants further investigation.
+setup from Le et al. [2018a], using the code provided
+by those authors with our modifications needed to
+implement DPF-SGR. An additional experiment on              6    Related Work
+a stochastic volatility model, including comparisons
+with the method proposed by Corenflos et al. [2021], is     Due to high variance of estimators obtained by ap-
+provided in the supplementary materials.                    plying DiCE to the ancestral variables, the gradients
+                                                            associated with sampling those variables are typically
+5.1   Linear Gaussian State Space Model                     ignored [Le et al., 2018a, Maddison et al., 2017, Naes-
+                                                            seth et al., 2018]. In particular, Jonschkowski et al.
+In the first experiment we use a Linear Gaussian State      [2018] construct an algorithm they call Differentiable
+Space Model (LGSSM) with a bootstrap proposal ex-           Particle Filtering, which explicitly ignores the propaga-
+actly as specified by Le et al. [2018a], with two global    tion of gradients through the resampling steps. They
+parameters, a one dimensional latent variable and 200       suggest adding auxiliary gradients to weights in an
+time steps. Figure 1 in our paper corresponds exactly       attempt to mitigate the resulting bias as a direction of
+to Figure 2 from Le et al. [2018a], with DPF-SGR and        future work, which is exactly what we provide here.
+PF-SF added. We find that DPF-SGR offers a no-              There are several existing approaches to making resam-
+ticeable improvement over the standard PF in the low        pling differentiable, all of which modify its behavior
+particle regime, while in the high particle regime DPF-     on the forward pass. Karkus et al. [2018] resample
+SGR achieves significantly faster convergence at the        with probabilities proportional to αwi + 1−α   N , which
+expense of a minimal decrease in the final performance.     effectively interpolates between no resampling and no
+                                                            gradient bias forcing the users to make an undesirable
+5.2   Variational Recurrent Neural Network                  trade-off. We get the best of both worlds, retaining
+                                                            full advantages of resampling while allowing the gradi-
+To jointly learn the model and the proposal, we train       ents to propage. Corenflos et al. [2021] replace tradi-
+a variational recurrent neural network (VRNN) mod-          tional resampling with a continuous transformation of
+eling the movement of agents in a 2D world where            particles based on optimal transport equations. This
+the obvservations are provided in the form of partially     is computationally intensive, biased, introduces addi-
+occluded images. We use the setting introduced by Le        tional hyperparameters, and can lead to undesirable
+et al. [2018a], with 32x32 images and 40 time steps.        behavior, in the extreme cases even putting the resam-
+Our Figure 2 corresponds exactly to Figure 4 of Le          pled particles outside of the support of the prior. On
+et al. [2018a], except that we show performance both        the other hand, it avoids problems with particle de-
+on the training and test sets. While PF achieves bet-       generacy while achieving full reparameterization. Zhu
+ter performance on the training set, this is largely a      et al. [2020] modify particles in a similar fashion using
+result of overfitting, with DPF-SGR learning slower         learned resampling networks, with similar disadvan-
+                       Differentiable Particle Filtering without Modifying the Forward Pass
+
+                                                                                  −354.0
+
+
+             0
+                                                                                  −354.5
+
+
+
+         −1000                                                                    −355.0
+
+
+
+
+                                                                  log Z (train)
+                                                                                  −355.5
+         −2000
+ log Z
+
+
+
+
+                                                 algorithm                                                                     name
+                                                                                  −356.0
+                                                 SIS                                                                           SIS
+         −3000
+                                                 PF                               −356.5                                       PF
+                                                 PF-SF
+         −4000
+                                                                                                                               DPF-SGR (us)
+                                                 DPF-SGR (us)                     −357.0
+                                                                                                                               particles
+                                                 particles
+                                                                                  −357.5
+                                                                                                                               10
+         −5000                                   10
+                                                                                                                               20
+                                                 10000
+                                                                                  −358.0
+                                                                                               0    200    400           600    800      1000
+                 0   100     200           300   400       500
+
+                                   epoch                                                                         epoch
+                                                                                  −355
+         −280
+
+                                                                                  −356
+
+         −300
+                                                                                  −357
+
+
+
+
+                                                                  log Z (test)
+         −320
+                                                                                  −358
+ log Z
+
+
+
+
+                                                 algorithm
+                                                                                                                               name
+         −340                                    SIS
+                                                                                  −359                                         SIS
+                                                 PF
+                                                                                                                               PF
+                                                 PF-SF
+         −360                                                                                                                  DPF-SGR (us)
+                                                                                  −360
+                                                 DPF-SGR (us)
+                                                 particles                                                                     particles
+         −380
+                                                 10                               −361                                         10
+                                                 10000                                                                         20
+         −400                                                                     −362
+                                                                                           0       200    400        600        800      1000
+                 0   100     200           300   400       500
+
+                                   epoch                                                                        epoch
+
+Figure 1: Estimates for the test set log-marginal like-          Figure 2: Log-marginal likelihood estimates for training
+lihood throughout the training of the LGSSM model.               and test set throughout the training of the VRNN
+The bottom plot is the zoomed in version of the top              model. Unlike DPF-SGR, SIS and PF show clear signs
+one, showing improvement of DPF-SGR over PF.                     of overfitting.
+
+
+tages, noting that in practice propagating gradients
+through them leads to instabilities so they avoid it.
+                                                                 [2018b] suggest using a separate objective for proposal
+7         Discussion                                             learning with alternating optimization, which is com-
+                                                                 petitive but not clearly a superior approach. Since our
+We have demonstrated that applying AD to DPF re-                 score function estimators contain bias dependent on
+covers known estimators for the score function, which            the proposal, they might be able to provide a learning
+enables maximum likelihood model learning by gradient            signal for it, as indicated in Sections 4.1 and 5.2. We
+ascent. We note that those estimators target the gradi-          believe the question warrants further investigation.
+ents of log-marginal likelihood directly, rather than the
+                                                                 The stop-gradient operator is relatively rarely used
+gradients of some lower bound to it. For this reason it’s
+                                                                 in theoretical formulas and many authors prefer to
+unclear whether such gradients are suitable for learning
+                                                                 avoid it. We believe it presents an opportunity to write
+the proposal, since the marginal likelihood does not
+                                                                 equations more closely resembling the implementation,
+depend on the proposal. The topic of constructing ob-
+                                                                 reducing the scope for translation errors. Ultimately,
+jectives for proposal learning is somewhat controversial,
+                                                                 stop-gradient is just a different notation for familiar
+and it has in particular been shown that tightening                                            pθ (x)
+                                                                 concepts, in particular ∇θ ⊥(p         expresses the same
+lower bounds to log-marginal likelihood eventually im-                                           θ (x))
+
+pedes proposal learning [Rainforth et al., 2019]. Gener-         thing as ∇θ0 ppθθ0(x)
+                                                                                   (x)
+                                                                                       θ 0 =θ
+                                                                                              , only making it easier to build
+ally, it is neither necessary nor sufficient to optimize a       compound expressions. We believe that using this
+lower bound to log-marginal likelihood to provide good           operator more broadly can drastically simplify certain
+learning signal to the proposal. For example, Le et al.          derivations and proofs.
+                                         Adam Ścibior, Frank Wood
+
+
+Acknowledgements                                            ing, 2020. ISBN 978-3-030-47844-5. doi: 10.1007/
+                                                            978-3-030-47845-2.
+We thank Tuan Anh Le, Maximilian Igl, Adrien Coren-       Adrien Corenflos, James Thornton, Arnaud Doucet,
+flos, and James Thornton for sharing the code for their    and George Deligiannidis. Differentiable Particle Fil-
+experimental setups which we used to conduct the ex-       tering via Entropy-Regularized Optimal Transport.
+periments described in this paper, and Vaden Masrani       arXiv:2102.07850 [cs, stat], February 2021.
+for helping to adapt this code to our needs. We also
+thank Marcin Tomczak, Wilder Lavington and the            Arnaud Doucet and Adam M Johansen. A tutorial on
+anonymous reviewers for providing feedback on a draft       particle filtering and smoothing: Fifteen years later.
+of this paper.                                              Handbook of nonlinear filtering, 12(656-704):3, 2009.
+                                                          Arnaud Doucet, Nando De Freitas, and Neil Gordon.
+We acknowledge the support of the Natural Sciences
+                                                           An introduction to sequential Monte Carlo methods.
+and Engineering Research Council of Canada (NSERC),
+                                                            In Sequential Monte Carlo methods in practice, pages
+the Canada CIFAR AI Chairs Program, and the Intel
+                                                            3–14. Springer, 2001.
+Parallel Computing Centers program. This material is
+based upon work supported by the United States Air        Gregory Farquhar, Shimon Whiteson, and Jakob Fo-
+Force Research Laboratory (AFRL) under the Defense         erster. Loaded DiCE: Trading off Bias and Vari-
+Advanced Research Projects Agency (DARPA) Data             ance in Any-Order Score Function Estimators for
+Driven Discovery Models (D3M) program (Contract            Reinforcement Learning. arXiv:1909.10549 [cs, stat],
+No. FA8750-19-2-0222) and Learning with Less Labels        September 2019.
+(LwLL) program (Contract No.FA8750-19-C-0515). Ad-        Paul Fearnhead and Peter Clifford. On-Line Infer-
+ditional support was provided by UBC’s Composites           ence for Hidden Markov Models via Particle Filters.
+Research Network (CRN), Data Science Institute (DSI)        Journal of the Royal Statistical Society. Series B
+and Support for Teams to Advance Interdisciplinary Re-     (Statistical Methodology), 65(4):887–899, 2003. ISSN
+search (STAIR) Grants. This research was enabled in         1369-7412.
+part by technical support and computational resources
+                                                          Jakob Foerster, Gregory Farquhar, Maruan Al-
+provided by WestGrid (https://www.westgrid.ca/) and
+                                                            Shedivat, Tim Rocktäschel, Eric Xing, and Shimon
+Compute Canada (www.computecanada.ca).
+                                                            Whiteson. DiCE: The Infinitely Differentiable Monte
+                                                            Carlo Estimator. In International Conference on
+References                                                  Machine Learning, pages 1529–1538. PMLR, July
+Martín Abadi, Ashish Agarwal, Paul Barham, Eugene           2018.
+ Brevdo, Zhifeng Chen, Craig Citro, Greg S. Cor-          Michael C. Fu. Chapter 19 Gradient Estimation. In
+ rado, Andy Davis, Jeffrey Dean, Matthieu Devin,           Shane G. Henderson and Barry L. Nelson, editors,
+ Sanjay Ghemawat, Ian Goodfellow, Andrew Harp,             Handbooks in Operations Research and Management
+ Geoffrey Irving, Michael Isard, Yangqing Jia, Rafal       Science, volume 13 of Simulation, pages 575–616.
+ Jozefowicz, Lukasz Kaiser, Manjunath Kudlur, Josh         Elsevier, January 2006. doi: 10.1016/S0927-0507(06)
+ Levenberg, Dandelion Mané, Rajat Monga, Sherry            13019-4.
+ Moore, Derek Murray, Chris Olah, Mike Schuster,
+                                                          Paul Glasserman. Monte Carlo Methods in Finan-
+ Jonathon Shlens, Benoit Steiner, Ilya Sutskever, Ku-
+                                                           cial Engineering. Stochastic Modelling and Applied
+ nal Talwar, Paul Tucker, Vincent Vanhoucke, Vijay
+                                                            Probability. Springer-Verlag, New York, 2003. ISBN
+ Vasudevan, Fernanda Viégas, Oriol Vinyals, Pete
+                                                            978-0-387-00451-8. doi: 10.1007/978-0-387-21617-1.
+ Warden, Martin Wattenberg, Martin Wicke, Yuan
+ Yu, and Xiaoqiang Zheng. TensorFlow: Large-scale         Alex Graves. Stochastic Backpropagation through Mix-
+ machine learning on heterogeneous systems, 2015.           ture Density Distributions. arXiv:1607.05690 [cs],
+                                                            July 2016.
+Atilim Gunes Baydin, Barak A. Pearlmutter,
+  Alexey Andreyevich Radul, and Jeffrey Mark Siskind.     Andreas Griewank. On Automatic Differentiation. In
+  Automatic differentiation in machine learning: A sur-    Mathematical Programming: Recent Developments
+  vey. arXiv:1502.05767 [cs, stat], February 2018.         and Applications, pages 83–108. Kluwer Academic
+Yuri Burda, Roger Grosse, and Ruslan Salakhut-             Publishers, Amsterdam, 1989.
+  dinov.      Importance Weighted Autoencoders.           Maximilian Igl, Luisa Zintgraf, Tuan Anh Le, Frank
+  arXiv:1509.00519 [cs, stat], November 2016.              Wood, and Shimon Whiteson. Deep variational rein-
+Nicolas Chopin and Omiros Papaspiliopoulos. An             forcement learning for POMDPs. In International
+  Introduction to Sequential Monte Carlo. Springer         Conference on Machine Learning, pages 2117–2126.
+  Series in Statistics. Springer International Publish-    PMLR, 2018.
+                   Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+Martin Jankowiak and Fritz Obermeyer. Pathwise             Christian Naesseth, Scott Linderman, Rajesh Ran-
+ Derivatives Beyond the Reparameterization Trick.           ganath, and David Blei. Variational Sequential
+ arXiv:1806.01851 [cs, stat], July 2018.                    Monte Carlo. In International Conference on Ar-
+Rico Jonschkowski, Divyam Rastogi, and Oliver Brock.        tificial Intelligence and Statistics, pages 968–977.
+  Differentiable Particle Filters: End-to-End Learning      PMLR, March 2018.
+  with Algorithmic Priors. arXiv:1805.11122 [cs, stat],    Radford M. Neal and Geoffrey E. Hinton. A View of the
+  May 2018.                                                  Em Algorithm that Justifies Incremental, Sparse, and
+Peter Karkus, David Hsu, and Wee Sun Lee. Particle           other Variants. In Michael I. Jordan, editor, Learning
+  Filter Networks with Application to Visual Local-         in Graphical Models, NATO ASI Series, pages 355–
+  ization. In Conference on Robot Learning, pages            368. Springer Netherlands, Dordrecht, 1998. ISBN
+  169–178. PMLR, October 2018.                               978-94-011-5014-9. doi: 10.1007/978-94-011-5014-9_
+                                                            12.
+Diederik P. Kingma and Max Welling. Auto-Encoding
+  Variational Bayes. arXiv:1312.6114 [cs, stat], May       Adam Paszke, Sam Gross, Francisco Massa, Adam
+  2014.                                                     Lerer, James Bradbury, Gregory Chanan, Trevor
+                                                            Killeen, Zeming Lin, Natalia Gimelshein, Luca
+Mike Klaas, Nando de Freitas, and Arnaud Doucet.
+                                                            Antiga, Alban Desmaison, Andreas Köpf, Edward
+ Toward Practical N2 Monte Carlo: The Marginal
+                                                            Yang, Zach DeVito, Martin Raison, Alykhan Te-
+ Particle Filter. arXiv:1207.1396 [cs, stat], July 2012.
+                                                            jani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang,
+Jinlin Lai, Daniel Sheldon, and Justin Domke. Varia-        Junjie Bai, and Soumith Chintala. PyTorch: An
+  tional Marginal Particle Filters. arXiv:2109.15134        Imperative Style, High-Performance Deep Learning
+  [cs, stat], September 2021.                               Library. arXiv:1912.01703 [cs, stat], December 2019.
+Tuan Anh Le, Maximilian Igl, Tom Rainforth, Tom            George Poyiadjis, Arnaud Doucet, and Sumeetpal
+  Jin, and Frank Wood. Auto-Encoding Sequential             Singh. Particle approximations of the score and ob-
+  Monte Carlo. arXiv:1705.10306 [stat], April 2018a.        served information matrix in state space models with
+Tuan Anh Le, Adam R Kosiorek, N Siddharth,                  application to parameter estimation. Biometrika, 98
+  Yee Whye Teh, and Frank Wood. Revisiting                  (1):65–80, 2011. ISSN 0006-3444.
+  reweighted wake-sleep. 2018b.                            Tom Rainforth, Adam R. Kosiorek, Tuan Anh Le,
+Jun S. Liu. Theory of Sequential Monte Carlo. In             Chris J. Maddison, Maximilian Igl, Frank Wood,
+  Jun S. Liu, editor, Monte Carlo Strategies in Scien-       and Yee Whye Teh. Tighter Variational Bounds are
+  tific Computing, Springer Series in Statistics, pages      Not Necessarily Better. arXiv:1802.04537 [cs, stat],
+  53–77. Springer, New York, NY, 2004. ISBN 978-0-           March 2019.
+  387-76371-2. doi: 10.1007/978-0-387-76371-2_3.           Rajesh Ranganath, Sean Gerrish, and David M. Blei.
+Chris J. Maddison, John Lawson, George Tucker, Nico-        Black Box Variational Inference. arXiv:1401.0118
+  las Heess, Mohammad Norouzi, Andriy Mnih, Ar-             [cs, stat], December 2013.
+  naud Doucet, and Yee Teh. Filtering Variational          Danilo Jimenez Rezende, Shakir Mohamed, and Daan
+  Objectives. Advances in Neural Information Process-       Wierstra. Stochastic Backpropagation and Ap-
+ ing Systems, 30, 2017.                                     proximate Inference in Deep Generative Models.
+Jingkai Mao, Jakob Foerster, Tim Rocktäschel, Maruan        arXiv:1401.4082 [cs, stat], May 2014.
+  Al-Shedivat, Gregory Farquhar, and Shimon White-         David E. Rumelhart, Geoffrey E. Hinton, and
+  son. A Baseline for Any Order Gradient Estimation         Ronald J. Williams. Learning representations by
+  in Stochastic Computation Graphs. In Proceedings          back-propagating errors. Nature, 323(6088):533–
+  of the 36th International Conference on Machine           536, October 1986. ISSN 1476-4687. doi: 10.1038/
+  Learning, pages 4343–4351. PMLR, May 2019.                323533a0.
+Pierre Del Moral. Feynman-Kac Formulae: Genealog-          John Schulman, Nicolas Heess, Theophane Weber, and
+  ical and Interacting Particle Systems with Applica-        Pieter Abbeel. Gradient Estimation Using Stochastic
+  tions. Probability and Its Applications. Springer-         Computation Graphs. arXiv:1506.05254 [cs], Jan-
+  Verlag, New York, 2004. ISBN 978-0-387-20268-6.            uary 2016.
+  doi: 10.1007/978-1-4684-9393-1.
+                                                           Emile van Krieken, Jakub M. Tomczak, and An-
+Lawrence M Murray, Anthony Lee, and Pierre E Jacob.         nette ten Teije.     Storchastic: A Framework
+  Parallel resampling in the particle filter. Journal of    for General Stochastic Automatic Differentiation.
+  Computational and Graphical Statistics, 25(3):789–        arXiv:2104.00428 [cs, stat], May 2021.
+  805, 2016.
+                                        Adam Ścibior, Frank Wood
+
+
+R. E. Wengert. A simple automatic derivative eval-        learning. Machine Learning, 8(3):229–256, May 1992.
+  uation program. Communications of the ACM, 7            ISSN 1573-0565. doi: 10.1007/BF00992696.
+ (8):463–464, August 1964. ISSN 0001-0782. doi:         Michael Zhu, Kevin Murphy, and Rico Jon-
+  10.1145/355586.364791.                                 schkowski.   Towards Differentiable Resampling.
+Ronald J. Williams. Simple statistical gradient-         arXiv:2004.11938 [cs, stat], April 2020.
+ following algorithms for connectionist reinforcement
+                   Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+
+
+                                    Supplementary Materials
+
+
+
+
+8   Stop-gradient tutorial
+
+The key equations for manipulating expressions involving stop-gradient are
+                                         −−−−−−−−−−→               −
+                                                                   →            −
+                                                                                →
+                                         f (E1 , . . . , En ) = f (E1 , . . . , E2 )                            (27)
+                                                     −−−→ →     −
+                                                     ⊥ (E) = E                                                  (28)
+                                                 ∇⊥ (E) = 0                                                     (29)
+                                                    −−→
+                                                    ∇E = ∇E              if ⊥ ∈
+                                                                              / E.                              (30)
+                                         −−→    →
+                                                −
+Crucially, it is generally the case that ∇E 6= ∇ E , that is different expressions involving stop-gradient can always
+evaluate to the same value on the forward pass, but produce different gradients. For example,
+                −−−−−−−−2−−−−−−−→2               −−−−→2 −−−−−→2             
+                                                                                    −−−→2 →     −−−−→2 
+                                              →
+                                              −
+            ∇x x + ⊥ (x) + x⊥ (x) = ∇x x + ⊥ (x) + x⊥ (x) = ∇x x + ⊥ (x) + x ⊥ (x) =          −                  (31)
+
+            ∇x x + x2 + xx2 = ∇x x + x2 + x3 = 1 + 2x + 3x2 .
+                                                  
+                                                                                                                 (32)
+
+On the other hand,
+               −−−−
+                  −−−−−−−−−−−−−−−−→      −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−    −−−−−−−→    
+                             2         2                                 2               2
+               ∇x x + ⊥ (x) + x⊥ (x) = 1 + 2⊥ (x) ∇x ⊥ (x) + (∇x) ⊥ (x) + x ∇x ⊥ (x) =                          (33)
+               −−−−−−−−−−−−−−−−2−−−→ −−−−−−−→2 →       − −−−−→2        −−−→
+               1 + 2⊥ (x) 0 + ⊥ (x) + x0 = 1 + ⊥ (x) = 1 + ⊥ (x) = 1 + ⊥ (x)2 = 1 + x2 .                        (34)
+
+The chain rule for standard functions works normally, as does repeated differentiation. Moreover, it is possible to
+interleave differentiation with evaluation. For example,
+                    −−−−−−−−−−−−−−−−→            −−−−−−−−−−−−−−−−−−−−−−−−−−−−→
+                 ∇x ∇x exp (⊥ (x) + log x) = ∇x exp (⊥ (x) + log x) ∇x (⊥ (x) + log x) =                        (35)
+                                                                   −−−−−−−−−−−−−−−−   −−−−−→
+                    −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−→
+                                                                                             
+                                                                                           1
+                 ∇x exp (⊥ (x) + log x) (∇x ⊥ (x) + ∇x log x) = ∇x exp (⊥ (x) + log x) 0 +     =                (36)
+                                                                                           x
+                    −−−−−−−−−−−−−−−→                                 →
+                                                                     − !
+                                        1         −−−−−−−−−−−−−→ 1
+                 ∇x exp (⊥ (x) + log x) = ∇x exp (⊥ (x) + log x)         =                                      (37)
+                                        x                            x
+                          −−−−−−−−−−→ 1
+                                                                    
+                                                                     1
+                 ∇x exp (⊥ (x) + log x)       = ∇x exp (x + log x)       =                                      (38)
+                                          x                          x
+                 1                                         1
+                   ∇x exp (x + log x) + exp (x + log x) ∇x =                                                    (39)
+                 x                                       x
+                 1                       1      1                   1
+                   exp (x + log x) 1 +       − 2 exp (x + log x) = exp (x + log x) .                            (40)
+                 x                       x     x                    x
+
+All the usual properties of standard functions hold, for example both addition and multiplication are associative
+and commutative, and the logarithm of a product is a sum of logarithms. We do not consider limits or integrals
+of expressions involving stop-gradient, leaving them undefined.
+                                                     Adam Ścibior, Frank Wood
+
+
+The key identities showing up repeatedly in this paper are
+                                                −−−−−→ −−−−→
+                                                    E      ∇E     ∇E
+                                                ∇       =       =    = log E,                                      (41)
+                                                  ⊥ (E)   ⊥ (E)    E
+
+and
+                     −−−−−→ −−−−−−−−→       −−−−→
+                       ⊥ (E)    ⊥ (E)        ⊥ (E) −−→   E         ∇E
+                     ∇       =−    2
+                                      ∇E = −    2
+                                                   ∇E = − 2 ∇E = −    = − log E,                                   (42)
+                         E       E            E          E         E
+
+both of which hold assuming that E does not contain any stop-gradient terms.
+Equipped with those, we can see what DiCE evaluates to
+                     −−−−−−−−−−−−−−−−→       −−− −−−−−−−−−   −−−−−−−−−−−−−−−−−−−−→
+                              pθ (x)                    pθ (x)                 pθ (x)
+                     ∇θ                fθ (x) = ∇θ                  fθ (x) +            ∇θ fθ (x) =                (43)
+                            ⊥ (pθ (x))                ⊥ (pθ (x))             ⊥ (pθ (x))
+                            −−−−−−→ −−−−−−→
+                             ∇θ pθ (x)       pθ (x)
+                     fθ (x)             +           ∇θ fθ (x) = fθ (x)∇θ log pθ (x) + ∇θ fθ (x).                   (44)
+                            ⊥ (pθ (x)) ⊥ (pθ (x))
+
+
+9     Detailed derivations
+
+9.1    Fisher’s identity with stop-gradient
+
+The IWAE [Burda et al., 2016] objective is
+                                                               "      N
+                                                                          #             "       N
+                                                                                                             #
+                                  h        i                       1 X i                     1 X pθ (xi , y)
+              LIWAE =      E          log Ẑ =           E     log       w =     E       log                   .   (45)
+                         xi ∼qφ                  xi ∼qφ (x)        N i=1     xi ∼qφ (x)      N i=1 qφ (xi )
+
+Automatic differentiation then computes gradients with respect to the model parameters θ as follows
+                                                     "   N
+                                                               #                "    PN       #
+                                                    1 X i                         ∇θ i=1 wi
+                     ∇θ LIWAE =     E       ∇θ log            w =        E          PN                             (46)
+                                xi ∼qφ (x)         N i=1             xi ∼qφ (x)
+                                                                                      i=1 w
+                                                                                            i
+                                           "P                      #               "N                #
+                                              N      i           i
+                                              i=1  w   ∇ θ log w                    X
+                                                                                          i        i
+                              =     E            PN                  =      E           w ∇θ log w                 (47)
+                                                            i
+                                                    i=1 w
+                                xi ∼qφ (x)                              xi ∼qφ (x)
+                                                                                    i=1
+                                           "N                         #
+                                            X
+                                                 i               i
+                              =     E           w ∇θ log pθ (x , y) .                                              (48)
+                                        xi ∼qφ (x)
+                                                         i=1
+
+
+This is exactly the same estimator we would obtain by using Fisher’s identity with a self-normalizing importance
+sampler to approximate the posterior
+                                                                                                
+                                                                     pθ (x|y)
+             ∇θ log pθ (y) =   E            [∇θ log pθ (x, y)] =
+                                                               E              ∇ θ log p θ (x, y)                   (49)
+                            x∼pθ (x|y)                     x∼qφ (x)   qφ (x)
+                                                                           "     N
+                                                                                                              #
+                                                                             1 X wi
+                                                            
+                                       w
+                          = E               ∇θ log pθ (x, y) =       E                      ∇θ log pθ (xi , y)     (50)
+                            x∼qφ (x) pθ (y)                      xi ∼qφ (x) N       p θ (y)
+                                                                               i=1
+                                      "N                       #
+                                       X
+                          ≈    E          wi ∇θ log pθ (xi , y) .                                                  (51)
+                             i x ∼qφ (x)
+                                               i=1
+
+
+However, the two methods are no longer equivalent if the proposal distribution qθ also depends on model
+parameters, such as when using the prior pθ (x). Furthermore, suppose it is not reparameterizable, so we apply
+                             Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+DiCE to obtain the gradient estimators
+                        "                             #                −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−→            !
+                                    N                                        N                        N
+                                  1 X pθ (xi , y)                           Y           i
+                                                                                  pθ (x )          1 X        i
+                                                                                                         pθ (x , y) 
+      ∇θ      E             log                           =     E ∇θ                          log                    =          (52)
+           xi ∼qθ (x)             N i=1 qθ (xi )            xi ∼qθ (x)
+                                                                            i=1
+                                                                                ⊥ (q θ (x i ))     N i=1
+                                                                                                          qθ (xi )
+                  −−−−−−−−−−−−−−−!       −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−!                    −−−−−−−−−−−−−−−−−→
+                          N          i               N         i              N           i     N
+                   ∇θ
+                         Y    p θ (x   )          1 X    pθ (x   , y)        Y     p θ (x   )   X
+                                                                                                     i         pθ (xi , y) 
+          E                                  log                       +                           w   ∇ θ log               =   (53)
+      xi ∼pθ (x))
+                         i=1
+                             ⊥ (qθ (xi ))        N i=1 qθ (xi )              i=1
+                                                                                  ⊥ (qθ (xi )) i=1              qθ (xi )
+                 "        N                       N
+                                                                               #
+                         X
+                                           i
+                                                 X
+                                                       i           pθ (xi , y)
+          E       log Ẑ     ∇θ log pθ (x ) +        w ∇θ log                    .                                               (54)
+      xi ∼qθ (x)
+                         i=1                     i=1
+                                                                    qθ (xi )
+
+9.2   Score function estimation with DPF
+           pθ (x̃i1:t ,y1:t )
+Let Lit =    qφ (x̃i1:t )
+                              , which can be thought of as the importance weight accumulated along the full ancestral
+                                                                            ait
+lineage of a particle i at time t and satisfies the recursion Lit = N wti Lt−1
+First, we derive a formula for the modified weights at given time steps
+                                                           ait                ait        ait
+                                      i   pθ (xit , yt |xt−1     ) i     i  v t−1    i  vt−1   ⊥ (Vt−1 )
+                                     vt =               a i       ṽt = wt  ai  = wt  ai             .                       (55)
+                                           qφ (xit |xt−1  t
+                                                               )           ⊥ v t−1t
+                                                                                       ⊥ vt−1t   Vt−1
+
+This allows us to derive and solve the following recursive equation
+                                                                       i
+                                                           at                        t−1
+                                         vti       wti   vt−1     ⊥ (Vt−1 )    Lit Y ⊥ (Vj )
+                                               =                        =               .                                   (56)
+                                        ⊥ vti     ⊥ wti ⊥ v ait     Vt−1      ⊥ Lit j=1 Vj
+                                                                       t−1
+                                                            
+Plugging this back into Eq. 55, and noting that ⊥ vti = ⊥ wti , we obtain the following formula
+                                                            i
+                                                        a      t−1
+                                                      L t      Y ⊥ (Vj )          Lit t−1Y ⊥ (Vj )
+                                         vti = wti     t−1i            = ⊥ v i
+                                                                               t      i
+                                                                                                                                (57)
+                                                     ⊥ Lt−1 j=1 Vj
+                                                          at                      ⊥ Lt j=1 Vj
+
+
+With that, we can derive an alternative form of ẐDPF
+                                      −1                                      −1
+                           T         TY
+                                            ! N                              TY
+                                                                                          ! N
+                          Y                  X                                             X             LiT
+                                                 vTi =                                        ⊥ vTi
+                                                                                                    
+                 ẐDPF =     Vt =        Vt                                        ⊥ (Vt )                                      (58)
+                                        t=1           t=1        i=1         t=1           i=1
+                                                                                                        ⊥ LiT
+                                          −1
+                                         TY
+                                                      ! N
+                                                       X            LiT       ⊥ (VT )
+                                                          ⊥ vTi
+                                                                
+                                    =          ⊥ (Vt )                  i
+                                                                           PN                                                   (59)
+                                                                   ⊥ LT               i
+                                                                                        
+                                         t=1          i=1                    i=1 ⊥ vT
+                                                    ! PN         i
+                                                                    Li
+                                                        i=1 ⊥ vT ⊥(Li )
+                                                                        T
+                                          T                                                N
+                                         Y                                              X           LiT
+                                    =        ⊥ (Vt )     PN
+                                                                         T
+                                                                            = ⊥ ẐDPF         ⊥ v iT        .                   (60)
+                                                                                                      ⊥ LiT
+                                                                    i
+                                                                      
+                                         t=1                i=1 ⊥ vT                      i=1
+
+
+This form allows us to evaluate the gradient computed by automatic differentiation
+                                                          N     −−−−−i→           N
+                                        −−−−−→ −−−→ X        −
+                                                             →            −−−→ X     −
+                                                                                     →
+                                                              i ∇θ LT
+                                        ∇θ ẐDPF = ẐDPF     vT     i
+                                                                        = Ẑ DPF     v iT ∇θ log LiT .                           (61)
+                                                         i=1
+                                                                ⊥ LT             i=1
+
+
+The estimator for the score is obtained using the chain rule for the logarithm
+                                           −−−−−→   N                     N
+                             −−−−−−−−→ ∇θ ẐDPF    X   −
+                                                       →                 X
+                             ∇θ log ẐDPF = −−−→ =     v iT ∇θ log LiT =     wiT ∇θ log pθ (x̃i1:T , y1:T ).                     (62)
+                                            ẐDPF  i=1                   i=1
+                                                          Adam Ścibior, Frank Wood
+
+
+9.3   Estimators of expectations
+
+Consider a function fθ : X T → R, differentiable in θ for all x1:T . A particle filter yields a consistent estimator for
+its expectation under the posterior
+
+                                                    N
+                                                    X
+                                              lim         wiT fθ (x̃i1:T ) =               E           [fθ (x1:T )] .            (63)
+                                          N →∞                                    x∼pθ (x1:T |y1:T )
+                                                    i=1
+
+
+Differentiating through the usual PF implementation, we obtain the following gradient estimator
+
+                                                                       N
+                                                                       X
+                                                                              wiT fθ (x̃i1:T )∇θ log wiT + ∇θ fθ (x̃i1:T ) =
+                                                                                                                          
+                   ∇θ               E            [fθ (x1:T )] ≈                                                                  (64)
+                        x∼pθ (x1:T |y1:T )
+                                                                        i=1
+                                          N
+                                          X                              N
+                                                                         X
+                                                 wiT fθ (x̃i1:T ) +             wiT fθ (x̃i1:T )∇θ log wTi + ∇θ fθ (x̃i1:T ) =
+                                                                                                                            
+                    − ∇θ log WT                                                                                                  (65)
+                                           i=1                            i=1
+                                                    N
+                                                    X
+                                                          wiT fθ (x̃i1:T )∇θ log wTi + ∇θ fθ (x̃i1:T ) =
+                                                                                                      
+                    − ∇θ log WT f θ +                                                                                            (66)
+                                                    i=1
+                           N
+                           X                                 N
+                                                             X
+                                    wiT ∇θ log wTi +                   wiT fθ (x̃i1:T )∇θ log wTi + ∇θ fθ (x̃i1:T ) =
+                                                                                                                   
+                    − fθ                                                                                                         (67)
+                           i=1                               i=1
+                    N
+                                                                            ai
+                    X                                                                              
+                          wiT       fθ (x̃i1:T ) − f θ ∇θ log pθ (xT , yT |xTT−1 ) + ∇θ fθ (x̃i1:T ) .
+                                                      
+                                                                                                                                 (68)
+                    i=1
+
+
+Furthermore, employing DiCE on ancestral variables results in the following correction
+
+                                 T X
+                                   N                                          T X
+                                                                                N
+                                                            ai                                  ait
+                                 X                                            X                              
+                           fθ                  ∇θ log wt−1
+                                                        t
+                                                           = fθ                         ∇θ log wt−1 − log Wt−1 =                 (69)
+                                 t=1 i=1                                      t=1 i=1
+                                                                                                       
+                                   N
+                                 T X                                       N
+                                                                 ait
+                                 X                                         X
+                           fθ                  ∇θ log wt−1 −                    wit−1 ∇θ log wt−1
+                                                                                               i   .                            (70)
+                                 t=1 i=1                                   j=1
+
+
+
+When differentiating through the implementation of the same estimator obtained by DPF, we obtain the following
+gradient estimator, using Eq. 57 and 62
+
+                                                                           −−−−−−−−−−−−−→
+                                                                              XN
+                            ∇θ                 E            [fθ (x1:T )] ≈ ∇θ    v iT fθ (x̃i1:T ) =                             (71)
+                                    x∼pθ (x1:T |y1:T )
+                                                                                     i=1
+                            −−−−−−−−−−−−−−−−−−−−−−−−−      −−−−−−→
+                               XN            i
+                                           LT     ⊥  Ẑ DPF
+                            ∇θ     ⊥ v iT      i
+                                                             fθ (x̃i1:T ) =                                                     (72)
+                               i=1
+                                           ⊥ L T     Ẑ DPF
+                                N
+                                X                                                          −−−−−−−−→
+                                        wiT fθ (x̃i1:T )∇θ log LiT + ∇θ fθ (x̃i1:T ) − f θ ∇θ log ẐDPF =
+                                                                                    
+                                                                                                                                 (73)
+                                i=1
+                                N
+                                X
+                                        wiT    fθ (x̃i1:T ) − f θ ∇θ log pθ (x̃i1:T , y1:T ) + ∇θ fθ (x̃i1:T ) .
+                                                                                                             
+                                                                                                                                 (74)
+                                i=1
+
+
+
+For the expectations under the unnormalized posterior, differentiating through DPF produces the following
+                     Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+gradient estimator
+                                                                                   −−−−−−−−−−−−−−−−−→
+                                                                                            N
+                                                                                            X
+                                  ∇θ              E                [Zfθ (x1:T )] ≈ ∇θ ẐDPF   v iT fθ (x̃i1:T ) =          (75)
+                                        x1:T ∼pθ (x1:T |y1:T )
+                                                                                                  i=1
+                                  −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−        −−−−−→
+                                           XN            i
+                                                       LT     ⊥  Ẑ DPF
+                                  ∇θ ẐDPF     ⊥ v iT      i
+                                                                         fθ (x̃i1:T ) =                                   (76)
+                                           i=1
+                                                       ⊥ L T     Ẑ DPF
+                                       N
+                                       X
+                                             wiT fθ (x̃i1:T )∇θ log LiT + ∇θ fθ (x̃i1:T ) =
+                                                                                         
+                                  Ẑ                                                                                       (77)
+                                       i=1
+                                       N
+                                       X
+                                             wiT fθ (x̃i1:T )∇θ log pθ (x̃i1:T , y1:T ) + ∇θ fθ (x̃i1:T ) .
+                                                                                                         
+                                  Ẑ                                                                                       (78)
+                                       i=1
+
+
+We compare it with the estimator obtained with PF and DiCE, which is also unbiased
+
+                     ∇θ                 E             [Zfθ (x1:T )] ≈                                                      (79)
+                           x1:T ∼pθ (x1:T |y1:T )
+                                                      N                                   T X
+                                                                                            N
+                                                                                                              ai
+                                                      X                                   X
+                     f θ ∇θ ẐPF + ẐPF ∇θ                  wiT fθ (x̃i1:T ) + ẐPF f θ                ∇θ log wt−1
+                                                                                                                t
+                                                                                                                   =       (80)
+                                                      i=1                                 t=1 i=1
+                             T
+                             X                           N
+                                                         X
+                                                                   wiT ∇θ fθ (x̃i1:T ) + fθ (x̃i1:T ) − f θ ∇θ log wTi +
+                                                                                                                     
+                     Ẑf θ         ∇θ log Wt + Ẑ                                                                          (81)
+                             t=1                            i=1
+                                                                                                  
+                                    N
+                                  T X                                  N
+                                                             ait
+                                  X                                    X
+                          Ẑf θ               ∇θ log wt−1 −                 wit−1 ∇θ log wt−1
+                                                                                           i   =                          (82)
+                                  t=1 i=1                              j=1
+                             T
+                             X                           N
+                                                         X
+                                                                   wiT ∇θ fθ (x̃i1:T ) + fθ (x̃i1:T ) − f θ ∇θ log wTi +
+                                                                                                                     
+                     Ẑf θ         ∇θ log Wt + Ẑ                                                                          (83)
+                             t=1                            i=1
+                                                                                                  
+                                    N
+                                  T X                                  N
+                                                             ait
+                                  X                                    X
+                          Ẑf θ               ∇θ log wt−1 −                 wit−1 ∇θ log wt−1
+                                                                                           i   =                          (84)
+                                  t=1 i=1                              j=1
+                          N
+                          X
+                                wiT ∇θ fθ (x̃i1:T ) + fθ (x̃i1:T ) − f θ ∇θ log wTi +
+                                                                                  
+                     Ẑ                                                                                                    (85)
+                          i=1
+                                                                                                                  
+                                  T X
+                                    N                                                      N
+                                                       ait
+                                  X                                                        X
+                          Ẑf θ               ∇θ log wt−1 + wit ∇θ log wti −                    wit−1 ∇θ log wt−1
+                                                                                                               i   .      (86)
+                                  t=1 i=1                                                  j=1
+
+
+9.4   Gradients for proposal learning
+
+The derivation leading up to Eq. 61 is valid for ∇φ . Then we compute the gradient of log LiT assuming
+reparameterization
+                              −−−−−→     N                     N
+                −−−−−−−−→ ∇φ ẐDPF      X   −
+                                            →                 X                       i1:T ), y1:T )
+                                                                             pθ (h̃φ (˜
+                ∇φ log ẐDPF = −−−→ =       v iT ∇φ log LiT =     wiT ∇φ log                          . (87)
+                               ẐDPF    i=1                   i=1
+                                                                                qφ (h̃φ (˜i1:T ))
+
+9.5   Score estimation with marginal particle filters
+
+Poyiadjis et al. [2011, Eq. 20] define their score function estimator as
+                                                                                   N
+                                                                                   X
+                                                         ∇θ log pθ (y1:T ) ≈              wiT ᾱTi ,                       (88)
+                                                                                   i=1
+                                                        Adam Ścibior, Frank Wood
+
+
+using the marginal particle filter and the following recursive definition of α
+                                 PN                                                               
+                                         j         i      j        j                   i
+                                       w
+                                   j=1 t+1   pθ (x     |x
+                                                   t+1 t    )   ᾱt  + ∇   θ log pθ (x t+1 , yt+1 )
+                         i
+                       ᾱt+1 =                   PN          j                 j
+                                                                                                                                               (89)
+                                                                        i
+                                                     j=1 w t+1 pθ (xt+1 |xt )
+                                 PN                                                                 
+                                         j         i               j      j                   i
+                                   j=1 w t+1 pθ (xt+1 , yt+1 |xt ) ᾱt + ∇θ log pθ (xt+1 , yt+1 )
+                             =                   PN          j                        j
+                                                                                                       .                                       (90)
+                                                                        i
+                                                     j=1 w t+1 pθ (xt+1 , yt+1 |xt )
+
+
+We show that the same result is obtained by differentiating log ẐDPF2 . To find the corresponding recursion, we
+expand the definition of vti in the following formula
+                −−−−−−−−−−−−−−−→
+                           t−1
+                     vti Y Vk
+                ∇θ                         =                                                                                                  (91)
+                   ⊥ vti k=1 ⊥ (Vk )
+                −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−P                             −−−−−−−−−−−           −−−−−n−−−       −−−−−−−−−−−−−→
+                                                                                N             i                   i
+                     PN i
+                             v       p  (x
+                                       θ t
+                                            n
+                                               , y   |x
+                                                   t t−1
+                                                        i
+                                                               )       ⊥        i=1  ⊥     v  t−1     q φ (x t |x t−1  , yt ) t−1
+                                                                                                                               Y Vk
+                ∇θ Pi=1 t−1                                       PN                                                                     =   (92)
+                                                                                            i                                      ⊥ (Vk )
+                          N
+                                                                                                          n |xi
+                   ⊥      i=1 v i
+                                t−1    pθ (x  n , y |xi
+                                              t      t     t−1   )             i=1 ⊥      v t−1     qφ  (x t    t−1  , y t )   k=1
+                −−−P
+                   −−−−−−−−−−−       −−−−−        −−−−−−−−−−i−−−−Q                −−−−−−−→
+                     N          i                n           i           v t−1       t−1        Vk
+                          ⊥   v t−1     p   (x
+                                          θ t      , y   |x
+                                                       t t−1 ⊥ v i )
+                     i=1                                                ( t−1 ) k=1 ⊥(Vk )
+                ∇θ                 P                                                                =                                        (93)
+                                        N        i               n , y |xi
+                               ⊥        i=1 t−1v         p θ (x  t      t    t−1 )
+                            −−−−  −−−−−−−−−−−−−−−−−−−−−−−−−−−→                                  
+                                                                     i
+                PN      i                  n           i           vt−1       Qt−2 Vk
+                      w
+                  i=1 t−1 θ ∇       p  (x
+                                      θ t    ,  y  |x
+                                                  t t−1 ⊥ v i)
+                                                                  ( t−1 ) k=1 ⊥(Vk )
+                               PN          i
+                                                                                                     =                                         (94)
+                                                           n           i
+                                    i=1 w t−1 pθ (xt , yt |xt−1 )
+                                                                                              −−−−−i−−−−Q      −−−−−−−→!
+                PN      i                  n           i                     n        i              vt−1         t−2       Vk
+                  i=1 w t−1 ∇θ pθ (xt , yt |xt−1 ) + pθ (xt , yt |xt−1 )∇θ ⊥(v i )                                k=1 ⊥(Vk )
+                                                                                                        t−1
+
+                                                 PN             i
+                                                                                                                                  =            (95)
+                                                                              n         i
+                                                      i=1 w t−1 pθ (xt , yt |xt−1 )
+                                                                                                    −−−−−i−−−−Q      −−−−−−−→!
+                PN      i          n         i                                n         i                  vt−1         t−2    Vk
+                  i=1 w t−1 pθ (xt , yt |xt−1 ) ∇θ log pθ (xt , yt |xt−1 ) + ∇θ ⊥(v i )                                 k=1 ⊥(Vk )
+                                                                                                              t−1
+
+                                                     PN             i
+                                                                                                                                     .         (96)
+                                                                                 n         i
+                                                          i=1 w t−1 pθ (xt , yt |xt−1 )
+
+                                                                                 −−−−−i−−− −−−−−−−→
+                                                                                     v      t−1 Vk
+                                                                                                      = ᾱti .
+                                                                                           Q
+This is exactly the same recursive relationship as defined by Eq. 90, so we have ∇θ ⊥ vt i
+                                                                                     ( t ) k=1 ⊥(Vk )
+Differentiating through DPF2 produces the following expression
+                                      −−−−−−→               −−−−−−→              −−−−−−−−−−−→
+                  −−−−−−−−−→ ∇θ ẐDPF2                           T                   N      TY−1
+                                                         1      Y            1      X
+                  ∇θ log ẐDPF2 =                   = ∇θ             Vt = ∇θ            vTi      Vt =                                          (97)
+                                           Ẑ            Ẑ     t=1          Ẑ     i=1      t=1
+                     −−−−−−−−−−−−−−−−−−−−−−−→                         −−−−−−−−−−−−−−−−−−−−−−−−−−−−−−→
+                          N                          TY −1                           N                     −1
+                                                                                                          TY
+                   1    X
+                                 i
+                                         vTi                      1          X
+                                                                                              i
+                                                                                                 vTi         Vt
+                     ∇θ      ⊥ v T VT           i
+                                                           V t =     ∇  θ ⊥    Ẑ      ⊥   v T       i
+                                                                                                                 =                            (98)
+                  Ẑ     i=1
+                                          ⊥ vT t=1                 Ẑ               i=1
+                                                                                                 ⊥ vT t=1 ⊥ (Vt )
+                           −−−−−−−−−−−−−−−−→
+                    N                   TY−1                  N
+                  X             vTi             Vt          X
+                       wiT ∇θ       i
+                                                        =       wiT ᾱTi ,                                                                    (99)
+                   i=1
+                              ⊥  v T     t=1
+                                              ⊥  (V t )      i=1
+
+recovering Eq. 88.
+
+9.6    Hessian of log-marginal likelihood with DPF
+
+While in most applications we are interested in first-order derivatives, we can apply automatic differentiation
+repeatedly to obtain derivatives of higher orders. Poyiadjis et al. [2011] show that the Hessian of the log-marginal
+                          Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+likelihood can be approximated with a particle filter using Louis’ identity
+
+
+                ∇2θ log pθ (y1:T ) = −∇θ log pθ (y1:T )∇θ log pθ (y1:T )T +                                                                    (100)
+                                     2
+                                     ∇θ log pθ (x1:T , y1:T ) + ∇θ log pθ (x1:T , y1:T )∇θ log pθ (x1:T , y1:T )T ≈
+                                                                                                                 
+                         E                                                                                                                     (101)
+                 x1:T ∼pθ (x1:T |y1:T )
+                     N X
+                     X N
+                 −                 wiT wjT ∇θ log pθ (x̃i1:T , y1:T )∇θ log pθ (x̃i1:T , y1:T )T +                                             (102)
+                     i=1 j=1
+                 N
+                 X
+                       wiT ∇2θ log pθ (x̃i1:T , y1:T ) + ∇θ log pθ (x̃i1:T , , y1:T )∇θ log pθ (x̃i1:T , , y1:T )T ,
+                                                                                                                  
+                                                                                                                                               (103)
+                 i=1
+
+
+
+
+where superscript T denotes transpose.
+We can derive the estimator produced by applying automatic differentiation twice to DPF using Eq. 60
+
+
+                                                −−−
+                                                   −−−− −−−−−−−−−−−−−−−−−−−−−→
+                              −−−−−−−−→                                                 
+              −−−−−−−−→           ∇    Ẑ             ⊥  ẐDPF X  N
+                                                                                ∇   Li
+                                     θ    DPF                                     θ
+              ∇2θ log ẐDPF = ∇θ                                     ⊥ v iT          T 
+                                                                            
+                                              = ∇θ                                        =                                                   (104)
+                                    ẐDPF               ẐDPF i=1             ⊥ LiT
+                                N                    N     −−−2−−i→
+                 −−−−−−−−→ X
+                                                          i ∇θ LT
+                                                    X
+                                     i          i
+              − ∇θ log ẐDPF       wT ∇θ log LT +       wT           =                                                                         (105)
+                               i=1                  i=1
+                                                            ⊥ LiT
+                  N X  N                                     N
+                                                                    −−−−−−−−−−−−−−−−−−−−→         !
+                                                                              i
+                 X            j                      j
+                                                            X               L
+              −          wiT wT ∇θ log LiT (∇θ log LT )T +      wiT ∇θ        T 
+                                                                                    (∇θ log LiT )T =                                           (106)
+                 i=1 j=1                                    i=1
+                                                                        ⊥ LiT
+                    N X
+                    X N                                                        N
+                                                                               X
+                               wiT wjT ∇θ log LiT (∇θ log LjT )T +                   wiT ∇θ log LiT (∇θ log LiT )T + ∇2θ log LiT ,
+                                                                                                                                
+               −                                                                                                                               (107)
+                    i=1 j=1                                                    i=1
+
+
+
+
+which is exactly the same as Eq. 103. Furthermore, Hessian-vector products can be computed with reduced
+memory requirements in the usual fashion.
+
+
+
+10    Proofs
+
+Consistency of the DPF estimator for the expectation under the posterior (Eq. 74) can be shown as follows
+
+
+             N
+             X
+                    wiT    fθ (x̃i1:T ) − f θ ∇θ log pθ (x̃i1:T , y1:T ) + ∇θ fθ (x̃i1:T ) =
+                                                                                         
+       lim                                                                                                                                     (108)
+      N →∞
+              i=1
+             N
+             X
+                    wiT    fθ (x̃i1:T ) − f θ ∇θ log pθ (x̃i1:T |y1:T ) + ∇θ fθ (x̃i1:T ) =
+                                                                                        
+       lim                                                                                                                                     (109)
+      N →∞
+              i=1
+                               "                                                         !                                                 #
+               E                    fθ (x1:T ) −             E               [fθ (x01:T )]   ∇θ log pθ (x1:T |y1:T ) + ∇θ fθ (x1:T ) =         (110)
+      x1:T ∼pθ (x1:T |y1:T )                       x01:T ∼pθ (x1:T |y1:T )
+
+               E               [fθ (x1:T )∇θ log pθ (x1:T |y1:T ) + ∇θ fθ (x1:T )] = ∇θ                       E               [fθ (x1:T )] .   (111)
+      x1:T ∼pθ (x1:T |y1:T )                                                                         x1:T ∼pθ (x1:T |y1:T )
+                                                                Adam Ścibior, Frank Wood
+
+
+Similarly for the consistency of the DPF estimator for the expectation under the unnormalized posterior (Eq. 21)
+
+
+                     "       N
+                                                                                                              #
+                             X
+                                   wiT    fθ (x̃i1:T )∇θ log pθ (x̃i1:T , y1:T ) + ∇θ fθ (x̃i1:T )
+                                                                                                          
+         lim E          Ẑ                                                                                        =                                     (112)
+       N →∞ P F
+                             i=1
+
+                 E                 [pθ (y1:T ) (fθ (x1:T )∇θ log pθ (x1:T , y1:T ) + ∇θ fθ (x1:T ))] =                                                  (113)
+       x1:T ∼pθ (x1:T |y1:T )
+
+                 E                 [pθ (y1:T ) (fθ (x1:T )∇θ log pθ (x1:T |y1:T ) + ∇θ fθ (x1:T )) + fθ (x1:T )∇θ pθ (y1:T )] =                         (114)
+       x1:T ∼pθ (x1:T |y1:T )
+
+                 E                 [pθ (y1:T )fθ (x1:T )∇θ log pθ (x1:T |y1:T ) + ∇θ (fθ (x1:T )pθ (y1:T ))] =                                          (115)
+       x1:T ∼pθ (x1:T |y1:T )
+
+       ∇θ               E                [pθ (y1:T )fθ (x1:T )] .                                                                                       (116)
+            x1:T ∼pθ (x1:T |y1:T )
+
+
+
+
+Theorem 1. Eq. 74 is an unbiased estimator for the expectation under the unnormalized posterior, that is
+
+
+                                                                "        N
+                                                                                                                                                #
+                                                                         X
+                                                                               wiT   fθ (x̃i1:T )∇θ log pθ (x̃i1:T , y1:T ) + ∇θ fθ (x̃i1:T )
+                                                                                                                                            
+                                         E                          Ẑ                                                                              =   (117)
+                               ai
+                              t ,y ), a1:N ∼R(w 1:N )
+               xit ∼qφ (xt |xt−1  t    t        t−1
+                                                                         i=1
+
+               ∇θ                  E            [pθ (y1:T )fθ (x1:T )] .                                                                                (118)
+                    x1:T ∼pθ (x1:T |y1:T )
+
+
+
+
+Proof. The proof is by induction on T and the inductive hypothesis is precisely the theorem for any function f .
+The inductive step is as follows. Let g(x1:T +1 ) =fθ (x1:T +1 )∇θ log pθ (x1:T +1 , y1:T +1 )+∇θ fθ (x1:T +1 ) and h(x1:T ) =
+ExT +1 ∼pθ (xT +1 |yT +1 ,xiT ) pθ (yT +1 |xiT )fθ (x1:T +1 ) . We first show that
+
+
+
+                    E                    [pθ (yT +1 |xT )g(x1:T +1 )] =                                                                                 (119)
+      xT +1 ∼pθ (xT +1 |yT +1 ,xT )
+
+                    E                    [pθ (yT +1 |xT ) (fθ (x1:T +1 )∇θ log pθ (x1:T +1 , y1:T +1 ) + ∇θ fθ (x1:T +1 ))] =                           (120)
+      xT +1 ∼pθ (xT +1 |yT +1 ,xT )
+
+                    E                    [pθ (yT +1 |xT )fθ (x1:T +1 )] ∇θ log pθ (x1:T , y1:T )+                                                       (121)
+      xT +1 ∼pθ (xT +1 |yT +1 ,xT )
+
+                    E                    [pθ (yT +1 |xT ) (fθ (x1:T +1 )∇θ log pθ (xT +1 , yT +1 |xT ) + ∇θ fθ (x1:T +1 ))] =                           (122)
+      xT +1 ∼pθ (xT +1 |yT +1 ,xT )
+                                                            "
+     h(x1:T )∇θ log pθ (x1:T , y1:T ) + E                       pθ (yT +1 |xT )fθ (x1:T +1 )∇θ log pθ (xT +1 |yT +1 , xT )+
+                                                    xT +1
+                                                                                           #
+                                      ∇θ pθ (yT +1 |xT )
+         pθ (yT +1 |xT )fθ (x1:T +1 )                    + pθ (yT +1 |xT )∇θ fθ (x1:T +1 ) =                                  (123)
+                                       pθ (yT +1 |xT )
+                                                                 h
+     h(x1:T )∇θ log pθ (x1:T , y1:T ) +             E              pθ (yT +1 |xT )fθ (x1:T +1 )∇θ log pθ (xT +1 |yT +1 , xT )+
+                                                    xT +1 ∼pθ (xT +1 |yT +1 ,xT )
+                                             i
+            ∇θ (pθ (yT +1 |xT )fθ (x1:T +1 )) =                                                                                                         (124)
+     h(x1:T )∇θ log pθ (x1:T , y1:T ) + ∇θ                                     E             [pθ (yT +1 |xT )fθ (x1:T +1 )] =                           (125)
+                                                         xT +1 ∼pθ (xT +1 |yT +1 ,xT )
+
+     h(x1:T )∇θ log pθ (x1:T , y1:T ) + ∇θ h(x1:T ).                                                                                                    (126)
+                            Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+                N          Method                                             LGSSM              N       Method                                   VRNN
+                           PF-SF                                 -475.73 ± 55.69                         –                                 –
+                10         SIS                                -2742.99 ± 279.97                  10      SIS                         -356.22 ± 0.08
+                           PF                                     -300.46 ± 2.62                         PF                          -355.98 ± 0.13
+                           DPF-SGR (us)                         -292.70 ± 1.28                           DPF-SGR (us)              -355.82 ± 0.14
+                           PF-SF                              -1038.85 ± 176.02                          –                                 –
+                10k        SIS                                   -343.65 ± 15.61                 20      SIS                         -356.41 ± 0.50
+                           PF                                   -290.04 ± 0.00                           PF                          -355.97 ± 0.16
+                           DPF-SGR (us)                           -290.08 ± 0.02                         DPF-SGR (us)              -355.74 ± 0.02
+
+
+Table 1: Best values for the test set log-marginal likelihood log Z for N particles in the LGSSM/VRNN experiments.
+
+
+
+Then
+
+                  "   TY
+                       +1
+                                     ! N                                                                                      #
+                                      X
+                                                 wiT +1 fθ (x̃i1:T +1 )∇θ log pθ (x̃i1:T +1 , y1:T +1 ) + ∇θ fθ (x̃i1:T +1 ) =
+                                                                                                                            
+          E                     Wt                                                                                                                       (127)
+     x1:N
+      t   ,a1:N
+            t             t=1             i=1
+                  "   TY
+                       +1
+                                     ! N                                  #
+                                      X
+          E                     Wt               wiT +1 g(x̃i1:T +1 )         =                                                                          (128)
+     x1:N
+      t   ,a1:N
+            t             t=1             i=1
+                  "   T
+                                     !                    "           N
+                                                                                                  ##
+                      Y                                               X
+          E                     Wt             E              WT +1           wiT +1 g(x̃i1:T +1 )       =                                               (129)
+     x1:N   1:N
+      1:T ,a1:T       t=1                a1:N    1:N
+                                          T +1 ,xT +1                  i=1
+                  "   T
+                                     !           "           "N                            ###
+                      Y                                       X
+          E                     Wt        E           E              wTi +1 g(x̃i1:T +1 )        =                                                       (130)
+     x1:N   1:N
+      1:T ,a1:T       t=1                a1:N
+                                          T +1       x1:N
+                                                      T +1     i=1
+                                                                                                                       
+                                                                                              aiT +1
+                          T
+                                     ! N
+                          Y         1 X                                 p  (x      , y
+                                                                      θ T +1 T +1 i T     |x        )      i
+                                                                                                           aT +1
+          E           Wt     E                     E                                    aT +1
+                                                                                                       g(x̃1:T   , xT +1 ) =                          (131)
+     x1:N
+      1:T ,a 1:N
+             1:T   t=1      a1:N
+                             T +1
+                                    N                        ai
+                                      i=1 xT +1 ∼qφ (xT +1 |x T +1 )        q   (x     |x       )
+                                                             T
+                                                                              φ   T +1    T
+                         !                                                                                            
+                    T                  N                                                                              
+                   Y                1 X                                                    ai            i
+                                                                                                        aT +1
+          E           Wt     E                         E                    pθ (yT +1 |xTT +1 )g(x̃1:T      , xT +1 )  =                             (132)
+      1:N    1:N
+     x1:T ,a1:T    t=1
+                             1:N
+                            aT +1   N i=1
+                                                                    a i
+                                                                      T +1
+                                                               xT +1 ∼pθ (xT +1 |yT +1 ,xT           )
+                  "   T
+                                     ! N                                                                                  #
+                      Y               X
+                                               wiT                                                   i      i
+                                                                                                                        
+          E                     Wt                                    E                  pθ (yT +1 |xT )g(x̃1:T , xT +1 ) =                              (133)
+     x1:N   1:N
+      1:T ,a1:T       t=1                i=1          xT +1 ∼pθ (xT +1 |yT +1 ,xiT )
+                  "   T
+                                     ! N                                                                               #
+                      Y               X
+          E                     Wt             wiT (h(x1:T )∇θ log pθ (x1:T , y1:T ) + ∇θ h(x1:T ))                        =                             (134)
+     x1:N   1:N
+      1:T ,a1:T       t=1                i=1
+     ∇θ               E              [pθ (y1:T )h(x1:T )] = ∇θ                               E                   [pθ (y1:T +1 )fθ (x1:T +1 )] ,          (135)
+          x1:T ∼pθ (x1:T |y1:T )                                               x1:T +1 ∼pθ (x1:T +1 |y1:T +1 )
+
+
+
+where the penultimate equality is the inductive hypothesis for T and h. This completes the proof.
+
+
+
+
+11     Additional experiments
+
+In Table 1 we provide numerical results for the experiments presented in the main text. We also include an
+additional experiment, with a comparison to the differentiable particle filter based on optimal transport (DPF-OT)
+proposed by Corenflos et al. [2021].
+                                                     Adam Ścibior, Frank Wood
+
+
+         2.0                                           method
+                                                           PF
+                                                           DPF-OT                                1600
+
+
+
+
+                                                                          wallclock time (sec)
+                                                           DPF-SGR (us)
+         1.8
+                                                       particles
+                                                                                                 1400
+                                                           10                                                                  PF
+                                                           500                                   1200                          DPF-OT
+ |θˆ1 − θ1 |
+
+
+
+
+         1.6                                                                                                                   DPF-SGR (us)
+                                                                                                 1000
+
+                                                                                                  800
+         1.4
+                                                                                                  600
+
+                                                                                                  400
+         1.2
+                                                                                                  200
+
+                                                                                                    0
+                 0     100    200           300        400         500
+                                                                                                        10               500
+
+                                    epoch                                                                    particles
+
+Figure 3: Left is the L1 error in parameter estimation throughout the training of the stochastic volatility model.
+Right is the average wall clock execution time for a single forward and backward pass for each particle filter
+variant.
+
+
+11.1           Stochastic Volatility Model
+
+In this experiment we learn the parameters of a stochastic volatility model, a popular financial model for which
+particle filters are known to perform well. We use the implementation provided in the code repository associated
+with the paper of Corenflos et al. [2021]2 , which allows us to reuse the DPF-OT settings provided by the original
+authors. The model is described by the following equations:
+                                                           σx2
+                                                                 
+                                           x0 ∼ N 0,
+                                                        (1 − φ2 )
+                                                  xt+1 = µ · (1 − φ) + φ · xt + σx · ηt ,
+                                                                  x 
+                                                                     t
+                                                    yt = t · exp       ,
+                                                                    2
+                                                    ηt ∼ N (0, 1), t = 1, ..., T,
+                                                     t ∼ N (0, 1).
+
+We generate synthetic data with T = 100, µ = 2, φ = 0.9, σx = 1, θ1:3 = {µ, φ, σx } and train the model for 500
+epochs using Adam with a learning rate of 0.01. Resampling is triggered when the effective sample size falls
+beneath N/2, and for all methods we use the bootstrap proposal like in the LGSSM experiment. Figure 3 shows
+progression of the parameter estimation error |µ̂ − µ| throughout training and the execution time of different
+algorithms. DPF-SGR produces results at least on par with DPF-OT, while executing almost as fast as PF.
+
+12             Additional background
+
+Particle filters [Doucet and Johansen, 2009, Chopin and Papaspiliopoulos, 2020, Doucet et al., 2001] are an
+extremely popular family of algorithms for state estimation in non-linear state space models. Their versatility,
+ease of implementation, and well-understood theoretical behavior make them a popular choice in a wide variety
+of application domains, including robotics, ecology, and finance. The crucial advantage of particle filters is that
+they can adaptively focus computation on more promising trajectories, which is usually accomplished through
+discrete resampling steps. Since particle filters also provide estimates of the log-marginal likelihood, they can be
+used to facilitate model learning.
+It has been known for a long time [Wengert, 1964, Griewank, 1989] that programs computing derivatives can be
+automatically obtained from programs computing differentiable functions, the corresponding algorithms being
+known as “automatic differentiation” (AD). A specialized version of this technique is used in deep learning under
+the name “backpropagation” [Rumelhart et al., 1986], more recently becoming popular across all of machine
+    2
+        https://github.com/JTT94/filterflow
+                    Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+learning [Baydin et al., 2018], accelerated by the availability of open-source libraries such as PyTorch [Paszke et al.,
+2019] and TensorFlow [Abadi et al., 2015]. In recent years there has been an explosion of interest in the machine
+learning community in computing gradients of expressions involving sampling random variables, motivated
+primarily by problems in deep generative modeling [Neal and Hinton, 1998] and reinforcement learning [Williams,
+1992]. While generic methods for extending AD to handle stochastic computations have been developed [Schulman
+et al., 2016, Foerster et al., 2018], the variance of resulting gradient estimators is still problematic[Rezende et al.,
+2014] where the reparameterization trick [Kingma and Welling, 2014, Ranganath et al., 2013] does not apply, in
+particular for discrete variables.
+Building on those developments, it is becoming increasingly popular to learn sequential latent variable models by
+gradient ascent using estimators derived from the application of AD to the log-marginal likelihood estimators
+obtained with particle filters. Examples include robotic localization [Jonschkowski et al., 2018], world-modeling in
+reinforcement learning [Igl et al., 2018], and deep generative modeling of music and speech [Maddison et al., 2017].
+The main obstacle is the discrete resampling steps, for which existing gradient estimators suffer from excessive
+variance, leading to the dependence of the resampling probabilities on model parameters typically being ignored
+[Le et al., 2018a, Maddison et al., 2017, Naesseth et al., 2018], introducing bias that was shown not to vanish
+asymptotically [Corenflos et al., 2021].
+Several recent articles[Corenflos et al., 2021, Zhu et al., 2020, Karkus et al., 2018] have proposed continuous
+relaxations of particle filter discrete resampling steps to avoid this problem, with different trade-offs and varying
+degrees of complexity.
+Alternatively, there exist consistent estimators of the gradient of log-marginal likelihood that can be obtained
+with an unmodified pass of a particle filter with usual discrete resampling [Poyiadjis et al., 2011], but until now
+these could not be obtained by applying AD to the log-marginal likelihood estimator produced by a particle filter.
+
+12.1    Particle filters
+
+Here we briefly review the basic particle filter algorithm, summarized in Algorithm 1, referring the reader to
+[Chopin and Papaspiliopoulos, 2020, Doucet and Johansen, 2009, Doucet et al., 2001] for more details. For a
+given sequence of observations y1:T , particle filters approximate the filtering distributions pθ (xt |y1:t ) and the
+marginal likelihood pθ (y1:T ) of a state space model with the following factorization of the joint
+                                                                  T
+                                                                  Y
+                                   pθ (x0:T , y1:T ) = pθ (x0 )         pθ (xt |xt−1 )pθ (yt |xt ).                 (136)
+                                                                  t=1
+
+
+The algorithm starts by sampling N particles independently from an initial distribution xi0 ∼ pθ (x0 ) and setting
+their weights to be uniform w0i = N1 . Then, at each iteration it advances one step forward in time, by first
+advancing each particle according to a proposal distribution qφ (xt+1 |xt ), then accumulating the importance
+                       t+1 |xt )
+sampling ratio qpφθ (x
+                    (xt+1 |xt ) and the likelihood pθ (yt+1 |xt+1 ) in the corresponding weight, saving the sum of weights
+and normalizing them before proceeding to the next time step. We assume that q and p have the same support
+and that the likelihoods are always non-zero, which guarantees that all the weights are always positive. We also
+assume that both p and q are differentiable with respect to their parameters.
+As the weights accumulate more terms, they become increasingly unbalanced and it is more efficient to focus
+more computational resources to particles with higher weights. This is accomplished via a resampling step, which
+in our formulation is optionally performed at the beginning of each time step. The ancestral indices for each
+particle are chosen from a resampling distribution R(w1:N
+                                                        t−1 ), which in the simplest multinomial resampling picks
+ancestral indices independently from a categorical distribution, but other variants like stratified and systematic
+resampling are usually favored in practice [Murray et al., 2016]. We assume post-resampling weights are always
+uniform for simplicity, although non-uniform resampling schemes also exist [Fearnhead and Clifford, 2003]. Note
+that we write w̃ for the weights obtained after resampling, which in a standard particle filter are always N1 , w for
+weights after the likelihood was accumulated at a given time step, and w for the subsequently normalized weights.
+Regardless of the specific details of the particle filter algorithm used, the marginal likelihood Z = pθ (y1:T ) is
+                     QT
+approximated by Ẑ = t=1 Wt . This estimator is known to be unbiased and under weak assumptions consistent.
+The estimator for the log-marginal likelihood log pθ (y1:T ) given by log Ẑ is consistent but biased. Similarly, a
+                                                 Adam Ścibior, Frank Wood
+
+
+particle filter produces consistent but biased estimators for expectations under the posterior, while the estimators
+for the expectations under the unnormalized posterior are additionally unbiased. We refer the reader to Moral
+[2004] and Chopin and Papaspiliopoulos [2020] for detailed convergence results.
+
+12.2    Score function estimation with particle filters
+
+Maximum likelihood learning of generative models by gradient ascent can be performed using the score function,
+which is the gradient of the log-marginal likelihood ∇θ log pθ (y1:T ). While the exact value of the score function is
+in general intractable, it can be approximated using any method for sampling from the posterior distribution
+with the help of Fisher’s identity
+
+                                 ∇θ log pθ (y1:T ) = ∇θ log                 E        [pθ (x1:T , y1:T )] =                (137)
+                                                                    x1:T ∼p(x1:T )
+
+                                           E               [∇θ log pθ (x1:T , y1:T )] .                                   (138)
+                                  x1:T ∼pθ (x1:T |y1:T )
+
+
+In the particle filtering context, the approximate samples from the posterior can be obtained by tracing the
+ancestral lineages of the surviving particles form the final time step. Let x̃i1:t be the ancestral lineage of a particle
+                                  ai
+i at time t, that is x̃i1:t+1 = (x̃1:tt+1 , xit+1 ) and x̃i1 = xi1 . Poyiadjis et al. [2011] propose a consistent score function
+estimator of the form
+                                                                 N
+                                                                 X
+                                       ∇θ log pθ (y1:T ) ≈             wiT ∇θ log pθ (x̃i1:T , y1:T ).                    (139)
+                                                                 i=1
+
+They also show how to compute this estimator without having to store full ancestral lineages and that the variance
+of this estimator can be further reduced using the marginal particle filter.
+In this work we show how to obtain this estimator through automatic differentiation of log Ẑ produced by a
+particle filter, without modifying the estimators obtained on the forward pass.
+
+12.3    The stop-gradient operator
+
+The stop-gradient operator is a standard component of automatic differentiation libraries, called stop_gradient
+in Tensorflow and detach in PyTorch, producing an expression that evaluates to its normal value on the forward
+pass but has zero gradient. While stop-gradient does not correspond to any formal mathematical function, we
+need to include it in our formulas to formally reason about programs involving stop-gradient and how automatic
+differentiation acts upon them. Following Foerster et al. [2018], we denote the stop-gradient with a ⊥, for example
+∇⊥ (x) = 0.
+Expressions involving the stop-gradient operator should be understood as expressions in a formal calculus, which
+correspond to programs written using automatic differentiation libraries. Following established terminology, we
+sometimes refer to them as surrogate expressions. For such expressions we need to distinguish between the results
+obtained by evaluating them on the forward pass and the expressions obtained by applying the gradient operator.
+                                                                                                               →
+                                                                                                               −
+Following van Krieken et al. [2021], we denote evaluation of an expression E with an overhead right arrow E .
+Operationally, evaluation removes all instances of stop-gradient, provided that no gradient operator is acting on
+them. Gradients satisfy the usual chain rules, except that gradients of any expression wrapped in stop-gradient
+are zero. Formally, the key equations are:
+                                               −−−−−−−−−−→               −
+                                                                         →            −
+                                                                                      →
+                                               f (E1 , . . . , En ) = f (E1 , . . . , E2 )                                (140)
+                                                           −−−→ →     −
+                                                           ⊥ (E) = E                                                      (141)
+                                                           ∇⊥ (E) = 0                                                     (142)
+                                                              −−→
+                                                              ∇E = ∇E            if ⊥ ∈
+                                                                                      / E,                                (143)
+
+where f is some differentiable function and ⊥ ∈
+                                              / E means that stop-gradient is not applied anywhere in expression
+E, including its subexpressions. We use this calculus to derive formulas for the estimators obtained by algorithms
+utilizing stop-gradient in automatic differentiation, which is generally accomplished by using the rules above,
+                    Differentiable Particle Filtering without Modifying the Forward Pass
+
+
+along with the chain rule for the gradient operator, to push the gradients inside, past any stop-gradient operators,
+and then evaluating the resulting expression. Note that in this calculus the gradient operator produces expressions
+rather than values, so that we can model repeated automatic differentiation. Expressions without stop-gradient
+can be equated with their usual interpretations. Throughout the paper we are careful to avoid using integrals of
+expressions involving stop-gradient, as we consider those undefined. We also present a short tutorial on using this
+calculus in the appendix.
+In previous work [Foerster et al., 2018, van Krieken et al., 2021], the stop-gradient operator has been used to show
+that certain expressions produce unbiased estimators for derivatives of arbitrary order under repeated automatic
+differentiation. In this work we consider a different family of expressions involving stop-gradient, showing that
+under automatic differentiation they produce score function estimators corresponding to the application of Fisher’s
+identity and self-normalizing importance sampling.
+
+12.4   Automatic differentiation of stochastic computation
+
+When using AD for computation involving stochastic choices, it is typically desirable to obtain gradient estimators
+that in expectation equal the gradient of the expected value of the original computation. The generic methods
+for accomplishing this generally fall into two categories. Consider a computation with a single random variable,
+L = Ex∼pθ (x) [fθ (x)]. If pθ is a continuous distribution, we can express x as a deterministic function h of some
+random variable  with a fixed distribution independent of θ, such as N (0, 1). With that, the gradient commutes
+with the expectation
+
+                             ∇θ L = ∇ θ         E       [fθ (h(, θ))] =       E       [∇θ fθ (h(, θ))] ,       (144)
+                                            ∼N (0,1)                      ∼N (0,1)
+
+at which point AD can be applied for a fixed . This technique is broadly known as the pathwise derivative
+[Glasserman, 2003], while in the machine learning it’s usually being referred to as the reparameterization trick
+[Kingma and Welling, 2014, Ranganath et al., 2013]. It is easy to apply for some distributions such as Gaussian
+and uniform, but in general finding a suitable  and h that can be efficiently computed is difficult and an active
+research area [Jankowiak and Obermeyer, 2018, Graves, 2016]. When applicable, this method tends to produce
+gradient estimators with relatively low variance.
+An alternative, typically used when reparemeterization is not possible, is based on the following identity
+
+                            ∇θ      E       [fθ (x)] =      E       [∇θ fθ (x) + fθ (x)∇θ log pθ (x)] .          (145)
+                                 x∼pθ (x)                x∼pθ (x)
+
+The two gradients inside the expectation are typically computed with AD jointly for a fixed x by forming a
+surrogate expression fθ (x) + ⊥ (fθ (x)) log pθ (x). In the reinforcement learning literature this method is known as
+REINFORCE [Williams, 1992], and more broadly referred to as the score function method or the likelihood ratio
+method [Fu, 2006]. We refrain from using those terms to avoid confusion with the score function ∇θ log pθ (y1:T )
+and the likelihood pθ (y1:T ) associated with the sequential latent variable model. Instead, we refer to this method as
+DiCE [Foerster et al., 2018], which produces the same gradient estimator using the following surrogate expression
+                                        −−−−−−−−−−−−−−−−→      
+                                                 pθ (x)
+                                        ∇θ                fθ (x) =                                               (146)
+                                               ⊥ (pθ (x))
+                                               −−−−−−→ −−−−−−→
+                                                ∇θ pθ (x)       pθ (x)
+                                        fθ (x)             +           ∇θ fθ (x) =                               (147)
+                                               ⊥ (pθ (x)) ⊥ (pθ (x))
+                                        fθ (x)∇θ log pθ (x) + ∇θ fθ (x),                                         (148)
+                                                                                pθ (x)
+while also remaining unbiased under repeated AD. Incidentally, the term ⊥(p       θ (x))
+                                                                                         , which Foerster et al. [2018]
+call “the magic box”, is precisely the AD-centric expression of the likelihood ratio from which the likelihood ratio
+method derives its name. The rules for constructing the surrogate expression in the presence of multiple random
+variables and complex dependencies were given by Schulman et al. [2016], with Foerster et al. [2018] deriving
+equivalent rules for DiCE. While DiCE is broadly applicable, the resulting gradient estimators tend to have high
+variance, which to some extent can be mitigated through a careful use of baselines [Mao et al., 2019, Farquhar
+et al., 2019].
+

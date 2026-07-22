@@ -1,0 +1,44 @@
+{
+  "artifact_hash": "sha256:c19ad7c0aa6f823ae40a84cb301fccf619e85e4c30b75694969602af76f265b9",
+  "inputs": {
+    "graph": {
+      "byte_count": 315021,
+      "file_sha256": "bbbae32fa762b0948605abb5c696974ab831729fdbbe41996c19e3b8eec7b8bb",
+      "path": "docs/benchmarks/artifacts/lgssm_neutra_training_topology_benchmark_2026_07_14/steps_020/graph_native.json"
+    },
+    "host": {
+      "byte_count": 315806,
+      "file_sha256": "5ca7088c80b287646b1e0c1a3c4ed38e54dcf0f2da89ad725fbacd3675a179cc",
+      "path": "docs/benchmarks/artifacts/lgssm_neutra_training_topology_benchmark_2026_07_14/steps_020/host_stepped.json"
+    }
+  },
+  "interpretation_limit": "one matched rung on one GPU with one warm repetition; no uncertainty interval",
+  "nonclaims": [
+    "no broad speedup claim",
+    "no 100-step timing claim unless this is the 100-step rung",
+    "no transport quality, HMC, or posterior claim"
+  ],
+  "output": "docs/benchmarks/artifacts/lgssm_neutra_training_topology_benchmark_2026_07_14/steps_020/comparison.json",
+  "parity": {
+    "diagnostic_max_abs": 0.0,
+    "final_state_max_abs": 0.0,
+    "passed": true,
+    "tolerance": 1e-12
+  },
+  "passed": true,
+  "plan": "docs/plans/bayesfilter-lgssm-neutra-training-topology-performance-benchmark-plan-2026-07-14.md",
+  "primary_criterion": "synchronized_warm_wall_time",
+  "schema": "bayesfilter.lgssm_neutra_training_topology_comparison.v1",
+  "steps": 20,
+  "timing": {
+    "cold_host_over_graph_ratio": 1.0683066346989507,
+    "evidence_class": "descriptive_single_repetition_per_cell",
+    "graph_cold_seconds": 195.396247097,
+    "graph_warm_seconds": 200.5074402120008,
+    "host_cold_seconds": 208.74310716900072,
+    "host_warm_seconds": 202.95655864199944,
+    "warm_graph_time_reduction_fraction": 0.012067205151614191,
+    "warm_host_over_graph_speedup": 1.0122146012507522
+  },
+  "verdict": "GRAPH_NATIVE_FASTER_ON_MATCHED_WARM_RUNG"
+}

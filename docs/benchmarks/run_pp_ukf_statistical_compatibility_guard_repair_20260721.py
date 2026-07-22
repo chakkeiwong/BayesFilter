@@ -47,6 +47,73 @@ RUNNER_COMPILE_ALLOWANCE_SECONDS = 60.0
 EXPECTED_NEXT_ROUND_L_VALUES = (5, 9, 12, 13, 14, 17, 18, 19, 24, 25)
 
 
+def build_pp_ukf_frozen_validation_candidates(
+    next_round_candidates: Sequence[Any],
+    *,
+    model_id: str,
+    target_signature: str,
+    tuning_scope_signature: str,
+    validation_seed_root: tuple[int, int] = (20260722, 5100),
+) -> tuple[Any, ...]:
+    """Convert PP-UKF next-round records into generic validation candidates.
+
+    This is an adapter seam only. It does not execute HMC or select a winner.
+    Primary records retain their tuned epsilon; coverage records retain the
+    exact inherited parent epsilon and parent candidate signature.
+    """
+
+    from bayesfilter.inference.frozen_kernel_validation import (
+        FrozenValidationCandidate,
+    )
+    from bayesfilter.inference.hmc_operational_broad_grid import (
+        OperationalPrimaryCandidate,
+        SameEpsilonNeighborGuard,
+        operational_broad_seed,
+    )
+
+    root = tuple(int(item) for item in validation_seed_root)
+    if len(root) != 2 or any(item < 0 for item in root):
+        raise ValueError("validation_seed_root must contain two nonnegative integers")
+    converted = []
+    for item in next_round_candidates:
+        if isinstance(item, OperationalPrimaryCandidate):
+            leapfrog = item.request.num_leapfrog_steps
+            epsilon = item.tuned_step_size
+            role = "independently_tuned"
+            parent_id = None
+            inherited_keys = ()
+        elif isinstance(item, SameEpsilonNeighborGuard):
+            leapfrog = item.request.num_leapfrog_steps
+            epsilon = item.request.inherited_step_size
+            role = "inherited_exact_one_hop_coverage"
+            parent_id = item.request.parent_candidate_signatures[0]
+            inherited_keys = ("step_size",)
+        else:
+            raise TypeError("next_round_candidates contains an unsupported record")
+        converted.append(
+            FrozenValidationCandidate(
+                candidate_id=item.signature,
+                model_id=model_id,
+                target_signature=target_signature,
+                tuning_scope_signature=tuning_scope_signature,
+                controls={
+                    "num_leapfrog_steps": leapfrog,
+                    "step_size": epsilon,
+                },
+                control_provenance=role,
+                execution_seed=operational_broad_seed(
+                    root,
+                    domain="generic_frozen_validation",
+                    num_leapfrog_steps=leapfrog,
+                    epsilon=epsilon,
+                ),
+                parent_candidate_id=parent_id,
+                inherited_control_keys=inherited_keys,
+            )
+        )
+    return tuple(converted)
+
+
 def _source_classification_rows(
     source_payload: Mapping[str, Any],
 ) -> tuple[Mapping[str, Any], ...]:

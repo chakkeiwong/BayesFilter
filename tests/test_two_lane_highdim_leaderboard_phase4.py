@@ -32,4 +32,6 @@ def test_phase4_fixed_sgqf_predator_prey_blocks_p47_value_as_t20_source_scope() 
     assert row["score_derivative_provenance"] is None
     assert "PREDATOR_PREY_T20_FIXED_SGQF_EVALUATOR_REQUIRED" in row["reason_codes"]
     assert "blocked_target_alignment" in row["reason"]
+    assert "transitions before y0" in row["reason"]
+    assert "assimilates y0 before the first transition" in row["reason"]
     assert any("P47 two-observation lower-rung" in item for item in row["nonclaims"])

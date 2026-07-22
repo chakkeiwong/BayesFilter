@@ -1,0 +1,100 @@
+{
+  "arms": {
+    "learned_residual": {
+      "cold_compile_plus_two_transitions_seconds": 7.4002932729781605,
+      "force_calls_per_transition": 3,
+      "force_count_contract_passed": true,
+      "health": {
+        "all_finite": true,
+        "energy_error_veto_clear": true,
+        "maximum_absolute_delta_h": 0.3575989321169648,
+        "one_new_endpoint_call_per_transition": true,
+        "passed": true
+      },
+      "jit_compile": true,
+      "output_devices": [
+        "/job:localhost/replica:0/task:0/device:GPU:0"
+      ],
+      "passed": true,
+      "timing_synchronized": true
+    },
+    "true_gradient": {
+      "cold_compile_plus_two_transitions_seconds": 27.785315123968758,
+      "force_calls_per_transition": 3,
+      "force_count_contract_passed": true,
+      "health": {
+        "all_finite": true,
+        "energy_error_veto_clear": true,
+        "maximum_absolute_delta_h": 0.019029733858635822,
+        "one_new_endpoint_call_per_transition": true,
+        "passed": true
+      },
+      "jit_compile": true,
+      "output_devices": [
+        "/job:localhost/replica:0/task:0/device:GPU:0"
+      ],
+      "passed": true,
+      "timing_synchronized": true
+    }
+  },
+  "cell": "PP-UKF",
+  "nonclaims": [
+    "two-transition GPU/XLA mechanics canary only"
+  ],
+  "passed": true,
+  "primary_arm_set": [
+    "learned_residual",
+    "true_gradient"
+  ],
+  "run_manifest": {
+    "canary": true,
+    "cell": "PP-UKF",
+    "command": "docs/benchmarks/run_hnn_neutra_exact_comparison_2026_07_18.py --cell PP-UKF --canary --output-root docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase2-canary/PP-UKF/attempt-03",
+    "device": "/GPU:0",
+    "dtype": "float64",
+    "environment": "tf-gpu",
+    "git_commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase2-canary/PP-UKF/attempt-03",
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "plan_file": "docs/plans/bayesfilter-hnn-neutra-exact-gradient-comparison-repair-plan-2026-07-18.md",
+    "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase2-canary/PP-UKF/attempt-03/result.json",
+    "schema": "bayesfilter.hnn_neutra_exact_comparison_manifest.v1",
+    "started_at_utc": "2026-07-17T20:17:43.756855+00:00",
+    "tensorflow_probability_version": "0.25.0",
+    "tensorflow_version": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 76.90546689002076
+  },
+  "schema": "bayesfilter.hnn_neutra_exact_comparison_canary.v1",
+  "structural_contract": null,
+  "target_signature": "036948f0faaf028d159d7b70337214f01514d732112c2d10e9f7eea1e13b8e30",
+  "transport_signature": "18546c2b30a5e2236e001293f9bbfc71babed47f5592d6821cabe0972990beec",
+  "value_only_endpoint_parity": {
+    "absolute_tolerance": 2e-08,
+    "endpoint_uses_true_gradient": false,
+    "maximum_absolute_error": 1.4210854715202004e-14,
+    "passed": true,
+    "point_count": 8,
+    "schema": "bayesfilter.neural_force_value_only_endpoint_parity.v1"
+  }
+}

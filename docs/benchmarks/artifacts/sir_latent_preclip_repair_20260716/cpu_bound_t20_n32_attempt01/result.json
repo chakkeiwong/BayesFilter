@@ -1,0 +1,308 @@
+{
+  "command": "docs/benchmarks/run_latent_preclip_sir_contract_e.py --time-steps 20 --particle-count 32 --no-jit-compile --prepared-input docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/prepared_t20_n32_attempt01/prepared.json --output docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/cpu_bound_t20_n32_attempt01/result.json",
+  "configuration": {
+    "col_chunk_size": 16,
+    "dtype": "float64",
+    "jit_compile": false,
+    "particle_count": 32,
+    "row_chunk_size": 16,
+    "seed": 81103,
+    "sinkhorn_steps": 2,
+    "time_steps": 20
+  },
+  "diagnostic": {
+    "clip_boundary_away_history": [
+      [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    ],
+    "finite_difference": [
+      -26.88674472892671,
+      -45.09158646328614,
+      5.40444174816912
+    ],
+    "finite_difference_endpoints": [
+      {
+        "minus": -678.5735252487863,
+        "minus_valid": true,
+        "parameter": "log_kappa_scale",
+        "plus": -678.5740629836808,
+        "plus_valid": true
+      },
+      {
+        "minus": -678.5733430907396,
+        "minus_valid": true,
+        "parameter": "log_nu_scale",
+        "plus": -678.5742449224689,
+        "plus_valid": true
+      },
+      {
+        "minus": -678.5738474215628,
+        "minus_valid": true,
+        "parameter": "log_obs_noise_scale",
+        "plus": -678.5737393327279,
+        "plus_valid": true
+      }
+    ],
+    "finite_difference_policy": {
+      "maximum_relative_error": 1.1764903717874067e-07,
+      "relative_errors": [
+        1.1764903717874067e-07,
+        2.5595592931423067e-08,
+        3.956377661425435e-09
+      ],
+      "scope": "individual_coordinate_same_scalar_fd_only",
+      "status": "pass",
+      "threshold": 0.08660254037844387
+    },
+    "first_call_seconds": 17.68260562600335,
+    "increment_history": [
+      [
+        -37.7200791674224,
+        -32.58334573642673,
+        -35.62092080108338,
+        -35.775536393262946,
+        -34.338570969386424,
+        -34.120025922724146,
+        -34.329204830431614,
+        -29.816354012615353,
+        -39.912484858325925,
+        -33.72674843488187,
+        -30.592832902776955,
+        -34.0167086969163,
+        -33.37520204763173,
+        -34.73456043965146,
+        -34.07803653847587,
+        -30.918015002302933,
+        -30.451775322119104,
+        -31.783706088908076,
+        -32.06770893890694,
+        -38.61197625379887
+      ]
+    ],
+    "increment_score_history": [
+      [
+        [
+          0.0,
+          0.0,
+          8.280376322365708
+        ],
+        [
+          8.950617649659206,
+          -3.3782970804167154,
+          -2.184542623297774
+        ],
+        [
+          11.426556454966276,
+          -4.438686278413315,
+          3.0442576348096493
+        ],
+        [
+          36.25293082875801,
+          -15.310075548025722,
+          1.0038435339848528
+        ],
+        [
+          82.54353526601568,
+          -40.49546262227409,
+          -0.5168429139117762
+        ],
+        [
+          -39.530956448852955,
+          26.803368705565553,
+          1.0792273779802595
+        ],
+        [
+          -88.10127596678757,
+          60.678441466046976,
+          3.07303409891617
+        ],
+        [
+          0.9684690855658591,
+          6.594001418387518,
+          -7.263455947700694
+        ],
+        [
+          15.197592371921214,
+          -65.88819307273765,
+          11.796465653858743
+        ],
+        [
+          -24.644913285639852,
+          19.624199593597545,
+          -1.6150094838218134
+        ],
+        [
+          -12.436668489476725,
+          -10.166319435142974,
+          -6.964159691832052
+        ],
+        [
+          -4.859952082808334,
+          9.128922146152828,
+          1.302994665482253
+        ],
+        [
+          -6.367328559308698,
+          -20.545536382381577,
+          -0.6237899862029013
+        ],
+        [
+          -17.8898378006817,
+          -20.09205471285954,
+          2.6910458691372585
+        ],
+        [
+          14.983143438312727,
+          23.420972974329402,
+          0.6377003335444786
+        ],
+        [
+          -10.2500243214026,
+          -11.45413576076503,
+          -5.460188310506647
+        ],
+        [
+          -7.991650164630181,
+          -1.250498668546561,
+          -6.047144353533266
+        ],
+        [
+          5.37051241376495,
+          -0.9819771938417128,
+          -3.4424521620101567
+        ],
+        [
+          -4.144471807282835,
+          -2.7306665392261986,
+          -3.060171087169643
+        ],
+        [
+          13.636973525780789,
+          5.390411681411014,
+          9.673252796694463
+        ]
+      ]
+    ],
+    "minimum_mass_history": [
+      [
+        0.7702861847152566,
+        0.7663916567137385,
+        0.8466221742179962,
+        0.9607719219986999,
+        0.7286468564593505,
+        0.9062736890523635,
+        0.8418894527759999,
+        0.9025094963589397,
+        0.9604850937612077,
+        0.8985436032896834,
+        0.8159998844600276,
+        0.7630949403855631,
+        0.7627020982215262,
+        0.9458943547343096,
+        0.8278593043442741,
+        0.8774774278768871,
+        0.9366788744956365,
+        0.9515180084342789,
+        0.9044842192551676,
+        0.9242646238888785
+      ]
+    ],
+    "objective": -678.5737933580489,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:CPU:0"
+    ],
+    "reset_valid_history": [
+      [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    ],
+    "score": [
+      -26.886747892126714,
+      -45.09158530914025,
+      5.404441726787107
+    ],
+    "valid_chart": [
+      true
+    ],
+    "warm_replay_objective_equal": true,
+    "warm_replay_seconds": 0.14418499101884663
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_dirty": true,
+    "physical_gpus": [],
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "trust_basis": "deliberate_cpu_only_reference_preflight"
+  },
+  "nonclaims": [
+    "not canonical Contract E admission",
+    "not fixed-TTSIRT total-score closure",
+    "not full-horizon correctness",
+    "not HMC or leaderboard readiness",
+    "same-scalar FD is not an oracle comparison"
+  ],
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/prepared_t20_n32_attempt01/prepared.json",
+    "sha256": "2f3c3222ca9ecaea0ab49adc890d752637f24c0452ea11fa9bddcdcc33c5dcc8",
+    "status": "PASS_CPU_ONLY_PREPARATION"
+  },
+  "prepared_identity": {
+    "epsilon": "e4407e1192399c3637f63af7aa574b2cb19bd11d81acb0994f62cf83a98f5ce4",
+    "fixed_reset_mask": "da374d6bef1139d4f3e8c5b058b12b0a0c31b1238ce21f89424408e78838ddc5",
+    "initial_noise": "b29a2f37bc22433ad5eda367a02779a650160a14d01b657d50fe21a20201bca1",
+    "observations": "2c34db42de33ef2c32a28428859f122a277195de002617418f892ef5956959f4",
+    "prepared_ridge": "4155a9e7be8aff1cb93472a68b167f901708de458d798a01c42783f40af70dc9",
+    "residual_design": "401b9df8e24272d35eea7dcfd7759fad62842491fef52a25f2563e738014ddf3",
+    "scaling": "cb930ec4c0b7a82a69f388f20232162c735b05f2d3c8dd01867282a66055007c",
+    "transition_noise": "c383652e6ff249eb17fe7266fe22ddb3af81bd5669cd75c1588b9f5c44cdc9b0"
+  },
+  "route_id": "contract_e_chol_latent_preclip_sir_candidate_v1",
+  "route_status": "candidate_not_canonical_not_admitted",
+  "schema": "bayesfilter.latent_preclip_sir.contract_e_chol_diagnostic.v1",
+  "simulator": {
+    "observations_sha256": "2c34db42de33ef2c32a28428859f122a277195de002617418f892ef5956959f4",
+    "physical_path_sha256": "ba1e8c9e77702bba2b63340e6e5004babd65895a52e5fbed9ca7bebd4f6dba09"
+  },
+  "status": "PASS_BOUNDED_DIAGNOSTIC",
+  "target_id": "zhao_cui_sir_austria_latent_preclip_simulator_law_v1"
+}

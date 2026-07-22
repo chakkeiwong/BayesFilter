@@ -1,0 +1,109 @@
+{
+  "commands": [
+    {
+      "command": "python docs/benchmarks/build_multimodel_neutra_p0_registry.py --output-root docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p0/attempt-03-20260715T1652",
+      "device_intent": "CPU_ONLY_NO_TENSORFLOW_IMPORT",
+      "environment": "current repository Python; CPU-only metadata work; no framework import",
+      "expected_artifacts": [
+        "target_registry.json",
+        "cell_ledger.json",
+        "assumption_ledger.json",
+        "command_manifest.json",
+        "budget_ledger.json",
+        "execution_events.jsonl",
+        "run_manifest.json"
+      ],
+      "phase": "P0",
+      "status": "EXECUTED_BY_THIS_BUILDER",
+      "timeout_seconds": 300
+    },
+    {
+      "blocker": "P1 implementation and exact focused-test commands do not yet exist",
+      "command": null,
+      "device_intent": "CPU_REFERENCE_PLUS_TRUSTED_GPU_XLA_CANARY",
+      "environment": "project TensorFlow/TFP environment",
+      "expected_artifacts": [
+        "generic harness tests",
+        "trusted GPU/XLA canary"
+      ],
+      "phase": "P1",
+      "status": "TO_BE_CREATED_IN_PHASE",
+      "timeout_seconds": null
+    },
+    {
+      "blocker": "all owning cells are TARGET_BLOCKED at P0",
+      "command": null,
+      "device_intent": "TRUSTED_GPU_XLA_FOR_SERIOUS_RUNS",
+      "environment": "project TensorFlow/TFP environment",
+      "expected_artifacts": [
+        "cell-specific artifacts named by subplan"
+      ],
+      "phase": "P2",
+      "status": "TO_BE_CREATED_IN_PHASE",
+      "timeout_seconds": null
+    },
+    {
+      "blocker": "all owning cells are TARGET_BLOCKED at P0",
+      "command": null,
+      "device_intent": "TRUSTED_GPU_XLA_FOR_SERIOUS_RUNS",
+      "environment": "project TensorFlow/TFP environment",
+      "expected_artifacts": [
+        "cell-specific artifacts named by subplan"
+      ],
+      "phase": "P3",
+      "status": "TO_BE_CREATED_IN_PHASE",
+      "timeout_seconds": null
+    },
+    {
+      "blocker": "all owning cells are TARGET_BLOCKED at P0",
+      "command": null,
+      "device_intent": "TRUSTED_GPU_XLA_FOR_SERIOUS_RUNS",
+      "environment": "project TensorFlow/TFP environment",
+      "expected_artifacts": [
+        "cell-specific artifacts named by subplan"
+      ],
+      "phase": "P4",
+      "status": "TO_BE_CREATED_IN_PHASE",
+      "timeout_seconds": null
+    },
+    {
+      "blocker": "all owning cells are TARGET_BLOCKED at P0",
+      "command": null,
+      "device_intent": "TRUSTED_GPU_XLA_FOR_SERIOUS_RUNS",
+      "environment": "project TensorFlow/TFP environment",
+      "expected_artifacts": [
+        "cell-specific artifacts named by subplan"
+      ],
+      "phase": "P5",
+      "status": "TO_BE_CREATED_IN_PHASE",
+      "timeout_seconds": null
+    },
+    {
+      "blocker": "all owning cells are TARGET_BLOCKED at P0",
+      "command": null,
+      "device_intent": "TRUSTED_GPU_XLA_FOR_SERIOUS_RUNS",
+      "environment": "project TensorFlow/TFP environment",
+      "expected_artifacts": [
+        "cell-specific artifacts named by subplan"
+      ],
+      "phase": "P6",
+      "status": "TO_BE_CREATED_IN_PHASE",
+      "timeout_seconds": null
+    },
+    {
+      "blocker": "requires P0-P6 results",
+      "command": null,
+      "device_intent": "CPU_ONLY_SYNTHESIS",
+      "environment": "current repository Python",
+      "expected_artifacts": [
+        "terminal integrity audit and reset memo"
+      ],
+      "phase": "P7",
+      "status": "TO_BE_REFRESHED_AFTER_P6",
+      "timeout_seconds": null
+    }
+  ],
+  "generated_at": "2026-07-15T16:43:23+08:00",
+  "program_id": "multimodel-neutra-filter-posterior-20260715",
+  "schema": "bayesfilter.multimodel_neutra_p0.v1.command_manifest"
+}

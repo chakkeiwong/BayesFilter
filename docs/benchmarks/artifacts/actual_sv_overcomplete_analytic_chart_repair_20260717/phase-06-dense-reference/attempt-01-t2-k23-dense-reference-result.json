@@ -1,0 +1,141 @@
+{
+  "schema": "bayesfilter.contract_e_tp.actual_sv_overcomplete_dense_comparison.v1",
+  "status": "COMPLETE_DESCRIPTIVE_DIAGNOSTIC",
+  "plan": "docs/plans/bayesfilter-actual-sv-overcomplete-analytic-chart-repair-plan-2026-07-17.md",
+  "phase": 6,
+  "scope": "actual_sv_center_same_target_dense_reference_comparison",
+  "source_validation": {
+    "preparation_path": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-05-derivative/attempt-01-t2-k23-preparation.json",
+    "preparation_sha256": "dc9bfe634bfadedb71216a8fdc26ba620ed090229f9f8eae13c68a67166d1138",
+    "candidate_result_path": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-05-derivative/attempt-02-t2-k23-score-fd-xla-result.json",
+    "candidate_result_sha256": "d834420e1408a60cc1220cf1fe622d5e57713987096fe2cf458c3e176db74745",
+    "route_id": "actual_sv_overcomplete_pearson_fixed_reference_v1",
+    "candidate_finite_program_status": "PASS_FINITE_PROGRAM",
+    "candidate_fd_gate_pass": true
+  },
+  "target": {
+    "time_steps": 2,
+    "theta": [
+      0.2533471031357997,
+      -0.916290731874155
+    ],
+    "parameter_names": [
+      "gamma_unconstrained",
+      "log_beta"
+    ],
+    "target_observations_sha256": "609c9b877eab9bf8bdf5a683da11deafdb02368de0fa9249a0019d322989202f"
+  },
+  "candidate": {
+    "value": -3.775773676532219,
+    "manual_total_score": [
+      -0.22024887773654617,
+      0.5291911366357585
+    ],
+    "score_source": "Phase 5 explicit total manual JVP of the same finite scalar"
+  },
+  "dense_references": [
+    {
+      "order": 129,
+      "radius": 10.0,
+      "value": -3.7757736895463547,
+      "score": [
+        -0.22024890389537316,
+        0.5291911395122895
+      ],
+      "target_observations_sha256": "609c9b877eab9bf8bdf5a683da11deafdb02368de0fa9249a0019d322989202f",
+      "role": "same_target_dense_filtering_reference"
+    },
+    {
+      "order": 257,
+      "radius": 10.0,
+      "value": -3.775773689546402,
+      "score": [
+        -0.22024890389537327,
+        0.5291911395122895
+      ],
+      "target_observations_sha256": "609c9b877eab9bf8bdf5a683da11deafdb02368de0fa9249a0019d322989202f",
+      "role": "same_target_dense_filtering_reference"
+    }
+  ],
+  "adjacent_reference_refinement": {
+    "coarse_order": 129,
+    "fine_order": 257,
+    "value_difference_fine_minus_coarse": -4.707345624410664e-14,
+    "value_absolute_difference": 4.707345624410664e-14,
+    "value_symmetric_relative_difference": 1.2467234562927962e-14,
+    "score": {
+      "difference": [
+        1.1102230246251565e-16,
+        0.0
+      ],
+      "absolute_difference": [
+        1.1102230246251565e-16,
+        0.0
+      ],
+      "componentwise_symmetric_relative_difference": [
+        5.040765265976332e-16,
+        0.0
+      ],
+      "vector_norm_symmetric_relative_difference": 1.9369018583224748e-16,
+      "sign_reversal": [
+        false,
+        false
+      ]
+    },
+    "classification": "descriptive_numerical_refinement_not_error_bound"
+  },
+  "candidate_vs_finest_reference": {
+    "reference_order": 257,
+    "value_difference_candidate_minus_reference": 1.3014182620452175e-08,
+    "value_absolute_difference": 1.3014182620452175e-08,
+    "value_symmetric_relative_difference": 3.4467591844584297e-09,
+    "score": {
+      "difference": [
+        2.6158827104438842e-08,
+        -2.8765310133849198e-09
+      ],
+      "absolute_difference": [
+        2.6158827104438842e-08,
+        2.8765310133849198e-09
+      ],
+      "componentwise_symmetric_relative_difference": [
+        1.187693931512109e-07,
+        5.435712744272272e-09
+      ],
+      "vector_norm_symmetric_relative_difference": 4.591194324435604e-08,
+      "sign_reversal": [
+        false,
+        false
+      ]
+    },
+    "equivalence_classification": "descriptive_only_no_justified_margin"
+  },
+  "decision": {
+    "candidate_engineering_gate_source_pass": true,
+    "dense_reference_finite": true,
+    "scientific_equivalence_pass": null,
+    "statistically_supported_ranking": false,
+    "default_readiness": false,
+    "next_action": "preserve the observed differences and proceed to the independent GPU/XLA engineering gate"
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_dirty": true,
+    "git_status_sha256": "3e59a9b0d6a2d12a64d326a7592e5336d2f388374838bb893efc809d58a5df20",
+    "command": "docs/benchmarks/compare_actual_sv_overcomplete_dense_reference.py --preparation docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-05-derivative/attempt-01-t2-k23-preparation.json --candidate-result docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-05-derivative/attempt-02-t2-k23-score-fd-xla-result.json --reference-orders 129,257 --reference-radius 10 --output docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-06-dense-reference/attempt-01-t2-k23-dense-reference-result.json",
+    "conda_environment": "tf-gpu",
+    "backend": "TensorFlow_float64_CPU_dense_reference_exception",
+    "tensorflow_version": "2.19.1",
+    "cuda_visible_devices": "-1",
+    "physical_gpus": [],
+    "jit_compile": false,
+    "wall_time_seconds": 0.18478723999578506,
+    "output": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-06-dense-reference/attempt-01-t2-k23-dense-reference-result.json"
+  },
+  "nonclaims": [
+    "no post-hoc score-equivalence threshold",
+    "adjacent quadrature refinement is not an exact error bound",
+    "no scientific equivalence or method ranking",
+    "not HMC, canonical Contract E--Chol, default, or leaderboard readiness"
+  ]
+}

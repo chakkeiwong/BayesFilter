@@ -1,0 +1,124 @@
+{
+  "attempt_id": "n5000-scope-attempt01",
+  "campaign_id": "lgssm-particle-bias-ladder-20260720",
+  "command": [
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py",
+    "--output-root",
+    "docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/n5000_scope_attempt01",
+    "--attempt-id",
+    "n5000-scope-attempt01",
+    "--time-steps",
+    "50",
+    "--num-particles",
+    "5000",
+    "--seed-microbatch-size",
+    "1",
+    "--tuning-seed-start",
+    "82000",
+    "--claim-seed-start",
+    "82020",
+    "--sinkhorn-candidates",
+    "20,25,30,40",
+    "--balance-candidates",
+    "3,5,8,12,16,25,32",
+    "--campaign-id",
+    "lgssm-particle-bias-ladder-20260720",
+    "--plan-path",
+    "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md"
+  ],
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "dtype": "float32",
+    "gpu_memory_limit_mib": 8192,
+    "gpu_required": true,
+    "jit_compile": true,
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true
+  },
+  "failure": {
+    "message": "name 'expected_steps' is not defined",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py\", line 615, in main\n    scope = _scope(\n            ^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py\", line 112, in _scope\n    expected_marginal_sweeps = expected_steps if chunks.row_blocks > 1 else 0\n                               ^^^^^^^^^^^^^^\nNameError: name 'expected_steps' is not defined\n",
+    "type": "NameError"
+  },
+  "finished_at_utc": "2026-07-19T17:37:23.351992+00:00",
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "num_particles": 5000,
+  "partitions": {
+    "calibration": [
+      82000,
+      82001,
+      82002,
+      82003,
+      82004,
+      82005,
+      82006,
+      82007
+    ],
+    "claim": [
+      82020,
+      82021,
+      82022,
+      82023,
+      82024,
+      82025,
+      82026,
+      82027,
+      82028,
+      82029,
+      82030,
+      82031,
+      82032,
+      82033,
+      82034,
+      82035
+    ],
+    "validation": [
+      82008,
+      82009,
+      82010,
+      82011,
+      82012,
+      82013,
+      82014,
+      82015
+    ]
+  },
+  "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+  "schema_version": "bayesfilter.ledh_offline_ot_tuning.v1",
+  "search_order": {
+    "balance_steps": [
+      3,
+      5,
+      8,
+      12,
+      16,
+      25,
+      32
+    ],
+    "rule": "exhaust_balance_ladder_before_next_sinkhorn",
+    "sinkhorn_steps": [
+      20,
+      25,
+      30,
+      40
+    ]
+  },
+  "seed_microbatch_size": 1,
+  "selection_metric": {
+    "kalman_used": false,
+    "maximum_row_error_tolerance": 0.01,
+    "tv_column_tolerance": 0.0001
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py": "d81d5b918c4e38c7fb5818dd6726049f000fb7552ecb3f15e8cb97e18663d9ef",
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py": "91cbba35ec3c6294ab7bae599ebc120ac353c3116a2aab76fbea2418c52331bf",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+  },
+  "status": "CAMPAIGN_EXECUTION_FAILURE",
+  "tuning_scope": null,
+  "tuning_scope_sha256": null,
+  "wall_time_seconds": 0.8323897760001273
+}

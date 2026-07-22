@@ -1,0 +1,63 @@
+{
+  "schema": "bayesfilter.corrected_neural_force_hmc.p6_source_requalification_audit.v1",
+  "program_id": "bayesfilter-corrected-neural-force-hmc-20260717",
+  "phase": "P6",
+  "audited_at_utc": "2026-07-17T18:25:00Z",
+  "source_repository": {
+    "path": "/home/chakwong/python",
+    "git_commit": "b5193b2c734d10946ddaf364c737ca2311826028"
+  },
+  "review": {
+    "claude_probe": "CLAUDE_PROBE_OK",
+    "bounded_plan_verdict": "AGREE",
+    "role": "read_only_advisory"
+  },
+  "cells": {
+    "FUNNEL": {
+      "target": "paper_funnel",
+      "dimension": 100,
+      "target_source_sha256": "40f8b3b835e6df8462b171ef3efb6ce4f7bcf1474194c80038459283ac5299d9",
+      "historical_result_sha256": "cc7e131f3f09b44bf98283e899ddeabc5f200cd4877b7b967c9ee1bf4048f93e",
+      "expected_selected_artifact": "/tmp/neutra_gate1_track_a_dim100_iaf/paper_funnel_iaf.json",
+      "expected_artifact_present": false,
+      "runner_serializes_transport_state": true,
+      "exact_selected_transport_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "selected_dense_iaf_transport_state_not_preserved"
+    },
+    "ILLGAUSS": {
+      "target": "paper_ill_cond_gaussian",
+      "dimension": 100,
+      "target_source_sha256": "40f8b3b835e6df8462b171ef3efb6ce4f7bcf1474194c80038459283ac5299d9",
+      "historical_result_sha256": "cc7e131f3f09b44bf98283e899ddeabc5f200cd4877b7b967c9ee1bf4048f93e",
+      "expected_selected_artifact": "/tmp/neutra_gate1_track_a_dim100_iaf/paper_ill_cond_gaussian_iaf.json",
+      "expected_artifact_present": false,
+      "runner_serializes_transport_state": true,
+      "exact_selected_transport_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "selected_dense_iaf_transport_state_not_preserved"
+    },
+    "GERMAN-LR": {
+      "target": "german_gamma_scales2",
+      "dimension": 51,
+      "target_source_sha256": "fd1703507f544e17e2786acc985142d913a91af03d1b33a4a6f89ccc8a0d1ad4",
+      "data_sha256": "2752b044394958ab6dd193a0b56ca0f0b3a2d8bc7cb8c008e35a5e84bbec02f8",
+      "reference_sha256": "605fbca76b076bb23cf865f7210ef8e6da2b29c1c87964d13463126e71faeb09",
+      "historical_result_sha256": "819f5bc29c59d37028c73c65ec01d96bfc5dd62d13ba9bb7617e0c1280c5a225",
+      "expected_selected_artifact": "/tmp/neutra_gate1_track_b/german_moderate_decision/german_gamma_scales2_iaf.json",
+      "expected_artifact_present": false,
+      "historical_runner_serializes_transport_state": false,
+      "exact_selected_transport_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "selected_masked_iaf_weights_never_preserved"
+    }
+  },
+  "gpu_wall_hours_consumed": 0.0,
+  "cpu_wall_hours_charged_conservatively": 0.25,
+  "nonclaims": [
+    "historical NeuTra results are not invalidated",
+    "a newly retrained chart was not tested",
+    "no corrected-kernel validity result exists for these three cells",
+    "no target was substituted and no pass was fabricated"
+  ]
+}

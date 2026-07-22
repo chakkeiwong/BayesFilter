@@ -1,0 +1,69 @@
+{
+  "schema": "bayesfilter.deterministic_lgssm_hmc_phase7_config.v1",
+  "config_id": "multidim_lgssm_phase7_burnin_sampling_2026_07_11",
+  "plan_path": "docs/plans/bayesfilter-deterministic-lgssm-hmc-phase7-repair-and-execution-plan-2026-07-11.md",
+  "source_tuning_config_path": "docs/benchmarks/configs/multidim_lgssm_serious_hmc_tuning_2026_07_09.json",
+  "source_tuning_config_hash": "sha256:1b5683e2f210e3976fca712ec2970f8327831596c0b67776316efbd0b6b46729",
+  "artifact_root": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09",
+  "expected_hashes": {
+    "fixture": "sha256:5b8f4ae78e00b69fb4b75deb1ccd3facfd7869f5d9fc0c7cb87eafdad8c8793e",
+    "xla_compile": "sha256:8941b369f6280ebc3c124220a9bab21f6889228deb92121d63f2fefba3ea6842",
+    "geometry": "sha256:e2b9531e86f85a662c4da26595e0ab082dd8a1a29d2dbb83b31b076bbf7683ac",
+    "mass": "sha256:92536fbd13e1ba89c53bfcc874355194b8d2d097ea498d22b5ccd7c318490d8e",
+    "public_final_kernel": "8ddf25a3b572893e19e814fad5ca5b6150718e36f760c159b47db1231d92ffff",
+    "private_loop_final_kernel": "391558a9b5f4cdc1b9dff9a5e9bceba668dedded7298c1d8c76daea42f42039a",
+    "selected_step": "ec7db59e51465eee95658167e1f7596e21d9ab0efdac11f54c2d397aa270ab40",
+    "selected_trajectory": "6eaf7a563353b278a71dcfbe2515fda6d46c47ab2e38996b6b61fab1bbbd13b3",
+    "adapter": "3a71b33479f6eb3681584d3a7a31550a17a5731116253131e9a21a9b5d21af08"
+  },
+  "execution": {
+    "worker_count": 2,
+    "chains_per_worker": 2,
+    "root_seed": [20260711, 701],
+    "cuda_visible_devices": "-1",
+    "jit_compile": true,
+    "use_xla": true,
+    "chain_execution_mode": "tf_function",
+    "compile_workers_sequentially": true,
+    "wall_time_cap_seconds": 28800,
+    "thread_environment": {
+      "TF_NUM_INTRAOP_THREADS": "8",
+      "TF_NUM_INTEROP_THREADS": "1",
+      "OMP_NUM_THREADS": "8",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "burnin": {
+    "initial_results_per_chain": 2000,
+    "extension_results_per_chain": 1000,
+    "check_window_results_per_chain": 1000,
+    "max_results_per_chain": 16000
+  },
+  "retained": {
+    "initial_results_per_chain": 4000,
+    "extension_results_per_chain": 2000,
+    "check_interval_results_per_chain": 2000,
+    "max_results_per_chain": 40000
+  },
+  "diagnostics": {
+    "rhat_max": 1.01,
+    "bulk_ess_min": 1000.0,
+    "tail_ess_min": 400.0,
+    "all_parameters_required": true,
+    "coordinate_system": "raw_lgssm_parameters_after_two_mass_transforms"
+  },
+  "artifacts": {
+    "public_result": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/burnin_sampling.json",
+    "public_progress": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/burnin_sampling_progress.json",
+    "private_replay": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/kernel_tuning_replay.json",
+    "private_retained_samples": "docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/phase7_retained_samples.npz"
+  },
+  "nonclaims": [
+    "Phase 7 burn-in and retained-sampling controller only",
+    "not posterior recovery evidence",
+    "not sampler superiority evidence",
+    "not production or default readiness evidence",
+    "not GPU or NeuTra-training evidence"
+  ]
+}

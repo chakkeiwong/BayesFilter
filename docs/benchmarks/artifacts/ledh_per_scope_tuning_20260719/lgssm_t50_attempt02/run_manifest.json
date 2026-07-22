@@ -1,0 +1,93 @@
+{
+  "artifact_root": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/ledh_per_scope_tuning_20260719/lgssm_t50_attempt02",
+  "attempt_id": "lgssm-t50-attempt02",
+  "campaign_id": "ledh-offline-ot-cheaper-first-tuning-20260718",
+  "command": [
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py",
+    "--output-root",
+    "docs/benchmarks/artifacts/ledh_per_scope_tuning_20260719/lgssm_t50_attempt02",
+    "--attempt-id",
+    "lgssm-t50-attempt02",
+    "--time-steps",
+    "50",
+    "--tuning-seed-start",
+    "81800",
+    "--claim-seed-start",
+    "81820",
+    "--sinkhorn-candidates",
+    "20,25,30,40",
+    "--balance-candidates",
+    "3,5,8,12,16,25,32"
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "dtype": "float32",
+    "gpu_memory_limit_mib": 8192,
+    "gpu_required": true,
+    "jit_compile": true,
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true
+  },
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "plan_path": "docs/plans/bayesfilter-ledh-offline-ot-cheaper-first-tuning-master-plan-2026-07-18.md",
+  "result_path": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/ledh_per_scope_tuning_20260719/lgssm_t50_attempt02/campaign_result.json",
+  "result_sha256": "2f973e3cdaab51996d9a28ad856879340dc4a25def47f397025da8d03fd35b94",
+  "schema_version": "bayesfilter.ledh_offline_ot_tuning_manifest.v1",
+  "seeds": {
+    "calibration": [
+      81800,
+      81801,
+      81802,
+      81803,
+      81804,
+      81805,
+      81806,
+      81807
+    ],
+    "claim": [
+      81820,
+      81821,
+      81822,
+      81823,
+      81824,
+      81825,
+      81826,
+      81827,
+      81828,
+      81829,
+      81830,
+      81831,
+      81832,
+      81833,
+      81834,
+      81835
+    ],
+    "validation": [
+      81808,
+      81809,
+      81810,
+      81811,
+      81812,
+      81813,
+      81814,
+      81815
+    ]
+  },
+  "status": "SCOPE_CLAIM_PASS",
+  "wall_time_seconds": 193.94741867197445
+}

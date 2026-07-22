@@ -1,0 +1,191 @@
+{
+  "all_predeclared_screen_arms_processed": true,
+  "all_predeclared_smokes_passed": true,
+  "artifact_hash": "sha256:d06bd6d7e235f6b896b0f591c45f32086c6ad96443392f4c57fa215ba7618286",
+  "decision": "NOMINATE_ONE_RECIPE_FOR_FRESH_LONG_BUDGET_TRAINING",
+  "evidence_role": "proxy_nomination_only_not_transport_promotion",
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": "heldout means, paired MCSE values, losses, gradients, and runtimes",
+    "hard_veto_screen": "all_four_candidates_passed",
+    "next_evidence_needed": "fresh 5000-step training seeds and downstream posterior/HMC validation",
+    "statistically_supported_ranking": false,
+    "viable_candidates": [
+      "source_anchor_lr5e3",
+      "lower_lr1e3",
+      "shallow_2stage_lr5e3",
+      "wide_2x_lr5e3"
+    ]
+  },
+  "nonclaims": [
+    "nomination is not a claim that the selected recipe is best or superior",
+    "500-step heldout reverse KL is not posterior correctness evidence",
+    "no HMC convergence, robustness, generalization, or default-readiness claim"
+  ],
+  "passed": true,
+  "recipe_order": [
+    "source_anchor_lr5e3",
+    "lower_lr1e3",
+    "shallow_2stage_lr5e3",
+    "wide_2x_lr5e3"
+  ],
+  "schema": "bayesfilter.neutra.batch_native_screen_result.v1",
+  "screen_rows": [
+    {
+      "artifact_hash": "sha256:cfdda205ef98805cfff3b59a8d0c4bc156db228e0ce75833a5a54bf4b9919bc1",
+      "heldout_mcse": 0.0865763392802929,
+      "heldout_mean": 72.94513644282262,
+      "passed": true,
+      "recipe_id": "source_anchor_lr5e3",
+      "result": {
+        "file_sha256": "092a766ef7cccb9cdb7cc4c965784d6fddaa7c61cc7750b6c3f065aff31e0a4e",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/screen-500/screen/candidates/source_anchor_lr5e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 500
+    },
+    {
+      "artifact_hash": "sha256:79a9513d12e996d5209b0805404cb5783bcc814ab723fa99392f6ff5b6d9de0e",
+      "heldout_mcse": 0.08502104174499933,
+      "heldout_mean": 74.34711099258871,
+      "passed": true,
+      "recipe_id": "lower_lr1e3",
+      "result": {
+        "file_sha256": "7efc8b5e67f0285bc7e744515d9332b97d60acdbd408dc7f74c32f8121251d91",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/screen-500/screen/candidates/lower_lr1e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 500
+    },
+    {
+      "artifact_hash": "sha256:47d907925fedd45053b7369198231f00923e35e2cccb080ea1e354c1b57e9127",
+      "heldout_mcse": 0.07751340586260629,
+      "heldout_mean": 73.33921014608546,
+      "passed": true,
+      "recipe_id": "shallow_2stage_lr5e3",
+      "result": {
+        "file_sha256": "22918cd911494770b307c5211c71a90fc246b0597b0300b4569c1f6a858baf5b",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/screen-500/screen/candidates/shallow_2stage_lr5e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 500
+    },
+    {
+      "artifact_hash": "sha256:2acbcbfa09695fb641fa6d4acb78bd90e622656e2bcda9148af684ca7115a0a6",
+      "heldout_mcse": 0.07761676613717938,
+      "heldout_mean": 72.74168736182357,
+      "passed": true,
+      "recipe_id": "wide_2x_lr5e3",
+      "result": {
+        "file_sha256": "10594c1f3cd4b80b37610438dda2f817e4fab1893411d648e16c12ef346345bd",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/screen-500/screen/candidates/wide_2x_lr5e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 500
+    }
+  ],
+  "screen_weights_reused_by_final": false,
+  "selected_recipe": {
+    "activation": "elu",
+    "batch_size": 128,
+    "clip_norm": 10.0,
+    "composition": "T_phi(z)=affine(dense_iaf_stack(z))",
+    "final_learning_rate_fraction": 1.0,
+    "hidden_layers": [
+      36,
+      36
+    ],
+    "init_scale": 0.02,
+    "learning_rate": 0.005,
+    "optimizer": "manual_adam_constant_learning_rate",
+    "recipe_id": "wide_2x_lr5e3",
+    "s_max": 1.0,
+    "stage_count": 3
+  },
+  "selection": {
+    "heldout_objective_means": {
+      "lower_lr1e3": 74.34711099258871,
+      "shallow_2stage_lr5e3": 73.33921014608546,
+      "source_anchor_lr5e3": 72.94513644282262,
+      "wide_2x_lr5e3": 72.74168736182357
+    },
+    "paired_comparisons": {
+      "lower_lr1e3": {
+        "mean_difference_candidate_minus_reference": 1.4019745497660896,
+        "paired_difference_mcse": 0.04578108955003824,
+        "reference_recipe_id": "source_anchor_lr5e3",
+        "within_one_paired_mcse_of_zero": false
+      },
+      "shallow_2stage_lr5e3": {
+        "mean_difference_candidate_minus_reference": 0.3940737032628512,
+        "paired_difference_mcse": 0.06593199632299843,
+        "reference_recipe_id": "source_anchor_lr5e3",
+        "within_one_paired_mcse_of_zero": false
+      },
+      "source_anchor_lr5e3": {
+        "mean_difference_candidate_minus_reference": 0.0,
+        "paired_difference_mcse": 0.0,
+        "reference_recipe_id": "source_anchor_lr5e3",
+        "within_one_paired_mcse_of_zero": true
+      },
+      "wide_2x_lr5e3": {
+        "mean_difference_candidate_minus_reference": -0.20344908099905545,
+        "paired_difference_mcse": 0.01321850759047676,
+        "reference_recipe_id": "source_anchor_lr5e3",
+        "within_one_paired_mcse_of_zero": false
+      }
+    },
+    "provisional_lowest_mean_recipe_id": "wide_2x_lr5e3",
+    "ranking_statistically_supported": false,
+    "selected_recipe_id": "wide_2x_lr5e3",
+    "selection_interpretation": "deterministic_proxy_nomination_only",
+    "source_anchor_preference_applied": false,
+    "status": "one_recipe_nominated"
+  },
+  "smoke_rows": [
+    {
+      "artifact_hash": "sha256:fd464272d143fb1745dc9f6c28ca8174f838a437abf914401f7adb9e883c2fb0",
+      "heldout_mcse": null,
+      "heldout_mean": null,
+      "passed": true,
+      "recipe_id": "source_anchor_lr5e3",
+      "result": {
+        "file_sha256": "a2af9278968867143e51af3a70431f347eaf1f5776ab1904ce62e5283332edf5",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/source_anchor_lr5e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 5
+    },
+    {
+      "artifact_hash": "sha256:dff8a812e9c41b7591e97db71ebd4c1a0f2139c101bfe62b5177b812a9117f81",
+      "heldout_mcse": null,
+      "heldout_mean": null,
+      "passed": true,
+      "recipe_id": "lower_lr1e3",
+      "result": {
+        "file_sha256": "dd2e7f343fda58b3ee243e61a83fcc70801a333e6b3af16d3f923e15bfa21a65",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/lower_lr1e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 5
+    },
+    {
+      "artifact_hash": "sha256:8df44e2e613f48dfe24edcfeba9d3ab43bf3f198a5be147428cf4cc1b5fc2f2a",
+      "heldout_mcse": null,
+      "heldout_mean": null,
+      "passed": true,
+      "recipe_id": "shallow_2stage_lr5e3",
+      "result": {
+        "file_sha256": "8dd8aecb7e21e969721254d7f14aa82131140a960234a6d0d5cef0ee674a148c",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/shallow_2stage_lr5e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 5
+    },
+    {
+      "artifact_hash": "sha256:86109d0ce75691dcaa866d9795682fc2c582604d39f07236e1576253dca0245d",
+      "heldout_mcse": null,
+      "heldout_mean": null,
+      "passed": true,
+      "recipe_id": "wide_2x_lr5e3",
+      "result": {
+        "file_sha256": "6699d7b784cfe4be7fb9fee91ad1975dbdb1ee1e578895012eeb58510283ff77",
+        "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/wide_2x_lr5e3/attempt_1_graph_native/result.json"
+      },
+      "steps": 5
+    }
+  ]
+}

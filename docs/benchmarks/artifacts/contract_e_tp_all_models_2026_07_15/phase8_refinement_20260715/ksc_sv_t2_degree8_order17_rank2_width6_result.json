@@ -1,0 +1,422 @@
+{
+  "config": {
+    "adjacent_rank": 2,
+    "axis_order": [
+      "x_t",
+      "x_t_minus_1"
+    ],
+    "coordinate_half_width": 6.0,
+    "degree": 8,
+    "density_tau": 0.0,
+    "initializer_id": "orthonormal_mode_diagonal_norm_balanced_v1",
+    "max_sweeps": 2,
+    "parameter_treatment": "theta_external_fixed_query_not_tt_coordinate",
+    "quadrature_order_per_axis": 17,
+    "ridge": 1e-10,
+    "status": "warm_start_hypothesis_not_default",
+    "transition_before_first_observation": false
+  },
+  "finite_program": {
+    "compatibility_hash": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+    "log_increments": [
+      -1.7428359007673926,
+      -2.083473746215785
+    ],
+    "previous_marginal_derivative_included": true,
+    "score_backend": "tensorflow_total_autodiff_same_finite_program",
+    "steps": [
+      {
+        "axis_order": [
+          "x_0"
+        ],
+        "fit_condition_numbers": [
+          1.0000000000000584,
+          1.0000000000000584
+        ],
+        "fit_dimension": 1,
+        "fit_residual": 0.028781254438690625,
+        "fit_unscaled_normal_condition_numbers": [
+          1.000000000000116,
+          1.000000000000116
+        ],
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [],
+        "log_scale_shift_index": 8,
+        "marginal_mass": 0.9999999999999992,
+        "target_kind": "initial_state_observation",
+        "time_index": 0
+      },
+      {
+        "axis_order": [
+          "x_t",
+          "x_t_minus_1"
+        ],
+        "fit_condition_numbers": [
+          1.0000000000000595,
+          1.6071424238046312,
+          1.6071424238046312,
+          1.2952605640356043,
+          1.2952605640356043,
+          1.6055443493513357,
+          1.6055443493513357,
+          1.2952040053960863
+        ],
+        "fit_dimension": 2,
+        "fit_residual": 0.03731049600353345,
+        "fit_unscaled_normal_condition_numbers": [
+          1.00000000000012,
+          70.25656995589311,
+          70.25656995589311,
+          2.718984467888596,
+          2.718984467888596,
+          68.80945660247568,
+          68.80945660247568,
+          2.720111725623381
+        ],
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [
+          1
+        ],
+        "log_scale_shift_index": 144,
+        "marginal_mass": 0.9999999999999993,
+        "target_kind": "adjacent_state_update",
+        "time_index": 1
+      }
+    ]
+  },
+  "hard_vetoes": {
+    "carried_marginal_mass_errors": [
+      7.771561172376096e-16,
+      6.661338147750939e-16
+    ],
+    "carried_marginal_mass_tolerance": 5.911715561524034e-11,
+    "carried_marginal_mass_tolerance_rule": "256 * float64_epsilon * max(1, 65 * degree * adjacent_rank)",
+    "carried_marginal_mass_valid": true,
+    "finite_value_and_score": true,
+    "first_step_time_order_valid": true,
+    "forbidden_retained_grid_route_used": false,
+    "oracle_alias_used": false,
+    "own_scalar_fd": "pass",
+    "previous_state_axis_present_from_t1": true,
+    "transition_before_first_observation": false
+  },
+  "horizon": 2,
+  "metadata_date": "2026-07-15",
+  "own_scalar_fd": {
+    "owner_fd_only_policy": {
+      "base_relative_tolerance": 0.05,
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "diagnostic_scope": "finite_difference_only",
+      "dimension_scaling": "sqrt(num_parameters)",
+      "max_coordinate_relative_error": 1.602589081547317e-07,
+      "max_coordinate_relative_error_margin": 0.07071051785974661,
+      "max_coordinate_relative_error_threshold": 0.07071067811865477,
+      "max_error_parameter": "log_beta",
+      "num_parameters": 2,
+      "parameters": [
+        {
+          "absolute_error": 3.993861991125058e-09,
+          "finite_difference": -0.21763353738564936,
+          "parameter": "gamma_unconstrained",
+          "relative_error": 1.8351316801177957e-08,
+          "relative_error_scale": 0.21763353738564936,
+          "score": -0.21763353339178737
+        },
+        {
+          "absolute_error": 9.734150263618346e-08,
+          "finite_difference": 0.6074014116104939,
+          "parameter": "log_beta",
+          "relative_error": 1.602589081547317e-07,
+          "relative_error_scale": 0.6074015089519965,
+          "score": 0.6074015089519965
+        }
+      ],
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "status": "pass"
+    },
+    "rows": [
+      {
+        "absolute_error": 4.438736227907469e-06,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": -0.21763797212801528,
+        "h": 0.01,
+        "legacy_row_relative_error": 4.438736227907469e-06,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.21763353339178737
+      },
+      {
+        "absolute_error": 3.994879439195298e-07,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": -0.2176339328797313,
+        "h": 0.003,
+        "legacy_row_relative_error": 3.994879439195298e-07,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.21763353339178737
+      },
+      {
+        "absolute_error": 4.438769840575674e-08,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": -0.21763357777948578,
+        "h": 0.001,
+        "legacy_row_relative_error": 4.438769840575674e-08,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.21763353339178737
+      },
+      {
+        "absolute_error": 3.993861991125058e-09,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": -0.21763353738564936,
+        "h": 0.0003,
+        "legacy_row_relative_error": 3.993861991125058e-09,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.21763353339178737
+      },
+      {
+        "absolute_error": 0.00010804971341837888,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": 0.6072934592385781,
+        "h": 0.01,
+        "legacy_row_relative_error": 0.00010804971341837888,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.6074015089519965
+      },
+      {
+        "absolute_error": 9.733215823315433e-06,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": 0.6073917757361732,
+        "h": 0.003,
+        "legacy_row_relative_error": 9.733215823315433e-06,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.6074015089519965
+      },
+      {
+        "absolute_error": 1.0815542880182605e-06,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": 0.6074004273977085,
+        "h": 0.001,
+        "legacy_row_relative_error": 1.0815542880182605e-06,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.6074015089519965
+      },
+      {
+        "absolute_error": 9.734150263618346e-08,
+        "branch_hash_base": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_minus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "branch_hash_plus": "5d3cf01a2f903530b12dcb7d1acc2c42f8691c307cbb6947f3eac9e0d2f013ae",
+        "finite_difference": 0.6074014116104939,
+        "h": 0.0003,
+        "legacy_row_relative_error": 9.734150263618346e-08,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.6074015089519965
+      }
+    ],
+    "selected_fd_for_policy": [
+      -0.21763353738564936,
+      0.6074014116104939
+    ],
+    "stable_windows": [
+      {
+        "parameter": "gamma_unconstrained",
+        "status": "pass",
+        "threshold": 0.07071067811865477,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 2.039504496621845e-05,
+            "relative_error_small": 1.8355958495695364e-06
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 1.8355958495695364e-06,
+            "relative_error_small": 2.0395611218932384e-07
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 2.0395611218932384e-07,
+            "relative_error_small": 1.8351316801177957e-08
+          }
+        ]
+      },
+      {
+        "parameter": "log_beta",
+        "status": "pass",
+        "threshold": 0.07071067811865477,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 0.00017788845076267031,
+            "relative_error_small": 1.6024352392717973e-05
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 1.6024352392717973e-05,
+            "relative_error_small": 1.7806249607189182e-06
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 1.7806249607189182e-06,
+            "relative_error_small": 1.602589081547317e-07
+          }
+        ]
+      }
+    ],
+    "status": "pass",
+    "steps": [
+      0.01,
+      0.003,
+      0.001,
+      0.0003
+    ]
+  },
+  "parameter_names": [
+    "gamma_unconstrained",
+    "log_beta"
+  ],
+  "route_classification": "extension_or_invention",
+  "route_id": "zhao_cui_fixed_adjacent_state_squared_tt_v1",
+  "route_subtype": "fixed_parameter_adjacent_state_squared_tt_extension",
+  "row": "ksc_sv",
+  "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-contract-e-tp-phase6 python docs/benchmarks/run_contract_e_tp_phase6_zhao_cui_comparator.py --row ksc_sv --horizon 2 --degree 8 --order 17 --rank 2 --coordinate-half-width 6 --seed contract-e-tp-phase8-refinement --target-preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_ksc_sv_t2_bound_target_preparation_20260715.json --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_refinement_20260715/ksc_sv_t2_degree8_order17_rank2_width6_result.json",
+    "conda_environment": "tf-gpu",
+    "cpu_gpu_status": "CPU-only; CUDA_VISIBLE_DEVICES=-1",
+    "data_seed": 81101,
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "jit_compile": false,
+    "jit_status": "explicit_nondefault_cpu_reference_diagnostic",
+    "output_artifact": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_refinement_20260715/ksc_sv_t2_degree8_order17_rank2_width6_result.json",
+    "plan": "docs/plans/bayesfilter-contract-e-tp-phase6-zhao-cui-comparator-certification-plan-2026-07-15.md",
+    "seed": "contract-e-tp-phase8-refinement",
+    "wall_time_seconds": 2.436607796989847
+  },
+  "schema_version": "contract_e_tp.phase6.zhao_cui_comparator.v1",
+  "score": [
+    -0.21763353339178737,
+    0.6074015089519965
+  ],
+  "source_anchors": [
+    "Zhao-Cui 2024 equations 15-16 and Algorithm 2 for parent recursion",
+    "KSC observation mixture is a BayesFilter target extension"
+  ],
+  "status": "certified_extension_or_invention",
+  "target": {
+    "preparation": {
+      "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_ksc_sv_t2_bound_target_preparation_20260715.json",
+      "sha256": "2825c1cb43f165a606fa3d7a33ab14431d1fabd8ee25876546aa929702c05f52"
+    },
+    "target_observation_policy": "offset_log_y_square_ksc_mixture",
+    "target_observations_sha256": "e30cfc1cf8b481911a0b72f6b507cf4bd4bffab3ffc2e0ea74d53db093e3c074",
+    "time_steps": 2,
+    "transition_before_first_observation": false
+  },
+  "theta": [
+    0.2533471031357997,
+    -0.916290731874155
+  ],
+  "value": -3.8263096469831774,
+  "what_is_not_concluded": [
+    "not adaptive TT-cross or TTSIRT reproduction",
+    "not source-faithful",
+    "not exact filtering",
+    "not cross-method equivalence",
+    "not superiority or ranking",
+    "not HMC, default, leaderboard, GPU, or full-horizon readiness"
+  ]
+}

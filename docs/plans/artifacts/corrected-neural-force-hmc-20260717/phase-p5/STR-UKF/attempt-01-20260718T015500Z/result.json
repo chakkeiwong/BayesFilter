@@ -1,0 +1,1201 @@
+{
+  "arm_decisions": {
+    "learned_residual": {
+      "agreement": null,
+      "passed": true,
+      "truth_tail": {
+        "definition": "F=(n_less+0.5*n_equal+0.5)/(N+1); p_truth=2*min(F,1-F)",
+        "marginal_parameters": [],
+        "minimum_p_truth": 0.27768057985503614,
+        "passed": true,
+        "rows": [
+          {
+            "p_truth": 0.8060484878780305,
+            "parameter": "rho",
+            "status": "PASS",
+            "truth": 0.8
+          },
+          {
+            "p_truth": 0.9860034991252187,
+            "parameter": "sigma",
+            "status": "PASS",
+            "truth": 0.5
+          },
+          {
+            "p_truth": 0.27768057985503614,
+            "parameter": "phi",
+            "status": "PASS",
+            "truth": 0.7
+          },
+          {
+            "p_truth": 0.6525868532866783,
+            "parameter": "gamma",
+            "status": "PASS",
+            "truth": 0.4
+          },
+          {
+            "p_truth": 0.5461134716320919,
+            "parameter": "R",
+            "status": "PASS",
+            "truth": 0.25
+          }
+        ],
+        "severe_parameters": []
+      }
+    },
+    "zero_residual": {
+      "agreement": null,
+      "passed": true,
+      "truth_tail": {
+        "definition": "F=(n_less+0.5*n_equal+0.5)/(N+1); p_truth=2*min(F,1-F)",
+        "marginal_parameters": [],
+        "minimum_p_truth": 0.31017245688577866,
+        "passed": true,
+        "rows": [
+          {
+            "p_truth": 0.810047488127968,
+            "parameter": "rho",
+            "status": "PASS",
+            "truth": 0.8
+          },
+          {
+            "p_truth": 0.9945013746563358,
+            "parameter": "sigma",
+            "status": "PASS",
+            "truth": 0.5
+          },
+          {
+            "p_truth": 0.31017245688577866,
+            "parameter": "phi",
+            "status": "PASS",
+            "truth": 0.7
+          },
+          {
+            "p_truth": 0.7130717320669833,
+            "parameter": "gamma",
+            "status": "PASS",
+            "truth": 0.4
+          },
+          {
+            "p_truth": 0.5466133466633343,
+            "parameter": "R",
+            "status": "PASS",
+            "truth": 0.25
+          }
+        ],
+        "severe_parameters": []
+      }
+    }
+  },
+  "cell": "STR-UKF",
+  "comparator_reference": {
+    "historical_owner_adjudication": "posthoc_bulk_ess_900_not_used_prospectively",
+    "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p5/STR-UKF/plain-hmc/attempt-02/result.json",
+    "status": "BLOCK_STR_UKF_SOURCE_GEOMETRY"
+  },
+  "decision": "HNN_VALIDITY_CONFIRMED_ONE_SEED",
+  "identity_reference": {
+    "artifact_hashes_sha256": "4574ce490bdd0a6aa8fd8d69882bcbfd214f8356a973c0bbb64b45e91284e09f",
+    "result_sha256": "73fd7a10fd89999993b2b88b636774df489e984e1c589cb3efff57ce2d3ea83d",
+    "root": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p5/STR-UKF/r1b-identity/cpu-attempt-02"
+  },
+  "nonclaims": [
+    "one named deterministic filter posterior and one fixture",
+    "no latent-model exactness or arm superiority claim"
+  ],
+  "passed": true,
+  "representative_arm": "learned_residual",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_sir_structural_neural_force_hmc_2026_07_18.py --cell STR-UKF --output-root docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z",
+    "device": "/GPU:0",
+    "environment": "tf-gpu",
+    "git_commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "plan_file": "docs/plans/bayesfilter-hnn-surrogate-hmc-p5-sir-structural-subplan-2026-07-17.md",
+    "result_file": "docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/result.json",
+    "schema": "bayesfilter.sir_structural_neural_force_hmc_p5_manifest.v1",
+    "started_at_utc": "2026-07-17T17:39:09.158835+00:00",
+    "tensorflow_version": "2.19.1",
+    "tf32_enabled": true,
+    "tfp_version": "0.25.0",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 1803.6791670430102
+  },
+  "runs": {
+    "learned_residual": {
+      "acceptance_rate": 0.8956666666666667,
+      "archives": {
+        "retained_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:bfbcf4e47165859e8be2618afa9f4e360131948815f9d9ffcaa184183c9673c2",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "4e6edfe9edc9b4c81255a6d118d41a1d9ec4c201f668679e8a202becf4883502",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/learned_residual/samples/retained_raw.tftensor"
+        },
+        "retained_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:eaacb543c856956eb28c2abb5d3db553bf0531cdfb74c6787743b0ef90f31eed",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "a625169d89375352f4a689ee926e73b621490c3ea39c03567fb3e17f3e72a8af",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/learned_residual/samples/retained_trace.tftensor"
+        },
+        "retained_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:cbd87cca82745575bcc21a065d3ee8632da73afec12a6cf6c428c720059cdf01",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "13555a1dc0d1fe210f57aa330b8eb1b105acd3fbe51afaf4d5f40541ccb4f040",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/learned_residual/samples/retained_z.tftensor"
+        },
+        "warmup_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:2ff539103ee98cc2911ee2c34ee93f3ddba1c162f67aef975a11fc817a040c42",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "fa89e9542734d9a2926feafcf4078103d37bed18d1ec666ccc2bff6148b5add2",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/learned_residual/samples/warmup_raw.tftensor"
+        },
+        "warmup_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:146f2f54fb82c906edf00b63121b8cea931b68307e25cffb604f01a54e5ef86a",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "2ffd48df6368b1954e7b9bc28e6e2b1a00e6119cbe2fe4fab5dd4684fd01891c",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/learned_residual/samples/warmup_trace.tftensor"
+        },
+        "warmup_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:3620af6d02844de573259db01a967f7ff5db297082e10d916a26318f94b37f65",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "b85a632b70bd4f1f41a96c758b3a240adedc64c938fd5921860684eb01861ec6",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/learned_residual/samples/warmup_z.tftensor"
+        }
+      },
+      "arm_id": "learned_residual",
+      "compile_included": true,
+      "elapsed_seconds": 301.8606412250083,
+      "endpoint_batch_invocations": 3000,
+      "endpoint_scalar_values": 12000,
+      "force_batch_invocations": 27000,
+      "full_energy_identity_max_error": 0.0,
+      "hard_vetoes": [],
+      "num_leapfrog_steps": 8,
+      "passed": true,
+      "retained_checks": [
+        {
+          "full_convergence": {
+            "chain_count": 4,
+            "definitions": {
+              "autocorrelation_truncation": "TFP initial positive pairs",
+              "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+              "quantile_interpolation": "linear",
+              "rank_transform": "Blom average-rank normal score",
+              "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+            },
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_rhat": 1.0054305005226742,
+            "min_bulk_ess": 2203.6430570610864,
+            "min_tail_ess": 2121.3523938029825,
+            "nonclaims": [
+              "all-parameter HMC convergence screen only",
+              "no posterior recovery claim",
+              "no sampler superiority claim",
+              "no production or default readiness claim"
+            ],
+            "parameter_count": 5,
+            "parameter_diagnostics": [
+              {
+                "bulk_ess": 2676.0190555633753,
+                "folded_rank_normalized_split_rhat": 1.0028799764646845,
+                "lower_tail_ess": 3189.176349558694,
+                "parameter": "rho_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.003715004734282,
+                "rhat": 1.003715004734282,
+                "tail_ess": 2221.5352628398055,
+                "upper_tail_ess": 2221.5352628398055
+              },
+              {
+                "bulk_ess": 3229.618652339581,
+                "folded_rank_normalized_split_rhat": 1.0029215044797475,
+                "lower_tail_ess": 2864.0501412072335,
+                "parameter": "sigma_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.001464827606701,
+                "rhat": 1.0029215044797475,
+                "tail_ess": 2789.273765976697,
+                "upper_tail_ess": 2789.273765976697
+              },
+              {
+                "bulk_ess": 2203.6430570610864,
+                "folded_rank_normalized_split_rhat": 1.0002898244660234,
+                "lower_tail_ess": 3189.4494851616005,
+                "parameter": "phi_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0054305005226742,
+                "rhat": 1.0054305005226742,
+                "tail_ess": 2245.0002200967374,
+                "upper_tail_ess": 2245.0002200967374
+              },
+              {
+                "bulk_ess": 3333.336074633455,
+                "folded_rank_normalized_split_rhat": 0.9992794411335572,
+                "lower_tail_ess": 2121.3523938029825,
+                "parameter": "gamma_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9991529783043046,
+                "rhat": 0.9992794411335572,
+                "tail_ess": 2121.3523938029825,
+                "upper_tail_ess": 2846.551891984991
+              },
+              {
+                "bulk_ess": 3119.8039150258287,
+                "folded_rank_normalized_split_rhat": 1.0003144214314463,
+                "lower_tail_ess": 2791.70705748671,
+                "parameter": "R_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0008278229436636,
+                "rhat": 1.0008278229436636,
+                "tail_ess": 2791.70705748671,
+                "upper_tail_ess": 2803.1925707426653
+              }
+            ],
+            "passed": true,
+            "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500,
+            "thresholds": {
+              "bulk_ess_min": 1000.0,
+              "rhat_max": 1.01,
+              "tail_ess_min": 400.0
+            }
+          },
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 13.91782592068443,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "passed": true,
+          "results_per_chain": 1000
+        }
+      ],
+      "retained_results_per_chain": 1000,
+      "step_size": 0.2,
+      "warmup_checks": [
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 18.19404598659397,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 5,
+            "folded_rank_normalized_split_rhat": [
+              1.009386585105416,
+              1.000899183597787,
+              1.0030036337009083,
+              1.0055645703862266,
+              1.0007242750045102
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.009386585105416,
+            "max_folded_rank_normalized_split_rhat": 1.009386585105416,
+            "max_rank_normalized_split_rhat": 1.003723481459218,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 5,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.003334150393156,
+              1.0023805377393984,
+              1.002259789973052,
+              1.003723481459218,
+              1.0003652663694391
+            ],
+            "rhat": [
+              1.009386585105416,
+              1.0023805377393984,
+              1.0030036337009083,
+              1.0055645703862266,
+              1.0007242750045102
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": false,
+          "results_per_chain": 1000
+        },
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 20.38840632687143,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 5,
+            "folded_rank_normalized_split_rhat": [
+              1.0028819075651754,
+              1.003781012888347,
+              1.0007527560450573,
+              1.0014381744958922,
+              0.9998179592041895
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.003781012888347,
+            "max_folded_rank_normalized_split_rhat": 1.003781012888347,
+            "max_rank_normalized_split_rhat": 1.001378543148991,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 5,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.000389788563702,
+              1.0010600963432992,
+              0.9995482122987301,
+              1.001378543148991,
+              0.998730351450141
+            ],
+            "rhat": [
+              1.0028819075651754,
+              1.003781012888347,
+              1.0007527560450573,
+              1.0014381744958922,
+              0.9998179592041895
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": true,
+          "results_per_chain": 2000
+        }
+      ],
+      "warmup_results_per_chain": 2000
+    },
+    "zero_residual": {
+      "acceptance_rate": 0.83075,
+      "archives": {
+        "retained_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:07c9fc33e09dbc987adf8484f30eed7b8ba4fac75cf5b0630080ef7fb450446c",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "zero_residual",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "cc890797038e6f4ef91184147ad983e5988d5e927ba293fb8455c185c1664a10",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/zero_residual/samples/retained_raw.tftensor"
+        },
+        "retained_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:3e656a055a85248a8630486e5cbd9cd8bb496747a9fc369973e3fe2aecd7e2b2",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "zero_residual",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "2118dd1324bb4947023511d9b4ca822e644b67636a7b6093a5fa656ce2a0ca08",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/zero_residual/samples/retained_trace.tftensor"
+        },
+        "retained_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:ca39db1095f8a0e814486d44f9322c043fc5983b0abe621318bdae0da6d8dde6",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "zero_residual",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "6af1ec8ddf9957c5b05755baa9d9024f933712020611b24125f570002a925fe4",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/zero_residual/samples/retained_z.tftensor"
+        },
+        "warmup_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:5a145d08a106129cf268d811551679f32812fe72cbc91208f5484aba5fc5c39a",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "zero_residual",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "93de608590f85e912306f58ddbbd1287271351186855a240061ca2a2adb948ef",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/zero_residual/samples/warmup_raw.tftensor"
+        },
+        "warmup_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:9dc2ec37ba52414a403b2991d8eafe432b03861a91e33b5f2de7d6755c82cdfb",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "zero_residual",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "f75245bd341df8c7d157a1b8b48be5bf0f5e186d4ce70892cb6f871fb9dc4c85",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/zero_residual/samples/warmup_trace.tftensor"
+        },
+        "warmup_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:3c8daa475619bfc70334a7284efd6cdd406cccc42d794cda3c9e2088bba29007",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "zero_residual",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "65e2ee9d6897547d12c2e43ba76468c699a7b4c8f8b7c1300d8c0ec50f76a25d",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/sampling/zero_residual/samples/warmup_z.tftensor"
+        }
+      },
+      "arm_id": "zero_residual",
+      "compile_included": true,
+      "elapsed_seconds": 279.79849091597134,
+      "endpoint_batch_invocations": 3000,
+      "endpoint_scalar_values": 12000,
+      "force_batch_invocations": 27000,
+      "full_energy_identity_max_error": 0.0,
+      "hard_vetoes": [],
+      "num_leapfrog_steps": 8,
+      "passed": true,
+      "retained_checks": [
+        {
+          "full_convergence": {
+            "chain_count": 4,
+            "definitions": {
+              "autocorrelation_truncation": "TFP initial positive pairs",
+              "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+              "quantile_interpolation": "linear",
+              "rank_transform": "Blom average-rank normal score",
+              "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+            },
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_rhat": 1.003560117711284,
+            "min_bulk_ess": 2188.259830776753,
+            "min_tail_ess": 1689.0229754039126,
+            "nonclaims": [
+              "all-parameter HMC convergence screen only",
+              "no posterior recovery claim",
+              "no sampler superiority claim",
+              "no production or default readiness claim"
+            ],
+            "parameter_count": 5,
+            "parameter_diagnostics": [
+              {
+                "bulk_ess": 2188.259830776753,
+                "folded_rank_normalized_split_rhat": 1.001987352009952,
+                "lower_tail_ess": 2044.756520691376,
+                "parameter": "rho_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0021459993028676,
+                "rhat": 1.0021459993028676,
+                "tail_ess": 1742.392151318614,
+                "upper_tail_ess": 1742.392151318614
+              },
+              {
+                "bulk_ess": 2614.7736981480457,
+                "folded_rank_normalized_split_rhat": 1.0025899724534433,
+                "lower_tail_ess": 2653.209026061745,
+                "parameter": "sigma_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9987805988180481,
+                "rhat": 1.0025899724534433,
+                "tail_ess": 2653.209026061745,
+                "upper_tail_ess": 2890.489979671821
+              },
+              {
+                "bulk_ess": 2646.8842857072977,
+                "folded_rank_normalized_split_rhat": 1.0009590010925904,
+                "lower_tail_ess": 2908.026945218937,
+                "parameter": "phi_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0000781436560546,
+                "rhat": 1.0009590010925904,
+                "tail_ess": 1945.840780540424,
+                "upper_tail_ess": 1945.840780540424
+              },
+              {
+                "bulk_ess": 2432.7650006678723,
+                "folded_rank_normalized_split_rhat": 1.0013399096872535,
+                "lower_tail_ess": 1689.0229754039126,
+                "parameter": "gamma_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.003560117711284,
+                "rhat": 1.003560117711284,
+                "tail_ess": 1689.0229754039126,
+                "upper_tail_ess": 2390.2981572112626
+              },
+              {
+                "bulk_ess": 2587.461532979571,
+                "folded_rank_normalized_split_rhat": 1.001977104180854,
+                "lower_tail_ess": 2125.7054742046753,
+                "parameter": "R_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0001454760912363,
+                "rhat": 1.001977104180854,
+                "tail_ess": 2125.7054742046753,
+                "upper_tail_ess": 2256.1031158313194
+              }
+            ],
+            "passed": true,
+            "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500,
+            "thresholds": {
+              "bulk_ess_min": 1000.0,
+              "rhat_max": 1.01,
+              "tail_ess_min": 400.0
+            }
+          },
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 3.886496995482492,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "passed": true,
+          "results_per_chain": 1000
+        }
+      ],
+      "retained_results_per_chain": 1000,
+      "step_size": 0.2,
+      "warmup_checks": [
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 3.982392648217229,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 5,
+            "folded_rank_normalized_split_rhat": [
+              1.002884584203645,
+              1.0019093142229214,
+              1.0051091582825509,
+              0.9983880615981938,
+              1.0000609180528717
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0057951047992744,
+            "max_folded_rank_normalized_split_rhat": 1.0051091582825509,
+            "max_rank_normalized_split_rhat": 1.0057951047992744,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 5,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.005676304692808,
+              1.0029608782695307,
+              1.0054967647364914,
+              1.0002666422318962,
+              1.0057951047992744
+            ],
+            "rhat": [
+              1.005676304692808,
+              1.0029608782695307,
+              1.0054967647364914,
+              1.0002666422318962,
+              1.0057951047992744
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": false,
+          "results_per_chain": 1000
+        },
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 4.009071731769689,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 5,
+            "folded_rank_normalized_split_rhat": [
+              1.0045916044174974,
+              1.000104705826786,
+              0.9988801949474236,
+              1.0033624381620658,
+              1.0005839120553626
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0045916044174974,
+            "max_folded_rank_normalized_split_rhat": 1.0045916044174974,
+            "max_rank_normalized_split_rhat": 1.0018427354501864,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 5,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.0018427354501864,
+              0.9998738557664971,
+              1.0004905467843648,
+              1.0009192549202943,
+              0.9989625526432847
+            ],
+            "rhat": [
+              1.0045916044174974,
+              1.000104705826786,
+              1.0004905467843648,
+              1.0033624381620658,
+              1.0005839120553626
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": true,
+          "results_per_chain": 2000
+        }
+      ],
+      "warmup_results_per_chain": 2000
+    }
+  },
+  "schema": "bayesfilter.sir_structural_neural_force_hmc_p5_result.v1",
+  "statistically_supported_ranking": false,
+  "structural_artificial_noise_allowed": false,
+  "structural_invariant_required": true,
+  "target_signature": "e8d78a8ee12245fee2e6c4c739d9dc03d672e8dd9a96bfbd492b426a72e1c665",
+  "training": {
+    "final_metrics": {
+      "heldout": {
+        "centered_standardized_potential_rmse": 0.13125243440885642,
+        "mean_force_cosine": 0.976004343057485,
+        "predictions_all_finite": true,
+        "role": "nomination_or_veto_only",
+        "row_count": 1024,
+        "standardized_force_rmse": 0.31279732712648417
+      },
+      "train": {
+        "centered_standardized_potential_rmse": 0.11040708990859367,
+        "mean_force_cosine": 0.9826949407960152,
+        "predictions_all_finite": true,
+        "role": "nomination_or_veto_only",
+        "row_count": 2048,
+        "standardized_force_rmse": 0.24258208888059668
+      }
+    },
+    "final_result_path": "docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p5/STR-UKF/attempt-01-20260718T015500Z/force-training/final/w20_lr0.005_b256/result.json",
+    "screen": [
+      {
+        "batch_size": 128,
+        "elapsed_seconds": 1.1911751690204255,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.2369812286067962,
+          "mean_force_cosine": 0.9287627654092063,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.4049201526873662
+        },
+        "layers": [
+          10,
+          10
+        ],
+        "learning_rate": 0.001,
+        "recipe": "w10_lr0.001_b128"
+      },
+      {
+        "batch_size": 128,
+        "elapsed_seconds": 1.0495747129898518,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.217237637507371,
+          "mean_force_cosine": 0.9499906712253201,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.37345186573750855
+        },
+        "layers": [
+          10,
+          10
+        ],
+        "learning_rate": 0.005,
+        "recipe": "w10_lr0.005_b128"
+      },
+      {
+        "batch_size": 256,
+        "elapsed_seconds": 1.3406797549687326,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.23138014138340068,
+          "mean_force_cosine": 0.9325080638432381,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.3977159743159883
+        },
+        "layers": [
+          20,
+          20
+        ],
+        "learning_rate": 0.001,
+        "recipe": "w20_lr0.001_b256"
+      },
+      {
+        "batch_size": 256,
+        "elapsed_seconds": 1.232965432049241,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.15920111821176777,
+          "mean_force_cosine": 0.9611305942397864,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.33181388913075466
+        },
+        "layers": [
+          20,
+          20
+        ],
+        "learning_rate": 0.005,
+        "recipe": "w20_lr0.005_b256"
+      }
+    ],
+    "selected": {
+      "batch_size": 256,
+      "elapsed_seconds": 1.232965432049241,
+      "heldout": {
+        "centered_standardized_potential_rmse": 0.15920111821176777,
+        "mean_force_cosine": 0.9611305942397864,
+        "predictions_all_finite": true,
+        "role": "nomination_or_veto_only",
+        "row_count": 1024,
+        "standardized_force_rmse": 0.33181388913075466
+      },
+      "layers": [
+        20,
+        20
+      ],
+      "learning_rate": 0.005,
+      "recipe": "w20_lr0.005_b256"
+    }
+  },
+  "transport_reference": {
+    "result_sha256": "fe2ff521b65a43e62ab23f32691e579ed8c8202cbc5ec91872a000995f860777",
+    "root": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/final/dim6_lr5e3/attempt-02/segment-5000"
+  },
+  "transport_signature": "32a19a8d8d02f6a94851ed489d3b64f961f3bc92ba7ac36506f8078a6649c1e0",
+  "tuning": {
+    "learned_residual": {
+      "rows": [
+        {
+          "acceptance_rate": 0.9565,
+          "candidate_id": "eps0.025_l8",
+          "elapsed_seconds": 52.51079841400497,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 1.4559512957689764,
+          "modern_rhat": 1.67057171418728,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.025
+        },
+        {
+          "acceptance_rate": 0.9495,
+          "candidate_id": "eps0.025_l12",
+          "elapsed_seconds": 49.249893013969995,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 5.558161726938849,
+          "modern_rhat": 1.1455410306981217,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.025
+        },
+        {
+          "acceptance_rate": 0.9515,
+          "candidate_id": "eps0.05_l8",
+          "elapsed_seconds": 49.97926796396496,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 11.404989386750401,
+          "modern_rhat": 1.1964456440110995,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.05
+        },
+        {
+          "acceptance_rate": 0.93,
+          "candidate_id": "eps0.05_l12",
+          "elapsed_seconds": 49.36937302403385,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 7.418190340616114,
+          "modern_rhat": 1.0577000753764363,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.05
+        },
+        {
+          "acceptance_rate": 0.9105,
+          "candidate_id": "eps0.1_l8",
+          "elapsed_seconds": 48.930495348991826,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 15.121509992790957,
+          "modern_rhat": 1.0486023179451467,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.1
+        },
+        {
+          "acceptance_rate": 0.919,
+          "candidate_id": "eps0.1_l12",
+          "elapsed_seconds": 49.57554432598408,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 11.536349475109402,
+          "modern_rhat": 1.0174886347488914,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.1
+        },
+        {
+          "acceptance_rate": 0.907,
+          "candidate_id": "eps0.2_l8",
+          "elapsed_seconds": 49.62422094197245,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 11.052048254912402,
+          "modern_rhat": 1.0064799529886752,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2
+        },
+        {
+          "acceptance_rate": 0.901,
+          "candidate_id": "eps0.2_l12",
+          "elapsed_seconds": 49.908572915010154,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 26.257306178058524,
+          "modern_rhat": 1.0203743013980322,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2
+        }
+      ],
+      "selected": {
+        "candidate_id": "eps0.2_l8",
+        "num_leapfrog_steps": 8,
+        "step_size": 0.2
+      }
+    },
+    "zero_residual": {
+      "rows": [
+        {
+          "acceptance_rate": 0.9425,
+          "candidate_id": "eps0.025_l8",
+          "elapsed_seconds": 53.25271587801399,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 1.300107549325217,
+          "modern_rhat": 1.9543290977657912,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.025
+        },
+        {
+          "acceptance_rate": 0.932,
+          "candidate_id": "eps0.025_l12",
+          "elapsed_seconds": 52.210626786982175,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 1.4905244877580444,
+          "modern_rhat": 1.429764261471662,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.025
+        },
+        {
+          "acceptance_rate": 0.9025,
+          "candidate_id": "eps0.05_l8",
+          "elapsed_seconds": 54.67663810396334,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 2.5463912759512555,
+          "modern_rhat": 1.1507811513267856,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.05
+        },
+        {
+          "acceptance_rate": 0.895,
+          "candidate_id": "eps0.05_l12",
+          "elapsed_seconds": 76.10470193997025,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 2.153834576517835,
+          "modern_rhat": 1.0540871685716477,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.05
+        },
+        {
+          "acceptance_rate": 0.8285,
+          "candidate_id": "eps0.1_l8",
+          "elapsed_seconds": 73.66092192404903,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 4.425753200107254,
+          "modern_rhat": 1.1050337993599553,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.1
+        },
+        {
+          "acceptance_rate": 0.844,
+          "candidate_id": "eps0.1_l12",
+          "elapsed_seconds": 54.08881686598761,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 3.8683276488711584,
+          "modern_rhat": 1.0219164082292038,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.1
+        },
+        {
+          "acceptance_rate": 0.8245,
+          "candidate_id": "eps0.2_l8",
+          "elapsed_seconds": 51.812709040998016,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 4500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 2.394447698538423,
+          "modern_rhat": 1.0163238669500143,
+          "num_leapfrog_steps": 8,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2
+        },
+        {
+          "acceptance_rate": 0.7735,
+          "candidate_id": "eps0.2_l12",
+          "elapsed_seconds": 50.969394400017336,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 6500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 16.34297774114317,
+          "modern_rhat": 1.456284055788466,
+          "num_leapfrog_steps": 12,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2
+        }
+      ],
+      "selected": {
+        "candidate_id": "eps0.2_l8",
+        "num_leapfrog_steps": 8,
+        "step_size": 0.2
+      }
+    }
+  },
+  "value_only_endpoint_parity": {
+    "absolute_tolerance": 2e-08,
+    "endpoint_uses_true_gradient": false,
+    "maximum_absolute_error": 2.842170943040401e-14,
+    "passed": true,
+    "point_count": 8,
+    "schema": "bayesfilter.neural_force_value_only_endpoint_parity.v1"
+  }
+}

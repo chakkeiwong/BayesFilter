@@ -1,0 +1,205 @@
+{
+  "schema": "bayesfilter.contract_e_tp.scalar_sv_prefix_result.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+  "scope": "center_only_prefix_diagnostic",
+  "target": {
+    "time_steps": 10,
+    "theta": [
+      1.0824113944610982,
+      -2.076793740349318,
+      0.0
+    ],
+    "parameter_names": [
+      "gamma_unconstrained",
+      "log_tau",
+      "mu_over_tau"
+    ],
+    "target_observation_policy": "raw_zero_mean_normal_generalized_sv",
+    "flow_observation_policy": "log_square_affine_proposal_only"
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_generalized_sv_t10_order41_lookahead9_preparation_20260715.json",
+    "sha256": "2bc935f5d00549b99e795ef97d55e1fe4816719e29c2a65f49e078f8e06ba761",
+    "teacher_order": 41,
+    "continuation_order": 65,
+    "continuation_radius": 10.0,
+    "lookahead_steps": 9
+  },
+  "candidate": {
+    "value": -16.009270791144026,
+    "score": [
+      0.09149851137213194,
+      -0.1649425661513839,
+      0.02260935596357437
+    ],
+    "increment_history": [
+      -1.0896398504912364,
+      -1.1343248280294136,
+      -1.0711291788680524,
+      -2.134659785039946,
+      -2.1532873761504225,
+      -1.030075386718824,
+      -2.6458495277253293,
+      -0.937063230834303,
+      -2.719999410251324,
+      -1.093242217035176
+    ],
+    "same_scalar_finite_difference": [
+      0.09149851045719969,
+      -0.16494256591670364,
+      0.02260935598741298
+    ],
+    "same_scalar_fd_policy": {
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "diagnostic_scope": "finite_difference_only",
+      "status": "pass",
+      "num_parameters": 3,
+      "base_relative_tolerance": 0.05,
+      "dimension_scaling": "sqrt(num_parameters)",
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "max_coordinate_relative_error": 9.999422299203516e-09,
+      "max_coordinate_relative_error_threshold": 0.08660254037844387,
+      "max_coordinate_relative_error_margin": 0.08660253037902156,
+      "max_error_parameter": "gamma_unconstrained",
+      "parameters": [
+        {
+          "parameter": "gamma_unconstrained",
+          "score": 0.09149851137213194,
+          "finite_difference": 0.09149851045719969,
+          "absolute_error": 9.149322549584227e-10,
+          "relative_error_scale": 0.09149851137213194,
+          "relative_error": 9.999422299203516e-09
+        },
+        {
+          "parameter": "log_tau",
+          "score": -0.1649425661513839,
+          "finite_difference": -0.16494256591670364,
+          "absolute_error": 2.346802474573195e-10,
+          "relative_error_scale": 0.1649425661513839,
+          "relative_error": 1.4227997837861365e-09
+        },
+        {
+          "parameter": "mu_over_tau",
+          "score": 0.02260935596357437,
+          "finite_difference": 0.02260935598741298,
+          "absolute_error": 2.3838608170789755e-11,
+          "relative_error_scale": 0.02260935598741298,
+          "relative_error": 1.054369181681297e-09
+        }
+      ]
+    }
+  },
+  "dense_references": [
+    {
+      "order": 129,
+      "radius": 12.0,
+      "value": -16.01968367120804,
+      "score": [
+        -0.1233262561293589,
+        -0.15504636698834656,
+        0.022298790254845307
+      ]
+    },
+    {
+      "order": 257,
+      "radius": 12.0,
+      "value": -16.019683671208277,
+      "score": [
+        -0.12332625612936243,
+        -0.15504636698834617,
+        0.022298790254845227
+      ]
+    }
+  ],
+  "reference_refinement": {
+    "finest_two_value_difference": -2.3803181647963356e-13,
+    "finest_two_score_difference": [
+      -3.5388358909926865e-15,
+      3.885780586188048e-16,
+      -7.979727989493313e-17
+    ],
+    "classification": "descriptive_numerical_refinement_not_exact_error_bound"
+  },
+  "candidate_vs_finest_reference": {
+    "value_difference": 0.01041288006425134,
+    "score_difference": [
+      0.21482476750149437,
+      -0.009896199163037717,
+      0.0003105657087291436
+    ],
+    "componentwise_relative_error": [
+      1.7419223954723402,
+      0.059997848911572095,
+      0.013736159014413848
+    ],
+    "sign_reversal": [
+      true,
+      false,
+      false
+    ],
+    "equivalence_classification": "descriptive_only_margin_unavailable"
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.0009059343248114675,
+      0.006004267977704953,
+      0.0036615769768504527,
+      0.001097506565232811,
+      0.002322916702107984,
+      0.0009704579356080113,
+      0.000645938724169752,
+      6.931835694454517e-05,
+      0.0004546508871913581
+    ],
+    "condition_number_history": [
+      55.75076490708785,
+      732.854213910061,
+      56.48875830682168,
+      11.694028532212625,
+      34.680559523532416,
+      16.60928511915741,
+      97.80685546032517,
+      15.203660184981004,
+      54.972251524498596
+    ],
+    "maximum_feature_residual_abs": 6.261657858885883e-14,
+    "chart_pass": true
+  },
+  "decision": {
+    "hard_veto_screen_pass": true,
+    "candidate_remains_viable": true,
+    "statistically_supported_ranking": false,
+    "default_readiness": false,
+    "next_evidence": "teacher/continuation refinement or next declared prefix"
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow_float64_CPU_reference_exception",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 4.784909519992652,
+    "command": "docs/benchmarks/run_contract_e_tp_scalar_sv_prefix.py --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_generalized_sv_t10_order41_lookahead9_preparation_20260715.json --reference-orders 129,257 --reference-radius 12 --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_generalized_sv_t10_order41_lookahead9_result_20260715.json"
+  },
+  "nonclaims": [
+    "no unsupported cross-method equivalence threshold",
+    "not full-horizon or parameter-region evidence",
+    "not HMC, canonical, or default readiness",
+    "not a statistically supported method ranking"
+  ]
+}

@@ -1,0 +1,304 @@
+{
+  "adapter_signature": "42dc7bad0137fd9c31aa1d618bb4e560f68d1bbe3a7ab4f5ef95e458b2abc985",
+  "contract_hash": "4bf98c1b5714563bf7f48115304027c8a41fb25c0c09e561e499d02aebe0dbe3",
+  "dimension": 18,
+  "final_training": {
+    "batch_size": 128,
+    "candidate_order": [
+      "dense_seed1201",
+      "dense_seed1202"
+    ],
+    "checkpoint_every": 50,
+    "heartbeat_every": 10,
+    "max_infrastructure_resumes_per_job": 1,
+    "screen_weights_reused": false,
+    "steps": 5000
+  },
+  "historical_parent_root": "docs/benchmarks/artifacts/lgssm_neutra_serious_validation_2026_07_13",
+  "immutable_inputs": {
+    "comparator_file_sha256": "1b0c05d4ea2981b1be179040d3a52039f05efe6c5b163f9bf7bba64ce2068920",
+    "geometry_file_sha256": "bd9b086d60df518b4410c3348b1fd93663fc8dc861428d77b4098aa1e118a87d",
+    "mass_file_sha256": "54549c9156821536bc4780f0406a7716b0d3fa39a5b5900fa2893cbef2968a95"
+  },
+  "nonclaims": [
+    "screen held-out reverse KL is nomination-only",
+    "four complete recipes do not isolate causal capacity or learning-rate effects",
+    "500-step behavior is not serious training evidence",
+    "one favorably truth-centered 18D LGSSM fixture only",
+    "plain-HMC agreement is not exact-posterior correctness evidence",
+    "no sampler superiority, calibration, robustness, or generalization claim",
+    "no production or default-readiness claim"
+  ],
+  "plan_path": "docs/plans/bayesfilter-lgssm-neutra-target-specific-training-protocol-amendment-2026-07-14.md",
+  "runtime": {
+    "chains_per_worker": 2,
+    "hmc": "cpu_hidden_two_persistent_workers_two_chains_each_xla_float64",
+    "jit_compile": true,
+    "training": "trusted_gpu_xla_float64",
+    "worker_count": 2
+  },
+  "schema": "bayesfilter.lgssm_neutra_target_specific_contract.v1",
+  "screen": {
+    "heldout_batch_count": 8,
+    "heldout_batch_size": 128,
+    "recipe_order": [
+      "source_anchor_lr5e3",
+      "lower_lr1e3",
+      "shallow_2stage_lr5e3",
+      "wide_2x_lr5e3"
+    ],
+    "recipes": [
+      {
+        "activation": "elu",
+        "batch_size": 128,
+        "clip_norm": 10.0,
+        "composition": "T_phi(z)=affine(dense_iaf_stack(z))",
+        "final_learning_rate_fraction": 1.0,
+        "hidden_layers": [
+          18,
+          18
+        ],
+        "init_scale": 0.02,
+        "learning_rate": 0.005,
+        "optimizer": "manual_adam_constant_learning_rate",
+        "recipe_id": "source_anchor_lr5e3",
+        "s_max": 1.0,
+        "stage_count": 3
+      },
+      {
+        "activation": "elu",
+        "batch_size": 128,
+        "clip_norm": 10.0,
+        "composition": "T_phi(z)=affine(dense_iaf_stack(z))",
+        "final_learning_rate_fraction": 1.0,
+        "hidden_layers": [
+          18,
+          18
+        ],
+        "init_scale": 0.02,
+        "learning_rate": 0.001,
+        "optimizer": "manual_adam_constant_learning_rate",
+        "recipe_id": "lower_lr1e3",
+        "s_max": 1.0,
+        "stage_count": 3
+      },
+      {
+        "activation": "elu",
+        "batch_size": 128,
+        "clip_norm": 10.0,
+        "composition": "T_phi(z)=affine(dense_iaf_stack(z))",
+        "final_learning_rate_fraction": 1.0,
+        "hidden_layers": [
+          18,
+          18
+        ],
+        "init_scale": 0.02,
+        "learning_rate": 0.005,
+        "optimizer": "manual_adam_constant_learning_rate",
+        "recipe_id": "shallow_2stage_lr5e3",
+        "s_max": 1.0,
+        "stage_count": 2
+      },
+      {
+        "activation": "elu",
+        "batch_size": 128,
+        "clip_norm": 10.0,
+        "composition": "T_phi(z)=affine(dense_iaf_stack(z))",
+        "final_learning_rate_fraction": 1.0,
+        "hidden_layers": [
+          36,
+          36
+        ],
+        "init_scale": 0.02,
+        "learning_rate": 0.005,
+        "optimizer": "manual_adam_constant_learning_rate",
+        "recipe_id": "wide_2x_lr5e3",
+        "s_max": 1.0,
+        "stage_count": 3
+      }
+    ],
+    "screen_steps": 500,
+    "selection_rule": "lowest_common_heldout_mean_with_source_anchor_paired_mcse_preference",
+    "smoke_steps": 5,
+    "zero_survivor_action": "terminal_no_recipe_result"
+  },
+  "seed_ledger": {
+    "candidate_hmc_seeds": {
+      "affine_control": {
+        "fixed_grid_primary_screen_seed": [
+          20260713,
+          2101
+        ],
+        "fixed_grid_primary_verification_seed": [
+          20260713,
+          2201
+        ],
+        "fixed_grid_repair_screen_seed": [
+          20260713,
+          2151
+        ],
+        "fixed_grid_repair_verification_seed": [
+          20260713,
+          2251
+        ],
+        "serious_seed": [
+          20260713,
+          3101
+        ]
+      },
+      "dense_seed1201": {
+        "fixed_grid_primary_screen_seed": [
+          20260713,
+          2201
+        ],
+        "fixed_grid_primary_verification_seed": [
+          20260713,
+          2301
+        ],
+        "fixed_grid_repair_screen_seed": [
+          20260713,
+          2251
+        ],
+        "fixed_grid_repair_verification_seed": [
+          20260713,
+          2351
+        ],
+        "serious_seed": [
+          20260713,
+          3201
+        ]
+      },
+      "dense_seed1202": {
+        "fixed_grid_primary_screen_seed": [
+          20260713,
+          2301
+        ],
+        "fixed_grid_primary_verification_seed": [
+          20260713,
+          2401
+        ],
+        "fixed_grid_repair_screen_seed": [
+          20260713,
+          2351
+        ],
+        "fixed_grid_repair_verification_seed": [
+          20260713,
+          2451
+        ],
+        "serious_seed": [
+          20260713,
+          3301
+        ]
+      }
+    },
+    "final_training_seeds": {
+      "dense_seed1201": [
+        20260713,
+        1201
+      ],
+      "dense_seed1202": [
+        20260713,
+        1202
+      ]
+    },
+    "heldout_seeds": [
+      [
+        20260714,
+        1501
+      ],
+      [
+        20260714,
+        1502
+      ],
+      [
+        20260714,
+        1503
+      ],
+      [
+        20260714,
+        1504
+      ],
+      [
+        20260714,
+        1505
+      ],
+      [
+        20260714,
+        1506
+      ],
+      [
+        20260714,
+        1507
+      ],
+      [
+        20260714,
+        1508
+      ]
+    ],
+    "screen_seed": [
+      20260714,
+      1401
+    ],
+    "smoke_seeds": {
+      "lower_lr1e3": [
+        20260714,
+        1412
+      ],
+      "shallow_2stage_lr5e3": [
+        20260714,
+        1413
+      ],
+      "source_anchor_lr5e3": [
+        20260714,
+        1411
+      ],
+      "wide_2x_lr5e3": [
+        20260714,
+        1414
+      ]
+    }
+  },
+  "serious": {
+    "bulk_ess_min": 1000.0,
+    "burnin": 1000,
+    "posterior_agreement_max_combined_mcse": 4.0,
+    "recovery_max_posterior_sd": 3.0,
+    "results_per_chain": 4000,
+    "rhat_max": 1.01,
+    "tail_ess_min": 400.0
+  },
+  "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30",
+  "tuning": {
+    "acceptance_band": [
+      0.6,
+      0.9
+    ],
+    "base_step_size": 0.1,
+    "leapfrog_steps": 10,
+    "modern_rhat_max": 1.01,
+    "one_repair_scales": [
+      0.125,
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0,
+      8.0
+    ],
+    "primary_scales": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "probe_burnin": 128,
+    "probe_results_per_chain": 64,
+    "repair_band": [
+      0.45,
+      0.98
+    ],
+    "verification_burnin": 1000,
+    "verification_results_per_chain": 1000
+  }
+}

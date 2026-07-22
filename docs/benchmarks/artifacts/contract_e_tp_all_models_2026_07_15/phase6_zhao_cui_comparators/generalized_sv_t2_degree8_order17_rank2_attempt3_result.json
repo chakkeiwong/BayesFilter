@@ -1,0 +1,470 @@
+{
+  "config": {
+    "adjacent_rank": 2,
+    "axis_order": [
+      "x_t",
+      "x_t_minus_1"
+    ],
+    "degree": 8,
+    "density_tau": 0.0,
+    "initializer_id": "orthonormal_mode_diagonal_norm_balanced_v1",
+    "max_sweeps": 2,
+    "quadrature_order_per_axis": 17,
+    "ridge": 1e-10,
+    "status": "warm_start_hypothesis_not_default"
+  },
+  "finite_program": {
+    "compatibility_hash": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+    "log_increments": [
+      -1.0896993889938642,
+      -1.255682947715493
+    ],
+    "previous_marginal_derivative_included": true,
+    "score_backend": "tensorflow_total_autodiff_same_finite_program",
+    "steps": [
+      {
+        "axis_order": [
+          "x_0"
+        ],
+        "fit_dimension": 1,
+        "fit_residual": 0.0022226608182225422,
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [],
+        "log_scale_shift_index": 8,
+        "marginal_mass": 0.9999999999999997,
+        "target_kind": "initial_state_observation",
+        "time_index": 0
+      },
+      {
+        "axis_order": [
+          "x_t",
+          "x_t_minus_1"
+        ],
+        "fit_dimension": 2,
+        "fit_residual": 0.07425487363680788,
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [
+          1
+        ],
+        "log_scale_shift_index": 144,
+        "marginal_mass": 0.9999999999999993,
+        "target_kind": "adjacent_state_update",
+        "time_index": 1
+      }
+    ]
+  },
+  "hard_vetoes": {
+    "carried_marginal_mass_errors": [
+      3.3306690738754696e-16,
+      6.661338147750939e-16
+    ],
+    "carried_marginal_mass_tolerance": 5.911715561524034e-11,
+    "carried_marginal_mass_tolerance_rule": "256 * float64_epsilon * max(1, 65 * degree * adjacent_rank)",
+    "carried_marginal_mass_valid": true,
+    "finite_value_and_score": true,
+    "forbidden_retained_grid_route_used": false,
+    "oracle_alias_used": false,
+    "own_scalar_fd": "pass",
+    "previous_state_axis_present_from_t1": true
+  },
+  "horizon": 2,
+  "metadata_date": "2026-07-15",
+  "own_scalar_fd": {
+    "owner_fd_only_policy": {
+      "base_relative_tolerance": 0.05,
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "diagnostic_scope": "finite_difference_only",
+      "dimension_scaling": "sqrt(num_parameters)",
+      "max_coordinate_relative_error": 3.0020890845549135e-07,
+      "max_coordinate_relative_error_margin": 0.08660224016953541,
+      "max_coordinate_relative_error_threshold": 0.08660254037844387,
+      "max_error_parameter": "log_tau",
+      "num_parameters": 3,
+      "parameters": [
+        {
+          "absolute_error": 7.5086362960608e-09,
+          "finite_difference": -0.20263852840004168,
+          "parameter": "gamma_unconstrained",
+          "relative_error": 3.7054336879300274e-08,
+          "relative_error_scale": 0.20263852840004168,
+          "score": -0.20263852089140538
+        },
+        {
+          "absolute_error": 3.461312885616463e-10,
+          "finite_difference": 0.0011529677331386288,
+          "parameter": "log_tau",
+          "relative_error": 3.0020890845549135e-07,
+          "relative_error_scale": 0.0011529680792699173,
+          "score": 0.0011529680792699173
+        },
+        {
+          "absolute_error": 1.4710350992874766e-12,
+          "finite_difference": -0.009707870897527709,
+          "parameter": "mu_over_tau",
+          "relative_error": 1.5153014647518614e-10,
+          "relative_error_scale": 0.009707870898998744,
+          "score": -0.009707870898998744
+        }
+      ],
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "status": "pass"
+    },
+    "rows": [
+      {
+        "absolute_error": 8.343565740143166e-06,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.20264686445714553,
+        "h": 0.01,
+        "legacy_row_relative_error": 8.343565740143166e-06,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.20263852089140538
+      },
+      {
+        "absolute_error": 7.509317371534596e-07,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.20263927182314254,
+        "h": 0.003,
+        "legacy_row_relative_error": 7.509317371534596e-07,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.20263852089140538
+      },
+      {
+        "absolute_error": 8.343671492605509e-08,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.2026386043281203,
+        "h": 0.001,
+        "legacy_row_relative_error": 8.343671492605509e-08,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.20263852089140538
+      },
+      {
+        "absolute_error": 7.5086362960608e-09,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.20263852840004168,
+        "h": 0.0003,
+        "legacy_row_relative_error": 7.5086362960608e-09,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.20263852089140538
+      },
+      {
+        "absolute_error": 3.8649154323082066e-07,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": 0.0011525815877266865,
+        "h": 0.01,
+        "legacy_row_relative_error": 3.8649154323082066e-07,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.0011529680792699173
+      },
+      {
+        "absolute_error": 3.478103066515727e-08,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": 0.0011529332982392522,
+        "h": 0.003,
+        "legacy_row_relative_error": 3.478103066515727e-08,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.0011529680792699173
+      },
+      {
+        "absolute_error": 3.864724113216561e-09,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": 0.0011529642145458041,
+        "h": 0.001,
+        "legacy_row_relative_error": 3.864724113216561e-09,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.0011529680792699173
+      },
+      {
+        "absolute_error": 3.461312885616463e-10,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": 0.0011529677331386288,
+        "h": 0.0003,
+        "legacy_row_relative_error": 3.461312885616463e-10,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.0011529680792699173
+      },
+      {
+        "absolute_error": 5.717407935978969e-10,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.00970787032725795,
+        "h": 0.01,
+        "legacy_row_relative_error": 5.717407935978969e-10,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.009707870898998744
+      },
+      {
+        "absolute_error": 5.1431072942143e-11,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.009707870847567671,
+        "h": 0.003,
+        "legacy_row_relative_error": 5.1431072942143e-11,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.009707870898998744
+      },
+      {
+        "absolute_error": 6.0599580908871076e-12,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.009707870892938786,
+        "h": 0.001,
+        "legacy_row_relative_error": 6.0599580908871076e-12,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.009707870898998744
+      },
+      {
+        "absolute_error": 1.4710350992874766e-12,
+        "branch_hash_base": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_minus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "branch_hash_plus": "099e065e3ff705389ccbf356da7a2d9f5b134544a5fbd48d456422cdb55616d4",
+        "finite_difference": -0.009707870897527709,
+        "h": 0.0003,
+        "legacy_row_relative_error": 1.4710350992874766e-12,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.009707870898998744
+      }
+    ],
+    "selected_fd_for_policy": [
+      -0.20263852840004168,
+      0.0011529677331386288,
+      -0.009707870897527709
+    ],
+    "stable_windows": [
+      {
+        "parameter": "gamma_unconstrained",
+        "status": "pass",
+        "threshold": 0.08660254037844387,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 4.1172932838087955e-05,
+            "relative_error_small": 3.7057561962068748e-06
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 3.7057561962068748e-06,
+            "relative_error_small": 4.1175133041753046e-07
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 4.1175133041753046e-07,
+            "relative_error_small": 3.7054336879300274e-08
+          }
+        ]
+      },
+      {
+        "parameter": "log_tau",
+        "status": "pass",
+        "threshold": 0.08660254037844387,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 0.0003352144349699212,
+            "relative_error_small": 3.0166516567554342e-05
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 3.0166516567554342e-05,
+            "relative_error_small": 3.351978413542708e-06
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 3.351978413542708e-06,
+            "relative_error_small": 3.0020890845549135e-07
+          }
+        ]
+      },
+      {
+        "parameter": "mu_over_tau",
+        "status": "pass",
+        "threshold": 0.08660254037844387,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 5.8894560871927687e-08,
+            "relative_error_small": 5.297873599395262e-09
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 5.297873599395262e-09,
+            "relative_error_small": 6.242314256066305e-10
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 6.242314256066305e-10,
+            "relative_error_small": 1.5153014647518614e-10
+          }
+        ]
+      }
+    ],
+    "status": "pass",
+    "steps": [
+      0.01,
+      0.003,
+      0.001,
+      0.0003
+    ]
+  },
+  "parameter_names": [
+    "gamma_unconstrained",
+    "log_tau",
+    "mu_over_tau"
+  ],
+  "route_classification": "extension_or_invention",
+  "route_id": "zhao_cui_fixed_adjacent_state_squared_tt_v1",
+  "row": "generalized_sv",
+  "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-contract-e-tp-phase6 python docs/benchmarks/run_contract_e_tp_phase6_zhao_cui_comparator.py --row generalized_sv --horizon 2 --degree 8 --order 17 --rank 2 --seed contract-e-tp-phase6-generalized-sv-rung2-attempt3 --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase6_zhao_cui_comparators/generalized_sv_t2_degree8_order17_rank2_attempt3_result.json",
+    "conda_environment": "tf-gpu",
+    "cpu_gpu_status": "CPU-only; CUDA_VISIBLE_DEVICES=-1",
+    "data_seed": 81105,
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "jit_compile": false,
+    "jit_status": "explicit_nondefault_cpu_reference_diagnostic",
+    "output_artifact": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase6_zhao_cui_comparators/generalized_sv_t2_degree8_order17_rank2_attempt3_result.json",
+    "plan": "docs/plans/bayesfilter-contract-e-tp-phase6-zhao-cui-comparator-certification-plan-2026-07-15.md",
+    "seed": "contract-e-tp-phase6-generalized-sv-rung2-attempt3",
+    "wall_time_seconds": 3.2547041829966474
+  },
+  "schema_version": "contract_e_tp.phase6.zhao_cui_comparator.v1",
+  "score": [
+    -0.20263852089140538,
+    0.0011529680792699173,
+    -0.009707870898998744
+  ],
+  "source_anchors": [
+    "Zhao-Cui 2024 equations 15-16 and Algorithm 2 for parent recursion",
+    "generalized-SV model operations are not author-source operations"
+  ],
+  "status": "certified_extension_or_invention",
+  "theta": [
+    1.0824113944610982,
+    -2.076793740349318,
+    0.0
+  ],
+  "value": -2.345382336709357,
+  "what_is_not_concluded": [
+    "not adaptive TT-cross or TTSIRT reproduction",
+    "not source-faithful",
+    "not exact filtering",
+    "not cross-method equivalence",
+    "not superiority or ranking",
+    "not HMC, default, leaderboard, GPU, or full-horizon readiness"
+  ]
+}

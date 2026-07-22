@@ -1,0 +1,117 @@
+{
+  "artifact_root": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/harness_smoke_t2_n128_attempt01",
+  "attempt_id": "harness-smoke-t2-n128-attempt01",
+  "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+  "command": [
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py",
+    "--output-root",
+    "docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/harness_smoke_t2_n128_attempt01",
+    "--attempt-id",
+    "harness-smoke-t2-n128-attempt01",
+    "--time-steps",
+    "2",
+    "--num-particles",
+    "128",
+    "--seed-microbatch-size",
+    "4",
+    "--tuning-seed-start",
+    "82100",
+    "--claim-seed-start",
+    "82120",
+    "--sinkhorn-candidates",
+    "20",
+    "--balance-candidates",
+    "50",
+    "--campaign-id",
+    "lgssm-particle-bias-ladder-harness-smoke-20260720",
+    "--plan-path",
+    "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md"
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "memory_policy": {
+      "aggregate_visible_gpu_limit_mib": 8192,
+      "configured_before_logical_device_initialization": true,
+      "hard_allocator_cap": true,
+      "memory_growth": false,
+      "memory_limit_mib_per_physical_device": 8192,
+      "mode": "fixed_logical_device_limit",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_limit_mib": 8192
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "unset"
+    },
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "dtype": "float32",
+    "gpu_memory_limit_mib": 8192,
+    "gpu_required": true,
+    "jit_compile": true,
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true
+  },
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+  "result_path": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/harness_smoke_t2_n128_attempt01/campaign_result.json",
+  "result_sha256": "5058e268b67a831f297bbe5b01f686996c7e7216a6593163fcf0c23bca1678c7",
+  "schema_version": "bayesfilter.ledh_offline_ot_tuning_manifest.v1",
+  "seeds": {
+    "calibration": [
+      82100,
+      82101,
+      82102,
+      82103,
+      82104,
+      82105,
+      82106,
+      82107
+    ],
+    "claim": [
+      82120,
+      82121,
+      82122,
+      82123,
+      82124,
+      82125,
+      82126,
+      82127,
+      82128,
+      82129,
+      82130,
+      82131,
+      82132,
+      82133,
+      82134,
+      82135
+    ],
+    "validation": [
+      82108,
+      82109,
+      82110,
+      82111,
+      82112,
+      82113,
+      82114,
+      82115
+    ]
+  },
+  "status": "SCOPE_CLAIM_PASS",
+  "wall_time_seconds": 39.37872952900034
+}

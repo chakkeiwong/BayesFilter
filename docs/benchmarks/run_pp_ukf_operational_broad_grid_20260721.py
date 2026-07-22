@@ -93,6 +93,18 @@ class PPUKFBatchNativeBoundAdapter:
         value, score, status = self.binding.invoke(values)
         return value, score, dict(status)
 
+    def target_status_telemetry(self, theta: Any) -> Mapping[str, Any]:
+        """Forward PP-UKF validity telemetry for shared HMC health gates."""
+
+        import tensorflow as tf
+
+        values = tf.convert_to_tensor(theta, tf.float64)
+        _value, _score, status = self.log_prob_and_grad_status(values)
+        return {
+            "status_code": status["status_code"],
+            "valid_pre_regularized_score": status["valid_pre_regularized_score"],
+        }
+
 
 def build_pp_ukf_bound_adapter() -> PPUKFBatchNativeBoundAdapter:
     """Construct the frozen PP-UKF target without importing all-model campaigns."""

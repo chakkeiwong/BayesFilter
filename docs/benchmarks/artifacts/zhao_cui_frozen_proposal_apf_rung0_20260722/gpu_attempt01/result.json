@@ -1,0 +1,108 @@
+{
+  "branch_id": "dedd22548f1ecebe0cc78c48267ac23f727993fa9f56037a31787f0851846756",
+  "device": {
+    "execution_device": "/GPU:0",
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": [
+      true
+    ],
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "diagnostics": {
+    "compile_inclusive_seconds": 3.224812582018785,
+    "descriptive_score_error": [
+      0.006420135498046875,
+      -0.014858245849609375
+    ],
+    "descriptive_value_error": 0.006988525390625,
+    "dimension": 24,
+    "exact_kalman_log_likelihood": -287.9295959472656,
+    "exact_kalman_score": [
+      -17.25143051147461,
+      -5.865792751312256
+    ],
+    "final_log_weight_spread": 4.57763671875e-05,
+    "gpu_allocator_current_bytes": 1154048,
+    "gpu_allocator_peak_bytes": 9904896,
+    "log_likelihood": -287.922607421875,
+    "maximum_log_weight_spread": 4.57763671875e-05,
+    "minimum_ess": 1023.99853515625,
+    "minimum_ess_fraction": 0.9999985694885254,
+    "output_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "particle_count": 1024,
+    "same_scalar_fd_max_abs_error": 0.009241104125976562,
+    "same_scalar_fd_score": [
+      -17.242431640625,
+      -5.889892101287842
+    ],
+    "score": [
+      -17.245010375976562,
+      -5.880650997161865
+    ],
+    "seed": 220722,
+    "time_steps": 10,
+    "warmed_seconds": 0.0008308029791805893
+  },
+  "gates": {
+    "expected_device": true,
+    "final_log_weight_spread_le_2e-3": true,
+    "finite": true,
+    "memory_growth_verified": true,
+    "minimum_ess_fraction_ge_0p999": true,
+    "same_scalar_fd_max_abs_error_le_2e-2": true,
+    "xla_enabled": true
+  },
+  "inference_status": {
+    "default_readiness": "not assessed",
+    "descriptive_only_differences": "finite-particle differences from exact Kalman value and score",
+    "hard_veto_screen": "passed",
+    "next_evidence_needed": "offline TT proposal fit and fresh nonlinear ESS/rank screen",
+    "statistically_supported_ranking": "none"
+  },
+  "nonclaims": [
+    "no source-faithful Zhao-Cui claim",
+    "no TT fit-quality claim",
+    "no posterior or HMC claim",
+    "no Austria SIR or NAWM claim",
+    "no default-readiness or superiority claim"
+  ],
+  "program_id": "b5f0e4dd5244eedc99281359bc5e6fe4b924a3d07b4cc054182cdb2607c84ea4",
+  "proposal_family": "fully_adapted_diagonal_gaussian_oracle_not_tt",
+  "route_classification": "extension_or_invention",
+  "route_id": "zhao_cui_frozen_proposal_apf_fixed_branch_v1",
+  "run_manifest": {
+    "command": "docs/benchmarks/run_zhao_cui_frozen_proposal_apf_rung0.py --output-root docs/benchmarks/artifacts/zhao_cui_frozen_proposal_apf_rung0_20260722/gpu_attempt01 --dimension 24 --time-steps 10 --particle-count 1024 --seed 220722",
+    "dtype": "float32",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "git": {
+      "commit": "9303ed7e88d0852eb6bb993d71d6fbcf815d19c8",
+      "dirty": true,
+      "dirty_line_count": 1171
+    },
+    "gpu_status": "trusted_visible_gpu",
+    "jit_compile": true,
+    "output_artifacts": [
+      "docs/benchmarks/artifacts/zhao_cui_frozen_proposal_apf_rung0_20260722/gpu_attempt01/result.json",
+      "docs/benchmarks/artifacts/zhao_cui_frozen_proposal_apf_rung0_20260722/gpu_attempt01/result.md"
+    ],
+    "plan_file": "docs/plans/bayesfilter-zhao-cui-highdim-frozen-proposal-apf-review-result-2026-07-22.md",
+    "random_seeds": [
+      220722
+    ],
+    "result_file": "docs/benchmarks/artifacts/zhao_cui_frozen_proposal_apf_rung0_20260722/gpu_attempt01/result.md",
+    "started_at_utc": "2026-07-22T07:54:45.282142+00:00",
+    "tensorflow_version": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 4.47218386901659
+  },
+  "schema": "bayesfilter.zhao_cui_frozen_proposal_apf.rung0.v1",
+  "status": "PASS_ENGINEERING_RUNG0",
+  "target_class": "deterministic_fixed_branch_approximate_likelihood"
+}

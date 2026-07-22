@@ -1,0 +1,392 @@
+{
+  "adapter_signature": "42dc7bad0137fd9c31aa1d618bb4e560f68d1bbe3a7ab4f5ef95e458b2abc985",
+  "artifact_hash": "sha256:dff8a812e9c41b7591e97db71ebd4c1a0f2139c101bfe62b5177b812a9117f81",
+  "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+  "artifact_signature": "11d71ca8b852d908e87d9f318d62341b908d7988a56d5dbc49e5f75f3b4d04df",
+  "campaign_contract": {
+    "contract_hash": "4bf98c1b5714563bf7f48115304027c8a41fb25c0c09e561e499d02aebe0dbe3",
+    "file_sha256": "6815261d1c66fe85160b2aa76b5bd97bfc9872efe21da3da31e94b36d539e2d9",
+    "path": "docs/benchmarks/artifacts/lgssm_neutra_target_specific_protocol_2026_07_14/campaign_contract.json"
+  },
+  "checkpoint": {
+    "byte_count": 315592,
+    "file_sha256": "24f0cdf0f791e05b63a32e2f0e6f1d2b6a25a97b4a8faff73ddfa882b8fb8d33",
+    "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/lower_lr1e3/attempt_1_graph_native/training/checkpoint_step_000005.json"
+  },
+  "checkpoint_policy": "terminal_only_graph_native_v1",
+  "compiled_training_control_flow": "tf_while_loop",
+  "compiled_training_program_invocations": 1,
+  "decision": "ENGINEERING_VALID_GRAPH_NATIVE_NUMPY_FREE_TRAINING_JOB",
+  "elapsed_seconds": 8.672014495998155,
+  "evidence_role": "wiring_only",
+  "frozen_reload_and_score_parity": {
+    "jit_compile": true,
+    "logdet_max_abs": 0.0,
+    "logdet_score_max_abs": 0.0,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "passed": true,
+    "pullback_score_max_abs": 0.0,
+    "target_status_source": "all_compiled_training_records",
+    "transport_max_abs": 0.0
+  },
+  "gpu_manifest": {
+    "jit_compile": true,
+    "logical_gpus": [
+      "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+    ],
+    "nvidia_smi": [
+      "0, NVIDIA GeForce RTX 4080 SUPER, 16376, 3720, 1, 591.86"
+    ],
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "tensorflow_version": "2.19.1",
+    "training_dtype": "float64",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "heldout_common_batches": null,
+  "job_id": "lower_lr1e3",
+  "job_kind": "smoke",
+  "nonclaims": [
+    "screen held-out reverse KL is nomination-only",
+    "500-step behavior is not serious training evidence",
+    "one favorably truth-centered 18D LGSSM fixture only",
+    "no posterior correctness, HMC convergence, or method superiority claim"
+  ],
+  "passed": true,
+  "payload": {
+    "byte_count": 153086,
+    "file_sha256": "886e85092553013d12cff95313b0b4ad08693dd05930f9fdc7a6753a18b0299c",
+    "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/lower_lr1e3/attempt_1_graph_native/training/frozen_transport.json"
+  },
+  "planned_steps": 5,
+  "progress": {
+    "byte_count": 1849,
+    "file_sha256": "d30757e702024a3cbd78da2610f0bae14330f9269512f5dbd8d93c4252b98289",
+    "path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/phase7/fresh-protocol/smoke/candidates/lower_lr1e3/attempt_1_graph_native/training/training_progress.jsonl"
+  },
+  "recipe": {
+    "activation": "elu",
+    "batch_size": 128,
+    "clip_norm": 10.0,
+    "composition": "T_phi(z)=affine(dense_iaf_stack(z))",
+    "final_learning_rate_fraction": 1.0,
+    "hidden_layers": [
+      18,
+      18
+    ],
+    "init_scale": 0.02,
+    "learning_rate": 0.001,
+    "optimizer": "manual_adam_constant_learning_rate",
+    "recipe_id": "lower_lr1e3",
+    "s_max": 1.0,
+    "stage_count": 3
+  },
+  "records": [
+    {
+      "clipped_gradient_norm": 10.0,
+      "gradient_was_clipped": true,
+      "learning_rate": 0.0010000000474974513,
+      "loss": 81.275873634178,
+      "mean_log_abs_det_jacobian": -20.06259756370332,
+      "program_elapsed_seconds": 3.703448122992995,
+      "raw_gradient_norm": 50.3889804667325,
+      "step": 1,
+      "target_floor_count_total": 0,
+      "target_max_innovation_condition_estimate": 26.53492149829802,
+      "target_min_innovation_eigenvalue": 0.01713668488517632,
+      "target_status_all_valid": true,
+      "target_status_available": true,
+      "target_status_nonvalid_count": 0,
+      "target_values_finite": true
+    },
+    {
+      "clipped_gradient_norm": 10.0,
+      "gradient_was_clipped": true,
+      "learning_rate": 0.0010000000474974513,
+      "loss": 79.38384405390755,
+      "mean_log_abs_det_jacobian": -20.268478412001663,
+      "program_elapsed_seconds": 3.703448122992995,
+      "raw_gradient_norm": 49.79595927327832,
+      "step": 5,
+      "target_floor_count_total": 0,
+      "target_max_innovation_condition_estimate": 33.67983866419669,
+      "target_min_innovation_eigenvalue": 0.013944776511364476,
+      "target_status_all_valid": true,
+      "target_status_available": true,
+      "target_status_nonvalid_count": 0,
+      "target_values_finite": true
+    }
+  ],
+  "repository_import_closure": {
+    "module_count": 21,
+    "modules": [
+      {
+        "module": "bayesfilter",
+        "path": "bayesfilter/__init__.py"
+      },
+      {
+        "module": "bayesfilter.diagnostics",
+        "path": "bayesfilter/diagnostics.py"
+      },
+      {
+        "module": "bayesfilter.inference",
+        "path": "bayesfilter/inference/__init__.py"
+      },
+      {
+        "module": "bayesfilter.inference.neutra_artifacts",
+        "path": "bayesfilter/inference/neutra_artifacts.py"
+      },
+      {
+        "module": "bayesfilter.inference.neutra_batching",
+        "path": "bayesfilter/inference/neutra_batching.py"
+      },
+      {
+        "module": "bayesfilter.inference.neutra_training",
+        "path": "bayesfilter/inference/neutra_training.py"
+      },
+      {
+        "module": "bayesfilter.inference.posterior_adapter",
+        "path": "bayesfilter/inference/posterior_adapter.py"
+      },
+      {
+        "module": "bayesfilter.linear",
+        "path": "bayesfilter/linear/__init__.py"
+      },
+      {
+        "module": "bayesfilter.linear.batched_kalman_svd_derivatives_tf",
+        "path": "bayesfilter/linear/batched_kalman_svd_derivatives_tf.py"
+      },
+      {
+        "module": "bayesfilter.linear.kalman_svd_derivatives_tf",
+        "path": "bayesfilter/linear/kalman_svd_derivatives_tf.py"
+      },
+      {
+        "module": "bayesfilter.linear.svd_factor_tf",
+        "path": "bayesfilter/linear/svd_factor_tf.py"
+      },
+      {
+        "module": "bayesfilter.linear.types_tf",
+        "path": "bayesfilter/linear/types_tf.py"
+      },
+      {
+        "module": "bayesfilter.results_tf",
+        "path": "bayesfilter/results_tf.py"
+      },
+      {
+        "module": "bayesfilter.ssm",
+        "path": "bayesfilter/ssm/__init__.py"
+      },
+      {
+        "module": "bayesfilter.ssm.contracts",
+        "path": "bayesfilter/ssm/contracts.py"
+      },
+      {
+        "module": "bayesfilter.structural",
+        "path": "bayesfilter/structural.py"
+      },
+      {
+        "module": "bayesfilter.testing",
+        "path": "bayesfilter/testing/__init__.py"
+      },
+      {
+        "module": "bayesfilter.testing.deterministic_lgssm_exact_target_tf",
+        "path": "bayesfilter/testing/deterministic_lgssm_exact_target_tf.py"
+      },
+      {
+        "module": "bayesfilter.testing.lgssm_neutra_strict_training_tf",
+        "path": "bayesfilter/testing/lgssm_neutra_strict_training_tf.py"
+      },
+      {
+        "module": "bayesfilter.testing.multidim_triangular_lgssm_batched_tf",
+        "path": "bayesfilter/testing/multidim_triangular_lgssm_batched_tf.py"
+      },
+      {
+        "module": "bayesfilter.testing.multidim_triangular_lgssm_tf",
+        "path": "bayesfilter/testing/multidim_triangular_lgssm_tf.py"
+      }
+    ],
+    "passed": true,
+    "policy": "no_repository_numpy_import_or_call_and_no_tf_host_callback",
+    "tensorflow_third_party_numpy_dependency_out_of_scope": true,
+    "violations": []
+  },
+  "runtime_metadata": {
+    "adam_moment_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "batch_native_target": {
+      "adapter_signature": "42dc7bad0137fd9c31aa1d618bb4e560f68d1bbe3a7ab4f5ef95e458b2abc985",
+      "backend_id": "tensorflow_manual_lgssm_svd_graph_status_score",
+      "callable_module": "bayesfilter.testing.deterministic_lgssm_exact_target_tf",
+      "callable_qualname": "DeterministicLGSSMExactPosteriorAdapter.neutra_batch_log_prob_and_grad_status",
+      "callable_source_sha256": "a718370228d9bbffdaacdc04cfe8791d0ba99961cc3447db02a128ea1bdcffb9",
+      "dependency_callable_sources": [
+        {
+          "global_name": "gaussian_raw_prior_log_prob_and_score_batch",
+          "module": "bayesfilter.testing.multidim_triangular_lgssm_batched_tf",
+          "qualname": "gaussian_raw_prior_log_prob_and_score_batch",
+          "source_sha256": "dd3f413ed62b9453be54965c848709f4facbfbf07348390e8c3106eb1113f2c7"
+        },
+        {
+          "global_name": "materialize_lower_triangular_lgssm_batch",
+          "module": "bayesfilter.testing.multidim_triangular_lgssm_batched_tf",
+          "qualname": "materialize_lower_triangular_lgssm_batch",
+          "source_sha256": "5eb43cb9cf5d3dc94f7259098c86ab62ba2773317e7804cd1239664d16442db3"
+        },
+        {
+          "global_name": "tf_batched_svd_linear_gaussian_score_first_order_graph_status",
+          "module": "bayesfilter.linear.batched_kalman_svd_derivatives_tf",
+          "qualname": "tf_batched_svd_linear_gaussian_score_first_order_graph_status",
+          "source_sha256": "7199a01e93f53cf98ca96b55ecb2d76c8a85d8f8e35fa8321441948b357dd1ae"
+        }
+      ],
+      "dependency_closure_sha256": "6d5a05a65a15b5fb4378fc08547d5dfd22dc83705d31e7fd662b142df04732b5",
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.linear.batched_kalman_svd_derivatives_tf",
+          "source_sha256": "b76596e05cdbda5ad70efd5fa44012229a4517309780da0686292234987ee09c"
+        },
+        {
+          "module": "bayesfilter.testing.multidim_triangular_lgssm_batched_tf",
+          "source_sha256": "332b9d5ebcad06f47c45beabb8a849c72b713a11f721221af771f7d700069e45"
+        }
+      ],
+      "evidence_path": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/fixture_T120_seed20260709_301.json",
+      "jit_compile_required": true,
+      "method_name": "neutra_batch_log_prob_and_grad_status",
+      "minimum_batch_size": 2,
+      "row_mapped_scalar_target_used": false,
+      "sample_axis_python_loop_used": false,
+      "scalar_fallback_used": false,
+      "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+      "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+      "status_telemetry_required": true,
+      "target_scope": "bayesfilter_multidim_lower_triangular_lgssm_t120_exact_v1",
+      "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30"
+    },
+    "checkpoint_policy": "terminal_only_graph_native_v1",
+    "compiled_output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "compiled_training_control_flow": "tf_while_loop",
+    "compiled_training_program_invocations": 1,
+    "graph_operation_types": [
+      "ConcatV2",
+      "Const",
+      "Equal",
+      "FloorMod",
+      "GatherV2",
+      "Identity",
+      "LogicalOr",
+      "NoOp",
+      "Pack",
+      "Placeholder",
+      "Prod",
+      "Range",
+      "Reshape",
+      "Squeeze",
+      "StridedSlice",
+      "TensorListReserve",
+      "TensorListStack",
+      "Where",
+      "While"
+    ],
+    "jit_compile": true,
+    "logical_gpus": [
+      "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+    ],
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "program_step_count": 5,
+    "requested_device": "/GPU:0",
+    "require_gpu": true,
+    "row_mapped_scalar_target_used": false,
+    "sample_axis_python_loop_used": false,
+    "scalar_fallback_used": false,
+    "trainable_variable_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "training_batch_size": 128
+  },
+  "schema": "bayesfilter.lgssm_neutra_strict_training_job.v1",
+  "seed": [
+    20260714,
+    1412
+  ],
+  "step_override_debug_only": false,
+  "steps": 5,
+  "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30",
+  "training_state_hash": "cf028f610f68901b775464077f58ee38ab184fefb02db3779c7c153b0642db29",
+  "transport_hash": "e00bb0217d480ffaaa2d5aa3097a8aaa9b7078696b9a46a400d8eb4d638c414b"
+}

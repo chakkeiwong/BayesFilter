@@ -7661,6 +7661,7 @@ def _operational_windowed_mass_capture(
         seed=stage_seed,
         target_scope=target_scope,
         chain_execution_mode=config.chain_execution_mode,
+        jit_compile=config.use_xla,
         target_status_trace_policy=config.target_status_trace_policy,
         algorithm_id=route_decision.algorithm_id,
         route_contract_version=route_decision.route_contract_version,
@@ -7942,7 +7943,10 @@ def run_hmc_windowed_mass_stage(
         attempt_state=_attempt_state,
     )
 
-    windowed_config = _windowed_mass_stage_internal_config(_attempt_budget_policy)
+    windowed_config = _windowed_mass_stage_internal_config(
+        _attempt_budget_policy,
+        mass_policy=cfg.mass_policy,
+    )
     draw_capture_policy = _windowed_stage_draw_capture_policy(windowed_config)
     stage_seed = _derive_seed(cfg.seed, stage_index=0)
     diagnostic_config = _windowed_stage_diagnostic_run_config(
@@ -11872,6 +11876,48 @@ def tune_hmc_kernel(
                 },
             )
             return result
+        if cfg.preset == "serious" and not bootstrap.passed:
+            final_status = "hard_veto"
+            diagnostic_role = "bootstrap_acceptance_promotion_required"
+            hard_vetoes = ("bootstrap_acceptance_promoted_kernel_missing",)
+            repair_triggers = _bootstrap_repair_triggers(bootstrap) or (
+                "bootstrap_nonpromoting_status",
+            )
+            result = HMCKernelTuningResult(
+                config=cfg,
+                adapter_signature=adapter_signature,
+                target_dimension=target_dimension,
+                geometry=geometry,
+                bootstrap=bootstrap,
+                tune_verify_repair_loop=None,
+                final_status=final_status,
+                diagnostic_role=diagnostic_role,
+                hard_vetoes=hard_vetoes,
+                repair_triggers=repair_triggers,
+                final_kernel_payload=None,
+                final_kernel_hash=None,
+                artifact_path=None if artifact_path is None else str(artifact_path),
+                diagnostic_roles=_public_tuning_diagnostic_roles(),
+                failure_diagnostics={
+                    "stage": "bootstrap",
+                    "bootstrap_final_status": bootstrap.final_status,
+                    "acceptance_promoted": False,
+                    "fallback_handoff_forbidden": True,
+                    "reports_posterior_convergence": False,
+                    "reports_sampler_superiority": False,
+                    "reports_default_readiness": False,
+                },
+            )
+            write_result_artifact(result)
+            write_progress(
+                "result_written",
+                extra={
+                    "final_status": result.final_status,
+                    "diagnostic_role": result.diagnostic_role,
+                    "bootstrap_acceptance_promoted": False,
+                },
+            )
+            return result
         handoff_kernel = _active_bootstrap_handoff_kernel_payload(
             geometry=geometry,
             bootstrap=bootstrap,
@@ -12439,6 +12485,10 @@ class _BootstrapFixedMassLatentValueScoreAdapter:
         self.supports_retained_flat_batch = bool(
             getattr(base_adapter, "supports_retained_flat_batch", False)
         )
+        self.supports_retained_value_score_status = bool(
+            getattr(base_adapter, "supports_retained_value_score_status", False)
+            and callable(getattr(base_adapter, "log_prob_and_grad_status", None))
+        )
         self.transform = transform
         self.parameter_dim = int(transform.dimension)
         self.target_scope = str(target_scope)
@@ -12500,11 +12550,21 @@ class _BootstrapFixedMassLatentValueScoreAdapter:
         return tf.tensordot(score_tensor, factor, axes=[[-1], [0]])
 
     def log_prob_and_grad(self, z: Any) -> tuple[Any, Any]:
+        value, score = self._log_prob_and_grad_status(z)[:2]
+        return value, score
+
+    def _log_prob_and_grad_status(
+        self, z: Any
+    ) -> tuple[Any, Any, Mapping[str, Any] | None]:
         import tensorflow as tf
 
         z_tensor = self._validate_trailing_dimension(z, "latent coordinate")
         theta = self.latent_to_position(z_tensor)
-        value, theta_score = self.base_adapter.log_prob_and_grad(theta)
+        if self.supports_retained_value_score_status:
+            value, theta_score, status = self.base_adapter.log_prob_and_grad_status(theta)
+        else:
+            value, theta_score = self.base_adapter.log_prob_and_grad(theta)
+            status = None
         value_tensor = tf.convert_to_tensor(value, dtype=z_tensor.dtype)
         theta_score_tensor = tf.convert_to_tensor(theta_score, dtype=z_tensor.dtype)
         _validate_value_score_shapes(
@@ -12512,7 +12572,17 @@ class _BootstrapFixedMassLatentValueScoreAdapter:
             value=value_tensor,
             score=theta_score_tensor,
         )
-        return value_tensor, self.theta_score_to_latent_score(theta_score_tensor)
+        return value_tensor, self.theta_score_to_latent_score(theta_score_tensor), status
+
+    def log_prob_and_grad_status(
+        self, z: Any
+    ) -> tuple[Any, Any, Mapping[str, Any]]:
+        if not self.supports_retained_value_score_status:
+            raise TypeError("base adapter does not expose combined value/score/status")
+        value, score, status = self._log_prob_and_grad_status(z)
+        if not isinstance(status, Mapping):
+            raise TypeError("combined value/score/status target must return a mapping")
+        return value, score, dict(status)
 
     def target_status_telemetry(self, z: Any) -> Mapping[str, Any]:
         telemetry = getattr(self.base_adapter, "target_status_telemetry", None)
@@ -23378,6 +23448,8 @@ def _phase7_direct_final_kernel_payload(
 
 def _windowed_mass_stage_internal_config(
     attempt_budget_policy: _HMCAttemptBudgetPolicy | None = None,
+    *,
+    mass_policy: str = "windowed_adaptive",
 ) -> WindowedMassAdaptationConfig:
     if attempt_budget_policy is None:
         warmup_steps = 12
@@ -23403,6 +23475,7 @@ def _windowed_mass_stage_internal_config(
         covariance_jitter=1.0e-6,
         eigenvalue_floor=1.0e-9,
         step_adaptation_rate=0.03,
+        mass_policy=mass_policy,
     )
 
 

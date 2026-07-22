@@ -214,6 +214,105 @@ def _apply_value_score_route_contract(rows: list[dict[str, Any]]) -> list[dict[s
     return updated
 
 
+def _zhao_cui_hmc_route_is_admissible(row: dict[str, Any]) -> bool:
+    """Require a fixed-variant identity before HMC score admission.
+
+    Zhao-Cui has multiple model-specific fixed-branch analytical adapters.  A
+    route does not have to use the high-dimensional source-route implementation,
+    but it must identify its actual fixed value/score program.  Generic
+    retained-grid and adaptive routes remain ineligible.
+    """
+
+    return (
+        row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+        and row.get("route_id") in highdim.ZHAO_CUI_FIXED_VARIANT_ROUTE_IDS
+        and row.get("hmc_route_policy_id") == highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID
+        and row.get("hmc_target_scope_admitted") is True
+    )
+
+
+def _normalize_legacy_zhao_cui_route_identity(row: dict[str, Any]) -> dict[str, Any]:
+    """Issue route identity for exact known pre-identity leaderboard rows.
+
+    The July 1/3 artifacts predate explicit route fields.  Their exact row,
+    numeric-status, and analytical-provenance tuple is repository-owned legacy
+    evidence; arbitrary caller fields are not accepted as identity.
+    """
+
+    if row.get("algorithm_id") != "zhao_cui_scalar_or_multistate":
+        return row
+    key = (
+        row.get("row_id"),
+        row.get("numeric_execution_status"),
+        row.get("score_derivative_provenance"),
+    )
+    known = {
+        (
+            "zhao_cui_sv_actual_nongaussian_T1000",
+            "executed_zhao_cui_exact_transformed_sv_fixed_branch_tt_value_score",
+            "zhao_cui_scalar_fixed_branch_tt_exact_transformed_sv_manual_parameter_score_methods_only",
+        ): "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+        (
+            "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+            "executed_zhao_cui_ksc_fixed_branch_tt_value_score",
+            "zhao_cui_scalar_fixed_branch_tt_ksc_mixture_manual_parameter_score_methods_only",
+        ): "zhao_cui_ksc_mixture_fixed_branch_tt",
+        (
+            "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+            "executed_zhao_cui_generalized_sv_prior_mean_scalar_tt_value_score",
+            "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt_manual_parameter_score_methods_only",
+        ): "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+        (
+            PARAMETERIZED_SIR_ROW,
+            "executed_zhao_cui_parameterized_sir_t20_local_complete_data_value_score",
+            "zhao_cui_sir_d18_local_complete_data_manual_parameter_score_methods",
+        ): "zhao_cui_sir_d18_local_complete_data_manual_component",
+    }
+    route_id = known.get(key)
+    if route_id is None:
+        return row
+    row = dict(row)
+    row["route_id"] = route_id
+    row["route_role"] = (
+        highdim.ZHAO_CUI_FIXED_VARIANT_ROUTE_ID
+        if route_id == "zhao_cui_sir_d18_local_complete_data_manual_component"
+        else "fixed_variant_analytical_hmc_route"
+    )
+    row["hmc_route_policy_id"] = highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID
+    row["hmc_target_scope_admitted"] = True
+    return row
+
+
+def _demote_zhao_cui_historical_score(row: dict[str, Any]) -> dict[str, Any]:
+    """Keep historical value evidence, but remove its HMC score admission."""
+
+    row["comparison_status"] = "executed_value_only"
+    row["numeric_execution_status"] = (
+        "executed_numeric_value_only_historical_zhao_cui_route_not_hmc_admitted"
+    )
+    row["score_status"] = "blocked_historical_zhao_cui_route_not_hmc_admitted"
+    row["score_status_reason"] = (
+        "Zhao-Cui HMC/leaderboard score admission requires the fixed-variant "
+        "source-route identity; this evaluator is historical/diagnostic only"
+    )
+    row["reason"] = row["score_status_reason"]
+    row["score"] = None
+    row["score_l2_norm"] = None
+    row["score_coordinate_system"] = None
+    row["route_role"] = highdim.ZHAO_CUI_HISTORICAL_ROUTE_STATUS
+    row["hmc_route_policy_id"] = None
+    row["hmc_target_scope_admitted"] = False
+    row["nonclaims"] = list(row.get("nonclaims", [])) + [
+        "historical/diagnostic Zhao-Cui route; not the fixed-variant HMC evaluator",
+        "its analytical score is not admitted for HMC or leaderboard use",
+    ]
+    row["reason_codes"] = list(row.get("reason_codes", [])) + [
+        "ZHAO_CUI_NONFIXED_ROUTE_DEMOTED_HISTORICAL",
+        "HMC_REQUIRES_FIXED_VARIANT_SOURCE_ROUTE",
+    ]
+    return row
+
+
 def _status_from_manifest(manifest: dict[str, Any]) -> str | None:
     status = manifest.get("status")
     if isinstance(status, str):
@@ -603,56 +702,21 @@ def _lgssm_reference_and_sgqf() -> tuple[float, float | None, list[float] | None
 
 
 def _predator_reference_and_sgqf() -> tuple[float, float | None, list[float] | None, float | None, str | None]:
-    theta = _predator_prey_theta()
-    observations = _predator_prey_observations()
-    model = highdim.p30_predator_prey_fixture_model()
-    adapted = tf_predator_prey_to_fixed_sgqf_model(model, theta, with_derivatives=True)
-    if not adapted.eligible or adapted.model is None:
-        return float("nan"), None, None, None, adapted.reason or "predator-prey SGQF adapter ineligible"
-
-    cloud = tf_fixed_sgqf_cloud(dim=2, sparse_level=2)
-    branch = TFFixedSGQFBranchConfig(predictive_epsilon=1e-10, innovation_epsilon=1e-10)
-    value = tf_fixed_sgqf_filter(
-        observations,
-        adapted.model,
-        cloud=cloud,
-        branch_config=branch,
-        return_filtered=True,
-    )
-    if value.failure is not None or value.log_likelihood is None:
-        stage = value.failure.stage if value.failure is not None else "unknown"
-        return float("nan"), None, None, None, f"predator-prey SGQF value failure at {stage}"
-
-    if adapted.derivatives is None:
-        return float("nan"), float(value.log_likelihood.numpy()), None, None, "predator-prey SGQF derivatives missing"
-
-    score = tf_fixed_sgqf_score(
-        observations,
-        adapted.model,
-        adapted.derivatives,
-        cloud=cloud,
-        branch_config=branch,
-        expected_branch_identity=value.branch_identity,
-    )
-    if score.failure is not None or score.score is None:
-        stage = score.failure.stage if score.failure is not None else "unknown"
-        return float("nan"), float(value.log_likelihood.numpy()), None, None, f"predator-prey SGQF score failure at {stage}"
-
-    loglik, mismatch_reason = _same_value_score_loglik(
-        value.log_likelihood,
-        score.log_likelihood,
-        "predator-prey fixed-SGQF",
-    )
-    if loglik is None:
-        return float("nan"), None, None, None, mismatch_reason
+    # The generic SGQF loop propagates before every observation, including y0.
+    # The canonical T20 target assimilates y0 from the initial law first, so
+    # this route is target-mismatched until an initial-observation-first
+    # evaluator is implemented.  Fail closed rather than emitting a plausible
+    # but wrong value/score pair.
     return (
         float("nan"),
-        loglik,
-        [float(v) for v in score.score.numpy()],
-        float(tf.linalg.norm(score.score).numpy()),
         None,
+        None,
+        None,
+        "blocked_target_alignment: predator-prey fixed-SGQF T20 evaluator is "
+        "target-mismatched: generic "
+        "route transitions before y0 while the canonical target assimilates "
+        "y0 before the first transition",
     )
-
 
 def _ksc_source_scope_sgqf_from_lowdim() -> tuple[float | None, float | None, list[float] | None, float | None, str | None]:
     theta = _sv_theta()
@@ -980,6 +1044,10 @@ def _zhao_cui_actual_sv_tt_cell() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "comparison_status": "executed_value_score" if executed_score else "blocked",
         "numeric_execution_status": (
             "executed_zhao_cui_exact_transformed_sv_fixed_branch_tt_value_score"
@@ -1032,8 +1100,17 @@ def _zhao_cui_actual_sv_tt_cell() -> dict[str, Any]:
 
 
 def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
-    avg_loglik, loglik, score, score_l2, runtime, reason = _zhao_cui_predator_prey_tt_value_score()
-    executed_score = loglik is not None and score is not None
+    # The retained-grid multistate evaluator is historical and cannot be used
+    # as an HMC/leaderboard fallback.  Predator-prey has no implemented
+    # fixed-variant source-route evaluator yet, so fail closed here while
+    # preserving the old route in its historical artifacts.
+    avg_loglik = loglik = score = score_l2 = runtime = None
+    reason = (
+        "Predator-prey fixed-variant Zhao-Cui source-route analytical-gradient "
+        "evaluator is not implemented; the historical multistate retained-grid "
+        "result is not admitted for HMC or leaderboard use"
+    )
+    executed_score = False
     return {
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_predator_prey_T20",
@@ -1062,9 +1139,7 @@ def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
         "mc_standard_error": None,
         "score_status": "analytical_score_emitted" if executed_score else "blocked_manual_tt_score_adapter",
         "score_status_reason": (
-            "Zhao-Cui predator-prey T20 score emitted by multistate fixed-design TT manual parameter-score adapter"
-            if executed_score
-            else reason
+            reason
         ),
         "target_contract_status": (
             "target_compatible_predator_prey_t20_fixed_design_multistate_tt"
@@ -1073,12 +1148,13 @@ def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
         ),
         "reason": reason,
         "reason_codes": [
-            (
-                "ZHAO_CUI_PREDATOR_PREY_T20_MULTISTATE_MANUAL_TT_VALUE_SCORE_ROUTE"
-                if executed_score
-                else "ZHAO_CUI_PREDATOR_PREY_T20_MULTISTATE_MANUAL_TT_ROUTE_BLOCKED"
-            )
+            "ZHAO_CUI_PREDATOR_PREY_FIXED_VARIANT_EVALUATOR_MISSING",
+            "ZHAO_CUI_NONFIXED_RETAINED_GRID_ROUTE_DEMOTED_HISTORICAL",
         ],
+        "route_id": "zhao_cui_predator_prey_t20_multistate_fixed_design_tt",
+        "route_role": highdim.ZHAO_CUI_HISTORICAL_ROUTE_STATUS,
+        "hmc_route_policy_id": None,
+        "hmc_target_scope_admitted": False,
         "nonclaims": [
             "T20 source-scope additive-Gaussian RK4 closure, not native/non-Gaussian predator-prey likelihood",
             "fixed-design multistate TT route, not adaptive MATLAB TT-cross/SIRT reproduction",
@@ -1086,6 +1162,7 @@ def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
             "P47 two-observation lower-rung evidence is not reported as this T20 row",
             "not a production-GPU timing result",
             "not HMC readiness evidence",
+            "historical retained-grid result is preserved only as diagnostic evidence",
         ],
     }
 
@@ -1097,6 +1174,10 @@ def _zhao_cui_generalized_sv_tt_cell() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "comparison_status": "executed_value_score" if executed_score else "blocked_or_status_only",
         "numeric_execution_status": (
             "executed_zhao_cui_generalized_sv_prior_mean_scalar_tt_value_score"
@@ -1164,6 +1245,10 @@ def _zhao_cui_ksc_tt_cell() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_ksc_mixture_fixed_branch_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "comparison_status": "executed_value_score" if executed_score else "blocked",
         "numeric_execution_status": (
             "executed_zhao_cui_ksc_fixed_branch_tt_value_score"
@@ -1425,6 +1510,10 @@ def _zhao_cui_lgssm_exact_oracle_adapter() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_lgssm_exact_oracle_affine_adapter",
+        "route_role": highdim.ZHAO_CUI_HISTORICAL_ROUTE_STATUS,
+        "hmc_route_policy_id": None,
+        "hmc_target_scope_admitted": False,
         "comparison_status": "executed_value_score",
         "numeric_execution_status": "executed_lgssm_exact_oracle_adapter_value_score",
         "average_log_likelihood": float(kalman_cell["average_log_likelihood"]),
@@ -1626,7 +1715,10 @@ def _zhao_cui_parameterized_sir_local_complete_data_cell() -> dict[str, Any]:
         ),
         "row_admission_status": "scoped_component_row_admitted" if executed_score else "blocked",
         "target_scope": "local_complete_data_zhao_cui_sir_d18_component",
+        "route_id": "zhao_cui_sir_d18_local_complete_data_manual_component",
         "route_role": highdim.FIXED_VARIANT_ZHAO_CUI_PRODUCTION_ROUTE,
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "retained_grid_route_role": highdim.MULTISTATE_RETAINED_GRID_ROUTE_ROLE,
         "retained_grid_leaderboard_admission": highdim.MULTISTATE_RETAINED_GRID_LEADERBOARD_ADMISSION,
         "average_log_likelihood": avg_loglik,
@@ -1981,6 +2073,14 @@ def _validate_analytical_score_contract(rows: list[dict[str, Any]]) -> None:
             raise ValueError(
                 f"{row['row_id']} {row['algorithm_id']}: admitted score row must declare same_route_value_score"
             )
+        if (
+            row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+            and not _zhao_cui_hmc_route_is_admissible(row)
+        ):
+            raise ValueError(
+                f"{row['row_id']} {row['algorithm_id']}: admitted Zhao-Cui score "
+                "requires the fixed-variant HMC filtering route identity"
+            )
         lower = provenance.lower()
         if "autodiff" in lower or "gradienttape" in lower or "gradient_tape" in lower:
             raise ValueError(f"{row['row_id']} {row['algorithm_id']}: score provenance must not use autodiff/tape fallback")
@@ -2014,7 +2114,7 @@ def _score_provenance_is_autodiff_or_historical_svd_ukf(row: dict[str, Any]) -> 
 def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     updated: list[dict[str, Any]] = []
     for row in rows:
-        row = dict(row)
+        row = _normalize_legacy_zhao_cui_route_identity(dict(row))
         provenance = str(row.get("score_derivative_provenance") or "").lower()
         repaired_zhao_cui_tt = (
             row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
@@ -2025,6 +2125,7 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
                 "zhao_cui_generalized_sv_synthetic_from_estimated_values",
             }
             and "manual_parameter_score_methods_only" in provenance
+            and _zhao_cui_hmc_route_is_admissible(row)
         )
         repaired_parameterized_sir = (
             row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
@@ -2032,8 +2133,9 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
             and provenance == "zhao_cui_sir_d18_local_complete_data_manual_parameter_score_methods"
             and row.get("target_scope") == "local_complete_data_zhao_cui_sir_d18_component"
             and row.get("row_admission_status") == "scoped_component_row_admitted"
+            and _zhao_cui_hmc_route_is_admissible(row)
         )
-        if (repaired_zhao_cui_tt or repaired_parameterized_sir) and row.get("comparison_status") == "executed_value_score":
+        if repaired_parameterized_sir and row.get("comparison_status") == "executed_value_score":
             updated.append(row)
             continue
         if (
@@ -2046,7 +2148,8 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
             row["score_status"] = "blocked_scoped_component_metadata_guard_failed"
             row["score_status_reason"] = (
                 "parameterized SIR scoped component row requires explicit "
-                "row_admission_status and target_scope metadata before score admission"
+                "row_admission_status, target_scope, and fixed-variant HMC "
+                "route metadata before score admission"
             )
             row["reason"] = row["score_status_reason"]
             row["score"] = None
@@ -2055,6 +2158,38 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
                 "row id alone is insufficient for scoped component score admission",
             ]
             updated.append(row)
+            continue
+        if repaired_zhao_cui_tt and row.get("comparison_status") == "executed_value_score":
+            updated.append(row)
+            continue
+        if (
+            row.get("comparison_status") == "executed_value_score"
+            and row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+            and _score_provenance_is_autodiff_or_historical_svd_ukf(row)
+        ):
+            row["comparison_status"] = "executed_value_only"
+            row["numeric_execution_status"] = (
+                "executed_numeric_value_only_autodiff_score_not_admitted"
+            )
+            row["score_status"] = "blocked_autodiff_not_admitted"
+            row["score_status_reason"] = (
+                "autodiff score provenance is diagnostic only; analytical "
+                "gradient accuracy is required"
+            )
+            row["reason"] = row["score_status_reason"]
+            row["score"] = None
+            row["score_l2_norm"] = None
+            row["score_coordinate_system"] = None
+            row["nonclaims"] = list(row.get("nonclaims", [])) + [
+                "autodiff or historical SVD score provenance is diagnostic only",
+            ]
+            updated.append(row)
+            continue
+        if (
+            row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+            and row.get("comparison_status") == "executed_value_score"
+        ):
+            updated.append(_demote_zhao_cui_historical_score(row))
             continue
         if row.get("comparison_status") == "executed_value_score" and _score_provenance_is_autodiff_or_historical_svd_ukf(row):
             is_historical_svd_ukf = row.get("algorithm_id") == "ukf" and (

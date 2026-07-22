@@ -1,0 +1,104 @@
+{
+  "arms": {
+    "learned_residual": {
+      "cold_compile_plus_two_transitions_seconds": 6.447671379952226,
+      "force_calls_per_transition": 3,
+      "force_count_contract_passed": true,
+      "health": {
+        "all_finite": true,
+        "energy_error_veto_clear": true,
+        "maximum_absolute_delta_h": 0.01737641137080015,
+        "one_new_endpoint_call_per_transition": true,
+        "passed": true
+      },
+      "jit_compile": true,
+      "output_devices": [
+        "/job:localhost/replica:0/task:0/device:GPU:0"
+      ],
+      "passed": true,
+      "timing_synchronized": true
+    },
+    "true_gradient": {
+      "cold_compile_plus_two_transitions_seconds": 22.306997359963134,
+      "force_calls_per_transition": 3,
+      "force_count_contract_passed": true,
+      "health": {
+        "all_finite": true,
+        "energy_error_veto_clear": true,
+        "maximum_absolute_delta_h": 0.00011519136057414059,
+        "one_new_endpoint_call_per_transition": true,
+        "passed": true
+      },
+      "jit_compile": true,
+      "output_devices": [
+        "/job:localhost/replica:0/task:0/device:GPU:0"
+      ],
+      "passed": true,
+      "timing_synchronized": true
+    }
+  },
+  "cell": "STR-UKF",
+  "nonclaims": [
+    "two-transition GPU/XLA mechanics canary only"
+  ],
+  "passed": true,
+  "primary_arm_set": [
+    "learned_residual",
+    "true_gradient"
+  ],
+  "run_manifest": {
+    "canary": true,
+    "cell": "STR-UKF",
+    "command": "docs/benchmarks/run_hnn_neutra_exact_comparison_2026_07_18.py --cell STR-UKF --canary --output-root docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase2-canary/STR-UKF/attempt-01",
+    "device": "/GPU:0",
+    "dtype": "float64",
+    "environment": "tf-gpu",
+    "git_commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase2-canary/STR-UKF/attempt-01",
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "plan_file": "docs/plans/bayesfilter-hnn-neutra-exact-gradient-comparison-repair-plan-2026-07-18.md",
+    "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase2-canary/STR-UKF/attempt-01/result.json",
+    "schema": "bayesfilter.hnn_neutra_exact_comparison_manifest.v1",
+    "started_at_utc": "2026-07-17T20:21:56.247267+00:00",
+    "tensorflow_probability_version": "0.25.0",
+    "tensorflow_version": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 49.46772853896255
+  },
+  "schema": "bayesfilter.hnn_neutra_exact_comparison_canary.v1",
+  "structural_contract": {
+    "artificial_k_noise_allowed": false,
+    "deterministic_completion": "k_t=phi*k_(t-1)+gamma*m_t^2",
+    "passed": true
+  },
+  "target_signature": "e8d78a8ee12245fee2e6c4c739d9dc03d672e8dd9a96bfbd492b426a72e1c665",
+  "transport_signature": "32a19a8d8d02f6a94851ed489d3b64f961f3bc92ba7ac36506f8078a6649c1e0",
+  "value_only_endpoint_parity": {
+    "absolute_tolerance": 2e-08,
+    "endpoint_uses_true_gradient": false,
+    "maximum_absolute_error": 2.842170943040401e-14,
+    "passed": true,
+    "point_count": 8,
+    "schema": "bayesfilter.neural_force_value_only_endpoint_parity.v1"
+  }
+}

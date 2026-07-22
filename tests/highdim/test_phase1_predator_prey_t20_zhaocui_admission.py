@@ -20,7 +20,7 @@ def _load_module():
     return module
 
 
-def test_predator_prey_t20_zhaocui_row_uses_t20_observations_and_manual_score() -> None:
+def test_predator_prey_t20_zhaocui_row_is_blocked_until_fixed_variant_exists() -> None:
     module = _load_module()
     observations = module._predator_prey_observations()
     theta = module._predator_prey_theta()
@@ -40,28 +40,18 @@ def test_predator_prey_t20_zhaocui_row_uses_t20_observations_and_manual_score() 
 
     assert row["row_id"] == "zhao_cui_predator_prey_T20"
     assert row["algorithm_id"] == "zhao_cui_scalar_or_multistate"
-    assert row["comparison_status"] == "executed_value_score"
+    assert row["comparison_status"] == "blocked_or_status_only"
     assert row["numeric_execution_status"] == (
-        "executed_zhao_cui_predator_prey_t20_multistate_tt_value_score"
+        "blocked_zhao_cui_predator_prey_t20_multistate_tt_value_score"
     )
-    assert row["score_status"] == "analytical_score_emitted"
+    assert row["score_status"] == "blocked_manual_tt_score_adapter"
     assert row["score_coordinate_system"] == "theta=(r,K,a,s,u,v)"
-    assert isinstance(row["log_likelihood"], float)
-    assert isinstance(row["average_log_likelihood"], float)
-    assert isinstance(row["score"], list)
-    assert len(row["score"]) == 6
-    assert bool(tf.math.is_finite(tf.constant(row["log_likelihood"], dtype=DTYPE)).numpy())
-    assert bool(tf.reduce_all(tf.math.is_finite(tf.constant(row["score"], dtype=DTYPE))).numpy())
-
-    provenance = str(row["score_derivative_provenance"]).lower()
-    assert "manual_parameter_score_methods_only" in provenance
-    assert "autodiff" not in provenance
-    assert "gradienttape" not in provenance
-    assert "gradient_tape" not in provenance
-    assert "forwardaccumulator" not in provenance
-    assert "finite_difference" not in provenance
-    assert "fd_" not in provenance
-    assert any("P47 two-observation lower-rung evidence is not reported" in item for item in row["nonclaims"])
+    assert row["log_likelihood"] is None
+    assert row["average_log_likelihood"] is None
+    assert row["score"] is None
+    assert row["route_role"] == "historical_diagnostic_only"
+    assert "fixed-variant" in row["reason"].lower()
+    assert any("historical" in item.lower() for item in row["nonclaims"])
 
 
 def test_predator_prey_t20_zhaocui_derivative_config_disables_fd() -> None:
@@ -77,17 +67,17 @@ def test_predator_prey_t20_zhaocui_derivative_config_disables_fd() -> None:
     assert derivative_config.finite_difference_h == ()
 
 
-def test_predator_prey_t20_zhaocui_row_passes_local_leaderboard_contracts() -> None:
+def test_predator_prey_t20_zhaocui_row_fails_closed_for_local_leaderboard_contracts() -> None:
     module = _load_module()
     row = module._apply_phase7_status(module._zhao_cui_predator_prey_tt_cell())
 
     module._validate_analytical_score_contract([row])
-    assert row["comparison_status"] == "executed_value_score"
+    assert row["comparison_status"] == "blocked_or_status_only"
     assert row["phase7_batch_gpu_xla_status"]["timing_rank_status"] == (
-        "not_ranked_by_phase7_timing"
+        "not_rankable_correctness_gate_open"
     )
     assert row["phase7_batch_gpu_xla_status"]["gpu_xla_status"] == (
-        "not_claimed_no_trusted_row_specific_gpu_xla_manifest"
+        "not_applicable_until_value_score_row_exists"
     )
 
 

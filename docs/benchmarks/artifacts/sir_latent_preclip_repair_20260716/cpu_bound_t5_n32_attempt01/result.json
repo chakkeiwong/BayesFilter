@@ -1,0 +1,173 @@
+{
+  "command": "docs/benchmarks/run_latent_preclip_sir_contract_e.py --time-steps 5 --particle-count 32 --no-jit-compile --prepared-input docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/prepared_t5_n32_attempt01/prepared.json --output docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/cpu_bound_t5_n32_attempt01/result.json",
+  "configuration": {
+    "col_chunk_size": 16,
+    "dtype": "float64",
+    "jit_compile": false,
+    "particle_count": 32,
+    "row_chunk_size": 16,
+    "seed": 81103,
+    "sinkhorn_steps": 2,
+    "time_steps": 5
+  },
+  "diagnostic": {
+    "clip_boundary_away_history": [
+      [
+        true,
+        true,
+        true,
+        true
+      ]
+    ],
+    "finite_difference": [
+      28.21188169690458,
+      -12.406461895864139,
+      -8.564193812787835
+    ],
+    "finite_difference_endpoints": [
+      {
+        "minus": -164.94365351013917,
+        "minus_valid": true,
+        "parameter": "log_kappa_scale",
+        "plus": -164.94308927250523,
+        "plus_valid": true
+      },
+      {
+        "minus": -164.9432472162447,
+        "minus_valid": true,
+        "parameter": "log_nu_scale",
+        "plus": -164.94349534548263,
+        "plus_valid": true
+      },
+      {
+        "minus": -164.94328561408577,
+        "minus_valid": true,
+        "parameter": "log_obs_noise_scale",
+        "plus": -164.94345689796202,
+        "plus_valid": true
+      }
+    ],
+    "finite_difference_policy": {
+      "maximum_relative_error": 5.86056274074228e-09,
+      "relative_errors": [
+        5.86056274074228e-09,
+        1.1051625168868907e-09,
+        1.3057495352743577e-09
+      ],
+      "scope": "individual_coordinate_same_scalar_fd_only",
+      "status": "pass",
+      "threshold": 0.08660254037844387
+    },
+    "first_call_seconds": 17.668784544977825,
+    "increment_history": [
+      [
+        -33.09428693272514,
+        -31.83791664089376,
+        -32.97640422724415,
+        -33.1549695065669,
+        -33.87979394529456
+      ]
+    ],
+    "increment_score_history": [
+      [
+        [
+          0.0,
+          0.0,
+          -0.8796083007971828
+        ],
+        [
+          -7.369780578128518,
+          2.7779469238776247,
+          -3.5190613558670174
+        ],
+        [
+          -2.4518669178417527,
+          0.8662303094837405,
+          -1.9654562155988429
+        ],
+        [
+          20.515761049190402,
+          -8.774444159221654,
+          -1.21479037857148
+        ],
+        [
+          17.517768309021953,
+          -7.276194956292692,
+          -0.9852775731360044
+        ]
+      ]
+    ],
+    "minimum_mass_history": [
+      [
+        0.7702861847152549,
+        0.59330487385583,
+        0.9014658614676251,
+        0.9321278701526261,
+        0.9611846878908432
+      ]
+    ],
+    "objective": -164.94337125272452,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:CPU:0"
+    ],
+    "reset_valid_history": [
+      [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    ],
+    "score": [
+      28.211881862242084,
+      -12.406461882152982,
+      -8.564193823970527
+    ],
+    "valid_chart": [
+      true
+    ],
+    "warm_replay_objective_equal": true,
+    "warm_replay_seconds": 0.034416790993418545
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_dirty": true,
+    "physical_gpus": [],
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "trust_basis": "deliberate_cpu_only_reference_preflight"
+  },
+  "nonclaims": [
+    "not canonical Contract E admission",
+    "not fixed-TTSIRT total-score closure",
+    "not full-horizon correctness",
+    "not HMC or leaderboard readiness",
+    "same-scalar FD is not an oracle comparison"
+  ],
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/prepared_t5_n32_attempt01/prepared.json",
+    "sha256": "6ad5928950058be00b523ca0aabffe4b0134997665ecf43570f443f17720c1ff",
+    "status": "PASS_CPU_ONLY_PREPARATION"
+  },
+  "prepared_identity": {
+    "epsilon": "e4407e1192399c3637f63af7aa574b2cb19bd11d81acb0994f62cf83a98f5ce4",
+    "fixed_reset_mask": "ef413b621d61c84f0a8803692cec21a89028b4ab5926b0db2f185b54dac28524",
+    "initial_noise": "b29a2f37bc22433ad5eda367a02779a650160a14d01b657d50fe21a20201bca1",
+    "observations": "82b84bb17d6b4f283dfd16919cadf1905512d821a1e2a2740d2ffe78b0e0d344",
+    "prepared_ridge": "35abc9c1c409f0996bd2b0adf5e83df6c0630c6326ba9c4bf2aa2d90cb5d4c78",
+    "residual_design": "c076456605d5a94bfc1bea47fb4bf124637d610b609402950162cb0eee353557",
+    "scaling": "cb930ec4c0b7a82a69f388f20232162c735b05f2d3c8dd01867282a66055007c",
+    "transition_noise": "157d68e89e4957b403cb69967c58d7907367a81d2ebcfa5a979cff886982b7b6"
+  },
+  "route_id": "contract_e_chol_latent_preclip_sir_candidate_v1",
+  "route_status": "candidate_not_canonical_not_admitted",
+  "schema": "bayesfilter.latent_preclip_sir.contract_e_chol_diagnostic.v1",
+  "simulator": {
+    "observations_sha256": "82b84bb17d6b4f283dfd16919cadf1905512d821a1e2a2740d2ffe78b0e0d344",
+    "physical_path_sha256": "1a760af2a855106d1ad397d9bef09baf0cdf040cf3a4be44135491bc325e91f4"
+  },
+  "status": "PASS_BOUNDED_DIAGNOSTIC",
+  "target_id": "zhao_cui_sir_austria_latent_preclip_simulator_law_v1"
+}

@@ -1,0 +1,140 @@
+{
+  "campaign_id": "cubature-genut-dimension-precision-20260721",
+  "comparisons": [
+    {
+      "N": 12,
+      "T": 2,
+      "dimension": 2,
+      "score_max_absolute_difference": 7.10683192750583e-05,
+      "value_absolute_difference": 2.0400661187913727e-05
+    },
+    {
+      "N": 8,
+      "T": 2,
+      "dimension": 4,
+      "score_max_absolute_difference": 0.00012833556880398334,
+      "value_absolute_difference": 7.524619512366826e-06
+    }
+  ],
+  "hard_valid": true,
+  "host": "DESKTOP-RF1Q5IJ",
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "diagnostic only",
+    "no default or leaderboard admission"
+  ],
+  "physical_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "precision_budget": {
+    "score_max_absolute_difference": 0.02,
+    "value_absolute_difference": 0.005
+  },
+  "rows": [
+    {
+      "N": 12,
+      "T": 2,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "dimension": 2,
+      "dtype": "float32",
+      "elapsed_seconds": 2.6639645980030764,
+      "finite": true,
+      "gpu": true,
+      "max_col_residual": 4.023313522338867e-07,
+      "max_mean_residual": 4.470348358154297e-08,
+      "max_row_residual": 1.4156103134155273e-07,
+      "placement_valid": true,
+      "score": [
+        -0.41968637704849243,
+        0.6767492294311523
+      ],
+      "value": -2.01025390625
+    },
+    {
+      "N": 12,
+      "T": 2,
+      "device": "/job:localhost/replica:0/task:0/device:CPU:0",
+      "dimension": 2,
+      "dtype": "float64",
+      "elapsed_seconds": 0.38318328800960444,
+      "finite": true,
+      "gpu": false,
+      "max_col_residual": 4.21661963123654e-07,
+      "max_mean_residual": 5.551115123125783e-17,
+      "max_row_residual": 1.1945749535391403e-07,
+      "placement_valid": true,
+      "score": [
+        -0.4196681183155641,
+        0.6768202977504274
+      ],
+      "value": -2.010274306911188
+    },
+    {
+      "N": 8,
+      "T": 2,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "dimension": 4,
+      "dtype": "float32",
+      "elapsed_seconds": 1.2601475410046987,
+      "finite": true,
+      "gpu": true,
+      "max_col_residual": 4.172325134277344e-07,
+      "max_mean_residual": 5.960464477539063e-08,
+      "max_row_residual": 1.043081283569336e-07,
+      "placement_valid": true,
+      "score": [
+        1.1531691551208496,
+        3.6434454917907715
+      ],
+      "value": -5.2248215675354
+    },
+    {
+      "N": 8,
+      "T": 2,
+      "device": "/job:localhost/replica:0/task:0/device:CPU:0",
+      "dimension": 4,
+      "dtype": "float64",
+      "elapsed_seconds": 0.3616974819742609,
+      "finite": true,
+      "gpu": false,
+      "max_col_residual": 4.824948980353128e-07,
+      "max_mean_residual": 1.1102230246251565e-16,
+      "max_row_residual": 1.0202525127511741e-07,
+      "placement_valid": true,
+      "score": [
+        1.1531239609944912,
+        3.6433171562219675
+      ],
+      "value": -5.224814042915888
+    }
+  ],
+  "run_manifest": {
+    "command": [
+      "docs/benchmarks/run_cubature_genut_dimension_precision.py",
+      "--output-root",
+      "docs/benchmarks/artifacts/cubature_genut_gap_closure_20260721/phase3_dimension_precision_attempt04"
+    ],
+    "git_commit": "0fff464ab456b72a010007e552c1e2d761624afe",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "started_utc": "2026-07-21T07:53:45.206506+00:00",
+    "tensorflow": "2.19.1",
+    "wall_seconds": 5.494336125993868
+  },
+  "schema_version": "bayesfilter.cubature_genut_dimension_precision.v1",
+  "tf32_enabled": true
+}

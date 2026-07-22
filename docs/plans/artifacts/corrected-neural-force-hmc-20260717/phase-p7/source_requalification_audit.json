@@ -1,0 +1,70 @@
+{
+  "schema": "bayesfilter.corrected_neural_force_hmc.p7_source_requalification_audit.v1",
+  "program_id": "bayesfilter-corrected-neural-force-hmc-20260717",
+  "phase": "P7",
+  "audited_at_utc": "2026-07-17T18:45:00Z",
+  "source_repository": {
+    "path": "/home/chakwong/python",
+    "git_commit": "b5193b2c734d10946ddaf364c737ca2311826028"
+  },
+  "review": {
+    "claude_probe": "CLAUDE_PROBE_OK",
+    "bounded_plan_verdict": "AGREE",
+    "role": "read_only_advisory"
+  },
+  "cells": {
+    "NK-ANALYTIC": {
+      "historical_result_sha256": "7196cc04cdd7601cb18cdf1c1f801e1ca1aa4ccf3c8d5d88c6320a0a58ecc1c4",
+      "documented_chart_root": "/home/chakwong/python/results/neutra/gate3/nk_mild_fixed_grid_plain_baseline_20260603/serious_seed42_gpu1_8h",
+      "documented_chart_root_present": false,
+      "exact_selected_chart_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "documented_selected_chart_root_not_preserved"
+    },
+    "NK-REAL": {
+      "historical_result_sha256": "dca30318d77fef92b11518187f257e4033463c178d1ee601cd0b4b162261b181",
+      "documented_chart_root": "/home/chakwong/python/docs/plans/artifacts/neutra-real-nk-parallel-value-score-training-2026-06-13/serious_baseline_resume_20260613_24h_r2",
+      "documented_chart_root_present": false,
+      "exact_selected_chart_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "selected_parent_and_resume_training_state_not_preserved"
+    },
+    "NK-SVD-UKF": {
+      "historical_result_sha256": "6c3f31be952028f7c9794ce6584648c51a0ba467754b6b7a8e1193a8c83caabf",
+      "documented_selected_artifact": "/home/chakwong/python/docs/plans/artifacts/nk-principal-sqrt-ukf-proper-baseline-runset-2026-06-19/phase6/serious-baseline/phase4-hmc-tf_principal_sqrt_ukf-full-grid-diagnostics-rerun/candidate_47_eps0.5_lf16_full_mcmc_v2.json",
+      "documented_selected_artifact_present": false,
+      "exact_selected_chart_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "selected_diagonal_transport_and_diagnostic_artifact_not_preserved"
+    },
+    "ROT-KF": {
+      "historical_result_sha256": "f1eab883e29ceab6e307c05d178b0d5e63103d4f954eba40d34ca32e782e689e",
+      "launch_summary_sha256": "4be482d632dfb1b7b70fce5330560b4afde3d5a936f88ba86af429cfce95b108",
+      "launch_summary_present": true,
+      "named_replay_and_training_state_present": false,
+      "launch_summary_embeds_complete_transport_state": false,
+      "exact_selected_chart_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "launch_summary_survives_but_selected_transport_state_does_not"
+    },
+    "ROT-SVD2": {
+      "historical_result_sha256": "b554916416bdf27c4e109f953ca43903334a75f3d8ec10f6d93984517447c971",
+      "launch_summary_sha256": "0d38adb3a7302e02013403782c631dce94c8f51900cf8474c9c2a8238956191e",
+      "launch_summary_present": true,
+      "per_parameter_statistics_present": true,
+      "named_final_replay_and_training_state_present": false,
+      "launch_summary_embeds_complete_transport_state": false,
+      "exact_selected_chart_reconstructible": false,
+      "decision": "REQUALIFICATION_BLOCKED",
+      "blocker": "summary_and_statistics_survive_but_selected_transport_state_does_not"
+    }
+  },
+  "gpu_wall_hours_consumed": 0.0,
+  "cpu_wall_hours_charged_conservatively": 0.5,
+  "nonclaims": [
+    "historical NeuTra results are not invalidated",
+    "no corrected neural-force run was executed on a substitute chart",
+    "no pooled DSGE failure is inferred",
+    "fresh chart retraining remains a different future campaign"
+  ]
+}

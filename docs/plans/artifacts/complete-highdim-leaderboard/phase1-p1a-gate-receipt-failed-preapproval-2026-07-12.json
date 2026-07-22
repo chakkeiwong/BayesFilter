@@ -1,0 +1,79 @@
+{
+  "schema_version": "bayesfilter.complete_highdim.phase1_p1a_gate_receipt.v1",
+  "run_id": "complete-highdim-leaderboard-local-20260712-134906",
+  "timestamp_local": "2026-07-12T15:20:23+08:00",
+  "gate": "P1-A canonical target freeze",
+  "verdict": "FAIL_P1A_CANONICAL_TARGET_CONTRADICTION",
+  "continuation_authority": false,
+  "blocker_token": "BLOCK_CANONICAL_TARGET_CONTRADICTION_SIR_OBSERVATION_IDENTITY",
+  "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "execution_scope": {
+    "classification": "cpu_hidden_engineering_only",
+    "cuda_visible_devices": "-1",
+    "filter_executed": false,
+    "gpu_evidence_claimed": false,
+    "leaderboard_cell_admitted": false
+  },
+  "entry_bindings": {
+    "phase0_freeze_path": "docs/plans/artifacts/complete-highdim-leaderboard/phase0-boundary-freeze-2026-07-11.json",
+    "phase0_freeze_sha256": "4115ef55114ffd73255363f0c62c4a19dd85d7ca3241d002c48409cb9004f878",
+    "phase1_subplan_path": "docs/plans/bayesfilter-complete-highdim-leaderboard-phase1-ledh-harness-subplan-2026-07-11.md",
+    "phase1_subplan_sha256": "ff75b73fdbc2f75c0d5f05c0ac835fdfec69cc7ccd1448b47c6f66b2d9ebb62b",
+    "local_continuation_runbook_path": "docs/plans/bayesfilter-complete-highdim-leaderboard-local-only-continuation-runbook-2026-07-12.md",
+    "local_continuation_runbook_sha256": "a39a2d08d84762f17de7bd0686d6df3eb4c884f6111fd3907f2754d0974ad4bd",
+    "stop_handoff_reference": "docs/plans/bayesfilter-complete-highdim-leaderboard-local-only-continuation-stop-handoff-2026-07-12.md"
+  },
+  "pre_edit_harness_identity": {
+    "path": "docs/benchmarks/benchmark_ledh_compact_score_gpu_xla.py",
+    "phase0_expected_sha256": "2bd7c4c62773657213ccd488c9e55b96f3f7d6d4a3b00a7aaf2a8fb070031d58",
+    "observed_sha256": "2bd7c4c62773657213ccd488c9e55b96f3f7d6d4a3b00a7aaf2a8fb070031d58",
+    "byte_identical": true,
+    "edited_during_p1a": false
+  },
+  "canonical_target_artifact": {
+    "path": "docs/plans/artifacts/complete-highdim-leaderboard/phase1-canonical-targets-2026-07-11.json",
+    "sha256": "ba3d93521d8372acb2312447a70a6ff0dbf90890b945995527162e4f79e61cfd",
+    "row_count": 6,
+    "row_sha256": {
+      "benchmark_lgssm_exact_oracle_m3_T50": "5272ebaf764f76c720b0755a0583e6d3f3aa2bf6ed35e5d6e1dea167aa3527d1",
+      "zhao_cui_sv_actual_nongaussian_T1000": "2c62d7f3cc76d67700e2797c363a8470b387b1525f68297229c2347064c9d7fa",
+      "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000": "420e523dad5ccc80d1bcafe032b3517f000637ea26d6c604a452a9145ca104de",
+      "zhao_cui_spatial_sir_austria_j9_T20": "9586c49d12d62ed079fd81baffc3abee9bf3218b55a6c41c77129cda3112229a",
+      "zhao_cui_predator_prey_T20": "cbd6512221eabc0f10525d31e9256655ba39621ed58a9a4abd094213c4da28ce",
+      "zhao_cui_generalized_sv_synthetic_from_estimated_values": "902dfb693446e1446988617caf3f7914c6e697f4d5d5c6706194ecd0eae69295"
+    }
+  },
+  "implementation_bindings": {
+    "builder_path": "docs/benchmarks/build_complete_highdim_phase1_canonical_targets.py",
+    "builder_sha256": "04ac316e80d18e8070e47aae784243e99f213c36335e930d4ca0ff4dd3a678f6",
+    "independent_checker_path": "docs/benchmarks/check_complete_highdim_phase1_canonical_targets.py",
+    "independent_checker_sha256": "211d68ca13fcae21dbe8f53e300053113507c6a17962e4c89f7a898a66dfa053",
+    "focused_test_path": "tests/highdim/test_complete_highdim_phase1_canonical_targets.py",
+    "focused_test_sha256": "2136bbd007423b875caaf423989f40d8ea16c3fd5874568ab16a9f2a0e7d6180"
+  },
+  "checks": {
+    "deterministic_builder_check": "PASS_PHASE1_CANONICAL_TARGET_BUILDER_CHECK",
+    "independent_regeneration_and_frame_check": "PASS_PHASE1_CANONICAL_TARGET_INDEPENDENT_CHECK",
+    "focused_adversarial_tests": "7 passed",
+    "python_compile": "pass",
+    "json_parse": "pass",
+    "scoped_diff_check": "pass"
+  },
+  "skeptical_assessment": {
+    "target_bytes_deterministically_materialized": true,
+    "independent_field_ledgers_matched": true,
+    "algorithm_specific_particle_and_transport_fields_excluded": true,
+    "all_declared_source_hashes_current": true,
+    "contradiction_with_phase0_target_identity_found": true,
+    "source_route_faithfulness_decided": false,
+    "note": "The candidate materialization proves that the current fixed-SIR harness obtains observations from _sir_dataset(81103). The reviewed Phase 0 boundary says this main row has fixed source observations and explicitly declares no synthetic target-generation seed. This is a target-authority contradiction, so deterministic bytes and passing encoder checks cannot close P1-A. The candidate artifact is diagnostic only until the owner chooses the intended SIR observation identity and all affected bindings are refreshed."
+  },
+  "next_gate": "blocked: owner target-identity decision and refreshed Phase 0/P1-A bindings; P1-B is not entered",
+  "nonclaims": [
+    "not evaluator correctness evidence",
+    "not GPU/XLA execution evidence",
+    "not Zhao-Cui source-faithfulness approval",
+    "not leaderboard cell admission",
+    "not ranking, posterior, HMC, or scientific-validity evidence"
+  ]
+}

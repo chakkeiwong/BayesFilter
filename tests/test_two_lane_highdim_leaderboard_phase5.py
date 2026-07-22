@@ -64,6 +64,7 @@ def test_phase5_parameterized_sir_scoped_component_row_uses_manual_score() -> No
     assert row["comparison_status"] == "executed_value_score"
     assert row["row_admission_status"] == "scoped_component_row_admitted"
     assert row["target_scope"] == "local_complete_data_zhao_cui_sir_d18_component"
+    assert row["hmc_target_scope_admitted"] is True
     assert row["target_contract_status"] == "target_compatible_scoped_local_complete_data_component"
     assert row["route_role"] == "fixed_variant_zhao_cui_source_route"
     assert row["retained_grid_leaderboard_admission"] == (
@@ -135,6 +136,8 @@ def test_phase5_split_merge_cached_baseline_admits_scoped_row_with_nonclaim() ->
         and item["algorithm_id"] == "zhao_cui_scalar_or_multistate"
     )
     assert row["comparison_status"] == "executed_value_score"
+    assert isinstance(row["score"], list)
+    assert row["score_status"] == "analytical_score_emitted"
     assert row["row_admission_status"] == "scoped_component_row_admitted"
     assert row["target_scope"] == "local_complete_data_zhao_cui_sir_d18_component"
     assert row["score_derivative_provenance"] == (

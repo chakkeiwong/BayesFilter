@@ -1,0 +1,121 @@
+{
+  "artifact_root": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/lgssm_n10000_tuned_kalman_20260720/attempt01",
+  "attempt_id": "n10000-tuned-kalman-attempt01",
+  "campaign_id": "lgssm-n10000-tuned-kalman-20260720",
+  "command": [
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py",
+    "--output-root",
+    "docs/benchmarks/artifacts/lgssm_n10000_tuned_kalman_20260720/attempt01",
+    "--attempt-id",
+    "n10000-tuned-kalman-attempt01",
+    "--time-steps",
+    "50",
+    "--num-particles",
+    "10000",
+    "--seed-microbatch-size",
+    "1",
+    "--tuning-seed-start",
+    "82400",
+    "--claim-seed-start",
+    "82420",
+    "--sinkhorn-candidates",
+    "20,25,30,40",
+    "--balance-candidates",
+    "5,8,12,16,25,32",
+    "--campaign-id",
+    "lgssm-n10000-tuned-kalman-20260720",
+    "--plan-path",
+    "docs/plans/bayesfilter-lgssm-n10000-tuned-kalman-certification-plan-2026-07-20.md",
+    "--node-cap-seconds",
+    "7200",
+    "--total-cap-seconds",
+    "28800"
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "memory_policy": {
+      "aggregate_visible_gpu_limit_mib": 8192,
+      "configured_before_logical_device_initialization": true,
+      "hard_allocator_cap": true,
+      "memory_growth": false,
+      "memory_limit_mib_per_physical_device": 8192,
+      "mode": "fixed_logical_device_limit",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_limit_mib": 8192
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "unset"
+    },
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "dtype": "float32",
+    "gpu_memory_limit_mib": 8192,
+    "gpu_required": true,
+    "jit_compile": true,
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true
+  },
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "plan_path": "docs/plans/bayesfilter-lgssm-n10000-tuned-kalman-certification-plan-2026-07-20.md",
+  "result_path": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/lgssm_n10000_tuned_kalman_20260720/attempt01/campaign_result.json",
+  "result_sha256": "e9e155b8b15408114d5395964f60a34b59042f9f81f4f7ac88c0d21f112f7317",
+  "schema_version": "bayesfilter.ledh_offline_ot_tuning_manifest.v1",
+  "seeds": {
+    "calibration": [
+      82400,
+      82401,
+      82402,
+      82403,
+      82404,
+      82405,
+      82406,
+      82407
+    ],
+    "claim": [
+      82420,
+      82421,
+      82422,
+      82423,
+      82424,
+      82425,
+      82426,
+      82427,
+      82428,
+      82429,
+      82430,
+      82431,
+      82432,
+      82433,
+      82434,
+      82435
+    ],
+    "validation": [
+      82408,
+      82409,
+      82410,
+      82411,
+      82412,
+      82413,
+      82414,
+      82415
+    ]
+  },
+  "status": "SCOPE_CLAIM_PASS",
+  "wall_time_seconds": 8412.728203710998
+}

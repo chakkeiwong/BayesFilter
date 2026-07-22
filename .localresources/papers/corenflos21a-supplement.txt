@@ -1,0 +1,737 @@
+                                                           Differentiable Particle Filtering
+
+A. Proof of Proposition 4.1
+A particle filter with multinomial resampling is defined by the following joint distribution
+                                                        N          T YN                     
+                                                        Y         Y      ait−1           i
+                                                                                      i at−1
+                              q θ,φ (x1:N
+                                      1:T , a1:N
+                                             1:T −1 ) =   q φ x i
+                                                                1       w t−1 φ q   x  |x
+                                                                                      t t−1
+                                                                    i=1             t=2 i=1
+
+where ait−1 ∈ {1, ..., N } is the ancestral index of particle xit and
+                                                        pθ (x1 , y1 )                                  pθ (xt , yt |xt−1 )
+                                  ωθ,φ (x1 , y1 ) =                   ,     ωθ,φ (xt−1 , xt , yt ) =                       .
+                                                         qφ (x1 )                                       qφ (xt |xt−1 )
+                                      ai                  PN                                                                 ait−1
+Finally, we have wti ∝ ωθ,φ (xt−1
+                               t−1
+                                   , xit , yt ),                   i
+                                                              i=1 wt = 1. We do not emphasize notationally that the weights wt−1 are
+θ, φ and observations dependent.
+The ELBO is given by
+                                                          "            N
+                                                                                         !   T                          N
+                                                                                                                                                      !#
+                                                                    1 X          i
+                                                                                            X                       1 X          Ait−1
+  `ELBO
+          (θ, φ) =Eqθ,φ [log pbθ (y1:T )] = Eqθ,φ log                     ωθ,φ (X1 , y1 ) +     log                       ωθ,φ (Xt−1   , Xti , yt )        .
+                                                                    N i=1                   t=2
+                                                                                                                    N i=1
+
+We now compute ∇θ `ELBO (θ, φ). We assume from now on that the regularity conditions allowing us to swap the expectation
+and differentiation operators are satisfied as in (Maddison et al., 2017; Le et al., 2018; Naesseth et al., 2018). We can split
+the gradient using the product rule and apply the log-derivative trick:
+
+
+                                                                                             1:N
+           ∇θ `ELBO (θ, φ) =Eqθ,φ [∇θ log pbθ (y1:T )] + Eqθ,φ log pbθ (y1:T )∇θ log q θ,φ (X1:T , A1:N
+                                                                                                           
+                                                                                                    1:T −1 )
+                                  "                N
+                                                                      !    T                 N
+                                                                                                                      !#
+                                               1 X            i
+                                                                          X              1 X            Ait−1 i
+                           =Eqθ,φ ∇θ log               ωθ,φ (X1 , y1 ) +      ∇θ log            ωθ,φ (Xt−1 , Xt , yt )                                 (17)
+                                               N i=1                      t=2
+                                                                                         N i=1
+                                    "                 ( T N                     )#
+                                                        XX                Ait−1
+                            + Eqθ,φ log pbθ (y1:T )              ∇θ log wt−1                                                                           (18)
+                                                                   t=2 i=1
+
+For the first part of the ELBO gradient (17), we have
+
+
+                                    N
+                                                           !       N                                        N
+                               1 X                                 X                                        X
+                  ∇θ log             wθ,φ (X1i ), y1           =          w1i ∇θ log wθ,φ (X1i , y1 ) =           ω1i ∇θ log pθ (X1i , y1 )
+                               N i=1                               i=1                                      i=1
+
+and
+                    N
+                                             !   N                                          N
+                 1 X          Ait−1  i
+                                                X                     Ait−1                X                             Ait−1
+      ∇θ log           ωθ,φ (Xt−1 , Xt , yt ) =     wti ∇θ log ωθ,φ (Xt−1   , Xti , yt ) =     wti ∇θ log pθ (Xti , yt |Xt−1   ).
+                 N i=1                          i=1                                        i=1
+
+This gives
+                                        "N                                       T X
+                                                                                   N
+                                                                                                                                #
+                                         X                                       X                                    Ait−1
+          ∇θ ` ELBO
+                      (θ, φ) = Eqθ,φ              w1i ∇θ log pθ (X1i , y1 ) +               wti ∇θ log pθ (Xti , yt |Xt−1   )                          (19)
+                                            i=1                                   t=2 i=1
+                                        "                   ( T N                           )#
+                                                             XX                    Ait−1
+                              + Eqθ,φ log pbθ (y1:T )                      ∇θ log wt−1           .                                                     (20)
+                                                               t=2 i=1
+
+When we ignore the gradient terms due to resampling corresponding to (20) as proposed in (Naesseth et al., 2018; Le et al.,
+2018; Maddison et al., 2017; Hirt & Dellaportas, 2019), we only use an unbiased estimate of the first term (19), i.e.
+                        N                                      T X
+                                                                 N
+                        X                                      X                                       Ai
+ˆ θ `ELBO (θ, φ) :=
+∇                             w1i ∇θ log pθ (X1i , y1 ) +                 wti ∇θ log pθ (Xti , yt |Xt−1
+                                                                                                      t−1
+                                                                                                          ),                1:N
+                                                                                                                    where (X1:T , A1:N
+                                                                                                                                   1:T −1 ) ∼ q θ,φ (·).
+                        i=1                                    t=2 i=1
+                                                                                                                                                       (21)
+                                                       Differentiable Particle Filtering
+
+Now we assume that the mild assumptions ensuring almost sure convergence of the PF estimates are satisfied (see e.g.
+(Del Moral, 2004)). Under these assumptions, the estimator (21) converges almost surely as N → ∞ towards
+               Z                                              T Z
+                                                              X
+                   ∇θ log pθ (x1 , y1 )pθ (x1 |y1 )dx1 +                ∇θ log pθ (xt , yt |xt−1 )pθ (xt−1:t |y1:t−1 )dxt−1:t .   (22)
+                                                              t=2
+
+Under an additional uniform integrability condition on ∇  ˆ θ `ELBO (θ, φ), we thus have that Eq [∇ ˆ θ `ELBO (θ, φ)] converges
+                                                                                                θ,φ
+towards (22). We recall that the true score is given by Fisher’s identity and satisfies
+               Z                                                  T Z
+                                                                  X
+                   ∇θ log pθ (x1 , y1 )pθ (x1 |y1:T )dx1 +                ∇θ log pθ (xt , yt |xt−1 )pθ (xt−1:t |y1:T )dxt−1:t .
+                                                                  t=2
+
+This concludes the proof of Proposition 4.1.
+
+B. Notation and Assumptions
+B.1. Filtering Notation
+Recall X = Rdx , denote the Borel sets of X by B(X ) and P(X ) the set of Borel probability measures on (X , B(X )). In
+an abuse of notation, we shall use the same notation for a probability
+                                                                 R      measure and its density w.r.t. Lebesgue measure;
+i.e. ν(dx) = ν(x)dx. We also use the standard notation ν(ψ) = ψ(x)ν(x)dx for any test function ψ. In the interest of
+notational clarity, we will remove subscript θ, φ where unnecessary in further workings.
+We denote {α(t) }t≥0 the predictive distributions where α(t) (xt ) = p(xt |y1:t−1 ) for t > 1 and α(1) (x1 ) = µ(x1 ) while
+{β (t) }t≥1 denotes the filtering distributions; i.e. β (t) (xt ) = p(xt |y1:t ) for t ≥ 1.
+
+
+Using this notation, we have
+                                             Z
+                               (t)
+                             α (ψ) =             ψ(xt )f (xt |xt−1 )β (t−1) (xt−1 )dxt−1 dxt := β (t−1) f (ψ),                    (23)
+
+                                             α(t) (g(yt |·)ψ)   β (t−1) (f (g(yt |·)ψ))
+                             β (t) (ψ) =                      =                         .                                         (24)
+                                              α(t) (g(yt |·))    β (t−1) (f (g(yt |·)))
+More generally, for a proposal distribution q(xt |xt−1 , yt ) 6= f (xt |xt−1 ) with parameter φ 6= θ, the following recursion
+holds
+
+
+                                                                        β (t−1) (q(ωt ψ))
+                                                         β (t) (ψ) =                                                              (25)
+                                                                         β (t−1) (q(ωt ))
+
+
+                                                                                    g(yt |xt )f (xt |xt−1 )
+                                       ωt (xt−1 , xt ) := ω(xt−1 , xt , yt ) =                              .                     (26)
+                                                                                      q(xt |xt−1 , yt )
+To simplify the presentation, we will present the analysis in the scenario where φ = θ and q(xt |xt−1 , yt ) = f (xt |xt−1 ) so
+we will analyze (23) for which ωt (xt−1 , xt ) = g(yt |xt ). In this case, the particle approximations of µ is denoted µN and
+for t > 1, α(t) and β (t) are given by the random measures
+                                         N                               N                                      N
+                       (t)           1 X                    (t)
+                                                                         X                     (t)         1 X
+                     αN (ψ) =              ψ(Xti ),       βN (ψ) =             wti ψ(Xti ),   β̃N (ψ) =          ψ(X̃ti ),        (27)
+                                     N i=1                               i=1
+                                                                                                           N i=1
+                               PN
+where wti ∝ g(yt |Xti ) with              i                                   i          i
+                                     i=1 wt = 1 and particles are drawn from Xt ∼ f (·|X̃t−1 ).
+       (t)                                                                            (t)
+Here βN denotes the weighted particle approximation of β (t) while β̃N is the uniformly weighted approximation obtained
+after the DET transformation described in Section 3.2.
+                                               Differentiable Particle Filtering
+
+B.2. Optimal Transport Notation
+Recall from Section 2.1, PtOT denotes a transport between α(t) and β (t) with accompanying map T(t) . PtOT,N denotes an
+                                                      (t)     (t)
+optimal transport between particle approximations αN and βN with corresponding transport matrix, POT with i, j entry
+ OT
+pi,j . To simplify notation, we remove script t when not needed.
+                                                                                      (t)     (t)
+Similarly from Section 3.1, POT,N denotes the regularized transport between αN and βN with accompanying matrix
+                                      (t)   1
+                                              PN                                                                 (t)
+POT                    OT
+   with i, j entry p,i,j . Recall β̃N = N     i=1 δX̃ i is the uniformly weighted particle approximation for β     under the
+            i      (t)     i
+                                R      OT,N      i                 i
+DET, i.e. X̃ = TN, (X ) = yP              (dy|x ). Note that X̃N, will be used where necessary to avoid ambiguity when
+comparing to other resampling schemes.
+Recall also for p > 0:
+                                       Wpp (α, β) =               E(U,V )∼P ||U − V ||p
+                                                                                       
+                                                        min                                                              (28)
+                                                      P∈U (α,β)
+
+where U(α, β) is the collection of couplings with marginals α and β.
+
+B.3. Assumptions
+Our results will rely on the following four assumptions.
+Assumption B.1. X ⊂ Rd is a compact subset with diameter
+                                                      d := sup |x − y|.
+                                                           x,y∈X
+
+
+
+Assumption B.2. There exists κ ∈ (0, 1) such that for any two probability measures π, ρ on X
+                                         Wk (πf, ρf ) ≤ κWk (π, ρ),           k = 1, 2.
+
+
+Assumption B.3. The weight function ω (t) : X → [∆, ∆−1 ] is 1-Lipschitz for all t.
+
+
+Assumption B.4. There exists a λ > 0, such that for all t ≥ 0 the unique optimal transport plan between α(t) and β (t) is
+given by a deterministic, λ-Lipschitz map T(t) .
+
+C. Auxiliary Results and Proof of Proposition 4.2
+We start by establishing a couple of key auxiliary results which will be then used subsequently to establish Proposition 4.2.
+
+C.1. Auxiliary Results
+                                                                                           PN
+As per section 2.1, let S(αN , βN ) denote the collection of coupling matrices between αN = i=1 ai δY i with ai > 0 and
+      PN                                                            P
+βN = i=1 bi δX i . We also denote entropy by H where H(P) = i,j pi,j log(1/pi,j ) for P = (pi,j )i,j ∈ S(αN , βN ).
+Lemma C.1. The entropic radius, RH , of simplex U(αN , βN ) may be bounded above as follows
+                                  RH :=         max            H(P1 ) − H(P2 ) ≤ 2 log(N )
+                                          P1 ,P2 ∈S(αN ,βN )
+
+
+Proof. Notice that −H(P) is convex, so that H(P) is concave.
+                                                              
+            X                1         2
+                                         X 1                 1
+                 pi,j log          =N           pi,j log
+             i,j
+                            pi,j         i,j
+                                             N2             pi,j
+                                                          
+                                              1 X                                  1
+                                   ≤ N 2H  2         pi,j  = N 2 H(1/N 2 ) = N 2 2 log N 2 = 2 log(N ).
+                                                                                            
+                                             N i,j                                N
+                                                         Differentiable Particle Filtering
+
+In addition since pi,j ≤ 1 for all i, j, we have that H(P) ≥ 0 and therefore we can bound
+
+                               RH = max H(P1 ) − H(P2 ) ≤                          max           H(P1 ) ≤ 2 log(N ).
+                                         P1 ,P2 ∈P                             P1 ∈S(αN ,βN )
+
+
+
+
+Lemma C.2. Let X ⊂ Rd be compact with diameter d > 0. Suppose we are     Pgiven   two probability measures α, Pβ on X with
+                                                                            N                                     N
+a unique deterministic, λ-Lipschitz optimal transport map T while αN = i=1 ai δY i with ai > 0 and βN = i=1 bi δX i .
+We write P OT,N , resp. POT,N , for an optimal coupling between αN and βN , resp. the -regularized optimal transport plan,
+between αN and βN . Then
+        Z                                        12                h         i1/2
+             ||y − T(x)|| POT,N (dx, dy)
+                           2
+                                                        ≤ 2λ1/2 E 1/2 d1/2 + E      + max{λ, 1} [W2 (αN , α) + W2 (βN , β)] ,
+
+where
+                                                                                                     p
+                                E := E(N, , α, β) := W2 (αN , α) + W2 (βN , β) +                     2 log(N ).
+
+
+Proof. From Corollary 3.8 from (Li & Nochetto, 2021)
+        Z                                       1/2
+                                                                                                     1/2
+             kT(x) − yk POT,N (dx, dy)
+                           2
+                                                         ≤ 2λ1/2
+                                                                   p
+                                                                       ẽN, [W2 (α, β) + ẽN, ]          + λW2 (αN , α) + W2 (βN , β),
+
+where λ is the Lipschitz constant of the optimal transport map T sending α to β, and
+                                                                  Z                            1/2
+                    ẽN, := W2 (αN , α) + W2 (βN , β) +                kx − yk2 POT,N (dx, dy)     − W2 (αN , βN ).                      (29)
+
+From Proposition 4 of (Weed, 2018),
+                                               X
+                                                         pOT              2   2
+                                                          ,i,j |Yi − Xj | − W2 (αN , βN ) ≤ RH ,
+                                           i,j=1,...,N
+
+
+where RH is the entropic radius as defined in Lemma C.1.
+By Lemma C.1 we therefore have that
+                                     Z
+                                          kx − yk2 POT,N (dx, dy) − W22 (αN , βN ) ≤ 2 log(N ).
+
+             √                                                      √          √        √
+Since x 7→       x is sub-additive, for r, s > 0 we have that            r−        s≤       r − s, whence
+                                Z                                      1/2
+                                                                                                       p
+                                     kx − yk POT,N (dx, dy)
+                                                 2
+                                                                               − W2 (αN , βN ) ≤        2 log N .
+
+We thus have
+                                                                                             p
+                                            ẽN, ≤ W2 (αN , α) + W2 (βN , β) +                  2 log(N ).
+
+In addition, by Assumption B.1 we have that W2 (α, β) ≤ d1/2 and the result follows.
+
+C.2. Proof of Proposition 4.2
+Proof of Proposition 4.2. By definition, we have β̃N (dx̃) = αN (dx)δTN, (x) (dx̃) with TN, (x) := x̃POT,N (dx̃|x)
+                                                               R                                      R
+
+while, as POT,N belongs to U(αN , βN ), we also have βN (dx̃) = αN (dx)POT,N (dx̃|x). We then have for any 1-Lipschitz
+                                                                 R
+                                                  Differentiable Particle Filtering
+
+function
+                                                  Z Z                                          
+                           βN (ψ) − β̃N (ψ) =                (ψ(x̃) − ψ(TN, (x)))POT,N (dx̃|x) αN (dx)
+                                                  ZZ
+                                              ≤        |ψ(x̃) − ψ(TN, (x))| αN (dx)POT,N (dx̃|x)
+                                                  ZZ
+                                              ≤        ||x̃ − TN, (x)||POT,N (dx, dx̃)
+                                                  Z Z                                       21
+                                              ≤          ||x̃ − TN, (x)||2 POT,N (dx, dx̃)
+                                                  Z Z                                         21
+                                              ≤          ||x̃ − T(x)|| POT,N (dx, dx̃)
+                                                                          2
+                                                                                                     ,
+
+where the final inequality follows from the fact that for any random vector V the mapping v 7→ E[kV − vk2 ] is minimized
+at v = E[V ]. The stated result is then obtained using Lemma C.2.
+
+D. Proof of Proposition 4.3
+For technical reasons, we analyse here a slightly modified PF algorithm where
+                                          N                                               N
+                                 (t)   1 X                       i.i.d.   (t−1)        1 X            
+                                αN =        δ j,              Xtj ∼ β̃N           f=               j
+                                                                                             f · X̃t−1   .                 (30)
+                                       N j=1 Xt                                        N j=1
+
+instead of the standard version where one has
+                                                         N
+                                          (t)      1 X                                   
+                                         αN =           δ j,              Xtj ∼ f · X̃t−1
+                                                                                      j
+                                                                                            .
+                                                   N j=1 Xt
+
+This slightly modified version of the bootstrap PF was analyzed for example in (Del Moral & Guionnet, 2001). The analysis
+does capture the additional error arising from the use of DET instead of resampling. Similar results should hold for the
+standard PF algorithm. The main technical reason for analysing this modified algorithm is our reliance on Theorem 2
+of (Fournier & Guillin, 2015); analysing the standard PF algorithm requires a version of (Fournier & Guillin, 2015) for
+stratified sampling and will be done in future work.
+                                                                                                             (t−1)   (t)
+Proposition D.1. Suppose that Assumptions B.1, B.2 and B.3 hold. Suppose also that given β̃N , αN is defined through
+(30). Define the functions
+                                     p
+                       F(x) := x + dK1 (∆, d)x
+                                 
+                                 x,
+                                               d<4
+                                       x
+                       fd (x) := log(2+1/x) , d = 4
+                                 
+                                  d/2
+                                   x ,          d > 4.
+                                         s                 !
+                                              −1   log(C/δ)
+                 FN,,δ,d (x) := F κx + fd                     ,
+                                                       cN
+               1 2                    h               p        i1/2 h                      p        i1/2
+                 G,δ,N,d (x) := 2λ1/2 FN,,δ,d (x) + 2 log N       d1/2 + FN,,δ,d (x) + 2 log N
+               d
+                                  + λκFN,,δ,d (x) + max{λ, 1}FN,,δ,d (x) .                                     (31)
+Then for any , δ > 0 we have with probability at least 1 − δ, over the sampling step in (30), that
+                                                              h                   i
+                                         (t)                             (t−1)
+                                  W2 β̃N , β (t) ≤ G,δ,N,d W2 β̃N , β (t−1)                                               (32)
+                      (t−1)
+In particular if W2 (β̃N      , β (t−1) ) → 0 and N = o(1/ log(N )) as N → ∞ we have that
+                                                            (t)
+                                                      W2 β̃N , β (t) → 0,
+                                                                    
+                                                Differentiable Particle Filtering
+
+in probability.
+
+Proof of Proposition D.1. To keep notation concise we write for N ≥ 1
+                                      (t)       0        (t−1)                (t)           (t−1)
+                             αN := αN ,        αN := β̃N         f,   βN := βN ,    β̃N := β̃N      .
+
+Controlling W1 (βN , β). Let ψ be 1-Lipschitz. Without loss of generality we may assume that ψ(0) = 0 since otherwise
+we can remove a constant.
+
+
+                                         αN (ωψ) α(ωψ)
+                       |βN (ψ) − β(ψ)| =         −
+                                          αN (ω)    α(ω)
+                                         αN (ωψ) α(ωψ)      α(ωψ) α(ωψ)
+                                       ≤         −        +        −
+                                          αN (ω)   αN (ω)   αN (ω)   α(ω)
+                                       ≤ ∆−1 |αN (ωψ) − α(ωψ)| + ∆−2 α(ωψ)|αN (ω) − α(ω)|.
+
+At this stage notice that
+                                       |(ωψ)0 | ≤ |ω 0 ψ| + |ωψ 0 | ≤ kψk∞ + kωk∞ .
+Notice that
+                                            |ψ(x)| = |ψ(x) − ψ(0)| ≤ |x − 0| ≤ d.
+Therefore we have that
+                                                       |(ωψ)0 | ≤ d + ∆−1 ,
+and thus ωψ is (d + ∆−1 )-Lipschitz. It follows that
+
+                        |βN (ψ) − β(ψ)| ≤ ∆−1 |αN (ωψ) − α(ωψ)| + ∆−2 α(ωψ)|αN (ω) − α(ω)|
+                                        ≤ ∆−1 (d + ∆−1 )W1 (αN , α) + ∆−3 dW1 (αN , α)
+                                        =: K1 (∆, d)W1 (αN , α).
+
+Therefore we have that
+                                             W1 (βN , β) ≤ K1 (∆, d)W1 (αN , α).                                      (33)
+Notice that using the compactness of the state space we easily get also that
+                               p                   p                         p
+                 W2 (βN , β) ≤ dW1 (βN , β) ≤ dK1 (∆, d)W1 (αN , α) ≤ dK1 (∆, d)W2 (αN , α),                          (34)
+
+since clearly W1 (ρ, σ) ≤ W2 (ρ, σ) for any two probability measures ρ, σ.
+Controlling W1 (β̃N, , β). Again supposing ψ is 1-Lipschitz, and ψ(0) = 0, consider
+                                                   Z                            Z
+                            β̃N (ψ) − β̃(ψ) =          ψ(TN, (x))αN (dx) −         ψ(T(x))α(dx)
+                                                   Z                      Z
+                                               ≤     ψ(TN, (x))αN (dx) − ψ(T(x))αN (dx)
+                                                     Z                   Z
+                                                   +   ψ(T(x))αN (dx) − ψ(T(x))α(dx)
+
+For the second term, using the fact that T and ψ are λ- and 1-Lipschitz respectively, we have that ψ ◦ T is λ-Lipschitz and
+therefore
+                       Z                       Z
+                          ψ(T(x))αN (dx) − ψ(T(x))α(dx) ≤ λW1 (αN , α) ≤ λW2 (αN , α),
+                                                  Differentiable Particle Filtering
+
+where we used Assumption B.2 for that last inequality For the first term recall that using Cauchy-Schwarz and Jensen we get
+                                    Z                             Z
+                                        ψ(TN, (x))αN (dx) − ψ(T(x))αN (dx)
+                                       Z
+                                    ≤ |TN, (x) − T(x)| αN (dx)
+                                       Z Z
+                                    ≤          yPN, (x, dy) − T(x) αN (dx)
+                                       ZZ
+                                    ≤        |y − T(x)| αN (dx)PN, (x, dy)
+                                          Z Z                                  1/2
+                                                                   2
+                                      ≤           |y − T(x)| αN (dx)PN, (x, dy)     .
+
+Here we can directly apply Lemma C.2 to obtain
+                        Z Z                                1/2
+                                       2
+                             |y − T(x)| αN (dx)PN, (x, dy)
+                                       h         i1/2
+                          ≤ 2λ1/2 E 1/2 d1/2 + E      + max{λ, 1} [W2 (αN , α) + W2 (βN , β)] ,
+
+where                                                                                          p
+                             E := E(n, , α, β) := W2 (αN , α) + W2 (βN , β) +                     2 log(N ).
+From (34) we have that
+                                                                                     p
+                          W2 (αN , α) + W2 (βN , β) ≤ W2 (αN , α) +                      dK1 (∆, d)W2 (αN , α).
+
+Next we want to bound W2 (αN , α). Notice first that
+                                                                                             
+                                         0          0                  0           (t−1)
+                 W2 (αN , α) ≤ W2 (αN , αN ) + W2 (αN , α) ≤ W2 (αN , αN ) + κW2 β̃N , β (t−1) ,
+
+by Assumption B.2.
+                                                                                                                 0
+To control the other term we use (Fournier & Guillin, 2015) to obtain a high probability bound on W2 (αN , αN      ). In
+particular, using Theorem 2 from (Fournier & Guillin, 2015), with α = ∞ since we are in a compact domain, that for some
+positive constants C, c we have
+                                                   0
+                                     P W22 (αN , αN  ) ≥ x ≤ C exp −cN fd2 (x) ,
+                                                                             
+                                                                                                                    (35)
+where                                                           
+                                                                x,
+                                                                                    d<4
+                                                                       x
+                                                 fd (x) :=        log(2+1/x) ,       d=4                               (36)
+                                                                
+                                                                 d/2
+                                                                  x    ,             d > 4.
+In particular, for any δ > 0, with probability at least 1 − δ over the sampling step in FN we have that
+                                                              s                 
+                                                                        log(C/δ)
+                                           W2 (αN , αN ) ≤ fd−1
+                                                        0
+                                                                                   .                                   (37)
+                                                                           cN
+
+Assuming that d ≥ 4 the rate then is of order N −1/d as expected.
+Therefore with probability at least 1 − δ over the sampling step we have that
+                                                                                 
+                                                                            (t−1)
+                              W2 (αN , α) + W2 (βN , β) ≤ FN,,δ,d W2 β̃N , β (t−1) ,
+
+where                                            s                        !
+                                                                log(C/δ)
+                                                     fd−1
+                                                                                                        p
+                   FN,,δ,d (x) = F    κx +                                      ,        F(x) := x +    dK1 (∆, d)x   (38)
+                                                                   cN
+                                                Differentiable Particle Filtering
+
+Thus overall we have with probability at least 1 − δ over the sample
+                                          q                                          
+                                                                            (t−1)
+                         W2 (β̃N, , β̃) ≤ dW1 (β̃N, , β̃) ≤ G,δ,N,d W2 β̃N , β (t−1) ,
+
+where
+              1 2                    h              p         i1/2 h                     p         i1/2
+                G,δ,N,d (x) := 2λ1/2 FN,,δ,d (x) + 2 log N       d1/2 + FN,,δ,d (x) + 2 log N
+              d
+                                 + λκFN,,δ,d (x) + max{λ, 1}FN,,δ,d (x) .
+
+In particular notice that if we set N = o(1/ log N ) and xN = o(1) we have
+
+                                                     GN ,δ,N,d (xN ) → 0.
+
+Therefore, notice that if N = o(1/ log N ) and W2 (µN , µ) → 0, then for any x > 0 we have that
+                                       h                  i
+                                                                       0
+                                                                         , αN ) ≥ x0 ],
+                                                    
+                                     P W2 β̃N, , β̃ ≥ x ≤ P[W2 (αN
+
+for some x0 that does not depend on N , where the probability is over the sampling step. The convergence in probability
+follows.
+                                     PN                i.i.d.                                                         (t)
+Proposition D.2. Let µN = N1 i=1 δX1i where X1i ∼ µ := q(·|y1 ) for i ∈ [N ] and suppose that for t ≥ 1, αN is
+defined through (30). Under Assumptions B.1, B.2, B.3 and B.4, for any δ > 0, with probability at least 1 − 2δ over the
+sampling steps, for any bounded 1-Lipschitz ψ, for any t ∈ [1 : T ], the approximations of the filtering distributions and
+log-likelihood computed by DPF satisfy
+                                                     s                     !
+                    (t)          (t)       (t)            −1    log(CT /δ)
+                 |β̃N (ψ) − β (ψ)| ≤ G,δ/T,N,d         fd                                                             (39)
+                                                                     cN
+                                                                                 s                    !
+                                                                   T                  
+                            p̂N (y1:T )   κ                       X     (t)        −1    log(CT /δ)
+                        log             ≤     max Lip [g(yt | ·)]     G,δ/T,N,d  fd                                   (40)
+                              p(y1:T )    ∆ t∈[1:T ]              t=1
+                                                                                             cN
+
+where C is a finite constant independent of T , G,δ/T,N,d , fd are defined in (31), and Lip[f ] is the Lipschitz constant of the
+              (t)
+function f . G,δ/T,N,d denotes the t-repeated composition of function G,δ/T,N,d . In particular, if we set N = o(1/ log N )
+
+                                                            p̂N (y1:T )
+                                                      log               → 0,
+                                                              p(y1:T )
+
+in probability.
+
+                                                                                    (t) 0   (t−1)
+Proof of Proposition D.2. Following the proof of Proposition D.1, we define αN = β̃N                f and for t ∈ [1 : T ], the events
+                                                               s                 
+                                              
+                                                 (t)  (t) 0
+                                                            
+                                                                  −1   log(CT /δ)
+                                  At  :=  W2 αN , αN          ≤ fd                  .
+                                                                            cN
+
+We know from Theorem 2 in (Fournier & Guillin, 2015) that P(At ) ≥ 1 − δ/T , where the probability is over the sampling
+step. In particular we have that
+                             "T     #        "T      #       N
+                              \               [             X                  δ
+                          P       At = 1 − P      ACt ≥ 1 −      P ACt ≥ 1 − T = 1 − δ.
+                              t=1             t=1           t=1
+                                                                                T
+
+Notice that on the event ∩Tt=1 At , iterating the bound (32) we have
+                                                       
+                                                 (t)          (t)
+                                         W2 β̃N , β (t) ≤ G,δ/T,N,d (W2 (µN , µ)) ,
+                                                   Differentiable Particle Filtering
+
+with probability at least 1 − δ. Again by Theorem 2 in (Fournier & Guillin, 2015) we have that with probability at least 1 − δ
+                                                          s                   
+                                                              −1   log(CT /δ)
+                                           W2 (µN , µ) ≤ fd                      .
+                                                                       cN
+
+Therefore with probability at least 1 − 2δ we have
+                                                                  s                           !
+                                               (t)                               log(CT /δ)
+                                              G,δ/T,N,d              fd−1                          .
+                                                                                     cN
+
+                                                          |x−y|
+It remains to prove (40). Note that | log(x) − log(y)| ≤ min{x,y} for any x, y > 0 so
+
+                                                                   T
+                                                                   X
+                              log p̂(y1:T ) − log p(y1:T ) ≤                 log p̂(yt |y1:t−1 ) − log p(yt |y1:t−1 )
+                                                                   t=1
+                                                                   T
+                                                                   X    p̂(yt |y1:t−1 ) − p(yt |y1:t−1 )
+                                                               ≤
+                                                                   t=1
+                                                                       min(p̂(y t |y1:t−1 ), p(yt |y1:t−1 ))
+
+                                                                         T
+                                                                         X
+                                                               ≤ ∆−1               |p̂(yt |y1:t−1 ) − p(yt |y1:t−1 )                            (41)
+                                                                             t=1
+
+where ∆ is defined in Assumption B.3.
+The term in line (41) may be written as follows
+
+                    p̂(yt |y1:t−1 ) − p(yt |y1:t−1 )
+                     ZZ                                             ZZ
+                                                      (t−1)
+                  =        g(yt |xt )f (dxt |x̃t−1 )β̃N (dx̃t−1 ) −    g(yt |xt )f (dxt |x̃t−1 )β̃ (t−1) (dx̃t−1 )
+                      (t−1)
+                =β̃N (h) − β (t−1) (h)
+
+for ∆2 ≤ h(x) := g(yt |x0 )f (x0 |x)dx0 ≤ ∆−2 . At this point notice also that
+                 R
+
+                       Z                       Z
+        h(x) − h(x0 ) = f (dw|x)g(yt | w) − f (dw|x0 )g(yt | w)
+                       Z           Z                      Z           Z
+                      = δx (dz) f (dw|z)g(yt | w) − δx0 (dz) f (dw|z)g(yt | w)
+
+                        = [δx f ][g(yt | ·)] − [δx0 f ][g(yt | ·)]
+                        ≤ Lip [g(yt | ·)] W1 (δx f, δx0 f ) ≤ κLip [g(yt | ·)] W1 (δx , δx0 ) = κLip [g(yt | ·)] |x − x0 |,
+
+by Assumption B.2. It follows therefore that h is Lipschitz and therefore that
+                                                                                                                
+                                                     (t−1)                                            (t−1)
+              p̂(yt |y1:t−1 ) − p(yt |y1:t−1 ) = β̃N         (h) − β (t−1) (h) ≤ κLip [g(yt | ·)] W1 βN , β (t−1) .
+
+Combining (39) and (41), and using the fact that W1 ≤ W2 , we thus get
+                                                       T                                   
+                                                                                  (t−1)
+                                                       X
+            log p̂(y1:T ) − log p(y1:T ) ≤ ∆−1 κ             Lip [g(yt | ·)] W1 β̃N , β (t)
+                                                       t=1
+                                                                                                           s                           !
+                                                                                      T                               
+                                                                                      X       (t)                         log(CT /δ)
+                                          ≤∆    −1
+                                                     κ max Lip [g(yt | ·)]                   G,δ/T,N,d        fd−1                         ,
+                                                       t∈[1:T ]
+                                                                                       t=1
+                                                                                                                              cN
+
+where the last inequality holds with probability at least 1 − δ over the sampling steps.
+The convergence in probability follows from the corresponding statement of Proposition D.1.
+                                                   Differentiable Particle Filtering
+
+E. Additional Experiments and Details
+E.1. Linear Gaussian model
+We first consider the following 2-dimensional linear Gaussian SSM for which exact inference can be carried out using
+Kalman techniques:
+
+                        Xt |{Xt−1 = x} ∼ N (diag(θ1 θ2 )x, 0.5I2 ) ,           Yt |{Xt = x} ∼ N (x, 0.1 · I2 ).                    (42)
+
+We simulate T = 150 observations using θ = (θ1 , θ2 ) = (0.5, 0.5). As a result, we expect in these scenarios that the
+filtering distribution pθ (xt |y1:t ) is not too distinct from the smoothing distribution pθ (xt |y1:T ) as the latent process is mixing
+quickly. From Proposition 4.1, this is thus a favourable scenario for methods ignoring resampling terms in the gradient as
+the bias should not be very large. Figure 1, displayed earlier, shows `(θ) obtained by Kalman and `(θ;        ˆ u) computed regular
+PF and DPF for the same number N = 25 of particles using qφ (xt |xt−1 , yt ) = fθ (xt |xt−1 ). The corresponding gradient
+vector fields are given in Figure 1, where the gradient is computed using the biased gradient from (Maddison et al., 2017;
+Naesseth et al., 2018; Le et al., 2018) for regular PF.
+We now compare the performance of the estimators θ̂SMLE (for DPF) and θ̂ELBO (for both regular PF and DPF) learned using
+gradient with learning rate 10−4 on 100 steps, using N = 25 for DPF and N = 500 for regular PF, to θ̂MLE computed
+using Kalman derivatives. We simulate M = 50 realizations of T = 150 observations using θ = (θ1 , θ2 ) = (0.5, 0.5). The
+ELBO stochastic gradient estimates are computed using biased gradient estimates of `ELBO (θ) ignoring the contributions of
+resampling steps as in (Maddison et al., 2017; Naesseth et al., 2018; Le et al., 2018) (we recall that unbiased estimates suffer
+from very high variance) and unbiased gradients of `ELBO (θ) using DPF. We average B parallel PFs to reduce the variance
+of these gradients of the ELBO and also B PFs (with fixed random seeds) to compute the gradient of `ˆSMLE(θ;u1:B ) :=
+ 1
+   PB ˆ                                                                   DPF                 ELBO                    PF
+ B   b=1 `(θ; ub ). The results are given in Table 4. For this example, θ̂ELBO maximizing `DPF (θ) outperforms θ̂ELBO and
+θ̂SMLE . However, as B increases, θ̂SMLE gets closer to θ̂ELBOqwhich is to be expected as `ˆSMLE (θ; u1:B ) −→ `
+                                                          DPF                                                       ELBO
+                                                                                                                         (θ). In
+                                                                  1
+                                                                    P2 PM           k    k
+Table 4, the Root Mean Square Error (RMSE) is defined as M i=1 k=1 (θ̂i − θ̂MLE,i )2 .
+
+
+                                       Table 4. 103 × RMSE4 over 50 datasets - lower is better
+
+                                                           PF           DPF
+                                                   B     θ̂ELBO       θ̂ELBO   θ̂SMLE
+                                                   1     1.94         1.30     7.94
+                                                   4     2.40         1.35     3.28
+                                                   10    2.80         1.37     2.18
+
+
+E.2. Variational Recurrent Neural Network
+N = 32 particles were used for training, with a regularization parameter of  = 0.5. The ELBO (scaled by sequence length)
+was used as the training objective to maximise for each resampling/ DET procedure. The ELBO evaluated on test data using
+N = 500 particles and multinomial resampling. Resampling / DET operations were carried out when effective sample
+(ESS) size fell below N/2. Learning rate 0.001 was used with the Adam optimizer.
+Recall the state-space model is given by
+
+                                          (Rt , Ot ) = RNNθ (Rt−1 , Y1:t−1 , Eθ (Zt−1 )),
+                                                 Zt ∼ N (µθ (Ot ), σθ (Ot )),
+                                                  p̂t = hθ (Eθ (Zt ), Ot ),
+                                             Yt |Xt ∼ Ber(p̂t ).
+
+Network architectures and data preprocessing steps were based loosely on (Maddison et al., 2017). Given the low volume of
+data and sparsity of the observations, relatively small neural networks were considered to prevent overfitting, larger neural
+                                                         q       P2     PM
+   4                                                         1                  k     k
+                                                                         k=1 (θ̂i − θ̂MLE,i ) .
+       The Root Mean Square Error (RMSE) is defined as                                       2
+                                                             M    i=1
+                                                 Differentiable Particle Filtering
+
+networks are considered in the more complex robotics experiments. Rt is of dimension dr = 16, Zt is of dimension dz = 8.
+Eθ is a single layer fully connected network with hidden layer of width 16, output of dimension 16 and RELU activation.
+µθ and σθ are both fully connected neural networks with two hidden layers, each of 16 units and RELU activation, the
+activation function is not applied to the final output of µθ but the softplus is applied to the output of σθ , which is the diagonal
+entries of the covariance matrix of the normal distribution that is used to sample Zt .
+hθ is a single layer fully connected network with two hidden layers, each of width 16 and RELU activation. The final output
+is not put through the RELU and is instead used as the logits for the Bernoulli distribution of observations.
+
+E.3. Robot Localization
+Similar to the VRNN example, N = 32 particles were used for training, with a regularization parameter of  = 0.5 and
+resampling / DET operations were carried out when ESS size fell below N/2. Learning rate 0.001 was used with the Adam
+optimizer.
+Network architectures and data preprocessing were based loosely on (Jonschkowski et al., 2018). There are 3 neural
+networks being considered:
+
+  • Encoder Eθ maps RBG 24 × 24 pixel images, hence dimension 3 × 24 × 24, to encoding of size dE = 128. This
+    network consists of a convolutional network (CNN) of kernel size 3 and a single layer fully connected network of
+    hidden width 128 and RELU activation.
+  • Decoder Dθ maps encoding back to original image. This consists of a fully connected neural network with three
+    hidden layers of width 128 and RELU activation function. This is followed by a transposed convolution network with
+    matching specification to the CNN in the encoder, to return an output with the same dimension as observation images,
+    3 × 24 × 24.
+                                               (1)   (2)
+  • Network Gθ maps the state St = (Xt , Xt , γt ) to encoding of dimension 128. First angle γt was converted to
+                                                    (1)   (2)
+    sin(γt ), cos(γt ). Then the augmented state (Xt , Xt , sin(γt ), cos(γt )) was passed to a 3 layer fully connected
+    network with hidden layers of dimensions 16, 32, 64 and RELU activation function, with final output of dimension 128.
+

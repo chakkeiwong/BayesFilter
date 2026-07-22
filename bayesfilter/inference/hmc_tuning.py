@@ -1339,7 +1339,7 @@ def build_windowed_warmup_schedule(
                 kind="slow",
                 start=cursor,
                 end=cursor + size,
-                update_mass=True,
+                update_mass=config.mass_policy == "windowed_adaptive",
             )
         )
         index += 1

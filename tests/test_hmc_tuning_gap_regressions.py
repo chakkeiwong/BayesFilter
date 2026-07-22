@@ -416,6 +416,116 @@ def test_retained_target_health_localizes_flat_batch_telemetry_failure() -> None
     assert adapter.telemetry_shapes == [(64, 2)] + [(4, 2)] * 6
 
 
+def test_retained_target_health_uses_combined_value_score_status_once_per_batch() -> None:
+    import tensorflow as tf
+
+    class CombinedAdapter:
+        supports_retained_flat_batch = True
+        supports_retained_value_score_status = True
+
+        def __init__(self) -> None:
+            self.combined_calls: list[tuple[int, ...]] = []
+            self.legacy_calls = 0
+            self.telemetry_calls = 0
+
+        def log_prob_and_grad_status(self, theta):
+            value = tf.convert_to_tensor(theta, dtype=tf.float64)
+            self.combined_calls.append(tuple(int(item) for item in value.shape))
+            leading_shape = tf.shape(value)[:-1]
+            return (
+                -0.5 * tf.reduce_sum(tf.square(value), axis=-1),
+                -value,
+                {
+                    "status_code": tf.zeros(leading_shape, tf.int32),
+                    "valid_pre_regularized_score": tf.ones(leading_shape, tf.bool),
+                    "floor_count_value": tf.zeros(leading_shape, tf.int32),
+                    "min_innovation_eigenvalue": tf.ones(leading_shape, tf.float64),
+                    "innovation_condition_estimate": tf.ones(
+                        leading_shape, tf.float64
+                    ),
+                },
+            )
+
+        def log_prob_and_grad(self, theta):
+            self.legacy_calls += 1
+            value, score, _status = self.log_prob_and_grad_status(theta)
+            return value, score
+
+        def target_status_telemetry(self, theta):
+            self.telemetry_calls += 1
+            raise AssertionError("combined retained protocol should avoid telemetry replay")
+
+    adapter = CombinedAdapter()
+    health = _evaluate_retained_target_health(
+        adapter=adapter,
+        samples=np.zeros((20, 4, 2), dtype=float),
+        target_status_trace_policy="per_chain_step",
+    )
+
+    assert health["shared_invalidity_reasons"] == ()
+    assert health["candidate_data_invalidity_reasons"] == ()
+    assert health["target_status_failure_count"] == 0
+    assert health["evaluated_draw_count"] == 20
+    assert adapter.combined_calls == [(64, 2), (16, 2)]
+    assert adapter.legacy_calls == 0
+    assert adapter.telemetry_calls == 0
+
+
+def test_combined_retained_status_failure_localization_does_not_call_legacy_telemetry() -> None:
+    import tensorflow as tf
+
+    class FailingCombinedAdapter:
+        supports_retained_flat_batch = True
+        supports_retained_value_score_status = True
+
+        def __init__(self) -> None:
+            self.combined_calls = 0
+            self.telemetry_calls = 0
+
+        def log_prob_and_grad_status(self, theta):
+            value = tf.convert_to_tensor(theta, dtype=tf.float64)
+            self.combined_calls += 1
+            leading = tf.shape(value)[:-1]
+            failed = tf.equal(value[..., 0], tf.constant(5.0, tf.float64))
+            return (
+                -0.5 * tf.reduce_sum(tf.square(value), axis=-1),
+                -value,
+                {
+                    "status_code": tf.cast(failed, tf.int32),
+                    "valid_pre_regularized_score": tf.logical_not(failed),
+                    "floor_count_value": tf.zeros(leading, tf.int32),
+                    "min_innovation_eigenvalue": tf.ones(leading, tf.float64),
+                    "innovation_condition_estimate": tf.ones(leading, tf.float64),
+                },
+            )
+
+        def log_prob_and_grad(self, theta):
+            value, score, _status = self.log_prob_and_grad_status(theta)
+            return value, score
+
+        def target_status_telemetry(self, _theta):
+            self.telemetry_calls += 1
+            raise AssertionError("legacy telemetry must not be called")
+
+    samples = np.zeros((20, 4, 2), dtype=float)
+    samples[:, :, 0] = np.arange(20, dtype=float)[:, None]
+    adapter = FailingCombinedAdapter()
+    health = _evaluate_retained_target_health(
+        adapter=adapter,
+        samples=samples,
+        target_status_trace_policy="per_chain_step",
+    )
+
+    assert health["candidate_data_invalidity_reasons"] == (
+        "target_status_telemetry_failure",
+    )
+    assert health["target_status_failure_count"] == 4
+    assert adapter.telemetry_calls == 0
+    # One batched call plus six combined calls to localize the first failing
+    # logical draw; no legacy telemetry replay is permitted.
+    assert adapter.combined_calls == 7
+
+
 def test_private_start_bank_rejects_negligibly_dispersed_distinct_states() -> None:
     history = np.stack(
         (

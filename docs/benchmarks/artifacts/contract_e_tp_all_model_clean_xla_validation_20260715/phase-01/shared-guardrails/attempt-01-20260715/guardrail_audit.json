@@ -1,0 +1,435 @@
+{
+  "device_policy": "CUDA_VISIBLE_DEVICES=-1 before TensorFlow import",
+  "generated_at": "2026-07-15T12:02:21.188508+00:00",
+  "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "graph_gates": {
+    "exact_function_nodes_3712": true,
+    "exact_functional_loops_4": true,
+    "exact_top_level_nodes_4014": true,
+    "function_ratio_at_most_1_10": true,
+    "graphdef_ratio_at_most_1_25": true,
+    "top_level_ratio_at_most_1_10": true
+  },
+  "graph_inventories": [
+    {
+      "function_count": 36,
+      "function_nodes": 3712,
+      "functional_loop_count": 4,
+      "functional_loops": [
+        {
+          "name": "while",
+          "op": "StatelessWhile",
+          "scope": "top"
+        },
+        {
+          "name": "while_1",
+          "op": "While",
+          "scope": "top"
+        },
+        {
+          "name": "gradient_tape/while_1/while_1_grad",
+          "op": "StatelessWhile",
+          "scope": "top"
+        },
+        {
+          "name": "gradient_tape/while/while_grad",
+          "op": "StatelessWhile",
+          "scope": "top"
+        }
+      ],
+      "graphdef_bytes": 1234390,
+      "preparation_path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8b_lgssm_t10_order5_lookahead8_attempt1_20260715/charts.json",
+      "preparation_sha256": "ac7042832c2101080c6c31f20b139bc6d086c0c69ae4b4fc0be283b5fc83ce5a",
+      "time_steps": 10,
+      "top_level_nodes": 4014
+    },
+    {
+      "function_count": 36,
+      "function_nodes": 3712,
+      "functional_loop_count": 4,
+      "functional_loops": [
+        {
+          "name": "while",
+          "op": "StatelessWhile",
+          "scope": "top"
+        },
+        {
+          "name": "while_1",
+          "op": "While",
+          "scope": "top"
+        },
+        {
+          "name": "gradient_tape/while_1/while_1_grad",
+          "op": "StatelessWhile",
+          "scope": "top"
+        },
+        {
+          "name": "gradient_tape/while/while_grad",
+          "op": "StatelessWhile",
+          "scope": "top"
+        }
+      ],
+      "graphdef_bytes": 1233359,
+      "preparation_path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8b_lgssm_t50_order5_lookahead8_attempt1_20260715/charts.json",
+      "preparation_sha256": "b5bee34dd3e94e34b5ec548384c34af42f18116f9037b27133ecc985ef2f47c2",
+      "time_steps": 50,
+      "top_level_nodes": 4014
+    }
+  ],
+  "graph_ratios": {
+    "function_nodes": 1.0,
+    "graphdef_bytes": 0.9991647696433056,
+    "top_level_nodes": 1.0
+  },
+  "nonclaims": [
+    "not nonlinear loop-core repair",
+    "not nonlinear XLA readiness",
+    "not scientific accuracy or equivalence",
+    "not canonical, default, HMC, or leaderboard readiness"
+  ],
+  "phase0_registry": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_model_clean_xla_validation_20260715/phase-00/registry/attempt-01-20260715/phase0_registry.json",
+    "sha256": "704522e3909f446eb1b3d32584bb37cff90159a69b6c1af2f13a8d15fc1aacee"
+  },
+  "schema": "contract_e_tp.clean_xla_phase1_guardrails.v1",
+  "source_audits": {
+    "fixed_small": {
+      "approved": true,
+      "forbidden_loop_findings": [],
+      "loop_findings": [
+        {
+          "disposition": "permit_declared_fixed",
+          "dynamic": false,
+          "expression": "range(3)",
+          "kind": "For",
+          "line": 2,
+          "role": "fixed_small_dimension",
+          "symbol": "f"
+        }
+      ],
+      "missing_required_reachable": [],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "f"
+      ],
+      "source_id": "synthetic_fixed_small_fixture",
+      "status": "PASS_SOURCE_GUARD",
+      "unresolved_local_calls": []
+    },
+    "lgssm_clean": {
+      "approved": true,
+      "forbidden_loop_findings": [],
+      "loop_findings": [],
+      "missing_required_reachable": [],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "_combine_parent_innovation_log_weights",
+        "_continuation_features_from_information",
+        "_finite_lookahead_information_parameters_loop",
+        "_flow_correction",
+        "_state_moment_features",
+        "_tensor_product_rule",
+        "contract_e_tp_lgssm_finite_lookahead_loop_core",
+        "initial_parents"
+      ],
+      "source_id": "/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_contract_e_tp_lgssm_tf.py",
+      "status": "PASS_SOURCE_GUARD",
+      "unresolved_local_calls": []
+    },
+    "lgssm_historical_unrolled": {
+      "approved": false,
+      "forbidden_loop_findings": [
+        {
+          "disposition": "reject_undeclared",
+          "dynamic": null,
+          "expression": "reversed(tf.unstack(observations[1:], axis=0))",
+          "kind": "For",
+          "line": 428,
+          "role": "undeclared",
+          "symbol": "_backward_information_parameters"
+        },
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps - 1)",
+          "kind": "For",
+          "line": 476,
+          "role": "lookahead_windows",
+          "symbol": "_finite_lookahead_information_parameters"
+        },
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps)",
+          "kind": "For",
+          "line": 805,
+          "role": "filter_time",
+          "symbol": "contract_e_tp_lgssm_score_informed_recursive_core"
+        }
+      ],
+      "loop_findings": [
+        {
+          "disposition": "reject_undeclared",
+          "dynamic": null,
+          "expression": "reversed(tf.unstack(observations[1:], axis=0))",
+          "kind": "For",
+          "line": 428,
+          "role": "undeclared",
+          "symbol": "_backward_information_parameters"
+        },
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps - 1)",
+          "kind": "For",
+          "line": 476,
+          "role": "lookahead_windows",
+          "symbol": "_finite_lookahead_information_parameters"
+        },
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps)",
+          "kind": "For",
+          "line": 805,
+          "role": "filter_time",
+          "symbol": "contract_e_tp_lgssm_score_informed_recursive_core"
+        }
+      ],
+      "missing_required_reachable": [],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "_backward_information_parameters",
+        "_combine_parent_innovation_log_weights",
+        "_continuation_features_from_information",
+        "_finite_lookahead_information_parameters",
+        "_flow_correction",
+        "_initial_target_model_score_marks",
+        "_next_predictive_contribution",
+        "_progressive_features",
+        "_state_moment_features",
+        "_target_model_progressive_score_marks",
+        "_target_observation_score",
+        "_target_transition_log_density_and_score",
+        "_tensor_product_rule",
+        "contract_e_tp_lgssm_score_informed_recursive_core",
+        "initial_parents"
+      ],
+      "source_id": "/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_contract_e_tp_lgssm_tf.py",
+      "status": "REJECT_SOURCE_GUARD",
+      "unresolved_local_calls": []
+    },
+    "neutral_alias_hidden_helper": {
+      "approved": false,
+      "forbidden_loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "r(len(seq))",
+          "kind": "For",
+          "line": 5,
+          "role": "declared_dynamic_bound",
+          "symbol": "z"
+        }
+      ],
+      "loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "r(len(seq))",
+          "kind": "For",
+          "line": 5,
+          "role": "declared_dynamic_bound",
+          "symbol": "z"
+        }
+      ],
+      "missing_required_reachable": [],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "q",
+        "z"
+      ],
+      "source_id": "synthetic_neutral_alias_fixture",
+      "status": "REJECT_SOURCE_GUARD",
+      "unresolved_local_calls": [
+        {
+          "callee": "r",
+          "caller": "z",
+          "line": 5
+        }
+      ]
+    },
+    "predator_prey_current": {
+      "approved": false,
+      "forbidden_loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps)",
+          "kind": "For",
+          "line": 394,
+          "role": "filter_time",
+          "symbol": "contract_e_tp_predator_prey_recursive_core"
+        },
+        {
+          "disposition": "reject_undeclared",
+          "dynamic": null,
+          "expression": "enumerate(tf.unstack(observations, axis=0))",
+          "kind": "For",
+          "line": 260,
+          "role": "undeclared",
+          "symbol": "gaussian_closure_continuation_log_likelihood"
+        }
+      ],
+      "loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps)",
+          "kind": "For",
+          "line": 394,
+          "role": "filter_time",
+          "symbol": "contract_e_tp_predator_prey_recursive_core"
+        },
+        {
+          "disposition": "reject_undeclared",
+          "dynamic": null,
+          "expression": "enumerate(tf.unstack(observations, axis=0))",
+          "kind": "For",
+          "line": 260,
+          "role": "undeclared",
+          "symbol": "gaussian_closure_continuation_log_likelihood"
+        }
+      ],
+      "missing_required_reachable": [
+        "target_continuation_log_likelihood"
+      ],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "_affine_ledh_flow",
+        "_features",
+        "_gaussian_log_density",
+        "_product_rule",
+        "_teacher_step",
+        "contract_e_tp_predator_prey_recursive_core",
+        "gaussian_closure_continuation_log_likelihood",
+        "initial_rule",
+        "one_step_target_continuation_log_likelihood"
+      ],
+      "source_id": "/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_contract_e_tp_predator_prey_tf.py",
+      "status": "REJECT_SOURCE_GUARD",
+      "unresolved_local_calls": []
+    },
+    "predator_prey_rk4": {
+      "approved": false,
+      "forbidden_loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(int(self._rk4_substeps))",
+          "kind": "For",
+          "line": 1623,
+          "role": "fixed_substep_rk4_solver",
+          "symbol": "PredatorPreySSM.transition_mean"
+        }
+      ],
+      "loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(int(self._rk4_substeps))",
+          "kind": "For",
+          "line": 1623,
+          "role": "fixed_substep_rk4_solver",
+          "symbol": "PredatorPreySSM.transition_mean"
+        }
+      ],
+      "missing_required_reachable": [],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "PredatorPreySSM._rhs",
+        "PredatorPreySSM._rk4_step",
+        "PredatorPreySSM.parameter_box",
+        "PredatorPreySSM.parameter_dim",
+        "PredatorPreySSM.state_dim",
+        "PredatorPreySSM.transition_mean",
+        "PredatorPreySSM.validate_parameter_box",
+        "_as_parameter_vector",
+        "_as_row_matrix"
+      ],
+      "source_id": "/home/chakwong/BayesFilter/bayesfilter/highdim/models.py",
+      "status": "REJECT_SOURCE_GUARD",
+      "unresolved_local_calls": []
+    },
+    "scalar_sv_current": {
+      "approved": false,
+      "forbidden_loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps)",
+          "kind": "For",
+          "line": 629,
+          "role": "filter_time",
+          "symbol": "contract_e_tp_scalar_sv_recursive_core"
+        },
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(future_count - 1, 0, -1)",
+          "kind": "For",
+          "line": 317,
+          "role": "backward_continuation",
+          "symbol": "target_continuation_log_likelihood"
+        }
+      ],
+      "loop_findings": [
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(time_steps)",
+          "kind": "For",
+          "line": 629,
+          "role": "filter_time",
+          "symbol": "contract_e_tp_scalar_sv_recursive_core"
+        },
+        {
+          "disposition": "reject_dynamic",
+          "dynamic": true,
+          "expression": "range(future_count - 1, 0, -1)",
+          "kind": "For",
+          "line": 317,
+          "role": "backward_continuation",
+          "symbol": "target_continuation_log_likelihood"
+        }
+      ],
+      "missing_required_reachable": [],
+      "missing_roots": [],
+      "reachable_symbols": [
+        "_affine_ledh_flow",
+        "_dynamics",
+        "_features",
+        "_flow_surface",
+        "_normal_log_density",
+        "_pairwise_transition_log_density",
+        "_teacher_step",
+        "contract_e_tp_scalar_sv_recursive_core",
+        "initial_rule",
+        "target_continuation_log_likelihood"
+      ],
+      "source_id": "/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_contract_e_tp_scalar_sv_tf.py",
+      "status": "REJECT_SOURCE_GUARD",
+      "unresolved_local_calls": []
+    }
+  },
+  "source_gates": {
+    "fixed_small": true,
+    "lgssm_clean": true,
+    "lgssm_historical_unrolled": true,
+    "neutral_alias_hidden_helper": true,
+    "predator_prey_current": true,
+    "predator_prey_rk4": true,
+    "scalar_sv_current": true
+  },
+  "status": "PASS_SHARED_SOURCE_AND_GRAPH_GUARDRAILS"
+}

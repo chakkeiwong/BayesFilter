@@ -97,6 +97,19 @@ def test_windowed_schedule_is_fast_slow_final_and_contiguous():
     assert [window.update_mass for window in schedule] == [False, True, True, False]
 
 
+def test_fixed_identity_windowed_schedule_disables_slow_mass_updates():
+    config = WindowedMassAdaptationConfig(
+        **{
+            **_config().payload(),
+            "mass_policy": "fixed_identity",
+        }
+    )
+
+    schedule = build_windowed_warmup_schedule(config)
+
+    assert [window.update_mass for window in schedule] == [False, False, False, False]
+
+
 def test_welford_covariance_matches_numpy_sample_covariance():
     samples = _warmup_draws()[2:7]
 
@@ -178,6 +191,7 @@ def test_windowed_mass_adaptation_smoke_updates_mass_and_reset_telemetry():
         "mass_update_count_matches_slow_windows": True,
         "every_update_has_dual_averaging_reset": True,
         "final_mass_artifact_frozen_payload": True,
+        "fixed_identity_signature_unchanged": True,
         "shrinkage_target_compatible": True,
         "does_not_report_posterior_convergence": True,
     }

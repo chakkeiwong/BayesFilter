@@ -1,0 +1,47 @@
+{
+  "artifact_hash": "sha256:1936ff2a29f46d60930ae2c02bde850da82ef364e63625922fac74f61ffabe56",
+  "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+  "schema": "bayesfilter.neutra_robustness_f0_fixture_identity.v1",
+  "passed": true,
+  "decision": "ADMIT_GENUINELY_NEW_FIXTURE_IDENTITY",
+  "config": {
+    "path": "docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/f0/config.json",
+    "file_sha256": "9dedf448ebb8eb02eeaa6fc74d51eef298e38106a5cd40b06de41bea8fd6ed8c"
+  },
+  "original_fixture": {
+    "path": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/fixture_T120_seed20260709_301.json",
+    "simulation_seed": [20260709, 301],
+    "fixture_artifact_hash": "sha256:bc5cf901f1a98788b74a3144be188c4dccb19b868106f814a1e55417c1b98d66",
+    "observations_hash": "d599033307f5c275f38129af58363df54eba0f7a8db4545df3e7a3527d635066",
+    "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30"
+  },
+  "new_fixture": {
+    "path": "docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/f0/plain-hmc/fixture_T120_seed20260715_701.json",
+    "file_sha256": "c7530a5edb79917a23c691b8dcd36a0e3e818d0eaaebba1159d617643910a514",
+    "simulation_seed": [20260715, 701],
+    "fixture_artifact_hash": "sha256:6d7523f48333a484c7a8205299cd4fc7084948f21c9f4e0140966cbd5fd2a109",
+    "observations_hash": "698c8e1900d36a084cf812f70211191922ef4af43fa001a725c5b1755aec0977",
+    "target_signature": "312d2f4ceb5d65bf18251fa53ae1276781c62fd2daefaba0bda8dc3d46a5d283"
+  },
+  "identity_checks": {
+    "same_model_prior_truth_and_parameter_order": true,
+    "different_simulation_seed": true,
+    "different_config_hash": true,
+    "different_fixture_hash": true,
+    "different_observations_hash": true,
+    "different_target_signature": true,
+    "repeated_generation_exactly_equal_before_write": true
+  },
+  "descriptive_difficulty_diagnostics": {
+    "original_observation_std": [0.32885283060189735, 0.2769010598530167, 0.24562953018084366, 0.20754837204980106],
+    "new_observation_std": [0.3971369471607545, 0.3256842635834058, 0.2604025645853898, 0.19069154305990363],
+    "original_max_abs_observation": 0.8536776776031644,
+    "new_max_abs_observation": 1.0167858793483633,
+    "interpretation": "new fixture has larger empirical observation spread in three of four coordinates and a larger maximum; this does not establish that posterior inference is harder"
+  },
+  "nonclaims": [
+    "new means independently generated observations, not predeclared harder data",
+    "fixture identity is not posterior convergence or NeuTra evidence",
+    "no calibration, robustness, superiority, production, or default-readiness claim"
+  ]
+}

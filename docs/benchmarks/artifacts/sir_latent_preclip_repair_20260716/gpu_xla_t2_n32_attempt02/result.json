@@ -1,0 +1,143 @@
+{
+  "command": "docs/benchmarks/run_latent_preclip_sir_contract_e.py --time-steps 2 --particle-count 32 --output docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/gpu_xla_t2_n32_attempt02/result.json",
+  "configuration": {
+    "col_chunk_size": 16,
+    "dtype": "float64",
+    "jit_compile": true,
+    "particle_count": 32,
+    "row_chunk_size": 16,
+    "seed": 81103,
+    "sinkhorn_steps": 2,
+    "time_steps": 2
+  },
+  "diagnostic": {
+    "clip_boundary_away_history": [
+      [
+        true
+      ]
+    ],
+    "finite_difference": [
+      3.243107599359973,
+      -1.194121746550536,
+      2.420739267705585
+    ],
+    "finite_difference_endpoints": [
+      {
+        "minus": -68.45035946492388,
+        "minus_valid": true,
+        "parameter": "log_kappa_scale",
+        "plus": -68.45029460277189,
+        "plus_valid": true
+      },
+      {
+        "minus": -68.45031509202775,
+        "minus_valid": true,
+        "parameter": "log_nu_scale",
+        "plus": -68.45033897446268,
+        "plus_valid": true
+      },
+      {
+        "minus": -68.45035124239351,
+        "minus_valid": true,
+        "parameter": "log_obs_noise_scale",
+        "plus": -68.45030282760816,
+        "plus_valid": true
+      }
+    ],
+    "finite_difference_policy": {
+      "maximum_relative_error": 8.224436537576322e-10,
+      "relative_errors": [
+        6.108160198634712e-10,
+        5.051782576687649e-10,
+        8.224436537576322e-10
+      ],
+      "scope": "individual_coordinate_same_scalar_fd_only",
+      "status": "pass",
+      "threshold": 0.08660254037844387
+    },
+    "first_call_seconds": 28.050144846987678,
+    "increment_history": [
+      [
+        -32.03711961477709,
+        -36.413207418271675
+      ]
+    ],
+    "increment_score_history": [
+      [
+        [
+          0.0,
+          0.0,
+          -2.9730089303972878
+        ],
+        [
+          3.243107601340915,
+          -1.1941217459472917,
+          5.393748200093794
+        ]
+      ]
+    ],
+    "minimum_mass_history": [
+      [
+        0.7702861847152547,
+        0.7293869923545484
+      ]
+    ],
+    "objective": -68.45032703304877,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "reset_valid_history": [
+      [
+        true,
+        true
+      ]
+    ],
+    "score": [
+      3.243107601340915,
+      -1.1941217459472917,
+      2.4207392696965067
+    ],
+    "valid_chart": [
+      true
+    ],
+    "warm_replay_objective_equal": true,
+    "warm_replay_seconds": 0.08450762499705888
+  },
+  "environment": {
+    "cuda_visible_devices": "unset",
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_dirty": true,
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ],
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "nonclaims": [
+    "not canonical Contract E admission",
+    "not fixed-TTSIRT total-score closure",
+    "not full-horizon correctness",
+    "not HMC or leaderboard readiness",
+    "same-scalar FD is not an oracle comparison"
+  ],
+  "prepared_identity": {
+    "epsilon": "e4407e1192399c3637f63af7aa574b2cb19bd11d81acb0994f62cf83a98f5ce4",
+    "fixed_reset_mask": "166d68193427ef749f3c781c1a80d47d37e4983c187def27181c314eb1e54d8f",
+    "initial_noise": "564f30414b72702f3db06a97b21e95a0a1d222a7cce9913f3cc821fb1ce8ed6d",
+    "observations": "a797f148955be2610ab4cbe0617a5ee503ac5d76ed9d52fe1e32e8adbc8d8352",
+    "prepared_ridge": "1227212d5ef60413fa3ddc4cedac100078612dcc7bf5e92a93aa8c8f455400aa",
+    "residual_design": "f6e007946d652c320b94dba75b4d034045df0d309ede0f1fc74bd6598d681187",
+    "scaling": "cb930ec4c0b7a82a69f388f20232162c735b05f2d3c8dd01867282a66055007c",
+    "transition_noise": "89473a37dee6265ed43ad149bfb5b4c7d36d5ceb3ad45b2e22499b3ba812806c"
+  },
+  "route_id": "contract_e_chol_latent_preclip_sir_candidate_v1",
+  "route_status": "candidate_not_canonical_not_admitted",
+  "schema": "bayesfilter.latent_preclip_sir.contract_e_chol_diagnostic.v1",
+  "simulator": {
+    "observations_sha256": "a797f148955be2610ab4cbe0617a5ee503ac5d76ed9d52fe1e32e8adbc8d8352",
+    "physical_path_sha256": "9d80aaaf61939c458dedff837aacd721165381ecc64774506eeddd063db0ef1d"
+  },
+  "status": "PASS_BOUNDED_DIAGNOSTIC",
+  "target_id": "zhao_cui_sir_austria_latent_preclip_simulator_law_v1"
+}

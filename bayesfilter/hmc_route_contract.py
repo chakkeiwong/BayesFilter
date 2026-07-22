@@ -148,8 +148,6 @@ def resolve_hmc_algorithm_route(
         blocker = "unsupported_chain_execution_mode"
     elif use_xla and mode != "tf_function":
         blocker = "xla_requires_tf_function"
-    elif selected == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID and use_xla:
-        blocker = "operational_windowed_warmup_xla_not_validated"
     elif (
         selected == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
         and runner != "default"
@@ -183,9 +181,7 @@ def resolve_hmc_algorithm_route(
         blocker_code=blocker,
         runtime_backend_requirement="tensorflow_probability",
         xla_requirement=(
-            "not_validated"
-            if selected == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
-            else "caller_configured_tf_function_only"
+            "caller_configured_tf_function_only"
         ),
         timeout_capability=timeout_capability,
         heartbeat_capability="telemetry_only",

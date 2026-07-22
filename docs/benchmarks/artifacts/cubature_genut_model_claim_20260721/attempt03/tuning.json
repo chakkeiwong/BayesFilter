@@ -1,0 +1,53 @@
+{
+  "candidate_count": 8,
+  "fd_role": "representative calibration validation only; never runtime score",
+  "frozen_before_claim": true,
+  "partitions": {
+    "calibration": [
+      3301,
+      3302
+    ],
+    "claim": [
+      3320,
+      3321,
+      3322,
+      3323,
+      3324,
+      3325,
+      3326,
+      3327,
+      3328,
+      3329,
+      3330,
+      3331,
+      3332,
+      3333,
+      3334,
+      3335
+    ],
+    "validation": [
+      3311,
+      3312
+    ]
+  },
+  "schema_version": "bayesfilter.cubature_genut_exact_sv_tuning.v1",
+  "scope": {
+    "dtype": "float32",
+    "horizon": [
+      2,
+      10,
+      50
+    ],
+    "jit_compile": true,
+    "model_id": "exact_transformed_sv_candidate_v1",
+    "particle_count": 12,
+    "state_dimension": 1,
+    "tf32_enabled": true
+  },
+  "selected_controls": {
+    "epsilon": 2.0,
+    "ridge": 0.0001,
+    "sinkhorn_steps": 8
+  },
+  "selection_objective": "max(validation dense-target value error, calibration recursive-vs-FD score error, validation reset marginal residual)"
+}

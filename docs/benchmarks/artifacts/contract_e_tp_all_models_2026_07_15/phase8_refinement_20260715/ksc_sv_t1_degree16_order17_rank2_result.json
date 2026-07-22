@@ -1,0 +1,342 @@
+{
+  "config": {
+    "adjacent_rank": 2,
+    "axis_order": [
+      "x_t",
+      "x_t_minus_1"
+    ],
+    "degree": 16,
+    "density_tau": 0.0,
+    "initializer_id": "orthonormal_mode_diagonal_norm_balanced_v1",
+    "max_sweeps": 2,
+    "parameter_treatment": "theta_external_fixed_query_not_tt_coordinate",
+    "quadrature_order_per_axis": 17,
+    "ridge": 1e-10,
+    "status": "warm_start_hypothesis_not_default",
+    "transition_before_first_observation": false
+  },
+  "finite_program": {
+    "compatibility_hash": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+    "log_increments": [
+      -1.7196451189536215
+    ],
+    "previous_marginal_derivative_included": true,
+    "score_backend": "tensorflow_total_autodiff_same_finite_program",
+    "steps": [
+      {
+        "axis_order": [
+          "x_0"
+        ],
+        "fit_condition_numbers": [
+          1.0000000000001663,
+          1.0000000000001663
+        ],
+        "fit_dimension": 1,
+        "fit_residual": 4.163443139041335e-11,
+        "fit_unscaled_normal_condition_numbers": [
+          1.0000000000003346,
+          1.0000000000003346
+        ],
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [],
+        "log_scale_shift_index": 8,
+        "marginal_mass": 0.9999999999999992,
+        "target_kind": "initial_state_observation",
+        "time_index": 0
+      }
+    ]
+  },
+  "hard_vetoes": {
+    "carried_marginal_mass_errors": [
+      7.771561172376096e-16
+    ],
+    "carried_marginal_mass_tolerance": 1.1823431123048067e-10,
+    "carried_marginal_mass_tolerance_rule": "256 * float64_epsilon * max(1, 65 * degree * adjacent_rank)",
+    "carried_marginal_mass_valid": true,
+    "finite_value_and_score": true,
+    "first_step_time_order_valid": true,
+    "forbidden_retained_grid_route_used": false,
+    "oracle_alias_used": false,
+    "own_scalar_fd": "pass",
+    "previous_state_axis_present_from_t1": true,
+    "transition_before_first_observation": false
+  },
+  "horizon": 1,
+  "metadata_date": "2026-07-15",
+  "own_scalar_fd": {
+    "owner_fd_only_policy": {
+      "base_relative_tolerance": 0.05,
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "diagnostic_scope": "finite_difference_only",
+      "dimension_scaling": "sqrt(num_parameters)",
+      "max_coordinate_relative_error": 4.49729588544057e-08,
+      "max_coordinate_relative_error_margin": 0.07071063314569591,
+      "max_coordinate_relative_error_threshold": 0.07071067811865477,
+      "max_error_parameter": "gamma_unconstrained",
+      "num_parameters": 2,
+      "parameters": [
+        {
+          "absolute_error": 4.70803042385004e-09,
+          "finite_difference": -0.10468580551018884,
+          "parameter": "gamma_unconstrained",
+          "relative_error": 4.49729588544057e-08,
+          "relative_error_scale": 0.10468580551018884,
+          "score": -0.10468580080215842
+        },
+        {
+          "absolute_error": 7.284235603588485e-09,
+          "finite_difference": -0.2368792373371361,
+          "parameter": "log_beta",
+          "relative_error": 3.075084032468944e-08,
+          "relative_error_scale": 0.2368792373371361,
+          "score": -0.23687923005290049
+        }
+      ],
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "status": "pass"
+    },
+    "rows": [
+      {
+        "absolute_error": 5.2320687598805815e-06,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.1046910328709183,
+        "h": 0.01,
+        "legacy_row_relative_error": 5.2320687598805815e-06,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.10468580080215842
+      },
+      {
+        "absolute_error": 4.708868296815494e-07,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.1046862716889881,
+        "h": 0.003,
+        "legacy_row_relative_error": 4.708868296815494e-07,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.10468580080215842
+      },
+      {
+        "absolute_error": 5.232068497895703e-08,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.1046858531228434,
+        "h": 0.001,
+        "legacy_row_relative_error": 5.232068497895703e-08,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.10468580080215842
+      },
+      {
+        "absolute_error": 4.70803042385004e-09,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.10468580551018884,
+        "h": 0.0003,
+        "legacy_row_relative_error": 4.70803042385004e-09,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.10468580080215842
+      },
+      {
+        "absolute_error": 8.107000747908932e-06,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.2368873370536484,
+        "h": 0.01,
+        "legacy_row_relative_error": 8.107000747908932e-06,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.23687923005290049
+      },
+      {
+        "absolute_error": 7.285382550570318e-07,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.23687995859115554,
+        "h": 0.003,
+        "legacy_row_relative_error": 7.285382550570318e-07,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.23687923005290049
+      },
+      {
+        "absolute_error": 8.093791134533568e-08,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.23687931099081183,
+        "h": 0.001,
+        "legacy_row_relative_error": 8.093791134533568e-08,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.23687923005290049
+      },
+      {
+        "absolute_error": 7.284235603588485e-09,
+        "branch_hash_base": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_minus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "branch_hash_plus": "c1595b6761df7004fce523adcc0f75bfdd67ce1551b770e39cbae9b441457a30",
+        "finite_difference": -0.2368792373371361,
+        "h": 0.0003,
+        "legacy_row_relative_error": 7.284235603588485e-09,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.23687923005290049
+      }
+    ],
+    "selected_fd_for_policy": [
+      -0.10468580551018884,
+      -0.2368792373371361
+    ],
+    "stable_windows": [
+      {
+        "parameter": "gamma_unconstrained",
+        "status": "pass",
+        "threshold": 0.07071067811865477,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 4.997628370265107e-05,
+            "relative_error_small": 4.498076224172971e-06
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 4.498076224172971e-06,
+            "relative_error_small": 4.997875397505853e-07
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 4.997875397505853e-07,
+            "relative_error_small": 4.49729588544057e-08
+          }
+        ]
+      },
+      {
+        "parameter": "log_beta",
+        "status": "pass",
+        "threshold": 0.07071067811865477,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 3.422302284597391e-05,
+            "relative_error_small": 3.0755588585459736e-06
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 3.0755588585459736e-06,
+            "relative_error_small": 3.4168417244541515e-07
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 3.4168417244541515e-07,
+            "relative_error_small": 3.075084032468944e-08
+          }
+        ]
+      }
+    ],
+    "status": "pass",
+    "steps": [
+      0.01,
+      0.003,
+      0.001,
+      0.0003
+    ]
+  },
+  "parameter_names": [
+    "gamma_unconstrained",
+    "log_beta"
+  ],
+  "route_classification": "extension_or_invention",
+  "route_id": "zhao_cui_fixed_adjacent_state_squared_tt_v1",
+  "route_subtype": "fixed_parameter_adjacent_state_squared_tt_extension",
+  "row": "ksc_sv",
+  "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-contract-e-tp-phase6 python docs/benchmarks/run_contract_e_tp_phase6_zhao_cui_comparator.py --row ksc_sv --horizon 1 --degree 16 --order 17 --rank 2 --seed contract-e-tp-phase8-refinement --target-preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_ksc_sv_t1_bound_target_preparation_20260715.json --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_refinement_20260715/ksc_sv_t1_degree16_order17_rank2_result.json",
+    "conda_environment": "tf-gpu",
+    "cpu_gpu_status": "CPU-only; CUDA_VISIBLE_DEVICES=-1",
+    "data_seed": 81101,
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "jit_compile": false,
+    "jit_status": "explicit_nondefault_cpu_reference_diagnostic",
+    "output_artifact": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_refinement_20260715/ksc_sv_t1_degree16_order17_rank2_result.json",
+    "plan": "docs/plans/bayesfilter-contract-e-tp-phase6-zhao-cui-comparator-certification-plan-2026-07-15.md",
+    "seed": "contract-e-tp-phase8-refinement",
+    "wall_time_seconds": 1.1476342419919092
+  },
+  "schema_version": "contract_e_tp.phase6.zhao_cui_comparator.v1",
+  "score": [
+    -0.10468580080215842,
+    -0.23687923005290049
+  ],
+  "source_anchors": [
+    "Zhao-Cui 2024 equations 15-16 and Algorithm 2 for parent recursion",
+    "KSC observation mixture is a BayesFilter target extension"
+  ],
+  "status": "certified_extension_or_invention",
+  "target": {
+    "preparation": {
+      "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_ksc_sv_t1_bound_target_preparation_20260715.json",
+      "sha256": "26aacd9f39fd22afdb8542fc89bb126472a1579416c9f49d64f9033e66fbf7c6"
+    },
+    "target_observation_policy": "offset_log_y_square_ksc_mixture",
+    "target_observations_sha256": "8915088a73d828d535a5f746b3aee78ec1f9536ae70864b087f7b728b517153e",
+    "time_steps": 1,
+    "transition_before_first_observation": false
+  },
+  "theta": [
+    0.2533471031357997,
+    -0.916290731874155
+  ],
+  "value": -1.7196451189536215,
+  "what_is_not_concluded": [
+    "not adaptive TT-cross or TTSIRT reproduction",
+    "not source-faithful",
+    "not exact filtering",
+    "not cross-method equivalence",
+    "not superiority or ranking",
+    "not HMC, default, leaderboard, GPU, or full-horizon readiness"
+  ]
+}

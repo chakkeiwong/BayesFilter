@@ -1,0 +1,74 @@
+{
+  "artifact_hash": "sha256:3cd396e8374adb150bf1e2a89a3da66c5c817ea7b1b0ccfa722d81b4b467de23",
+  "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+  "comparison_rows": [
+    {
+      "mean_reverse_kl": 61.49334701799762,
+      "paired_difference_mcse": 0.0,
+      "paired_mean_difference_from_nominal": 0.0,
+      "recipe_id": "inherited_wide_lr5e3",
+      "result": {
+        "byte_count": 52010,
+        "file_sha256": "71c6351c1bee066009c4074230ef75503b3446db3135127452e9661e3245d93f",
+        "path": "docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/f1/screen/candidates/inherited_wide_lr5e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": true
+    },
+    {
+      "mean_reverse_kl": 61.585377632777266,
+      "paired_difference_mcse": 0.020598497633649075,
+      "paired_mean_difference_from_nominal": 0.09203061477964525,
+      "recipe_id": "source_width_lr5e3",
+      "result": {
+        "byte_count": 52004,
+        "file_sha256": "401daa07a765a36a6d69576fa0cbbfda62b6f85c9b21ac8dee522e6f5ae538d8",
+        "path": "docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/f1/screen/candidates/source_width_lr5e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": false
+    },
+    {
+      "mean_reverse_kl": 61.86170878104768,
+      "paired_difference_mcse": 0.03320966631496544,
+      "paired_mean_difference_from_nominal": 0.36836176305005974,
+      "recipe_id": "wide_lower_lr1e3",
+      "result": {
+        "byte_count": 51922,
+        "file_sha256": "22782585c695f4e30a8d618d485758c100e5fdfd3ac8c36267ce6d52e2ce9aa6",
+        "path": "docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/f1/screen/candidates/wide_lower_lr1e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": false
+    }
+  ],
+  "decision": "NOMINATE_F1_RECIPE_FOR_FRESH_5000_STEP_TRAINING",
+  "evidence_role": "proxy_nomination_only_not_transport_promotion",
+  "nominal_lowest_mean_recipe": "inherited_wide_lr5e3",
+  "nonclaims": [
+    "training and heldout reverse KL are nomination-only",
+    "screen differences are descriptive without a supported method ranking",
+    "no HMC convergence, posterior correctness, robustness, or superiority claim",
+    "no production or default-readiness claim"
+  ],
+  "passed": true,
+  "schema": "bayesfilter.neutra_robustness_f1_screen_selection.v1",
+  "screen_weights_reused": false,
+  "selected_recipe": {
+    "activation": "elu",
+    "batch_size": 128,
+    "clip_norm": 10.0,
+    "final_learning_rate_fraction": 1.0,
+    "hidden_layers": [
+      36,
+      36
+    ],
+    "init_scale": 0.02,
+    "learning_rate": 0.005,
+    "optimizer": "manual_adam_constant_learning_rate",
+    "recipe_id": "inherited_wide_lr5e3",
+    "s_max": 1.0,
+    "stage_count": 3
+  },
+  "selected_recipe_id": "inherited_wide_lr5e3",
+  "selection_rule": "within_two_paired_mcse_of_lowest_mean_then_parameter_count_then_learning_rate_then_declared_order",
+  "statistically_supported_ranking": false,
+  "target_signature": "312d2f4ceb5d65bf18251fa53ae1276781c62fd2daefaba0bda8dc3d46a5d283"
+}

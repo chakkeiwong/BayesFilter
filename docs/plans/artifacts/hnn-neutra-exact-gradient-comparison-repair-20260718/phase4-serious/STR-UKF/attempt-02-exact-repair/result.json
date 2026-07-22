@@ -1,0 +1,1108 @@
+{
+  "accuracy": {
+    "learned_residual": {
+      "passed": true,
+      "sampler_validity": true,
+      "truth_status": "PASS",
+      "truth_tail": {
+        "definition": "F=(n_less+0.5*n_equal+0.5)/(N+1); p_truth=2*min(F,1-F)",
+        "marginal_parameters": [],
+        "minimum_p_truth": 0.2885444659708769,
+        "passed": true,
+        "rows": [
+          {
+            "p_truth": 0.8198862571089307,
+            "parameter": "rho",
+            "status": "PASS",
+            "truth": 0.8
+          },
+          {
+            "p_truth": 0.9693769139428785,
+            "parameter": "sigma",
+            "status": "PASS",
+            "truth": 0.5
+          },
+          {
+            "p_truth": 0.2885444659708769,
+            "parameter": "phi",
+            "status": "PASS",
+            "truth": 0.7
+          },
+          {
+            "p_truth": 0.6898943816011499,
+            "parameter": "gamma",
+            "status": "PASS",
+            "truth": 0.4
+          },
+          {
+            "p_truth": 0.5329041934879071,
+            "parameter": "R",
+            "status": "PASS",
+            "truth": 0.25
+          }
+        ],
+        "severe_parameters": []
+      }
+    },
+    "true_gradient": {
+      "passed": false,
+      "sampler_validity": false,
+      "truth_status": "NOT_AVAILABLE",
+      "truth_tail": null
+    }
+  },
+  "cell": "STR-UKF",
+  "completed": true,
+  "cost_ledger": {
+    "break_even_transition_batches": 0,
+    "common_neutra_chart_training_seconds": "not_reconstructed",
+    "efficiency_status": {
+      "learned_residual": "available",
+      "true_gradient": "not_valid_for_efficiency"
+    },
+    "from_scratch_total_seconds": null,
+    "from_scratch_total_status": "unsupported_missing_common_chart_training_cost",
+    "hnn_preparation_seconds": 251.46515422099037,
+    "hnn_specific_overhead_seconds": 0.0,
+    "matched_saving_seconds_per_transition_batch": 1.0099630397659494,
+    "minimum_bulk_ess": {
+      "learned_residual": 5884.479642646577,
+      "true_gradient": null
+    },
+    "preparation_break_even_transition_batches": 249,
+    "reuse_campaign_break_even_transition_batches": 0,
+    "reuse_campaign_pre_sampling_delta_seconds": -4647.174403310986,
+    "reuse_scenario_seconds": {
+      "learned_residual": 1124.9565508769592,
+      "true_gradient": 6320.996728196857
+    },
+    "sampling_warm_seconds": {
+      "learned_residual": 535.4640199560672,
+      "true_gradient": 1084.3297939649783
+    },
+    "schema": "bayesfilter.hnn_neutra_cost_ledger.v1",
+    "supervision_generation_seconds": 241.6277689699782,
+    "timing_synchronized": true,
+    "training_grid_wall_seconds": 9.837385251012165,
+    "training_optimization_only": {
+      "final_seconds": 3.5822564540430903,
+      "screen_seconds": 4.928158896975219
+    },
+    "tuned_seconds_per_minimum_bulk_ess": {
+      "learned_residual": 0.09099598477245123,
+      "true_gradient": null
+    },
+    "tuning_cold_seconds": {
+      "learned_residual": 338.02737669990165,
+      "true_gradient": 5236.666934231878
+    }
+  },
+  "decision": "EXACT_REPAIR_VALIDITY_FAILURE",
+  "direct_posterior_agreement": null,
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": "one-seed independently tuned sampling and attempt-01 matched timing",
+    "hard_veto_screen": "failed",
+    "next_evidence_needed": "classify repeated exact-arm failure",
+    "statistically_supported_ranking": false
+  },
+  "matched_mechanics": {
+    "alternating_orders": [
+      [
+        "learned_residual",
+        "true_gradient"
+      ],
+      [
+        "true_gradient",
+        "learned_residual"
+      ],
+      [
+        "learned_residual",
+        "true_gradient"
+      ]
+    ],
+    "attempt_01_matched_mechanics": {
+      "alternating_orders": [
+        [
+          "learned_residual",
+          "true_gradient"
+        ],
+        [
+          "true_gradient",
+          "learned_residual"
+        ],
+        [
+          "learned_residual",
+          "true_gradient"
+        ]
+      ],
+      "compile_probe_seconds": {
+        "learned_residual": 42.259320890007075,
+        "true_gradient": 749.9479461250012
+      },
+      "learned_faster": true,
+      "mechanics": {
+        "chain_count": 4,
+        "endpoint_batch_invocations": 500,
+        "endpoint_scalar_values": 2000,
+        "force_batch_invocations": 6500,
+        "num_leapfrog_steps": 12,
+        "seed": [
+          20260718,
+          84003
+        ],
+        "step_size": 0.2,
+        "transitions_per_chain": 500
+      },
+      "passed": false,
+      "role": "mechanism_cost_only_not_convergence_evidence",
+      "schema": "bayesfilter.hnn_neutra_matched_mechanics.v1",
+      "seconds_per_transition_batch": {
+        "learned_residual": 0.08829023966006935,
+        "true_gradient": 1.5236080598499393
+      },
+      "speed_ratio_exact_over_learned": 17.256811916198878,
+      "timing_synchronized": true,
+      "warm_median_seconds": {
+        "learned_residual": 44.14511983003467,
+        "true_gradient": 761.8040299249697
+      },
+      "warm_repeats_seconds": {
+        "learned_residual": [
+          38.204979831993114,
+          44.14511983003467,
+          47.679075482010376
+        ],
+        "true_gradient": [
+          730.777289340971,
+          761.8040299249697,
+          892.3231442199904
+        ]
+      }
+    },
+    "compile_probe_seconds": {
+      "learned_residual": 43.91574323998066,
+      "true_gradient": 555.25533958897
+    },
+    "learned_faster": true,
+    "mechanics": {
+      "chain_count": 4,
+      "endpoint_batch_invocations": 500,
+      "endpoint_scalar_values": 2000,
+      "force_batch_invocations": 4500,
+      "num_leapfrog_steps": 8,
+      "seed": [
+        20260718,
+        84003
+      ],
+      "step_size": 0.1,
+      "transitions_per_chain": 500
+    },
+    "passed": true,
+    "role": "mechanism_cost_only_not_convergence_evidence",
+    "schema": "bayesfilter.hnn_neutra_matched_mechanics.v1",
+    "seconds_per_transition_batch": {
+      "learned_residual": 0.07750471993803512,
+      "true_gradient": 1.0874677597039846
+    },
+    "speed_ratio_exact_over_learned": 14.0309875395126,
+    "status": "repaired_common_mechanics_eps0.1_l8",
+    "supersedes_attempt_01_matched_health_failure": true,
+    "timing_synchronized": true,
+    "warm_median_seconds": {
+      "learned_residual": 38.75235996901756,
+      "true_gradient": 543.7338798519922
+    },
+    "warm_repeats_seconds": {
+      "learned_residual": [
+        37.399127105018124,
+        39.44260366499657,
+        38.75235996901756
+      ],
+      "true_gradient": [
+        545.1780936549767,
+        543.7338798519922,
+        533.5832056610379
+      ]
+    }
+  },
+  "nonclaims": [
+    "no HNN retraining or HNN resampling in this repair",
+    "archived HNN weights reused only for repaired matched timing",
+    "attempt-01 matched timing is superseded because it failed its energy-health gate",
+    "no universal superiority or default-readiness claim",
+    "common NeuTra chart-training cost remains unreconstructed"
+  ],
+  "original_attempt": {
+    "result_sha256": "c4a86724ec88cfbcc7aea8d8b4becf29828b1dda20dbd4727776a7d4f98e8c94",
+    "root": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01",
+    "run_manifest_sha256": "023a1d7e4c4c37e177f429e1e4246bc40e4591d24fa21ec00fb10f4047b0eea9"
+  },
+  "passed": false,
+  "performance_passed": false,
+  "repair_selection": {
+    "failed_candidate": "eps0.2_l8",
+    "failed_warmup_maximum_absolute_delta_h": 4213.1896518000785,
+    "num_leapfrog_steps": 8,
+    "role": "localized_exact_arm_energy_health_repair",
+    "seed_and_initialization_unchanged": true,
+    "source_tuning_candidate": "eps0.1_l8",
+    "source_tuning_maximum_absolute_delta_h": 16.04995289049518,
+    "source_tuning_modern_rhat": 1.0706975657128621,
+    "step_size": 0.1
+  },
+  "run_manifest": {
+    "cell": "STR-UKF",
+    "command": "docs/benchmarks/run_hnn_neutra_structural_exact_repair_2026_07_18.py --original-root docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01 --output-root docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-02-exact-repair",
+    "device": "/GPU:0",
+    "dtype": "float64",
+    "environment": "tf-gpu",
+    "git_commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "original_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01",
+    "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-02-exact-repair",
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "plan_file": "docs/plans/bayesfilter-hnn-neutra-exact-gradient-comparison-repair-plan-2026-07-18.md",
+    "repair_scope": "exact_arm_sampling_plus_repaired_matched_mechanics",
+    "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-02-exact-repair/result.json",
+    "schema": "bayesfilter.hnn_neutra_structural_exact_repair_manifest.v1",
+    "started_at_utc": "2026-07-18T03:50:27.096896+00:00",
+    "tensorflow_probability_version": "0.25.0",
+    "tensorflow_version": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 4537.414422738017
+  },
+  "runs": {
+    "learned_residual": {
+      "result": {
+        "acceptance_rate": 0.8897916666666666,
+        "archives": {
+          "retained_raw": {
+            "all_finite": true,
+            "artifact_hash": "sha256:582d6b109b4855fbebe2d41e7f96135e4e11bf8f229a9ec348cd63cd94e41d0b",
+            "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+            "dtype": "float64",
+            "metadata": {
+              "arm": "learned_residual",
+              "stage": "retained"
+            },
+            "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+            "shape": [
+              4000,
+              4,
+              5
+            ],
+            "tensor_file_sha256": "6b4fcec4c5e010739a5156e120da82693920d6dfe4166070ff70fa8de1d31dc2",
+            "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01/sampling/learned_residual/samples/retained_raw.tftensor"
+          },
+          "retained_trace": {
+            "all_finite": true,
+            "artifact_hash": "sha256:444c8d66dc3326d2169cd09dda41c3577fb6675e8e4c48f10dcee04dad7c145f",
+            "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+            "dtype": "float64",
+            "metadata": {
+              "arm": "learned_residual",
+              "columns": [
+                "initial_potential",
+                "final_potential",
+                "initial_kinetic",
+                "final_kinetic",
+                "delta_h",
+                "log_acceptance_ratio"
+              ],
+              "stage": "retained"
+            },
+            "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+            "shape": [
+              4000,
+              4,
+              6
+            ],
+            "tensor_file_sha256": "4867bb8ce9acddc496d5cc973371ff271642f8e08a06c54b072f91bc9cfff351",
+            "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01/sampling/learned_residual/samples/retained_trace.tftensor"
+          },
+          "retained_z": {
+            "all_finite": true,
+            "artifact_hash": "sha256:f1aa1678f0a0f7f0c2a993114f3f05e9a79a5e55f883017fae767c52204e1fcf",
+            "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+            "dtype": "float64",
+            "metadata": {
+              "arm": "learned_residual",
+              "stage": "retained"
+            },
+            "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+            "shape": [
+              4000,
+              4,
+              5
+            ],
+            "tensor_file_sha256": "2df6ec84da5e9c0e7a0589d0b61ba99702b1146074fbc3f0309a512dd0ef050b",
+            "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01/sampling/learned_residual/samples/retained_z.tftensor"
+          },
+          "warmup_raw": {
+            "all_finite": true,
+            "artifact_hash": "sha256:2d78d71e1999746e293545a1631c6157b56c89acd0eb9aff14f67cfa4b8135b5",
+            "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+            "dtype": "float64",
+            "metadata": {
+              "arm": "learned_residual",
+              "stage": "warmup"
+            },
+            "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+            "shape": [
+              2000,
+              4,
+              5
+            ],
+            "tensor_file_sha256": "e7612a1a1e8a475c2cb801bdcdc196633bc333efcc09e1048bb838c1c290274f",
+            "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01/sampling/learned_residual/samples/warmup_raw.tftensor"
+          },
+          "warmup_trace": {
+            "all_finite": true,
+            "artifact_hash": "sha256:0aabb21e19924539cec8ac1310e5f9daa050319fe7065083a8d4b98018f1f48a",
+            "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+            "dtype": "float64",
+            "metadata": {
+              "arm": "learned_residual",
+              "columns": [
+                "initial_potential",
+                "final_potential",
+                "initial_kinetic",
+                "final_kinetic",
+                "delta_h",
+                "log_acceptance_ratio"
+              ],
+              "stage": "warmup"
+            },
+            "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+            "shape": [
+              2000,
+              4,
+              6
+            ],
+            "tensor_file_sha256": "67c5fefa67e990d05edace1c9dd2f86d7eca542fe1bd02cf20c7c47cd1e6f086",
+            "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01/sampling/learned_residual/samples/warmup_trace.tftensor"
+          },
+          "warmup_z": {
+            "all_finite": true,
+            "artifact_hash": "sha256:4c2f346783e322996c9176f44d0f232e673735f87b037d8c606d7fd5bbd04fec",
+            "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+            "dtype": "float64",
+            "metadata": {
+              "arm": "learned_residual",
+              "stage": "warmup"
+            },
+            "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+            "shape": [
+              2000,
+              4,
+              5
+            ],
+            "tensor_file_sha256": "2b1e14fc0e0b3a18174bf5d90eaac80c87c0d03e0eaa64eacde917ba597c2599",
+            "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-01/sampling/learned_residual/samples/warmup_z.tftensor"
+          }
+        },
+        "arm_id": "learned_residual",
+        "compile_included_in_sampling_execution_seconds": false,
+        "compile_probe_seconds": 99.48965506500099,
+        "elapsed_seconds": 638.9172628769884,
+        "endpoint_batch_invocations": 6000,
+        "endpoint_scalar_values": 24000,
+        "force_batch_invocations": 78000,
+        "full_energy_identity_max_error": 0.0,
+        "hard_vetoes": [],
+        "num_leapfrog_steps": 12,
+        "passed": true,
+        "retained_checks": [
+          {
+            "full_convergence": {
+              "chain_count": 4,
+              "definitions": {
+                "autocorrelation_truncation": "TFP initial positive pairs",
+                "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+                "quantile_interpolation": "linear",
+                "rank_transform": "Blom average-rank normal score",
+                "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+              },
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 1000,
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_rhat": 1.0239429066488157,
+              "min_bulk_ess": 908.5644968140077,
+              "min_tail_ess": 343.44481827841463,
+              "nonclaims": [
+                "all-parameter HMC convergence screen only",
+                "no posterior recovery claim",
+                "no sampler superiority claim",
+                "no production or default readiness claim"
+              ],
+              "parameter_count": 5,
+              "parameter_diagnostics": [
+                {
+                  "bulk_ess": 908.5644968140077,
+                  "folded_rank_normalized_split_rhat": 1.0125439977297888,
+                  "lower_tail_ess": 2441.451762424113,
+                  "parameter": "rho_source_probit",
+                  "passed": false,
+                  "rank_normalized_split_rhat": 1.0076968219204105,
+                  "rhat": 1.0125439977297888,
+                  "tail_ess": 343.44481827841463,
+                  "upper_tail_ess": 343.44481827841463
+                },
+                {
+                  "bulk_ess": 2469.1780518748083,
+                  "folded_rank_normalized_split_rhat": 1.0079600116138574,
+                  "lower_tail_ess": 2115.8335381804127,
+                  "parameter": "sigma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0008916624277926,
+                  "rhat": 1.0079600116138574,
+                  "tail_ess": 2015.4442761655703,
+                  "upper_tail_ess": 2015.4442761655703
+                },
+                {
+                  "bulk_ess": 1437.0743522972116,
+                  "folded_rank_normalized_split_rhat": 1.012224316736342,
+                  "lower_tail_ess": 430.37029161049986,
+                  "parameter": "phi_source_probit",
+                  "passed": false,
+                  "rank_normalized_split_rhat": 1.0035598944344175,
+                  "rhat": 1.012224316736342,
+                  "tail_ess": 430.37029161049986,
+                  "upper_tail_ess": 2340.3429250574673
+                },
+                {
+                  "bulk_ess": 3367.247307616568,
+                  "folded_rank_normalized_split_rhat": 1.0096142676060413,
+                  "lower_tail_ess": 2060.498788609352,
+                  "parameter": "gamma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0004045234685097,
+                  "rhat": 1.0096142676060413,
+                  "tail_ess": 2060.498788609352,
+                  "upper_tail_ess": 2081.086467496639
+                },
+                {
+                  "bulk_ess": 5362.922111705143,
+                  "folded_rank_normalized_split_rhat": 1.0239429066488157,
+                  "lower_tail_ess": 2304.339449107716,
+                  "parameter": "R_source_probit",
+                  "passed": false,
+                  "rank_normalized_split_rhat": 0.9997547235032193,
+                  "rhat": 1.0239429066488157,
+                  "tail_ess": 2184.42563969012,
+                  "upper_tail_ess": 2184.42563969012
+                }
+              ],
+              "passed": false,
+              "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 500,
+              "thresholds": {
+                "bulk_ess_min": 1000.0,
+                "rhat_max": 1.01,
+                "tail_ess_min": 400.0
+              }
+            },
+            "health": {
+              "all_finite": true,
+              "energy_error_veto_clear": true,
+              "maximum_absolute_delta_h": 14.640515318911092,
+              "one_new_endpoint_call_per_transition": true,
+              "passed": true
+            },
+            "passed": false,
+            "results_per_chain": 1000
+          },
+          {
+            "full_convergence": {
+              "chain_count": 4,
+              "definitions": {
+                "autocorrelation_truncation": "TFP initial positive pairs",
+                "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+                "quantile_interpolation": "linear",
+                "rank_transform": "Blom average-rank normal score",
+                "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+              },
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 2000,
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_rhat": 1.012754474143584,
+              "min_bulk_ess": 2688.313899965378,
+              "min_tail_ess": 1142.425262762791,
+              "nonclaims": [
+                "all-parameter HMC convergence screen only",
+                "no posterior recovery claim",
+                "no sampler superiority claim",
+                "no production or default readiness claim"
+              ],
+              "parameter_count": 5,
+              "parameter_diagnostics": [
+                {
+                  "bulk_ess": 2688.313899965378,
+                  "folded_rank_normalized_split_rhat": 1.0044718717968297,
+                  "lower_tail_ess": 5181.851073885817,
+                  "parameter": "rho_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0023967918436234,
+                  "rhat": 1.0044718717968297,
+                  "tail_ess": 1142.425262762791,
+                  "upper_tail_ess": 1142.425262762791
+                },
+                {
+                  "bulk_ess": 7416.442095492251,
+                  "folded_rank_normalized_split_rhat": 1.0034165982777112,
+                  "lower_tail_ess": 4468.801084732367,
+                  "parameter": "sigma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 0.9996513230238736,
+                  "rhat": 1.0034165982777112,
+                  "tail_ess": 4468.801084732367,
+                  "upper_tail_ess": 4690.725809668628
+                },
+                {
+                  "bulk_ess": 4629.524209064931,
+                  "folded_rank_normalized_split_rhat": 1.0028068779384993,
+                  "lower_tail_ess": 1446.5696737233527,
+                  "parameter": "phi_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.000095238980918,
+                  "rhat": 1.0028068779384993,
+                  "tail_ess": 1446.5696737233527,
+                  "upper_tail_ess": 4229.389705164149
+                },
+                {
+                  "bulk_ess": 8857.663828997633,
+                  "folded_rank_normalized_split_rhat": 1.000128589021329,
+                  "lower_tail_ess": 4086.603181145585,
+                  "parameter": "gamma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 0.9995348575528867,
+                  "rhat": 1.000128589021329,
+                  "tail_ess": 4086.603181145585,
+                  "upper_tail_ess": 4448.615063916846
+                },
+                {
+                  "bulk_ess": 11329.866873981997,
+                  "folded_rank_normalized_split_rhat": 1.012754474143584,
+                  "lower_tail_ess": 4198.200628376098,
+                  "parameter": "R_source_probit",
+                  "passed": false,
+                  "rank_normalized_split_rhat": 1.0006329391467832,
+                  "rhat": 1.012754474143584,
+                  "tail_ess": 4198.200628376098,
+                  "upper_tail_ess": 4242.914256149086
+                }
+              ],
+              "passed": false,
+              "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 1000,
+              "thresholds": {
+                "bulk_ess_min": 1000.0,
+                "rhat_max": 1.01,
+                "tail_ess_min": 400.0
+              }
+            },
+            "health": {
+              "all_finite": true,
+              "energy_error_veto_clear": true,
+              "maximum_absolute_delta_h": 18.367634407915077,
+              "one_new_endpoint_call_per_transition": true,
+              "passed": true
+            },
+            "passed": false,
+            "results_per_chain": 2000
+          },
+          {
+            "full_convergence": {
+              "chain_count": 4,
+              "definitions": {
+                "autocorrelation_truncation": "TFP initial positive pairs",
+                "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+                "quantile_interpolation": "linear",
+                "rank_transform": "Blom average-rank normal score",
+                "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+              },
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 3000,
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_rhat": 1.0150573135211196,
+              "min_bulk_ess": 3681.958827161502,
+              "min_tail_ess": 915.9219752963461,
+              "nonclaims": [
+                "all-parameter HMC convergence screen only",
+                "no posterior recovery claim",
+                "no sampler superiority claim",
+                "no production or default readiness claim"
+              ],
+              "parameter_count": 5,
+              "parameter_diagnostics": [
+                {
+                  "bulk_ess": 4470.061761413867,
+                  "folded_rank_normalized_split_rhat": 1.0022142258801883,
+                  "lower_tail_ess": 7065.36503298873,
+                  "parameter": "rho_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.000874499157661,
+                  "rhat": 1.0022142258801883,
+                  "tail_ess": 2227.2758931468543,
+                  "upper_tail_ess": 2227.2758931468543
+                },
+                {
+                  "bulk_ess": 7276.194473918291,
+                  "folded_rank_normalized_split_rhat": 1.0009806448686445,
+                  "lower_tail_ess": 2611.55861785053,
+                  "parameter": "sigma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0004870521893745,
+                  "rhat": 1.0009806448686445,
+                  "tail_ess": 2611.55861785053,
+                  "upper_tail_ess": 7559.223682359962
+                },
+                {
+                  "bulk_ess": 6178.364825496924,
+                  "folded_rank_normalized_split_rhat": 1.002705289247778,
+                  "lower_tail_ess": 2821.0025141866286,
+                  "parameter": "phi_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0007273885879915,
+                  "rhat": 1.002705289247778,
+                  "tail_ess": 2821.0025141866286,
+                  "upper_tail_ess": 5745.760539876133
+                },
+                {
+                  "bulk_ess": 9321.216548656688,
+                  "folded_rank_normalized_split_rhat": 1.0004634745518737,
+                  "lower_tail_ess": 5946.197498755851,
+                  "parameter": "gamma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0009618278065202,
+                  "rhat": 1.0009618278065202,
+                  "tail_ess": 5403.989466013323,
+                  "upper_tail_ess": 5403.989466013323
+                },
+                {
+                  "bulk_ess": 3681.958827161502,
+                  "folded_rank_normalized_split_rhat": 1.0150573135211196,
+                  "lower_tail_ess": 915.9219752963461,
+                  "parameter": "R_source_probit",
+                  "passed": false,
+                  "rank_normalized_split_rhat": 1.002130353355318,
+                  "rhat": 1.0150573135211196,
+                  "tail_ess": 915.9219752963461,
+                  "upper_tail_ess": 5384.782975043085
+                }
+              ],
+              "passed": false,
+              "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 1500,
+              "thresholds": {
+                "bulk_ess_min": 1000.0,
+                "rhat_max": 1.01,
+                "tail_ess_min": 400.0
+              }
+            },
+            "health": {
+              "all_finite": true,
+              "energy_error_veto_clear": true,
+              "maximum_absolute_delta_h": 15.702493553698343,
+              "one_new_endpoint_call_per_transition": true,
+              "passed": true
+            },
+            "passed": false,
+            "results_per_chain": 3000
+          },
+          {
+            "full_convergence": {
+              "chain_count": 4,
+              "definitions": {
+                "autocorrelation_truncation": "TFP initial positive pairs",
+                "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+                "quantile_interpolation": "linear",
+                "rank_transform": "Blom average-rank normal score",
+                "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+              },
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 4000,
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_rhat": 1.0096312320872292,
+              "min_bulk_ess": 5884.479642646577,
+              "min_tail_ess": 1570.6084570036262,
+              "nonclaims": [
+                "all-parameter HMC convergence screen only",
+                "no posterior recovery claim",
+                "no sampler superiority claim",
+                "no production or default readiness claim"
+              ],
+              "parameter_count": 5,
+              "parameter_diagnostics": [
+                {
+                  "bulk_ess": 7100.014903710228,
+                  "folded_rank_normalized_split_rhat": 1.0032573578614712,
+                  "lower_tail_ess": 8440.082395902262,
+                  "parameter": "rho_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 0.9999145972229461,
+                  "rhat": 1.0032573578614712,
+                  "tail_ess": 3625.1679607519986,
+                  "upper_tail_ess": 3625.1679607519986
+                },
+                {
+                  "bulk_ess": 10546.069709451118,
+                  "folded_rank_normalized_split_rhat": 1.0013809791001276,
+                  "lower_tail_ess": 4029.705474550317,
+                  "parameter": "sigma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0006624295598785,
+                  "rhat": 1.0013809791001276,
+                  "tail_ess": 4029.705474550317,
+                  "upper_tail_ess": 7359.691245808269
+                },
+                {
+                  "bulk_ess": 9408.215087960505,
+                  "folded_rank_normalized_split_rhat": 1.001260181793586,
+                  "lower_tail_ess": 4188.471421120186,
+                  "parameter": "phi_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0005134627321577,
+                  "rhat": 1.001260181793586,
+                  "tail_ess": 4188.471421120186,
+                  "upper_tail_ess": 6036.775489082643
+                },
+                {
+                  "bulk_ess": 12705.250893086044,
+                  "folded_rank_normalized_split_rhat": 1.0020493185609942,
+                  "lower_tail_ess": 7022.552500652211,
+                  "parameter": "gamma_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0001978171660333,
+                  "rhat": 1.0020493185609942,
+                  "tail_ess": 7022.552500652211,
+                  "upper_tail_ess": 7532.683379568104
+                },
+                {
+                  "bulk_ess": 5884.479642646577,
+                  "folded_rank_normalized_split_rhat": 1.0096312320872292,
+                  "lower_tail_ess": 1570.6084570036262,
+                  "parameter": "R_source_probit",
+                  "passed": true,
+                  "rank_normalized_split_rhat": 1.0008934516960228,
+                  "rhat": 1.0096312320872292,
+                  "tail_ess": 1570.6084570036262,
+                  "upper_tail_ess": 7356.958596098651
+                }
+              ],
+              "passed": true,
+              "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 2000,
+              "thresholds": {
+                "bulk_ess_min": 1000.0,
+                "rhat_max": 1.01,
+                "tail_ess_min": 400.0
+              }
+            },
+            "health": {
+              "all_finite": true,
+              "energy_error_veto_clear": true,
+              "maximum_absolute_delta_h": 31.341494254429335,
+              "one_new_endpoint_call_per_transition": true,
+              "passed": true
+            },
+            "passed": true,
+            "results_per_chain": 4000
+          }
+        ],
+        "retained_results_per_chain": 4000,
+        "sampling_execution_seconds": 535.4640199560672,
+        "step_size": 0.2,
+        "timing_scope": "synchronized_warm_chunk_execution",
+        "timing_synchronized": true,
+        "warmup_checks": [
+          {
+            "health": {
+              "all_finite": true,
+              "energy_error_veto_clear": true,
+              "maximum_absolute_delta_h": 51.2910729279278,
+              "one_new_endpoint_call_per_transition": true,
+              "passed": true
+            },
+            "modern_rhat": {
+              "chain_count": 4,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 1000,
+              "finite_rhat_count": 5,
+              "folded_rank_normalized_split_rhat": [
+                1.008155414858509,
+                1.0069057218945194,
+                1.0064112489521586,
+                1.0070107470647796,
+                1.0049751213403075
+              ],
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_finite_rhat": 1.008155414858509,
+              "max_folded_rank_normalized_split_rhat": 1.008155414858509,
+              "max_rank_normalized_split_rhat": 1.005829893773547,
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 5,
+              "passed": true,
+              "rank_normalized_split_rhat": [
+                0.9990399351381444,
+                1.0032216798703373,
+                1.0008875234186947,
+                1.005829893773547,
+                0.9991159042162804
+              ],
+              "rhat": [
+                1.008155414858509,
+                1.0069057218945194,
+                1.0064112489521586,
+                1.0070107470647796,
+                1.0049751213403075
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 1.05,
+              "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 500
+            },
+            "passed": false,
+            "results_per_chain": 1000
+          },
+          {
+            "health": {
+              "all_finite": true,
+              "energy_error_veto_clear": true,
+              "maximum_absolute_delta_h": 17.81950786571244,
+              "one_new_endpoint_call_per_transition": true,
+              "passed": true
+            },
+            "modern_rhat": {
+              "chain_count": 4,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 1000,
+              "finite_rhat_count": 5,
+              "folded_rank_normalized_split_rhat": [
+                1.0017232025119067,
+                1.0070413935047564,
+                1.0046488529256152,
+                1.0030061954029055,
+                1.0094169100601629
+              ],
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_finite_rhat": 1.0094169100601629,
+              "max_folded_rank_normalized_split_rhat": 1.0094169100601629,
+              "max_rank_normalized_split_rhat": 1.0012151285712483,
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 5,
+              "passed": true,
+              "rank_normalized_split_rhat": [
+                0.9995951741781209,
+                1.0012151285712483,
+                0.9985281555946851,
+                0.9995616964648638,
+                0.9990801480954773
+              ],
+              "rhat": [
+                1.0017232025119067,
+                1.0070413935047564,
+                1.0046488529256152,
+                1.0030061954029055,
+                1.0094169100601629
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 1.05,
+              "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 500
+            },
+            "passed": true,
+            "results_per_chain": 2000
+          }
+        ],
+        "warmup_results_per_chain": 2000
+      },
+      "source": "verified_preserved_attempt_01"
+    },
+    "true_gradient": {
+      "acceptance_rate": 0.9865,
+      "archives": {
+        "warmup_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:93f4467b52df40f14f60ea3491d43145c32db90072c651ecb2c4f9f47c0f9c70",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "406d8b742ee589325d52d745ae7bd1c73b6368ed03cf575f46ec12dbb7a219ea",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-02-exact-repair/sampling/true_gradient/samples/warmup_raw.tftensor"
+        },
+        "warmup_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:4108832b2337e76bba0bd44ef65112c5e9e304880191c733c2397458f30df186",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "797849fe6eb11d54844dece413d6eb8fd69e963ee550cdf45d37150a0dd2cc2d",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-02-exact-repair/sampling/true_gradient/samples/warmup_trace.tftensor"
+        },
+        "warmup_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:21debf27eaaa366f136fd21643b405bb3e917fc01a68afee493c7ff02019bb09",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            5
+          ],
+          "tensor_file_sha256": "7294fdbe2a215aa4a99c67786ca2b32b3e3ec5d9eb87e54ca0b1d3571b0a2ece",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase4-serious/STR-UKF/attempt-02-exact-repair/sampling/true_gradient/samples/warmup_z.tftensor"
+        }
+      },
+      "arm_id": "true_gradient",
+      "compile_included_in_sampling_execution_seconds": false,
+      "compile_probe_seconds": 1103.4317103710491,
+      "elapsed_seconds": 2193.404578023008,
+      "endpoint_batch_invocations": 1000,
+      "endpoint_scalar_values": 4000,
+      "force_batch_invocations": 9000,
+      "full_energy_identity_max_error": 0.0,
+      "hard_vetoes": [
+        "warmup_chunk_health_failed"
+      ],
+      "num_leapfrog_steps": 8,
+      "passed": false,
+      "retained_checks": [],
+      "retained_results_per_chain": 0,
+      "sampling_execution_seconds": 1084.3297939649783,
+      "step_size": 0.1,
+      "timing_scope": "synchronized_warm_chunk_execution",
+      "timing_synchronized": true,
+      "warmup_checks": [
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": false,
+            "maximum_absolute_delta_h": 1307.2413690787753,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": false
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 5,
+            "folded_rank_normalized_split_rhat": [
+              1.0168593939826893,
+              1.0044680071697911,
+              1.0146648176383295,
+              1.0078115040172522,
+              1.0019438953117914
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0282962125129786,
+            "max_folded_rank_normalized_split_rhat": 1.0168593939826893,
+            "max_rank_normalized_split_rhat": 1.0282962125129786,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 5,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.0187324943411094,
+              1.0282962125129786,
+              1.0147075961609389,
+              1.0236798688960345,
+              1.012912164455677
+            ],
+            "rhat": [
+              1.0187324943411094,
+              1.0282962125129786,
+              1.0147075961609389,
+              1.0236798688960345,
+              1.012912164455677
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": false,
+          "results_per_chain": 1000
+        }
+      ],
+      "warmup_results_per_chain": 1000
+    }
+  },
+  "schema": "bayesfilter.hnn_neutra_structural_exact_repair_result.v1",
+  "second_seed_required": false,
+  "structural_contract": {
+    "artificial_k_noise_allowed": false,
+    "deterministic_completion": "k_t=phi*k_(t-1)+gamma*m_t^2",
+    "passed": true
+  },
+  "target_signature": "e8d78a8ee12245fee2e6c4c739d9dc03d672e8dd9a96bfbd492b426a72e1c665",
+  "transport_signature": "32a19a8d8d02f6a94851ed489d3b64f961f3bc92ba7ac36506f8078a6649c1e0"
+}

@@ -1,0 +1,1386 @@
+                                           Particle Approximations of the Score and Observed
+                                         Information Matrix for Parameter Estimation in State
+                                               Space Models With Linear Computational Cost
+
+                                                Christopher Nemeth, Paul Fearnhead and Lyudmila Mihaylova
+arXiv:1306.0735v3 [stat.CO] 4 Sep 2015
+
+
+
+
+                                                                               September 7, 2015
+
+
+                                                                                      Abstract
+                                                   Poyiadjis et al. (2011) show how particle methods can be used to estimate both
+                                               the score and the observed information matrix for state space models. These meth-
+                                               ods either suffer from a computational cost that is quadratic in the number of parti-
+                                               cles, or produce estimates whose variance increases quadratically with the amount of
+                                               data. This paper introduces an alternative approach for estimating these terms at a
+                                               computational cost that is linear in the number of particles. The method is derived
+                                               using a combination of kernel density estimation, to avoid the particle degeneracy
+                                               that causes the quadratically increasing variance, and Rao-Blackwellisation. Cru-
+                                               cially, we show the method is robust to the choice of bandwidth within the kernel
+                                               density estimation, as it has good asymptotic properties regardless of this choice.
+                                               Our estimates of the score and observed information matrix can be used within
+                                               both online and batch procedures for estimating parameters for state space mod-
+                                               els. Empirical results show improved parameter estimates compared to existing
+                                               methods at a significantly reduced computational cost. Supplementary materials
+                                               including code are available.
+                                             Christopher Nemeth, Department of Mathematics and Statistics, Lancaster University, Lancaster
+                                         LA1 4YF, UK (Email: c.nemeth@lancaster.ac.uk). Paul Fearnhead, Department of Mathematics and
+                                         Statistics, Lancaster University, Lancaster LA1 4YF, UK (Email: p.fearnhead@lancaster.ac.uk). Lyud-
+                                         mila Mihaylova, Department of Automatic Control and Systems Engineering, University of Sheffield,
+                                         Sheffield S1 3JD, UK (Email: l.s.mihaylova@sheffield.ac.uk).
+
+
+                                                                                           1
+Keywords. Gradient ascent algorithm; Maximum likelihood parameter estimation; Par-
+ticle filtering; Sequential Monte Carlo; Stochastic approximation
+
+
+
+1      Introduction
+State space models have become a popular framework to model nonlinear time series
+problems in engineering, econometrics and statistics (Cappé et al., 2005; Durbin and
+Koopman, 2001). In this paper we consider the problem of maximum likelihood es-
+timation of the model parameters, θ, for nonlinear, non-Gaussian state space models,
+where there is no closed form expression for the marginal likelihood, p(y1:T |θ), for data
+y1:T = {y1 , y2 , . . . , yT }.
+    Using sequential Monte Carlo (SMC) methods, also known as particle filters, we pro-
+pose an efficient method to create particle approximations of the score vector ∇ log p(y1:T |θ),
+which can be used within a gradient ascent algorithm to estimate θ by indirectly max-
+imising the likelihood function. We show that our proposed algorithm can be applied
+offline, to estimate the θ from batches of data, or recursively, to update θ when new
+observations yt are received. Previous work by Poyiadjis et al. (2011), has provided two
+approaches for estimating the score vector and observed information matrix. The first
+has a computational complexity that is linear in the number of particles, but it has the
+drawback that the variance of the estimates increases quadratically through time. The
+second method produces estimates whose variance increases linearly with time, but at
+the expense of a computational cost that is quadratic in the number of particles. The
+increased computational complexity of this algorithm limits its use for online applications.
+    We propose a new method for estimating the score vector and observed information
+matrix using a novel implementation of a kernel density estimation technique (Liu and
+West, 2001), with Rao-Blackwellisation to reduce the Monte Carlo error of our estimates.
+The result is a linear-time algorithm which has substantially smaller Monte Carlo vari-
+ance than the linear-time algorithm of Poyiadjis et al. (2011) and notable improvements
+over the fixed-lag smoother (Olsson et al., 2008) – with empirical results showing the
+Monte Carlo variance of the estimate of the score vector increases only linearly with
+time. Furthermore, unlike standard uses of kernel density estimation, we derive results
+
+
+                                              2
+showing that our method is robust to the choice of bandwidth. For any fixed bandwidth
+our approach can consistently estimate the parameters as both the number of time-points
+and the number of particles go to infinity.
+    Our final algorithm has similarities with the fixed-lag smoother of Dahlin et al. (2014),
+in terms of reducing the Monte Carlo error in the score and observed information esti-
+mates. However, one of the key advantages of our approach using Rao-Blackwellisation
+and kernel density estimation is that we are able to better approximate the observed in-
+formation matrix, which in turn leads to faster and more accurate parameter estimation.
+A recently proposed linear time algorithm by Westerborn and Olsson (2014), supported
+by theoretical results (Olsson and Westerborn, 2014), could be also be used, but is not
+tested here. Finally, compared to competing methods, empirical results on a challeng-
+ing eight parameter nonlinear model show that our algorithm produces more consistent
+parameter estimates, with an order of magnitude improvement in the rate of convergence.
+
+
+
+2     Inference for state space models
+
+2.1     State space models
+
+Consider the general state space model where {Xt ; 1 ≤ t ≤ T } represents a latent Markov
+process that takes values on X ⊆ Rnx . The process is fully characterised by its initial
+density p(x1 |θ) = µθ (x1 ) and transition probability density
+
+                           p(xt |x1:t−1 , θ) = p(xt |xt−1 , θ) = fθ (xt |xt−1 ),         (1)
+
+where θ ∈ Θ represents a vector of model parameters. For an arbitrary sequence {zi } the
+notation zi:j corresponds to (zi , zi+1 , . . . , zj ) for i ≤ j.
+    We assume that the process {Xt } is not directly observable, but partial observations
+can be made via a second process {Yt ; 1 ≤ t ≤ T } ⊆ Y ⊆ Rny . The observations {Yt } are
+conditionally independent given {Xt } and are defined by the probability density
+
+                            p(yt |y1:t−1 , x1:t , θ) = p(yt |xt , θ) = gθ (yt |xt ).     (2)
+
+    In the standard Bayesian context the latent process {X1:T } is estimated conditional
+on a sequence of observations y1:T , for T ≥ 1. If the parameter vector θ is known then
+
+                                                       3
+the conditional distribution p(x1:T |y1:T , θ) ∝ p(x1:T , y1:T , θ) can be evaluated where
+                                                       T
+                                                       Y                      T
+                                                                              Y
+                     p(x1:T , y1:T , θ) = µθ (x1 )           fθ (xt |xt−1 )         gθ (yt |xt ).      (3)
+                                                       t=2                    t=1
+
+   For nonlinear, non-Gaussian state space models it is not possible to evaluate the
+posterior density p(θ, x1:T |y1:T ) in closed form. A popular approach for approximating
+these densities is to use a sequential Monte Carlo algorithm.
+
+
+2.2      Sequential Monte Carlo algorithm
+
+SMC algorithms allow for the sequential approximation of the conditional density of the
+latent state given a sequence of observations, y1:t , for a fixed θ, which in this section we
+assume are known model parameters. For simplicity we shall focus on methods aimed
+at approximating the conditional density for the current state, Xt , but the ideas can be
+extended to learning about the full path of the process, X1:t . Approximations of the
+density p(xt |y1:t , θ) can be calculated recursively by first approximating p(x1 |y1 , θ), then
+p(x2 |y1:2 , θ) and so forth. Each conditional density can be approximated by a set of N
+weighted random samples, called particles, where
+                                     N
+                                     X                                                 N
+                                                                                       X
+                                            (i)                      (i)                       (i)
+               p̂(dxt |y1:t , θ) =         wt δX (i) (dxt ),     ∀i wt ≥ 0,                   wt = 1   (4)
+                                                  t
+                                     i=1                                                i=1
+
+is an approximation for the conditional distribution and δx0 (dx) is a Dirac delta mass
+                                                                 (i)
+function located at x0 . The set of particles {Xt }N
+                                                   i=1 and their corresponding weights
+   (i)
+{wt }N
+     i=1 provide an empirical measure that approximates the probability density function
+
+p(xt |y1:t , θ), where the accuracy of the approximation increases as N → ∞ (Crisan and
+Doucet, 2002).
+   We can recursively update our approximation using the following filtering recursion,
+                                            Z
+              p(xt |y1:t , θ) ∝ gθ (yt |xt ) fθ (xt |xt−1 )p(xt−1 |y1:t−1 , θ)dxt−1 , (5)
+
+                                                                                               (i)
+where if we assume that at time t − 1 we have a set of particles {Xt−1 }N
+                                                                        i=1 , and weights
+   (i)
+{wt−1 }N
+       i=1 , which produce a discrete approximation to p(xt−1 |y1:t−1 , θ), we can then create
+
+a Monte Carlo approximation for (5) as
+                                                             N
+                                                             X         (i)           (i)
+                          p(xt |y1:t , θ) ≈ cgθ (yt |xt )            wt−1 fθ (xt |xt−1 ),              (6)
+                                                               i=1
+
+
+                                                        4
+where c is a normalising constant. Particle approximations as given above can be up-
+dated recursively by propagating and updating the particle set using importance sampling
+techniques. There is now an extensive literature on particle filtering algorithms, see for
+example, Doucet et al. (2000) and Cappé et al. (2007).
+       In this paper the particle approximations of the latent process are created with the
+auxiliary particle filter of Pitt and Shephard (1999). This filter has a general form,
+and simpler filters can be derived as special cases (Fearnhead, 2007). The idea is to
+                        (i)                        (i)                   (i)            (i)
+approximate cwt−1 gθ (yt |xt )fθ (xt |xt−1 ) with ξt q(xt |xt−1 , yt , θ), for a set of probabilities
+ (i)                                                (i)
+ξt         and proposal densities q(xt |xt−1 , yt , θ).                   We simulate particles at time t by first
+                                                                                        (i)
+choosing a particle at time t − 1, with particle xt−1 being chosen with probability
+ (i)
+ξt . We then propagate this to time t by sampling our particle at time t, xt , from
+            (i)                                                                                                                (i)
+q(xt |xt−1 , yt , θ). The importance sampling weight assigned to our new particle xt is then
+     (i)                      (i)    (i)           (i)
+wt−1 gθ (yt |xt )fθ (xt |xt−1 )/ξt q(xt |xt−1 , yt , θ). Details are summarised in Algorithm 1.
+
+Algorithm 1 Auxiliary Particle Filter
+Step 1: iteration t = 1.
+                  (i)                                                                                         (i)            (i)
+Sample {x1 } from the prior p(x1 |θ), set and normalise weights w1 = gθ (y1 |x1 ).
+Step 2: iteration t = 2, . . . , T .
+                                             (i)                                                        (i)
+Assume a set of particles {xt−1 }N                                 N
+                                 i=1 and associated weights {wt−1 }i=1 that approximate
+                                                                                                  (i)
+p(xt−1 |y1:t−1 , θ) and user-defined set of proposal weights {ξt }N
+                                                                  i=1 and family of proposal
+
+densities q(·|xt−1 , yt , θ).
+                                                                                                                       (i)
+     (a) Sample indices {k1 , k2 , . . . , kN } from {1, . . . , N } with probabilities ξt .
+                                         i (i)             (k )
+     (b) Propagate particles xt ∼ q(·|xt−1 , yt , θ).
+                                                         (k )      (i)
+                                                       i g (y |x )f (x |x i )   (i)   (k )
+                                             (i)    wt−1  θ t t    θ t
+     (c) Weight each particle wt ∝                          (k )   (i)
+                                                                         t−1
+                                                                         (k )                 and normalise the weights.
+                                                           ξt i q(xt |xt−1
+                                                                         i ,y ,θ)
+                                                                             t
+
+
+
+
+3           Parameter estimation for state space models
+
+3.1           Maximum likelihood estimation
+
+The maximum likelihood approach to parameter estimation is based on solving
+                                                                                      T
+                                                                                      X
+                        θ̂ = arg max log p(y1:T |θ) = arg max                                 log p(yt |y1:t−1 , θ),
+                                    θ∈Θ                                        θ∈Θ
+                                                                                      t=1
+
+
+                                                                    5
+where,
+                               Z             Z                                      
+           p(yt |y1:t−1 , θ) =    gθ (yt |xt ) fθ (xt |xt−1 )p(xt−1 |y1:t−1 , θ)dxt−1 dxt .
+
+Aside from a few simple cases, it is not possible to calculate the log-likelihood in closed
+form. Pointwise estimates of the log-likelihood can be obtained using SMC approxima-
+tions (Hürzeler and Künsch, 2001) for a fixed value θ. If the parameter space Θ is discrete
+and low dimensional, then it is relatively straightforward to find the θ which maximises
+log p(y1:T |θ). For problems where the parameter space is continuous, finding the max-
+imum likelihood estimate (MLE) can be more difficult. One option is to evaluate the
+likelihood over a grid of θ values, but this is computationally inefficient when the model
+dimension is large.
+    The gradient based method for parameter estimation, also known as the steepest
+ascent algorithm, maximises the log-likelihood function by evaluating the score vector
+(gradient of the log-likelihood) at the current parameters and then moving them in the
+direction of the gradient. For a given batch of data y1:T , the unknown parameter θ can
+be estimated by choosing an initial estimate θ0 , and then recursively solving
+
+                              θk = θk−1 + γk ∇ log p(y1:T |θ)|θ=θk−1                          (7)
+
+until convergence. Here γk is a sequence of decreasing step sizes which satisfies the
+conditions k γk = ∞ and k γk2 < ∞. One common choice is γk = k −α , where 0.5 <
+           P              P
+
+α < 1. The conditions on γk are necessary to ensure convergence to a value θ̂ for
+which ∇ log p(y1:T |θ̂) = 0. A key ingredient to good statistical properties of the resulting
+estimator of θ, such as consistency (Crowder, 1986), is that if the data are generated from
+p(y1:T |θ∗ ), then
+                                           Z
+                                   ∗
+                 E [∇ log p(Y1:T |θ )] =       p(y1:T |θ∗ )∇ log p(y1:T |θ∗ )dy1:T = 0.
+
+That is, the expected value of ∇ log p(y1:T |θ), with expectation taken with respect to the
+data, is 0 when θ is the true parameter value.
+    The rate of convergence of (7) can be improved if we are able to calculate the ob-
+served information matrix, which provides a measure of the curvature of the log-likelihood.
+When this is possible the Newton-Raphson method can be used and the step size param-
+eter γk is replaced with −γk {∇2 log p(y1:T |θ)}−1 .
+
+                                                    6
+3.2      Estimation of the score and observed information matrix
+
+For nonlinear and non-Gaussian state space models it is impossible to derive the score
+and observed information exactly. In such cases, SMC can be used to produce particle
+approximations in their place (Poyiadjis et al., 2011). If we assume that it is possible
+to obtain a particle approximation of the latent process p(x1:T |y1:T , θ), then this approx-
+imation can be used to estimate the score vector ∇ log p(y1:T |θ) using Fisher’s identity
+(Cappé et al., 2005)
+                                        Z
+                 ∇ log p(y1:T |θ) =         ∇ log p(x1:T , y1:T |θ)p(x1:T |y1:T , θ)dx1:T .           (8)
+
+   A similar identity for the observed information matrix is given by Louis (1982)
+
+                                                                                  ∇2 p(y1:T |θ)
+             − ∇2 log p(y1:T |θ) = ∇ log p(y1:T |θ)∇ log p(y1:T |θ)> −                          ,     (9)
+                                                                                   p(y1:T |θ)
+
+where,
+
+      ∇2 p(y1:T |θ)
+                        Z
+                    =       ∇ log p(x1:T , y1:T |θ)∇ log p(x1:T , y1:T |θ)> p(x1:T |y1:T , θ)dx1:T   (10)
+       p(y1:T |θ)
+                        Z
+                   +        ∇2 log p(x1:T , y1:T |θ)p(x1:T |y1:T , θ)dx1:T .
+
+See Cappé et al. (2005) for further details of both identities.
+   If we assume that the conditional densities (1) and (2) are twice continuously differ-
+entiable, then from the joint density (3) we get
+                                            T
+                                            X
+              ∇ log p(x1:T , y1:T |θ) =           {∇ log gθ (yt |xt ) + ∇ log fθ (xt |xt−1 )} ,      (11)
+                                            t=1
+
+where we introduce the notation fθ (x1 |x0 ) = µθ (x1 ) to give a simpler form and similarly
+for the second derivative we have
+                                            T
+                                            X
+             ∇2 log p(x1:T , y1:T |θ) =           ∇2 log gθ (yt |xt ) + ∇2 log fθ (xt |xt−1 ) .
+                                              
+                                                                                                     (12)
+                                            t=1
+
+In the next section we shall introduce a sequential Monte Carlo algorithm which creates
+approximations of these terms.
+
+
+
+
+                                                       7
+4     Particle approximations of the score vector and
+      observed information matrix
+
+4.1    Kernel density methods to overcome particle degeneracy
+
+In this section we focus on applying our method to the score vector ∇ log p(y1:t |θ) and
+note that extending these results to the observed information matrix is straightforward
+and not given explicitly (see Algorithm 2 for implementation details). Using a particle
+                                  (i)                (i)
+filter (Alg. 1) we can sample xt and let x1:t denote the path associated with that particle.
+                                        (i)                      (i)
+At time t particle i stores value αt = ∇ log p(x1:t , y1:t |θ), which depends on the history of
+               (i)
+the particle, x1:t . The estimate for αt is then updated recursively, where at iteration t we
+                 (i)                                       (i)
+have particles xt with associated weights wt . If we assume that particle i is descended
+from particle ki at time t − 1, then (11) can be given as
+
+                        (i)    (k )
+                               i                               (i)       i         (i)   (k )
+                       αt = αt−1 + ∇ log gθ (yt |xt ) + ∇ log fθ (xt |xt−1 ).                          (13)
+
+The score vector St = ∇ log p(y1:t |θ) at time t is then approximated as
+                                                     N
+                                                     X           (i)   (i)
+                                              St =             w t αt .
+                                                     i=1
+
+Estimation of the score vector in this fashion does not require that we store the entire
+                                  (i)                                        (i)
+path of the latent process {X1:T }N
+                                  i=1 . However, the αt s that are stored for each particle
+
+depend on the complete path-history of the associated particle. Particle approximations
+of this form are known to be poor due to inherent particle degeneracy over time (Andrieu
+et al., 2005). Poyiadjis et al. (2011) prove that the asymptotic variance of the estimate
+of the score vector increases at least quadratically with time. This can be attributed
+to the standard problem of particle degeneracy in particle filters when approximating
+the conditional distribution of the complete path of the latent state p(x1:t |y1:t ). One
+approach to reduce this degeneracy is to use kernel density methods, such as the Liu and
+                                                                             (i)
+West (2001) algorithm, which we apply here to the αt s.
+                                                                                                 (i)
+    The idea of Liu and West (2001) is to combine shrinkage of the αt s towards their
+mean, together with adding noise. The latter is necessary for overcoming particle degener-
+                                                                                                (i)
+acy, but the former is required to avoid the increasing variance of the αt s. Implementing
+
+                                                           8
+                                       i                  (k )
+this strategy we start by replacing αt−1 with a draw from a Gaussian kernel, where ki
+                                                                                         (i)
+is drawn from a discrete distribution with probabilities ξt , and where the mean and
+               i (k )
+variance of αt−1 are
+                       N
+                       X                                         N
+                                                                 X
+                              (i)  (i)                                      (i)    (i)            (i)
+         St−1 =              wt−1 αt−1      and      Σαt−1 =               wt−1 (αt−1 − St−1 )> (αt−1 − St−1 ).
+                       i=1                                        i=1
+
+   If we let 0 < λ < 1 be a shrinkage parameter, which is a fixed constant, and choose a
+                                           i                     (k )
+density bandwidth h > 0, we can replace αt−1 in (13) with
+
+                                                i (k )                             (i)
+                                            λαt−1 + (1 − λ)St−1 + t ,                                            (14)
+
+         (i)
+where t is a realisation of a Gaussian distribution N (0, h2 Σαt−1 ). By choosing λ and h
+such that λ2 + h2 = 1 (Liu and West, 2001), it is then straightforward to show that this
+                                                                                                        (i)
+kernel density approximation preserves the mean and variance of the αt s.
+
+
+4.2      Rao-Blackwellisation
+                 (i)
+The stored αt values do not have any effect on the dynamics of the state. Furthermore,
+we have a stochastic update for these terms which, when we use the kernel density
+approach, results in a linear-Gaussian update. This means that we can use the idea of
+Rao-Blackwellisation (Doucet et al., 2000) to reduce the variance in our estimates of the
+                                                                                                                    (i)
+score vector and observed information matrix. In practice this means replacing the αt
+values by an appropriate distribution which is sequentially updated. Therefore we do not
+need to add noise to the approximation at each time step as we do with the standard
+kernel density approach. Instead we can recursively update the mean and variance of the
+                                      (i)
+distribution representing αt and estimate the score vector St .
+                                                                  (j)
+   For t ≥ 2, assume that at time t−1 each αt−1 is represented by a Gaussian distribution,
+
+                                              (j)                  (j)
+                                             αt−1 ∼ N (mt−1 , h2 Vt−1 ).
+
+Then from (13) and (14) we have that
+
+                                                    (i)              (i)
+                                                  αt ∼ N (mt , h2 Vt ),                                           (15)
+
+where,
+
+                 (i)    i      (k )                                             i (i)             (i)     (k )
+               mt = λmt−1 + (1 − λ)St−1 + ∇ log gθ (yt |xt ) + ∇ log fθ (xt |xt−1 ),
+
+                                                                 9
+and
+                                                  N
+                                                  X           (i)          (i)    (i)
+            Vt = Vt−1 + Σαt−1 = Vt−1 +                   wt−1 (mt−1 − St−1 )> (mt−1 − St−1 ).
+                                                   i=1
+                                                                                                  (i)
+   The estimated score vector at each iteration is a weighted average of the αt s, so we
+can estimate the score by
+                                                        N
+                                                        X           (i)    (i)
+                                                St =          wt mt .                                   (16)
+                                                        i=1
+
+If we only want to estimate the score vector, then this shows that we only need to calculate
+                                (i)
+the expected value of the αt s. However, if we wish to calculate the observed information
+matrix It , then from (10), a standard particle approximation would give
+                                                 N
+                                                                 (i) (i)>
+                                                 X             n              o
+                                                         (i)              (i)
+                              It = St St> −             wt      αt αt + βt ,
+                                                 i=1
+
+                    (i)                   (i)                                               (i)
+where we define βt = ∇2 log p(x1:t , y1:t |θ). Taking the same approach for βt as we did
+      (i)                                                            (i)
+for αt , we define a Gaussian distribution for βt and update its mean and covariance in
+the same way as was shown above for αt . In practice we only need to calculate the mean,
+                               (i)
+which we will denote as nt . Using Rao-Blackwellisation, and the assumed distributions
+      (i)     (i)
+for αt and βt , gives the following estimate of the observed information matrix
+                                          N
+                                                          (i) (i)>
+                                          X             n                     o
+                                                  (i)                     (i)
+                          It = St St> −          wt      mt mt + h2 Vt + nt .
+                                          i=1
+
+   Note the inclusion of h2 Vt in this estimate. This term is important as it corrects
+for the fact that shrinking the values of αt towards St at each iteration will reduce the
+variability in these values. Without this correction the observed information would be
+overestimated. Details of this approach are summarised in Algorithm 2.
+   Our new O(N ) algorithm can be viewed as a generalisation of the Poyiadjis et al.
+(2011) algorithm. Setting λ = 1 in Algorithm 2 gives the Poyiadjis algorithm. However,
+this algorithm, as illustrated in Section 6 and proved by Poyiadjis et al. (2011), has a
+quadratically increasing variance in t. As a result, Poyiadjis et al. (2011) introduce an
+alternative algorithm whose computational cost is quadratic in the number of particles,
+but which has better Monte Carlo properties. Del Moral et al. (2010) and Douc et al.
+(2011) show that this alternative approach, under standard mixing assumptions, produces
+estimates of the score with an asymptotic variance that increases only linearly with time.
+
+                                                          10
+Algorithm 2 Rao-Blackwellised Score and Observed Information Matrix
+                         (i)                     (i)
+Initialise: set m0 = 0 and n0 = 0 for i = 1 . . . , N , S0 = 0 and B0 = 0.
+At iteration t = 1, . . . , T ,
+                                                             (i)                                  (i)
+    (a) Apply Algorithm 1 to obtain {xt }N          N            N
+                                         i=1 , {ki }i=1 and {wt }i=1
+
+    (b) Update the mean of the approximations for αt and βt
+
+             (i)               i  (k )                                               (i)
+                                                                                       i                         (i)    (k )
+          mt =             λmt−1 + (1 − λ)St−1 + ∇ log gθ (yt |xt ) + ∇ log fθ (xt |xt−1 )
+             (i)                (k )                                                 (i)                          (i)    (k )
+                    i
+           nt = λnt−1 + (1 − λ)Bt−1 + ∇2 log gθ (yt |xt ) + ∇2 log fθ (xt |xt−1
+                                                                              i
+                                                                                )
+
+    (b) Update the score vector and observed information matrix
+                   N                                                   N
+                                                                                                 (i)>
+                   X      (i) (i)
+                                                                       X       (i)         (i)             (i)
+         St =            wt mt                 and     It = St St> −          wt (mt mt                 + nt ) − h2 Vt
+                   i=1                                                  i=1
+
+                                PN    (i)   (i)         >  (i)                   PN    (i) (i)
+where Vt = Vt−1 +                i=1 wt−1 (mt−1 − St−1 ) (mt−1 − St−1 ) and Bt =  i=1 wt nt .
+
+
+
+5      Theoretical justification
+
+5.1     Monte Carlo accuracy
+
+We have motivated the use of both the kernel density approximation and Rao-Blackwellisation
+as a means to reduce the impact of particle degeneracy on the O(N ) algorithm for es-
+timating the score vector and observed information matrix. However, what can we say
+about the resulting algorithm?
+     It is possible to implement Algorithm 2 so as to store the whole history of the state
+x1:t , rather than just the current value, xt . This just involves extra storage, with our
+                          (i)   i        (i)    (k )
+particles being x1:t = (xt , x1:t−1 ). Whilst unnecessary in practice, thinking about such
+an algorithm helps with understanding the algorithms properties.
+     One can fix θ, the parameter value used when running the particle filter algorithm,
+and the data y1:t . For convenience we drop the dependence on θ from notation in the
+                          (i)
+following. The mt values calculated by the algorithm are just functions of the history of
+the state and the past estimated score values. We can define a set of functions φs (x1:t ),
+
+                                  φs (x1:t ) = ∇ log gθ (ys |xs ) + ∇ log fθ (xs |xs−1 ),
+
+where t ≥ s > 0 and functions, ms (x1:t ), which depend on ms−1 (x1:t ) and the estimated
+
+                                                                   11
+score functions at previous time-steps, S0:s−1 , through
+
+                      ms (x1:t ) = λms−1 (x1:t ) + (1 − λ)Ss−1 + φs (x1:t ),                 (17)
+
+                                                                           (i)        (i)
+with m0 (x1:t ) = 0. We then have that in Algorithm 2, mt = mt (x1:t ), is the value of this
+function evaluated for the state history associated with the ith particle at time t.
+   Note that it is possible to iteratively solve the recursion (17) to get
+                                    s
+                                    X                                      s
+                                                                           X
+                                              s−u
+                     ms (x1:t ) =         λ         φu (x1:t ) + (1 − λ)         λs−u Su−1   (18)
+                                    u=1                                    u=1
+
+where 0 < λ < 1 is the shrinkage parameter.
+   If we set λ = 1, then Algorithm 2 reverts to the Poyiadjis O(N ) algorithm and (18)
+simplifies to a sum of additive functionals φu (x1:t ). The poor Monte Carlo properties of
+this algorithm stem from the fact that the Monte Carlo variance of SMC estimates of
+φu (x1:t ) increase at least linearly with s − u. And hence the Monte Carlo variance of the
+SMC estimate of su=1 φu (x1:t ), increases at least quadratically with s.
+                     P
+
+   In terms of the Monte Carlo accuracy of Algorithm 2, the key is that in (18) we
+exponentially down-weight the contribution of φu (x1:t ) as s − u increases. Under quite
+weak assumptions, such as the Monte Carlo variance of the estimate of φu (x1:t ) being
+bounded by a polynomial in s−u, we will have that the Monte Carlo variance of estimates
+of su=1 λs−u φu (x1:t ) will now be bounded in s.
+  P
+
+   For λ < 1, we introduce the additional second term in (18), without which there
+would be a substantial bias in the score estimate that would grow with t. Estimating this
+term is less problematic as the Monte Carlo variance of each Su−1 will depend only on u,
+and will not increase as s increases. Empirically, the resulting Monte Carlo variance of
+our estimates of the score increase only linearly with s for a wide-range of models.
+
+
+5.2     Effect on parameter inference
+
+Now consider the value of St in the limit as the number of particles goes to infinity,
+N → ∞. We assume that standard conditions on the particle filter for the law of large
+numbers (Chopin, 2004) hold. Then we have that
+                                            Z
+                St → Eθ [mt (X1:t )|y1:t ] = mt (x1:t )p(x1:t |y1:t , θ)dx1:t .
+
+                                                         12
+    For t = 1, . . . , T , where we fix the data y1:T , define S̄t = Eθ [mt (X1:t )|y1:t ] to be the
+large N limit of the estimate of the score at time t. The following lemma expresses S̄t in
+terms of expectations of the φs (·) functions. Proofs from this section can be found in the
+supplementary material.
+
+Lemma 5.1. Fix y1:T . Then S̄1 = Eθ [φ1 (X1:t )|y1 ] and for 2 ≤ t ≤ T
+                   t
+                   X                                                 t−1 X
+                                                                     X   t−1
+                             t−u
+           S̄t =         λ         Eθ [φu (X1:t )|y1:t ] + (1 − λ)             λs−u Eθ [φu (X1:t )|y1:s ] ,
+                   u=1                                               u=1 s=u
+
+where the expectations are taken with respect to the conditional distribution of X1:t given
+y1:u :                                                 Z
+                             Eθ [φs (X1:t )|y1:u ] =       φs (x1:t )p(x1:t |y1:u , θ)dx1:t .
+
+    We now consider taking expectation of S̄T with respect to the data.                                       We write
+S̄T (y1:T ; θ) to denote the dependence on the data y1:T and the choice of parameter θ
+when implementing the particle filter algorithm. A direct consequence of Lemma 1 is the
+following theorem.
+
+Theorem 5.2. Let θ∗ be the true parameter value, and T a positive integer. Assume
+regularity conditions exist so that for all t ≤ T ,
+
+                                          Eθ∗ [∇ log p(X1:t , Y1:t |θ∗ )] = 0,                                    (19)
+
+where expectation is taken with respect to p(X1:T , Y1:T |θ∗ ). Then
+
+                                               Eθ∗ S̄T (Y1:T ; θ∗ ) = 0,
+                                                                  
+
+
+where expectation is taken with respect to p(Y1:T |θ∗ ).
+
+    The theorem shows that for any 0 < λ < 1, the expectation of S̄T (y1:T ; θ∗ ) at the
+true parameter θ∗ is zero, and hence S̄T (y1:T ; θ) = 0 are a set of unbiased estimating
+equations for θ. Using our estimates of the score function within the steepest gradient
+ascent algorithm is thus using Monte Carlo estimates to approximately solve this set of
+unbiased estimating equations.
+    The accuracy of the final estimate of θ will depend both on the amount of Monte
+Carlo error, and also the accuracy of the estimator based on solving the underlying esti-
+mating equation. Note that the statistical efficiency of the estimator obtained by solving
+
+                                                           13
+S̄T (y1:T ; θ) = 0 may be different, and lower, than that of solving ∇ log p(y1:T |θ) = 0.
+However in practice we would expect this to be more than compensated by the reduction
+in Monte Carlo error we get. We investigate this empirically in the following sections.
+
+
+
+6     Comparison of approaches
+In this section we shall evaluate our algorithm and compare existing approaches for
+estimating the score vector. Most importantly, we will investigate how the performance
+of our method depends on the choice of shrinkage parameter, λ. For comparison, we
+consider a linear-Gaussian state space model, where it is possible to analytically calculate
+the score vector and observed information matrix using a Kalman filter (Kalman, 1960).
+    Consider a first order autoregressive model AR(1) observed with Gaussian noise:
+
+                                                                             σ2
+                                                                                 
+                           2                                 2
+    Yt |Xt = xt ∼ N (xt , τ ), Xt |Xt−1 = xt−1 ∼ N (φxt−1 , σ ), X1 ∼ N 0,          ,
+                                                                           1 − φ2
+                                                                                   (20)
+where we can derive the optimal proposal distribution for the particle filter
+                             (i)
+                                                        !
+         (i)               φxt−1 τ 2 + yt σ 2 σ 2 τ 2        (i)  (i)          (i)
+  q(xt |xt−1 , yt ) = N xt       2    2
+                                             , 2      2
+                                                          , ξt ∝ wt−1 N (yt |φxt−1 , σ 2 + τ 2 ).
+                               σ +τ           σ +τ
+
+    We shall compare our algorithm (Alg. 2) against the O(N ) and O(N 2 ) algorithms of
+Poyiadjis et al. (2011), and also the fixed-lag smoother of Kitagawa and Sato (2001).
+    The fixed-lag smoother is based on approximating p(x1:t |y1:T , θ) with p(x1:t |y1:min{t+L,T } , θ),
+where L is some pre-specified lag. The posterior, p(x1:t |y1:min{t+L,T } , θ), can then be esti-
+mated using an O(N ) algorithm. This method reduces the Monte Carlo variance at the
+cost of introducing a bias. Theoretical results given by Olsson et al. (2008) show that as
+T increases the optimal choice of L, in terms of a bias-variance trade-off, is O(log(T )).
+    We perform a comparison on a data set of length T = 20, 000 simulated from the
+autoregressive model (20) with parameters θ∗ = (φ, σ, τ )> = (0.8, 0.5, 1)> . Our method
+and the Poyiadjis O(N ) have the same computational cost and are implemented with
+N = 50, 000. The Poyiadjis O(N 2 ) algorithm, which has a quadratic computational cost,
+is implemented with N = 500. The comparisons were run on a Dell Latitude laptop with
+a 1.6GHz processor, where each iteration of the O(N ) algorithms takes approximately 1
+
+
+                                                14
+minute for N = 50, 000. The O(N 2 ) takes 5.1 minutes for N = 500. This corresponds to
+a CPU cost that is approximately 5 times greater than the O(N ) methods.
+   The results given in Figure 1 show that for all but the Poyiadjis O(N ) algorithm
+the standard deviation of the score estimate is increasing at a rate of T −1/2 , giving a
+variance that is increasing approximately linearly with time. For the Poyiadjis O(N ), the
+variance is increasing quadratically (standard deviation is increasing linearly) in line with
+the established theoretical results. As for the O(N 2 ) algorithm, the variance increases
+only linearly, as expected, but at an increased computational cost compared to the O(N )
+algorithms. The variance could be further reduced by increasing the number of particles,
+but this will lead to a further increase in the computational cost. While the variance of
+the O(N 2 ) is only linearly increasing, it is worth noting that it is larger than what is
+given by our algorithm for all values of λ.
+   For estimating the score, the fixed-lag smoother performs well in terms of both bias
+and variance, and we note that, while not shown in Figure 1, varying the lag about
+log(T ) does not dramatically change the outcome, but L = 10 seems to give the best
+result. However, while the fixed-lag smoother appears to work well when estimating the
+score, it struggles to accurately estimate the observed information, with a large bias for a
+range of lags (1 ≤ L ≤ 100). This is because the fixed-lag approach reduces the variability
+in the estimates of ∇ log p(x1:t , y1:t |θ) associated with each particle, which means that it
+under-estimates the first term in Louis’s identity (9). Whilst our approach also reduces
+the variability in the estimates of ∇ log p(x1:t , y1:t |θ) associated with each particle, we
+are able to correct for this within the Rao-Blackwellisation scheme (see Section 4.2 for
+details). This drawback is further explored in Section 7.1.
+   For our algorithm, we notice that the bias and variance of both the score estimate, and
+observed information matrix, vary according to λ. Reducing λ has the effect of increasing
+the bias, but at the same time, reducing the Monte Carlo variance of the estimates. The
+figures show that if we wish to minimise both bias and variance, then setting λ ≈ 0.95 will
+produce an estimate for the score and observed information which exhibit only linearly
+increasing variance, with minimal bias introduced as a result. In fact, the results suggest
+that setting 0.9 ≤ λ ≤ 0.99 will produce the best overall results. However, ultimately
+interest lies in estimating the model parameters, and in Section 7 we will see that our
+
+
+                                              15
+           15
+
+
+
+
+                                                                                                                   10
+                                                                                                                   8
+                                                                                                                                                                                            ●
+           10
+
+
+
+
+                                                                                                                                                                                        ●
+                                                                                                                                                                                    ●
+
+
+
+
+                                                                                              Standard Deviation
+                                                                                                                                                                          ●   ●
+
+
+
+
+                                                                                                                   6
+                                                                                                                                                                      ●
+                                                                                                                                                                ●
+                                                                                                                                                         ●
+    Bias
+
+
+
+
+                                                                                                                                                    ●
+                                                                                                                                              ●
+
+
+
+
+                                                                                                                   4
+                                                                                                                                          ●
+           5
+
+
+
+
+                                                                                                                                     ●
+
+                                                                                                                                ●
+
+
+                                                                                                                            ●
+
+
+
+
+                                                                                                                   2
+                                                                                     ●
+                                                                             ●   ●
+                                                                       ●
+                                                                   ●
+                                                               ●
+                                                  ●      ●
+                                       ●     ●
+                                   ●
+                     ●   ●    ●
+           0
+
+
+
+
+                                                                                                                   0
+                 0             5000              10000             15000             20000                              0             5000              10000             15000             20000
+
+                                                 Time                                                                                                   Time
+           800
+
+
+
+
+                                                                                                                   60
+                                                                                                                   50
+           600
+
+
+
+
+                                                                                                                   40
+                                                                                              Standard Deviation
+           400
+    Bias
+
+
+
+
+                                                                                                                   30
+                                                                                                                   20
+
+
+
+
+                                                                                                                                                                                            ●
+                                                                                                                                                                              ●     ●   ●
+                                                                                                                                                                ●     ●   ●
+           200
+
+
+
+
+                                                                                                                                                         ●
+                                                                                                                                              ●     ●
+                                                                                                                                          ●
+                                                                                                                                     ●
+                                                                                                                   10
+
+
+
+
+                                                                                                                                ●
+                                                                                                                            ●
+
+
+
+                                                                   ●   ●     ●   ●   ●
+                              ●    ●   ●     ●    ●      ●     ●
+                     ●   ●
+           0
+
+
+
+
+                                                                                                                   0
+
+
+
+
+                 0           200           400               600       800           1000                               0           200           400               600       800           1000
+
+                                                 Time                                                                                                   Time
+
+
+
+
+Figure 1: Absolute bias (left column) and standard deviation (right column) of score
+estimates for τ (top row) and observed information matrix for the φ component (bottom
+row) from the autoregressive model using our O(N ) algorithm with λ = 0.99 ( ∗                                                                                                                      ∗
+   ), λ = 0.95 (                           ), λ = 0.9 (− · × − · × − ), λ = 0.8 ( ♦                                                                                   ♦       ), λ = 0.7 ( M
+    M            ), Fixed-lag smoother L = 10 (·O · ·O · ·O· ), and the Poyiadjis O(N ) algorithm
+(· · · · ··) and O(N 2 ) with N = 500 (− · ⊗ − · ⊗ −).
+
+
+
+
+                                                                                             16
+algorithm produces reliable estimates of the model parameters for all values of λ.
+
+
+
+7     Parameter estimation
+Our O(N ) algorithm, as described in Section 4, can be used to estimate the score vector
+and observed information matrix. These estimates can then be used within the steepest
+ascent algorithm (7) to obtain the MLE for θ.
+    The steepest ascent algorithm (7) performs offline maximum likelihood estimation
+using batches of data y1:T , which can be useful when dealing with small data sets. Al-
+ternatively, we could implement recursive parameter estimation, where estimates of the
+parameters θt are updated as new observations are made available. Ideally this would be
+achieved by using the gradient of the predictive log-likelihood,
+
+                              θt = θt−1 + γt ∇ log p(yt |y1:t−1 , θt ),                   (21)
+
+where,
+               ∇ log p(yt |y1:t−1 , θt ) = ∇ log p(y1:t |θt ) − ∇ log p(y1:t−1 |θt−1 ).
+
+However, getting Monte Carlo estimates of ∇ log p(yt |y1:t−1 , θt ) is difficult due to using
+different values of θ at each iteration of the sequential Monte Carlo algorithm. Thus,
+following LeGland and Mevel (1997) and Poyiadjis et al. (2011), we make a further
+approximation, and ignore the fact that θ changes with t. Instead we update θt at each
+iteration using the following approximation to this gradient:
+
+                               ∇ log p̂(yt |y1:t−1 , θt ) = St − St−1 .
+
+
+7.1      Autoregressive model
+
+We compare the accuracy and efficiency of estimating the parameters of the AR(1) model
+(20) using the various algorithms given in Section 6 in both an offline and online setting.
+Starting with the batch case (offline), we simulated 1,000 observations from the model
+with parameters θ∗ = (φ, σ, τ )> = (0.9, 0.7, 1)> and estimated the score vector and ob-
+served information matrix using our O(N ) algorithm, the fixed-lag smoother, and the
+O(N ) and O(N 2 ) algorithms of Poyiadjis. The estimates of the score vector and observed
+
+                                                 17
+information matrix were used within the Newton-Raphson algorithm (7) to estimate θ.
+The starting parameters for the algorithm are θ0 = (φ, σ, τ )> = (0.6, 1, 0.7)> . The AR(1)
+model is linear-Gaussian, and therefore allows for a direct comparison against the Kalman
+filter, where the score and observed information matrix can be calculated analytically.
+                 0.08
+
+
+
+
+                                                                                                                0.25
+                            ●
+                                                                                                                           ●
+                 0.06
+
+
+
+
+                                                                                                                0.20
+                                     ●
+
+
+                                                                                                                                ●
+                                          ●
+
+
+
+
+                                                                                                                0.15
+    RMS error
+
+
+
+
+                                                                                                    RMS error
+                                                   ●
+                                                                                                                                     ●
+                 0.04
+
+
+
+
+                                                           ●
+                                                                     ●                                                                    ●
+                                                                          ●
+                                                                               ●                                                                  ●
+                                                                                       ●
+                                                                                            ●                                                               ●
+
+
+
+
+                                                                                                                0.10
+                                                                                                                                                                 ●
+                                                                                                                                                                      ●
+                                                                                                                                                                           ●
+                                                                                                                                                                                ●
+                 0.02
+
+
+
+
+                                                                                                                0.05
+                 0.00
+
+
+
+
+                                                                                                                0.00
+
+
+
+
+                        0           200           400               600       800          1000                        0       200       400               600       800       1000
+
+                                                        Iteration                                                                              Iteration
+
+
+
+
+Figure 2: Root mean squared error of parameter estimates φ (left panel) and σ (right
+panel) averaged over 20 Monte Carlo simulations from our O(N ) algorithm with λ = 0.95
+(               ), Poyiadjis O(N ) ( O                                             O            ), Poyiadjis O(N 2 ) (− · ♦ − · − ♦ ), Fixed-lag
+smoother (                      ◦             ◦          ), Fixed-lag smoother ( · · + · · + · ) with score only and the
+Kalman filter estimate ( M                                                M ).
+
+    Figure 2 gives the RMS error of the parameters estimated using the Newton-Raphson
+algorithm (7) averaged over 20 Monte Carlo simulations. Our algorithm, the fixed-lag
+smoother and the O(N ) algorithm of Poyiadjis were implemented with 50,000 particles
+and the O(N 2 ) algorithm was implemented with 1,000 particles. For our algorithm we
+set λ = 0.95 and for the fixed-lag smoother L = 7. In terms of computational cost, given
+the number of particles, our algorithm has more than a 10 fold computational time saving
+compared to the O(N 2 ) algorithm. The fixed-lag smoother was implemented with and
+without the observed information matrix applied in the gradient ascent algorithm.
+    The RMS error of the O(N 2 ) algorithm given in Figure 2 is comparable to the error
+given by our O(N ) algorithm, however, it is important to remember that this is achieved
+with a significant computational saving. Compared to the Poyiadjis O(N ) algorithm, our
+
+                                                                                                  18
+O(N ) algorithm and the fixed-lag smoother (using only the score estimate) produce lower
+RMS error. Using a fixed-lag smoother estimate of the observed information matrix in
+the Newton-Raphson algorithm leads to higher RMS error than when only the score is
+used. The poor performance of the fixed-lag approach was discussed in Section 6 and is
+attributed to the error in estimating the observed information matrix.
+    Illustrating the robustness of λ in our O(N ) algorithm, Figure 3 gives estimates for θ
+using the offline (7) and online (21) gradient ascent algorithms for varying values of λ (for
+the online case we simulated 60,000 observations). We see that there is little difference
+between λ = 0.99 and λ = 0.95, but more importantly, for λ = 0.5 the parameters are
+converging to the MLEs, only at a slower rate. This was also the case for much lower
+choices of λ (e.g. λ = 0.1), which are not shown here, but for which the parameters
+converged to the MLE at an even slowly rate.
+         1.1
+
+
+
+
+                                                                   1.1
+         1.0
+
+
+
+
+                                                                   1.0
+         0.9
+
+
+
+
+                                                                   0.9
+    θ
+
+
+
+
+                                                               θ
+         0.8
+
+
+
+
+                                                                   0.8
+         0.7
+
+
+
+
+                                                                   0.7
+         0.6
+
+
+
+
+                                                                   0.6
+
+
+
+
+               0   200   400               600   800   1000              0   10000   20000   30000   40000   50000   60000
+
+                               Iteration                                                     Time
+
+
+
+
+Figure 3: Batch (left panel) and recursive (right panel) parameter estimation for λ = 0.99
+(       ), λ = 0.95 ( − · ♦ − · − ♦ ) and λ = 0.5 ( ×                          × ).
+
+    Using the recursive gradient ascent scheme (21) we can compare our method against
+the online Bayesian particle learning algorithm (Carvalho et al., 2010). Particle learning
+uses MCMC moves to sequentially update the parameters within an SMC algorithm. A
+prior distribution is selected for each of the parameters which is updated at each time
+point via a set of low-dimensional sufficient statistics (see the supplementary materials
+for implementation details).
+
+                                                              19
+   We generated 40, 000 observations from the AR(1) model and considered three dif-
+ferent sets of true parameter values, chosen to represent different degrees of dependence
+within the underlying state process: φ = 0.9, 0.99 and 0.999. We set σ 2 = 1 − φ2 so that
+the marginal variance of the state is 1 and fixed τ = 1. We maintain the same initial
+parameters θ0 for the gradient scheme as was used for the batch analysis.
+                0.30
+
+
+
+
+                                                                                                        1.0
+                0.25
+
+
+
+
+                                                                                                        0.8
+                0.20
+
+
+
+
+                                                                                                        0.6
+    RMS Error
+
+
+
+
+                                                                                            RMS Error
+                0.15
+
+
+
+
+                                                                                                        0.4
+                0.10
+
+
+
+
+                           ●                                                                                      ●
+                                                                                                                      ●   ●   ●   ●   ●    ●      ●   ●   ●   ●   ●
+                               ●                                                                                                                                      ●   ●
+                                   ●   ●   ●   ●
+                                                                                                        0.2
+
+                                                    ●      ●   ●   ●   ●   ●   ●   ●
+                0.05
+                0.00
+
+
+
+
+                                                                                                        0.0
+
+
+
+
+                       0           10000           20000           30000           40000                      0           10000           20000           30000           40000
+
+                                                   Time                                                                                   Time
+
+
+
+
+Figure 4: Root mean squared error of parameter estimates φ (left panel) and σ (right
+panel) averaged over 100 Monte Carlo simulations from our algorithm with λ = 0.95 and
+φ = 0.9 (                      ), φ = 0.99 ( M                         M ), φ = 0.999 ( ♦                                     ♦       ) and the particle learning
+algorithm with φ = 0.9 (·O · ·O · ·· ), φ = 0.99 (− ◦ · − ◦ · − ), φ = 0.999 (·· × ·· × ··).
+
+   Figure 4 shows the RMS error of our O(N ) algorithm applied to estimate the param-
+eters θt , against the particle learning filter over 100 data sets. The results show that the
+particle learning filter produces a lower RMS error than our algorithm for the first few
+thousand observations, but that it degenerates over very long time-series, particularly in
+the case of strong dependence (φ = 0.99 and 0.999). This is due to degeneracy in the
+sufficient statistics that occurs as a result of their dependence on the complete latent
+process, and the fact that the Monte Carlo approximation to p(x1:T |y1:T , θ) degrades as
+T increases (Andrieu et al., 2005). This degeneracy is particularly pronounced for large
+φ, as this corresponds to cases where the underlying MCMC moves used to update the
+parameters mix poorly.
+   Over longer data sets, applying gradient ascent with our O(N ) algorithm, outperforms
+
+                                                                                           20
+particle learning. As φ approaches 1, the long term state dependence is increased, as is
+the distance between the true parameter values and the fixed starting values used to
+initiate the gradient scheme. Our method appears to take longer to converge in this
+setting, but compared to particle learning, our method appears to be more robust to the
+choice of φ, and for this reason, maximum likelihood methods are preferred over particle
+learning when estimating parameters from long time series. See Chopin et al. (2011) for
+a further discussion on the implementation challenges of particle learning.
+
+
+7.2     Nonlinear seasonal Poisson model
+
+In this section we demonstrate our methodology on a nonlinear state space model, where
+we estimate the parameters from a real data set and show that these estimates are in
+agreement with previous studies.
+   We consider a time series of monthly counts of poliomyelitis in the United States from
+January 1970 to December 1983. This time series was introduced by Zeger (1988) and has
+since been analysed by Chan and Ledolter (1995), who used a Monte Carlo EM algorithm,
+and Davis and Rodriguez-Yam (2005) and Langrock (2011) who both estimated the
+parameters using an approximate likelihood approach. The proposed model accounts for
+the observed seasonality of polio outbreaks and also contains a trend component which
+is the main interest in determining whether or not there is a decreasing trend:
+
+      Yt |Xt = xt , zt ∼ Nt [0, xt exp(zt )],    Xt |Xt−1 = xt−1 ∼ N (φxt−1 , σ 2 )               (22)
+                                                                                        
+                       t               2πt               2πt              2πt              2πt
+log(zt ) = µ1 + µ2        + µ3 cos            + µ4 sin         + µ5 cos         + µ6 sin         ,
+                    1000               12                12               12               12
+where Nt [a, b] denotes the number of events in time interval (a, b].
+   The model parameters θ = (µ1 , µ2 , µ3 , µ4 , µ5 , µ6 , φ, σ 2 )> are estimated using the gra-
+dient ascent algorithm, where the score vector is estimated using our proposed method
+(Alg. 2) with λ = 0.95 and 0.7. We compare our method against the fixed-lag smoother
+and the Poyiadjis O(N ) and O(N 2 ) algorithms. Each method was implemented with
+N = 1, 000 particles, except the Poyiadjis O(N 2 ) algorithm, which was implemented
+              √
+with N = 33 ≈ 1, 000 . The fixed-lag smoother was run with lag L = 5 and 20.
+   Parameter estimates for the seasonal Poisson model are given in Table 1, where the
+batch implementation of the gradient ascent algorithm was executed for 2, 000 iterations.
+
+                                               21
+            Algorithm                     Maximum likelihood estimates
+                              µ1     µ2      µ3     µ4     µ5      µ6      φ     σ2
+        Our alg. λ = 0.95    0.26   -3.89   0.16   -0.48   0.41   -0.01   0.65   0.28
+        Our alg. λ = 0.70    0.26   -3.98   0.16   -0.49   0.41   -0.02   0.61   0.30
+         Fixed-lag (L=5)     0.32   -4.42   0.18   -0.47   0.42   0.00    0.66   0.27
+         Fixed-lag (L=20)    0.32   -4.43   0.18   -0.47   0.42   0.00    0.66   0.27
+         Poyiadjis O(N )     0.12   -4.66   0.18   -0.51   0.41   -0.01   0.27   1.00
+         Poyiadjis O(N 2 )   0.21   -3.53   0.14   -0.49   0.43   -0.05   0.66   0.28
+              D&R            0.24   -3.81   0.16   -0.48   0.41   -0.01   0.63   0.29
+
+Table 1: Results of batch parameter estimation for competing models using the gradient
+ascent algorithm (7) initialised at θ0 = (0.4, −3, 0.3, −0.3, 0.65, −0.2, 0.4, 0.4). Results
+given by Davis and Rodriguez-Yam (2005) are quoted as D&R.
+
+
+
+Given the short data set (T=168), we do not consider recursive parameter estimation.
+   We give the results from using our method with λ = 0.95 and λ = 0.7, and note
+that almost identical parameter estimates were obtained for λ ∈ [0.5, 0.99]. We can see
+that for our method, the parameter estimates are consistent with the results presented by
+Davis and Rodriguez-Yam (2005) and Langrock (2011). To understand the performance
+of the methods we re-ran each of them 20 times to see the Monte Carlo variability in the
+parameter estimates. For our method, the fixed-lag smoother and the O(N 2 ) method, we
+obtained almost identical estimates for each run. However the O(N ) method of Poyiadjis
+et al. showed increased variation in the estimates (for example the range of the estimates
+for µ2 was [-4.76, -4.53]). The fixed-lag smoothers performed equally well for L = 5 and
+20 with little difference between the two implementations. Most of the parameters are
+estimated well using the fixed-lag smoother, but the bias of the score estimates does lead
+to poor estimation of µ1 and µ2 . All of the algorithms, except the Poyiadjis O(N ) and
+O(N 2 ) algorithms converged after approximately 500 iterations (figures available in the
+supplementary material). This is due to the Monte Carlo variation in the score estimates
+which directly impacts the parameter estimates. In the case of the O(N 2 ) algorithm, this
+variation could be reduced by increasing the number of particles, but at a significantly
+
+
+                                             22
+increased computational cost compared to our method.
+
+
+
+8     Discussion
+In this paper we have presented a novel sequential Monte Carlo method for estimating
+the score vector and observed information matrix for nonlinear, non-Gaussian state space
+models. Previous approaches have produced estimates with quadratically increasing vari-
+ance at a computational cost that is linear in the number of particles, or achieved linearly
+increasing variance at a quadratic computational cost.
+    The algorithm we have developed combines techniques from kernel density estimation
+and Rao-Blackwellisation to yield estimates of both the score vector and the observed
+information matrix which display only linearly increasing variance, which is achieved at
+a linear computational cost. Importantly, we have shown that this approximate score
+vector, at the true parameter value, has expectation zero when taken with respect to
+the data. Thus, the resulting gradient ascent scheme uses Monte Carlo methods to
+approximately find the solution to a set of unbiased estimating equations.
+    The estimates of the score and observed information given by our O(N ) algorithm can
+be applied to the gradient ascent and Newton-Raphson algorithms to obtain maximum
+likelihood estimates of the model parameters. This can be achieved either offline or
+online, where the parameters are estimated from a batch of observations, or recursively
+from observations received sequentially. Furthermore, we have shown that in terms of
+parameter estimation, our algorithm is relatively insensitive the the choice of λ. However
+we do note that setting 0.90 < λ < 0.99 produces low variance estimates of the score
+with minimal bias, which also results in faster parameter convergence.
+    For a significant reduction in computational time we can achieve improved parameter
+estimation over competing methods in terms of minimising root mean squared error.
+We also compared our algorithm to the particle learning filter for online estimation.
+The particle learning filter performs well initially but degenerates over time, whereas our
+algorithm is more accurate over longer time series. Our method also appears to be robust
+to the choice of model parameters compared to the particle learning filter which struggles
+to estimate the parameters when the states are highly dependent.
+
+
+                                            23
+                        Supplementary Materials
+Appendices: Proofs for Lemma 1 and Theorem 1. Also, a derivation of the particle
+     learning updates and a plot for the nonseasonal Poisson model example. (pdf)
+
+R code: R code for the examples in Section 7. (Rcode.zip, zip file)
+
+
+
+                                    References
+Andrieu, C., Doucet, A., and Tadic, V. B. (2005). On-line parameter estimation in general
+  state-space models. In IEEE Conference on Decision and Control, pages 332–337.
+
+Cappé, O., Godsill, S., and Moulines, E. (2007). An Overview of Existing Methods and
+  Recent Advances in Sequential Monte Carlo. Proceedings of the IEEE, 95(5):899–924.
+
+Cappé, O., Moulines, E., and Ryden, T. (2005). Inference in Hidden Markov Models.
+  Springer Series in Statistics. Springer.
+
+Carvalho, C. M., Johannes, M., Lopes, H., and Polson, N. G. (2010). Particle Learning
+  and Smoothing. Statistical Science, 25(1):88–106.
+
+Chan, K. and Ledolter, J. (1995). Monte Carlo EM estimation for time series models
+  involving counts. Journal of the American Statistical Association, 90(429):242–252.
+
+Chopin, N. (2004). Central limit theorem for sequential Monte Carlo methods and its
+  application to Bayesian inference. The Annals of Statistics, 32(6):2385–2411.
+
+Chopin, N., Iacobucci, A., Marin, J., Mengersen, K., Robert, C., Ryder, R., and Sh afer,
+  C. (2011). On particle learning. In Bernardo, J., Bayarri, M., Berger, J., Dawid, A.,
+  D.Heckerman, Smith, A., and West, M., editors, Bayesian Statistics 9, pages 317–360.
+  Oxford University Press.
+
+Crisan, D. and Doucet, A. (2002). A survey of convergence results on particle filtering
+  methods for practitioners. IEEE Transactions on Signal Processing, 50(3):736–746.
+
+Crowder, M. (1986). On consistency and inconsistency of estimating equations. Econo-
+  metric Theory, 2(3):305–330.
+
+                                             24
+Dahlin, J., Lindsten, F., and Schön, T. B. (2014). Second-order Particle MCMC for
+  Bayesian Parameter Inference. In Proceedings of the 19th World Congress of the Inter-
+  national Federation of Automatic Control (IFAC).
+
+Davis, R. and Rodriguez-Yam, G. (2005). Estimation for state-space models based on a
+  likelihood approximation. Statistica Sinica, 15:381–406.
+
+Del Moral, P., Doucet, A., and Singh, S. S. (2010). A backward particle interpretation
+  of Feynman-Kac formulae. ESAIM: Mathematical Modelling and Numerical Analysis,
+  44(5):947–975.
+
+Douc, R., Garivier, A., Moulines, E., and Olsson, J. (2011). Sequential monte carlo
+  smoothing for general state space hidden markov models. The Annals of Applied Prob-
+  ability, 21(6):2109–2145.
+
+Doucet, A., Godsill, S., and Andrieu, C. (2000). On sequential Monte Carlo sampling
+  methods for Bayesian filtering. Statistics and computing, 10(3):197–208.
+
+Durbin, J. and Koopman, S. (2001). Time Series Analysis by State Space Methods. Oxford
+  Statistical Science Series. Oxford University Press.
+
+Fearnhead, P. (2007). Computational methods for complex stochastic systems: a review
+  of some alternatives to MCMC. Statistics and Computing, 18(2):151–171.
+
+Hürzeler, M. and Künsch, H. R. (2001). Approximating and maximising the likelihood
+  for a general state-space model. In Doucet, A., de Freitas, N., and Gordon, N., editors,
+  Sequential Monte Carlo Methods in Practice, pages 197–223. Springer-Verlag, New
+  York.
+
+Kalman, R. E. (1960). A New Approach to Linear Filtering and Prediction Problems.
+  Transactions of the ASME, Journal of Basic Engineering, 82(Series D):35–45.
+
+Kitagawa, G. and Sato, S. (2001). Monte carlo smoothing and self-organising state-space
+  model. In Doucet, A., de Freitas, N., and Gordon, N., editors, Sequential Monte Carlo
+  Methods in Practice, pages 178–195. Springer-Verlag, New York.
+
+
+
+                                           25
+Langrock, R. (2011). Some applications of nonlinear and non-Gaussian statespace mod-
+  elling by means of hidden Markov models. Journal of Applied Statistics, 38(12):2955–
+  2970.
+
+LeGland, F. and Mevel, L. (1997). Recursive estimation in hidden Markov models. In
+  36th IEEE Conference on Decision and Control, pages 3468–3473, San Diego, CA.
+  Institute of Electronics and Electrical Engineering.
+
+Liu, J. and West, M. (2001). Combined parameter and state estimation in simulation-
+  based filtering. In Doucet, A., de Freitas, N., and Gordon, N., editors, Sequential Monte
+  Carlo Methods in Practice, pages 197–223. Springer-Verlag, New York.
+
+Louis, T. (1982). Finding the observed information matrix when using the EM algorithm.
+  Journal of the Royal Statistical Society. Series B, 44(2):226–233.
+
+Olsson, J., Cappé, O., Douc, R., and Moulines, E. (2008). Sequential Monte Carlo
+  smoothing with application to parameter estimation in nonlinear state space models.
+  Bernoulli, 14(1):155–179.
+
+Olsson, J. and Westerborn, J. (2014). Efficient particle-based online smoothing in general
+  hidden Markov models: the PaRIS algorithm. arXiv preprint arXiv:1412.7550.
+
+Pitt, M. K. and Shephard, N. (1999). Filtering via Simulation: Auxiliary Particle Filters.
+  Journal of the American Statistical Association, 94(446):590–599.
+
+Poyiadjis, G., Doucet, A., and Singh, S. S. (2011). Particle approximations of the score
+  and observed information matrix in state space models with application to parameter
+  estimation. Biometrika, 98(1):65–80.
+
+Westerborn, J. and Olsson, J. (2014). Efficient particle based online smoothing in general
+  hidden markov models. In International Conference on Acoustics, Speech and Signal
+  Processing (ICASSP).
+
+Zeger, S. (1988). A regression model for time series of counts. Biometrika, 75(4):621–629.
+
+
+
+
+                                            26
+

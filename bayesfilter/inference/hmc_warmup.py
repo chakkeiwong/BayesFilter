@@ -524,6 +524,10 @@ class _AffineWarmupAdapter:
         self.supports_retained_flat_batch = bool(
             getattr(base_adapter, "supports_retained_flat_batch", False)
         )
+        self.supports_retained_value_score_status = bool(
+            getattr(base_adapter, "supports_retained_value_score_status", False)
+            and callable(getattr(base_adapter, "log_prob_and_grad_status", None))
+        )
         if self.supports_retained_draw_batch and self.supports_retained_flat_batch:
             raise ValueError(
                 "base adapter cannot declare two retained batching contracts"
@@ -558,15 +562,36 @@ class _AffineWarmupAdapter:
         return tf.zeros((self.parameter_dim,), dtype=tf.float64)
 
     def log_prob_and_grad(self, latent: Any) -> tuple[Any, Any]:
+        value, score = self._log_prob_and_grad_status(latent)[:2]
+        return value, score
+
+    def _log_prob_and_grad_status(
+        self, latent: Any
+    ) -> tuple[Any, Any, Mapping[str, Any] | None]:
         import tensorflow as tf
 
         z = tf.convert_to_tensor(latent, dtype=tf.float64)
         theta = self.transform.latent_to_theta(z)
-        value, theta_score = self.base_adapter.log_prob_and_grad(theta)
+        if self.supports_retained_value_score_status:
+            value, theta_score, status = self.base_adapter.log_prob_and_grad_status(theta)
+        else:
+            value, theta_score = self.base_adapter.log_prob_and_grad(theta)
+            status = None
         return (
             tf.convert_to_tensor(value, dtype=z.dtype),
             self.transform.theta_score_to_latent_score(theta_score),
+            status,
         )
+
+    def log_prob_and_grad_status(
+        self, latent: Any
+    ) -> tuple[Any, Any, Mapping[str, Any]]:
+        if not self.supports_retained_value_score_status:
+            raise TypeError("base adapter does not expose combined value/score/status")
+        value, score, status = self._log_prob_and_grad_status(latent)
+        if not isinstance(status, Mapping):
+            raise TypeError("combined value/score/status target must return a mapping")
+        return value, score, dict(status)
 
     def target_status_telemetry(self, latent: Any) -> Mapping[str, Any]:
         telemetry = getattr(self.base_adapter, "target_status_telemetry", None)
@@ -775,6 +800,7 @@ def find_reasonable_epsilon(
     num_leapfrog_steps: int = 1,
     momentum_probe_count: int = 1,
     target_status_trace_policy: str = "none",
+    jit_compile: bool = False,
 ) -> ReasonableEpsilonResult:
     """Bracket epsilon using the fixed trajectory that will consume it."""
 
@@ -852,18 +878,39 @@ def find_reasonable_epsilon(
             step_size=tf.constant(step, dtype=state.dtype),
             num_leapfrog_steps=leapfrog_steps,
         )
-        results = kernel.bootstrap_results(state)
+        if bool(jit_compile):
+            bootstrap_results = tf.function(
+                kernel.bootstrap_results,
+                jit_compile=True,
+                reduce_retracing=True,
+            )
+            results = bootstrap_results(state)
+        else:
+            results = kernel.bootstrap_results(state)
         if not _kernel_result_value_score_finite(results.accepted_results):
             raise ValueError("reasonable-epsilon bootstrap target evidence is nonfinite")
+        if bool(jit_compile):
+            @tf.function(jit_compile=True, reduce_retracing=True)
+            def one_step(proposal_seed: tf.Tensor):
+                return kernel.one_step(
+                    state,
+                    results,
+                    seed=tf.convert_to_tensor(proposal_seed, tf.int32),
+                )
+        else:
+            def one_step(proposal_seed: tf.Tensor):
+                return kernel.one_step(
+                    state,
+                    results,
+                    seed=tf.convert_to_tensor(proposal_seed, tf.int32),
+                )
         acceptance_probabilities: list[float] = []
         finite = True
         health_failure_list: list[str] = []
         for proposal_seed in proposal_seeds:
             try:
-                next_state, next_results = kernel.one_step(
-                    state,
-                    results,
-                    seed=tf.constant(proposal_seed, dtype=tf.int32),
+                next_state, next_results = one_step(
+                    tf.constant(proposal_seed, dtype=tf.int32)
                 )
             except tf.errors.InvalidArgumentError as exc:
                 if not is_declared_target_domain_failure(exc):
@@ -1396,6 +1443,13 @@ class OperationalWindowedWarmupResult:
         expected_schedule = build_windowed_warmup_schedule(self.config)
         if tuple(item.window for item in windows) != expected_schedule:
             raise ValueError("operational warmup windows do not match the schedule")
+        if self.config.mass_policy == "fixed_identity" and any(
+            item.window.update_mass or item.metric_decision is not None
+            for item in windows
+        ):
+            raise ValueError(
+                "fixed-identity operational warmup cannot assess or update mass"
+            )
         initial_signature = str(self.initial_coordinate_signature)
         if not initial_signature or windows[0].coordinate_signature_used != initial_signature:
             raise ValueError("operational warmup initial coordinate lineage is invalid")
@@ -1437,6 +1491,14 @@ class OperationalWindowedWarmupResult:
         if not np.all(np.isfinite(bank)):
             raise ValueError("private start bank must be finite")
         final_state = self.final_kernel_state
+        if self.config.mass_policy == "fixed_identity" and (
+            final_state.transform.signature != initial_signature
+            or final_state.momentum_metric.signature != expected_metric
+            or final_state.adaptation_generation != 0
+        ):
+            raise ValueError(
+                "fixed-identity operational warmup changed coordinate or metric state"
+            )
         if (
             final_state.transform.signature != expected_coordinate
             or final_state.momentum_metric.signature != expected_metric
@@ -1697,6 +1759,7 @@ def run_operational_windowed_warmup(
     seed: tuple[int, int],
     target_scope: str,
     chain_execution_mode: str = "tf_function",
+    jit_compile: bool = False,
     target_status_trace_policy: str = "none",
     algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION,
@@ -1787,6 +1850,7 @@ def run_operational_windowed_warmup(
             num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
             momentum_probe_count=4,
             target_status_trace_policy=target_status_policy,
+            jit_compile=jit_compile,
         )
     )
     if not reasonable.passed or reasonable.selected_step_size is None:
@@ -1995,7 +2059,11 @@ def run_operational_windowed_warmup(
             active_runner = (
                 run_window
                 if chain_execution_mode == "eager"
-                else tf.function(run_window, reduce_retracing=True)
+                else tf.function(
+                    run_window,
+                    jit_compile=bool(jit_compile),
+                    reduce_retracing=True,
+                )
             )
         window_start = time.perf_counter()
         segment_states: list[Any] = []
@@ -2401,6 +2469,7 @@ def run_operational_windowed_warmup(
                         num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
                         momentum_probe_count=4,
                         target_status_trace_policy=target_status_policy,
+                        jit_compile=jit_compile,
                     )
                     if (
                         not candidate_reasonable.passed

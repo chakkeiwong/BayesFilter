@@ -1,0 +1,146 @@
+{
+  "schema": "bayesfilter.contract_e_tp.phase3_lgssm_center.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "scope": "center_only_not_parameter_region_certificate",
+  "target": {
+    "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+    "dataset_seed": 81100,
+    "time_steps": 2,
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "parameter_names": [
+      "phi1",
+      "phi2",
+      "phi3",
+      "q_scale",
+      "r_scale"
+    ],
+    "route": "corrected_ledh_parent_by_innovation_teacher"
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase3_lgssm_order5_t5_center_preparation_20260715/charts.json",
+    "sha256": "0472316b1d665419347232092dc694b3eb90532af8ad6a2dcc8f113763248e73",
+    "scope": "center_only_not_parameter_region_certificate",
+    "quadrature_order": 5,
+    "feature_names": [
+      "mass",
+      "x1",
+      "x2",
+      "x3",
+      "x1_sq",
+      "x1_x2",
+      "x1_x3",
+      "x2_sq",
+      "x2_x3",
+      "x3_sq",
+      "next_corrected_ledh_predictive_contribution"
+    ]
+  },
+  "value": {
+    "contract_e_tp": -8.861945865453333,
+    "kalman": -8.862150494354598,
+    "difference": 0.00020462890126538014,
+    "center_boundary": 0.001,
+    "center_screen_pass": true,
+    "increment_history": [
+      -6.990315120314722,
+      -1.871630745138611
+    ]
+  },
+  "score": {
+    "contract_e_tp": [
+      3.836027023842505,
+      -0.38393946365370957,
+      -0.08329514240980856,
+      4.425612429216118,
+      11.141461535096306
+    ],
+    "kalman": [
+      3.8280136999547345,
+      -0.3841810550659297,
+      -0.08308722315713792,
+      4.417211557338931,
+      11.13813400253651
+    ],
+    "difference": [
+      0.00801332388777043,
+      0.00024159141222013236,
+      -0.00020791925267064915,
+      0.0084008718771873,
+      0.0033275325597958982
+    ],
+    "componentwise_relative_error": [
+      0.0020933373064639725,
+      0.0006288478024473971,
+      0.002502421488769986,
+      0.0019018495646262986,
+      0.00029875134910732013
+    ],
+    "sign_reversal": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "center_delta_grad": 0.05,
+    "center_screen_pass": true,
+    "same_scalar_finite_difference": [
+      3.8360270245618717,
+      -0.38393946368842075,
+      -0.08329514251670389,
+      4.425612433323067,
+      11.141461545172147
+    ],
+    "same_scalar_fd_relative_error": [
+      1.8752912420943718e-10,
+      9.040794619702338e-11,
+      1.283332049078266e-09,
+      9.279957314534799e-10,
+      9.043553725382788e-10
+    ],
+    "same_scalar_fd_threshold": 0.1118033988749895,
+    "same_scalar_fd_pass": true
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.0011785923906277452
+    ],
+    "condition_number_history": [
+      421.1569731344072
+    ],
+    "feature_residual_max_abs": 8.326672684688674e-16,
+    "chart_pass": true
+  },
+  "decision": {
+    "engineering_pass": true,
+    "center_value_screen_pass": true,
+    "center_gradient_screen_pass": true,
+    "next_action": "advance_to_order_refinement_or_later_phase",
+    "ranking_supported": false,
+    "differences_are_descriptive": true
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow float64 CPU-hidden reference/diagnostic",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 3.4930533970036777,
+    "command": "docs/benchmarks/run_contract_e_tp_phase3_lgssm_center.py --time-steps 2 --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase3_lgssm_order5_t5_center_preparation_20260715/charts.json --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase3_lgssm_order5_t2_center_20260715/result.json"
+  },
+  "nonclaims": [
+    "no off-center or HMC trajectory validity",
+    "no stochastic ranking or cross-method equivalence",
+    "no canonical, leaderboard, default, or HMC admission"
+  ]
+}

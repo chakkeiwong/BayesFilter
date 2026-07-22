@@ -1,0 +1,39 @@
+{
+  "attempt_id": "lgssm-t50-attempt02",
+  "balance_steps": 8,
+  "campaign_id": "ledh-offline-ot-cheaper-first-tuning-20260718",
+  "candidate_artifact": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/ledh_per_scope_tuning_20260719/lgssm_t50_attempt02/candidate_s20_b8.json",
+  "candidate_artifact_sha256": "002fd9df467dcb1f420517ef8fc52f64176bc08334fdd7f8c1ac639dca31f406",
+  "kalman_used": false,
+  "schema_version": "bayesfilter.ledh_offline_ot_selection.v1",
+  "selection_metrics": [
+    "TV_col",
+    "E_row"
+  ],
+  "selection_rule": "first validation pass after exhausting cheaper balance controls at each sinkhorn rung",
+  "sinkhorn_steps": 20,
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "1f10544339052d48768fedb54718b28803c0999ccead7e0d1eee910070a8625b",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "60362d85954090ba84f192b2e3e44f58c070326b1634cff630b914cb0cec973d",
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py": "fef9c561c29b74c0de6c458006a4fc13265c88a03e3cd1c382a5d47e665ac338",
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py": "1225eef49450347761d05347f73bc4039409a854f9c1762c0dc0c6bd39a985a4",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "dd5f6230c14c51166da3252f5838221716a5d25809474c34cd696f42501993a9"
+  },
+  "tuning_scope": {
+    "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "control_family_id": "streaming_ot_sinkhorn_balance_v1",
+    "dtype": "float32",
+    "horizon": 50,
+    "jit_compile": true,
+    "model_id": "canonical_lgssm_m3",
+    "parameter_count": 5,
+    "particle_count": 1024,
+    "prepared_data_id": "lgssm_dataset_seed_81100_observation_prefix_t50",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route_id": "contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1",
+    "state_dimension": 3,
+    "target_id": "canonical_lgssm_dataset_seed_81100_theta_0p72_0p55_0p35_0p35_0p45",
+    "tf32_enabled": true
+  },
+  "tuning_scope_sha256": "451d361ac856bfeea9df93a84f07999967db8199dbb9ce948fa214c074ea5f2d"
+}

@@ -112,6 +112,22 @@ def test_score_contract_rejects_missing_or_mixed_value_score_routes() -> None:
         module._validate_analytical_score_contract([mixed])
 
 
+def test_score_contract_rejects_zhao_cui_without_fixed_variant_hmc_identity() -> None:
+    module = _load_module()
+    row = {
+        "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+        "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "comparison_status": "executed_value_score",
+        "score": [1.0],
+        "score_derivative_provenance": "manual_parameter_score_methods_only",
+        "value_route_id": "historical_route",
+        "score_route_id": "historical_route",
+        "value_score_route_status": "same_route_value_score",
+    }
+    with pytest.raises(ValueError, match="fixed-variant HMC filtering route"):
+        module._validate_analytical_score_contract([row])
+
+
 def test_autodiff_score_rows_are_value_only_diagnostic_rows() -> None:
     payload = _build_payload()
 
@@ -159,11 +175,75 @@ def test_historical_svd_ukf_score_rows_are_value_only_diagnostics() -> None:
     assert "principal-square-root UKF" in demoted[0]["score_status_reason"]
 
 
+def test_zhao_cui_score_admission_requires_fixed_variant_filter_identity() -> None:
+    module = _load_module()
+    base = {
+        "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+        "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "comparison_status": "executed_value_score",
+        "numeric_execution_status": "executed_test_value_score",
+        "score": [1.0, -0.25],
+        "score_l2_norm": 1.0308,
+        "score_coordinate_system": "theta",
+        "score_derivative_provenance": (
+            "zhao_cui_manual_parameter_score_methods_only"
+        ),
+        "nonclaims": [],
+    }
+    historical = dict(
+        base,
+        route_id="zhao_cui_predator_prey_t20_multistate_fixed_design_tt",
+        route_role="historical_diagnostic_only",
+    )
+    fixed = dict(
+        base,
+        route_id="zhao_cui_exact_transformed_sv_fixed_branch_tt",
+        route_role="fixed_variant_analytical_hmc_route",
+        hmc_route_policy_id="zhao_cui_fixed_variant_hmc_default_v1",
+        hmc_target_scope_admitted=True,
+    )
+
+    historical_row, fixed_row = module._enforce_analytical_score_admission(
+        [historical, fixed]
+    )
+
+    assert historical_row["comparison_status"] == "executed_value_only"
+    assert historical_row["score"] is None
+    assert fixed_row["comparison_status"] == "executed_value_score"
+    assert fixed_row["score"] == [1.0, -0.25]
+
+
+def test_legacy_zhao_cui_sv_signature_receives_repository_route_identity() -> None:
+    module = _load_module()
+    row = {
+        "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+        "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "comparison_status": "executed_value_score",
+        "numeric_execution_status": (
+            "executed_zhao_cui_exact_transformed_sv_fixed_branch_tt_value_score"
+        ),
+        "score": [1.0, -0.25],
+        "score_l2_norm": 1.0308,
+        "score_coordinate_system": "theta",
+        "score_derivative_provenance": (
+            "zhao_cui_scalar_fixed_branch_tt_exact_transformed_sv_"
+            "manual_parameter_score_methods_only"
+        ),
+        "nonclaims": [],
+    }
+
+    (normalized,) = module._enforce_analytical_score_admission([row])
+
+    assert normalized["comparison_status"] == "executed_value_score"
+    assert normalized["route_id"] == "zhao_cui_exact_transformed_sv_fixed_branch_tt"
+    assert normalized["hmc_target_scope_admitted"] is True
+
+
 def test_row_summary_full_ready_requires_all_algorithms_with_admitted_scores() -> None:
     payload = _build_payload()
 
     by_row = {row["row_id"]: row for row in payload["row_summary"]}
-    assert by_row["benchmark_lgssm_exact_oracle_m3_T50"]["full_three_way_ready"] is True
+    assert by_row["benchmark_lgssm_exact_oracle_m3_T50"]["full_three_way_ready"] is False
     assert by_row["zhao_cui_sv_actual_nongaussian_T1000"]["full_three_way_ready"] is True
     assert by_row["zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000"]["full_three_way_ready"] is True
     assert by_row["zhao_cui_predator_prey_T20"]["full_three_way_ready"] is False
@@ -224,7 +304,7 @@ def test_actual_sv_ukf_cell_uses_reviewed_srukf_score_without_full_payload_rebui
     assert any("gamma score nearly zero structurally" in item for item in row["nonclaims"])
 
 
-def test_zhao_cui_sv_cells_use_manual_tt_score_rows_without_full_payload_rebuild(monkeypatch) -> None:
+def test_zhao_cui_sv_cells_use_fixed_variant_manual_scores_without_full_payload_rebuild(monkeypatch) -> None:
     module = _load_module()
     full_observations = module._sv_observations()
     original_config = module._zhao_cui_scalar_tt_config
@@ -251,6 +331,8 @@ def test_zhao_cui_sv_cells_use_manual_tt_score_rows_without_full_payload_rebuild
             "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
         }
         assert row["comparison_status"] == "executed_value_score"
+        assert row["route_role"] == "fixed_variant_analytical_hmc_route"
+        assert row["hmc_target_scope_admitted"] is True
         assert row["score_coordinate_system"] == "theta=[probit_gamma,log_beta]"
         assert row["score_status"] == "analytical_score_emitted"
         assert row["score"] is not None

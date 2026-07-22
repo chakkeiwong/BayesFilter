@@ -626,6 +626,76 @@ def test_operational_warmup_passes_active_l_to_every_epsilon_search(
     assert set(observed) == {5}
 
 
+def test_operational_warmup_passes_xla_to_epsilon_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[bool] = []
+    original_find = hmc_warmup.find_reasonable_epsilon
+
+    def recording_find(**kwargs: object) -> ReasonableEpsilonResult:
+        observed.append(bool(kwargs["jit_compile"]))
+        return original_find(**kwargs)
+
+    monkeypatch.setattr(hmc_warmup, "find_reasonable_epsilon", recording_find)
+    run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.eye(2)),
+        initial_transform=_transform(np.eye(2)),
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=0.35,
+        trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=112,
+            initial_buffer=16,
+            final_buffer=32,
+            first_window_size=64,
+            min_window_samples=32,
+        ),
+        target_accept_prob=0.70,
+        seed=(20260719, 6),
+        target_scope="hmc_warmup_gaussian",
+        chain_execution_mode="tf_function",
+        jit_compile=True,
+    )
+
+    assert observed
+    assert all(observed)
+
+
+def test_fixed_identity_operational_warmup_never_assesses_or_changes_mass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_metric_assessment(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("fixed-identity warmup must not assess covariance")
+
+    monkeypatch.setattr(hmc_warmup, "assess_metric_covariance", fail_metric_assessment)
+    initial_transform = _transform(np.eye(2))
+    result = run_operational_windowed_warmup(
+        adapter=_GaussianAdapter(np.array([[1.2, -0.2], [-0.2, 0.5]])),
+        initial_transform=initial_transform,
+        initial_canonical_theta=np.array([0.2, -0.1]),
+        initial_step_size=0.35,
+        trajectory_policy=WarmupTrajectoryPolicy(2, 8),
+        config=WindowedMassAdaptationConfig(
+            warmup_steps=20,
+            initial_buffer=2,
+            final_buffer=8,
+            first_window_size=10,
+            min_window_samples=2,
+            mass_policy="fixed_identity",
+        ),
+        target_accept_prob=0.70,
+        seed=(20260721, 1),
+        target_scope="hmc_warmup_fixed_identity",
+        chain_execution_mode="eager",
+    )
+
+    assert result.operational_metric_update_count == 0
+    assert all(window.metric_decision is None for window in result.windows)
+    assert result.final_kernel_state.adaptation_generation == 0
+    assert result.final_kernel_state.transform.signature == initial_transform.signature
+    assert result.final_kernel_state.momentum_metric.signature == result.windows[0].metric_signature_used
+
+
 def test_operational_warmup_external_bound_caps_consumed_step() -> None:
     upper_bound = 0.2
     result = run_operational_windowed_warmup(

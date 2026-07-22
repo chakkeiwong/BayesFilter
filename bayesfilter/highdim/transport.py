@@ -485,6 +485,66 @@ class FixedTTSIRTTransport:
         del reference_points
         return tf.math.log(self.eval_pdf(local_points))
 
+    def conditional_proposal_log_density(
+        self,
+        *,
+        conditioning_points: tf.Tensor,
+        generated_points: tf.Tensor,
+    ) -> tf.Tensor:
+        """Evaluate the suffix density using the Proposition-2 prefix marginal."""
+
+        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
+        generated = tf.convert_to_tensor(generated_points, dtype=tf.float64)
+        if condition.shape.rank != 2 or generated.shape.rank != 2:
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        conditioning_dimension = int(condition.shape[0])
+        if conditioning_dimension < 1 or conditioning_dimension >= self.dimension:
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        if conditioning_dimension + int(generated.shape[0]) != self.dimension:
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        if int(condition.shape[1]) != int(generated.shape[1]):
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        if not bool(
+            tf.reduce_all(tf.math.is_finite(condition)).numpy()
+            and tf.reduce_all(tf.math.is_finite(generated)).numpy()
+        ):
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.NONFINITE_VALUE.value}"
+            )
+
+        joint_points = tf.concat([condition, generated], axis=0)
+        joint_log_density = tf.math.log(self.eval_pdf(joint_points))
+        prefix_axes = tuple(range(conditioning_dimension))
+        prefix_relative_density = self.density.normalized_marginal_density_values(
+            prefix_axes,
+            tf.transpose(condition),
+        )
+        prefix_reference_density = tf.ones(
+            [tf.shape(condition)[1]], dtype=tf.float64
+        )
+        for axis in prefix_axes:
+            prefix_reference_density = (
+                prefix_reference_density
+                * self._axis_reference_measure_density(axis)
+            )
+        prefix_log_density = tf.math.log(
+            prefix_relative_density * prefix_reference_density
+        )
+        result = joint_log_density - prefix_log_density
+        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.NONFINITE_VALUE.value}"
+            )
+        return result
+
     def marginalize(self, keep_axes: tuple[int, ...]):
         return self.density.marginal_density(tuple(int(axis) for axis in keep_axes))
 

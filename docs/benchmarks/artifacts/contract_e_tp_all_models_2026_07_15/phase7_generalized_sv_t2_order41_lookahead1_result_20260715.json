@@ -1,0 +1,234 @@
+{
+  "schema": "bayesfilter.contract_e_tp.scalar_sv_prefix_result.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+  "scope": "center_only_prefix_diagnostic",
+  "target": {
+    "time_steps": 2,
+    "theta": [
+      1.0824113944610982,
+      -2.076793740349318,
+      0.0
+    ],
+    "parameter_names": [
+      "gamma_unconstrained",
+      "log_tau",
+      "mu_over_tau"
+    ],
+    "target_observation_policy": "raw_zero_mean_normal_generalized_sv",
+    "flow_observation_policy": "log_square_affine_proposal_only",
+    "transition_before_first_observation": true
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase7_generalized_sv_t2_order41_lookahead1_preparation_20260715.json",
+    "sha256": "5cf2b04e41b353cc25502d6076866e9a42905b3db45aeed8c35a67e3b6256dfe",
+    "teacher_order": 41,
+    "continuation_order": 129,
+    "continuation_radius": 12.0,
+    "lookahead_steps": 1,
+    "requested_progressive_lookaheads": [
+      1
+    ],
+    "chart_mode": "fixed_square"
+  },
+  "candidate": {
+    "value": -2.222643186611754,
+    "score": [
+      0.04915026804051259,
+      -0.0034258927600401305,
+      -0.0093017472136641
+    ],
+    "increment_history": [
+      -1.0896398504912361,
+      -1.1330033361205178
+    ],
+    "increment_score_history": [
+      [
+        -0.0031712920306334034,
+        -0.004308340984786154,
+        -0.005069194373072747
+      ],
+      [
+        0.05232156007114602,
+        0.0008824482247460305,
+        -0.004232552840591348
+      ]
+    ],
+    "same_scalar_finite_difference": [
+      0.04915026803331556,
+      -0.003425892813879727,
+      -0.009301747216916567
+    ],
+    "same_scalar_fd_policy": {
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "diagnostic_scope": "finite_difference_only",
+      "status": "pass",
+      "num_parameters": 3,
+      "base_relative_tolerance": 0.05,
+      "dimension_scaling": "sqrt(num_parameters)",
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "max_coordinate_relative_error": 1.5715493547109632e-08,
+      "max_coordinate_relative_error_threshold": 0.08660254037844387,
+      "max_coordinate_relative_error_margin": 0.08660252466295032,
+      "max_error_parameter": "log_tau",
+      "parameters": [
+        {
+          "parameter": "gamma_unconstrained",
+          "score": 0.04915026804051259,
+          "finite_difference": 0.04915026803331556,
+          "absolute_error": 7.197027696026481e-12,
+          "relative_error_scale": 0.04915026804051259,
+          "relative_error": 1.4642906301333414e-10
+        },
+        {
+          "parameter": "log_tau",
+          "score": -0.0034258927600401305,
+          "finite_difference": -0.003425892813879727,
+          "absolute_error": 5.383959640961611e-11,
+          "relative_error_scale": 0.003425892813879727,
+          "relative_error": 1.5715493547109632e-08
+        },
+        {
+          "parameter": "mu_over_tau",
+          "score": -0.0093017472136641,
+          "finite_difference": -0.009301747216916567,
+          "absolute_error": 3.252467739578435e-12,
+          "relative_error_scale": 0.009301747216916567,
+          "relative_error": 3.496620219546876e-10
+        }
+      ]
+    }
+  },
+  "dense_references": [
+    {
+      "order": 129,
+      "radius": 12.0,
+      "value": -2.224284208732239,
+      "score": [
+        -0.0022147123988665455,
+        -0.004626769510918961,
+        -0.009272578823796115
+      ],
+      "increment_history": [
+        -1.0896398521160573,
+        -1.1346443566161817
+      ],
+      "increment_score_history": [
+        [
+          -0.0031713373884912455,
+          -0.00430834030877922,
+          -0.0050691941471976395
+        ],
+        [
+          0.000956624989624801,
+          -0.00031842920213974186,
+          -0.004203384676598474
+        ]
+      ]
+    },
+    {
+      "order": 257,
+      "radius": 12.0,
+      "value": -2.224284208732311,
+      "score": [
+        -0.0022147123988675837,
+        -0.004626769510918967,
+        -0.009272578823796097
+      ],
+      "increment_history": [
+        -1.0896398521161053,
+        -1.1346443566162057
+      ],
+      "increment_score_history": [
+        [
+          -0.003171337388491961,
+          -0.004308340308779226,
+          -0.005069194147197632
+        ],
+        [
+          0.0009566249896244355,
+          -0.00031842920213974186,
+          -0.004203384676598467
+        ]
+      ]
+    }
+  ],
+  "reference_refinement": {
+    "finest_two_value_difference": -7.194245199571014e-14,
+    "finest_two_score_difference": [
+      -1.038232000372119e-15,
+      -6.071532165918825e-18,
+      1.734723475976807e-17
+    ],
+    "classification": "descriptive_numerical_refinement_not_exact_error_bound"
+  },
+  "candidate_vs_finest_reference": {
+    "value_difference": 0.0016410221205567233,
+    "score_difference": [
+      0.051364980439380176,
+      0.0012008767508788366,
+      -2.916838986800202e-05
+    ],
+    "componentwise_relative_error": [
+      1.0450600268759895,
+      0.2595497242827467,
+      0.0031357968775107305
+    ],
+    "sign_reversal": [
+      true,
+      false,
+      false
+    ],
+    "increment_score_difference_history": [
+      [
+        4.535785855762364e-08,
+        -6.760069275191238e-10,
+        -2.2587511548655126e-10
+      ],
+      [
+        0.05136493508152159,
+        0.0012008774268857723,
+        -2.916816399288133e-05
+      ]
+    ],
+    "equivalence_classification": "descriptive_only_margin_unavailable"
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.0009144761549749663
+    ],
+    "condition_number_history": [
+      31.0953403393366
+    ],
+    "maximum_feature_residual_abs": 4.440892098500626e-16,
+    "chart_pass": true
+  },
+  "decision": {
+    "hard_veto_screen_pass": true,
+    "candidate_remains_viable": true,
+    "statistically_supported_ranking": false,
+    "default_readiness": false,
+    "next_evidence": "teacher/continuation refinement or next declared prefix"
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow_float64_CPU_reference_exception",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 3.207190097979037,
+    "command": "docs/benchmarks/run_contract_e_tp_scalar_sv_prefix.py --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase7_generalized_sv_t2_order41_lookahead1_preparation_20260715.json --reference-orders 129,257 --reference-radius 12 --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase7_generalized_sv_t2_order41_lookahead1_result_20260715.json"
+  },
+  "nonclaims": [
+    "no unsupported cross-method equivalence threshold",
+    "not full-horizon or parameter-region evidence",
+    "not HMC, canonical, or default readiness",
+    "not a statistically supported method ranking"
+  ]
+}

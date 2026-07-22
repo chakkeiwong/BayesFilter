@@ -35,11 +35,84 @@ build/
 .mypy_cache/
 .ruff_cache/
 
-# Generated JSON outputs. Promotion/verification artifacts under
-# docs/benchmarks remain visible when they support a retained result or claim.
+# Generated JSON outputs. Only compact artifacts whose names identify a
+# promotion, claim, verification, or reproducibility role are re-included.
 *.json
 !docs/benchmarks/*.json
-!docs/benchmarks/**/*.json
+!docs/benchmarks/configs/
+!docs/benchmarks/configs/**/*.json
+!docs/benchmarks/artifacts/
+!docs/benchmarks/artifacts/**/
+!docs/plans/artifacts/
+!docs/plans/artifacts/**/
+
+# Claim-bearing and promotion-supporting experiment artifacts. Intermediate
+# preparations, traces, mutable progress, checkpoints, and private payloads
+# remain ignored unless a narrower rule below explicitly retains them.
+!docs/benchmarks/artifacts/**/*result*.json
+!docs/plans/artifacts/**/*result*.json
+!docs/benchmarks/artifacts/**/*summary*.json
+!docs/plans/artifacts/**/*summary*.json
+!docs/benchmarks/artifacts/**/*manifest*.json
+!docs/plans/artifacts/**/*manifest*.json
+!docs/benchmarks/artifacts/**/*decision*.json
+!docs/plans/artifacts/**/*decision*.json
+!docs/benchmarks/artifacts/**/*selected*.json
+!docs/plans/artifacts/**/*selected*.json
+!docs/benchmarks/artifacts/**/*selection*.json
+!docs/plans/artifacts/**/*selection*.json
+!docs/benchmarks/artifacts/**/*audit*.json
+!docs/plans/artifacts/**/*audit*.json
+!docs/benchmarks/artifacts/**/*certif*.json
+!docs/plans/artifacts/**/*certif*.json
+!docs/benchmarks/artifacts/**/*evidence*.json
+!docs/plans/artifacts/**/*evidence*.json
+!docs/benchmarks/artifacts/**/*receipt*.json
+!docs/plans/artifacts/**/*receipt*.json
+!docs/benchmarks/artifacts/**/*report*.json
+!docs/plans/artifacts/**/*report*.json
+!docs/benchmarks/artifacts/**/*comparison*.json
+!docs/plans/artifacts/**/*comparison*.json
+!docs/benchmarks/artifacts/**/*aggregate*.json
+!docs/plans/artifacts/**/*aggregate*.json
+!docs/benchmarks/artifacts/**/*contract*.json
+!docs/plans/artifacts/**/*contract*.json
+!docs/benchmarks/artifacts/**/*policy*.json
+!docs/plans/artifacts/**/*policy*.json
+!docs/benchmarks/artifacts/**/*verification*.json
+!docs/plans/artifacts/**/*verification*.json
+!docs/benchmarks/artifacts/**/*public*.json
+!docs/plans/artifacts/**/*public*.json
+!docs/benchmarks/artifacts/**/*tuning*.json
+!docs/plans/artifacts/**/*tuning*.json
+!docs/benchmarks/artifacts/**/*geometry*.json
+!docs/plans/artifacts/**/*geometry*.json
+!docs/benchmarks/artifacts/**/*mass*.json
+!docs/plans/artifacts/**/*mass*.json
+!docs/benchmarks/artifacts/**/*frozen_transport*.json
+!docs/plans/artifacts/**/*frozen_transport*.json
+!docs/benchmarks/artifacts/**/*artifact_hashes*.json
+!docs/plans/artifacts/**/*artifact_hashes*.json
+!docs/benchmarks/artifacts/**/*fixture*.json
+!docs/plans/artifacts/**/*fixture*.json
+!docs/benchmarks/artifacts/**/*dataset*.json
+!docs/plans/artifacts/**/*dataset*.json
+!docs/benchmarks/artifacts/**/*observations*.json
+!docs/plans/artifacts/**/*observations*.json
+
+# Mutable or non-public state wins over the semantic filename rules above.
+# Campaign-specific retained private manifests may be re-included below when
+# they are the compact hash ledger for public evidence.
+docs/benchmarks/artifacts/**/*progress*.json
+docs/plans/artifacts/**/*progress*.json
+docs/benchmarks/artifacts/**/*checkpoint*.json
+docs/plans/artifacts/**/*checkpoint*.json
+docs/benchmarks/artifacts/**/*latest*.json
+docs/plans/artifacts/**/*latest*.json
+docs/benchmarks/artifacts/**/*private*/
+docs/plans/artifacts/**/*private*/
+docs/benchmarks/artifacts/**/*private*.json
+docs/plans/artifacts/**/*private*.json
 !docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_gpu_xla_training_state_seed20260707.json
 !docs/plans/artifacts/multidim-triangular-lgssm-neutra-hmc-2026-07-08/lower_triangular_lgssm_contract_v1.json
 !docs/plans/artifacts/multidim-triangular-lgssm-neutra-hmc-2026-07-08/lower_triangular_lgssm_synthetic_data_v1_seed20260708.json
@@ -94,12 +167,21 @@ docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-5-trial0-gh/gpu-xla.json
 # Raw sampler states and local tuning databases are reproducible execution
 # state, not compact promotion or claim evidence.
 *.tftensor
+*.tensor
+*.npz
+*.npy
+*.jsonl
+*.lock
 *.sqlite3
 
 # Local benchmark execution byproducts. Keep authored harnesses, compact result
 # JSON/Markdown, strict manifests, and compressed claim archives trackable.
 docs/benchmarks/**/*.txt
 docs/benchmarks/**/*.jsonl
+docs/plans/artifacts/**/*.txt
+docs/plans/logs/**/*.txt
+docs/plans/logs/**/*.pid
+docs/plans/logs/**/*.ready
 docs/benchmarks/**/logs/
 docs/benchmarks/**/methods/*.md
 docs/benchmarks/**/methods/*.payload.json
@@ -186,6 +268,10 @@ desktop.ini
 .claude/
 .claude_reviews/
 .localenv/
+
+# Complete source snapshots are reproducible launch state. The authored source,
+# snapshot builders, and integrity receipts remain trackable separately.
+.complete-highdim-source-snapshot-*/
 
 # Agent scratch rewrite buffers. Evidence notes/results under docs/plans stay
 # tracked when they support a claim, gate, or promotion decision.

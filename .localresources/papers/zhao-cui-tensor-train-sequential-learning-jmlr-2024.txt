@@ -1,0 +1,3056 @@
+Journal of Machine Learning Research 25 (2024) 1-51                  Submitted 6/23; Revised 7/24; Published
+
+
+
+
+   Tensor-train methods for sequential state and parameter
+                learning in state-space models
+
+Yiran Zhao                                                                yiran.zhao@sydney.edu.au
+Tiangang Cui                                                            tiangang.cui@sydney.edu.au
+School of Mathematics and Statistics
+University of Sydney
+New South Wales 2006, Australia
+
+
+Editor: Ryan Adams
+
+
+                                                Abstract
+     We consider sequential state and parameter learning in state-space models with intractable
+     state transition and observation processes. By exploiting low-rank tensor train (TT) de-
+     compositions, we propose new sequential learning methods for joint parameter and state
+     estimation under the Bayesian framework. Our key innovation is the introduction of scal-
+     able function approximation tools such as TT for recursively learning the sequentially
+     updated posterior distributions. The function approximation perspective of our methods
+     offers tractable error analysis and potentially alleviates the particle degeneracy faced by
+     many particle-based methods. In addition to the new insights into the algorithmic design,
+     our methods complement conventional particle-based methods. Our TT-based approxima-
+     tions naturally define conditional Knothe–Rosenblatt (KR) rearrangements that lead to
+     parameter estimation, filtering, smoothing and path estimation accompanying our sequen-
+     tial learning algorithms, which open the door to removing potential approximation bias.
+     We also explore several preconditioning techniques based on either linear or nonlinear KR
+     rearrangements to enhance the approximation power of TT for practical problems. We
+     demonstrate the efficacy and efficiency of our proposed methods on several state-space
+     models, in which our methods achieve state-of-the-art estimation accuracy and computa-
+     tional performance.
+     Keywords: tensor train, Knothe–Rosenblatt rearrangement, state-space models, sequen-
+     tial Monte Carlo, uncertainty quantification, transport maps
+
+
+1. Introduction
+
+State-space models have been widely used in mathematical and statistical modelling to an-
+alyze time-varying complex phenomena (Cappé et al., 2006; Kantas et al., 2009). Examples
+include time series analysis in finance, temporal pattern recognition in bioinformatics, fore-
+cast in meteorology, and more. A typical state-space model is also referred to as a hidden
+Markov model, which consists of two stochastic processes {X t }t≥0 and {Y t }t≥1 . The state
+transition process {X t }t≥0 is an X -valued latent Markov process specified by a conditional
+transition density
+
+
+                     (X t |X 0:t-1 = x0:t-1 ) ≡ (X t |X t-1 = xt-1 ) ∼ f (xt |xt-1 , θ),                 (1)
+
+c 2024 Yiran Zhao and Tiangang Cui.
+License: CC-BY 4.0, see https://creativecommons.org/licenses/by/4.0/. Attribution requirements are provided
+at http://jmlr.org/papers/v25/23-0743.html.
+                                             Zhao and Cui
+
+
+
+
+and an initial density p(x0 |θ). Here X t represents the hidden state of the underlying system
+at an integer-valued time index t ≥ 0, and the notation xi:j denotes vectors (xi , xi+1 , . . . , xj )
+from a sequence {xt }t≥0 . The Y-valued observation process {Y t }t≥1 is characterized by the
+likelihood function g (y t |xt , θ) as
+
+                (Y t |X 0:t = x0:t , Y 1:t-1 = y 1:t-1 ) ≡ (Y t |X t = xt ) ∼ g(y t |xt , θ),        (2)
+
+where Y t represents the observable at time index t > 0. In (1) and (2), θ ∈ Θ is a set of
+parameters that govern the state transition process and the observation process.
+
+Example 1 (Volatility of financial instruments) The stochastic volatility model consists of
+the return of an asset {Y t }t≥1 and the logarithm of its squared volatility {X t }t≥0 . In the
+simplest setup, the logarithm of the squared volatility {X t }t≥0 is a scalar-valued autore-
+gressive process with order one, that is, an AR(1) process, while the scalar-valued return
+{Y t }t≥1 is the observable determined by the volatility. We arrange the unknown parameters
+to appear in both the state transition process and the observation process. The system is
+described by                     (                       (x)
+                                    X t = γX t-1 + σεt
+                                             (y)
+                                                              ,
+                                    Y t = εt β exp( 12 X t )
+                                                           (x)          (y)
+where Θ = (γ, σ, β) are model parameters, εt and εt are independent and identically
+distributed (i.i.d.) standard Gaussian random variables, and the initial state is given as
+              σ2
+X 0 ∼ N (0, 1−γ  2 ). The goal is to estimate the parameter Θ and the hidden states {X t }t≥0
+
+from the observed returns {Y t }t≥1 .
+
+1.1 Sequential learning problems
+Following the state-space model defined in (1) and (2), random variables (Θ, X 0:t , Y 1:t )
+have the joint density
+                                                       t 
+                                                       Y                                        
+                 p(θ, x0:t , y 1:t ) = p(θ) p(x0 |θ)             f (xj |xj-1 , θ) g(y j |xj , θ) ,   (3)
+                                                       j=1
+
+where p(θ) and p(x0 |θ) are prescribed prior densities. Conditioned on all available data
+Y 1:t = y 1:t at time t, the trajectory of the states X 0:t and the parameter Θ jointly follow
+the posterior density
+                                                      p(θ, x0:t , y 1:t )
+                                 p(θ, x0:t |y 1:t ) =                     ,                 (4)
+                                                         p(y 1:t )
+where p(y 1:t ) is an unknown constant commonly referred to as the evidence. We aim to
+design sequential algorithms that simultaneously solve the following inference problems at
+each time t:
+
+ • Filtering that infers the current state, which is the marginal conditional random vari-
+   able                                                 Z
+                (X t |Y 1:t = y 1:t ) ∼ p(xt |y 1:t ) := p(θ, x0:t |y 1:t )dx0:t-1 dθ. (5)
+
+
+                                                       2
+                         Tensor trains for sequential learning
+
+
+
+
+ • Parameter estimation that infers the unknown parameter, which is the marginal
+   conditional random variable
+                                                       Z
+                    (Θ|Y 1:t = y 1:t ) ∼ p(θ|y 1:t ) := p(θ, x0:t |y 1:t )dx0:t . (6)
+
+ • Path estimation that infers the trajectory of the states, which are the marginal con-
+   ditional random variables
+                                                              Z
+                  (X 0:t |Y 1:t = y 1:t ) ∼ p(x0:t |y 1:t ) := p(θ, x0:t |y 1:t )dθ. (7)
+
+ • Smoothing. As a result of increasing state dimensions and the observation size, path
+   estimation becomes increasingly challenging over time. Smoothing is a related learning
+   problem focusing on the lower-dimensional marginal conditional random variable
+                                                     Z
+             (X k |Y 1:t = y 1:t ) ∼ p(xk |y 1:t ) := p(θ, x0:t |y 1:t )dx0:k-1 dxk+1:t dθ (8)
+
+    for some previous time index k < t.
+In the presence of unknown parameters and stochastic noises in the state transition density
+(1), all the above-mentioned learning problems are essentially characterizations of marginal
+random variables. Furthermore, the random variables of interest are intractable, in the sense
+that the characteristic functions and moments often do not admit analytical forms, and it
+is infeasible to directly simulate these random variables. Thus, we need to design numerical
+methods to solve these problems. In principle, algorithms for solving these problems need
+to be sequential by design—the computation of new solutions to the problems (5)–(8) at
+time t only relies on either previous solutions at t − 1 for forward algorithms, or solutions
+at t + 1 for backward algorithms. We refer readers to Evensen et al. (2022); Kantas et al.
+(2009); Reich and Cotter (2015) and Särkkä (2013) for further details and references of
+these sequential learning problems.
+
+1.2 Related work and our contributions
+Assuming the parameter θ is known, the classical filtering problem aims to estimate the
+distribution of the current state conditioned on the data available up to t, that is, (X t |Θ =
+θ, Y 1:t = y 1:t ). For linear models with Gaussian noises, the filtering density yields a closed-
+form solution given by the classical Kalman filter (Kalman, 1960). The extended Kalman
+filter (Anderson and Moore, 2012; Einicke and White, 1999) and the ensemble Kalman
+filter (Evensen, 2003) generalize the Kalman filter to nonlinear problems. These generaliza-
+tions use linearization and Monte Carlo sampling to create Gaussian approximations and
+sample-based approximations of posterior densities. As a result, these methods are flexi-
+ble to implement and often robust with respect to dimensionality. However, the Gaussian
+assumption used by various Kalman filters introduces unavoidable approximation errors to
+the resulting filtering density, which makes them only suitable for tracking the states for
+nonlinear problems.
+     Beyond the Gaussian form, sequential Monte Carlo (SMC) methods recursively main-
+tain a set of weighted particles to fully characterize the filtering density (5) for nonlinear
+
+                                                3
+                                       Zhao and Cui
+
+
+
+
+problems. In the simplest form, the bootstrap filter (Gordon et al., 1993) updates weighted
+particles using the state transition process and reweighs them using the likelihood function
+with newly collected data. It is well-known that the weights of the bootstrap filter tend
+to degenerate over time, a phenomenon commonly referred to as the particle degeneracy
+(Doucet and Johansen, 2009; Snyder et al., 2008; Liu et al., 2001; Pitt and Shephard, 1999).
+To mitigate the particle degeneracy, the auxiliary particle filter (Pitt and Shephard, 1999,
+2001) and various advanced resampling techniques such as residual resampling (Carpen-
+ter et al., 1999), systematic resampling (Kitagawa, 1996), and resample-move (Gilks and
+Berzuini, 2001) have been developed. See Del Moral et al. (2012); Doucet and Johansen
+(2009); Reich and Cotter (2015) and Maskell and Gordon (2002) for comprehensive reviews
+of these techniques.
+     An emerging trend is the development of transport map methods that overcome the
+particle degeneracy by transforming the forecast particles into equally weighted particles
+following the filtering density. The ensemble transform filter (Reich, 2013) builds such trans-
+formations via a discrete optimal transport problem. The coupling technique of Spantini
+et al. (2022) relaxes the Gaussian assumption of the ensemble Kalman filter by building con-
+ditional Knothe–Rosenblatt (KR) rearrangements (Knothe et al., 1957; Rosenblatt, 1952).
+The implicit sampling method (Chorin and Tu, 2009; Morzfeld et al., 2012) couples a ref-
+erence density, for example, a standard Gaussian, to a particular approximation of the
+filtering density via implicit maps. Methods based on neural networks are also developed.
+For example, Gottwald and Reich (2021) build random feature maps on delayed coordinates
+to accelerate filtering, and Hoang et al. (2021) approximate conditional mean filters using
+neural networks.
+     One of our innovations is treating the filtering problem and other aforementioned se-
+quential learning problems as recursive function approximation problems. This perspective
+opens the door to applying scalable function approximation tools in sequential learning.
+In particular, we employ tensor-train (TT) decompositions (Hackbusch, 2012; Oseledets
+and Tyrtyshnikov, 2010; Oseledets, 2011) to design non-parametric solution ansatzes for
+recursively approximating probability densities in sequential learning. As a result, our
+new algorithms significantly generalize the linear Gaussian assumptions used by various
+Kalman filters and bypass sample-based empirical approximations used in various particle
+filters. This not only makes our algorithms computationally efficient but also capable of
+fully quantifying uncertainties in sequential learning problems. The computed TT decom-
+positions in our algorithms naturally lead to a sequence of KR rearrangements, enabling us
+to design an accompanying particle filter to correct for biases due to function approximation
+errors. Moreover, we use these KR rearrangements to develop a backward sampling algo-
+rithm, in line with many particle smoothing methods—for example, Bresler (1986); Briers
+et al. (2010); Fearnhead et al. (2010); Godsill et al. (2004)—to solve the path estimation
+and smoothing problems.
+     Another significant challenge in sequential learning problems is to estimate unknown
+parameters, which intrinsically requires marginalizing over the state path to evaluate the
+posterior parameter density (6). The particle Markov chain Monte Carlo (MCMC) method
+(Andrieu et al., 2010) and the method developed in Särkkä et al. (2015) use inner-loop
+particle filters or Gaussian filters to estimate the computationally intractable marginalized
+posterior parameter density p(θ|y 1:t ), and then build outer-loop Markov chain transition
+
+                                              4
+                         Tensor trains for sequential learning
+
+
+
+
+kernels to sample posterior parameters. These methods are designed for batched data and
+thus may have difficulties updating the solution in an online manner with new observations.
+To estimate posterior parameters online, the SMC2 method (Chopin et al., 2013) and its
+variants—for example, the nested particle filter (Crisan and Miguez, 2018)—run an outer-
+loop particle filter to sequentially update the parameter distribution. Since these methods
+are based on particle filters, they often need a restart step to handle the particle degener-
+acy. As a result, they need to sacrifice either the computational complexity (SMC2 has a
+computational complexity quadratic in time) or the rate of convergence (the nested particle
+filter has a convergence rate of N −1/4 , where N is the sample size) in online estimation.
+    Our new algorithms are directly applicable to the online parameter estimation problem.
+In fact, our new algorithms solve all four aforementioned sequential learning problems in an
+integrated manner by recursively approximating the joint posterior density of parameters
+and states over time. The separability of TT decompositions naturally leads to marginal
+posterior densities for solving the parameter estimation and filtering problems. This also
+allows us to build accompanying KR rearrangements to correct approximation biases and
+solve the smoothing and path estimation problems. More importantly, we show that the
+accumulation of these density approximation errors has a linear rate under mild assump-
+tions. Within the same framework, we also present preconditioning techniques to improve
+the approximation power of TT decompositions. On a range of numerical examples, we
+show that our method outperforms the SMC2 method and can produce meaningful results
+in real-world applications.
+
+1.3 Outline
+
+We propose a basic version of the TT-based algorithm that recursively approximates the
+time-varying joint posterior densities in Section 2. The separable form of TT provides ap-
+proximations to the marginal densities required in learning problems (5)–(8). The basic
+TT-based algorithm is useful to outline the design principles and key steps of our proposed
+methods. However, the rank truncation used by TT may not preserve non-negativity of den-
+sity functions. This leads to difficulties in removing the approximation bias using techniques
+such as importance sampling. We overcome this limitation in Section 3 by integrating the
+square-root approximation technique of Cui and Dolgov (2022) into the basic algorithm of
+Section 2. This preserves the recursive learning pattern of the basic algorithm for problems
+(5)–(8) and leads to non-negative approximations by construction. More importantly, the
+separable form of the non-negative TT naturally leads to a sequence of KR rearrangements
+that couple reference random variables and the marginal random variables of interest. We
+use the resulting (conditional) KR rearrangements to design particle filters and particle
+smoothers accompanying TT approximations to remove estimation biases.
+    The smoothing procedure accompanying our TT-based learning algorithm shares many
+similarities with the joint KR rearrangements developed in Spantini et al. (2018). In partic-
+ular, our joint KR rearrangement for the simultaneous path and parameter estimation (see
+Section 3.4) follows the same sparsity pattern as that of Spantini et al. (2018), as a result of
+the hidden Markov structure of the learning problem. Our key innovation lies in algorithmic
+design. The work of Spantini et al. (2018) adopts a variational approach that builds an
+approximate map by minimizing the statistical divergence of the pushforward of some ref-
+
+                                               5
+                                           Zhao and Cui
+
+
+
+
+erence density under the candidate map from the target density. The training procedure of
+the variational approach is often quite involved—the objective function presents many local
+minima and each optimization iteration requires repeated evaluations of the target density
+at transformed reference variables under the candidate map. In comparison, our algorithmic
+design uses multilinear function approximations to directly approximate marginal and con-
+ditional densities of interest. In addition to the benefit of bypassing nonlinear optimization,
+we can exploit the TT-based approximations to compute the exact KR rearrangement of the
+approximate density in both lower-triangular and upper-triangular forms. This enables us
+to solve the filtering problem (5) and the smoothing problem (8) using different conditional
+KR rearrangements constructed from the same approximate density.
+    In Section 4, we discuss the error accumulation rate of our proposed algorithms. In
+Section 5, we present a set of preconditioning techniques for our sequential learning problems
+to further enhance the approximation power of TT. These preconditioning techniques are
+also given in the form of KR rearrangements. In Section 6, we present a set of numerical
+experiments to demonstrate the efficacy and efficiency of our proposed methods and compare
+them to particle-based methods. Our code is accessible online via https://github.com/
+DeepTransport/tensor-ssm-paper-demo.
+
+1.4 Notation
+The dimensionalities of the state space X , the data space Y, and the parameter space Θ
+are m, n, and d, respectively. We assume that the spaces X , Y, and Θ can be expressed
+as Cartesian products. We denote the j-th element of a vector x by xj . The index t ∈ N
+is specifically reserved for denoting the time throughout the paper. For a state random
+vector X t and its realization xt at time t, their j-th elements are denoted by Xt,j and xt,j ,
+respectively. The same convention applies to the data vector Y t and its realization y t .
+    For a vector xt ∈ Rm and an index j, it is convenient to group a subset of elements
+as follows. The vector xt,<j = (xt,1 , . . . , xt,j-1 ) collects the first j − 1 elements, and the
+vector xt,>j = (xt,j+1 , . . . , xt,m ) collects the last m − j elements. Similarly, we have xt,≤j =
+(xt,1 , . . . , xt,j ), xt,≥j = (xt,j , . . . , xt,m ), and xt,≤m ≡ xt,≥0 ≡ xt .
+    We consider probability measures absolutely continuous with respect to the Lebesgue
+measure. We denote normalized posterior probability densities in the sequential learning
+problems by p and its unnormalized version by π. Approximations to these densities are
+denoted by p̂ and π̂, respectively. The Hellinger distance between random variables with
+densities p and p̂ is defined by
+
+                                         1 Z   p      p     2  12
+                          DH (p, p̂) =           p(x) − p̂(x) dx .
+                                          2
+
+We denote the m-dimensional uniform random variable on a unit hypercube by Ξ ∼
+uniform(ξ; [0, 1]m ), in which we drop [0, 1]m in the definition when no confusion arises.
+    Consider a diffeomorphism S : X → U, where X , U ⊆ Rm . The density of the transformed
+variable S(X) where X ∼ p, is the pushforward of p under S, which takes the form
+                                                    
+                                S] p(u) = p S −1 (u) ∇S −1 (u) .
+
+                                                 6
+                           Tensor trains for sequential learning
+
+
+
+
+Similarly, the density of the transformed variable S −1 (U ), where U ∼ η, is the pullback of
+the density of U under S, which takes the form
+                                                  
+                                 S ] η(x) = η S(x) ∇S(x) .
+
+Here | · | denotes the absolute value of the determinant of a matrix.
+
+2. TT-based recursive posterior approximation
+We first discuss the recursive formula outlining the design principle of sequential learning
+problems. We then introduce the TT decomposition and present a basic implementation of
+the TT-based sequential learning algorithm.
+
+2.1 Recursive state and parameter learning
+Following the definition of the joint density of (Θ, X 0:t , Y 1:t ) in (3), the density of the
+posterior random variables (Θ, X 0:t |Y 1:t = y 1:t ) also has a recursive form
+
+                                         p(θ, x0:t-1 |y 1:t-1 )f (xt |xt-1 , θ)g(y t |xt , θ)
+                  p(θ, x0:t |y 1:t ) =                                                        ,      (9)
+                                                            p(y t |y 1:t-1 )
+
+where p(y t |y 1:t-1 ) is a computationally intractable conditional evidence. Marginalizing both
+sides over X 0:t-2 , the parameter Θ and the adjacent states (X t , X t-1 ) jointly follow the
+posterior density
+                                             p(θ, xt-1 |y 1:t-1 )f (xt |xt-1 , θ)g(y t |xt , θ)
+                 p(θ, xt , xt-1 |y 1:t ) =                                                      .   (10)
+                                                              p(y t |y 1:t-1 )
+The above formula outlines basic steps needed by a sequential estimation algorithm to solve
+the filtering problem (5) and the parameter estimation problem (6):
+
+1. At time t−1, the posterior random variables (Θ, X t-1 |Y 1:t-1 = y 1:t-1 ) has the density
+   p(θ, xt-1 |y 1:t-1 ).
+
+2. At time t, using the state transition density f (xt |xt-1 , θ) and the likelihood function
+   g(y t |xt , θ), we can compute the joint posterior density p(θ, xt , xt-1 |y 1:t ), up to the
+   unknown conditional evidence p(y t |y 1:t-1 ).
+
+3. We obtain the density of the new posterior random variables (Θ, X t |Y 1:t = y 1:t ) by
+   solving a marginalization problem
+                                             Z
+                           p(θ, xt |y 1:t ) = p(θ, xt , xt-1 |y 1:t )dxt-1 .          (11)
+
+
+    In these steps, the marginalization in (11) plays a key role in sequentially updating the
+joint posterior random variables (Θ, X t |Y 1:t = y 1:t ). For example, the bootstrap filter
+(Gordon et al., 1993) solves the marginalization using a weighted update of conditional
+                                                           (i)   (i)
+samples—it first draws conditional random variables X t |X t-1 that follow the state transi-
+                      (i)
+tion density f (xt |X t-1 ) conditioned on each of the previous particles, and then updates the
+
+                                                        7
+                                                  Zhao and Cui
+
+
+
+                                                            (i)
+weights using the likelihood function g(y t |X t ). The path estimation (7) and the smooth-
+ing (8) can be solved by additional backward propagation steps given the solutions to the
+filtering and parameter estimation problems. In the rest of this section, we will introduce
+the TT decomposition that solves the marginalization problem (11) by function approxima-
+tion, and then present a basic TT-based algorithm to outline the procedure for solving the
+filtering and parameter estimation problems. Algorithms for solving the smoothing problem
+will be discussed in later sections.
+
+2.2 TT decomposition
+The central computational tool used in this work is the functional TT decomposition (Bigoni
+et al., 2016; Gorodetsky et al., 2019). Consider we have a general multivariate function
+h : X → R where X ∈ Rm is a Cartesian product. Then, one can approximately decompose
+h(x) in the following form
+                      r0 X
+                      X  r1                 rm
+                                            X      (α ,α1 )               (α       ,αk )
+     h(x) ≈ ĥ(x) =                 ···           H1 0        (x1 ) · · · Hk k-1           (xk ) · · · H(α
+                                                                                                        m
+                                                                                                           m-1 ,αm )
+                                                                                                                     (xm ),
+                      α0 =1 α1 =1         αm =1
+
+where r0 = rm = 1 and the summation ranges r0 , r1 , . . . , rm are called TT ranks. Each
+                                      (α ,α )
+scalar-valued univariate function Hk k-1 k (xk ) is represented as a linear combination of a
+                            (1)               (` )
+set of `k basis functions {φk (xk ), . . . , φk k (xk )}, which yields
+                                                      `k
+                                                      X
+                            (α      ,αk )                    (j)
+                          Hk k-1            (xk ) =         φk (xk )Ak [αk-1 , j, αk ],
+                                                      j=1
+
+where Ak ∈ Rrk-1 ×`k ×rk is an order-3 coefficient tensor. Examples of the basis functions
+include piecewise polynomials, orthogonal functions, radial basis functions, etc. Grouping
+                                         (α ,α )
+all scalar-valued univariate functions Hk k-1 k (xk ) for each coordinate xk yields a matrix-
+valued function Hk (xk ) : Xk → Rrk-1 ×rk , which is referred to as the k-th tensor core. This
+way, the decomposed function can also be expressed as a sequence of multiplications of
+matrix-valued univariate functions, which is given by
+
+                             ĥ(x) = H1 (x1 ) · · · Hk (xk ) · · · Hm (xm ).
+
+    The TT decomposition can be efficiently computed via alternating linear schemes to-
+gether with cross interpolation (Bigoni et al., 2016; Gorodetsky et al., 2019; Oseledets and
+Tyrtyshnikov, 2010). We employ the functional extension of the alternating minimal en-
+ergy method with a residual-based rank adaptation of Dolgov and Savostyanov (2014). It
+requires only O(m`r2 ) evaluations of the function f and O(m`r3 ) floating point operations,
+where ` = maxk `k and r = maxk rk . In general, the maximal rank r depends on the dimen-
+sion m and can be large when the function h concentrates in some part of its domain. Some
+theoretical results exist that provide rank bounds. For example, the work of Rohrbach
+et al. (2022) establishes specific bounds for certain multivariate Gaussian densities that
+depend poly-logarithmically on m, while the work of Griebel and Harbrecht (2023) proves
+dimension-independent bounds for general functions in weighted spaces with dominating
+mixed smoothness.
+
+                                                            8
+                             Tensor trains for sequential learning
+
+
+
+
+   The integral of the factorized function ĥ can be simplified to the integral of certain
+univariate tensor cores. For example, the integral over xk can be calculated as
+               Z                                Z
+                  ĥ(x1 , x2 , . . . , xm )dxk = H1 (x1 ) · · · Hk (xk ) · · · Hm (xm )dxk
+
+                                                 =       H1 (x1 ) · · · Hk · · · Hm (xm ),
+                                 R
+where the overlined matrix Hk = Hk (xk )dxk ∈ Rrk-1 ×rk is obtained by integrating the k-th
+tensor core elementwisely. This way, the cost of the integration problem scales linearly in
+the number of variables and quadratically in tensor ranks. This opens the door to solving
+the marginalization step in sequential learning problems.
+
+2.3 Basic algorithm
+We integrate the TT decomposition and the recursive formula in Section 2.1 to design
+a basic TT-based algorithm for solving the sequential learning problems. Although this
+basic algorithm does not require a particular variable ordering, we order the variables as
+(xt , θ, xt-1 ) to be compatible with algorithms that will be introduced in Section 3.2.
+     At time t−1, we suppose the density of the posterior variables (Θ, X t-1 |Y 1:t-1 = y 1:t-1 )
+is approximated by a TT decomposition, that is,
+
+                                   p(θ, xt-1 |y 1:t-1 ) ∝
+                                                        ∼ π̂(θ, xt-1 |y 1:t-1 ).
+Here h1 (x) ∝
+            ∼ h2 (x) denotes that h1 (x) is approximately proportional to h2 (x), that is,
+they are close to each other after normalization:
+                                             h1 (x)      h2 (x)
+                                         R            ≈R          .
+                                             h1 (x)dx    h2 (x)dx
+Then, for the new observed data y t , we can recursively approximate the new density of the
+joint posterior random variables (Θ, X t |Y 1:t = y 1:t ), the filtering density of (X t |Y 1:t =
+y 1:t ) and the posterior parameter density (Θ|Y 1:t = y 1:t ) as follows.
+Algorithm 1: TT-based sequential estimation.
+(a) Non-separable approximation. Following (10), the density of the joint posterior
+    random variables (X t , Θ, X t-1 |Y 1:t = y 1:t ) yields a non-separable, unnormalized ap-
+    proximation qt in the form of
+
+                       qt (xt , θ, xt-1 ) := π̂(xt-1 , θ|y 1:t-1 )f (xt |xt-1 , θ)g(y t |xt , θ),                 (12)
+
+    which can be evaluated pointwisely.
+(b) Separable approximation. We re-approximate the non-separable unnormalized den-
+    sity qt by a TT decomposition π̂, that is,
+
+         qt (xt , θ, xt-1 ) ≈ π̂(xt , θ, xt-1 |y 1:t )
+                           = F1 (xt,1 ) · · · Fm (xt,m )G1 (θ1 ) · · · Gd (θd )H1 (xt-1,1 ) · · · Hm (xt-1,m ),
+
+    where F, G and H denote tensor cores for the state at time t, the parameters, and the
+    state at time t−1, respectively.
+
+                                                          9
+                                                Zhao and Cui
+
+
+
+
+(c) Integration. By integrating the TT-approximation π̂, we are able to approximate the
+    density of the posterior random variables (Θ, X t |Y 1:t = y 1:t ) by
+                                     Z
+               π̂(xt , θ|y 1:t ) =       π̂(xt , θ, xt-1 |y 1:t )dxt-1
+
+                               =         F1 (xt,1 ) · · · Fm (xt,m )G1 (θ1 ) · · · Gd (θd )(H1 · · · Hm ),
+
+   and the normalizing constant
+                 Z
+             ct = π̂(xt , θ, xt-1 |y 1:t )dxt dθdxt-1 = F1 · · · Fm G1 · · · Gd H1 · · · Hm .
+
+   The densities of the posterior parameters (Θ|Y 1:t = y 1:t ) and the filtering state (X t |Y 1:t =
+   y 1:t ) can be approximated in a similar way.
+In the next step t + 1, we can apply the same procedure using the newly computed approx-
+imation π̂(xt , θ|y 1:t ).
+
+    The above basic TT-based algorithm reveals some key principles of the algorithms intro-
+duced in this paper. Given the existing approximation π̂(xt-1 , θ|y 1:t-1 ), the joint posterior
+random variables (X t , Θ, X t−1 |Y 1:t = y 1:t ) yield a non-separable, unnormalized approx-
+imate density qt in step (a) of Alg. 1. Since qt cannot be directly marginalized, we re-
+approximate qt using a new TT in step (b) of Alg. 1, which enables further marginalizations
+in step (c) of Alg. 1.
+    In Section 3, we design new algorithms to remove estimation biases due to approximation
+errors. In Alg. 1, the rank truncation used by TT may not preserve non-negativity of
+density functions. An analogue is that the truncated singular value decomposition of a
+non-negative matrix may contain negative entries. Non-negativity is essential for designing
+transport maps for debiasing. We will overcome this barrier by using an alternative form
+of the TT decomposition in Section 3. Then in Section 4, we analyze the accumulation of
+approximation errors over time. Since the complexity and the approximation power of TT-
+based algorithms crucially rely on the tensor ranks, we develop preconditioning methods in
+Section 5 to improve the efficiency of our proposed algorithms.
+
+3. Squared-TT algorithms, debiasing and smoothing
+We first review the squared-TT method for building KR rearrangements, which is originally
+introduced in Cui and Dolgov (2022). We then integrate the resulting transport maps into
+the recursive procedure defined in Section 2.3 to sequentially solve the filtering problem
+(5) and the parameter estimation problem (6) with sample-based debiasing. Furthermore,
+we also design an algorithm to solve the path estimation problem (7) and the smoothing
+problem (8) with additional backward propagation steps.
+
+3.1 Squared TT and KR rearrangement
+Consider the normalized target probability density p(x) = z1 π(x) with x ∈ Rm , in which
+z is an unknown constant, and we can only evaluate the unnormalized density π(x). To
+
+                                                         10
+                             Tensor trains for sequential learning
+
+
+
+
+preserve non-negativity in function approximation, one can decompose the square root of
+π(x), that is,             p
+                             π(x) ≈ φ(x) = H1 (x1 ) · · · Hm (xm ).
+Then, the approximate density function φ(x)2 is non-negative for all
+                                                                 Q x by construction.
+Given some reference tensor-product probability density λ(x) := m   i=1 λi (xi ) such that
+supx π(x)/λ(x) < ∞ and a sufficiently small constant τ > 0, we can further construct a
+defensive version of the approximate density function
+                                                            Z
+                         1
+                 p̂(x) = π̂(x), π̂(x) = φ(x)2 + τ λ(x), ẑ = π̂(x)dx.                 (13)
+                         ẑ
+
+The approximate density p̂ with the defensive term λ(x) satisfies
+
+                             p(x)           ẑp(x)       ẑ     π(x)
+                     sup           = sup     2
+                                                      <     sup      < ∞.
+                         x   p̂(x)    x φ(x) + τ λ(x)   τ z x λ(x)
+
+We introduce the defensive term τ λ(x) to ensure that the target density p(x) is absolutely
+continuous with respect to the approximate density p̂(x). This way, when the approxi-
+mation p̂(x) is used as the proposal density in importance sampling, for example, in the
+case of correcting the bias of our recursive posterior approximation scheme, the resulting
+estimators can fulfil the requirement of the central limit theorem. Under mild assumptions,
+                                                 √
+the following lemma establishes the L2 error of π̂ and the Hellinger distance between the
+normalized density p and its approximation p̂.
+                                                               √
+Lemma 1 Suppose the TT approximation φ satisfies kφ − πkL2 ≤  and the constant τ
+                  √ 2                            √                            √    √
+satisfies τ ≤ kφ − πkL2 . Then, the L2 error of π̂ defined in (13) satisfies k π̂ − πkL2 ≤
+√
+  2. The Hellinger distance between p and its normalized approximation p̂ defined in (13)
+satisfies                                 √
+                                            2 √    √           2
+                             DH (p̂, p) ≤ √ k π̂ − πkL2 ≤ √ .
+                                           z                    z
+
+Proof The bounds on the L2 error and the Hellinger distance are shown in Proposition 4
+and Theorem 1 of Cui and Dolgov (2022), respectively.
+
+
+    As outlined in Section 2.3, marginalization of the approximation is a key operation in
+deriving the recursive algorithm. For the squared TT approximation defined in (13), the
+following (Cui and Dolgov, 2022, Proposition 2) gives its marginal density.
+
+Proposition 2 We consider the normalized approximation p̂ defined in (13). For the TT
+decomposition φ(x) = H1 (x1 ) · · · Hm (xm ) and a given index 1 ≤ k < m, we define the
+left accumulated tensor core as H≤k (x≤k ) = H1 (x1 ) · · · Hk (xk ) ∈ R1×rk and the right ac-
+cumulated tensor core as H>k (x>k ) = Hk+1 (xk+1 ) · · · Hm (xm ) ∈ Rrk ×1 . Then the marginal
+density of p̂ takes the form
+                     Z
+                                     1 X
+                                        rk  X
+                                             rk                                 
+                                                 (α )       (α ,γ ) 2
+        p̂(x≤k ) =       p̂(x)dx>k =            H≤kk (x≤k )L>kk k     + τ λ(x≤k ) ,      (14)
+                                     ẑ
+                                         γk =1   αk =1
+
+
+                                                 11
+                                          Zhao and Cui
+
+
+
+                  Q
+where λ(x≤k ) = ki=1 λi (xi ) and L>k ∈ Rrk ×rk is the (lower-triangular) Cholesky decompo-
+sition of the accumulated mass matrix
+                   Z
+          (α ,β )      (α )       (β )
+        M>kk k = H>kk (x>k )H>kk (x>k )dx>k , αk = 1, . . . , rk , βk = 1, . . . , rk .
+
+     As shown in Cui and Dolgov (2022), the Cholesky decomposition in Proposition 2 can
+be recursively computed from k = m − 1 to k = 1. The normalizing constant ẑ can also be
+computed in a similar way as the last iteration of the recursion. Computing all the marginal
+densities p̂(x1 ), . . . , p̂(x≤m-1 ) requires O(m`r3 ) floating point operations (flops).
+     The normalized approximate density p̂ defines a new random variable X             b . Then us-
+ing the marginal densities constructed in Proposition 2, the densities of random variables
+Xb 1, X
+      b 2 |X
+           b 1, . . . , X    b <k , . . . , X
+                        b k |X                   b <m are given by p̂(x1 ) and
+                                            b m |X
+                                p̂(x≤k )   φ(x≤k )2 + τ λ(x≤k )
+               p̂(xk |x<k ) =            =                      ,    k = 2, 3, . . . , m,
+                                p̂(x<k )   φ(x<k )2 + τ λ(x<k )
+respectively. The corresponding distribution functions
+                         Z x1                                  Z xk
+              F1 (x1 ) =      p̂(x01 )dx01 and Fk (xk |x<k ) =      p̂(x0k |x<k )dx0k
+                          −∞                                         −∞
+
+define an order-preserving map F : Rm 7→ [0, 1]m in the form of
+                                                                                >
+                    F(x) = F1 (x1 ), . . . , Fk (xk |x<k ), . . . , Fm (xm |x<m ) ,
+which is referred to as the KR rearrangement (Rosenblatt, 1952; Knothe et al., 1957). The
+map F transforms a random variable X      b ∼ p̂(x) into a uniform random variable Ξ ∼
+                                b
+uniform(ξ), that is, Ξ = F(X ). Since the k-th component of F depends on only the
+previous k − 1 coordinates, both F and its inverse F −1 have triangular structures, and thus
+can be evaluated dimension-by-dimension.
+    The construction of the marginal densities in (14), and hence the conditional densities
+{p̂(xk |x<k )}m                   3
+              k=1 , requires O(m`r ) flops. These conditional densities can be constructed
+before evaluating the transformations F and F −1 . Evaluating the KR rearrangement F
+consists of the dimension-by-dimension evaluation of the conditional densities p̂(xk |x<k )
+and the computation of the corresponding distribution functions {Fk }m  k=1 . For each sam-
+ple, the former is essentially a sequence of vector-matrix products with a total cost of
+O(m`r2 ) flops, while the latter can be computed algebraically exactly with a total cost
+of O(m`(log ` + r) + m`) flops, where the O(m`(log ` + r)) term is for applying pseudo-
+spectral methods to construct the distribution function and the O(m`) term is for eval-
+uating the resulting distribution function. This way, evaluating F for N samples costs
+O(m`r3 + N m`r2 + N m`(log ` + r) + N m`). For evaluating the inverse transformation
+F −1 , we need to numerically solve a sequence of root finding problems for inverting each
+distribution function Fk . Since Fk is strictly increasing and bounded by construction,
+applying either the regula falsi method or Newton’s method for a fixed number of iter-
+ations (denoted by c) can accurately invert Fk up to machine precision, where c is of-
+ten less than 10. This way, evaluating the inverse transform F −1 for N samples costs
+O(m`r3 + N m`r2 + N m`(log ` + r) + N m`c) flops. Therefore, for cases where the sample
+size N is large and the TT rank r is sufficiently high, the evaluations of F and F −1 cost
+O(N m`r2 ) flops.
+
+                                                  12
+                            Tensor trains for sequential learning
+
+
+
+
+Remark 3 The marginal densities p̂(x≥k ) where k = 2, . . . , m, can be computed in a similar
+way from the first coordinate to the last coordinate. This way, the resulting KR rearrange-
+ment is upper-triangular, that is,
+                                                                                    >
+                     F u (x) = F1 (x1 |x>1 ), . . . , Fk (xk |x>k ), . . . , Fm (xm ) ,
+
+as the variable dependency follows a reverse order.
+
+3.2 Non-negativity-preserving algorithm and conditional maps
+Following the steps of the basic algorithm (Alg. 1), we first define a new sequential learning
+algorithm using the non-negativity-preserving approximation presented in (13), and then
+construct the associated conditional KR rearrangements. The conditional KR rearrange-
+ments will be used to sequentially generate weighted samples to correct for the approxima-
+tion bias.
+
+Algorithm 2: Sequential estimation using squared-TT approximations.
+
+(a) Non-separable approximation. At time t−1, suppose the posterior random variables
+    (Θ, X t-1 |Y 1:t-1 ) has a TT-based (unnormalized) approximate density π̂(θ, xt-1 |y 1:t-1 ).
+    The density of the new joint posterior random variables (X t , Θ, X t-1 |Y 1:t = y 1:t ) yields
+    a non-separable, unnormalized approximation
+
+                       qt (xt , θ, xt-1 ) := π̂(xt-1 , θ|y 1:t-1 )f (xt |xt-1 , θ)g(y t |xt , θ).                 (15)
+
+
+(b) Separable approximation. We re-approximate the square root of qt by a TT decom-
+    position φt , that is,
+         p
+          qt (xt , θ, xt-1 ) ≈ φt (xt , θ, xt-1 )
+                             = G1 (xt,1 )· · ·Gm (xt,m )F1 (θ1 ) · · · Fd (θd )H1 (xt-1,1 ) · · · Hm (xt-1,m ).
+                                                                  √
+    and choose a constant τt such that τt ≤ kφt −                     qt k2L2 . Following the construction in
+    (13), this gives a non-negative approximation
+
+                      π̂(xt , θ, xt-1 |y 1:t ) = φt (xt , θ, xt-1 )2 + τt λ(xt )λ(θ)λ(xt-1 ).                     (16)
+
+
+(c) Integration. Applying Proposition     R   2 from the right variable xt-1,m to the left variable
+    xt-1,1 , we obtain π̂(xt , θ|y 1:t ) = π̂(xt , θ, xt-1 |y 1:t ) dxt-1 .
+
+In the next step t + 1, we can apply the same procedure using the newly computed marginal
+approximation π̂(xt , θ|y 1:t ).
+
+    Using Proposition 2, we can integrate the approximate density π̂(xt , θ, xt-1 |y 1:t ) from the
+right variable xt-1,m to the left variable xt,1 to define the lower-triangular KR rearrangement
+
+                                                        13
+                                                 Zhao and Cui
+
+
+
+
+Ftl : X × Θ × X → [0, 1]2m+d in the form of
+                                                                                                         
+                                                          Ft,t,1 (xt,1 )
+                                                                        ...                              
+                                                                                                         
+                                  l                    
+                                                         Ft,t,m (x.t,m |xt,<m )
+                                                                                                          
+                                                                                                          
+                                  Ft,t (xt )                              ..                             
+             l                    l                    
+                                                         
+                                                                                                          
+                                                                                                          ,
+            Ft (xt , θ, xt-1 ) = Ft,θ (θ |xt )  = Ft,θ,k (θk               |xt , θ <k )                           (17)
+                                   l                                  ...                                
+                                  Ft,t-1 (xt-1|xt , θ)                                                   
+                                                         Ft,t-1,1 (xt-1,1 |xt , θ)                       
+                                                                                                         
+                                                                    ...                                  
+                                                                   Ft,t-1,m (xt-1,m |xt , θ, xt-1,<m )
+in which each scalar-valued function Ft,·,· is a (conditional) distribution function. For ex-
+ample, we have
+                                                Z xt-1,k
+                                                         π̂(xt , θ, xt-1,<k , x0t-1,k |y 1:t ) 0
+          Ft,t-1,k (xt-1,k |xt , θ, xt-1,<k ) =                                               dxt-1,k . (18)
+                                                 −∞         π̂(xt , θ, xt-1,<k |y 1:t )
+The inverse map (Ftl )−1 transforms uniform random variables to the approximate posterior
+random variables (Xb t , Θ,
+                          b Xb t-1 |Y 1:t = y 1:t ) ∼ p̂, where p̂(xt , θ, xt-1 |y 1:t ) ∝ π̂(xt , θ, xt-1 |y 1:t ).
+   Note that the construction of conditional distribution function, for example, (18), does
+not require the normalizing constant of the approximate density π̂, because the marginal
+densities share the same normalizing constant. Thus, by only integrating the state xt-1
+dimension-by-dimension from the right variable xt-1,m to the left variable xt-1,1 , we obtain
+the lower conditional KR rearrangement
+                                                                                   
+                                               Ft,t-1,1 (xt-1,1 |xt , θ)
+                        l
+                    Ft,t-1  (xt-1 |xt , θ) =              ...                      .                      (19)
+                                               Ft,t-1,m (xt-1,m |xt , θ, xt-1,<m )
+
+The following proposition shows that the lower conditional map Ft,t-1           l    defines a back-
+ward sampler, which generates samples backward in time from the conditional density
+p̂(xt-1 |xt , θ, y 1:t ). This is particularly useful for defining smoothing algorithms.
+
+Proposition 4 Conditioned on X    b t = xt and Θb = θ, inverting the lower conditional KR
+                l
+rearrangement Ft,t-1 defined in (19), we transform a uniform random variable to the con-
+ditional random variable
+                       b t-1 |X
+                      (X      b t = xt , Θ
+                                         b = θ, Y 1:t = y 1:t ) ∼ p̂(xt-1 |xt , θ, y 1:t ).
+
+Proof Conditioned on X   b t = xt and Θb = θ, the Jacobian of F l (·|xt , θ), denoted by
+                                                               t,t-1
+J∈R m×m , is a lower triangular matrix with diagonal entries
+               ∂Ft,t-1,k (xt-1,k |xt , θ, xt-1,<k )
+       Jkk =                                        = p̂(xt-1,k |xt , θ, xt-1,<k , y 1:t ),      k = 1, . . . , m,
+                            ∂xt-1,k
+                                                          l
+by (18). Thus, the pullback of the uniform density under Ft,t-1 (·|xt , θ) is
+                                             m
+                                             Y
+          l
+        (Ft,t-1 )] uniform(xt ) = |J| =            p̂(xt-1,k |xt , θ, xt-1,<k , y 1:t ) = p̂(xt-1 |xt , θ, y 1:t ).
+                                             k=1
+
+
+                                                           14
+                             Tensor trains for sequential learning
+
+
+
+
+This concludes the result.
+
+
+    Similarly, one can integrate the state xt in the approximation π̂(xt , θ, xt-1 |y 1:t ) from the
+left variable xt,1 to the right variable xt,m to define an upper conditional KR rearrangement
+                                                                              
+                                                Ft,t,1 (xt,1 |xt,>1 , θ, xt-1 )
+                            u
+                         Ft,t (xt |θ, xt-1 ) =          ...                   ,               (20)
+                                                Ft,t,m (xt,m |θ, xt-1 )
+                                u , we are able to transform a uniform random variable to
+Inverting the conditional map Ft,t
+the conditional random variable
+                      b t |Θ
+                     (X    b = θ, X
+                                  b t-1 = xt-1 , Y 1:t = y 1:t ) ∼ p̂(xt |θ, xt-1 , y 1:t ).
+
+                                       u defines a forward sampler that generates samples
+This way, the upper conditional map Ft,t
+forward in time. This will be used in particle filtering.
+
+3.3 Particle filter
+The upper conditional map Ft,t      u in (20) naturally define a particle filter accompanying
+
+the recursive approximations in Alg. 2. Suppose weighted samples {Θ          b (i) , X
+                                                                                     b (i) , W (i) }N
+                                                                                       0:t-1  t-1 i=1
+follow the joint posterior density p(θ, x0:t-1 |y 1:t-1 ) at time t−1. Conditioned on each pair of
+{Θb (i) , X
+          b (i) }N , we can invert F u to obtain a new sample
+            t-1 i=1                  t,t
+
+                  b (i) = (F u )−1 (Ξ(i) |Θ
+                  X                       b (i) , X
+                                                  b (i) ),        Ξ
+                                                                    (i)
+                                                                          ∼ uniform(ξ; [0, 1]m ).          (21)
+                    t       t,t                     t-1
+
+
+The sample X b (i) follows the conditional density p̂(xt |θ, xt-1 , y 1:t ). Expanding the sample
+                t
+           b (i) by X
+state path X           b (i) , the updated weighted samples {Θ            b (i) , X
+                                                                                  b (i) , W (i) }N jointly follow
+             0:t-1       t                                                          0:t    t-1 i=1
+the normalized density
+                                 p̂(xt |θ, xt-1 , y 1:t ) p(θ, x0:t-1 |y 1:t-1 ).                            (22)
+   After applying the sampling procedure in (21), we can update the weights of the up-
+dated samples {Θ      b (i) , X
+                              b (i) , W (i) }N according to the ratio of the new joint posterior density
+                                0:t    t-1 i=1
+p(θ, x0:t |y 1:t ) in (9) to the sampling density in (22), which take the form
+
+                                                         p(θ, x0:t |y 1:t )
+                           rf (θ, x0:t ) =                                                  .
+                                             p̂(xt |θ, xt-1 , y 1:t )p(θ, x0:t-1 |y 1:t-1 )
+
+Following the recursive form of p(θ, x0:t |y 1:t ) in (9), we have
+
+                                                               f (xt |xt-1 , θ)g(y t |xt , θ)
+                        rf (θ, x0:t ) ∝ ωf (θ, xt-1:t ) :=                                    .            (23)
+                                                                   p̂(xt |θ, xt-1 , y 1:t )
+                                       (i) (i)    b (i) , X
+                                                          b (i) ) followed by the renormal-
+Thus, by updating the weights using Wt = Wt-1 ωf (Θ         t-1:t
+ization
+                                      (i)
+                           (i)      W
+                         Wt = P t (i) for i = 1, . . . , N,
+                                   N
+                                   i=1 Wt
+
+
+                                                          15
+                                           Zhao and Cui
+
+
+
+
+we have the reweighed samples {Θ     b (i) , X
+                                             b (i) , W (i) }N that follow the joint posterior density
+                                               0:t    t     i=1
+p(θ, x0:t |y 1:t ). Alg. 3 provides details of the particle filter accompanying the sequential
+learning procedure in Alg. 2.
+
+Algorithm 3: One iteration of the particle filter accompanying Alg. 2.
+
+                                                   b (i) , X
+(a) At time t−1, suppose we have weighted samples {Θ       b (i) , W (i) }N following the
+                                                             0:t-1  t-1 i=1
+    joint density p(θ, x0:t-1 |y 1:t-1 ).
+
+(b) At time t, given the approximate density π̂(xt , θ, xt-1 |y 1:t ) computed in Alg. 2, apply
+    Proposition 2 to integrate π̂ from the left variable xt,1 to the right variable xt,m to define
+    a conditional KR rearrangement Ft,t  u in the form of (20).
+
+
+
+(c) For each of {Θ   b (i) , X
+                             b (i) }N , invert F u as in (21) to generate a new sample X    b (i) , and
+                               0:t-1 i=1        t,t                                           t
+                                                    (i)     (i)   b (i) , X
+                                                                          b (i) ), where the function
+    then update the weights according to Wt = Wt-1 ωf (Θ                    t-1:t
+    ωf (·, ·) is defined in (23).
+                                   (i)       (i)   PN    (i)
+(d) Renormalize the weights Wt           ← Wt /     i=1 Wt .
+
+
+
+    In Alg. 3, constructing the conditional densities in step (b), which defines the con-
+ditional KR rearrangement Ft,t u , requires O(m`r 3 ) flops. This step does not involve any
+
+sampling, and thus its cost is independent of the sample size N . Then, in step (c), gener-
+ating N samples from the resulting conditional KR rearrangement requires an additional
+O(N m`(r2 + log ` + r + c)) flops, where c is the maximum number of iterations used in the
+root finding algorithms, as discussed in Sec. 3.1.
+    In summary, Alg. 3 can be viewed as a standard particle filter with TT approximations
+to be the proposal density. Commonly used resampling techniques in SMC methods can
+also be used in Alg. 3 as a rejuvenation to re-balance the weights.
+
+3.4 Path estimation and smoothing
+Similar to other particle filter algorithms, weights computed by Alg. 3 may degenerate
+over time. This has an intuitive explanation in the joint state and parameter estimation
+context. The locations of the parameter samples are fixed at the initial time, so that the
+weights (and hence the effective sample size) necessarily degenerate because the posterior
+parameter density may concentrate with more data observed over time. We overcome this
+issue by drawing random samples from the last approximation p̂(xT , θ, xT -1 |y 1:T )—which is
+conditioned on all available data by construction—and removing the approximation bias by
+designing a path estimation algorithm accompanying Alg. 2 to replace the particle filtering.
+The path estimation algorithm also naturally leads to particle smoothing.
+    Our path estimation algorithm uses the same sequence of non-negativity-preserving ap-
+proximations constructed in Alg. 2. It starts at the final time T and recursively samples
+                                                      l
+backward in time using the lower conditional map Ft,t-1    defined in (19). At time T , ini-
+                (i)
+               b ,X     (i)
+                     b ,Θ    (i)
+                            b }  N
+tial samples {X   T -1   T          are generated from p̂(xT , θ, xT -1 |y 1:T ) using a full KR
+                                   i=1
+
+
+                                                   16
+                            Tensor trains for sequential learning
+
+
+
+
+rearrangement FTl defined in (17). Then, at each of steps t = T −1, . . . , 1, for each of
+{Θb (i) , X
+          b (i) }N , we invert the lower conditional map F l to obtain
+            t:T i=1                                       t,t-1
+
+               b (i) = (F l )−1 (Ξ(i) |Θ
+               X                       b (i) , X
+                                               b (i) ),             (i)
+                                                               Ξt-1 ∼ uniform(ξ; [0, 1]m ).                              (24)
+                 t-1     t,t-1    t-1            t
+
+Following from Proposition 4, after completing backward recursion, each pair of the param-
+eter sample and state path sample in {Θb (i) , X
+                                               b (i) }N follows the joint density
+                                                 0:T i=1
+
+                                                                      −1
+                                                                     TY
+                   p̂(θ, x0:T |y 1:T ) = p̂(xT , θ, xT -1 |y 1:T )         p̂(xt-1 |θ, xt , y 1:t ).                     (25)
+                                                                     t=1
+
+Conditioned on θ and xt , the state xt-1 is independent of the data y t:T observed at future
+times, and hence we have p(xt-1 |θ, xt , y 1:t ) = p(xt-1 |θ, xt , y 1:T ). Using this identity, the
+original joint posterior density p(θ, x0:T |y 1:T ) defined in (4) has the same factorized form
+as the density in (25). Therefore, the above backward sampling procedure can have a
+reasonable efficiency if the approximations built in Alg. 2 are sufficiently accurate.
+
+         Θ̂   X̂T X̂T -1 X̂T -2 X̂T -3    ...      X̂2   X̂1   X̂0
+
+ Ξθ                                       ...                                 Ξθ     = FTl ,θ          (Θ̂|X̂T )
+
+
+ ΞT                                       ...                                 ΞT     = FTl ,T          (X̂T )
+
+
+ ΞT -1                                    ...                                 ΞT -1 = FTl ,T -1 (X̂T -1 |X̂T , Θ̂)
+
+
+ ΞT -2                                    ...                                 ΞT -2 = FTl -1,T -2 (X̂T -2 |X̂T -1 , Θ̂)
+
+
+ ΞT -3                                    ...                                 ΞT -3 = FTl -2,T -3 (X̂T -3 |X̂T -2 , Θ̂)
+ .       .     .      .      .      .     ..        .     .     .
+ .       .     .      .      .      .          .    .     .     .
+ .       .     .      .      .      .               .     .     .
+
+                                                                                        l
+ Ξ1                                       ...                                 Ξ1     = F2,1            (X̂1 |X̂2 , Θ̂)
+
+                                                                                        l
+ Ξ0                                       ...                                 Ξ0     = F1,0            (X̂0 |X̂1 , Θ̂)
+
+
+Figure 1: Conditional dependency structures of the joint map F used in particle smoothing.
+The blue entries indicate the conditional dependency on the states, and the orange entries
+indicate the conditional dependency on the parameters. The 2 × 2 sub-matrix in the top
+left corner represents the structure of the first two blocks of the map FTl .
+
+    In fact, the backward recursion can be considered as the inverse of a joint KR rear-
+rangement F : Θ × X T +1 → [0, 1]d+(m+1)×T that transforms approximate posterior random
+            b X
+variables (Θ,  b 0:T |Y 1:T = y 1:T ) that follow the density (25), to the reference uniform ran-
+dom variables. As illustrated in Figure 1, the joint KR rearrangement F has a block sparse
+structure. The non-zero blocks in the first column reflect the conditional dependency of each
+
+                                                         17
+                                                     Zhao and Cui
+
+
+
+
+of the state variables on the parameter, while the non-zero blocks on the first sub-diagonal
+reflect the Markov dependency of state variables. From this perspective, our TT-based
+construction of the joint KR rearrangement F can be viewed as a constructive proof and
+a numerical implementation of the decomposition theorem (Spantini et al., 2018, Theorem
+12) for the joint parameter and state estimation in general state-space models.
+    For a pair of sample parameter and sample state path (Θ      b (i) = θ, X
+                                                                            b (i) = x0:T ) generated
+                                                                              0:T
+by the backward recursion, it yields a weighted representation of the posterior sample with
+the importance weight
+                                                p(θ, x0:T |y 1:T )
+                                rb (θ, x0:T ) =                     .
+                                                p̂(θ, x0:T |y 1:T )
+Following the recursive form of p(θ, x0:t |y 1:t ), the ratio rb (θ, x0:T ) has an unnormalized
+computable form
+
+   rb (θ, x0:T ) ∝ ωb (θ, x0:T )
+                                    TY
+                                      −1
+                                         f (xt |xt-1 , θ)g(y t |xt , θ)  f (xT |xT -1 , θ)g(y T |xT , θ)
+                := p(θ)p(x0 |θ)                                                                           .   (26)
+                                             p̂(xt-1 |θ, xt , y 1:t )         p̂(xT , θ, xT -1 |y 1:T )
+                                      t=1
+
+We summarize the particle smoothing procedure in Alg. 4. The set of weighted samples
+{Θb (i) , X
+          b (i) , W (i) }N is an unbiased representation of the joint posterior random variables
+            0:T          i=1
+(Θ, X 0:T |y 1:T ). It mitigates the particle degeneracy because the samples are drawn condi-
+tioned all observed data y 1:T .
+
+Algorithm 4: Path estimation algorithm accompanying Alg. 2.
+
+                      b ,Θb ,X(i)      (i)         (i)
+                             b }N from p̂(xT , θ, xT -1 |y 1:T ) using F l .
+(a) Generate samples {X T      T -1 i=1                                 T
+
+(b) For t = T − 1, . . . , 1, do the following
+                     b (i) , X
+      • For each of {Θ       b (i) }N , invert the lower conditional map F l
+                               t:T i=1                                    t,t-1 as in (24) to
+                                     (i)
+                                   b .
+        generate a new sample X              t-1
+
+                 b (i) , X
+(c) For each of {Θ       b (i) }N , compute the weight W (i) using (26).
+                           0:T i=1
+                                              P
+(d) Normalize the weights as W (i) ← W (i) / N        (i)
+                                                i=1 W .
+
+
+    In our setting, applying one step of particle filtering and applying one step of particle
+smoothing have the same computational complexity. For particle filtering, integrals used
+for constructing the upper conditional map Ft,t      u in (20) take the opposite direction to the
+
+integrals used for building π̂(xt , θ|y 1:t ) in Alg. 2. This incurs an additional O(m`r3 ) flops.
+In comparison, constructing the lower conditional map Ft,t-1    l   in (19) for particle smoothing
+shares the same integrals as in Alg. 2, and thus does not incur additional computational
+cost.
+    Marginalizing the square TT approximation (16) from either end has an O(`r3 ) compu-
+tational complexity per coordinate. This is much lower than marginalizing variables in the
+middle, which has an O(`r6 ) computational complexity per coordinate. Thus, the variable
+
+                                                          18
+                             Tensor trains for sequential learning
+
+
+
+
+ordering (xt , θ, xt-1 ) is computationally advantageous for both smoothing and filtering. One
+can also consider the variable ordering (θ, xt , xt-1 ) if only the smoothing algorithm is used
+for debiasing, as Alg. 2 and the lower conditional map in Alg. 4 only need to integrate the
+state xt-1 .
+
+4. Error analysis
+At the core of Alg. 1 and 2 is the recursive approximation of the joint densities of the pos-
+terior random variables (X t , Θ, X t-1 |Y 1:t = y 1:t ). We begin this section with an analysis
+of the accumulation of approximation errors in general state-space models. Based on this
+result, we provide an upper bound on the TT-approximation errors of Alg. 1 and show
+the stability of Alg. 2. Although most of the analysis presented centers around the TT
+decomposition, our results on the error accumulation rate are readily generalizable to other
+function approximation schemes applied to state-space models. For instance, one can con-
+sider the deep polynomial method of Cui et al. (2023) and the sum-of-square approximation
+of Zanger et al. (2024). The same error accumulation analysis will apply.
+
+4.1 Error decomposition and propagation
+Starting with the initial unnormalized joint posterior density
+
+                       π(x1 , θ, x0 |y 1 ) = p(θ)p(x0 |θ)f (x1 |x0 , θ)g (y 1 |x1 , θ) ,
+
+we define the unnormalized joint posterior density recursively as
+                                  Z
+         π(xt , θ, xt-1 |y 1:t ) = π(xt-1 , θ, xt-2 |y 1:t-1 )dxt-2 f (xt |xt-1 , θ) g (y t |xt , θ)
+
+                                 =      π(xt-1 , θ|y 1:t-1 )f (xt |xt-1 , θ) g (y t |xt , θ) ,
+
+which follows a similar derivation to that of (10). We use shorthands pt (xt , θ, xt-1 ) :=
+p(xt , θ, xt-1 |y 1:t ) and p̂t (xt , θ, xt-1 ) := p̂(xt , θ, xt-1 |y 1:t ) to respectively denote the joint pos-
+terior density at time t and its TT-based approximation. Similar notation is adopted for rep-
+resenting their unnormalized counterparts. We omit the input                     R variables when no confusion
+arises. The density πt has the normalizing constant zt := π(xt , θ, xt-1 |y 1:t )dxt dθ dxt-1 ,
+which is indeed the evidence p(y 1:t ) introduced in (4).
+    Recall that in each iteration of Alg. 1 and 2, the unnormalized joint posterior density πt
+cannot be directly evaluated since it is the density of marginal random variables. Instead, we
+introduce the non-separable, unnormalized approximation qt in step (a) of both algorithms,
+and then approximate qt using a TT-based approximation π̂t in step (b). As shown in (12)
+and (15), the function qt takes the form
+
+                      qt (xt , θ, xt-1 ) = π̂(xt-1 , θ|y 1:t-1 )f (xt |xt-1 , θ)g(y t |xt , θ),
+
+where π̂(xt-1 , θ|y 1:t-1 ) is the marginalization of the previous TT-based approximation. The
+construction of the function qt enables pointwise function evaluations that are necessary for
+building the new TT decomposition used by π̂t .
+    This reveals that each iteration of Alg. 1 and 2 can be considered as a two-step ap-
+proximation procedure: the unnormalized joint density πt is approximated by the function
+
+                                                         19
+                                                  Zhao and Cui
+
+
+
+
+qt , from which we construct the TT-based approximation π̂t . Considering the triangle
+inequality for some distance metric D(·, ·), the error D(π̂t , πt ) has the decomposition
+                                     D(π̂t , πt ) ≤ D(π̂t , qt ) + D(qt , πt ),                      (27)
+where D(π̂t , qt ) is the approximation error in the current iteration and D(qt , πt ) is the
+propagation error from the previous iteration. In particular, we consider the L1 distance of
+unnormalized densities and the L2 distance of the square roots of unnormalized densities as
+the distance metrics for bounding these errors. The L1 distance is useful for approximations
+that cannot preserve non-negativity (for example, Alg. 1) and is analogous to the total
+variation distance of probability measures. The L2 distance on square-root densities is
+directly related to the Hellinger distance (see Lemma 1) and we use it to analyze Alg. 2.
+We aim to understand how the approximation errors accumulate over time in the recursive
+algorithms. Based on the following assumption, we first analyze the propagation error in
+Propositions 5 and 6.
+
+Assumption 1 For the state transition process and the observation process, we assume
+either of the following bounds holds
+                       (g)
+                     Ct       =      sup g(y t |xt , θ) < ∞,                                         (28)
+                                  xt ∈X ,θ∈Θ
+                                           Z
+                       (f )
+                     Ct       =      sup       f (xt |xt-1 , θ)g(y t |xt , θ)dxt < ∞.                (29)
+                                  xt-1 ∈X ,θ∈Θ
+
+   Generally speaking, any Lipschitz continuous f and g satisfy the above assumptions,
+which are usually the case in many applications. For example, an observation model with
+                                                   (g)
+the commonly used Gaussian noise has a bounded Ct for all t.
+
+Proposition 5 Suppose either bound of Assumption 1 holds. The propagation error kqt −
+πt kL1 at time t is bounded by the previous total error
+                                                  (h)
+                          kqt − πt kL1 ≤ Ct kπ̂t-1 − πt-1 kL1 ,              h ∈ {f, g}.
+
+Proof By the construction of qt , we express the propagation error as
+                       Z
+        kqt − πt kL1 =    π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) r(xt-1 , θ)dxt-1 dθ,
+                        R
+where r(xt-1 , θ) = f (xt |xt-1 , θ)g(y t |xt , θ)dxt . Either condition (28) or (29) leads to
+                               (h)
+supxt-1 ∈X ,θ∈Θ r(xt-1 , θ) ≤ Ct for h ∈ {f, g}, and thus we have
+                                           (h)
+                   kqt − πt kL1 ≤ Ct             π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) L1 .
+Applying Lemma 15 in Appendix A, the L1 distance of the marginal densities is bounded
+by that of the joint densities as
+                     π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) L1 ≤ kπ̂t-1 − πt-1 kL1 ,
+which leads to the result.
+
+
+
+                                                          20
+                            Tensor trains for sequential learning
+
+
+
+                                                                                 √
+Proposition 6 Suppose either bound of Assumption 1 holds. The propagation error k qt −
+√
+  πt kL2 at time t is bounded by the previous total error
+                   √    √        √ (h) √      √
+                  k qt − πt kL2 ≤ Ct k π̂t-1 − πt-1 kL2 ,                    h ∈ {f, g}.
+
+Proof By the construction of qt , we express the squared propagation error as
+                     Z p                        p                    2
+      √     √
+     k qt − πt k2L2 =     π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) r(xt-1 , θ)dxt-1 dθ,
+                        R
+where r(xt-1 , θ) = f (xt |xt-1 , θ)g(y t |xt , θ)dxt . Either condition (28) or (29) leads to
+                               (h)
+supxt-1 ∈X ,θ∈Θ r(xt-1 , θ) ≤ Ct for h ∈ {f, g}, and thus we have
+                               Z p                                              2        1/2
+      √    √                (h)
+                                                             p
+     k qt − πt kL2 ≤       Ct         π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) dxt-1 dθ
+                          √ (h) p                          p
+                         = Ct      π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) L2 .
+
+Applying Lemma 14 in Appendix A, the L2 distance between the marginal densities is
+bounded by the L2 distance between the joint densities as
+             p                        p                           √       √
+               π̂(xt-1 , θ|y 1:t-1 ) − π(xt-1 , θ|y 1:t-1 ) L2 ≤ k π̂t-1 − πt-1 kL2 ,
+
+which leads to the result.
+
+
+    Based on the error propagation bounds, we can then analyze the total approximation
+errors of our sequential estimation algorithms. In the following, we show the total errors of
+Alg. 1 and 2 assuming the approximation error in each iteration is bounded.
+
+Theorem 7 Suppose either bound of Assumption 1 holds and the approximation π̂t in Alg. 1
+satisfies kπ̂t − qt kL1 ≤ t . For t > 0, the total error satisfies
+                                                              t
+                                                              X
+                                (h)                                                        (h)
+            kπ̂t − πt kL1 ≤ Ct kπt-1 − π̂t-1 kL1 + t ≤             C t−k k ,   C = sup Ct ,
+                                                                                      t
+                                                              k=1
+
+for h ∈ {f, g}.
+
+Proof The result follows from the triangle inequality (27) and induction.
+
+
+Theorem 8 Suppose either bound of Assumption 1 holds and the approximation π̂t in
+                  √       √
+Alg. 2 satisfies k π̂t − qt kL2 ≤ t . For t > 0, the Hellinger distance between pt and
+its approximation p̂t is bounded by
+                                                  √        Xt
+                                                   2
+                               DH (p̂t , pt ) ≤ p              C (t−k)/2 k ,
+                                                 p(y 1:t ) k=1
+                   (h)
+where C = supt Ct        with h ∈ {f, g} and p(y 1:t ) is the evidence.
+
+                                                    21
+                                               Zhao and Cui
+
+
+
+
+Proof We recall that there is no approximation used in Alg. 2 at the initial step t = 0, that
+is, 0 = 0, as we only have the prior for X 0 and Θ. Applying the triangle inequality (27)
+and induction, we have
+
+                                                           X                      t
+              √     √        √ (h) √     √
+             k π̂t − πt kL2 ≤ Ct k πt-1 − π̂t-1 kL2 + t ≤   C (t−k)/2 k .
+                                                                                k=1
+
+Applying Lemma 1, the Hellinger distance between p̂t and pt is bounded by the L2 distance
+        √      √
+between π̂t and πt , that is,
+                                            √
+                                              2 √    √
+                           DH (p̂t , pt ) ≤ √ k π̂t − πt kL2 ,
+                                             zt
+where zt = p(y 1:t ) by definition. This concludes the result.
+
+
+    By Lemmas 13 and 15 in Appendix A, either the Hellinger distance or the L1 distance
+between the exact marginal and the approximate marginal is bounded from above by the
+corresponding distance between the joint densities. Thus, approximations of the filtering
+density p(xt |y 1:t ) and the posterior parameter density p(θ|y 1:t ) obtained by Alg. 1 and 2,
+which are marginalizations of the joint approximation p̂(xt , θ, xt-1 |y 1:t ), follow the same
+error bounds derived here.
+
+4.2 Error analysis for TT approximations
+For Alg. 1, we first show in Proposition 9 that the approximation error kπ̂t − qt kL1 can be
+bounded based on certain Sobolev-type smoothness assumptions. Then, we can apply the
+result of Theorem 7 to bound the total error.
+
+Proposition 9 For any time t > 0, we express the product of the state transition density
+and the likelihood function as
+
+                               ht (xt , θ, xt-1 ) = f (xt |xt-1 , θ)g(y t |xt , θ).
+
+We assume that state space X and the parameter space Θ are compact in the sense that
+they admit finite Lebesgue measures and there exist some K ∈ N and s ≥ 1 such that
+ht ∈ W K+1,2s (X × Θ × X ). At time t = 1, we further assume that the (unnormalized)
+prior density π(x0 , θ) := π(x0 |θ)π(θ) belongs to W K+1,2r (X × Θ) for some r ≥ 1 such that
+1    1
+r + s = 1. Then, for some error controlling factor εt ∈ (0, 1) at time t > 0, there exists a
+TT decomposition π̂t (xt , θ, xt-1 ) with ranks
+                    −1/K                          −k/K
+            r1 = dεt       e     and     rk = dεt        e   for    k = 2, 3, . . . , 2m + d − 1,
+
+such that the approximation error in step (b) of Alg. 1 is bounded by
+                                       p
+                    kπ̂t − qt kL1 ≤ CTT Ω(X × Θ × X )(2m + d − 1) εt ,
+
+where Ω(·) denotes the measure of the space and CTT is a constant independent of π̂t , qt ,
+and the dimension.
+
+                                                       22
+                          Tensor trains for sequential learning
+
+
+
+
+Proof Our goal is to establish the Sobolev-type smoothness of the function qt , so that
+results of Griebel and Harbrecht (2023) can be used to derive the TT ranks for some target
+error measured in the L2 norm. The bound on the L1 norm follows from that on the L2
+norm using the Cauchy–Schwartz inequality.
+    For brevity, we define the previous marginal density π̂(xt-1 , θ|y 1:t-1 ) as
+                                             
+                                               π̂(xt-1 , θ|y 1:t-1 ), t>1
+                       ϕ̂t (xt , θ, xt-1 ) =                              ,
+                                               π(x0 , θ),             t=1
+
+which takes a constant value over xt . For t > 1, since the marginal TT approximation
+π̂(xt-1 , θ|y 1:t-1 ) is a linear combination of multivariate polynomial basis functions, the func-
+tion ϕ̂t is an analytical function. Thus, we have ϕ̂t ∈ W K+1,2r (X × Θ × X ) for any K ∈ N,
+r ≥ 1/2, and t > 1.
+    For t > 0, the L2 norm of qt can be expressed as kqt k2L2 = kϕ̂2t h2t kL1 . Applying the
+Hölder inequality, we have
+                                         1/2      1/2
+                         kqt kL2 ≤ kϕ̂2t kLr kh2t kLs = kϕ̂t kL2r kht kL2s ,
+
+for r, s ∈ [0, ∞] with 1r + 1s = 1. This way, we have kqt kL2 < ∞ for all t > 0 by our
+assumptions and the analyticity of ϕ̂t for t > 1. For derivatives of qt , with the multi-index
+notation and the general Leibniz rule (see Constantine and Savits (1996)), we have
+                                     X α                    
+                               α
+                              ∂ qt =           ∂ α−β ϕ̂t ∂ β ht ,
+                                           β
+                                       β≤α
+
+where α, β are multi-indices. Following a similar derivation asP      in the L2 norm case, we
+                   α
+can show that k∂ qt kL2 < ∞ for all |α| ≤ K + 1, where |α| =            αi . Therefore, we have
+qt ∈ W K+1,2 (X × Θ × X ) for all t > 0.
+    Given a target error controlling factor εt ∈ (0, 1), Theorem 4 of Griebel and Harbrecht
+                                                                               −1/K
+(2023) states that there exists a TT decomposition π̂t with ranks r1 = dεt          e and rk =
+   −2k/K                                                             √
+dεt      e for k = 2, 3, . . . , 2m+d−1 such that kπ̂t − qt kL2 ≤ CTT 2m + d − 1 εt . Then, by
+the Cauchy–Schwartz inequality, we have
+                                            p
+                        kπ̂t − qt kL1 ≤ CTT Ω(X × Θ × X ) kπ̂t − qt kL2 ,
+
+and thus the result follows.
+
+
+    Proposition 9 only considers bounded spaces. This can be easily extended to unbounded
+spaces by considering a weight measure and a slightly modified approximation scheme. See
+Cui and Dolgov (2022); Cui et al. (2023) and references therein for details. The result of
+Griebel and Harbrecht (2023) establishes sufficient conditions of the a priori error bound
+of TT decompositions using smoothness. In practice, there are many examples of low-rank
+functions that do not satisfy the smoothness assumption, for example, products of discontin-
+uous univariate functions. To the authors’ knowledge, the analysis of TT ranks for general
+functions is still an active research area and the results of Griebel and Harbrecht (2023)
+may not provide a precise practical guideline for building TT decompositions. Nonetheless,
+
+                                                 23
+                                           Zhao and Cui
+
+
+
+
+Proposition 9 provides some confidence in applying TT decompositions in the sequential
+state and parameter learning problems.
+    It is worth mentioning that the error controlling factor εt in Proposition 9 determines
+the TT ranks and hence the computational complexity for building a TT decomposition.
+Proposition 9 suggests that with a prescribed εt , the error of a TT decomposition may
+increase with the dimensionality of the problem. For a class of high-dimensional problems
+where the Sobolev norm is equipped with suitably decaying weights (Dick et al., 2013;
+Griebel and Harbrecht, 2023; Sloan and Woźniakowski, 1998), one can obtain a dimension-
+free error bound. Although such dimension-free bounds are not discussed here, extending
+Proposition 9 to such weighted Sobolev norms is trivial.
+
+Corollary 10 Suppose either bound of Assumption 1 holds and the smoothness of the den-
+sities f and g fulfil the requirement of Proposition 9. In each step of Alg. 1, suppose further
+the ranks of a TT approximation is chosen according to Proposition 9 so that it satisfies
+                                          p
+                       kπ̂t − qt kL1 ≤ CTT Ω(X × Θ × X )(2m + d − 1) εt
+
+for some error controlling factor εt ∈ (0, 1). Then, for t > 0, the total error satisfies
+
+                                      p                          t
+                                                                 X
+                kπ̂t − πt kL1 ≤ CTT    Ω(X × Θ × X )(2m + d − 1)   C t−k εk ,
+                                                                   k=1
+
+                  (h)
+where C = supt Ct       with h ∈ {f, g}.
+
+Proof The result is a direct consequence of Theorem 7.
+
+
+     In Alg. 2, the previous marginal density π̂(xt-1 , θ|y 1:t-1 ) can be expressed as a sum of
+squares of multivariate polynomial functions (each in the TT form) to ensure non-negativity
+together with a defensive term (cf. Proposition 2). Applying the multivariate Faa di
+Bruno formula (Constantinepand Savits, 1996), one can show that the square root of the
+previous marginal density π̂(xt-1 , θ|y 1:t-1 ) yields a bounded Sobolev norm for a finite
+order of differentiability K. However, the bound on the Sobolev norm may increase with
+K. Although Theorem 4 of Griebel and Harbrecht (2023) may still apply in this case
+for a finite K, it requires further analysis to understand the impact of increasing Sobolev
+norm on the a priori error analysis of the TT decomposition. In our numerical examples
+(Section 6.1), we demonstrate that Alg. 1 and 2 achieve comparable approximation accuracy.
+In the rest, we focus on analyzing the impact of the additional defensive term used in Alg. 2.
+                                       √     √
+We bound the approximation error k π̂t − qt kL2 in Proposition 11—we omit the proof as
+it is a direct consequence of Lemma 1. Then in Corollary 12, we apply Theorem 8 to bound
+the total Hellinger error of Alg. 2 to complete the analysis.
+
+Proposition 11 In each iteration of Alg. 2, suppose a TT decomposition φt is constructed
+according to Proposition 9 such that its L2 error satisfies
+                                  √             √
+                            kφt − qt kL2 < CTT 2m + d − 1 εt
+
+                                                24
+                              Tensor trains for sequential learning
+
+
+
+
+for some error controlling factor εt ∈ (0, 1). Suppose further the constant τt in the defensive
+                         √                                                    √      √
+term satisfies τt ≤ kφt − qt k2L2 . Then, the approximation error satisfies k π̂t − qt kL2 ≤
+     p
+CTT 2 (2m + d − 1) εt .
+
+Corollary 12 Suppose Proposition 11 and either bound of Assumption 1 hold. For t > 0,
+the total Hellinger distance between pt and its approximation p̂t in Alg. 2 satisfies
+                                            √            t
+                                        2CTT 2m + d − 1 X (t−k)/2
+                       DH (p̂t , pt ) ≤     p               C       εk ,
+                                             p(y 1:t )  k=1
+
+                   (h)
+where C = supt Ct         with h ∈ {f, g} and p(y 1:t ) is the evidence.
+
+5. Preconditioning methods
+The key step of Alg. 2 is to approximate the square root of the non-separable, unnormal-
+ized density qt by a TT decomposition φq,t . In many applications, the temporally increasing
+data size and complex nonlinear interactions among parameters and states may concentrate
+posterior densities to some submanifold, and hence lead to potentially high ranks in φq,t .
+This can make the TT-based algorithms computationally demanding. Rather than directly
+approximating qt , here we present a preconditioning framework to improve TT’s approxi-
+mation efficiency and discuss how to apply the resulting preconditioned approximations in
+our sequential estimation algorithms (Alg. 2–4).
+
+5.1 General framework
+Our preconditioning procedure is guided by a (possibly unnormalized) bridging density
+ρt (xt , θ, xt-1 ) that is easier to approximate than qt (xt , θ, xt-1 ). We introduce general refer-
+ence random variables (U t , U θ , U t-1 ) with tensor-product normalized density η(ut , uθ , ut-1 )
+= η(ut )η(uθ )η(ut-1 ), where (U t , U t-1 ) take values in Rm and U θ takes values Rd . The pre-
+conditioning procedure has the following conceptual steps.
+
+1. Change of coordinates. We first construct a preconditioning KR rearrangement Tt
+   such that
+                                                                    
+             (Tt )] ρt (ut , uθ , ut-1 ) = ρt Tt−1 (ut , uθ , ut-1 ) ∇Tt−1 (ut , uθ , ut-1 )
+                                             ∝ η(ut , uθ , ut-1 ).                                  (30)
+
+    The map Tt defines a change of coordinates from (xt , θ, xt-1 ) to (ut , uθ , ut-1 ).
+2. Preconditioning. Applying the identity in (30), the pushforward of qt under Tt takes
+   form
+                                                                    
+             (Tt )] qt (ut , uθ , ut-1 ) = qt Tt−1 (ut , uθ , ut-1 ) ∇Tt−1 (ut , uθ , ut-1 )
+                                             ∝ q],t (ut , uθ , ut-1 ),
+
+    where                                                                   
+                                                   qt Tt−1 (ut , uθ , ut-1 )
+                         q],t (ut , uθ , ut-1 ) :=                            η(ut , uθ , ut-1 )   (31)
+                                                   ρt Tt−1 (ut , uθ , ut-1 )
+
+                                                         25
+                                             Zhao and Cui
+
+
+
+
+   is a non-negative function that can be evaluated pointwise. The pushforward density q],t
+   can be viewed as the reference density η perturbed by the ratio qt /ρt in the transformed
+   coordinates (ut , uθ , ut-1 ). With a suitable bridging density, the ratio qt /ρt is significantly
+   less concentrated, and hence may be easier to approximate. See Fig. 2 for an illustration.
+                                                        √
+3. TT-approximation. By approximating q],t using a TT φ],t , that is,
+                                 q
+                                   q],t (ut , uθ , ut-1 ) ≈ φ],t (ut , uθ , ut-1 ),
+
+   we can follow the squared-TT approximation outlined in Section 3.1 to define an un-
+   normalized approximate density
+
+                    ν̂],t (ut , uθ , ut-1 ) := φ],t (ut , uθ , ut-1 )2 + τ],t η(ut , uθ , ut-1 ) (32)
+                             √
+   where τ],t ≤ kφ],t − q],t k2L2 . Applying Proposition 2 and denoting the normalized
+   density by µ̂],t ∝ ν̂],t , we obtain a KR rearrangement St such that
+
+                            (St )] µ̂],t (ξ t , ξ θ , ξ t-1 ) = uniform(ξ t , ξ θ , ξ t-1 ).
+
+4. Composition. The above steps define a composite transformation St ◦ Tt that approx-
+   imately pushes forward the normalized version of the density qt (xt , θ, xt-1 ) to a uniform
+   density. Equivalently, we have
+                                                          ]
+                           qt (xt , θ, xt-1 ) ∝
+                                              ∼ (St ◦ Tt ) uniform(xt , θ, xt-1 ).
+   Thus, the pullback of the uniform density under St ◦Tt defines a normalized approximate
+   posterior density, which takes the form
+
+                       p̂(xt , θ, xt-1 |y 1:t ) = (St ◦ Tt )] uniform(xt , θ, xt-1 )
+                                              = |∇(St ◦ Tt )(xt , θ, xt-1 )|
+                                                                           
+                                             (30) µ̂],t Tt (xt , θ, xt-1 )
+                                              =                           ρt (xt , θ, xt-1 )
+                                                    η Tt (xt , θ, xt-1 )
+                                                  1
+                                              = π̂(xt , θ, xt-1 |y 1:t ),
+                                                 ẑt
+   where                                                                   
+                                                  ν̂],t Tt (xt , θ, xt-1 )
+                       π̂(xt , θ, xt-1 |y 1:t ) =                         ρt (xt , θ, xt-1 )    (33)
+                                                    η Tt (xt , θ, xt-1 )
+   is the unnormalized approximate posterior density and
+                 Z                                     Z
+            ẑt = π̂(xt , θ, xt-1 |y 1:t )dxt dθdxt-1 = ν̂],t (ut , uθ , ut-1 )dut duθ dut-1 ,
+
+   is the normalizing constant. The last equality follows from the change of coordinates
+   defined by Tt .
+
+There are many ways to defining the bridging density ρt and building the preconditioning
+map Tt . In the following, we provide some examples of bridging densities relying on the
+particular structure of qt , which is defined in (15).
+
+                                                       26
+                               Tensor trains for sequential learning
+
+
+
+
+           qt and direct. approx.                                q♯,t                       qt and precond. approx.
+       2                                                                                    2
+                                                   1
+       1                                                                                    1
+      x2                                         u2                                       x2
+       0                                                                                    0
+
+      −1                                         −1                                       −1
+                  exact                                                                             exact
+                  single-layered                                                                    preconditioned
+        −2            0               2                −2          0          2              −2        0             2
+                     x1                                           u1                                   x1
+Figure 2: Left: approximation of qt (gray contours) using a single layer of TT-based ap-
+proximation (red contours), in which Fourier basis of order 30 and a TT rank 24 is used.
+Middle: preconditioned density using the tempering technique (cf. Section 5.3), in which
+the nonlinear preconditioning transform is defined by a TT with Fourier basis of order 30
+and a rank 12. Right: approximation of qt (gray contours) using the preconditioned ap-
+proximation (blue contours), in which Fourier basis of order 30 and a TT rank 12 is used
+in the preconditioned approximation.
+
+
+5.2 Gaussian bridging and linear preconditioning
+We consider a Gaussian approximation to the density qt as the bridging density, that is,
+ρt (·) := N (·; µt , Σt ), where µt ∈ R2m+d is the mean vector and Σt ∈ R(2m+d)×(2m+d) is
+the covariance matrix. In each iteration, we can draw random variables from the previous
+marginal approximation π̂(θ, xt-1 |y 1:t-1 ) and use one step of particle filter—for example,
+a bootstrap filter—to estimate (µt , Σt ) using particles. With ρt (·) := N (·; µt , Σt ), we
+compute the Cholesky factorization of Σt to obtain Lt Lt > = Σt , where Lt is lower-triangular.
+                                                            l                  −1               >
+    defines a lower-triangular linear KR rearrangement Tt (xt , θ, xt-1 ) = Lt [xt , θ, xt-1 ] −
+This
+µt that transforms (X t , Θ, X t-1 ) ∼ ρt into reference variables (U t , U θ , U t-1 ) following a
+tensor-product zero mean standard Gaussian density η. The upper-triangular linear KR
+rearrangement can also be derived by permuting the variables.
+
+5.3 Tempering and nonlinear preconditioning
+We employ the tempering idea, for example, Beskos et al. (2016); Gelman and Meng (1998);
+Herbst and Schorfheide (2019) and Kantas et al. (2014), to build an unnormalized bridging
+density
+             ρt (xt , θ, xt-1 ) = π̂(θ, xt-1 |y 1:t−1 )βπ f (xt |xt-1 , θ)βf g (y t |xt , θ)βg , (34)
+with some constants βπ , βf , βg ∈ [0, 1]. When βπ = βf = βg = 1, it recovers the target
+density qt . By choosing appropriate constants (βπ , βf , βg )—for example, using the adap-
+tation strategy discussed in Beskos et al. (2016) and Kantas et al. (2014)—to construct ρt
+that is less concentrate than qt but retains some features of qt . We can apply the squared
+                                          √
+approximation procedure to decompose ρt into a TT φρ,t , approximate ρt by
+                          ρ̂t (xt , θ, xt-1 ) := φρ,t (xt , θ, xt-1 )2 + τρ,t λ(xt , θ, xt-1 ),                          (35)
+with some τρ,t > 0, and derive the corresponding KR rearrangement Rt such that
+                                   (Rt )] ρ̂t (ξ t , ξ θ , ξ t-1 ) ∝ uniform(ξ t , ξ θ , ξ t-1 ).
+
+                                                                27
+                                            Zhao and Cui
+
+
+
+
+Given a diagonal map D such that D] η(ξ t , ξ θ , ξ t-1 ) = uniform(ξ t , ξ θ , ξ t-1 ), composing D−1
+and Rt , we obtain Tt = D−1 ◦ Rt such that
+
+                              (Tt )] ρ̂t (ut , uθ , ut-1 ) ∝ η(ut , uθ , ut-1 ).
+
+    In this construction, the preconditioned target density q],t —which is originally defined
+in (31)—becomes
+                                                                       
+                                             qt Tt−1 (ut , uθ , ut-1 )
+                   q],t (ut , uθ , ut-1 ) :=                             η(ut , uθ , ut-1 ),
+                                             ρ̂t Tt−1 (ut , uθ , ut-1 )
+
+where the exact bridging density ρt is replaced with ρ̂t , which is the pushforward of the
+reference density under the preconditioning map Tt . As a consequence, the unnormalized
+approximate density in (33) becomes
+                                                                      
+                                              ν̂],t Tt (xt , θ, xt-1 )
+                   π̂(xt , θ, xt-1 |y 1:t ) =                         ρ̂t (xt , θ, xt-1 ).
+                                                η Tt (xt , θ, xt-1 )
+
+5.4 Marginalization and conditional maps
+After building the preconditioned approximation, we need to integrate the approximate
+density π̂(xt , θ, xt-1 |y 1:t ) over xt-1 , so that the marginal density
+                                                    Z
+                                 π̂(xt , θ|y 1:t ) = π̂(xt , θ, xt-1 |y 1:t )dxt-1
+
+can be used in the next iteration of Alg. 2. In addition, we also need to derive the lower and
+upper conditional KR rearrangements to be used in path estimation and particle filtering,
+respectively. We use the lower-triangular KR rearrangements Stl and Ttl , which respectively
+take the form
+                             l                                        l              
+                             St,t (ut )                                 Tt,t (xt )
+                             l                                        l              
+    Stl (ut , uθ , ut-1 ) = St,θ (uθ |ut )            l
+                                             and Tt (xt , θ, xt-1 ) = Tt,θ (θ |xt )  ,
+                           l
+                          St,t-1 (ut-1|ut , uθ )                                     l (x |x , θ)
+                                                                                   Tt,t-1 t-1 t
+
+as well as nonlinear preconditioning defined above, to outline how to carry the marginal-
+izations and conditional sampling.
+    Because the composition Stl ◦Ttl is also lower triangular, we can apply a similar derivation
+to that of Proposition 4 to compute the marginal density π̂(xt , θ|y 1:t ). The necessary steps
+for computing π̂(xt , θ|y 1:t ) is integrated with the preconditioned density approximation
+procedure, and thus we summarize them together in Alg. 5, which replace steps (b) and (c)
+of the sequential estimation algorithm (Alg. 2).
+
+Algorithm 5: Preconditioned replacements for steps (b) and (c) of the sequential estimation
+algorithm (Alg. 2).
+
+(b.1) Approximate the bridging density ρt (xt , θ, xt-1 ) by the TT-based approximate density
+    ρ̂t (xt , θ, xt-1 ) defined in (35).
+
+                                                     28
+                            Tensor trains for sequential learning
+
+
+
+
+(b.2) Integrate ρ̂t (xt , θ, xt-1 ) from the right variable xt-1,m to the left variable xt,1 using
+    Proposition 2 to define lower-triangular preconditioning map Ttl , the lower conditional
+           l (x |x , θ), and the marginal density ρ̂ (x , θ).
+    map Tt,t-1  t-1 t                                     t t
+
+(b.3) Approximate the pushforward density q],t (ut , uθ , ut-1 ) by the TT-based approxima-
+    tion ν̂],t (ut , uθ , ut-1 ) defined in (32).
+
+(c.1) Integrate the last block of ν̂],t (ut , uθ , ut-1 ) from the right variable ut-1,m to the left
+    variable ut-1,1 using Proposition 2 to define the marginal density ν̂],t (ut , uθ ) and the
+                             l
+    lower conditional map St,t-1 (ut-1 |ut , uθ ).
+
+(c.2) Using the lower-triangular transformation (ut , uθ ) = (Tt,t        l (x ), T l (θ|x )), we have the
+                                                                               t     t,θ  t
+    marginal density
+                                                     l (x ), T l (θ|x )
+                                                                         
+                                            ν̂],t Tt,t    t    t,θ    t
+                        π̂(xt , θ|y 1:t ) =        l (x ), T l (θ|x )
+                                                                         ρ̂t (xt , θ),
+                                              η Tt,t    t    t,θ    t
+
+    which will be used in the next iteration of the sequential estimation.
+
+  As a byproduct, steps (b.2) and (c.1) of Alg. 5 also define the last block of the composite
+map Stl ◦ Ttl , which can be expressed as
+                   l                       l       l                     l           l
+                                                                                               
+                 Ft,t-1 (xt-1 |xt , θ) := St,t-1 Tt,t-1 (xt-1 |xt , θ) Tt,t (xt ), Tt,θ (θ|xt ) .
+
+This precisely gives the lower conditional map for the path estimation (Alg. 4).
+
+6. Numerical results
+We provide several numerical examples to demonstrate the efficiency of our TT-based meth-
+ods. These include a linear Kalman filter controlled by unknown parameters, in which the
+posterior density of the parameters has an analytical form; a stochastic volatility model
+(cf. Example 1) commonly used in the literature for benchmarking sequential algorithms;
+a high-dimensional compartmental susceptible-infectious-removed model following the Aus-
+trian state adjacency map; and a dynamical system modelling the interaction of a predator-
+prey system. We also compare our method to SMC2 when it is applicable. For all the
+numerical examples reported here, we compute the 25%, 50%, 75% quantiles of the effective
+sample sizes using 40 repeated experiments from smoothing samples obtained in Alg. 4.
+
+6.1 Linear Kalman filter with unknown parameters
+Setup. Our first example considers a linear Kalman filter with unknown parameters, in
+which the state process and the observation process take the form:
+                          (
+                                                          (x)
+                             X t − µ = b (X t-1 − µ) + aεt
+                                                   (y)         ,                (36)
+                                  Y t = CX t + dεt
+         (x)       (y)
+where εt and εt follow independent Gaussian distributions N (0, Im ) and N (0, In ), and
+C ∈ Rn×m is the observation matrix. Here Im represents an m × m identity matrix. The
+
+                                                   29
+                                         Zhao and Cui
+
+
+
+
+prior density of the initial state X 0 is given by p(x0 |µ) := N (x0 ; µ1, Im ), where 1 is the
+m-dimensional vector filled with ones. The parameters controlling the model are collected
+as θ = (µ, a, b, d).
+     Conditioned on the parameters, the joint state filtering density p(x0:t |θ, y 1:t ) follows
+a multivariable Gaussian distribution, which can be derived from the classical Kalman
+filter. Integrating overR the states, we obtain an explicit form of the posterior parameter
+density p(θ|y 1:t ) = p(x0:t , θ|y 1:t )dx0:t . Although the posterior parameter density cannot
+be directly sampled, we can evaluate the density pointwisely for any given parameter θ,
+and thus we can use the model in (36) to benchmark the performance of various estimation
+algorithms—for example, this enables us to estimate the Hellinger distance between the
+exact posterior parameter density p(θ|y 1:t ) and its approximation p̂(θ|y 1:t ) obtained by
+Alg. 2. For the sake of completeness, we include the derivation of the posterior parameter
+density p(θ|y 1:t ) in Appendix B.
+     In our numerical experiment, we take m and n to be three and let the total number
+of time steps T be 50. Additionally, we set µ = 0 and set the observation matrix C to
+be a prescribed random value. We impose the condition a2 + b2 = 1 such that the state
+process X t is stationary. Thus, the parameters to be estimated are reduced to θ = (a, d).
+We impose a uniform prior density p(θ) := uniform(θ; [0.4, 1]2 ) on the parameters, and
+generate the synthetic data Y t using a = 0.8 and d = 0.5 in the numerical experiments.
+When building TT approximations, we transform the parameters to an unbounded domain
+using the inverse distribution function of the standard Gaussian distribution to facilitate
+the linear preconditioning techniques in Sec. 5.2.
+     Comparison of Alg. 1 and 2. We start with the comparison between Alg. 1 and 2.
+For both algorithms, we use 5 alternating least square (ALS) iterations to construct TT
+decompositions. Note that using two ALS iterations is sufficient in most of the situations
+presented here. We use a rather large number of ALS iterations to eliminate possible error
+sources in our benchmarks. The TT decomposition used here employs a piecewise Lagrange
+basis function defined by four subintervals and polynomials with order eight. We consider
+maximum TT ranks r ∈ {10, 20, 30} in this comparison.
+     Following the discussion of Section 4, we use the relative L1 error of posterior parameter
+densities, kπ̂(θ|y 1:t ) − π(θ|y 1:t )kL1 /kπ(θ|y 1:t )kL1 , to benchmark the accuracy of these TT-
+based algorithms. Note that the denominator kπ(θ|y 1:t )kL1 is also the normalizing constant
+of the posterior density. Fig. 3 shows the change of the relative L1 error over time. For both
+algorithms, we observe that the error accumulations behave similarly, and relative errors
+reduce with increasing TT ranks. For all TT ranks, Alg. 2 is more accurate than Alg. 1.
+In the other numerical experiments, we only demonstrate the performance of Alg. 2 and its
+accompanying sampling algorithms.
+     Demonstration of Alg. 2 and debiasing. Since the non-negativity-preserving Alg. 2
+is the workhorse of this paper, here we thoroughly demonstrate its accuracy and the sam-
+pling performance of the accompanying path estimation algorithm (Alg. 4) with various
+algorithmic settings. In all experiments, we use five ALS iterations to construct TT decom-
+positions and piecewise basis functions defined on four subintervals with Lagrange polyno-
+mials. We denote the number of degrees of freedom of the basis functions by `.
+     In the first set of numerical experiments, we vary the number of degrees of freedom of
+the piecewise basis functions ` and the maximum TT rank r to investigate their impacts
+
+                                                30
+                                       Tensor trains for sequential learning
+
+
+
+                                                  
+                                     ∥π̂t − πt ∥L1 ∥πt ∥L1
+
+                  1
+
+
+
+
+                 0.5                                                                    Alg. 1, rank 10         Alg. 2, rank 10
+                                                                                        Alg. 1, rank 20         Alg. 2, rank 20
+                                                                                        Alg. 1, rank 30         Alg. 2, rank 30
+
+                  0
+                       0        10         20        30    40         50
+                                           time step
+                                                                             
+                                                                ∥π̂t − πt ∥L1 ∥πt ∥L1
+                                                0.6
+                                                                rank 10
+                                                0.5             rank 20
+                                                0.4             rank 30
+
+                                                0.3
+
+                                                0.2
+
+                                                0.1
+
+                                                 0
+                                                      0   10         20        30        40     50
+                                                                     time step
+Figure 3: Linear Kalman filter with unknown parameters. The relative L1 error of approx-
+imations of posterior parameter densities built by Alg. 1 and 2.
+
+       DH                                                 ESS                       DH                                            ESS
+                           DH at t = 30
+                           DH at t = 50                        80%                                                                  80%
+      0.2                  ESS at t = 30
+                                                                                0.2
+                           ESS at t = 50
+
+
+
+                                                               40%                                                                  40%
+      0.1                                                                       0.1
+
+
+
+
+       0                                                       0%                   0                                               0%
+            17             25         33        41        49                             10       15       20        25       30
+                       degrees of freedom                                                                 rank
+Figure 4: Linear Kalman filter with unknown parameters. The Hellinger distances (blue
+lines) between the theoretical posterior parameter density and its TT approximation, and
+the ESS (red lines) for the joint posterior of the states and the parameters at time t ∈
+{30, 50}. Left: changing the number of degrees of freedom of the basis functions ` with a
+fixed maximum TT rank r = 15. Right: changing the maximum TT rank r with a fixed
+number of degrees of freedom of the basis functions ` = 33.
+
+
+on the accuracy of TT-based methods. We first fix the maximum TT rank r to be 15 and
+vary ` = {17, 25, 33, 41, 49} by fixing the number of subintervals to be four and increasing
+the order of the Lagrange polynomials. For each `, we run Alg. 2 for t up to 50 and apply
+
+                                                                          31
+                                         Zhao and Cui
+
+
+
+
+the path estimation (Alg. 4) using N = 1000 sample paths at t ∈ {30, 50}. For each of
+the approximate posterior parameter densities, we report the Hellinger distance and the
+effective sample size (ESS)—for the joint density p(θ, x0:t |y 1:t )—at t ∈ {30, 50} in the left
+plot of Fig. 4. We observe that increasing the number of degrees of freedom of the basis
+functions only marginally improves the accuracy. Then we fix the number of degrees of
+freedom ` to be 33 with order-eight Lagrange polynomials on four subintervals, and vary
+the maximum TT rank r ∈ {10, 15, 20, 25, 30}. The resulting Hellinger distances and ESSs
+are shown in the right plot of Fig. 4. In this case, we observe a significant error reduction
+with increasing TT ranks.
+
+               DH , parameter                ESS, joint                     ESS, parameter
+     0.1                          100%                           100%
+
+
+
+    0.05                           75%                            90%
+                                              rank 15
+                                              rank 30
+                                              nonlinear
+       0                           50%                            80%
+           0        25      50           0       25       50            0         25         50
+                  time step                  time step                   time step
+Figure 5: Linear Kalman filter with unknown parameters. Left: the Hellinger distance
+between the theoretical posterior parameter density p(θ|y 1:t ) and its TT approximations
+versus time. Middle: the ESS of the path estimation (Alg. 4) for sampling the joint posterior
+p(θ, x0:t |y 1:t ) versus time. Right: the ESS for sampling the posterior parameter density
+p(θ|y 1:t ) versus time.
+
+     In the second set of numerical experiments, we demonstrate the impact of precondi-
+tioning techniques. Here we consider two approximation ansatzes with (`, r) = (33, 15)
+and (`, r) = (33, 30) using linear preconditioning (cf. Section 5.2) and another ansatz
+(`, r) = (33, 15) using nonlinear preconditioning (cf. Section 5.3). For nonlinear pre-
+conditioning, we use a standard multivariate Gaussian for the reference density η and
+βπ = βf = βg = 0.4 to construct the bridging density. For each t ∈ {5, 10, . . . , 50}, we
+report the Hellinger distance, the ESS of the path estimation (Alg. 4) for the joint den-
+sity, and the ESS of the approximate posterior parameter density. The results are shown
+in Fig. 5. In the linear preconditioning case, we observe that the approximation ansatz
+(`, r) = (33, 30) outperforms the approximation ansatz (`, r) = (33, 15) at all time steps,
+which is expected. We also observe that the performance of the nonlinear precondition-
+ing technique using the approximation ansatz (`, r) = (33, 15) is comparable with that of
+linear preconditioning with a higher-rank approximation ansatz (`, r) = (33, 30). For both
+(`, r) = (33, 15) using nonlinear preconditioning and (`, r) = (33, 30) using linear precondi-
+tioning, the Hellinger distance remains below 0.05 for all time steps, while the ESSs for the
+joint densities and the marginal parameter densities are respectively around 80% and 98%
+after 50 time steps. These results provide strong evidence of the reliability of the TT-based
+sequential estimation methods.
+     Comparison with SMC2 . We compare Alg. 2 with (`, r) = (33, 30) and (`, r) =
+(33, 15) to the SMC2 method. We consider two setups for the SMC2 method. One uses a
+particle size Nθ = 500 for the parameters and another one uses an increased particle size
+
+                                               32
+                              Tensor trains for sequential learning
+
+
+
+
+                                  t = 10                        t = 30                        t = 50
+
+
+              1
+                                           0.8                           0.8
+             0.8
+         d                                 0.6                           0.6
+             0.6
+
+             0.4                           0.4                           0.4
+                0.4 0.6 0.8   1                  0.6 0.75 0.9                  0.6 0.75 0.9
+                      a
+                                  t = 10                        t = 30                        t = 50
+
+
+              1
+                                           0.8                           0.8
+             0.8
+         d                                 0.6                           0.6
+             0.6
+
+             0.4                           0.4                           0.4
+                0.4 0.6 0.8   1                  0.6 0.75 0.9                  0.6 0.75 0.9
+                      a
+                                  t = 10                        t = 30                        t = 50
+
+
+              1
+                                           0.8                           0.8
+             0.8
+         d                                 0.6                           0.6
+             0.6
+
+             0.4                           0.4                           0.4
+                0.4 0.6 0.8   1                  0.6 0.75 0.9                  0.6 0.75 0.9
+                      a
+                                  t = 10                        t = 30                        t = 50
+
+
+              1
+                                           0.8                           0.8
+             0.8
+         d                                 0.6                           0.6
+             0.6
+
+             0.4                           0.4                           0.4
+                0.4 0.6 0.8   1                  0.6 0.75 0.9                  0.6 0.75 0.9
+                      a
+
+Figure 6: Linear Kalman filter with unknown parameters. The contours of posterior den-
+sities of θ = (a, d) at different time. From the top row to the bottom row, blue lines are
+results obtained by Alg. 2 with (`, r) = (33, 15), Alg. 2 with (`, r) = (33, 30), SMC2 with
+500 particles, and SMC2 with 5000 particles, respectively. The marginal densities are shown
+by red curves on each side. The analytical solutions are plotted as thick gray curves at the
+background. For SMC2 , the marginal densities are results obtained from 5 batches, whereas
+the contours are results obtained by putting all batches together.
+
+
+Nθ = 5000. In all numerical experiments, the particle size for the states is initially set to
+Nx = 100 and adaptively increased so that the acceptance rate of the parameter particles
+remains a relatively high level (Chopin et al., 2013). In our setup, the computational cost
+
+                                                        33
+                                            Zhao and Cui
+
+
+
+
+of running SMC2 with (Nθ , Nx ) = (500, 100) is about the same as running Alg. 2 with
+(`, r) = (33, 30). Both take roughly 10 minutes using a 3.20 GHz Intel i7-8700 CPU. In
+Fig. 6, we present contours of the posterior parameter densities and their one-dimensional
+marginals at t ∈ {10, 30, 50} estimated using various algorithms. For SMC2 , we follow the
+setup of Chopin et al. (2013) to run five independent batches of particles, and then apply the
+kernel density estimation (KDE) method (Silverman, 1986; Peter D, 1985) to estimate the
+joint density using the union of the five batches and the one-dimensional parameter marginal
+density of each batch. Both TT-based setups perform better than the SMC2 -based setups.
+The approximate posterior parameter densities from TT with (`, r) = (33, 30) accurately
+capture the true densities at all time steps, while those from SMC2 do not have a consistent
+result across different batches, especially with (Nθ , Nx ) = (500, 100).
+
+6.2 Stochastic volatility
+Our second numerical example uses the stochastic volatility model defined in Example 1.
+We test Alg. 2 and Alg. 4 on synthetic data sets and a real-world data set taken from the
+S&P 500 index.
+    Synthetic data. We fix σ = 1 and aim to estimate parameters θ = (γ, β). We
+consider the sequential estimation problems for T = 1000 steps. Here γ = 0.6 and β =
+0.4 are used to generate synthetic data. We set the prior density of the initial state to
+be p(x|θ) := N (x; 0, 1/(1 − γ 2 )) and the prior density of the parameters to be p(θ) :=
+uniform(θ; [0.1, 0.9]2 ). Since the analytical marginal densities are no longer available in this
+example, we can only evaluate the 1002-dimensional joint posterior density of the parameters
+and all the states (θ, x0:1000 ), and then estimate the corresponding joint ESS as a measure
+of the approximation errors.
+
+          ESS                                              ESS
+       100%                                              100%
+                  TT rank 10                                        TT rank 20
+                  TT rank 5                                         TT rank 5
+        60%                                              60%
+
+
+        20%                                              20%
+
+              0   200    400   600    800   1,000               0   200    400   600    800   1,000
+                          time step                                         time step
+Figure 7: Stochastic volatility model with synthetic data. The ESS for the joint posterior
+density versus time, computed using different maximum TT ranks r ∈ {5, 10, 20}.
+
+    Similarly to the linear Kalman filter case, we use the piecewise Lagrange polynomial with
+the number of degrees of freedom ` to be 33 as the basis function, linear preconditioning,
+and five ALS iterations for building TT decompositions in Alg. 2. The accompanying path
+estimation algorithm (Alg. 4) is used to generate weighted samples from the resulting TT-
+based approximations. We set the maximum TT rank to be r ∈ {5, 10, 20} and show the
+change of ESS over time in Fig. 7. We observe that with r = 5, the TT-based approximation
+yields a reliable result with ESS above 20% even after 1000 steps, while with r = 10 it
+provides nearly 100% ESS at almost all time steps. Fig. 8 presents the trajectories of the
+states estimated from the approximate posterior state path density p̂(x0:1000 |y 1:1000 ) using
+rank r = 10. We observe the true states are well followed by the trajectories estimated
+
+                                                    34
+                                   Tensor trains for sequential learning
+
+
+
+
+                2
+
+
+                0
+
+
+               −2
+
+                    0      100        200         300   400        500         600       700   800         900   1,000
+                                                              time step
+Figure 8: Stochastic volatility model with synthetic data. The thick brown line represents
+the path of the true state and crosses are the observations. Estimated using the approximate
+posterior state path density p̂(x0:1000 |y 1:1000 ) defined in (25) with a maximum TT rank
+r = 10, the black line and the shaded region represent the median path and the credible
+interval bounded between 5% and 95% percentiles, respectively.
+
+                p̂(γ|y 1:t )
+                5
+
+
+
+
+                3
+
+
+
+
+                1
+
+
+
+               0.9
+                               0.5                                                                   800         1,000
+                               γ                         200             400             600
+                                            0.1                                      t
+Figure 9: Stochastic volatility model with synthetic data. The brown line and the shaded
+region in the horizontal (t, γ)-plane show the evolution of the median and the credible inter-
+val of the posterior estimates of γ bounded between 5% and 95% percentiles. The density
+profiles in the vertical axis show the approximate posterior parameter density p̂(γ|y 1:t ) at
+different time.
+
+
+from the approximations. In Fig. 9, we also show the approximate filtering densities of the
+parameter γ from the TT-based approximations, that is, p̂(γ|y 1:t ) over time. We observe
+that the densities get concentrated around the true value γ = 0.6 (for generating the data)
+with an increasing amount of data observed over time.
+     Next, we compare the TT-based method with r = 10 to SMC2 with 5 independent
+batches, each batch with Nθ = 1000 parameter particles and initially Nx = 100 state
+particles. Fig. 10 shows the contours and the marginals of the posterior parameter densities
+at t ∈ {400, 700, 1000} obtained by the TT-based method and SMC2 . Both methods yield
+densities that concentrate around the true values of the parameters used to generate the
+data, that is, (γ, β) = (0.6, 0.4). However, the computation time of the TT-based method
+is about one hour using a 3.20 GHz Intel i7-8700 CPU, while that for one batch of SMC2
+method is over eight hours.
+     S&P 500 index. We then apply our algorithms to the daily returns of the S&P 500
+index. The historical data of the stock prices are obtained from Yahoo Finance1 . The
+data set contains 1009 observations from 31st of December 2019 to 29th of December 2023,
+excluding weekends and holidays. We compute the continuously compounded daily returns
+{y t }Tt=1 from the stock prices, where T = 1008.
+1. https://au.finance.yahoo.com/
+
+
+                                                              35
+                                                Zhao and Cui
+
+
+
+
+                                    t = 400                             t = 700                        t = 1000
+
+
+               0.5                            0.5                                 0.5
+
+
+             β 0.4                            0.4                                 0.4
+
+
+               0.3                            0.3                                 0.3
+                  0.2   0.5   0.8                0.2   0.5        0.8                0.2   0.5   0.8
+                        γ
+                                    t = 400                             t = 700                        t = 1000
+
+
+               0.5                            0.5                                 0.5
+
+
+             β 0.4                            0.4                                 0.4
+
+
+               0.3                            0.3                                 0.3
+                  0.2   0.5   0.8                0.2   0.5        0.8                0.2   0.5   0.8
+                        γ
+Figure 10: Stochastic volatility model with synthetic data. The contours of posterior den-
+sities of θ = (γ, β) at different time. The top and bottom rows show results obtained by
+Alg. 2 and SMC2 respectively. The marginal densities are shown on each side. For SMC2 ,
+the marginal densities shown are results obtained from 5 batches with 1000 particles in each
+batch, whereas the contours are results obtained by putting all batches together.
+    We aim to estimate the states {X t }Tt=0 and all the three parameters Θ = (γ, σ, β) from
+the observed daily returns {y t }Tt=1 of the S&P 500 index. Following the common practice
+in econometrics (Zhang and Maxwell, 2008; Yu et al., 2006), we set the priors for Θ and
+X 0 as:
+
+   • (γ + 1)/2 ∼ Beta(ω1 , ω2 ), with ω1 = 20, ω2 = 1.5.
+
+   • σ 2 ∼ IG(ζ/2, Sσ /2), with ζ = 2, Sσ = 0.01, where IG stands for the inverse Gamma
+     distribution.
+
+   • log(β)|σ ∼ N (β0 , σ 2 /q0 ), with β0 = 0, q0 = 0.8.
+                                     
+   • X 0 |γ, σ ∼ N 0, σ 2 /(1 − γ 2 ) .
+
+    When building TT approximations, we transform the parameters and the states in the
+stochastic volatility model to
+                                                             
+                               Θ0 = Φ−1 (γ), log(σ), log(β)/σ ,
+                                     X 0t = X t /σ,
+
+where Φ denotes the distribution function of the standard Gaussian random variable. The
+transformed parameters and states take values in an unbounded domain, so that the linear
+preconditioning techniques developed in Sec. 5.2 can be applied. After obtaining the ap-
+proximate densities of (Θ0 , X 0t ) using our TT-based methods, we transform them back to
+the original variables (Θ, X t ) to present the estimation results.
+    We set the maximum TT rank to be r ∈ {5, 10, 20} and maintain the other TT con-
+figurations used in the synthetic case. Fig. 11 shows the change of ESS over time. The
+
+                                                             36
+                                     Tensor trains for sequential learning
+
+
+
+
+                             ESS
+                        100%
+                                           TT rank 20
+                                           TT rank 10
+                                           TT rank 5
+
+                         60%
+
+
+
+
+                         20%
+
+
+                                 0             200               400              600          800          1,000
+                                                                         time step
+Figure 11: Stochastic volatility model with the S&P500 returns. The ESS for the joint
+posterior density at different time, computed using maximum TT ranks r ∈ {5, 10, 20}.
+
+             10
+
+
+              0
+
+
+           −10
+                  0          100         200    300           400        500      600   700          800   900      1,000
+
+
+             30
+
+             20
+
+             10
+
+
+                  0          100         200    300           400        500      600   700          800   900      1,000
+                                                                     time step
+
+Figure 12: Stochastic volatility model with the S&P500 returns. The observed returns
+(top) and the estimated trajectories of squared volatilities (bottom). In the bottom plot,
+the black line and the shaded region represent the median path and the credible interval
+bounded between 5% and 95% percentiles, respectively. These estimation results are ob-
+tained using the approximate posterior state path density p̂(x0:1008 |y 1:1008 ) defined in (25)
+with a maximum TT rank r = 20.
+
+
+
+
+             0.4                                       0.85                             0.85
+
+
+             σ                                          β                                β
+             0.2                                       0.83                             0.83
+
+                      0.94           1                        0.94            1                 0.2        0.4
+                             γ                                       γ                                 σ
+Figure 13: Stochastic volatility model with the S&P500 returns. The contours of posterior
+densities of θ = (γ, σ, β) at T = 1008, estimated by Alg. 2. The marginal densities are
+shown on each side.
+
+ESS clearly increases with the TT rank, reaching around 70% after 1008 steps for r = 20.
+
+                                                                         37
+                                        Zhao and Cui
+
+
+
+
+Fig. 12 shows the observed returns of the S&P 500 index during the selected period and
+the trajectories of the squared volatilities estimated from the approximate posterior state
+path density p̂(x0:1008 |y 1:1008 ) using rank r = 20. We observe that the highly volatile
+returns around t = 300 are well captured by the peak of the estimated volatilities, and
+the increasing variability of the returns after t = 800 is also captured by the increase in
+the estimated volatilities in the corresponding timeframe. In Fig. 13, we also present the
+approximate posterior densities of the parameters θ = {γ, σ, β} from the TT-based approx-
+imations p̂(θ|y 1:1008 ). We observe a highly nonlinear pattern between β and the other two
+parameters. These results demonstrate that our TT-based sequential estimation methods
+are effective for real-world data in this case.
+
+6.3 Susceptible-infectious-removed model
+We then apply our TT-based methods to a high-dimensional compartmental susceptible-
+infectious-removed (SIR) model to demonstrate its dimension scalability. The SIR model
+describes the numbers of susceptible, infectious and removed individuals across J ∈ N spa-
+tially dependent demographic compartments, denoted by Sj (t), Ij (t) and Rj (t), respectively.
+The interaction between them are modelled by the following coupled ODEs:
+                       dS                             P
+                          j
+                      
+                               = −κj Sj Ij + 21         i∈Ij (Si − Sj )
+                      
+                        dt
+                      
+                      
+                         dIj                                P
+                                = κj Sj Ij − νj Ij + 21         i∈Ij (Ii − Ij )
+                                                                                  ,      (37)
+                       dt
+                      
+                      
+                      
+                      
+                       dRj                     P
+                               = νj Ij + 21       i∈Ij (Ri − Rj )
+                         dt
+where κj and νj are the parameters representing the infection and recovery rates, and Ij
+is the index set containing all neighbors of the j-th compartment. We fix the parameters
+κj = 0.1 and νj = 18 for j = 1, 2, . . . , J, and focus on the inference for Sj , Ij and Rj .
+    In the SIR model, it is sufficient to infer any two of the three random processes in
+each compartment, and the third process is known given the other two. Here we infer the
+processes Sj and Ij , and set the state to be
+
+                               x = (S1 , I1 , . . . , SJ , IJ ) ∈ R2J .
+
+Then, the dynamic for the state follows
+
+                                           dx
+                                              = G(x),
+                                           dt
+where G(x) is defined by the right-hand side of the first two equations in (37). To formulate
+the state-space model, we discretize the dynamical system at discrete time points t = k∆t,
+                                                                     (x)
+where ∆t = 0.02, and perturb the states using Gaussian noises εk ∼ N (0, I2J ). Thus,
+conditioned on the state X k-1 at time (k − 1)∆t, the state X k at time k∆t is given by
+                                           Z k∆t
+                                                                   (x)
+                          X k = X k-1 +                G x(t) dt + εk .
+                                             (k-1)∆t
+
+
+                                                 38
+                                Tensor trains for sequential learning
+
+
+
+
+We use the explicit fourth-order Runge-Kutta formula with constant time step sizes ∆t =
+0.005 to numerically solve the above time integration problem. For the observation process,
+we assume only Ij (t) is observable at each time step, and the observations are perturbed
+                     (y)
+by Gaussian noises εk ∼ N (0, 100 IJ ). This defines the observation process
+
+                                                 (y)
+                    Y k,j = X k,2j + εk,j ,                k = 1, 2, . . . , T,    j = 1, 2, . . . , J.
+
+
+
+
+                                                       W     V - Vorarlberg             O - Upper Austria
+                                    O        N
+                                                             T - Tyrol                  N - Lower Austria
+                               Sa                            Sa - Salzburg              W - Vienna
+                                        St             B
+                                                             K - Carinthia              B - Burgenland
+                       T            K
+                                                             St - Styria
+                V
+
+
+
+
+  Figure 14: Compartment connectivity graph of the Austrian states (Cui et al., 2024).
+
+     We consider the same realistic setting as in Cui et al. (2024), with J = 9 compartments
+following the Austrian state adjacency map shown in Fig 14. We generate the synthetic
+data for T = 20 time steps, with fixed inhomogeneous initial states Sj (0) = 485 + j and
+Ij (0) = 15 − j, for j = 1, 2, . . . , 9. Subsequently, we impose a Gaussian prior on the
+initial states p(x0 ) := N (x0 ; µ0 , I18 ) where µ0 = S1 (0), I1 (0), . . . , S9 (0), I9 (0) . We aim to
+estimate the 18-dimensional states from the partial observations, which poses a challenging
+high-dimensional inference problem.
+
+                      ESS
+                                                                                         TT rank 40
+                    100%
+                                                                                         TT rank 20
+                                                                                         TT rank 10
+
+
+
+
+                    60%
+
+
+
+
+                    20%
+
+
+                           0                 5                  10                15             20
+                                                              time step
+Figure 15: SIR model. The ESS for the joint posterior density versus time, computed using
+maximum TT ranks r ∈ {10, 20, 40}.
+
+    Similarly to the previous experiments, we employ Alg. 2 with linear preconditioning,
+the piecewise Lagrange polynomial with the number of degrees of freedom ` to be 33, and
+five ALS iterations. Nevertheless, we increase the maximum TT rank to r ∈ {10, 20, 40}
+to accommodate the larger state dimensions in this experiment. Fig. 15 shows the change
+of ESS over time. We observe that the large state dimension in this example requires TT
+
+                                                               39
+                                          Zhao and Cui
+
+
+
+
+             S1                                      S5
+
+           400                                     400
+
+
+           200                                     200
+
+
+            0                                       0
+                 0   0.1    0.2     0.3      0.4         0   0.1   0.2    0.3   0.4
+                            time                                   time
+             I1                                      I5
+           150                                     150
+
+           100                                     100
+
+            50                                      50
+
+            0                                       0
+                 0   0.1    0.2     0.3      0.4         0   0.1   0.2    0.3   0.4
+                            time                                   time
+
+Figure 16: SIR model. The trajectories of the number of susceptible and infectious indi-
+viduals in Vorarlberg (left) and Styria (right). The thick brown curves are the true state
+trajectories. The black curves represent the median posterior state path obtained by the
+approximate density p̂(x0:20 |y 1:20 ), and the shaded region is the credible interval bounded
+between 5% and 95% percentiles of the approximate smoothing densities.
+
+
+ranks above r = 20 to achieve accurate results. In Fig. 16, we present the trajectories of
+the first and middle dimensions of the state (Vorarlberg and Styria), estimated from the
+approximate posterior state path density p̂(x0:20 |y 1:20 ) using rank r = 40. We observe
+that the true dynamics are closely followed by the estimated trajectories, despite Sj being
+unobservable and the observations for Ij being far from the true dynamics. These results
+demonstrate a strong dimension scalability of our TT-based sequential estimation methods
+in this case.
+
+6.4 Predator-prey model
+Finally, we consider the predator-prey model, which is a time-invariant dynamical system
+in the form of             dP         
+                                             P       PQ 
+                                 = rP 1 −         −s
+                             dt               K         a+P
+                                       PQ                      ,                    (38)
+                          
+                            dQ
+                                  = u          − vQ
+                             dt        a+P
+where P and Q denote the prey population and the predator population, respectively.
+There are six parameters, θ = (r, K, a, s, u, v), that control the behavior of the system.
+To formulate the state-space model, we represent P and Q as x = (P, Q). This way, the
+dynamical system in (38) can be equivalently expressed as
+
+                                          dx
+                                             = G(x; θ),
+                                          dt
+where G(x; θ) is defined by the right-hand side of (38). Similarly to the previous SIR model,
+we discretize the dynamical system at discrete time points t = k∆t, where ∆t = 2, and
+
+                                               40
+                         Tensor trains for sequential learning
+
+
+
+                                                   (x)
+perturb the states using Gaussian noises εk ∼ N (0, 4 I2 ). This way, the state transition
+process is given by
+                                      Z k∆t
+                                                             (x)
+                        X k = X k-1 +       G(x(t); θ)dt + εk .
+                                                (k-1)∆t
+
+We still use the explicit fourth-order Runge-Kutta formula with constant time step sizes
+∆t = 0.1 to numerically solve the above time integration problem. We observe x at the
+same sequence of discrete time points, and the observations are perturbed by Gaussian
+        (y)
+noises εk ∼ N (0, 4 I2 ). This defines the observation process
+
+                                                             (y)
+                                             Y k = X k + εk .
+
+We generate synthetic observations using θ = (0.6, 114, 25, 0.3, 0.5, 0.5) and x0 = [50, 5]>
+up to the terminal time T = 20. We impose a uniform prior on the parameters, p(θ) :=
+uniform(x; [a, b]), where [a, b] ≡ [a1 , b1 ] × · · · × [a6 , b6 ] is a hypercube defined by a =
+(0.1, 110, 20, 0.1, 0, 0) and b = (1.1, 130, 30, 1.1, 1, 1). Furthermore, we impose a Gaussian
+prior on the initial states p(x0 ) := N (x0 ; µ0 , I2 ) where µ0 = (50, 5).
+
+                               ESS
+                          100%
+
+
+                           75%
+
+
+                           50%
+
+
+                           25%         nonlinear precondioning
+                                       linear preconditioning
+                              0%
+                                   0     2         4         6           8   10
+                                                    time step
+Figure 17: Predator-prey model. The ESS for the joint posterior density versus time,
+computed using different preconditioning techniques.
+
+
+        prey                                                predator
+        90
+                                                             20
+
+
+        65
+                                                             10
+
+
+        40                                                       0
+             0           20                   40                     0            20   40
+                        time                                                  time
+Figure 18: Predator-prey model. The thick brown curves are the true trajectories, disconti-
+nuity indicates the state noises at discrete time steps, and blue crosses are the observations.
+The black curves represent the median posterior state path obtained by the approximate
+density p̂(x0:20 |y 1:20 ), and the shaded region is the credible interval bounded between 5%
+and 95% percentiles of the approximate smoothing densities.
+
+
+                                                       41
+                                       Zhao and Cui
+
+
+
+
+    We first employ Alg. 2 with linear preconditioning, the piecewise Lagrange polynomial
+with the number of degrees of freedom ` to be 33, a maximum TT rank r = 20, and five
+ALS iterations. The accompanying path estimation algorithm (Alg. 4) is used to generate
+weighted samples from the resulting TT-based approximations. In Fig. 17, the ESSs for the
+joint posterior density of the parameters and all the states are represented by square markers
+in blue. In this case, the ESS decreases rapidly. Instead of brutally increasing the rank to
+enhance the approximation power of TT, we keep the same TT rank and apply the nonlinear
+preconditioning technique. Here we use the bridging density (34) with βπ = βf = βg = 0.4
+and a standard multivariate Gaussian reference density. With nonlinear preconditioning,
+the ESSs are shown by red circles in Fig. 17. We observe that nonlinear preconditioning
+significantly increases the ESS, where it remains at about 40% after 20 steps. In Fig. 18, we
+also present the trajectories of the states estimated from the approximate posterior state
+path density p̂(x0:20 |y 1:20 ) with nonlinear preconditioning and the true state trajectory.
+The curves between the two adjacent states xk-1 and xk are the solution of the dynamical
+system (38) with initial condition x = xk-1 . We observe that the true trajectories are well
+followed by the approximations.
+
+
+7. Conclusion and further extensions
+We present new TT-based methods to sequentially learn the posterior distributions of states
+and parameters of state-space models. Our main innovation is the recursive approximation
+of posterior densities using TT rather than relying on (weighted) particle representations.
+Using the square-root approximation technique (cf. Section 3), we derive conditional KR
+rearrangements that map reference random variables to the approximated posterior ran-
+dom variables. As a result, this defines the particle filtering, path estimation and particle
+smoothing algorithms accompanying the recursive TT-based approximations.
+    This work opens the door to many future research directions. For example, one can
+integrate our TT-based methods into SMC methods (Chopin et al., 2013; Crisan and Miguez,
+2018), in which TT-based methods can potentially provide more efficient particle filters and
+MCMC proposal kernels for SMC. The KR rearrangements offered by our methods also
+open the door to integrating other structured particle sets—for instance, quasi Monte Carlo
+points, see Dick et al. (2013) and references therein—into sequential learning algorithms to
+improve the rate of convergence of estimators. This integration can significantly complement
+the Hilbert space-filling curve technique used by the sequential quasi Monte Carlo method
+(Gerber and Chopin, 2015).
+    Further research is needed to understand the rank structure of TT decompositions in
+state-space models—particularly on the impact of the Markov property—which may provide
+a posteriori error bounds to certify the algorithms presented here. The function approx-
+imation perspective of the work presented here is not limited to the TT decomposition.
+Other function approximation methods based on separable bases—for example, Gaussian
+processes and radial basis functions (Wendland, 2004; Williams and Rasmussen, 2006) with
+product-form kernels, multivariate wavelet and Fourier bases (Daubechies, 1992; de Boor
+et al., 1993; DeVore and Popov, 1988; Mallat, 1989), and sparse grids and spectral poly-
+nomials (Bungartz and Griebel, 2004; Shen et al., 2011; Xiu and Karniadakis, 2002)—can
+also be used to approximate posterior densities and compute their marginal densities. See
+
+                                             42
+                          Tensor trains for sequential learning
+
+
+
+
+Cui et al. (2023) for the preliminary investigations in stationary inference problems. This
+offers a pathway to designing problem-specific function approximation methods for sequen-
+tial learning. For instance, state transition processes governed by certain partial differential
+equations may yield a hyperbolic-cross structure (Dũng et al., 2018) suitable for sparse
+spectral polynomials.
+     Dimension scalability is a limitation of the TT decomposition and general transport-
+map methods. Although the complexity of building the TT decomposition can be dimension
+independent for functions equipped with rapid decaying weights (Griebel and Harbrecht,
+2023)—which is the case for many high- or infinite-dimensional problems (Stuart, 2010)—it
+is still computationally prohibitive to operate with the apparent state and parameter dimen-
+sions for very high-dimensional systems such as weather forecasts. A possibility of reducing
+the number of variables in the approximation problem is to use the conditional Gaussian
+structure of certain state-space models (Chen et al., 2022, 2018; Chen and Majda, 2018) to
+marginalize high-dimensional conditional Gaussian variables analytically. Then, one only
+needs to apply TT-based approximations to the rest of the non-Gaussian variables. For
+a broader range of state-space models, there may exist approximate conditional Gaussian
+structures and similar structures that allow for analytical marginalization. In ongoing work,
+we are extending likelihood-informed subspace methods (Cui et al., 2014; Cui and Tong,
+2022; Zahm et al., 2022) to state-space models to identify these intrinsic structures.
+
+Acknowledgments
+We would like to thank Sergey Dolgov, Rob Scheichl and Olivier Zahm for many fruitful
+discussions about tensor trains and sparse polynomials. This work was supported in part
+by the Australian Research Council under the grant DP210103092.
+
+Appendix A. f -divergence of marginal random variables
+Commonly used statistical divergences such as the Kullback–Leibler divergence, the total
+variation distance and the squared Hellinger distance are instances of the f -divergence.
+Briefly, given a convex function f (·), the f -divergence is defined as
+                                             Z        p(x) 
+                                Df (pkq) =       f              q(x)dx.
+                                                      q(x)
+
+The following lemma bounds the f -divergence of marginal random variables by the corre-
+sponding f -divergence of joint random variables.
+
+Lemma 13 Let p1 (x1 , x2 ) and p2 (x1 , x2 ) be two joint densities, and p̄1 (x1 ) and p̄2 (x1 ) be
+the marginal densities of p1 and p2 , respectively. The f -divergence of p̄1 from p̄2 is bounded
+from above by that of p1 from p2 , that is, Df (p̄1 kp̄2 ) ≤ Df (p1 kp2 ).
+
+Proof Since the function f is convex, applying Jensen’s inequality, we have
+                                                             
+                                             p1 (X 1 , X 2 ) 
+             Df (p1 kp2 ) = Ep2 (x1 ,x2 ) f
+                                             p2 (X 1 , X 2 )
+
+                                                 43
+                                            Zhao and Cui
+
+
+
+                                Z Z        p (x , x )  p (x , x )         
+                                             1   1        2   2   1   2
+                            =          f                                  dx2 p̄2 (x1 )dx1
+                                        p2 (x1 , x2 )     p̄2 (x1 )
+                                Z
+                                 Z p (x , x ) p (x , x )            
+                                        1 1        2   2 1     2
+                            ≥ f                                   dx2 p̄2 (x1 )dx1
+                                       p2 (x1 , x2 ) p̄2 (x1 )
+                             Z Z                        
+                                       p1 (x1 , x2 )
+                            = f                      dx2 p̄2 (x1 )dx1
+                                         p̄2 (x1 )
+                             Z 
+                                  p̄1 (x1 ) 
+                            = f               p̄2 (x1 )dx1 = Df (p̄1 kp̄2 ),
+                                  p̄2 (x1 )
+which concludes the proof.
+
+
+   When the densities are only known up to some constants, the L2 distance between the
+square root of the unnormalized marginal densities is also bounded by the L2 distance
+between their unnormalized joint densities. This is shown in the following lemma.
+Lemma 14 Let π1 (x1 , x2 ) and π2 (x1 , x2 ) be two unnormalized densities.    R        Then, we de-
+note their Rcorresponding unnormalized marginal densities by π̄1 (x1 ) = π1 (x1 , x2 )dx2 and
+                                                          √           √
+π̄2 (x1 ) = π2 (x1 , x2 )dx2 . The L2 distance between π̄1 and π̄2 is bounded from above
+                               √       √                √       √              √        √
+by the L2 distance between π1 and π2 , that is, k π̄1 − π̄2 kL2 ≤ k π1 − π2 kL2 .
+                                    √         √
+Proof The L2 distance between π1 and π2 can be expressed as
+                                Z Z p                  p
+             √      √     2
+                                                                     2
+           k π1 − π2 kL2 =             π1 (x1 , x2 ) − π2 (x1 , x2 ) dx1 dx2
+                                Z Z s                   2
+                                        π1 (x1 , x2 )
+                              =                       − 1 π2 (x1 , x2 )dx1 dx2
+                                        π2 (x1 , x2 )
+                                Z Z s                   2
+                                        π1 (x1 , x2 )       π2 (x1 , x2 )
+                              =                       −1                  dx2 π̄2 (x1 )dx1 .
+                                        π2 (x1 , x2 )         π̄2 (x1 )
+               √
+Since f (r) = ( r − 1)2 , r ≥ 0 is a convex function, applying Jensen’s inequality to the inner
+integral over x2 , the rest of the proof follows the same steps of Lemma 13.
+
+
+    Lemma 14 is useful to establish the bound for the divergence between two unnormal-
+ized marginal densities given the divergence bound between their joint densities. However,
+Lemma 14 implicitly assumes that both unnormalized joint functions (densities) are non-
+negative by construction, which is generally not true when π2 is a function approximation
+of π1 . The following lemma does not restrict the approximate functions to be non-negative,
+and gives a similar result under the L1 distance, which is analogous to the total variation
+distance for normalized densities.
+                                                                            R
+Lemma 15 Let π1 (x1 , x2 ) be an unnormalized density and π̄1 (x1 ) = π1 (x1 , x2 )dx2 be
+its marginal density. Suppose π1 (x1 , x2 ) hasR an approximation π2 (x1 , x2 ), which does not
+preserve non-negativity, and let π̄2 (x1 ) = π2 (x1 , x2 )dx2 be the corresponding marginal
+function. The L1 distance between π̄1 and π̄2 is bounded from above by the L1 distance
+between π1 and π2 , that is, kπ̄1 − π̄2 kL1 ≤ kπ1 − π2 kL1 .
+
+                                                     44
+                         Tensor trains for sequential learning
+
+
+
+
+Proof The L1 distance between π1 and π2 can be expressed as
+                          Z Z
+           kπ1 − π2 kL1 =      π1 (x1 , x2 ) − π2 (x1 , x2 ) dx1 dx2
+                          Z Z
+                                π2 (x1 , x2 )
+                        =                     − 1 π1 (x1 , x2 )dx1 dx2
+                                π1 (x1 , x2 )
+                          Z Z
+                                π2 (x1 , x2 )     π1 (x1 , x2 )
+                        =                     −1                dx2 π̄1 (x1 )dx1 .
+                                π1 (x1 , x2 )       π̄1 (x1 )
+Since f (r) = |r − 1| is a convex function, applying Jensen’s inequality to the inner integral
+over x2 , the rest of the proof follows the same steps of Lemma 13.
+
+
+
+Appendix B. Posterior densities of the linear Kalman filter with
+  unknown parameters
+We recall that the linear Kalman filter specifies the state and observation processes as
+                           (
+                                                             (x)
+                             X t − µ = b (X t-1 − µ) + a εt
+                                                     (y)         ,                       (39)
+                                 Y t = CX t + d εt
+        (x)       (y)
+where εt and εt follow respectively independent Gaussian distributions N (0, Im ) and
+N (0, In ), and C ∈ Rn×m is the observation matrix. Here Im represents an m × m identity
+matrix. The prior density of the initial state X 0 is given by p(x0 |µ) := N (x0 ; µ1m , Im ),
+where 1m is an m-dimensional vector filled with ones. Without loss of generality, we set µ
+to be zero to simplify notation used in the derivation. This way, the parameters controlling
+the model are collected as θ = (a, b, d). It is well known that the filtering density (X t |Θ =
+θ, Y 1:t = y 1:t ) and the smoothing density (X k |Θ = θ, Y 1:t = y 1:t ) for any k < t are
+Gaussian conditioned on Θ = θ. See Särkkä (2013) and reference therein for details. Using
+this property, here we derive the analytical form of the posterior parameter density p(θ|y 1:t ).
+    As a starting point, we collect all the quantities from time 0 to t in vectorized forms,
+                               X̄   = [X 0 ; . . . ; X t ] ∈ Rm(t+1) ,
+                               Ȳ   = [Y 1 ; . . . ; Y t ]    ∈ Rnt ,
+                                          (x)           (x)
+                               ε̄(x) = [ε0 ; . . . ; εt ] ∈ Rm(t+1) ,
+                                          (y)           (x)
+                               ε̄(y) = [ε1 ; . . . ; εt ] ∈ Rnt ,
+        (x)                                                              (x)
+where ε0 ∼ N (0, Im ) is independent of the other state noises εk , k ≥ 1. Corresponding to
+the collected states X̄ and the collected observations Ȳ , we define the joint state transition
+matrix Aθ ∈ Rm(t+1)×m(t+1) and the joint observation matrix H ∈ Rnt×m(t+1) as
+                                                                                   
+                a Im                                           0 C
+             −b Im       Im                                 0 C                    
+                                                                                   
+                      −b Im Im                                      0 C            
+       Aθ =                                  and H =                               ,
+                             . .      . .                              . .   . .   
+                                 .        .                                .     . 
+                                    −b Im Im                                     0 C
+
+                                                   45
+                                         Zhao and Cui
+
+
+
+
+respectively, where 0 denotes a matrix of size n × m filled with zeros. Then, the state and
+observation processes defined in (39) can be equivalently expressed as
+
+                              X̄ = a A−1  (x)
+                                      θ ε̄ ,      Ȳ = HX̄ + d ε̄(y) .                (40)
+
+The joint posterior density of the state path X 0:t ≡ X̄ and the parameters Θ takes the
+form
+                                           1
+                           p(x̄, θ|ȳ) =       p(ȳ|x̄, θ)p(x̄|θ)p(θ).
+                                         p(ȳ)
+Our goal is to derive the posterior parameter density
+                                  Z
+                                                     1
+                        p(θ|ȳ) = p(x̄, θ|ȳ)dx̄ =       p(θ)p(ȳ|θ),                 (41)
+                                                   p(ȳ)
+
+where p(ȳ|θ) is the marginal likelihood defined as
+                                        Z
+                               p(ȳ|θ) = p(ȳ|x̄, θ)p(x̄|θ)dx̄.
+
+   Combining the two equations in (40), we obtain
+
+                                    Ȳ = aH A−1
+                                             θ ε̄
+                                                  (x)
+                                                      + d ε̄(y) .
+
+Note that ε̄(x) and ε̄(y) are independent Gaussian random variables. Thus, conditioned on
+the parameters Θ = θ, the observations Ȳ follow a multivariate Gaussian distribution:
+
+             (Ȳ |Θ = θ) ∼ N (ȳ; 0, Σ̄θ )   where    Σ̄θ = a2 HA−1 −> >   2
+                                                                 θ Aθ H + d Int .
+
+To be more specific, we have
+                                                          1             
+                    p(ȳ|θ) = (2π)−nt/2 det(Σ̄θ )−1/2 exp − ȳ > Σ̄−1
+                                                                   θ  ȳ   .
+                                                           2
+The explicit form of the posterior parameter density follows from (41).
+
+References
+Brian D O Anderson and John B Moore. Optimal filtering. Courier Corporation, 2012.
+
+Christophe Andrieu, Arnaud Doucet, and Roman Holenstein. Particle Markov chain Monte
+ Carlo methods. Journal of the Royal Statistical Society: Series B (Statistical Methodol-
+ ogy), 72(3):269–342, 2010.
+
+Alexandros Beskos, Ajay Jasra, Nikolas Kantas, and Alexandre Thiery. On the convergence
+  of adaptive sequential Monte Carlo methods. Annals of Applied Probability, 26(2):1111–
+  1146, 2016.
+
+Daniele Bigoni, Allan P Engsig-Karup, and Youssef M Marzouk. Spectral tensor-train
+ decomposition. SIAM Journal on Scientific Computing, 38(4):A2405–A2439, 2016.
+
+                                                 46
+                        Tensor trains for sequential learning
+
+
+
+
+Yoram Bresler. Two-filter formulae for discrete-time non-linear Bayesian smoothing. Inter-
+  national Journal of Control, 43(2):629–641, 1986.
+
+Mark Briers, Arnaud Doucet, and Simon Maskell. Smoothing algorithms for state–space
+ models. Annals of the Institute of Statistical Mathematics, 62:61–89, 2010.
+
+Hans-Joachim Bungartz and Michael Griebel. Sparse grids. Acta Numerica, 13:147–269,
+ 2004.
+
+Olivier Cappé, Eric Moulines, and Tobias Rydén. Inference in Hidden Markov Models.
+  Springer Science & Business Media, 2006.
+
+James Carpenter, Peter Clifford, and Paul Fearnhead. Improved particle filter for nonlinear
+  problems. IEE Proceedings-Radar, Sonar and Navigation, 146(1):2–7, 1999.
+
+Nan Chen and Andrew J Majda. Conditional Gaussian systems for multiscale nonlinear
+ stochastic systems: Prediction, state estimation and uncertainty quantification. Entropy,
+ 20(7):509, 2018.
+
+Nan Chen, Andrew J Majda, and Xin T Tong. Rigorous analysis for efficient statistically
+ accurate algorithms for solving Fokker–Planck equations in large dimensions. SIAM/ASA
+ Journal on Uncertainty Quantification, 6(3):1198–1223, 2018.
+
+Nan Chen, Yingda Li, and Honghu Liu. Conditional Gaussian nonlinear system: A fast
+ preconditioner and a cheap surrogate model for complex nonlinear systems. Chaos: An
+ Interdisciplinary Journal of Nonlinear Science, 32(5):053122, 2022.
+
+Nicolas Chopin, Pierre E Jacob, and Omiros Papaspiliopoulos. SMC2: an efficient algorithm
+  for sequential analysis of state space models. Journal of the Royal Statistical Society:
+  Series B (Statistical Methodology), 75(3):397–426, 2013.
+
+Alexandre J Chorin and Xuemin Tu. Implicit sampling for particle filters. Proceedings of
+  the National Academy of Sciences, 106(41):17249–17254, 2009.
+
+Gregory M Constantine and Thomas H Savits. A multivariate Faa di Bruno formula with
+  applications. Transactions of the American Mathematical Society, 348(2):503–520, 1996.
+
+Dan Crisan and Joaquin Miguez. Nested particle filters for online parameter estimation in
+ discrete-time state-space Markov models. Bernoulli, 24(4A):3039–3086, 2018.
+
+Tiangang Cui and Sergey Dolgov. Deep composition of tensor-trains using squared inverse
+  Rosenblatt transports. Foundations of Computational Mathematics, 22(6):1863–1922,
+  2022.
+
+Tiangang Cui and Xin T Tong. A unified performance analysis of likelihood-informed
+  subspace methods. Bernoulli, 28(4):2788–2815, 2022.
+
+Tiangang Cui, James Martin, Youssef M. Marzouk, Antti Solonen, and Alessio Spantini.
+  Likelihood-informed dimension reduction for nonlinear inverse problems. Inverse Prob-
+  lems, 30:114015, 2014.
+
+                                            47
+                                       Zhao and Cui
+
+
+
+
+Tiangang Cui, Sergey Dolgov, and Olivier Zahm. Self-reinforced polynomial approximation
+  methods for concentrated probability densities. arXiv preprint: 2303.02554, 2023.
+
+Tiangang Cui, Sergey Dolgov, and Robert Scheichl. Deep importance sampling using tensor
+  trains with application to a priori and a posteriori rare events. SIAM Journal on Scientific
+  Computing, 46(1):C1–C29, 2024.
+
+Ingrid Daubechies. Ten lectures on wavelets. SIAM, 1992.
+
+Carl de Boor, Ronald A DeVore, and Amos Ron. On the construction of multivariate (pre)
+  wavelets. Constructive approximation, 9(2):123–166, 1993.
+
+Pierre Del Moral, Arnaud Doucet, and Ajay Jasra. On adaptive resampling strategies for
+  sequential Monte Carlo methods. Bernoulli, 18(1):252–278, 2012.
+
+Ronald A DeVore and Vasil A Popov. Interpolation of besov spaces. Transactions of the
+  American Mathematical Society, 305(1):397–414, 1988.
+
+Josef Dick, Frances Y Kuo, and Ian H Sloan. High-dimensional integration: the quasi-Monte
+  Carlo way. Acta Numerica, 22:133–288, 2013.
+
+Sergey V Dolgov and Dmitry V Savostyanov. Alternating minimal energy methods for linear
+  systems in higher dimensions. SIAM Journal on Scientific Computing, 36(5):A2248–
+  A2271, 2014.
+
+Arnaud Doucet and Adam M Johansen. A tutorial on particle filtering and smoothing:
+  Fifteen years later. Handbook of nonlinear filtering, 12(656-704):3, 2009.
+
+Dinh Dũng, Vladimir Temlyakov, and Tino Ullrich.          Hyperbolic cross approximation.
+  Springer, 2018.
+
+Garry A Einicke and Langford B White. Robust extended Kalman filtering. IEEE Trans-
+ actions on Signal Processing, 47(9):2596–2599, 1999.
+
+Geir Evensen. The ensemble Kalman filter: Theoretical formulation and practical imple-
+ mentation. Ocean Dynamics, 53(4):343–367, 2003.
+
+Geir Evensen, Femke C Vossepoel, and Peter Jan van Leeuwen. Data assimilation funda-
+ mentals: A unified formulation of the state and parameter estimation problem. Springer
+ Nature, 2022.
+
+Paul Fearnhead, David Wyncoll, and Jonathan Tawn. A sequential smoothing algorithm
+  with linear computational cost. Biometrika, 97(2):447–464, 2010.
+
+Andrew Gelman and Xiao-Li Meng. Simulating normalizing constants: From importance
+ sampling to bridge sampling to path sampling. Statistical Sciences, pages 163–185, 1998.
+
+Mathieu Gerber and Nicolas Chopin. Sequential quasi Monte Carlo. Journal of the Royal
+ Statistical Society Series B: Statistical Methodology, 77(3):509–579, 2015.
+
+                                             48
+                       Tensor trains for sequential learning
+
+
+
+
+Walter R Gilks and Carlo Berzuini. Following a moving target—Monte Carlo inference for
+ dynamic Bayesian models. Journal of the Royal Statistical Society: Series B (Statistical
+ Methodology), 63(1):127–146, 2001.
+Simon J Godsill, Arnaud Doucet, and Mike West. Monte Carlo smoothing for nonlinear
+  time series. Journal of the American Statistical Association, 99(465):156–168, 2004.
+Neil J Gordon, David J Salmond, and Adrian FM Smith. Novel approach to nonlinear/non-
+  Gaussian Bayesian state estimation. In IEEE Proceedings F (Radar and Signal Process-
+  ing), volume 140, pages 107–113. IET, 1993.
+Alex Gorodetsky, Sertac Karaman, and Youssef M Marzouk. A continuous analogue of the
+  tensor-train decomposition. Computer Methods in Applied Mechanics and Engineering,
+  347:59–84, 2019.
+Georg A Gottwald and Sebastian Reich. Combining machine learning and data assimilation
+ to forecast dynamical systems from noisy partial observations. Chaos: An Interdisci-
+ plinary Journal of Nonlinear Science, 31(10):101103, 2021.
+Michael Griebel and Helmut Harbrecht. Analysis of tensor approximation schemes for
+ continuous functions. Foundations of Computational Mathematics, 23:219–240, 2023.
+Wolfgang Hackbusch. Tensor spaces and numerical tensor calculus, volume 42. Springer
+ Science & Business Media, 2012.
+Edward Herbst and Frank Schorfheide. Tempered particle filtering. Journal of Economet-
+  rics, 210(1):26–44, 2019.
+Truong-Vinh Hoang, Sebastian Krumscheid, Hermann G Matthies, and Raúl Tempone.
+  Machine learning-based conditional mean filter: a generalization of the ensemble Kalman
+  filter for nonlinear data assimilation. arXiv preprint: 2106.07908, 2021.
+Rudolph Emil Kalman. A new approach to linear filtering and prediction problems. 1960.
+Nicholas Kantas, Arnaud Doucet, Sumeetpal Sindhu Singh, and Jan Marian Maciejowski.
+  An overview of sequential Monte Carlo methods for parameter estimation in general
+  state-space models. IFAC Proceedings Volumes, 42(10):774–785, 2009.
+Nikolas Kantas, Alexandros Beskos, and Ajay Jasra. Sequential Monte Carlo methods
+  for high-dimensional inverse problems: A case study for the navier–stokes equations.
+  SIAM/ASA Journal on Uncertainty Quantification, 2(1):464–489, 2014.
+Genshiro Kitagawa. Monte Carlo filter and smoother for non-Gaussian nonlinear state space
+ models. Journal of Computational and Graphical Statistics, 5(1):1–25, 1996.
+Herbert Knothe et al. Contributions to the theory of convex bodies. The Michigan Mathe-
+  matical Journal, 4(1):39–52, 1957.
+Jun S Liu, Rong Chen, and Tanya Logvinenko. A theoretical framework for sequential
+  importance sampling with resampling. In Sequential Monte Carlo methods in practice,
+  pages 225–246. Springer, 2001.
+
+                                           49
+                                     Zhao and Cui
+
+
+
+
+Stephane G Mallat. Multiresolution approximations and wavelet orthonormal bases of
+  L2 (R). Transactions of the American Mathematical Society, 315(1):69–87, 1989.
+
+Simon Maskell and Neil Gordon. A tutorial on particle filters for on-line nonlinear/non-
+  Gaussian Bayesian tracking. IEEE Target Tracking: Algorithms and Applications (Ref.
+  No. 2001/174), pages 2–1, 2002.
+
+Matthias Morzfeld, Xuemin Tu, Ethan Atkins, and Alexandre J Chorin. A random map
+ implementation of implicit filters. Journal of Computational Physics, 231(4):2049–2066,
+ 2012.
+
+Ivan Oseledets and Eugene Tyrtyshnikov. TT-cross approximation for multidimensional
+  arrays. Linear Algebra and its Applications, 432(1):70–88, 2010.
+
+Ivan Oseledets. Tensor-train decomposition. SIAM Journal on Scientific Computing, 33(5):
+  2295–2317, 2011.
+
+Hill Peter D. Kernel estimation of a distribution function. Communications in Statistics-
+  Theory and Methods, 14(3):605–620, 1985.
+
+Michael K Pitt and Neil Shephard. Filtering via simulation: Auxiliary particle filters.
+ Journal of the American Statistical Association, 94(446):590–599, 1999.
+
+Michael K Pitt and Neil Shephard. Auxiliary variable based particle filters. Sequential
+ Monte Carlo methods in practice, pages 273–293, 2001.
+
+Sebastian Reich. A nonparametric ensemble transform method for Bayesian inference. SIAM
+  Journal on Scientific Computing, 35(4):A2013–A2024, 2013.
+
+Sebastian Reich and Colin Cotter. Probabilistic forecasting and Bayesian data assimilation.
+  Cambridge University Press, 2015.
+
+Paul B Rohrbach, Sergey Dolgov, Lars Grasedyck, and Robert Scheichl. Rank bounds for
+  approximating Gaussian densities in the tensor-train format. SIAM/ASA Journal on
+  Uncertainty Quantification, 10(3):1191–1224, 2022.
+
+Murray Rosenblatt. Remarks on a multivariate transformation. The Annals of Mathematical
+ Statistics, 23(3):470–472, 1952.
+
+Simo Särkkä. Bayesian filtering and smoothing. Number 3. Cambridge University Press,
+  2013.
+
+Simo Särkkä, Jouni Hartikainen, Isambi S Mbalawata, and Heikki Haario. Posterior infer-
+  ence on parameters of stochastic differential equations via non-linear Gaussian filtering
+  and adaptive mcmc. Statistics and Computing, 25(2):427–437, 2015.
+
+Jie Shen, Tao Tang, and Li-Lian Wang. Spectral methods: algorithms, analysis and appli-
+  cations, volume 41. Springer Science & Business Media, 2011.
+
+Bernard W Silverman. Density estimation for statistics and data analysis, volume 26. CRC
+  press, 1986.
+
+                                            50
+                        Tensor trains for sequential learning
+
+
+
+
+Ian H Sloan and Henryk Woźniakowski. When are quasi-Monte Carlo algorithms efficient
+  for high dimensional integrals?, Journal of Complexity, 14(1):1–33, 1998.
+
+Chris Snyder, Thomas Bengtsson, Peter Bickel, and Jeff Anderson. Obstacles to high-
+ dimensional particle filtering. Monthly Weather Review, 136(12):4629–4640, 2008.
+
+Alessio Spantini, Daniele Bigoni, and Youssef Marzouk. Inference via low-dimensional cou-
+  plings. The Journal of Machine Learning Research, 19(1):2639–2709, 2018.
+
+Alessio Spantini, Ricardo Baptista, and Youssef Marzouk. Coupling techniques for nonlinear
+  ensemble filtering. SIAM Review, 64(4):921–953, 2022.
+
+Andrew M Stuart. Inverse problems: a Bayesian perspective. Acta Numerica, 19:451–559,
+ 2010.
+
+Holger Wendland. Scattered data approximation, volume 17. Cambridge university press,
+ 2004.
+
+Christopher KI Williams and Carl Edward Rasmussen. Gaussian processes for machine
+ learning, volume 2. MIT press Cambridge, MA, 2006.
+
+Dongbin Xiu and George Em Karniadakis. The wiener–askey polynomial chaos for stochas-
+ tic differential equations. SIAM Journal on Scientific Computing, 24(2):619–644, 2002.
+
+Jun Yu, Zhenlin Yang and Xibin Zhang. A class of nonlinear stochastic volatility models and
+  its implications for pricing currency options. Computational Statistics & Data Analysis,
+  51(4):2218–2231, 2006.
+
+Olivier Zahm, Tiangang Cui, Kody Law, Alessio Spantini, and Youssef Marzouk. Certified
+  dimension reduction in nonlinear Bayesian inverse problems. Mathematics of Computa-
+  tion, 91(336):1789–1835, 2022.
+
+Benjamin Zanger, Tiangang Cui, Martin Schreiber, and Olivier Zahm. Sequential transport
+  maps using SoS density estimation and α-divergences. arXiv preprint, arXiv:2402.17943,
+  2024.
+
+Xibin Zhang and Maxwell L King. Box-Cox stochastic volatility models with heavy-tails
+  and correlated errors. Journal of Empirical Finance, 15(3):549–566, 2008.
+
+
+
+
+                                            51
+

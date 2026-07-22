@@ -1,0 +1,170 @@
+{
+  "adapter_signature": "42dc7bad0137fd9c31aa1d618bb4e560f68d1bbe3a7ab4f5ef95e458b2abc985",
+  "contract_hash": "2ec81932645255e594041f61ac55885239b18cb301b891d2b1136d0dfdb6fd17",
+  "dimension": 18,
+  "immutable_inputs": {
+    "comparator_file_sha256": "1b0c05d4ea2981b1be179040d3a52039f05efe6c5b163f9bf7bba64ce2068920",
+    "geometry_file_sha256": "bd9b086d60df518b4410c3348b1fd93663fc8dc861428d77b4098aa1e118a87d",
+    "mass_file_sha256": "54549c9156821536bc4780f0406a7716b0d3fa39a5b5900fa2893cbef2968a95"
+  },
+  "nonclaims": [
+    "one favorably truth-centered 18D LGSSM fixture only",
+    "plain-HMC agreement is not exact-posterior correctness evidence",
+    "training loss is explanatory only",
+    "acceptance alone cannot admit a kernel",
+    "runtime and ESS differences are descriptive only",
+    "no sampler superiority, calibration, robustness, or generalization claim",
+    "no production or default-readiness claim"
+  ],
+  "runtime": {
+    "chains_per_worker": 2,
+    "hmc": "cpu_hidden_two_persistent_workers_two_chains_each_xla_float64",
+    "jit_compile": true,
+    "training": "trusted_gpu_xla_float64",
+    "worker_count": 2
+  },
+  "schema": "bayesfilter.lgssm_neutra_serious_validation_contract.v1",
+  "seed_ledger": {
+    "candidate_hmc_seeds": {
+      "affine_control": {
+        "fixed_grid_primary_screen_seed": [
+          20260713,
+          2101
+        ],
+        "fixed_grid_primary_verification_seed": [
+          20260713,
+          2201
+        ],
+        "fixed_grid_repair_screen_seed": [
+          20260713,
+          2151
+        ],
+        "fixed_grid_repair_verification_seed": [
+          20260713,
+          2251
+        ],
+        "serious_seed": [
+          20260713,
+          3101
+        ]
+      },
+      "dense_seed1201": {
+        "fixed_grid_primary_screen_seed": [
+          20260713,
+          2201
+        ],
+        "fixed_grid_primary_verification_seed": [
+          20260713,
+          2301
+        ],
+        "fixed_grid_repair_screen_seed": [
+          20260713,
+          2251
+        ],
+        "fixed_grid_repair_verification_seed": [
+          20260713,
+          2351
+        ],
+        "serious_seed": [
+          20260713,
+          3201
+        ]
+      },
+      "dense_seed1202": {
+        "fixed_grid_primary_screen_seed": [
+          20260713,
+          2301
+        ],
+        "fixed_grid_primary_verification_seed": [
+          20260713,
+          2401
+        ],
+        "fixed_grid_repair_screen_seed": [
+          20260713,
+          2351
+        ],
+        "fixed_grid_repair_verification_seed": [
+          20260713,
+          2451
+        ],
+        "serious_seed": [
+          20260713,
+          3301
+        ]
+      }
+    },
+    "phase3_training_seed": [
+      20260713,
+      1101
+    ],
+    "phase4_training_seeds": {
+      "dense_seed1201": [
+        20260713,
+        1201
+      ],
+      "dense_seed1202": [
+        20260713,
+        1202
+      ]
+    },
+    "worker_seed_derivation": "(root0, root1 + 1009 * (worker_index + 1))"
+  },
+  "serious": {
+    "bulk_ess_min": 1000.0,
+    "burnin": 1000,
+    "posterior_agreement_max_combined_mcse": 4.0,
+    "recovery_max_posterior_sd": 3.0,
+    "results_per_chain": 4000,
+    "rhat_max": 1.01,
+    "tail_ess_min": 400.0
+  },
+  "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30",
+  "training": {
+    "activation": "elu",
+    "device": "/GPU:0",
+    "hidden_layers": [
+      18,
+      18
+    ],
+    "jit_compile": true,
+    "phase3_batch_size": 16,
+    "phase3_steps": 8,
+    "phase4_batch_size": 256,
+    "phase4_steps": 1000,
+    "s_max": 1.0,
+    "stage_count": 3
+  },
+  "tuning": {
+    "acceptance_band": [
+      0.6,
+      0.9
+    ],
+    "base_step_size": 0.1,
+    "leapfrog_steps": 10,
+    "modern_rhat_max": 1.01,
+    "one_repair_scales": [
+      0.125,
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0,
+      8.0
+    ],
+    "primary_scales": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "probe_burnin": 128,
+    "probe_results_per_chain": 64,
+    "repair_band": [
+      0.45,
+      0.98
+    ],
+    "verification_burnin": 1000,
+    "verification_results_per_chain": 1000
+  }
+}

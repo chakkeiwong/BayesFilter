@@ -1,0 +1,42 @@
+{
+  "schema": "bayesfilter.corrected_neural_force_hmc.command_manifest.v1",
+  "program_id": "bayesfilter-corrected-neural-force-hmc-20260717",
+  "git_commit_at_p0": "15170e1573d19b235d96f3ed3525fa2071f58320",
+  "dirty_worktree_disclosure": "shared heavily dirty worktree with concurrent lanes; HNN implementation uses new standalone files and does not rewrite unrelated shared changes",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "environment": "tf-gpu",
+  "gpu_policy": {
+    "trusted_or_escalated": true,
+    "memory_growth": true,
+    "jit_compile": true,
+    "tf32_enabled": true
+  },
+  "phase_commands": {
+    "P1_cpu": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/test_neural_force_hmc.py -k not_gpu",
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python -m compileall -q bayesfilter/inference/neural_force_hmc.py tests/test_neural_force_hmc.py"
+    ],
+    "P1_gpu": [
+      "nvidia-smi",
+      "BAYESFILTER_TEST_DEVICE_SCOPE=visible /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/test_neural_force_hmc_gpu.py"
+    ],
+    "P2_cpu": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/test_neural_force_training.py tests/test_neural_force_campaign.py -k not_gpu"
+    ],
+    "P2_gpu": [
+      "BAYESFILTER_TEST_DEVICE_SCOPE=visible /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/test_neural_force_training_gpu.py tests/test_neural_force_hmc_gpu.py"
+    ],
+    "P3": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python docs/benchmarks/run_lgssm_neural_force_hmc_2026_07_17.py --output-root docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p3/LGSSM-KF/attempt-01"
+    ]
+  },
+  "seed_domains": {
+    "training_screen": [20260717, 51000],
+    "fresh_training": [20260717, 52000],
+    "tuning": [20260717, 53000],
+    "warmup": [20260717, 54000],
+    "retained": [20260717, 55000],
+    "conditional_second_dataset": [20260717, 56000]
+  },
+  "timeouts_seconds": {"P1_cpu": 600, "P1_gpu": 900, "P2_cpu": 1200, "P2_gpu": 3600, "P3": 43200}
+}

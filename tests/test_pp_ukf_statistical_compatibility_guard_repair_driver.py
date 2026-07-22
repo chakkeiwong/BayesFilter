@@ -62,3 +62,46 @@ def test_projection_fits_unchanged_budget_and_binds_nine_guards():
     assert projection["prior_charged_seconds"] == pytest.approx(
         9931.762329853023
     )
+
+
+def test_generic_validation_conversion_preserves_primary_and_coverage_provenance():
+    from bayesfilter.inference.hmc_operational_broad_grid import (
+        assemble_operational_broad_grid_result,
+        expand_same_epsilon_neighbor_guards,
+    )
+    from tests.test_hmc_operational_broad_grid import (
+        POLICY,
+        _guard,
+        _handoff,
+        _primary,
+    )
+
+    primaries = tuple(_primary(item) for item in POLICY.primary_l_grid)
+    requests = expand_same_epsilon_neighbor_guards(
+        primaries, policy=POLICY, handoff=_handoff()
+    )
+    result = assemble_operational_broad_grid_result(
+        policy=POLICY,
+        handoff=_handoff(),
+        primary_candidates=primaries,
+        guard_candidates=tuple(_guard(request) for request in requests),
+    )
+    converted = driver.build_pp_ukf_frozen_validation_candidates(
+        result.next_round_candidates,
+        model_id="pp_ukf",
+        target_signature="target",
+        tuning_scope_signature="scope",
+    )
+    converted_coverage = next(
+        item for item in converted if item.controls["num_leapfrog_steps"] == 4
+    )
+    assert converted_coverage.control_provenance == "inherited_exact_one_hop_coverage"
+    assert converted_coverage.parent_candidate_id in {
+        item.signature for item in primaries
+    }
+    assert converted_coverage.controls["step_size"] == 0.2
+    assert all(
+        item.control_provenance == "independently_tuned"
+        for item in converted
+        if item.parent_candidate_id is None
+    )

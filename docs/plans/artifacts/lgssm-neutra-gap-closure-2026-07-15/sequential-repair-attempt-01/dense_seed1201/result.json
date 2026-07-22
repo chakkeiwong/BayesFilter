@@ -1,0 +1,823 @@
+{
+  "adapter_signature": "42dc7bad0137fd9c31aa1d618bb4e560f68d1bbe3a7ab4f5ef95e458b2abc985",
+  "artifact_hash": "sha256:14a75b67791aa6d58b1af933877e3c2473075bb1491ddc6e08bb641b10d92abf",
+  "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+  "artifact_signature": "e83cc667a0e03208c6cb6fd9b2659ee3950866a4c97017441fe5464928305058",
+  "candidate_id": "dense_seed1201",
+  "decision": "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL",
+  "evidence_role": "corrected_sequential_warmup_and_tuning_admission",
+  "fixed_kernel": {
+    "artifact_signature": "e83cc667a0e03208c6cb6fd9b2659ee3950866a4c97017441fe5464928305058",
+    "candidate_id": "dense_seed1201",
+    "fixed_transport_adapter_signature": "c303f615a20a26ab5011f4f9cb959c98ed503c80fc9712a422db7dc614bbddc7",
+    "num_leapfrog_steps": 10,
+    "schema": "bayesfilter.lgssm_neutra_fixed_hmc_kernel.v2",
+    "sequential_config": {
+      "chain_count": 4,
+      "dtype": "float64",
+      "jit_compile": true,
+      "num_leapfrog_steps": 10,
+      "retained_chunk_results": 1000,
+      "retained_max_results": 10000,
+      "retained_min_results": 1000,
+      "retained_rhat_max": 1.01,
+      "retained_seed": [
+        20260715,
+        4201
+      ],
+      "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+      "step_size": 0.8,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 1000,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000,
+      "warmup_rhat_max": 1.05,
+      "warmup_seed": [
+        20260715,
+        4101
+      ]
+    },
+    "step_size": 0.8,
+    "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30",
+    "trajectory_length": 8.0,
+    "transport_hash": "bcbe925f2ca77996bfe05cd5b951d1a66f540327789093d0ade8fecdf0773363"
+  },
+  "fixed_kernel_hash": "sha256:700b0f66ef80298d59fb1545671c160e9fe952e588050f10edc8889bcf22f915",
+  "fixed_transport_adapter_signature": "c303f615a20a26ab5011f4f9cb959c98ed503c80fc9712a422db7dc614bbddc7",
+  "historical_fixed_budget_result": {
+    "artifact_hash": "sha256:ec870c42abe1bd0d477947fe36ef2e2b6faacffbf88aa338b25842f37c2029d5",
+    "evidence_role": "superseded_incomplete_fixed_budget_diagnostic",
+    "file_sha256": "28bdcd5da05457369e123a0ee1ffb01320c2441a19f73adf86783fb9037de1fb",
+    "path": "docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/phase4/dense_seed1201/result.json"
+  },
+  "nonclaims": [
+    "one favorably truth-centered 18D LGSSM fixture only",
+    "plain-HMC agreement is not exact-posterior correctness evidence",
+    "training loss and acceptance alone are explanatory only",
+    "no sampler superiority, calibration, robustness, or generalization claim",
+    "no production or default-readiness claim"
+  ],
+  "passed": true,
+  "phase": "R1",
+  "runtime_manifest": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+      "docs/benchmarks/run_lgssm_neutra_gap_closure_2026_07_15.py",
+      "sequential-candidate",
+      "--job-id",
+      "dense_seed1201"
+    ],
+    "conda_env": "tf-gpu",
+    "cuda_visible_devices": "-1",
+    "dtype": "float64",
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "jit_compile": true,
+    "output_paths": [
+      "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/result.json",
+      "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples"
+    ],
+    "plan_file": "docs/plans/bayesfilter-lgssm-neutra-scientific-gap-closure-plan-2026-07-15.md",
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "python_version": "3.11.14",
+    "tensorflow_probability_version": "0.25.0",
+    "tensorflow_version": "2.19.1"
+  },
+  "schema": "bayesfilter.lgssm_neutra_sequential_hmc_candidate.v1",
+  "sequential_run": {
+    "config": {
+      "chain_count": 4,
+      "dtype": "float64",
+      "jit_compile": true,
+      "num_leapfrog_steps": 10,
+      "retained_chunk_results": 1000,
+      "retained_max_results": 10000,
+      "retained_min_results": 1000,
+      "retained_rhat_max": 1.01,
+      "retained_seed": [
+        20260715,
+        4201
+      ],
+      "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+      "step_size": 0.8,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 1000,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000,
+      "warmup_rhat_max": 1.05,
+      "warmup_seed": [
+        20260715,
+        4101
+      ]
+    },
+    "cumulative_archives": {
+      "retained_raw": {
+        "all_finite": true,
+        "artifact_hash": "sha256:44bd068d6d24b4e7fed170503936b383ed6987543914fce2e3f75429eedb270f",
+        "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+        "dtype": "float64",
+        "metadata": {
+          "coordinate_system": "raw_parameters",
+          "stage": "retained"
+        },
+        "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+        "shape": [
+          2000,
+          4,
+          18
+        ],
+        "tensor_file_sha256": "808fc2550602d58cb13f1e2682342b0603086068b86e9b1fa1e4f78268325926",
+        "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/retained/all_raw.tftensor"
+      },
+      "retained_z": {
+        "all_finite": true,
+        "artifact_hash": "sha256:ccbbe7dcd20a576ff3248e317272e331e45fc6a01ad3b7a9d342eb54686813d3",
+        "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+        "dtype": "float64",
+        "metadata": {
+          "coordinate_system": "latent_z",
+          "stage": "retained"
+        },
+        "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+        "shape": [
+          2000,
+          4,
+          18
+        ],
+        "tensor_file_sha256": "d85edb6f17273c430ffeb9faf31283fd6803a6d6e1b9a33f96c3833c3458f26f",
+        "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/retained/all_z.tftensor"
+      },
+      "warmup_raw": {
+        "all_finite": true,
+        "artifact_hash": "sha256:85da7cbd6c1ed7d85eac1e872265d7374f67a5bf19438e3400df49fe9ca3d7ad",
+        "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+        "dtype": "float64",
+        "metadata": {
+          "coordinate_system": "raw_parameters",
+          "stage": "warmup"
+        },
+        "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+        "shape": [
+          2000,
+          4,
+          18
+        ],
+        "tensor_file_sha256": "3ae9814f6eb551166b5a73112f8d01f67551f4ebb7cfbe87b472a3f7059883c8",
+        "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/warmup/all_raw.tftensor"
+      },
+      "warmup_z": {
+        "all_finite": true,
+        "artifact_hash": "sha256:6c85d84b033e033b6f26e863ecc0737bd72b65690dea440eddfe686d691cb6b5",
+        "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+        "dtype": "float64",
+        "metadata": {
+          "coordinate_system": "latent_z",
+          "stage": "warmup"
+        },
+        "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+        "shape": [
+          2000,
+          4,
+          18
+        ],
+        "tensor_file_sha256": "2328ad964ebc49335b50bf4b0fe32c20da2d34c32edf949dff5a31962669fd19",
+        "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/warmup/all_z.tftensor"
+      }
+    },
+    "decision": "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL",
+    "elapsed_seconds": 560.9116315819992,
+    "hard_vetoes": [],
+    "passed": true,
+    "retained_archives": [
+      {
+        "raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:a16c016adc88458e475c9736085d57f6e6391f08ae59b233c51de6d37746407b",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 0,
+            "coordinate_system": "raw_parameters",
+            "seed": [
+              20260715,
+              5210
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "a3ec019273ae16d9689f7f48cabaf1b046ebe099f5a6df58f57dc570f9ee990d",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/retained/chunk_0001_raw.tftensor"
+        },
+        "z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:ac3e728ad8bcd45f0e13734f6a415de12218209c7cd91ab4febf3f4505a7f0e9",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 0,
+            "coordinate_system": "latent_z",
+            "seed": [
+              20260715,
+              5210
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "fede5616d95e3dd152f7cc9405511f41b503e0a524137c1b85c50175cfa2731c",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/retained/chunk_0001_z.tftensor"
+        }
+      },
+      {
+        "raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:d40b08a397727d4c74d9320bbaec973a3a24cafef9c07b532a85bac1530b15a3",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 1,
+            "coordinate_system": "raw_parameters",
+            "seed": [
+              20260715,
+              6219
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "e8510f387f1f8571b385ab5d6b35241a00c59e183adb48183aad45505faf997e",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/retained/chunk_0002_raw.tftensor"
+        },
+        "z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:741394015bc4313e3b6d6b1b6cb000205b88660a413c24adb25a50558c486481",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 1,
+            "coordinate_system": "latent_z",
+            "seed": [
+              20260715,
+              6219
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "bd550737cf4e2604ee538dc0a9af6feb36b5ede33da970cc8cc1dd6bdb4862d6",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/retained/chunk_0002_z.tftensor"
+        }
+      }
+    ],
+    "retained_cap_hit": false,
+    "retained_check_count": 2,
+    "retained_checks": [
+      {
+        "chunk_index": 0,
+        "completed_results_per_chain": 1000,
+        "health": {
+          "acceptance_rate": 0.69075,
+          "acceptance_rate_by_chain": [
+            0.677,
+            0.68,
+            0.691,
+            0.715
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 140.5525896300096,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "floor_count_total": 0,
+            "max_innovation_condition_estimate": 6.743169809240117,
+            "min_innovation_eigenvalue": 0.027644695707226826,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 18,
+          "folded_rank_normalized_split_rhat": [
+            1.0042414384442375,
+            1.0025834861261225,
+            1.0053785605807546,
+            1.0011661480934897,
+            1.0084204857097452,
+            1.0020543762477603,
+            1.004476964432477,
+            1.00091584463316,
+            1.0108233134843527,
+            1.000599571273079,
+            1.0061152972803207,
+            0.9994626973304942,
+            1.000602226840893,
+            1.0054261534782056,
+            1.0034253774781916,
+            1.0005410827507533,
+            1.0096848536823801,
+            1.0040516221026787
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0108233134843527,
+          "max_folded_rank_normalized_split_rhat": 1.0108233134843527,
+          "max_rank_normalized_split_rhat": 1.0080605458993117,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 18,
+          "passed": false,
+          "rank_normalized_split_rhat": [
+            1.0080605458993117,
+            1.0005742618968139,
+            1.000733471301148,
+            1.0039728437845172,
+            1.0028540813747409,
+            1.0024392407980236,
+            1.0023199381580647,
+            1.0003030665605197,
+            1.0026295793560915,
+            1.005366167684496,
+            1.0046315957062457,
+            0.9996922901766266,
+            1.0042700472127086,
+            0.9989816463961759,
+            1.0015987661907226,
+            1.0006531017764015,
+            0.9994028387302495,
+            1.0031457456062405
+          ],
+          "rhat": [
+            1.0080605458993117,
+            1.0025834861261225,
+            1.0053785605807546,
+            1.0039728437845172,
+            1.0084204857097452,
+            1.0024392407980236,
+            1.004476964432477,
+            1.00091584463316,
+            1.0108233134843527,
+            1.005366167684496,
+            1.0061152972803207,
+            0.9996922901766266,
+            1.0042700472127086,
+            1.0054261534782056,
+            1.0034253774781916,
+            1.0006531017764015,
+            1.0096848536823801,
+            1.0040516221026787
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "passed": false,
+        "seed": [
+          20260715,
+          5210
+        ]
+      },
+      {
+        "chunk_index": 1,
+        "completed_results_per_chain": 2000,
+        "health": {
+          "acceptance_rate": 0.6965,
+          "acceptance_rate_by_chain": [
+            0.699,
+            0.704,
+            0.691,
+            0.692
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 140.5548715699988,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "floor_count_total": 0,
+            "max_innovation_condition_estimate": 5.447991657805139,
+            "min_innovation_eigenvalue": 0.02666120398064174,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 2000,
+          "finite_rhat_count": 18,
+          "folded_rank_normalized_split_rhat": [
+            1.0014703967941019,
+            1.0014115000464694,
+            1.0026066145994141,
+            1.0017646560256437,
+            1.0019884793384242,
+            1.0041964119502815,
+            1.0037148070526734,
+            1.0012862506749154,
+            1.00374433794061,
+            1.0008683045359428,
+            1.0021720581148774,
+            0.9997350106400497,
+            1.0014411425476608,
+            1.0026047017691428,
+            1.0014213449855194,
+            1.0017107599194648,
+            1.0063961971041147,
+            0.9996069212008966
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0063961971041147,
+          "max_folded_rank_normalized_split_rhat": 1.0063961971041147,
+          "max_rank_normalized_split_rhat": 1.0041252098385516,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 18,
+          "passed": true,
+          "rank_normalized_split_rhat": [
+            1.001624451820496,
+            1.0003765890378866,
+            0.9996138794503039,
+            1.0016623337292376,
+            1.000012066762593,
+            1.0041252098385516,
+            1.0012846205201666,
+            1.0018116095856557,
+            0.9996083427180004,
+            1.0018185013252343,
+            1.000523845176408,
+            1.0004696148707286,
+            1.0001247379545537,
+            1.0002771757650202,
+            1.0008178267350731,
+            0.9995298345003426,
+            0.9995326019525822,
+            1.0014807221330726
+          ],
+          "rhat": [
+            1.001624451820496,
+            1.0014115000464694,
+            1.0026066145994141,
+            1.0017646560256437,
+            1.0019884793384242,
+            1.0041964119502815,
+            1.0037148070526734,
+            1.0018116095856557,
+            1.00374433794061,
+            1.0018185013252343,
+            1.0021720581148774,
+            1.0004696148707286,
+            1.0014411425476608,
+            1.0026047017691428,
+            1.0014213449855194,
+            1.0017107599194648,
+            1.0063961971041147,
+            1.0014807221330726
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 1000
+        },
+        "passed": true,
+        "seed": [
+          20260715,
+          6219
+        ]
+      }
+    ],
+    "retained_passed": true,
+    "retained_results_per_chain": 2000,
+    "warmup_archives": [
+      {
+        "raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:1dff30d02722abe5425f6b8a4ca3453b36d852e5b65240458cc3b000458fa1f9",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 0,
+            "coordinate_system": "raw_parameters",
+            "seed": [
+              20260715,
+              5110
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "fc8420b911c284d06a9a4736ba9a53728d307c4e3408283e784531fb1deb93e6",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/warmup/chunk_0001_raw.tftensor"
+        },
+        "z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:4469c47e9f5b0ffb0b4ff5b97db3300e1b0de3b43e14130fae13f7961eeb561d",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 0,
+            "coordinate_system": "latent_z",
+            "seed": [
+              20260715,
+              5110
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "ac4bf8e05276cf090b0ca4e5de6b74b0169451761d9323e0996afcd6f44be87c",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/warmup/chunk_0001_z.tftensor"
+        }
+      },
+      {
+        "raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:5150c05d055f78b3f9b2b60f1443613c38fc4132a1eaa9c2456e2debc11d3ebb",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 1,
+            "coordinate_system": "raw_parameters",
+            "seed": [
+              20260715,
+              6119
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "18d2e901717b8fcffac0b8a96e6e652efe7fb71e2764838e78cdf43e0575af0b",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/warmup/chunk_0002_raw.tftensor"
+        },
+        "z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:edee4a5b46b6d60b2917c0ca20d8e0a00968f2c0f81ead6f7e70409cb2a7a92d",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "chunk_index": 1,
+            "coordinate_system": "latent_z",
+            "seed": [
+              20260715,
+              6119
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            18
+          ],
+          "tensor_file_sha256": "f3dbc7c2ec79ec61d0c94d5473ffe620b10e71e6d7da7945f55e50595291119f",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/dense_seed1201/samples/warmup/chunk_0002_z.tftensor"
+        }
+      }
+    ],
+    "warmup_cap_hit": false,
+    "warmup_check_count": 2,
+    "warmup_checks": [
+      {
+        "check_window_results_per_chain": 0,
+        "chunk_index": 0,
+        "completed_results_per_chain": 1000,
+        "health": {
+          "acceptance_rate": 0.674,
+          "acceptance_rate_by_chain": [
+            0.689,
+            0.691,
+            0.665,
+            0.651
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 144.43644702099846,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "floor_count_total": 0,
+            "max_innovation_condition_estimate": 6.37828805071242,
+            "min_innovation_eigenvalue": 0.027997559761832772,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": null,
+        "passed": false,
+        "seed": [
+          20260715,
+          5110
+        ]
+      },
+      {
+        "check_window_results_per_chain": 1000,
+        "chunk_index": 1,
+        "completed_results_per_chain": 2000,
+        "health": {
+          "acceptance_rate": 0.68475,
+          "acceptance_rate_by_chain": [
+            0.688,
+            0.687,
+            0.671,
+            0.693
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 134.86568795099447,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "floor_count_total": 0,
+            "max_innovation_condition_estimate": 5.510208781984839,
+            "min_innovation_eigenvalue": 0.027480783836424,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 18,
+          "folded_rank_normalized_split_rhat": [
+            0.9998482886813572,
+            1.0065811676702894,
+            1.0054764293357017,
+            1.0034033461610488,
+            1.0029020720526216,
+            1.0018199452946839,
+            1.000715931386079,
+            1.0022700883743187,
+            1.0050184448679043,
+            1.0019474506234642,
+            1.0001823100279474,
+            1.0088795999125952,
+            1.00446121043175,
+            1.0058939761118775,
+            1.0009801223510322,
+            1.000285288143028,
+            1.0067625057985328,
+            1.0014941029041673
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.010714634034379,
+          "max_folded_rank_normalized_split_rhat": 1.0088795999125952,
+          "max_rank_normalized_split_rhat": 1.010714634034379,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 18,
+          "passed": true,
+          "rank_normalized_split_rhat": [
+            1.0041942031655204,
+            1.0053871337239837,
+            0.9998093059929879,
+            1.0009200884660292,
+            1.003028693143898,
+            0.9997985523387335,
+            1.0061221397511972,
+            1.0037790492067864,
+            1.002088214228611,
+            1.0002290206536901,
+            1.0094869698190116,
+            1.000458658768497,
+            1.0096260760031583,
+            1.00935159807366,
+            1.0093222675797635,
+            1.004763046517105,
+            1.0024035756284757,
+            1.010714634034379
+          ],
+          "rhat": [
+            1.0041942031655204,
+            1.0065811676702894,
+            1.0054764293357017,
+            1.0034033461610488,
+            1.003028693143898,
+            1.0018199452946839,
+            1.0061221397511972,
+            1.0037790492067864,
+            1.0050184448679043,
+            1.0019474506234642,
+            1.0094869698190116,
+            1.0088795999125952,
+            1.0096260760031583,
+            1.00935159807366,
+            1.0093222675797635,
+            1.004763046517105,
+            1.0067625057985328,
+            1.010714634034379
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.05,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "passed": true,
+        "seed": [
+          20260715,
+          6119
+        ]
+      }
+    ],
+    "warmup_excluded_from_posterior": true,
+    "warmup_passed": true,
+    "warmup_results_per_chain": 2000,
+    "warmup_samples_retained": true
+  },
+  "serious_confirmation_executed": false,
+  "source_record": {
+    "artifact_hash": "sha256:ba66acef9fb18b915957e86b5ed89d894d7ae3d8ccd1ce25efc46f0d89cf7305",
+    "file_sha256": "afc3a7a60189d8e650faaa7a7fe6e3e414d726012c682fd9cb3764e997a8d67a",
+    "path": "docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/phase1/seed1201_post_validation.json",
+    "payload_file_sha256": "6429977ba1754ce5f36248104c82fa18639311a0727298bc3ed436b4a670a745",
+    "payload_path": "docs/plans/artifacts/neutra-batch-native-training-2026-07-14/long-training-attempt-01/phase4/training_jobs/dense_seed1201/attempt_1_graph_native/training/frozen_transport.json"
+  },
+  "target_signature": "f47619320ded5f70259c6932eb2436642a02834c7a0249c7c52c20a5a2302f30",
+  "transport_hash": "bcbe925f2ca77996bfe05cd5b951d1a66f540327789093d0ade8fecdf0773363"
+}

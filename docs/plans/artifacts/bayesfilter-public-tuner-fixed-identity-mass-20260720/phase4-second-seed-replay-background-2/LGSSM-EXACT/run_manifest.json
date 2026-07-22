@@ -1,0 +1,76 @@
+{
+  "admitted_kernel_replay": {
+    "mechanics_sha256": "477f9b321817fd292f569913ac6d5233fedf0133df85a8fb0c7bd8c570be28cb",
+    "path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720-replay-migration/admitted_kernel_mechanics.json",
+    "source": "persisted_artifact"
+  },
+  "admitted_kernel_replay_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720-replay-migration/admitted_kernel_mechanics.json",
+  "cell_id": "LGSSM-EXACT",
+  "command": [
+    "docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py",
+    "--action",
+    "validate-frozen",
+    "--cell",
+    "LGSSM-EXACT",
+    "--output-root",
+    "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2",
+    "--frozen-transport",
+    "docs/plans/artifacts/bayesfilter-neutra-all-executable-models-e2e-20260718/serious-attempt-02/LGSSM-EXACT/final/segments/steps-004001-005000/frozen_transport.json",
+    "--frozen-transport-sha256",
+    "b0b89656b2503146556f50b4e5e3e0e6b9b63daf0673380043ccb046dd14877e",
+    "--admitted-kernel-replay",
+    "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720-replay-migration/admitted_kernel_mechanics.json",
+    "--seed-offset",
+    "1000"
+  ],
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-neutra-all-executable-models-e2e-20260718/serious-attempt-02/LGSSM-EXACT/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "b0b89656b2503146556f50b4e5e3e0e6b9b63daf0673380043ccb046dd14877e",
+    "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+    "training_state_hash": "sha256:333d3138f121316463ad15d5e81f5165eb856ef59e142ca9d9848cea074a2c5e"
+  },
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "nonclaims": [
+    "one-seed diagnostic only",
+    "no sampler superiority or default-readiness claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT",
+  "plan_path": "docs/plans/bayesfilter-public-tuner-fixed-identity-mass-plan-2026-07-19.md",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "random_seeds": {
+    "public_tuner": null,
+    "sequential_retained": [
+      20260718,
+      2902
+    ],
+    "sequential_warmup": [
+      20260718,
+      2901
+    ]
+  },
+  "result_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/result.json",
+  "schema": "bayesfilter.neutra.frozen_transport_validation_manifest.v1",
+  "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+  "tensorflow_version": "2.19.1",
+  "tf32_execution_enabled": true,
+  "wall_time_seconds": 2216.601156424993
+}

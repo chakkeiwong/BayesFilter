@@ -99,7 +99,6 @@ def test_known_stage_route_truth_table(algorithm_id: str, stage: str) -> None:
     [
         ({"algorithm_id": "unknown"}, "unknown_or_stage_incompatible_algorithm_id"),
         ({"runtime_backend": "numpy"}, "unsupported_runtime_backend"),
-        ({"use_xla": True}, "operational_windowed_warmup_xla_not_validated"),
         ({"runner_identity": "injected"}, "operational_windowed_warmup_requires_default_runner"),
     ],
 )
@@ -118,6 +117,17 @@ def test_unsupported_route_is_typed_and_never_falls_back(
     with pytest.raises(UnsupportedHMCAlgorithmRoute) as caught:
         require_hmc_algorithm_route(**arguments)
     assert caught.value.decision == decision
+
+
+def test_operational_windowed_warmup_xla_route_is_validated() -> None:
+    decision = resolve_hmc_algorithm_route(
+        algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        stage=HMC_WINDOWED_MASS_STAGE,
+        use_xla=True,
+    )
+    assert decision.supported is True
+    assert decision.blocker_code is None
+    assert decision.xla_requirement == "caller_configured_tf_function_only"
 
 
 def test_legacy_route_is_explicit_and_non_authoritative() -> None:

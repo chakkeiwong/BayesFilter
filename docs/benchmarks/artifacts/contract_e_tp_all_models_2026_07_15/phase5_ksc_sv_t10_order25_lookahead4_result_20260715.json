@@ -1,0 +1,187 @@
+{
+  "schema": "bayesfilter.contract_e_tp.scalar_sv_prefix_result.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+  "scope": "center_only_prefix_diagnostic",
+  "target": {
+    "time_steps": 10,
+    "theta": [
+      0.2533471031357997,
+      -0.916290731874155
+    ],
+    "parameter_names": [
+      "gamma_unconstrained",
+      "log_beta"
+    ],
+    "target_observation_policy": "offset_log_y_square_ksc_mixture",
+    "flow_observation_policy": "gaussianized_log_square_affine_surface"
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_ksc_sv_t10_order25_lookahead4_preparation_20260715.json",
+    "sha256": "a8dad06eeeeff81c9f391247606b77f9f79c8b030eeecf83fae26708d8960e42",
+    "teacher_order": 25,
+    "continuation_order": 65,
+    "continuation_radius": 8.0,
+    "lookahead_steps": 4
+  },
+  "candidate": {
+    "value": -19.95295564062531,
+    "score": [
+      -0.6887307356990735,
+      0.6417289825013215
+    ],
+    "increment_history": [
+      -1.7415883806808292,
+      -2.0576496626540743,
+      -2.188607996418112,
+      -1.6675499663720657,
+      -1.7662722556301225,
+      -3.4429912935921383,
+      -1.8170496586320233,
+      -1.7445960550950472,
+      -1.6485337711365313,
+      -1.8781166004143657
+    ],
+    "same_scalar_finite_difference": [
+      -0.6887307359093596,
+      0.6417289826643469
+    ],
+    "same_scalar_fd_policy": {
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "diagnostic_scope": "finite_difference_only",
+      "status": "pass",
+      "num_parameters": 2,
+      "base_relative_tolerance": 0.05,
+      "dimension_scaling": "sqrt(num_parameters)",
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "max_coordinate_relative_error": 3.0532414321726814e-10,
+      "max_coordinate_relative_error_threshold": 0.07071067811865477,
+      "max_coordinate_relative_error_margin": 0.07071067781333062,
+      "max_error_parameter": "gamma_unconstrained",
+      "parameters": [
+        {
+          "parameter": "gamma_unconstrained",
+          "score": -0.6887307356990735,
+          "finite_difference": -0.6887307359093596,
+          "absolute_error": 2.102861218489238e-10,
+          "relative_error_scale": 0.6887307359093596,
+          "relative_error": 3.0532414321726814e-10
+        },
+        {
+          "parameter": "log_beta",
+          "score": 0.6417289825013215,
+          "finite_difference": 0.6417289826643469,
+          "absolute_error": 1.630253709805629e-10,
+          "relative_error_scale": 0.6417289826643469,
+          "relative_error": 2.5404084182657604e-10
+        }
+      ]
+    }
+  },
+  "dense_references": [
+    {
+      "order": 129,
+      "radius": 10.0,
+      "value": -19.956279189654843,
+      "score": [
+        -0.7056728187531016,
+        0.6354924365044501
+      ]
+    },
+    {
+      "order": 257,
+      "radius": 10.0,
+      "value": -19.956279189655078,
+      "score": [
+        -0.7056728187531017,
+        0.6354924365044501
+      ]
+    }
+  ],
+  "reference_refinement": {
+    "finest_two_value_difference": -2.3447910280083306e-13,
+    "finest_two_score_difference": [
+      -1.1102230246251565e-16,
+      0.0
+    ],
+    "classification": "descriptive_numerical_refinement_not_exact_error_bound"
+  },
+  "candidate_vs_finest_reference": {
+    "value_difference": 0.0033235490297691683,
+    "score_difference": [
+      0.016942083054028223,
+      0.006236545996871401
+    ],
+    "componentwise_relative_error": [
+      0.024008410985652345,
+      0.009718348659527089
+    ],
+    "sign_reversal": [
+      false,
+      false
+    ],
+    "equivalence_classification": "descriptive_only_margin_unavailable"
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.0111763720142262,
+      0.0004636431756691326,
+      0.002664362268344956,
+      0.0029542494729453885,
+      0.0019394115570859447,
+      0.0005446782425252191,
+      0.0010524750810409433,
+      0.0015585188349945451,
+      0.0016105963487487076
+    ],
+    "condition_number_history": [
+      110.58626078272803,
+      21.364217632231423,
+      915.0472422378924,
+      15.267330509187678,
+      18.737701432466082,
+      28.80610762450257,
+      162.3727451072141,
+      1108.906001572725,
+      40.119424184765194
+    ],
+    "maximum_feature_residual_abs": 1.3988810110276972e-14,
+    "chart_pass": true
+  },
+  "decision": {
+    "hard_veto_screen_pass": true,
+    "candidate_remains_viable": true,
+    "statistically_supported_ranking": false,
+    "default_readiness": false,
+    "next_evidence": "teacher/continuation refinement or next declared prefix"
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow_float64_CPU_reference_exception",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 5.143966079005622,
+    "command": "docs/benchmarks/run_contract_e_tp_scalar_sv_prefix.py --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_ksc_sv_t10_order25_lookahead4_preparation_20260715.json --reference-orders 129,257 --reference-radius 10 --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_ksc_sv_t10_order25_lookahead4_result_20260715.json"
+  },
+  "nonclaims": [
+    "no unsupported cross-method equivalence threshold",
+    "not full-horizon or parameter-region evidence",
+    "not HMC, canonical, or default readiness",
+    "not a statistically supported method ranking"
+  ]
+}
