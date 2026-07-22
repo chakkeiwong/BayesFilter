@@ -17,21 +17,19 @@ def _load_module():
     return module
 
 
-def test_phase4_fixed_sgqf_predator_prey_blocks_p47_value_as_t20_source_scope() -> None:
+def test_phase4_fixed_sgqf_predator_prey_executes_source_order_t20_value_score() -> None:
     module = _load_module()
     row = module._apply_score_status(module._cell_for_fixed_sgqf("zhao_cui_predator_prey_T20"))
 
-    assert row["comparison_status"] == "blocked"
-    assert row["numeric_execution_status"] == "blocked_predator_prey_sgqf_value"
-    assert row["target_contract_status"] == "blocked_missing_t20_fixed_sgqf_evaluator"
-    assert row["score_status"] == "blocked_target_alignment"
-    assert row["average_log_likelihood"] is None
-    assert row["log_likelihood"] is None
-    assert row["score"] is None
-    assert row["score_coordinate_system"] is None
-    assert row["score_derivative_provenance"] is None
-    assert "PREDATOR_PREY_T20_FIXED_SGQF_EVALUATOR_REQUIRED" in row["reason_codes"]
-    assert "blocked_target_alignment" in row["reason"]
-    assert "transitions before y0" in row["reason"]
-    assert "assimilates y0 before the first transition" in row["reason"]
+    assert row["comparison_status"] == "executed_value_score"
+    assert row["numeric_execution_status"] == "executed_predator_prey_sgqf_value_score"
+    assert row["target_contract_status"] == "target_compatible_source_order_predator_prey_t20_sgqf"
+    assert row["score_status"] == "analytical_score_emitted"
+    assert abs(row["log_likelihood"] - (-102.62270352134469)) < 1e-10
+    assert len(row["score"]) == 6
+    assert row["score_coordinate_system"] == "physical=(r,K,a,s,u,v)"
+    assert "manual" in row["score_derivative_provenance"]
+    assert row["time_order"] == "x0_then_20_transition_then_observe_steps_y1_y20"
+    assert len(row["route_identity"]) == 64
+    assert "DIRECT_PREDATOR_PREY_SGQF_VALUE_SCORE_ROUTE" in row["reason_codes"]
     assert any("P47 two-observation lower-rung" in item for item in row["nonclaims"])

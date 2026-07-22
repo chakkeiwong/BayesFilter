@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Mapping
 
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 from bayesfilter.nonlinear.fixed_sgqf_tf import tf_fixed_sgqf_cloud
@@ -51,6 +54,18 @@ PP_SGQF_NONCLAIMS = (
     "no positivity projection despite negative states in the frozen trajectory",
     "no HMC convergence, NeuTra training, calibration, or readiness claim",
 )
+PP_SOURCE_SGQF_ROUTE_ID = (
+    "fixed_sgqf_zhao_cui_predator_prey_t20_transition_then_observe_physical_score_v1"
+)
+PP_SOURCE_SGQF_TARGET_ID = (
+    "zhao_cui_predator_prey_tf_seed81104_x0_then_y1_y20_v1"
+)
+PP_SOURCE_STATE_SHA256 = (
+    "63cc7d7e8e3a251f76ebb607b152b58b59cd8ceda4489057e60070b44ab1d2ec"
+)
+PP_SOURCE_OBSERVATION_SHA256 = (
+    "fea0681d43a4bd502d1f5a90e04f58da435c6e891e72d9da4d54f4cf0584f00a"
+)
 _MIN_VARIANCE = tf.constant(1.0e-12, tf.float64)
 
 
@@ -92,22 +107,30 @@ def _weighted_covariance_derivative(
     )
 
 
-def pp_sgqf_likelihood_value_score_status(
-    theta: Any,
-    *,
+def _pp_sgqf_initial_filter_state(
     observations: tf.Tensor,
-    nodes: tf.Tensor,
-    weights: tf.Tensor,
-) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
-    """Evaluate corrected-time-order PP-SGQF likelihood and manual score."""
+    batch_size: int,
+    *,
+    initial_observation_first: bool,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    """Initialize either the amended y0-first or source transition-first loop."""
 
-    values = _rank2_theta(theta)
+    if not isinstance(initial_observation_first, bool):
+        raise TypeError("initial_observation_first must be bool")
+    if not initial_observation_first:
+        mean = tf.broadcast_to(_INITIAL_MEAN[None, :], [batch_size, 2])
+        covariance = tf.broadcast_to(
+            _INITIAL_COVARIANCE[None, :, :], [batch_size, 2, 2]
+        )
+        return (
+            mean,
+            covariance,
+            tf.zeros([batch_size], tf.float64),
+            tf.constant(0, tf.int32),
+            tf.reduce_min(tf.linalg.eigvalsh(covariance), axis=1),
+        )
+
     y = tf.convert_to_tensor(observations, tf.float64)
-    cloud_points = tf.convert_to_tensor(nodes, tf.float64)
-    cloud_weights = tf.convert_to_tensor(weights, tf.float64)
-    batch_size = int(values.shape[0])
-    parameter_dim = 6
-
     initial_innovation_covariance = _INITIAL_COVARIANCE + _OBSERVATION_COVARIANCE
     initial_factor = tf.linalg.cholesky(initial_innovation_covariance)
     initial_innovation = y[0] - _INITIAL_MEAN
@@ -136,9 +159,41 @@ def pp_sgqf_likelihood_value_score_status(
     covariance = tf.broadcast_to(
         initial_filtered_covariance[None, :, :], [batch_size, 2, 2]
     )
+    return (
+        mean,
+        covariance,
+        tf.fill([batch_size], initial_value),
+        tf.constant(1, tf.int32),
+        tf.reduce_min(tf.linalg.eigvalsh(covariance), axis=1),
+    )
+
+
+def pp_sgqf_likelihood_value_score_status(
+    theta: Any,
+    *,
+    observations: tf.Tensor,
+    nodes: tf.Tensor,
+    weights: tf.Tensor,
+    initial_observation_first: bool = True,
+) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+    """Evaluate either declared PP-SGQF time order and its manual score."""
+
+    values = _rank2_theta(theta)
+    y = tf.convert_to_tensor(observations, tf.float64)
+    cloud_points = tf.convert_to_tensor(nodes, tf.float64)
+    cloud_weights = tf.convert_to_tensor(weights, tf.float64)
+    batch_size = int(values.shape[0])
+    parameter_dim = 6
+
+    mean, covariance, total_value, start_index, min_filtered_eigenvalue = (
+        _pp_sgqf_initial_filter_state(
+            y,
+            batch_size,
+            initial_observation_first=initial_observation_first,
+        )
+    )
     d_mean = tf.zeros([batch_size, parameter_dim, 2], tf.float64)
     d_covariance = tf.zeros([batch_size, parameter_dim, 2, 2], tf.float64)
-    total_value = tf.fill([batch_size], initial_value)
     total_score = tf.zeros([batch_size, parameter_dim], tf.float64)
     valid = tf.ones([batch_size], tf.bool)
     min_predictive_eigenvalue = tf.fill(
@@ -146,9 +201,6 @@ def pp_sgqf_likelihood_value_score_status(
     )
     min_innovation_eigenvalue = tf.fill(
         [batch_size], tf.constant(float("inf"), tf.float64)
-    )
-    min_filtered_eigenvalue = tf.reduce_min(
-        tf.linalg.eigvalsh(covariance), axis=1
     )
 
     def condition(index, *_loop_values):
@@ -373,7 +425,7 @@ def pp_sgqf_likelihood_value_score_status(
         condition,
         body,
         (
-            tf.constant(1, tf.int32),
+            start_index,
             mean,
             covariance,
             d_mean,
@@ -402,6 +454,9 @@ def pp_sgqf_likelihood_value_score_status(
         "innovation_condition_estimate": condition_estimate,
         "min_predictive_eigenvalue": result[8],
         "min_filtered_eigenvalue": result[10],
+        "transition_count": tf.fill(
+            [batch_size], tf.shape(y)[0] - start_index
+        ),
     }
 
 
@@ -411,6 +466,7 @@ def pp_sgqf_likelihood_value_only_status(
     observations: tf.Tensor,
     nodes: tf.Tensor,
     weights: tf.Tensor,
+    initial_observation_first: bool = True,
 ) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:
     """Evaluate the fixed-SGQF scalar recursion without parameter derivatives."""
 
@@ -419,36 +475,16 @@ def pp_sgqf_likelihood_value_only_status(
     cloud_points = tf.convert_to_tensor(nodes, tf.float64)
     cloud_weights = tf.convert_to_tensor(weights, tf.float64)
     batch_size = int(values.shape[0])
-    initial_covariance = _INITIAL_COVARIANCE + _OBSERVATION_COVARIANCE
-    initial_factor = tf.linalg.cholesky(initial_covariance)
-    initial_innovation = y[0] - _INITIAL_MEAN
-    initial_solve = tf.linalg.cholesky_solve(
-        initial_factor, initial_innovation[:, None]
-    )[:, 0]
-    initial_value = -0.5 * (
-        2.0 * _LOG_TWO_PI
-        + 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(initial_factor)))
-        + tf.reduce_sum(initial_innovation * initial_solve)
+    mean, covariance, total_value, start_index, min_filtered = (
+        _pp_sgqf_initial_filter_state(
+            y,
+            batch_size,
+            initial_observation_first=initial_observation_first,
+        )
     )
-    initial_gain = _INITIAL_COVARIANCE @ tf.linalg.cholesky_solve(
-        initial_factor, tf.eye(2, dtype=tf.float64)
-    )
-    mean = tf.broadcast_to(
-        (_INITIAL_MEAN + tf.linalg.matvec(initial_gain, initial_innovation))[None, :],
-        [batch_size, 2],
-    )
-    covariance = tf.broadcast_to(
-        _symmetrize(
-            _INITIAL_COVARIANCE
-            - initial_gain @ initial_covariance @ tf.transpose(initial_gain)
-        )[None, :, :],
-        [batch_size, 2, 2],
-    )
-    total_value = tf.fill([batch_size], initial_value)
     valid = tf.ones([batch_size], tf.bool)
     min_predictive = tf.fill([batch_size], tf.constant(float("inf"), tf.float64))
     min_innovation = tf.fill([batch_size], tf.constant(float("inf"), tf.float64))
-    min_filtered = tf.reduce_min(tf.linalg.eigvalsh(covariance), axis=1)
     identity = tf.eye(2, batch_shape=[batch_size], dtype=tf.float64)
 
     def body(index, current_mean, current_covariance, value_total,
@@ -539,7 +575,7 @@ def pp_sgqf_likelihood_value_only_status(
         lambda index, *_unused: index < tf.shape(y)[0],
         body,
         (
-            tf.constant(1, tf.int32),
+            start_index,
             mean,
             covariance,
             total_value,
@@ -560,6 +596,9 @@ def pp_sgqf_likelihood_value_only_status(
         "min_predictive_eigenvalue": result[5],
         "min_innovation_eigenvalue": result[6],
         "min_filtered_eigenvalue": result[7],
+        "transition_count": tf.fill(
+            [batch_size], tf.shape(y)[0] - start_index
+        ),
     }
 
 
@@ -591,6 +630,198 @@ def pp_sgqf_likelihood_value_score(
         theta, observations=observations, nodes=nodes, weights=weights
     )
     return value, score
+
+
+def generate_source_order_predator_prey_dataset_tf() -> tuple[tf.Tensor, tf.Tensor]:
+    """Replay x0:x20 and y1:y20 in the author program's event order."""
+
+    from bayesfilter.highdim.models import p30_predator_prey_fixture_model
+
+    with tf.device("/CPU:0"):
+        model = p30_predator_prey_fixture_model()
+        generator = tf.random.Generator.from_seed(81104)
+        state = model.initial_mean + tf.linalg.matvec(
+            tf.linalg.cholesky(model.initial_covariance),
+            generator.normal([2], dtype=tf.float64),
+        )
+        states = [state]
+        observations = []
+        for _time_index in range(20):
+            state = model.transition_mean(model.true_parameters(), state)[0] + tf.linalg.matvec(
+                tf.linalg.cholesky(model.process_covariance),
+                generator.normal([2], dtype=tf.float64),
+            )
+            states.append(state)
+            observations.append(
+                state
+                + tf.linalg.matvec(
+                    tf.linalg.cholesky(model.observation_covariance),
+                    generator.normal([2], dtype=tf.float64),
+                )
+            )
+        state_path = tf.stack(states)
+        observation_path = tf.stack(observations)
+        if _tensor_hash(state_path) != PP_SOURCE_STATE_SHA256:
+            raise ValueError("source-order predator-prey state hash mismatch")
+        if _tensor_hash(observation_path) != PP_SOURCE_OBSERVATION_SHA256:
+            raise ValueError("source-order predator-prey observation hash mismatch")
+        return state_path, observation_path
+
+
+def _physical_to_source_probit(physical: Any) -> tuple[tf.Tensor, tf.Tensor]:
+    values = tf.convert_to_tensor(physical)
+    if values.dtype != tf.float64:
+        raise ValueError("physical predator-prey parameters must use float64")
+    if values.shape.rank != 2 or values.shape[-1] != 6 or values.shape[0] is None:
+        raise ValueError("physical predator-prey parameters require shape [batch, 6]")
+    strictly_inside = tf.reduce_all(
+        tf.logical_and(values > PP_PARAMETER_LOWER, values < PP_PARAMETER_UPPER)
+    )
+    if tf.executing_eagerly() and not bool(strictly_inside.numpy()):
+        raise ValueError("physical predator-prey parameters must be strictly interior")
+    probability = (values - PP_PARAMETER_LOWER) / (
+        PP_PARAMETER_UPPER - PP_PARAMETER_LOWER
+    )
+    normal = tfp.distributions.Normal(
+        loc=tf.constant(0.0, tf.float64), scale=tf.constant(1.0, tf.float64)
+    )
+    source = normal.quantile(probability)
+    dphysical_dsource = (PP_PARAMETER_UPPER - PP_PARAMETER_LOWER) * normal.prob(source)
+    return source, dphysical_dsource
+
+
+def pp_source_sgqf_physical_value_score_status(
+    physical: Any,
+    *,
+    observations: tf.Tensor,
+    nodes: tf.Tensor,
+    weights: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+    """Return source-order likelihood and manual score in physical coordinates."""
+
+    source, dphysical_dsource = _physical_to_source_probit(physical)
+    value, source_score, status = pp_sgqf_likelihood_value_score_status(
+        source,
+        observations=observations,
+        nodes=nodes,
+        weights=weights,
+        initial_observation_first=False,
+    )
+    return value, source_score / dphysical_dsource, status
+
+
+def pp_source_sgqf_physical_value_only_status(
+    physical: Any,
+    *,
+    observations: tf.Tensor,
+    nodes: tf.Tensor,
+    weights: tf.Tensor,
+) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:
+    source, _dphysical_dsource = _physical_to_source_probit(physical)
+    return pp_sgqf_likelihood_value_only_status(
+        source,
+        observations=observations,
+        nodes=nodes,
+        weights=weights,
+        initial_observation_first=False,
+    )
+
+
+@dataclass(frozen=True)
+class PredatorPreySourceSGQFRoute:
+    states: tf.Tensor
+    observations: tf.Tensor
+    nodes: tf.Tensor
+    weights: tf.Tensor
+    route_identity: str
+    manifest: Mapping[str, object]
+
+    def __post_init__(self) -> None:
+        if self.states.shape != (21, 2) or self.observations.shape != (20, 2):
+            raise ValueError("canonical predator-prey source route requires x0:x20/y1:y20")
+        if _tensor_hash(self.states) != PP_SOURCE_STATE_SHA256:
+            raise ValueError("predator-prey source route state identity rejected")
+        if _tensor_hash(self.observations) != PP_SOURCE_OBSERVATION_SHA256:
+            raise ValueError("predator-prey source route observation identity rejected")
+        manifest = dict(self.manifest)
+        if self.route_identity != _semantic_hash(manifest):
+            raise ValueError("predator-prey source SGQF route identity rejected")
+        object.__setattr__(self, "manifest", MappingProxyType(manifest))
+
+    def physical_value_score_status(
+        self, physical: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+        return pp_source_sgqf_physical_value_score_status(
+            physical,
+            observations=self.observations,
+            nodes=self.nodes,
+            weights=self.weights,
+        )
+
+    def physical_value_only_status(
+        self, physical: Any
+    ) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:
+        return pp_source_sgqf_physical_value_only_status(
+            physical,
+            observations=self.observations,
+            nodes=self.nodes,
+            weights=self.weights,
+        )
+
+
+def make_predator_prey_source_sgqf_route(
+    *, sparse_level: int = 2
+) -> PredatorPreySourceSGQFRoute:
+    if int(sparse_level) != 2:
+        raise ValueError("canonical predator-prey source route requires sparse level 2")
+    states, observations = generate_source_order_predator_prey_dataset_tf()
+    cloud = tf_fixed_sgqf_cloud(dim=2, sparse_level=2)
+    cloud_payload = dict(cloud.manifest_payload())
+    for device_value_field in (
+        "points",
+        "weights",
+        "weight_total",
+        "negative_weight_count",
+    ):
+        cloud_payload.pop(device_value_field, None)
+    cloud_hash = _semantic_hash(cloud_payload)
+    manifest: dict[str, object] = {
+        "schema": "bayesfilter.predator_prey_source_sgqf_route.v1",
+        "row_id": "zhao_cui_predator_prey_T20",
+        "route_id": PP_SOURCE_SGQF_ROUTE_ID,
+        "target_id": PP_SOURCE_SGQF_TARGET_ID,
+        "result_kind": "value_score",
+        "parameter_coordinate": "physical=(r,K,a,s,u,v)",
+        "parameter_bounds": [
+            [float(lower), float(upper)]
+            for lower, upper in zip(PP_PARAMETER_LOWER.numpy(), PP_PARAMETER_UPPER.numpy())
+        ],
+        "seed": 81104,
+        "horizon": 20,
+        "time_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+        "state_sha256": PP_SOURCE_STATE_SHA256,
+        "observation_sha256": PP_SOURCE_OBSERVATION_SHA256,
+        "cloud_level": 2,
+        "cloud_point_count": cloud.point_count,
+        "cloud_hash": cloud_hash,
+        "dtype": "float64",
+        "score": "manual_rk4_cholesky_moment_forward_sensitivity_physical_chain_rule",
+        "source_anchor": "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/ssmodel.m:34",
+        "nonclaims": [
+            "not exact nonlinear likelihood",
+            "not MATLAB random-stream replay",
+            "not posterior or HMC readiness evidence",
+            "not SGQF superiority evidence",
+        ],
+    }
+    return PredatorPreySourceSGQFRoute(
+        states=states,
+        observations=observations,
+        nodes=cloud.points,
+        weights=cloud.weights,
+        route_identity=_semantic_hash(manifest),
+        manifest=manifest,
+    )
 
 
 def _posterior_value_score(

@@ -1,0 +1,140 @@
+{
+  "engineering_decision": "full_T20_physical_value_score_XLA_pass",
+  "gpu_allocator_bytes": null,
+  "hard_vetoes": [],
+  "logical_gpus": [],
+  "memory_policy": null,
+  "mode": "cpu",
+  "nonclaims": [
+    "no exact nonlinear likelihood claim",
+    "no posterior or HMC readiness claim",
+    "no statistically supported ranking or SGQF superiority claim",
+    "GPU execution is engineering evidence only"
+  ],
+  "numerical_decision": "finite_level2_candidate_manual_score_fd_qualified_on_cpu",
+  "parity": null,
+  "physical_gpus": [],
+  "result": {
+    "jit_compile": true,
+    "score": [
+      [
+        -27.641142846743442,
+        0.08410678056739994,
+        -0.08414331945605201,
+        0.8556990579659061,
+        17.52559776873519,
+        -22.634978370035032
+      ]
+    ],
+    "score_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "status": {
+      "floor_count_value": [
+        0
+      ],
+      "innovation_condition_estimate": [
+        1.0
+      ],
+      "min_filtered_eigenvalue": [
+        1.0
+      ],
+      "min_innovation_eigenvalue": [
+        8.164414139154609
+      ],
+      "min_predictive_eigenvalue": [
+        4.1644141391546095
+      ],
+      "status_code": [
+        0
+      ],
+      "transition_count": [
+        20
+      ],
+      "valid_pre_regularized_score": [
+        true
+      ]
+    },
+    "value": [
+      -102.62270352134466
+    ],
+    "value_device": "/job:localhost/replica:0/task:0/device:CPU:0"
+  },
+  "route_identity": "30b284e772bd49c12c65d1b1fffe3d0696e565fe8a82e02d6ccbfecbd13bd015",
+  "route_manifest": {
+    "cloud_hash": "c705bdd919a79e10fbc85f164e5e14f82a7e56275fa2b21b802065ad90b041eb",
+    "cloud_level": 2,
+    "cloud_point_count": 5,
+    "dtype": "float64",
+    "horizon": 20,
+    "nonclaims": [
+      "not exact nonlinear likelihood",
+      "not MATLAB random-stream replay",
+      "not posterior or HMC readiness evidence",
+      "not SGQF superiority evidence"
+    ],
+    "observation_sha256": "fea0681d43a4bd502d1f5a90e04f58da435c6e891e72d9da4d54f4cf0584f00a",
+    "parameter_bounds": [
+      [
+        0.1,
+        1.1
+      ],
+      [
+        110.0,
+        130.0
+      ],
+      [
+        20.0,
+        30.0
+      ],
+      [
+        0.1,
+        1.1
+      ],
+      [
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        1.0
+      ]
+    ],
+    "parameter_coordinate": "physical=(r,K,a,s,u,v)",
+    "result_kind": "value_score",
+    "route_id": "fixed_sgqf_zhao_cui_predator_prey_t20_transition_then_observe_physical_score_v1",
+    "row_id": "zhao_cui_predator_prey_T20",
+    "schema": "bayesfilter.predator_prey_source_sgqf_route.v1",
+    "score": "manual_rk4_cholesky_moment_forward_sensitivity_physical_chain_rule",
+    "seed": 81104,
+    "source_anchor": "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/ssmodel.m:34",
+    "state_sha256": "63cc7d7e8e3a251f76ebb607b152b58b59cd8ceda4489057e60070b44ab1d2ec",
+    "target_id": "zhao_cui_predator_prey_tf_seed81104_x0_then_y1_y20_v1",
+    "time_order": "x0_then_20_transition_then_observe_steps_y1_y20"
+  },
+  "run_manifest": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+      "docs/benchmarks/run_predator_prey_source_sgqf_validation.py",
+      "--mode",
+      "cpu",
+      "--output-root",
+      "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt01/predator-prey/cpu"
+    ],
+    "cuda_visible_devices": "-1",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "71f659aa2620adfaa9fdb34d66c0816543365c82",
+    "git_diff_sha256": "55680a0b49ba1b4d6d29c24de2f5bbd9bac951f01ba084e00fc1095461a7d5e4",
+    "host": "DESKTOP-RF1Q5IJ",
+    "plan": "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-repair-master-program-2026-07-22.md",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "result": "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt01/predator-prey/cpu/result.json",
+    "started_utc": "2026-07-22T10:33:13.618542+00:00",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0",
+    "tf_force_gpu_allow_growth": "unset",
+    "wall_seconds": 2.920830070012016
+  },
+  "schema_version": "bayesfilter.predator_prey_source_sgqf_validation.v1",
+  "scientific_decision": "deterministic_approximation_viable_not_exact_or_superior",
+  "status": "PASS"
+}

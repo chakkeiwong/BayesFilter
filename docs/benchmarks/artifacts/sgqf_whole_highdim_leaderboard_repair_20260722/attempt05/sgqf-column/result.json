@@ -1,0 +1,592 @@
+{
+  "benchmark": "bayesfilter_sgqf_highdim_column",
+  "comparison_algorithm_ids": [
+    "fixed_sgqf"
+  ],
+  "manifest": {
+    "algorithm_id": "fixed_sgqf",
+    "comparison_program_master": "docs/plans/bayesfilter-two-lane-filter-comparison-master-program-2026-06-24.md",
+    "execution_mode": "row_selective_sgqf_column_only",
+    "main_row_count": 6,
+    "repair_program": "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-repair-master-program-2026-07-22.md",
+    "row_count": 7,
+    "scoped_not_applicable_row_count": 1
+  },
+  "metadata_date": "2026-07-22",
+  "nonclaims": [
+    "This artifact executes only fixed_sgqf cells and does not rerun UKF or Zhao-Cui comparators.",
+    "sgqf_column_complete is independent of three-way comparison readiness.",
+    "A completed deterministic column does not establish exact nonlinear likelihoods, superiority, or statistically supported ranking.",
+    "The parameterized SIR local complete-data component is not applicable to SGQF and is excluded from the column denominator."
+  ],
+  "row_summary": [
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [
+        "fixed_sgqf"
+      ],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+      "row_scope": "main_observed_data_filtering_row",
+      "scoped_component_ready": false,
+      "score_admitted_algorithms": [
+        "fixed_sgqf"
+      ],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    },
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [
+        "fixed_sgqf"
+      ],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+      "row_scope": "main_observed_data_filtering_row",
+      "scoped_component_ready": false,
+      "score_admitted_algorithms": [
+        "fixed_sgqf"
+      ],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    },
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [
+        "fixed_sgqf"
+      ],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "row_scope": "main_observed_data_filtering_row",
+      "scoped_component_ready": false,
+      "score_admitted_algorithms": [
+        "fixed_sgqf"
+      ],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    },
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [
+        "fixed_sgqf"
+      ],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "row_scope": "main_observed_data_filtering_row",
+      "scoped_component_ready": false,
+      "score_admitted_algorithms": [],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    },
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20_parameterized_logscale",
+      "row_scope": "scoped_component_row",
+      "scoped_component_ready": true,
+      "score_admitted_algorithms": [],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    },
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [
+        "fixed_sgqf"
+      ],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "zhao_cui_predator_prey_T20",
+      "row_scope": "main_observed_data_filtering_row",
+      "scoped_component_ready": false,
+      "score_admitted_algorithms": [
+        "fixed_sgqf"
+      ],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    },
+    {
+      "blocked_or_missing_algorithms": [],
+      "comparison_ready": false,
+      "executed_algorithms": [
+        "fixed_sgqf"
+      ],
+      "full_three_way_ready": false,
+      "full_three_way_ready_deprecated": true,
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "row_scope": "main_observed_data_filtering_row",
+      "scoped_component_ready": false,
+      "score_admitted_algorithms": [
+        "fixed_sgqf"
+      ],
+      "score_complete": true,
+      "sgqf_complete": true,
+      "value_complete": true
+    }
+  ],
+  "rows": [
+    {
+      "absolute_value_gap_to_kalman": 0.0,
+      "algorithm_applicability": "applicable",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": -2.721519497158494,
+      "cell_result_complete": true,
+      "comparison_status": "executed_value_score",
+      "lane": "highdim_source_scope",
+      "log_likelihood": -136.0759748579247,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "direct affine SGQF value plus analytical fixed-branch score route",
+        "not a production-GPU timing result"
+      ],
+      "numeric_execution_status": "executed_direct_affine_sgqf_value_score",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "not_measured_in_phase7",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": null,
+      "reason_codes": [
+        "DIRECT_AFFINE_SGQF_LGSSM_VALUE_SCORE_ROUTE"
+      ],
+      "reference_log_likelihood": -136.0759748579247,
+      "required_result_kind": "value_score",
+      "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+      "runtime_seconds": null,
+      "score": [
+        5.655446880394385,
+        -3.835056458864437,
+        0.3023616838294101,
+        -1.9171802706081804,
+        4.35426591901195
+      ],
+      "score_admitted": true,
+      "score_coordinate_system": "p8d_lgssm_theta",
+      "score_derivative_provenance": "fixed_sgqf_analytic_first_order_fixed_branch_affine_lgssm_score",
+      "score_l2_norm": 8.331768835665498,
+      "score_route_id": "fixed_sgqf_direct_affine_lgssm",
+      "score_status": "analytical_score_emitted",
+      "score_status_reason": "SGQF score vector emitted by reviewed analytical fixed-branch score path",
+      "target_contract_status": "target_compatible_direct_affine_sgqf",
+      "value_admitted": true,
+      "value_route_id": "fixed_sgqf_direct_affine_lgssm",
+      "value_score_route_status": "same_route_value_score"
+    },
+    {
+      "absolute_value_gap_to_kalman": null,
+      "algorithm_applicability": "applicable",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": -2.303576523800024,
+      "cell_result_complete": true,
+      "comparison_status": "executed_value_score",
+      "data_identity": "79677dd860af98af88b22a24fe9776f07729b007e739dc1fb4a26a1e9eadfd65",
+      "data_observation_sha256": "f52d6a0221b21bf4d3bdf667d3b64b97a7ef14d0b18ab1f98a471820cc491c79",
+      "data_seed": 81101,
+      "data_state_sha256": "0c650cc40dee423556117f62ed599c6c206674eb6c8708423873ec754ca3c52c",
+      "data_target_id": "zhao_cui_sv_tf_seed81101_x0_then_y1_y1000_v1",
+      "lane": "highdim_source_scope",
+      "log_likelihood": -2303.576523800024,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "direct exact-transformed SGQF actual-SV value plus manual forward-sensitivity score route executed",
+        "not KSC Gaussian mixture approximation",
+        "not augmented-noise Gaussian-closure route",
+        "score differentiates the fixed-SGQF approximate value target, not an exact-likelihood oracle",
+        "not a production-GPU timing result",
+        "reset seed-81101 transition-first data; old initial-observation-first values are historical only"
+      ],
+      "numeric_execution_status": "executed_direct_exact_transformed_sv_sgqf_value_score",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "not_measured_in_phase7",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": null,
+      "reason_codes": [
+        "DIRECT_EXACT_TRANSFORMED_SV_SGQF_VALUE_SCORE_ROUTE"
+      ],
+      "reference_log_likelihood": null,
+      "required_result_kind": "value_score",
+      "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+      "runtime_seconds": null,
+      "score": [
+        2.842317252778783,
+        1.8104302761386535
+      ],
+      "score_admitted": true,
+      "score_coordinate_system": "theta=[probit_gamma, log_beta] per coordinate",
+      "score_derivative_provenance": "fixed_sgqf_exact_transformed_sv_manual_forward_sensitivity_analytical_recurrence",
+      "score_l2_norm": 3.3699295467714765,
+      "score_route_id": "fixed_sgqf_direct_exact_transformed_sv",
+      "score_status": "analytical_score_emitted",
+      "score_status_reason": "SGQF score vector emitted by reviewed analytical fixed-branch score path",
+      "target_contract_status": "target_compatible_direct_exact_transformed_sv_sgqf_value_score",
+      "time_order": "x0_then_1000_transition_then_observe_steps_y1_y1000",
+      "value_admitted": true,
+      "value_route_id": "fixed_sgqf_direct_exact_transformed_sv",
+      "value_score_route_status": "same_route_value_score"
+    },
+    {
+      "absolute_value_gap_to_kalman": null,
+      "algorithm_applicability": "applicable",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": -2.298854329179004,
+      "cell_result_complete": true,
+      "comparison_status": "executed_value_score",
+      "data_identity": "79677dd860af98af88b22a24fe9776f07729b007e739dc1fb4a26a1e9eadfd65",
+      "data_observation_sha256": "f52d6a0221b21bf4d3bdf667d3b64b97a7ef14d0b18ab1f98a471820cc491c79",
+      "data_seed": 81101,
+      "data_state_sha256": "0c650cc40dee423556117f62ed599c6c206674eb6c8708423873ec754ca3c52c",
+      "data_target_id": "zhao_cui_sv_tf_seed81101_x0_then_y1_y1000_v1",
+      "lane": "highdim_source_scope",
+      "log_likelihood": -2298.854329179004,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "source-scope KSC SGQF value plus analytical component-score route executed",
+        "declared KSC Gaussian-mixture surrogate target only",
+        "reset seed-81101 transition-first data; old initial-observation-first values are historical only"
+      ],
+      "numeric_execution_status": "executed_source_scope_ksc_sgqf_value_score",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "not_measured_in_phase7",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": null,
+      "reason_codes": [
+        "DIRECT_KSC_SOURCE_SCOPE_SGQF_VALUE_SCORE_ROUTE"
+      ],
+      "reference_log_likelihood": null,
+      "required_result_kind": "value_score",
+      "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "runtime_seconds": null,
+      "score": [
+        9.478792031591524,
+        -6.951826680216385
+      ],
+      "score_admitted": true,
+      "score_coordinate_system": "p8_truth_theta_coordinate",
+      "score_derivative_provenance": "fixed_sgqf_independent_panel_transformed_sv_gaussian_mixture_analytic_component_score_logsumexp_aggregation",
+      "score_l2_norm": 11.754802957511936,
+      "score_route_id": "fixed_sgqf_independent_panel_ksc_mixture",
+      "score_status": "analytical_score_emitted",
+      "score_status_reason": "SGQF score vector emitted by reviewed analytical fixed-branch score path",
+      "target_contract_status": "target_compatible_declared_ksc_surrogate_value_score",
+      "time_order": "x0_then_1000_transition_then_observe_steps_y1_y1000",
+      "value_admitted": true,
+      "value_route_id": "fixed_sgqf_independent_panel_ksc_mixture",
+      "value_score_route_status": "same_route_value_score"
+    },
+    {
+      "absolute_value_gap_to_kalman": null,
+      "algorithm_applicability": "applicable",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": -34.568460341318286,
+      "cell_result_complete": true,
+      "cloud_level": 2,
+      "cloud_point_count": 37,
+      "cloud_sha256": "a303685144ad6abeaa0a88f49bd0e5df0bc3af2c9193df33e9ee7d09054fc2c8",
+      "comparison_status": "executed_value_only",
+      "data_observation_sha256": "311975f378572d577a4efff005156bf736eeb36ab08824323a7d36231beffbda",
+      "data_state_sha256": "67de785712b3af3a464b7b318c2f0a517062d2ae65db73f62ba97c6e6bc63793",
+      "lane": "highdim_source_scope",
+      "log_likelihood": -691.3692068263657,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "not exact nonlinear likelihood",
+        "not an inferred-parameter or score route",
+        "not MATLAB random-stream replay",
+        "not SGQF superiority or default-readiness evidence",
+        "37-point level-2 cloud has one negative center weight and misses mixed fourth moments",
+        "GPU/XLA readiness is a separate engineering gate"
+      ],
+      "numeric_execution_status": "executed_fixed_sir_source_order_sgqf_value_only",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "source_runtime_reused_explanatory_only",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": null,
+      "reason_codes": [
+        "FIXED_SIR_SOURCE_ORDER_LEVEL2_SGQF_VALUE_ONLY"
+      ],
+      "reference_log_likelihood": null,
+      "required_result_kind": "value_only_no_free_theta",
+      "route_id": "fixed_sgqf_zhao_cui_sir_austria_j9_t20_transition_then_observe_value_only_v1",
+      "route_identity": "a2371527017b1882e066059e1d146aaa79bed632ac8a1a028a25de67c55062df",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "runtime_seconds": 0.6501484000182245,
+      "score": null,
+      "score_admitted": null,
+      "score_coordinate_system": null,
+      "score_derivative_provenance": null,
+      "score_l2_norm": null,
+      "score_status": "not_applicable_no_free_theta",
+      "score_status_reason": "Fixed Zhao-Cui SIR row has parameter_dim=0; a score is not mathematically applicable.",
+      "target_contract_status": "target_compatible_fixed_sir_transition_then_observe_value_only",
+      "target_id": "zhao_cui_sir_austria_fixed_kappa_nu_tf_seed81103_y1_y20_v1",
+      "time_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+      "value_admitted": true,
+      "value_status": {
+        "min_filtered_eigenvalue": 1.5212850579120916,
+        "min_innovation_eigenvalue": 101.98486459068396,
+        "min_predictive_eigenvalue": 1.5314088895139897,
+        "status_code": 0,
+        "valid_value": true
+      }
+    },
+    {
+      "absolute_score_l2_gap_to_kalman": null,
+      "absolute_value_gap_to_kalman": null,
+      "algorithm_applicability": "not_applicable_scoped_row",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": null,
+      "cell_result_complete": true,
+      "comparison_status": "blocked",
+      "lane": "highdim_source_scope",
+      "log_likelihood": null,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "not a fixed-SGQF or UKF full-filtering comparison row",
+        "not ranked as a full three-algorithm observed-data/filtering row"
+      ],
+      "numeric_execution_status": "blocked_not_applicable_to_scoped_zhao_cui_component_row",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "not_measured_in_phase7",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": "fixed_sgqf is not admitted for the scoped Zhao-Cui parameterized SIR local complete-data component row; the scoped row is a fixed-variant Zhao-Cui manual-score component cell.",
+      "reason_codes": [
+        "SCOPED_COMPONENT_ROW_ZHAO_CUI_ONLY",
+        "FULL_FILTERING_LEADERBOARD_CELL_STILL_NOT_CLAIMED"
+      ],
+      "reference_log_likelihood": null,
+      "reference_score": null,
+      "required_result_kind": "not_applicable",
+      "retained_grid_leaderboard_admission": "not_admitted_for_production_leaderboard_use_fixed_variant_zhao_cui",
+      "retained_grid_route_role": "diagnostic_historical_retained_grid",
+      "route_role": "not_applicable_to_scoped_component_row",
+      "row_admission_status": "not_applicable_to_scoped_component_row",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20_parameterized_logscale",
+      "runtime_seconds": null,
+      "score": null,
+      "score_admitted": null,
+      "score_coordinate_system": null,
+      "score_derivative_provenance": null,
+      "score_l2_norm": null,
+      "score_status": "not_applicable_to_scoped_component_row",
+      "score_status_reason": "fixed_sgqf is not admitted for the scoped Zhao-Cui parameterized SIR local complete-data component row; the scoped row is a fixed-variant Zhao-Cui manual-score component cell.",
+      "target_contract_status": "not_applicable_to_scoped_zhao_cui_component_row",
+      "target_scope": "local_complete_data_zhao_cui_sir_d18_component",
+      "value_admitted": null
+    },
+    {
+      "absolute_value_gap_to_kalman": null,
+      "algorithm_applicability": "applicable",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": -5.131135176067234,
+      "cell_result_complete": true,
+      "cloud_level": 2,
+      "cloud_point_count": 5,
+      "comparison_status": "executed_value_score",
+      "data_observation_sha256": "fea0681d43a4bd502d1f5a90e04f58da435c6e891e72d9da4d54f4cf0584f00a",
+      "data_state_sha256": "63cc7d7e8e3a251f76ebb607b152b58b59cd8ceda4489057e60070b44ab1d2ec",
+      "lane": "highdim_source_scope",
+      "log_likelihood": -102.62270352134469,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "source-order transition-then-observe SGQF value plus physical manual score route",
+        "P47 two-observation lower-rung SGQF diagnostic is not reported as the T20 source-scope row",
+        "old initial-observation-first value -103.13789 is a different target and is not a baseline for this cell",
+        "not a production-GPU timing result"
+      ],
+      "numeric_execution_status": "executed_predator_prey_sgqf_value_score",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "not_measured_in_phase7",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": null,
+      "reason_codes": [
+        "DIRECT_PREDATOR_PREY_SGQF_VALUE_SCORE_ROUTE"
+      ],
+      "reference_log_likelihood": null,
+      "required_result_kind": "value_score",
+      "route_id": "fixed_sgqf_zhao_cui_predator_prey_t20_transition_then_observe_physical_score_v1",
+      "route_identity": "30b284e772bd49c12c65d1b1fffe3d0696e565fe8a82e02d6ccbfecbd13bd015",
+      "row_id": "zhao_cui_predator_prey_T20",
+      "runtime_seconds": null,
+      "score": [
+        -27.641142846743517,
+        0.08410678056739762,
+        -0.08414331945605219,
+        0.8556990579659419,
+        17.525597768735203,
+        -22.63497837003507
+      ],
+      "score_admitted": true,
+      "score_coordinate_system": "physical=(r,K,a,s,u,v)",
+      "score_derivative_provenance": "fixed_sgqf_manual_analytical_rk4_cholesky_moment_forward_sensitivity_physical_chain_rule",
+      "score_l2_norm": 39.80286391409646,
+      "score_route_id": "fixed_sgqf_zhao_cui_predator_prey_t20_transition_then_observe_physical_score_v1",
+      "score_status": "analytical_score_emitted",
+      "score_status_reason": "SGQF score vector emitted by reviewed analytical fixed-branch score path",
+      "target_contract_status": "target_compatible_source_order_predator_prey_t20_sgqf",
+      "target_id": "zhao_cui_predator_prey_tf_seed81104_x0_then_y1_y20_v1",
+      "time_order": "x0_then_20_transition_then_observe_steps_y1_y20",
+      "value_admitted": true,
+      "value_route_id": "fixed_sgqf_zhao_cui_predator_prey_t20_transition_then_observe_physical_score_v1",
+      "value_score_route_status": "same_route_value_score"
+    },
+    {
+      "absolute_value_gap_to_kalman": null,
+      "algorithm_applicability": "applicable",
+      "algorithm_id": "fixed_sgqf",
+      "average_log_likelihood": -1.4265797339659205,
+      "cell_result_complete": true,
+      "cloud_level": 3,
+      "cloud_point_count": 5,
+      "cloud_sha256": "96e8bec74c2c3289c85f8bffdc8efecaad8dbd37890387a35e8ca969e09ff4b0",
+      "comparison_status": "executed_value_score",
+      "data_observation_sha256": "c990947b16d5ef108870fcb716836166a41b1fe31503b9cb5e0cd0459d4a53f2",
+      "data_state_sha256": "2a976493f58cc839667f8f4c892e92853dc232f5fe02fc617dad202b300ee358",
+      "lane": "highdim_source_scope",
+      "log_likelihood": -1437.9923718376479,
+      "mc_standard_error": null,
+      "nonclaims": [
+        "not exact nonlinear likelihood or exact posterior",
+        "not NativeGeneralizedSVSSM and not a two-state target",
+        "not actual-SV or KSC transformed-observation evidence",
+        "not adaptive MATLAB TT-cross/SIRT reproduction",
+        "not SGQF superiority or default-readiness evidence",
+        "level-3 one-dimensional quadrature is a fixed approximation",
+        "GPU/XLA readiness is a separate engineering gate"
+      ],
+      "numeric_execution_status": "executed_generalized_sv_raw_y_sgqf_value_score",
+      "phase7_batch_gpu_xla_status": {
+        "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+        "cpu_timing_status": "source_runtime_reused_explanatory_only",
+        "evidence_paths": [],
+        "gpu_xla_status": "not_claimed_no_trusted_row_specific_gpu_xla_manifest",
+        "nonclaims": [
+          "no row-specific batched main evaluator claim",
+          "no row-specific GPU/XLA timing claim",
+          "not ranked by Phase 7 timing"
+        ],
+        "reason": "Phase 7 did not run or admit a row-specific batched/GPU/XLA main leaderboard benchmark for this admitted cell.",
+        "scope": "main_leaderboard_row",
+        "timing_rank_status": "not_ranked_by_phase7_timing"
+      },
+      "reason": null,
+      "reason_codes": [
+        "GENERALIZED_SV_RAW_Y_SGQF_MANUAL_VALUE_SCORE_ROUTE"
+      ],
+      "reference_log_likelihood": null,
+      "required_result_kind": "value_score",
+      "route_id": "fixed_sgqf_generalized_sv_prior_mean_raw_y_level3_gaussian_projection_manual_score_v1",
+      "route_identity": "648b817c259506101c0ec6e9eefd9afe14c676db1ee08e7163b8f74edfc527f7",
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "runtime_seconds": 3.7390521240013186,
+      "score": [
+        2.83047307059115,
+        1.1148893545208483,
+        -0.06866268525147975
+      ],
+      "score_admitted": true,
+      "score_coordinate_system": "theta=(z_gamma,log_tau,mu_over_tau)",
+      "score_derivative_provenance": "fixed_sgqf_generalized_sv_raw_y_manual_analytical_forward_sensitivity_same_scalar",
+      "score_l2_norm": 3.042904967380932,
+      "score_route_id": "fixed_sgqf_generalized_sv_prior_mean_raw_y_level3_gaussian_projection_manual_score_v1",
+      "score_status": "analytical_score_emitted",
+      "score_status_reason": "SGQF score vector emitted by reviewed analytical fixed-branch score path",
+      "target_contract_status": "target_compatible_generalized_sv_prior_mean_raw_y_gaussian_projection",
+      "target_id": "zhao_cui_svmodels_prior_mean_tf_seed81105_transition_then_observe_raw_y_v1",
+      "time_order": "stationary_x0_then_1008_transition_then_observe_steps",
+      "value_admitted": true,
+      "value_route_id": "fixed_sgqf_generalized_sv_prior_mean_raw_y_level3_gaussian_projection_manual_score_v1",
+      "value_score_route_status": "same_route_value_score"
+    }
+  ],
+  "sgqf_column_complete": true,
+  "source_scope_row_ids": [
+    "benchmark_lgssm_exact_oracle_m3_T50",
+    "zhao_cui_sv_actual_nongaussian_T1000",
+    "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+    "zhao_cui_spatial_sir_austria_j9_T20",
+    "zhao_cui_spatial_sir_austria_j9_T20_parameterized_logscale",
+    "zhao_cui_predator_prey_T20",
+    "zhao_cui_generalized_sv_synthetic_from_estimated_values"
+  ]
+}
