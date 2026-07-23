@@ -1,0 +1,475 @@
+{
+  "artifact_json": "docs/benchmarks/artifacts/one_seed_four_filter_feasibility_20260722/attempt03/result.json",
+  "configuration": {
+    "dtype_genut": "float32",
+    "genut_controls": {
+      "balance_steps": 8,
+      "epsilon": 2.0,
+      "ridge": 1e-05,
+      "sinkhorn_steps": 8
+    },
+    "genut_particle_count": 1002,
+    "jit_compile": true,
+    "score_policy": "analytical/manual/recursive only",
+    "tf32": true
+  },
+  "device": {
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "git_commit": "4281adf3c6067b706d83841bfc7a8fba022a65dd",
+  "gpu_allocator": {
+    "current": 46592,
+    "peak": 134453504
+  },
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "methods": [
+    "ukf",
+    "sgqf",
+    "zhao_cui",
+    "genut"
+  ],
+  "models": [
+    {
+      "cells": [
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 3.300858336035162,
+          "method": "ukf",
+          "reason": null,
+          "route_id": "principal_sqrt_ukf_independent_panel_ksc_mixture",
+          "score": [
+            -0.6924748646961102,
+            0.6095782715450404
+          ],
+          "score_provenance": "principal_sqrt_ukf_manual_recursive_score",
+          "status": "executed",
+          "value": -19.950941746601956
+        },
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 2.0898594509926625,
+          "method": "sgqf",
+          "reason": null,
+          "route_id": "fixed_sgqf_independent_panel_ksc_mixture",
+          "score": [
+            -0.6924748646961102,
+            0.6095782715450418
+          ],
+          "score_provenance": "fixed_sgqf_analytical_recursive_score",
+          "status": "executed",
+          "value": -19.950941746601956
+        },
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 19.541597217030358,
+          "method": "zhao_cui",
+          "reason": null,
+          "route_id": "zhao_cui_ksc_mixture_fixed_branch_tt",
+          "route_role": "fixed_variant_diagnostic",
+          "score": [
+            -0.7056718029203304,
+            0.6354886692801854
+          ],
+          "score_provenance": "zhao_cui_fixed_variant_manual_parameter_score_methods_only",
+          "status": "executed",
+          "value": -19.95628883432051
+        },
+        {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "dtype": "float32",
+          "elapsed_seconds": 3.684675620053895,
+          "jit_compile": true,
+          "max_col_residual": 3.1581148505210876e-06,
+          "max_mean_residual": 5.960464477539063e-08,
+          "max_row_residual": 1.1641532182693481e-07,
+          "maximum_post_quotient_column_tv_error": 1.847511884989217e-05,
+          "maximum_residual": 3.1581148505210876e-06,
+          "method": "genut",
+          "minimum_row_mass": 0.0009978875750675797,
+          "particle_count": 1002,
+          "particle_seed": 81101,
+          "reason": null,
+          "route_id": "cubature_genut_nonfused_positive_ot_row_quotient_candidate_v2",
+          "score": [
+            -0.6754307746887207,
+            0.5055976510047913
+          ],
+          "score_increment_sum_residual": 0.0,
+          "score_provenance": "recursive_forward_sensitivity_same_finite_value_program",
+          "status": "executed",
+          "tf32": true,
+          "transition_before_first_observation": false,
+          "value": -19.97339630126953
+        }
+      ],
+      "horizon": 10,
+      "model_id": "ksc_sv",
+      "parameter_order": [
+        "z_gamma",
+        "log_beta"
+      ],
+      "raw_observation_sha256": "da31958d154c15261ee46219da73b28a4a195fe6b30f3d76dadaf5a9fdfb7206",
+      "seed": 81101,
+      "target_id": "amended_initial_observation_first_ksc_sv_prefix10_seed81101",
+      "target_observation_policy": "log(y^2+1e-8) seven-component KSC mixture",
+      "theta": [
+        0.25334709882736206,
+        -0.9162907600402832
+      ],
+      "time_order": "stationary_initial_draw_then_observe_y0_to_y9_before_transitions",
+      "transformed_observation_sha256": "6555381729cac365067b50110884f0cb114ad6119cc06c882cae10f2bea583fd"
+    },
+    {
+      "cells": [
+        {
+          "method": "ukf",
+          "reason": "available UKF is an augmented-noise raw-observation Gaussian closure, not this exact transformed target",
+          "status": "not_comparable"
+        },
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 0.044414230971597135,
+          "method": "sgqf",
+          "reason": null,
+          "route_id": "fixed_sgqf_direct_exact_transformed_sv",
+          "score": [
+            -0.5324662803728515,
+            0.7453561843984522
+          ],
+          "score_provenance": "fixed_sgqf_analytical_recursive_score",
+          "status": "executed",
+          "value": -19.737671454458912
+        },
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 19.431453506986145,
+          "method": "zhao_cui",
+          "reason": null,
+          "route_id": "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+          "route_role": "fixed_variant_diagnostic",
+          "score": [
+            -0.7072002788826178,
+            0.5905715364278991
+          ],
+          "score_provenance": "zhao_cui_fixed_variant_manual_parameter_score_methods_only",
+          "status": "executed",
+          "value": -19.9956629857278
+        },
+        {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "dtype": "float32",
+          "elapsed_seconds": 2.0591852689976804,
+          "jit_compile": true,
+          "max_col_residual": 3.3462420105934143e-06,
+          "max_mean_residual": 2.9802322387695312e-08,
+          "max_row_residual": 1.1746305972337723e-07,
+          "maximum_post_quotient_column_tv_error": 1.9279956177342683e-05,
+          "maximum_residual": 3.3462420105934143e-06,
+          "method": "genut",
+          "minimum_row_mass": 0.0009978865273296833,
+          "particle_count": 1002,
+          "particle_seed": 81101,
+          "reason": null,
+          "route_id": "cubature_genut_nonfused_positive_ot_row_quotient_candidate_v2",
+          "score": [
+            -0.6781377792358398,
+            0.48294341564178467
+          ],
+          "score_increment_sum_residual": 0.0,
+          "score_provenance": "recursive_forward_sensitivity_same_finite_value_program",
+          "status": "executed",
+          "tf32": true,
+          "transition_before_first_observation": false,
+          "value": -20.018402099609375
+        }
+      ],
+      "horizon": 10,
+      "model_id": "exact_transformed_sv",
+      "parameter_order": [
+        "z_gamma",
+        "log_beta"
+      ],
+      "raw_observation_sha256": "da31958d154c15261ee46219da73b28a4a195fe6b30f3d76dadaf5a9fdfb7206",
+      "seed": 81101,
+      "target_id": "amended_initial_observation_first_exact_sv_prefix10_seed81101",
+      "target_observation_policy": "exact log(y^2) log-chi-square observation",
+      "theta": [
+        0.25334709882736206,
+        -0.9162907600402832
+      ],
+      "time_order": "stationary_initial_draw_then_observe_y0_to_y9_before_transitions",
+      "transformed_observation_sha256": "0ceef36fba4c54c922eed5e0bdda6e406fd216cf8054d848905367d102bec4d9"
+    },
+    {
+      "cells": [
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 0.56769685796462,
+          "method": "sgqf",
+          "reason": null,
+          "route_id": "fixed_sgqf_generalized_sv_prior_mean_raw_y_level3_gaussian_projection_manual_score_v1",
+          "score": [
+            -0.12200644916137315,
+            -0.1539074236623366,
+            0.0222873809519662
+          ],
+          "score_provenance": "generalized_sv_sgqf_analytical_recursive_score",
+          "status": "executed",
+          "value": -16.019455246965997
+        },
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 20.6443955579889,
+          "method": "zhao_cui",
+          "reason": null,
+          "route_id": "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+          "route_role": "fixed_variant_diagnostic",
+          "score": [
+            -0.12547017508737268,
+            -0.1548427704221113,
+            0.022260932828017707
+          ],
+          "score_provenance": "zhao_cui_fixed_variant_manual_parameter_score_methods_only",
+          "status": "executed",
+          "value": -16.01987281812904
+        },
+        {
+          "method": "ukf",
+          "reason": "no reviewed same-target generalized-SV UKF route is implemented",
+          "status": "not_comparable"
+        },
+        {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "dtype": "float32",
+          "elapsed_seconds": 2.3833837819984183,
+          "jit_compile": true,
+          "max_col_residual": 6.221234798431396e-07,
+          "max_mean_residual": 5.960464477539063e-08,
+          "max_row_residual": 1.0570511221885681e-07,
+          "maximum_post_quotient_column_tv_error": 1.0890791600104421e-05,
+          "maximum_residual": 6.221234798431396e-07,
+          "method": "genut",
+          "minimum_row_mass": 0.0009978982852771878,
+          "particle_count": 1002,
+          "particle_seed": 81105,
+          "reason": null,
+          "route_id": "cubature_genut_nonfused_positive_ot_row_quotient_candidate_v2",
+          "score": [
+            -0.10781475156545639,
+            -0.15403185784816742,
+            0.021872445940971375
+          ],
+          "score_increment_sum_residual": 0.0,
+          "score_provenance": "recursive_forward_sensitivity_same_finite_value_program",
+          "status": "executed",
+          "tf32": true,
+          "transition_before_first_observation": true,
+          "value": -16.015846252441406
+        }
+      ],
+      "horizon": 10,
+      "model_id": "generalized_sv",
+      "observation_sha256": "b9fce5d40162b32a765e907a3487bd71f7ec07b26cd251ca868b411ff7e7c0be",
+      "parameter_order": [
+        "z_gamma",
+        "log_tau",
+        "mu_over_tau"
+      ],
+      "seed": 81105,
+      "target_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values_prefix10",
+      "target_observation_policy": "raw Gaussian SV observation y=sqrt(exp(tau*x))*epsilon",
+      "theta": [
+        1.0824114084243774,
+        -2.076793670654297,
+        0.0
+      ],
+      "time_order": "stationary_initial_draw_then_transition_before_every_observation"
+    },
+    {
+      "cells": [
+        {
+          "dtype": "float64",
+          "elapsed_seconds": 6.544831631996203,
+          "method": "sgqf",
+          "reason": null,
+          "route_id": "fixed_sgqf_zhao_cui_predator_prey_t20_transition_then_observe_physical_score_v1",
+          "route_identity": "30b284e772bd49c12c65d1b1fffe3d0696e565fe8a82e02d6ccbfecbd13bd015",
+          "score": [
+            -27.641142846745378,
+            0.0841067805671752,
+            -0.08414331945605757,
+            0.8556990579673663,
+            17.525597768735736,
+            -22.634978370035732
+          ],
+          "score_provenance": "fixed_sgqf_analytical_recursive_score",
+          "status": "executed",
+          "value": -102.6227035213447
+        },
+        {
+          "method": "ukf",
+          "reason": "available UKF uses initial-observation-first timing, while this canonical source row is transition-then-observe",
+          "status": "not_comparable"
+        },
+        {
+          "method": "zhao_cui",
+          "reason": "fixed-variant Zhao-Cui predator-prey source-route evaluator is not implemented; historical retained-grid route is demoted",
+          "status": "not_implemented_or_not_comparable"
+        },
+        {
+          "controls": {
+            "balance_steps": 8,
+            "epsilon": 2.0,
+            "ridge": 1e-05,
+            "sinkhorn_steps": 8
+          },
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "dtype": "float32",
+          "elapsed_seconds": 5.280977661022916,
+          "jit_compile": true,
+          "max_col_residual": 1.3243407011032104e-05,
+          "max_mean_residual": 1.52587890625e-05,
+          "max_row_residual": 1.544831320643425e-07,
+          "maximum_post_quotient_column_tv_error": 2.649320595082827e-05,
+          "maximum_residual": 1.52587890625e-05,
+          "method": "genut",
+          "minimum_row_mass": 0.0009978495072573423,
+          "particle_count": 1002,
+          "particle_seed": 81104,
+          "reason": null,
+          "route_id": "cubature_genut_nonfused_positive_ot_row_quotient_candidate_v2",
+          "score": [
+            -26.750307083129883,
+            0.1759563535451889,
+            -0.09248145669698715,
+            0.5654255747795105,
+            19.851070404052734,
+            -25.527313232421875
+          ],
+          "score_increment_sum_residual": 3.814697265625e-06,
+          "score_provenance": "recursive_forward_sensitivity_same_finite_value_program",
+          "status": "executed",
+          "tf32": true,
+          "transition_before_first_observation": true,
+          "value": -102.58187866210938
+        }
+      ],
+      "horizon": 20,
+      "model_id": "predator_prey",
+      "observation_sha256": "fea0681d43a4bd502d1f5a90e04f58da435c6e891e72d9da4d54f4cf0584f00a",
+      "parameter_order": [
+        "r",
+        "K",
+        "a",
+        "s",
+        "u",
+        "v"
+      ],
+      "seed": 81104,
+      "target_id": "zhao_cui_predator_prey_tf_seed81104_x0_then_y1_y20_v1",
+      "target_observation_policy": "additive Gaussian observation of source-order RK4 trajectory",
+      "theta": [
+        0.6,
+        114.0,
+        25.0,
+        0.3,
+        0.5,
+        0.5
+      ],
+      "time_order": "x0_then_20_transition_then_observe_steps_y1_y20"
+    }
+  ],
+  "nonclaims": [
+    "no method ranking",
+    "no uncertainty interval",
+    "no exact nonlinear oracle",
+    "no default or leaderboard promotion",
+    "missing cells are not numerical failures"
+  ],
+  "plan": "docs/plans/bayesfilter-one-seed-four-filter-feasibility-plan-2026-07-22.md",
+  "run_manifest": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+      "docs/benchmarks/run_one_seed_four_filter_feasibility.py",
+      "--output-root",
+      "docs/benchmarks/artifacts/one_seed_four_filter_feasibility_20260722/attempt03"
+    ],
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "host": "DESKTOP-RF1Q5IJ",
+    "cpu_gpu_status": "trusted_gpu_xla_genut_with_cpu_fp64_comparators",
+    "data_version": "repository_frozen_seeded_fixtures_with_tensor_hashes",
+    "device": {
+      "logical_devices": [
+        "/device:GPU:0"
+      ],
+      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+    },
+    "git_commit": "4281adf3c6067b706d83841bfc7a8fba022a65dd",
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "output_json": "docs/benchmarks/artifacts/one_seed_four_filter_feasibility_20260722/attempt03/result.json",
+    "output_markdown": "docs/benchmarks/artifacts/one_seed_four_filter_feasibility_20260722/attempt03/result.md",
+    "plan": "docs/plans/bayesfilter-one-seed-four-filter-feasibility-plan-2026-07-22.md",
+    "python": "3.11.14",
+    "random_seeds": [
+      81101,
+      81104,
+      81105
+    ],
+    "result": "docs/plans/bayesfilter-one-seed-four-filter-feasibility-result-2026-07-22.md",
+    "tensorflow": "2.19.1",
+    "wall_time_seconds": 96.00781976198778
+  },
+  "schema_version": "bayesfilter.one_seed_four_filter_feasibility.v1",
+  "wall_time_seconds": 96.00781976198778
+}

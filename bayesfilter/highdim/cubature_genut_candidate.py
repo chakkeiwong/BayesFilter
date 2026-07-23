@@ -33,10 +33,20 @@ _AUTHORIZED_CANDIDATE_SEALS: dict[object, str] = {}
 _REPOSITORY_CANDIDATE_SEALS: set[object] = set()
 
 _REPOSITORY_ADAPTER_REGISTRY = {
+    "diagonal_lgssm_v1": {
+        "callable_dependency_ids": (
+            "bayesfilter.highdim.cubature_genut_adapters:diagonal_lgssm_candidate_adapter",
+            "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.higher_moment_contract_e:higher_moment_shape_jvp",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
+            "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
+        ),
+    },
     "exact_transformed_sv_v1": {
         "callable_dependency_ids": (
             "bayesfilter.highdim.cubature_genut_adapters:exact_transformed_sv_candidate_adapter",
             "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.higher_moment_contract_e:higher_moment_shape_jvp",
             "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
             "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
         ),
@@ -45,6 +55,7 @@ _REPOSITORY_ADAPTER_REGISTRY = {
         "callable_dependency_ids": (
             "bayesfilter.highdim.cubature_genut_adapters:predator_prey_candidate_adapter",
             "bayesfilter.highdim.cubature_genut_filter:finite_value_score",
+            "bayesfilter.highdim.higher_moment_contract_e:higher_moment_shape_jvp",
             "bayesfilter.highdim.cubature_genut_candidate:gaussian_genut_design",
             "bayesfilter.highdim.cubature_genut_candidate:replicate_positive_genut",
             "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",

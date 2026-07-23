@@ -8,6 +8,7 @@ from typing import Callable
 import tensorflow as tf
 
 from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
 
 
 Tensor = tf.Tensor
@@ -416,6 +417,9 @@ def finite_value_score(
     balance_steps: int = 8,
     ridge: float = 1.0e-5,
     transition_before_first_observation: bool = True,
+    higher_moment_correction_steps: int = 0,
+    higher_moment_strength: float = 0.0,
+    higher_moment_floor: float = 1.0e-6,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
     """Evaluate the finite candidate scalar and its complete forward JVP."""
 
@@ -442,6 +446,8 @@ def finite_value_score(
     minimum_row_mass = tf.constant(float("inf"), theta.dtype)
     maximum_column_tv_error = tf.zeros([], theta.dtype)
     minimum_gap_eigenvalue = tf.constant(float("inf"), theta.dtype)
+    maximum_skew_residual = tf.zeros([], theta.dtype)
+    maximum_kurtosis_residual = tf.zeros([], theta.dtype)
     horizon = tf.shape(observations)[0]
     increments = tf.TensorArray(theta.dtype, size=horizon, element_shape=())
     score_increments = tf.TensorArray(
@@ -463,6 +469,8 @@ def finite_value_score(
         minimum_row_mass_value: Tensor,
         maximum_column_tv_error_value: Tensor,
         minimum_gap_eigenvalue_value: Tensor,
+        maximum_skew_residual_value: Tensor,
+        maximum_kurtosis_residual_value: Tensor,
         increments_value: tf.TensorArray,
         score_increments_value: tf.TensorArray,
     ):
@@ -549,11 +557,22 @@ def finite_value_score(
                 ridge=ridge,
                 parameter_count=parameter_count,
         )
-        step_valid = stage_valid & restored["reset_valid"]
-        restored_particles = tf.where(step_valid, restored["particles"], particles_value)
+        higher = higher_moment_shape_jvp(
+            particles_next,
+            normalized_weights,
+            particle_tangent_next,
+            normalized_weight_tangent,
+            restored["particles"],
+            restored["particles_tangent"],
+            correction_steps=higher_moment_correction_steps,
+            strength=higher_moment_strength,
+            floor=higher_moment_floor,
+        )
+        step_valid = stage_valid & restored["reset_valid"] & higher["valid"]
+        restored_particles = tf.where(step_valid, higher["particles"], particles_value)
         restored_tangent = tf.where(
             step_valid,
-            restored["particles_tangent"],
+            higher["particles_tangent"],
             particle_tangent_value,
         )
         mean_residual = restored["mean_residual"]
@@ -588,6 +607,14 @@ def finite_value_score(
                 minimum_gap_eigenvalue_value,
                 restored["minimum_gap_eigenvalue"],
             ),
+            tf.maximum(
+                maximum_skew_residual_value,
+                tf.reduce_max(tf.abs(higher["skew_residual"])),
+            ),
+            tf.maximum(
+                maximum_kurtosis_residual_value,
+                tf.reduce_max(tf.abs(higher["kurtosis_residual"])),
+            ),
             increments_value.write(time_index, increment),
             score_increments_value.write(time_index, increment_tangent),
         )
@@ -607,6 +634,8 @@ def finite_value_score(
         minimum_row_mass,
         maximum_column_tv_error,
         minimum_gap_eigenvalue,
+        maximum_skew_residual,
+        maximum_kurtosis_residual,
         increments,
         score_increments,
     ) = tf.while_loop(
@@ -627,6 +656,8 @@ def finite_value_score(
             minimum_row_mass,
             maximum_column_tv_error,
             minimum_gap_eigenvalue,
+            maximum_skew_residual,
+            maximum_kurtosis_residual,
             increments,
             score_increments,
         ),
@@ -641,6 +672,8 @@ def finite_value_score(
         "minimum_row_mass": minimum_row_mass,
         "maximum_post_quotient_column_tv_error": maximum_column_tv_error,
         "minimum_covariance_gap_eigenvalue": minimum_gap_eigenvalue,
+        "maximum_skew_residual": maximum_skew_residual,
+        "maximum_kurtosis_residual": maximum_kurtosis_residual,
         "value_increments": increments.stack(),
         "score_increments": score_increments.stack(),
     }

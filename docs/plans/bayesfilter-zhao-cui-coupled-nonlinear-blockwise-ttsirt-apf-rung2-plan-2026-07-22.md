@@ -2,7 +2,7 @@
 
 Date: 2026-07-22
 
-Status: `V3_CPU_PRECHECK_PASS_GPU_CLAIM_AUTHORIZED_PENDING_OCCUPANCY`
+Status: `PASS_ENGINEERING_RUNG2`
 
 Route classification: `extension_or_invention`
 
@@ -46,13 +46,18 @@ Kalman update. The matched ladder is:
 
 1. exact conditional with exact predictive auxiliary probabilities;
 2. exact conditional with uniform auxiliary probabilities; and
-3. fitted TTSIRT conditional with uniform auxiliary probabilities.
+3. fitted TTSIRT conditional with uniform auxiliary probabilities; and
+4. fitted TTSIRT conditional with the frozen reference-parameter predictive
+   auxiliary probabilities.
 
-All arms use the same model, observations, particles, fixed random numbers,
-scope, and online dtype. Arm 1 is an oracle ceiling; arm 2 isolates auxiliary
-loss; arm 3 is the candidate. Cross-arm numerical differences are descriptive
-only. The primary evidence is candidate ESS plus the analytical derivative of
-the same fixed-branch scalar.
+All arms use the same model, observations, particles, fixed base random
+numbers, scope, and online dtype. The auxiliary law and proposal determine the
+realized genealogy and states, so those outputs are not asserted to be
+identical across arms. Arm 1 is an oracle ceiling; arm 2 isolates the effect of
+uniform genealogy with the exact proposal; arm 3 preserves the rejected
+uniform-genealogy fitted comparator; and arm 4 is the candidate. Cross-arm
+numerical differences are descriptive only. The primary evidence is arm 4 ESS
+plus the analytical derivative of that same fixed-branch scalar.
 
 Twelve identical model blocks are replicated to state dimension `24` and
 observation dimension `12`. Proposal uniforms are independent by block, while
@@ -115,15 +120,18 @@ Stage A is a structural screen with `l1_weight=0` as a comparator only:
 - defensive mass fixed initially at `1e-6`, with cross-order log-normalizer and tail
   diagnostics that trigger a fresh tau/scale repair rather than promotion.
 
-Stage B repeats the selected structure from identical initial cores and clouds
-with `l1_weight` in `{0,1e-6,1e-5}`. Learning rate `3e-4`, L2 weight `1e-8`,
-gradient clip `10`, deterministic fixed-design TT-SVD initialization, and 32
-density-refinement steps are target-specific hypotheses, not defaults. Validation excess
+Stage B repeats the selected structure with `l1_weight` in
+`{0,1e-6,1e-5}`. Every arm uses the same fixed quadrature clouds, seeds, and
+deterministic TT-SVD initialization rule. The initial target is identical, but
+later sequential targets are not identical across L1 arms: each arm carries
+its own fitted current-state marginal into the next adjacent target. Learning
+rate `3e-4`, L2 weight `1e-8`, gradient clip `10`, and 32 density-refinement
+steps are target-specific hypotheses, not defaults. Validation excess
 cross-entropy, computed as quadrature `KL(target || fitted)`, selects or vetoes;
 raw differential cross-entropy is explanatory only because its target-entropy
-term changes with the coordinate scale. Audit data are not evaluated
-until the structure and L1 arm are frozen. A positive-L1 arm must improve the
-zero-L1 arm's maximum validation KL by at least
+term changes with the coordinate scale. Audit data are not evaluated until the
+structure and L1 arm are frozen. A positive-L1 arm must improve the zero-L1
+arm's maximum validation KL by at least
 `max(0.005, 0.02*abs(zero_l1_metric))`; otherwise the zero-L1 comparator is
 selected while preserving L1 tuning as the required procedure.
 
@@ -143,7 +151,7 @@ the tuning artifact for this exact scope. They are not transferable defaults.
 | TT-SVD initializer | fixed tensor-product quadrature projection in the orthonormal Legendre basis | the v1 random-core 4D prefit remained near loss `1.0`; TT-SVD gave one-block RMS `0.339-0.479` and ESS `0.668-0.671` | dense coefficient tensor is limited to this 4D block compiler and is not a generic high-dimensional route | realized ranks, discarded singular-value mass, validation KL | extension hypothesis |
 | L1 grid | Zhao-Cui lane policy, target-specific magnitudes | includes zero comparator and positive penalties | penalties ineffective or destructive | recorded regularization and validation-KL differences | hypotheses |
 | Training steps/LR | P75/P86 optimizer surface with much smaller target | bounded first ladder | undertraining or overshoot | trace at every 8 steps and final/best ratio | hypotheses |
-| Uniform auxiliary candidate | rung-1 mechanism isolation | tests proposal before predictive compiler | avoidable ESS collapse | exact-uniform arm separates mechanism | deliberate baseline |
+| Uniform auxiliary fitted comparator | rung-1 mechanism isolation | tests the fitted proposal before the predictive-auxiliary repair | avoidable ESS collapse | exact-uniform arm and fitted-predictive arm separate mechanisms | deliberate baseline |
 | Frozen fitted predictive auxiliary | v2 CPU repair after uniform fitted ESS `0.1166` | uses reference previous weights plus predictive observation likelihood while keeping the online branch parameter-independent | reference-anchor mismatch or residual genealogy collapse | fitted-uniform vs fitted-predictive ESS and same-scalar score | repaired hypothesis |
 | Grid-CDF inverse | existing diagnostic implementation | only available fixed conditional inverse | density/sample mismatch | exact-conditional log-q and roundtrip gates | diagnostic extension |
 | Float32 TF32 XLA online | repository default | required production-oriented execution target | cancellation or unsupported op | CPU precheck, score/FD, device and finite gates | reviewed execution default |
@@ -175,9 +183,10 @@ using a fresh directory for every attempt.
 - Missing stop conditions: non-finite training, target-design collapse,
   conditional mismatch, score failure, ESS failure, budget exhaustion, and
   missing GPU policy are explicit stops.
-- Unfair comparison: all three arms share observations, particles, model,
-  fixed randomness, dtype, and horizon; only the declared proposal/auxiliary
-  mechanisms differ.
+- Unfair comparison: all four arms share observations, particles, model, fixed
+  base randomness, dtype, and horizon; only the declared proposal and
+  auxiliary mechanisms differ. Realized genealogies and states are allowed to
+  differ as consequences of those declared mechanisms.
 - Hidden assumptions: capacity, scale, L1, training schedule, auxiliary law,
   and block factorization are recorded as hypotheses rather than defaults.
 - Stale context: rung 1 proved only independent scalar Gaussian composition;
@@ -200,9 +209,14 @@ v1 canonical CPU precheck then rejected the algebraic/random-core candidate:
 conditional RMS `1707.8`, ESS fraction `0.00195`, while the exact-uniform arm
 retained `0.5297`. This did not invalidate the scalar, score, inverse, or XLA
 harness. Bounded repair diagnostics found that the Gaussian-quantile map plus
-fixed TT-SVD initialization passes all one-block numerical screens; v2 debug
-also passes every mechanics gate. The v2 canonical CPU precheck is now the
-next authorized action.
+fixed TT-SVD initialization passes all one-block numerical screens. The v2 CPU
+precheck repaired the proposal fit but rejected the fitted uniform-genealogy
+arm at ESS fraction `0.1166`. The v3 predictive-auxiliary repair passed the CPU
+precheck and the terminal GPU/XLA run. The GPU candidate reached ESS fraction
+`0.25457`, conditional log-density RMS `0.30145`, score/FD maximum error
+`1.93e-4`, and inverse roundtrip maximum error `2.98e-6`; all declared gates
+passed with memory growth configured and verified before logical-device
+initialization.
 
 ## Pre-Mortem
 
@@ -218,7 +232,7 @@ grid is ineffective. Cross-order log-normalizer, trace, validation, and conditio
 diagnostics distinguish those repair triggers from failure of the fixed-TT/APF
 architecture.
 
-## Budget And Stop Conditions
+## Budget And Stop Conditions (Closed)
 
 - Debug implementation/smoke: at most 6 CPU-hidden harness-repair attempts,
   still bounded by 2 minutes total. Attempts 1--4 exposed only empty-theta,
@@ -232,6 +246,10 @@ architecture.
 - User authorization was received on 2026-07-22; stop only if a scientific
   veto fires or the declared compute budget is exhausted.
 
+The terminal GPU attempt completed in `119.63 s`, within the declared two-minute
+budget. This scope is closed; any multi-seed or longer-horizon work requires a
+fresh plan, tuning scope, budget, and versioned output root.
+
 ## GPU And Shared-Device Policy
 
 The canonical claim runner must set `TF_FORCE_GPU_ALLOW_GROWTH=true` before
@@ -242,7 +260,7 @@ policy. Offline training and branch compilation remain on CPU. Before launch,
 record `nvidia-smi` occupancy and defer while the shared device is materially
 busy.
 
-## Planned Commands
+## Commands Executed
 
 Nonclaiming debug smoke:
 
@@ -253,7 +271,7 @@ CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 python \
   --debug-smoke --cpu-reference
 ```
 
-Canonical v2 CPU precheck:
+Canonical v3 CPU precheck after the predictive-auxiliary repair:
 
 ```bash
 CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 python \
@@ -262,8 +280,7 @@ CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 python \
   --cpu-reference
 ```
 
-Canonical trusted GPU claim, pending CPU pass, occupancy gate, and
-authorization:
+Canonical trusted GPU claim after the CPU and occupancy gates passed:
 
 ```bash
 TF_FORCE_GPU_ALLOW_GROWTH=true PYTHONDONTWRITEBYTECODE=1 python \
@@ -272,9 +289,9 @@ TF_FORCE_GPU_ALLOW_GROWTH=true PYTHONDONTWRITEBYTECODE=1 python \
 ```
 The v2 CPU precheck repaired target/map/fit quality but the uniform fitted arm
 still reached only ESS fraction `0.1166`; its fitted predictive auxiliary
-diagnostic on the debug scope reached `0.6472`. The canonical v2 retry therefore
-uses the frozen predictive auxiliary arm as the candidate and retains the
-uniform arm as an explanatory comparator.
+diagnostic on the debug scope reached `0.6472`. The v3 repair therefore used
+the frozen predictive auxiliary arm as the candidate and retained the uniform
+arm as an explanatory comparator.
 
 The v3 CPU precheck passed all declared gates at `d=24,T=3,N=512`: selected
 degree `6`, TT-SVD rank cap `12`, Gaussian scale `0.22`, and `l1_weight=0.0`
@@ -282,6 +299,9 @@ after the complete L1 grid; validation KL `0.00264`, untouched audit KL
 `0.00496`, cross-order log-normalizer spread `0.00856`, conditional log-density
 RMS `0.30145`, predictive fitted ESS fraction `0.25457`, same-scalar score/FD
 error `2.69e-4`, and inverse roundtrip error `2.98e-6`. Positive L1 did not
-meet the predeclared `0.005` improvement margin. This is a CPU precheck, not the
-GPU/XLA claim; the next action is the single occupancy-gated GPU attempt with
-memory growth configured and verified before logical-device initialization.
+meet the predeclared `0.005` improvement margin. The subsequent GPU/XLA run
+reproduced the pass with predictive fitted ESS fraction `0.25457`, same-scalar
+score/FD error `1.93e-4`, `/GPU:0` placement, TF32/XLA enabled, and memory
+growth verified on `/physical_device:GPU:0`. The terminal decision is
+`PASS_ENGINEERING_RUNG2`; this does not transfer the selected controls to a new
+scope or establish any of the stated nonclaims.
