@@ -53,6 +53,7 @@ TFBatchedSVDBackend = Literal[
 TFPrincipalSqrtBackend = Literal[
     "compiled_custom_op",
     "tensorflow_eigh",
+    "tensorflow_eigh_strict",
 ]
 
 _PRINCIPAL_SQRT_ROUNDOFF_TOLERANCE = 1.0e-14
@@ -571,6 +572,20 @@ def _tensorflow_native_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor:
     return _symmetrize(factor)
 
 
+def _tensorflow_strict_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor:
+    """Device-side SPD root matching the custom-op input contract.
+
+    The caller has already classified/repairs the covariance. Do not clamp or
+    add another symmetrization here: those arithmetic changes accumulate over
+    the 96-step score recursion and can move an otherwise valid candidate away
+    from the exact DZ5 baseline.
+    """
+
+    values, vectors = tf.linalg.eigh(tf.convert_to_tensor(covariance, tf.float64))
+    factor = vectors @ tf.linalg.diag(tf.sqrt(values)) @ tf.linalg.matrix_transpose(vectors)
+    return factor
+
+
 def _tensorflow_native_symmetric_sylvester_solve(
     symmetric_factor: tf.Tensor,
     rhs: tf.Tensor,
@@ -585,6 +600,21 @@ def _tensorflow_native_symmetric_sylvester_solve(
     return _symmetrize(solved)
 
 
+def _tensorflow_strict_symmetric_sylvester_solve(
+    symmetric_factor: tf.Tensor,
+    rhs: tf.Tensor,
+) -> tf.Tensor:
+    """Device-side Lyapunov solve with the custom-op's strict inputs."""
+
+    factor = tf.convert_to_tensor(symmetric_factor, tf.float64)
+    rhs = tf.convert_to_tensor(rhs, tf.float64)
+    values, vectors = tf.linalg.eigh(factor)
+    projected = tf.einsum("bia,bpij,bjc->bpac", vectors, rhs, vectors)
+    denominator = values[:, :, tf.newaxis] + values[:, tf.newaxis, :]
+    scaled = projected / denominator[:, tf.newaxis, :, :]
+    return tf.einsum("bia,bpac,bjc->bpij", vectors, scaled, vectors)
+
+
 def _principal_sqrt_factor(
     covariance: tf.Tensor,
     *,
@@ -594,6 +624,8 @@ def _principal_sqrt_factor(
         return _symmetrize(symmetric_principal_sqrt(covariance))
     if factor_backend == "tensorflow_eigh":
         return _tensorflow_native_principal_sqrt(covariance)
+    if factor_backend == "tensorflow_eigh_strict":
+        return _tensorflow_strict_principal_sqrt(covariance)
     raise ValueError(f"unknown principal sqrt backend: {factor_backend!r}")
 
 
@@ -607,6 +639,8 @@ def _symmetric_sylvester_factor_solve(
         return _symmetrize(symmetric_sylvester_solve(factor, rhs))
     if factor_backend == "tensorflow_eigh":
         return _tensorflow_native_symmetric_sylvester_solve(factor, rhs)
+    if factor_backend == "tensorflow_eigh_strict":
+        return _tensorflow_strict_symmetric_sylvester_solve(factor, rhs)
     raise ValueError(f"unknown principal sqrt backend: {factor_backend!r}")
 
 

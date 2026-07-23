@@ -13,6 +13,7 @@ import json
 import math
 import os
 import resource
+import signal
 import subprocess
 import sys
 import time
@@ -115,7 +116,7 @@ PLAN = Path(
 )
 SINGLE_DIAGNOSTIC_PLAN = Path(
     "docs/plans/"
-    "bayesfilter-ssl-lstm-q20-single-seed-neutra-training-diagnostic-plan-2026-07-20.md"
+    "bayesfilter-ssl-lstm-neutra-training-hierarchy-plan-2026-07-21.md"
 )
 DEEP_DIAGNOSTIC_PLAN = Path(
     "docs/plans/"
@@ -125,7 +126,26 @@ WIDE_DIAGNOSTIC_PLAN = Path(
     "docs/plans/"
     "bayesfilter-ssl-lstm-q20-wide-64x64-saturation-test-plan-2026-07-20.md"
 )
+LOSS_ONLY_ARCHITECTURE_PLAN = Path(
+    "docs/plans/"
+    "bayesfilter-ssl-lstm-q20-two-architecture-loss-gate-plan-2026-07-21.md"
+)
 SCRIPT = Path(__file__).resolve().relative_to(ROOT)
+SOURCE_PATHS = {
+    "runner": SCRIPT,
+    "target": Path("bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py"),
+    "pool": Path("bayesfilter/inference/cpu_value_score_pool.py"),
+    "trainer": Path("bayesfilter/inference/neutra_training.py"),
+    "controller": Path("bayesfilter/inference/neutra_training_control.py"),
+}
+# These hashes describe the source imported by this process. Computing them at
+# module load prevents a concurrent edit from being mislabeled as executed code
+# in a terminal summary written much later.
+IMPORTED_SOURCE_SHA256 = {
+    key: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+    for key, path in SOURCE_PATHS.items()
+}
+_SOURCE_BINDINGS_AT_LAUNCH: dict[str, dict[str, Any]] = {}
 DEFAULT_OUTPUT_ROOT = Path(
     "docs/plans/artifacts/"
     "ssl-lstm-neutra-hmc-state-complexity-2026-07-19/phase-3-training"
@@ -134,6 +154,7 @@ Q_VALUES = (1, 2, 5, 10, 20)
 WORKERS_BY_Q = {1: 32, 2: 32, 5: 32, 10: 32, 20: 16}
 OPTUNA_RUNGS = (50, 100, 200, 400)
 VALIDATION_BATCH_SIZE = 64
+AUDIT_BATCH_SIZE = 256
 BATCH_SIZE = 480
 DEFAULT_HIDDEN_LAYERS = (32, 32)
 MAX_STEPS = 2000
@@ -148,6 +169,10 @@ class ComplexityTrainingError(RuntimeError):
 
 class ResourceStop(ComplexityTrainingError):
     """Raised after preserving a resource-stop checkpoint."""
+
+
+class TrainingInterrupted(ComplexityTrainingError):
+    """Raised after preserving a deferred signal-interruption checkpoint."""
 
 
 class HostMemoryVeto(ComplexityTrainingError):
@@ -177,6 +202,12 @@ class TrialParameters:
             raise ValueError("gradient_clip_norm outside study search contract")
 
 
+def stream_payload(stream: Stream) -> Mapping[str, Any]:
+    """Return the JSON-normalized stream identity used by persisted artifacts."""
+
+    return json.loads(canonical(asdict(stream)))
+
+
 STREAMS = (
     Stream("seed-a", (20260719, 12101), (20260719, 13101), (20260719, 14101)),
     Stream("seed-b", (20260719, 12102), (20260719, 13102), (20260719, 14102)),
@@ -184,6 +215,26 @@ STREAMS = (
 FRESH_CONFIRMATION = Stream(
     "seed-c", (20260719, 12103), (20260719, 13103), (20260719, 14103)
 )
+
+
+_INTERRUPTION_SIGNAL: int | None = None
+
+
+def request_training_interruption(signum: int, _frame: Any) -> None:
+    """Defer termination until the runner reaches a checkpoint-safe boundary."""
+
+    global _INTERRUPTION_SIGNAL
+    _INTERRUPTION_SIGNAL = int(signum)
+
+
+def reset_training_interruption() -> None:
+    global _INTERRUPTION_SIGNAL
+    _INTERRUPTION_SIGNAL = None
+
+
+def install_training_signal_handlers() -> None:
+    signal.signal(signal.SIGTERM, request_training_interruption)
+    signal.signal(signal.SIGINT, request_training_interruption)
 
 
 class Budget:
@@ -225,6 +276,53 @@ def write_json(path: Path, payload: Any, *, replace: bool = False) -> None:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def latest_verified_progress_checkpoint(
+    *,
+    progress: Mapping[str, Any],
+    stream: Stream,
+) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
+    """Return the newest progress-bound joint checkpoint after strict validation."""
+
+    if progress.get("schema") != SCHEMA or progress.get("status") != "RUNNING":
+        raise ComplexityTrainingError("orphan recovery requires RUNNING progress")
+    if progress.get("stream") != stream_payload(stream):
+        raise ComplexityTrainingError("orphan recovery stream mismatch")
+    rows = progress.get("checkpoints")
+    if not isinstance(rows, list) or not rows:
+        raise ComplexityTrainingError("orphan recovery has no checkpoint")
+    receipt = rows[-1]
+    if not isinstance(receipt, Mapping):
+        raise ComplexityTrainingError("latest checkpoint receipt is invalid")
+    step = int(receipt.get("step", -1))
+    if step != int(progress.get("last_program_step", -2)):
+        raise ComplexityTrainingError("latest checkpoint/progress step mismatch")
+    path = repo_path(Path(str(receipt.get("path", ""))), label="resume checkpoint")
+    if not path.is_file() or sha256(path) != str(receipt.get("sha256", "")):
+        raise ComplexityTrainingError("resume checkpoint file hash mismatch")
+    joint = json.loads(path.read_text(encoding="utf-8"))
+    validate_joint_training_checkpoint(joint)
+    if joint.get("checkpoint_hash") != receipt.get("checkpoint_hash"):
+        raise ComplexityTrainingError("resume checkpoint payload hash mismatch")
+    trainer_step = int(joint["trainer_state"].get("step", -1))
+    controller_step = int(
+        joint["controller_state"].get("last_observation_step", -1)
+    )
+    if trainer_step != step or controller_step != step:
+        raise ComplexityTrainingError("resume checkpoint internal step mismatch")
+    history = progress.get("history")
+    if not isinstance(history, list) or not history:
+        raise ComplexityTrainingError("orphan recovery history is incomplete")
+    if int(history[-1].get("step", -1)) != step:
+        raise ComplexityTrainingError("orphan recovery history step mismatch")
+    return joint, {
+        "kind": "latest_verified_progress_checkpoint",
+        "step": step,
+        "path": path.relative_to(ROOT).as_posix(),
+        "sha256": sha256(path),
+        "checkpoint_hash": joint["checkpoint_hash"],
+    }
 
 
 def git(*args: str) -> str:
@@ -272,6 +370,17 @@ def validation_batch(stream: Stream) -> tf.Tensor:
     )
 
 
+def audit_batch(stream: Stream) -> tf.Tensor:
+    """Return the final-only audit cloud, independent of controller validation."""
+
+    seed = tf.random.experimental.stateless_fold_in(
+        tf.constant(stream.validation_seed, tf.int32), 20260721
+    )
+    return tf.random.stateless_normal(
+        (AUDIT_BATCH_SIZE, 4), seed, dtype=tf.float64
+    )
+
+
 def trainer_config(
     target: Any,
     stream: Stream,
@@ -303,7 +412,9 @@ def trainer_config(
     )
 
 
-def plateau_config(params: TrialParameters) -> NeuTraPlateauConfig:
+def plateau_config(
+    params: TrialParameters, *, saturation_repair_enabled: bool = True
+) -> NeuTraPlateauConfig:
     return NeuTraPlateauConfig(
         validation_check_every=250,
         patience_steps=250,
@@ -314,6 +425,7 @@ def plateau_config(params: TrialParameters) -> NeuTraPlateauConfig:
         minimum_learning_rate_fraction=1.0 / 16.0,
         absolute_min_delta=0.0,
         saturation_max=0.05,
+        saturation_repair_enabled=bool(saturation_repair_enabled),
         roundtrip_max_abs=1.0e-9,
         moderate_shell_max_inverse_radius=SHELL_RADIUS_MAX,
     )
@@ -461,6 +573,33 @@ def _external_validation(
     )
 
 
+def _external_transport_audit(
+    transport: Any,
+    pool: CPUValueScorePool,
+    z: tf.Tensor,
+    *,
+    request_id: str,
+) -> dict[str, Any]:
+    """Evaluate an exported transport on the final-only audit cloud."""
+
+    # Frozen artifacts expose the public batch API; the trainable wrapper is
+    # the only object that owns ``forward_and_logdet``.
+    theta = transport.forward_batch(z)
+    logdet = transport.log_abs_det_jacobian_batch(z)
+    values, metadata = pool.evaluate_values(theta.numpy(), request_id=request_id)
+    _enforce_host_memory(metadata)
+    losses = -np.asarray(values, np.float64) - np.asarray(logdet.numpy(), np.float64)
+    if losses.shape != (AUDIT_BATCH_SIZE,) or not np.all(np.isfinite(losses)):
+        raise FloatingPointError("audit loss returned nonfinite or wrong-shaped values")
+    return {
+        "batch_size": AUDIT_BATCH_SIZE,
+        "mean_loss": float(np.mean(losses)),
+        "per_sample_loss": losses.tolist(),
+        "worker_backend": metadata,
+        "audit_definition": "stateless_validation_seed_fold_20260721_final_only",
+    }
+
+
 def _enforce_host_memory(metadata: Mapping[str, Any]) -> int:
     worker_bytes = max(
         int(metadata.get("active_worker_ru_maxrss_sum_bytes", 0)),
@@ -558,8 +697,6 @@ def _rung_vetoes(row: Mapping[str, Any]) -> list[str]:
     vetoes = []
     if not math.isfinite(float(row["mean_loss"])):
         vetoes.append("nonfinite_validation_loss")
-    if float(row["saturation_fraction"]) > 0.05:
-        vetoes.append("dense_scale_saturation_above_cap")
     return vetoes
 
 
@@ -683,25 +820,54 @@ def run_final_stream(
     resume: bool = False,
     batch_size: int = BATCH_SIZE,
     hidden_layers: tuple[int, ...] = DEFAULT_HIDDEN_LAYERS,
+    saturation_repair_enabled: bool = True,
 ) -> dict[str, Any]:
     trainer = NeuTraReverseKLTrainer(
         target, trainer_config(target, stream, params, hidden_layers)
     )
-    controller = NeuTraPlateauController(plateau_config(params))
+    controller = NeuTraPlateauController(
+        plateau_config(params, saturation_repair_enabled=saturation_repair_enabled)
+    )
     validation_z = validation_batch(stream)
     progress_path = output_dir / "progress.json"
     resource_path = output_dir / "resource-stop.json"
+    interruption_path = output_dir / "interruption-stop.json"
+    resume_source: Mapping[str, Any] | None = None
     if resume:
-        if not progress_path.is_file() or not resource_path.is_file():
-            raise ComplexityTrainingError("resume requires progress and resource-stop files")
+        if not progress_path.is_file():
+            raise ComplexityTrainingError("resume requires progress")
         progress = json.loads(progress_path.read_text(encoding="utf-8"))
-        resource_stop = json.loads(resource_path.read_text(encoding="utf-8"))
-        if progress.get("schema") != SCHEMA or resource_stop.get("schema") != SCHEMA:
-            raise ComplexityTrainingError("resume artifact schema mismatch")
-        if progress.get("stream") != asdict(stream):
-            raise ComplexityTrainingError("resume stream mismatch")
-        joint = resource_stop.get("joint_checkpoint", {})
-        validate_joint_training_checkpoint(joint)
+        stop_path = (
+            resource_path
+            if resource_path.is_file()
+            else interruption_path
+            if interruption_path.is_file()
+            else None
+        )
+        if stop_path is not None:
+            stop = json.loads(stop_path.read_text(encoding="utf-8"))
+            if progress.get("schema") != SCHEMA or stop.get("schema") != SCHEMA:
+                raise ComplexityTrainingError("resume artifact schema mismatch")
+            if progress.get("stream") != stream_payload(
+                stream
+            ) or stop.get("stream") != stream_payload(stream):
+                raise ComplexityTrainingError("resume stream mismatch")
+            joint = stop.get("joint_checkpoint", {})
+            validate_joint_training_checkpoint(joint)
+            start_step = int(stop["next_program_step"])
+            resume_source = {
+                "kind": str(stop.get("status", "UNKNOWN_STOP")),
+                "path": stop_path.relative_to(ROOT).as_posix(),
+                "sha256": sha256(stop_path),
+                "checkpoint_hash": joint["checkpoint_hash"],
+            }
+            stop_path.unlink()
+        else:
+            joint, resume_source = latest_verified_progress_checkpoint(
+                progress=progress,
+                stream=stream,
+            )
+            start_step = int(progress["last_program_step"]) + 1
         trainer.restore_state(joint["trainer_state"])
         controller.restore_state(joint["controller_state"])
         best_state = joint["best_trainer_state"]
@@ -711,8 +877,6 @@ def run_final_stream(
         if not history or best_state is None:
             raise ComplexityTrainingError("resume progress is incomplete")
         initial = history[0]
-        start_step = int(resource_stop["next_program_step"])
-        resource_path.unlink()
     else:
         initial, initial_pool = _external_validation(
             trainer,
@@ -762,7 +926,37 @@ def run_final_stream(
         )
     stop_reason = None
     terminal_program_step = None
+    if resume and controller.status == "stopped":
+        # A prior export failure can leave a verified max-step checkpoint with
+        # all training complete. Finalize it without replaying optimizer steps.
+        stop_reason = controller.stop_reason
+        terminal_program_step = int(progress["last_program_step"])
+        if stop_reason is None or terminal_program_step <= 0:
+            raise ComplexityTrainingError("stopped resume checkpoint is incomplete")
     for step in range(start_step, MAX_STEPS + 1):
+        if _INTERRUPTION_SIGNAL is not None:
+            emergency = joint_training_checkpoint_payload(
+                trainer_state=trainer.state_payload(),
+                controller_state=controller.state_payload(),
+                best_trainer_state=best_state,
+            )
+            write_json(
+                interruption_path,
+                {
+                    "schema": SCHEMA,
+                    "status": "INTERRUPTED",
+                    "signal": int(_INTERRUPTION_SIGNAL),
+                    "stream": asdict(stream),
+                    "next_program_step": step,
+                    "joint_checkpoint": emergency,
+                    "candidate_veto": False,
+                    "scientific_interpretation": "none",
+                },
+                replace=True,
+            )
+            raise TrainingInterrupted(
+                f"deferred signal interruption: {_INTERRUPTION_SIGNAL}"
+            )
         try:
             budget.require(60.0)
         except ResourceStop:
@@ -875,10 +1069,14 @@ def run_final_stream(
         pool,
         request_id=f"q{target.q}-final-{stream.label}-support",
     )
+    audit = _external_transport_audit(
+        loaded.transport,
+        pool,
+        audit_batch(stream),
+        request_id=f"q{target.q}-final-{stream.label}-audit",
+    )
     paired = _paired_upper(initial["per_sample_loss"], list(controller.best_per_sample_loss))
     vetoes = []
-    if stop_reason == "scale_saturation_above_cap":
-        vetoes.append("dense_scale_saturation_above_cap")
     if not probes["all_finite"]:
         vetoes.append("support_probe_nonfinite")
     if probes["roundtrip_max_abs"] > 1.0e-9:
@@ -900,10 +1098,12 @@ def run_final_stream(
         "checkpoints": checkpoints,
         "paired_best_minus_initial": paired,
         "support_probe": probes,
+        "audit": audit,
         "vetoes": vetoes,
         "best_trainer_state": best_state,
         "best_frozen_payload": frozen,
         "pool_receipts": pool_receipts,
+        "resume_source": resume_source,
     }
 
 
@@ -931,32 +1131,54 @@ def write_final_progress(
     )
 
 
+def plan_for_args(args: argparse.Namespace) -> Path:
+    if args.loss_only_control:
+        return LOSS_ONLY_ARCHITECTURE_PLAN
+    if args.mode == "single-diagnostic" and args.hidden_layers == (64, 64):
+        return WIDE_DIAGNOSTIC_PLAN
+    if args.mode == "single-diagnostic" and args.hidden_layers == (32, 32, 32):
+        return DEEP_DIAGNOSTIC_PLAN
+    if args.mode == "single-diagnostic":
+        return SINGLE_DIAGNOSTIC_PLAN
+    return PLAN
+
+
 def source_bindings(*, plan: Path = PLAN) -> dict[str, Any]:
-    paths = {
-        "runner": SCRIPT,
-        "plan": plan,
-        "target": Path("bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py"),
-        "pool": Path("bayesfilter/inference/cpu_value_score_pool.py"),
-        "trainer": Path("bayesfilter/inference/neutra_training.py"),
-        "controller": Path("bayesfilter/inference/neutra_training_control.py"),
-    }
-    return {
+    key = plan.as_posix()
+    if key in _SOURCE_BINDINGS_AT_LAUNCH:
+        return json.loads(json.dumps(_SOURCE_BINDINGS_AT_LAUNCH[key]))
+    paths = {**SOURCE_PATHS, "plan": plan}
+    payload = {
         "git_commit": git("rev-parse", "HEAD"),
         "git_dirty": bool(git("status", "--porcelain")),
+        "capture_point": "process_launch_after_import_before_execution",
         "source_paths": {key: path.as_posix() for key, path in paths.items()},
-        "source_sha256": {key: sha256(ROOT / path) for key, path in paths.items()},
+        "source_sha256": {
+            **IMPORTED_SOURCE_SHA256,
+            "plan": sha256(ROOT / plan),
+        },
     }
+    _SOURCE_BINDINGS_AT_LAUNCH[key] = payload
+    return json.loads(json.dumps(payload))
 
 
 def run_manifest(args: argparse.Namespace, charged_seconds: float) -> dict[str, Any]:
-    if args.mode == "single-diagnostic" and args.hidden_layers == (64, 64):
-        plan = WIDE_DIAGNOSTIC_PLAN
-    elif args.mode == "single-diagnostic" and args.hidden_layers == (32, 32, 32):
-        plan = DEEP_DIAGNOSTIC_PLAN
-    elif args.mode == "single-diagnostic":
-        plan = SINGLE_DIAGNOSTIC_PLAN
-    else:
-        plan = PLAN
+    plan = plan_for_args(args)
+    physical_gpus = tf.config.list_physical_devices("GPU")
+    memory_growth = {
+        gpu.name: bool(tf.config.experimental.get_memory_growth(gpu))
+        for gpu in physical_gpus
+    }
+    logical_gpus = tf.config.list_logical_devices("GPU")
+    allocator_memory = {
+        device.name: {
+            key: int(value)
+            for key, value in tf.config.experimental.get_memory_info(
+                f"GPU:{index}"
+            ).items()
+        }
+        for index, device in enumerate(logical_gpus)
+    }
     layer_sizes = (4, *args.hidden_layers, 8)
     parameters_per_stage = sum(
         input_width * output_width + output_width
@@ -972,7 +1194,11 @@ def run_manifest(args: argparse.Namespace, charged_seconds: float) -> dict[str, 
         "optuna": _optuna_version(),
         "selected_physical_gpu": SELECTED_GPU,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
-        "logical_gpus": [device.name for device in tf.config.list_logical_devices("GPU")],
+        "logical_gpus": [device.name for device in logical_gpus],
+        "tf_force_gpu_allow_growth": os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH"),
+        "gpu_memory_growth": memory_growth,
+        "gpu_memory_growth_verified": bool(memory_growth) and all(memory_growth.values()),
+        "gpu_allocator_memory_bytes": allocator_memory,
         "dtype": "float64",
         "jit_compile_parent": True,
         "jit_compile_workers": False,
@@ -991,6 +1217,7 @@ def run_manifest(args: argparse.Namespace, charged_seconds: float) -> dict[str, 
         "output_root": args.output_root.as_posix(),
         "batch_size": int(args.batch_size),
         "hidden_layers": list(args.hidden_layers),
+        "loss_only_control": bool(args.loss_only_control),
         "trainable_parameter_count": 3 * parameters_per_stage,
     }
 
@@ -1053,7 +1280,9 @@ def contract_payload(args: argparse.Namespace) -> dict[str, Any]:
             "rungs": list(OPTUNA_RUNGS),
             "n_trials": 6,
         },
-        "plateau_config": plateau_config(params).manifest_payload(),
+    "plateau_config": plateau_config(
+        params, saturation_repair_enabled=not args.loss_only_control
+    ).manifest_payload(),
         "external_boundary": {
             "training": "CPU pool value_score -> GPU external custom-gradient update",
             "validation": "CPU pool value_only -> GPU transport validation",
@@ -1072,7 +1301,9 @@ def contract_payload(args: argparse.Namespace) -> dict[str, Any]:
             "separate_receipt_required": True,
         },
         "material_execution_authorized": False,
-        "source_bindings": source_bindings(),
+        "source_bindings": source_bindings(
+            plan=LOSS_ONLY_ARCHITECTURE_PLAN if args.loss_only_control else PLAN
+        ),
         "nonclaims": [
             "contract and import smoke only",
             "no target evaluation",
@@ -1258,7 +1489,9 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_veto": False if resource_stop is not None else None,
         "scientific_interpretation": "none" if resource_stop is not None else None,
         "run_manifest": run_manifest(args, budget.elapsed),
-        "source_bindings": source_bindings(),
+        "source_bindings": source_bindings(
+            plan=LOSS_ONLY_ARCHITECTURE_PLAN if args.loss_only_control else PLAN
+        ),
         "nonclaims": [
             "Optuna nomination only",
             "does not statistically rank viable trials",
@@ -1290,17 +1523,24 @@ def run_final(args: argparse.Namespace) -> dict[str, Any]:
     prior_seconds = 0.0
     previous_results: dict[str, Mapping[str, Any]] = {}
     if args.resume:
-        if not summary_path.is_file():
-            raise ComplexityTrainingError("final resume requires final-summary.json")
-        previous = json.loads(summary_path.read_text(encoding="utf-8"))
-        if previous.get("schema") != SCHEMA or int(previous.get("q", -1)) != args.q:
-            raise ComplexityTrainingError("final resume summary mismatch")
-        if previous.get("params") != asdict(params):
-            raise ComplexityTrainingError("final resume parameter mismatch")
-        prior_seconds = float(previous.get("charged_seconds", 0.0))
-        previous_results = {
-            str(row["label"]): row for row in previous.get("results", [])
-        }
+        if summary_path.is_file():
+            previous = json.loads(summary_path.read_text(encoding="utf-8"))
+            if previous.get("schema") != SCHEMA or int(previous.get("q", -1)) != args.q:
+                raise ComplexityTrainingError("final resume summary mismatch")
+            if previous.get("params") != asdict(params):
+                raise ComplexityTrainingError("final resume parameter mismatch")
+            if bool(previous.get("loss_only_control", False)) != bool(
+                args.loss_only_control
+            ):
+                raise ComplexityTrainingError("final resume loss-only control mismatch")
+            prior_seconds = float(previous.get("charged_seconds", 0.0))
+            previous_results = {
+                str(row["label"]): row for row in previous.get("results", [])
+            }
+        elif not any((output / stream.label / "progress.json").is_file() for stream in STREAMS):
+            raise ComplexityTrainingError(
+                "final orphan resume requires at least one stream progress.json"
+            )
     budget = Budget(args.gpu_cap_seconds, prior_seconds=prior_seconds)
     results = []
     resource_stop = None
@@ -1317,6 +1557,7 @@ def run_final(args: argparse.Namespace) -> dict[str, Any]:
             stream_dir = output / stream.label
             stream_dir.mkdir(parents=True, exist_ok=args.resume)
             try:
+                stream_has_progress = (stream_dir / "progress.json").is_file()
                 result = run_final_stream(
                     target=target,
                     pool=pool,
@@ -1324,9 +1565,10 @@ def run_final(args: argparse.Namespace) -> dict[str, Any]:
                     params=params,
                     budget=budget,
                     output_dir=stream_dir,
-                    resume=args.resume and (stream_dir / "resource-stop.json").is_file(),
+                    resume=args.resume and stream_has_progress,
                     batch_size=args.batch_size,
                     hidden_layers=args.hidden_layers,
+                    saturation_repair_enabled=not args.loss_only_control,
                 )
             except ResourceStop as exc:
                 resource_stop = str(exc)
@@ -1378,6 +1620,7 @@ def run_final(args: argparse.Namespace) -> dict[str, Any]:
         ),
         "q": args.q,
         "params": asdict(params),
+        "loss_only_control": bool(args.loss_only_control),
         "results": results,
         "fresh_confirmation_eligible": (
             resource_stop is None
@@ -1393,7 +1636,7 @@ def run_final(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_veto": False if resource_stop is not None else None,
         "scientific_interpretation": "none" if resource_stop is not None else None,
         "run_manifest": run_manifest(args, budget.elapsed),
-        "source_bindings": source_bindings(),
+        "source_bindings": source_bindings(plan=plan_for_args(args)),
         "nonclaims": [
             "transport training/admission only",
             "fresh confirmation requires a separate recorded launch",
@@ -1419,27 +1662,33 @@ def run_single_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
     summary_path = output / "single-diagnostic-summary.json"
     prior_seconds = 0.0
     if args.resume:
-        if not summary_path.is_file():
+        if summary_path.is_file():
+            previous = json.loads(summary_path.read_text(encoding="utf-8"))
+            if (
+                previous.get("schema") != SCHEMA
+                or previous.get("mode") != "single-diagnostic"
+                or int(previous.get("q", -1)) != 20
+                or previous.get("params") != asdict(params)
+                or previous.get("stream") != stream_payload(stream)
+                or previous.get("hidden_layers") != list(args.hidden_layers)
+                or bool(previous.get("loss_only_control", False))
+                != bool(args.loss_only_control)
+                or previous.get("status") not in {"RESOURCE_STOP", "INTERRUPTED"}
+            ):
+                raise ComplexityTrainingError(
+                    "single-diagnostic resume summary mismatch"
+                )
+            prior_seconds = float(previous.get("charged_seconds", 0.0))
+        elif not (output / stream.label / "progress.json").is_file():
             raise ComplexityTrainingError(
-                "single-diagnostic resume requires single-diagnostic-summary.json"
+                "single-diagnostic orphan resume requires RUNNING progress"
             )
-        previous = json.loads(summary_path.read_text(encoding="utf-8"))
-        if (
-            previous.get("schema") != SCHEMA
-            or previous.get("mode") != "single-diagnostic"
-            or int(previous.get("q", -1)) != 20
-            or previous.get("params") != asdict(params)
-            or previous.get("stream") != asdict(stream)
-            or previous.get("hidden_layers") != list(args.hidden_layers)
-            or previous.get("status") != "RESOURCE_STOP"
-        ):
-            raise ComplexityTrainingError("single-diagnostic resume summary mismatch")
-        prior_seconds = float(previous.get("charged_seconds", 0.0))
     budget = Budget(args.gpu_cap_seconds, prior_seconds=prior_seconds)
     stream_dir = output / stream.label
     stream_dir.mkdir(parents=True, exist_ok=args.resume)
     result_row = None
     resource_stop = None
+    interrupted = None
     hard_veto = None
     with CPUValueScorePool(pool_config(args.q)) as pool:
         try:
@@ -1450,12 +1699,15 @@ def run_single_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
                 params=params,
                 budget=budget,
                 output_dir=stream_dir,
-                resume=args.resume and (stream_dir / "resource-stop.json").is_file(),
+                resume=args.resume,
                 batch_size=args.batch_size,
                 hidden_layers=args.hidden_layers,
+                saturation_repair_enabled=not args.loss_only_control,
             )
         except ResourceStop as exc:
             resource_stop = str(exc)
+        except TrainingInterrupted as exc:
+            interrupted = str(exc)
         except HostMemoryVeto as exc:
             hard_veto = str(exc)
             write_json(
@@ -1510,6 +1762,8 @@ def run_single_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
         "status": (
             "HARD_VETO"
             if hard_veto is not None
+            else "INTERRUPTED"
+            if interrupted is not None
             else "RESOURCE_STOP"
             if resource_stop is not None
             else "COMPLETED"
@@ -1518,22 +1772,16 @@ def run_single_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
         "stream": asdict(stream),
         "params": asdict(params),
         "hidden_layers": list(args.hidden_layers),
+        "loss_only_control": bool(args.loss_only_control),
         "params_provenance": "existing_fixed_smoke_parameters_unpromoted_q20_hypothesis",
         "phase3_admission_status": "NOT_EVALUATED_ONE_SEED",
         "result": result_row,
         "charged_seconds": budget.elapsed,
         "resource_stop": resource_stop,
+        "interrupted": interrupted,
         "hard_veto": hard_veto,
         "run_manifest": run_manifest(args, budget.elapsed),
-        "source_bindings": source_bindings(
-            plan=(
-                WIDE_DIAGNOSTIC_PLAN
-                if args.hidden_layers == (64, 64)
-                else DEEP_DIAGNOSTIC_PLAN
-                if args.hidden_layers == (32, 32, 32)
-                else SINGLE_DIAGNOSTIC_PLAN
-            )
-        ),
+        "source_bindings": source_bindings(plan=plan_for_args(args)),
         "params_path": params_path.relative_to(ROOT).as_posix(),
         "params_sha256": sha256(params_path),
         "nonclaims": [
@@ -1766,7 +2014,7 @@ def run_confirmation(args: argparse.Namespace) -> dict[str, Any]:
         "resource_stop": resource_stop,
         "hard_veto": hard_veto,
         "run_manifest": run_manifest(args, budget.elapsed),
-        "source_bindings": source_bindings(),
+        "source_bindings": source_bindings(plan=plan_for_args(args)),
         "nonclaims": [
             "single prospectively allowed fresh-seed confirmation only",
             "does not authorize another hyperparameter or architecture search",
@@ -1802,6 +2050,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--final-summary", type=Path)
     parser.add_argument("--failed-result", type=Path)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--loss-only-control",
+        action="store_true",
+        help="disable saturation-triggered learning-rate repair; loss plateau remains authoritative",
+    )
     parser.add_argument(
         "--batch-size",
         type=int,
@@ -1841,6 +2094,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     validate_material_args(args)
+    source_bindings(plan=plan_for_args(args))
+    reset_training_interruption()
+    install_training_signal_handlers()
     if args.mode == "contract-smoke":
         payload = contract_payload(args)
     else:

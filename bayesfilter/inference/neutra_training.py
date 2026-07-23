@@ -865,6 +865,14 @@ class NeuTraReverseKLTrainer:
             jit_compile=bool(config.jit_compile),
             reduce_retracing=True,
         )
+        # The chunked bridge keeps target evaluation and reverse-KL gradient
+        # graphs at a bounded static shape. The Python caller aggregates raw
+        # gradients before one optimizer update, preserving full-batch means.
+        self._compiled_external_gradients = tf.function(
+            self._external_gradients_impl,
+            jit_compile=bool(config.jit_compile),
+            reduce_retracing=True,
+        )
 
     def forward_and_logdet(self, z: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _rank2(z, dimension=self.config.dimension, name="z")
@@ -914,6 +922,158 @@ class NeuTraReverseKLTrainer:
                 "external NeuTra step rejected nonfinite loss or gradient before update"
             )
         return NeuTraTrainStep(*rows[:-1])
+
+    def train_step_with_external_value_score_chunks(
+        self,
+        z_chunks: Sequence[Any],
+        target_value_chunks: Sequence[Any],
+        target_score_chunks: Sequence[Any],
+        row_counts: Sequence[int],
+    ) -> NeuTraTrainStep:
+        """Apply one full-batch update from fixed-shape detached-score chunks.
+
+        Each chunk is evaluated with the same transport state and contributes
+        ``row_count / total_rows`` of the un-clipped reverse-KL gradient. The
+        aggregate is clipped once and applied once, exactly matching the
+        full-batch external-score contract up to floating-point summation
+        order. Chunks may contain deterministic padding; ``row_counts``
+        excludes those rows from every aggregate statistic.
+        """
+
+        if not z_chunks or not (
+            len(z_chunks) == len(target_value_chunks)
+            == len(target_score_chunks)
+            == len(row_counts)
+        ):
+            raise ValueError("chunk sequences must be nonempty and have equal length")
+        counts = tuple(int(count) for count in row_counts)
+        if any(count <= 0 for count in counts):
+            raise ValueError("row_counts must be positive")
+        total_rows = sum(counts)
+        raw_outputs = []
+        for z, target_value, target_score, count in zip(
+            z_chunks,
+            target_value_chunks,
+            target_score_chunks,
+            counts,
+            strict=True,
+        ):
+            values = _rank2(z, dimension=self.config.dimension, name="z chunk")
+            value_tensor = tf.convert_to_tensor(target_value, tf.float64)
+            score_tensor = tf.convert_to_tensor(target_score, tf.float64)
+            if value_tensor.shape != (values.shape[0],):
+                raise ValueError("external chunk target value shape mismatch")
+            if score_tensor.shape != values.shape:
+                raise ValueError("external chunk target score shape mismatch")
+            if count > int(values.shape[0]):
+                raise ValueError("row_count exceeds chunk row count")
+            raw_outputs.append(
+                self._compiled_external_gradients(
+                    values,
+                    value_tensor,
+                    score_tensor,
+                    tf.concat(
+                        (
+                            tf.ones((count,), tf.float64),
+                            tf.zeros((int(values.shape[0]) - count,), tf.float64),
+                        ),
+                        axis=0,
+                    ),
+                )
+            )
+
+        weight = tf.cast(1.0 / float(total_rows), tf.float64)
+        loss = weight * tf.add_n([output[0] for output in raw_outputs])
+        surrogate = tf.add_n(
+            [weight * output[1] for output in raw_outputs]
+        )
+        target_value_mean = tf.add_n(
+            [weight * output[2] for output in raw_outputs]
+        )
+        logdet_mean = tf.add_n(
+            [weight * output[3] for output in raw_outputs]
+        )
+        gradients = tuple(
+            weight * tf.add_n([output[4 + index] for output in raw_outputs])
+            for index in range(len(self.variables))
+        )
+        for index, gradient in enumerate(gradients):
+            _assert_finite(gradient, f"chunked gradient[{index}]")
+        gradient_norm = tf.linalg.global_norm(gradients)
+        if self.config.gradient_clip_mode == "per_variable":
+            clipped = tuple(
+                tf.clip_by_norm(gradient, self.config.gradient_clip_norm)
+                for gradient in gradients
+            )
+            clipping_applied = tf.reduce_any(
+                tf.stack(
+                    [
+                        tf.linalg.norm(gradient) > self.config.gradient_clip_norm
+                        for gradient in gradients
+                    ]
+                )
+            )
+        else:
+            clipped_rows, _ = tf.clip_by_global_norm(
+                gradients,
+                tf.cast(self.config.gradient_clip_norm, tf.float64),
+                use_norm=gradient_norm,
+            )
+            clipped = tuple(clipped_rows)
+            clipping_applied = gradient_norm > tf.cast(
+                self.config.gradient_clip_norm, gradient_norm.dtype
+            )
+        clipped_norm = tf.linalg.global_norm(clipped)
+        finite_step = bool(
+            tf.reduce_all(
+                tf.stack(
+                    (
+                        tf.reduce_all(tf.math.is_finite(loss)),
+                        tf.reduce_all(tf.math.is_finite(surrogate)),
+                        tf.reduce_all(tf.math.is_finite(target_value_mean)),
+                        tf.reduce_all(tf.math.is_finite(logdet_mean)),
+                        tf.reduce_all(tf.math.is_finite(gradient_norm)),
+                        tf.reduce_all(tf.math.is_finite(clipped_norm)),
+                        *(tf.reduce_all(tf.math.is_finite(gradient)) for gradient in clipped),
+                    )
+                )
+            ).numpy()
+        )
+        if not finite_step:
+            raise NeuTraTrainingError(
+                "chunked external NeuTra step rejected nonfinite loss or gradient"
+            )
+        if self.optimizer is not None:
+            self.optimizer.apply_gradients(zip(clipped, self.variables, strict=True))
+            next_step = tf.cast(self.optimizer.iterations, tf.int64)
+        else:
+            next_step = self.step + tf.constant(1, dtype=tf.int64)
+            beta1 = tf.cast(self.config.beta1, tf.float64)
+            beta2 = tf.cast(self.config.beta2, tf.float64)
+            learning_rate = tf.cast(self._generic_learning_rate, tf.float64)
+            epsilon = tf.cast(self.config.epsilon, tf.float64)
+            step_float = tf.cast(next_step, tf.float64)
+            for variable, gradient, first, second in zip(
+                self.variables, clipped, self.first_moments, self.second_moments, strict=True
+            ):
+                first.assign(beta1 * first + (1.0 - beta1) * gradient)
+                second.assign(beta2 * second + (1.0 - beta2) * tf.square(gradient))
+                variable.assign_sub(
+                    learning_rate * (first / (1.0 - tf.pow(beta1, step_float))) /
+                    (tf.sqrt(second / (1.0 - tf.pow(beta2, step_float))) + epsilon)
+                )
+                _assert_finite(variable, "updated transport variable")
+        self.step.assign(next_step)
+        return NeuTraTrainStep(
+            loss=loss,
+            surrogate=surrogate,
+            target_value_mean=target_value_mean,
+            logdet_mean=logdet_mean,
+            gradient_norm=gradient_norm,
+            clipped_gradient_norm=clipped_norm,
+            clipping_applied=clipping_applied,
+            step=tf.identity(self.step),
+        )
 
     def validation_batch(self, z: Any) -> NeuTraValidation:
         values = _rank2(z, dimension=self.config.dimension, name="z")
@@ -1304,19 +1464,59 @@ class NeuTraReverseKLTrainer:
         learning_rate = tf.cast(self._generic_learning_rate, tf.float64)
         epsilon = tf.cast(self.config.epsilon, tf.float64)
         step_float = tf.cast(next_step, tf.float64)
+        candidate_rows = []
         for variable, gradient, first, second in zip(
             self.variables,
             gradients,
             self.first_moments,
             self.second_moments,
         ):
-            first.assign(beta1 * first + (1.0 - beta1) * gradient)
-            second.assign(beta2 * second + (1.0 - beta2) * tf.square(gradient))
-            first_hat = first / (1.0 - tf.pow(beta1, step_float))
-            second_hat = second / (1.0 - tf.pow(beta2, step_float))
-            variable.assign_sub(learning_rate * first_hat / (tf.sqrt(second_hat) + epsilon))
-            _assert_finite(variable, "updated transport variable")
-        self.step.assign(next_step)
+            next_first = beta1 * first + (1.0 - beta1) * gradient
+            next_second = beta2 * second + (1.0 - beta2) * tf.square(gradient)
+            first_hat = next_first / (1.0 - tf.pow(beta1, step_float))
+            second_hat = next_second / (1.0 - tf.pow(beta2, step_float))
+            next_variable = variable - (
+                learning_rate * first_hat / (tf.sqrt(second_hat) + epsilon)
+            )
+            candidate_rows.append((next_variable, next_first, next_second))
+        finite_step = tf.reduce_all(
+            tf.stack(
+                (
+                    tf.reduce_all(tf.math.is_finite(result.loss)),
+                    tf.reduce_all(tf.math.is_finite(result.surrogate)),
+                    tf.reduce_all(tf.math.is_finite(result.target_value_mean)),
+                    tf.reduce_all(tf.math.is_finite(result.logdet_mean)),
+                    tf.reduce_all(tf.math.is_finite(result.gradient_norm)),
+                    tf.reduce_all(tf.math.is_finite(result.clipped_gradient_norm)),
+                    *(
+                        tf.reduce_all(tf.math.is_finite(value))
+                        for row in candidate_rows
+                        for value in row
+                    ),
+                )
+            )
+        )
+
+        def apply_generic_update() -> tf.Tensor:
+            for (variable, first, second), (
+                next_variable,
+                next_first,
+                next_second,
+            ) in zip(
+                zip(self.variables, self.first_moments, self.second_moments),
+                candidate_rows,
+            ):
+                variable.assign(next_variable)
+                first.assign(next_first)
+                second.assign(next_second)
+            self.step.assign(next_step)
+            return tf.identity(self.step)
+
+        applied_step = tf.cond(
+            finite_step,
+            apply_generic_update,
+            lambda: tf.identity(self.step),
+        )
         return (
             result.loss,
             result.surrogate,
@@ -1325,8 +1525,8 @@ class NeuTraReverseKLTrainer:
             result.gradient_norm,
             result.clipped_gradient_norm,
             result.clipping_applied,
-            tf.identity(self.step),
-            tf.constant(True),
+            applied_step,
+            finite_step,
         )
 
     def _external_train_step_impl(
@@ -1431,6 +1631,55 @@ class NeuTraReverseKLTrainer:
             clipping_applied,
             tf.identity(self.step),
             finite_step,
+        )
+
+    def _external_gradients_impl(
+        self,
+        z: tf.Tensor,
+        target_value: tf.Tensor,
+        target_score: tf.Tensor,
+        valid_mask: tf.Tensor,
+    ) -> tuple[tf.Tensor, ...]:
+        """Return un-clipped detached-score gradients for one static chunk."""
+
+        target_value = tf.stop_gradient(tf.convert_to_tensor(target_value, tf.float64))
+        target_score = tf.stop_gradient(tf.convert_to_tensor(target_score, tf.float64))
+        valid_mask = tf.stop_gradient(tf.convert_to_tensor(valid_mask, tf.float64))
+        _assert_finite(target_value, "external chunk target value")
+        _assert_finite(target_score, "external chunk target score")
+        _assert_finite(valid_mask, "external chunk valid mask")
+
+        @tf.custom_gradient
+        def target_values_with_worker_score(theta_live: tf.Tensor) -> tuple[tf.Tensor, Any]:
+            del theta_live
+
+            def grad(upstream: tf.Tensor) -> tf.Tensor:
+                return tf.reshape(tf.cast(upstream, tf.float64), (-1, 1)) * target_score
+
+            return target_value, grad
+
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(self.variables)
+            theta, logdet = self.transport.forward_and_logdet(z)
+            bridged_target_value = target_values_with_worker_score(theta)
+            loss = tf.reduce_sum(valid_mask * (-bridged_target_value - logdet))
+        gradients = tuple(tape.gradient(loss, self.variables))
+        if any(gradient is None for gradient in gradients):
+            raise NeuTraTrainingError("external chunk reverse-KL gradient is missing")
+        gradients = tuple(tf.convert_to_tensor(gradient) for gradient in gradients)
+        surrogate = tf.reduce_sum(
+            valid_mask
+            * (
+                -tf.reduce_sum(target_score * tf.stop_gradient(theta), axis=-1)
+                - tf.stop_gradient(logdet)
+            )
+        )
+        return (
+            loss,
+            surrogate,
+            tf.reduce_sum(valid_mask * target_value),
+            tf.reduce_sum(valid_mask * logdet),
+            *gradients,
         )
 
 

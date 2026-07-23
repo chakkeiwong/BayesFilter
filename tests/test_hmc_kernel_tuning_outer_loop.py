@@ -1110,8 +1110,39 @@ def test_public_standard_and_serious_budget_policies_remain_unchanged() -> None:
     assert serious_factory is not None
     serious_policy0 = serious_factory(4, 0)
     assert serious_policy0.serious_policy is True
+    assert serious_policy0.operational_evidence_extension_checkpoints == ()
+    assert serious_policy0.payload() == hmc_kernel_tuning._default_attempt_budget_policy(
+        4, 0
+    ).payload()
     assert serious_policy0.payload()["geometry_budget_summary"]["dimension"] == 4
     assert "geometry_multiplier" in serious_policy0.payload()["geometry_budget_summary"]
+
+
+def test_public_serious_one_doubling_derives_one_internal_evidence_checkpoint() -> None:
+    config = hmc_kernel_tuning.HMCKernelTuningConfig.serious(
+        operational_evidence_policy="one_doubling"
+    )
+    factory = _public_budget_policy_factory(config)
+
+    assert factory is not None
+    policy = factory(4, 0)
+    initial_results = policy.operational_screen_num_results
+    expected_operational = hmc_kernel_tuning.HMCOperationalStatisticalWorkPolicy(
+        initial_candidate_results=initial_results,
+        candidate_burnin_steps=policy.operational_screen_num_burnin_steps,
+        evidence_extension_checkpoints=(2 * initial_results,),
+        exact_l_tune_adaptation_steps=(
+            policy.operational_exact_l_tune_adaptation_steps
+        ),
+        fresh_verification_results=policy.operational_verification_num_results,
+        fresh_verification_burnin_steps=(
+            policy.operational_verification_num_burnin_steps
+        ),
+        policy_id=policy.operational_budget_policy_id,
+    )
+
+    assert policy.operational_evidence_extension_checkpoints == (2 * initial_results,)
+    assert policy.operational_budget_policy_hash == expected_operational.policy_hash
 
 
 def test_public_standard_terminal_phase6_extra_attempt_caps_phase6_screen_only() -> None:
@@ -5711,6 +5742,14 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
         "repair_verification",
     )
     assert result.final_kernel_hash is not None
+    loop_private_ledger = result.private_evidence_ledger()
+    assert loop_private_ledger["schema"] == (
+        "bayesfilter.hmc_tune_verify_private_evidence_ledger.v1"
+    )
+    assert loop_private_ledger["attempt_count"] == 2
+    assert loop_private_ledger["raw_samples_exposed"] is False
+    assert loop_private_ledger["raw_start_bank_exposed"] is False
+    assert "private_evidence_ledger" not in result.payload()
     first_attempt_public = hmc_kernel_tuning._phase7_attempt_public_summary(
         result.attempts[0]
     )
@@ -5871,6 +5910,14 @@ def test_operational_phase5_selection_repairs_through_empirical_midpoint(
     )
     assert summary["raw_step_history_exposed"] is False
     assert "repaired_step_history" not in summary
+    private_ledger = fixed.private_evidence_ledger()
+    assert private_ledger["schema"] == (
+        "bayesfilter.hmc_fixed_trajectory_private_evidence_ledger.v1"
+    )
+    assert private_ledger["attempt_count"] == 3
+    assert private_ledger["raw_samples_exposed"] is False
+    assert private_ledger["raw_start_bank_exposed"] is False
+    assert "private_evidence_ledger" not in fixed.payload()
 
 
 def test_operational_exact_l_candidate_failure_is_budget_exhausted_not_runtime_error(

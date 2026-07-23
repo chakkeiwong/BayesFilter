@@ -108,10 +108,59 @@ int solve_batch(int batch, int parameters, int n, const double* s,
   const size_t nn = static_cast<size_t>(n) * n;
   for (int b = 0; b < batch; ++b) {
     const double* s_b = s + static_cast<size_t>(b) * nn;
+    if (has_nonfinite(s_b, nn)) {
+      *error = "SymmetricSylvester: inputs must be finite";
+      return 1;
+    }
+    double max_abs = 0.0;
+    const double sym_residual = max_abs_symmetry_residual(s_b, n, &max_abs);
+    const double sym_tolerance = 1.0e-10 * (1.0 + max_abs);
+    if (sym_residual > sym_tolerance) {
+      std::ostringstream oss;
+      oss << "SymmetricSylvester: symmetric_factor must be symmetric; residual="
+          << sym_residual << " tolerance=" << sym_tolerance;
+      *error = oss.str();
+      return 2;
+    }
+
+    Eigen::Map<const RowMajorMatrix> s_map(s_b, n, n);
+    const Eigen::MatrixXd s_col = s_map;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(s_col);
+    if (eig.info() != Eigen::Success) {
+      *error = "SymmetricSylvester: eigensolve failed";
+      return 3;
+    }
+    const Eigen::VectorXd values = eig.eigenvalues();
+    const double min_value = values.minCoeff();
+    if (!(min_value > 0.0)) {
+      std::ostringstream oss;
+      oss << "SymmetricSylvester: symmetric_factor must be positive definite; "
+          << "min_eigenvalue=" << min_value;
+      *error = oss.str();
+      return 4;
+    }
+    const Eigen::MatrixXd vectors = eig.eigenvectors();
+
+    // All parameter directions share the same Sylvester operator. Factorize
+    // it once per batch row instead of repeating the eigensolve for every RHS.
     for (int p = 0; p < parameters; ++p) {
       const size_t offset = (static_cast<size_t>(b) * parameters + p) * nn;
-      const int info = solve_one(n, s_b, rhs + offset, x + offset, error);
-      if (info != 0) return info;
+      if (has_nonfinite(rhs + offset, nn)) {
+        *error = "SymmetricSylvester: inputs must be finite";
+        return 1;
+      }
+      Eigen::Map<const RowMajorMatrix> rhs_map(rhs + offset, n, n);
+      const Eigen::MatrixXd rhs_col = rhs_map;
+      Eigen::MatrixXd transformed = vectors.transpose() * rhs_col * vectors;
+      for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+          transformed(i, j) /= values(i) + values(j);
+        }
+      }
+      const Eigen::MatrixXd solution =
+          vectors * transformed * vectors.transpose();
+      Eigen::Map<RowMajorMatrix> x_map(x + offset, n, n);
+      x_map = solution;
     }
   }
   return 0;

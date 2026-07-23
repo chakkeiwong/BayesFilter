@@ -40,6 +40,10 @@ def test_hmc_budget_contract_matches_implemented_worst_case() -> None:
     assert payload["hmc_cold_reserve_seconds_per_rung"] == 9000.0
     assert payload["hmc_margin"] == 1.5
     assert payload["material_execution_authorized"] is False
+    source = RUNNER.read_text(encoding="utf-8")
+    assert 'os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"' in source
+    assert "_enable_memory_growth_before_project_imports()" in source
+    assert '"gpu_memory_growth_verified"' in source
 
 
 def test_hmc_budget_formula_adds_margin_and_cold_reserve() -> None:

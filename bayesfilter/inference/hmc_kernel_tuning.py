@@ -107,6 +107,7 @@ from bayesfilter.inference.hmc_verification import (
 from bayesfilter.inference.hmc_kernel_selection import (
     BoundedFixedTrajectorySelectionResult,
     FixedTrajectorySelection,
+    candidate_handoff_policy_payload,
     paired_candidate_seed,
     private_start_bank_content_signature,
     run_bounded_operational_fixed_trajectory_selection,
@@ -122,6 +123,27 @@ from bayesfilter.runtime import stable_config_hash
 _OPERATIONAL_WARMUP_DEFAULT_REUSABLE_RUNNER_BUILDER = (
     build_reusable_full_chain_tfp_hmc_runner
 )
+
+_OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY = "initial_only"
+_OPERATIONAL_EVIDENCE_POLICY_ONE_DOUBLING = "one_doubling"
+_OPERATIONAL_EVIDENCE_POLICIES = {
+    _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY,
+    _OPERATIONAL_EVIDENCE_POLICY_ONE_DOUBLING,
+}
+_OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT = "strict"
+_OPERATIONAL_CANDIDATE_HANDOFF_POLICY_MIXED = (
+    "mixed_evidence_requires_fresh_verification"
+)
+_OPERATIONAL_CANDIDATE_HANDOFF_POLICY_SCHEMA = (
+    "bayesfilter.hmc_operational_candidate_handoff_policy.v1"
+)
+
+
+def _validated_operational_candidate_handoff_policy(value: Any) -> str:
+    contract = candidate_handoff_policy_payload(value)
+    if contract.get("schema") != _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_SCHEMA:
+        raise ValueError("operational candidate handoff policy schema mismatch")
+    return str(contract["policy"])
 
 
 GEOMETRY_INITIALIZATION_NONCLAIMS = (
@@ -3946,6 +3968,13 @@ class HMCFixedMassStepStageResult:
     def artifact_hash(self) -> str:
         return stable_config_hash(self.payload())
 
+    def private_evidence_ledger(self) -> Mapping[str, Any] | None:
+        """Return aggregate operational evidence through a private-only API."""
+
+        if self._operational_selection_loop is None:
+            return None
+        return self._operational_selection_loop.private_evidence_ledger()
+
     def payload(self) -> Mapping[str, Any]:
         return {
             "schema": "bayesfilter.hmc_fixed_mass_step_stage.v1",
@@ -4919,6 +4948,9 @@ class HMCTuneVerifyRepairLoopConfig:
 
     algorithm_id: str = OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
     operational_budget_policy_id: str = OPERATIONAL_HMC_BUDGET_POLICY_ID
+    operational_candidate_handoff_policy: str = (
+        _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT
+    )
     target_accept_prob: float = 0.70
     acceptance_band: tuple[float, float] = (0.65, 0.75)
     repair_band: tuple[float, float] = (0.55, 0.85)
@@ -4962,6 +4994,16 @@ class HMCTuneVerifyRepairLoopConfig:
             self,
             "operational_budget_policy_id",
             budget_policy_id,
+        )
+        candidate_handoff_policy = (
+            _validated_operational_candidate_handoff_policy(
+                self.operational_candidate_handoff_policy
+            )
+        )
+        object.__setattr__(
+            self,
+            "operational_candidate_handoff_policy",
+            candidate_handoff_policy,
         )
         target = float(self.target_accept_prob)
         if not np.isfinite(target) or not 0.0 < target < 1.0:
@@ -5173,6 +5215,14 @@ class HMCTuneVerifyRepairLoopConfig:
         return {
             "algorithm_id": self.algorithm_id,
             "operational_budget_policy_id": self.operational_budget_policy_id,
+            "operational_candidate_handoff_policy": (
+                self.operational_candidate_handoff_policy
+            ),
+            "operational_candidate_handoff_policy_contract": (
+                candidate_handoff_policy_payload(
+                    self.operational_candidate_handoff_policy
+                )
+            ),
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
             "repair_band": self.repair_band,
@@ -5393,6 +5443,37 @@ class HMCTuneVerifyRepairLoopResult:
     def artifact_hash(self) -> str:
         return stable_config_hash(self.payload(include_final_mass_arrays=True))
 
+    def private_evidence_ledger(self) -> Mapping[str, Any]:
+        """Collect private Phase 5 evidence without changing serialized payloads."""
+
+        attempt_ledgers = tuple(
+            {
+                "attempt_index": attempt.attempt_index,
+                "fixed_mass_step_stage_artifact_hash": (
+                    attempt.fixed_mass_step_stage.artifact_hash
+                ),
+                "evidence_ledger": ledger,
+            }
+            for attempt in self.attempts
+            if attempt.fixed_mass_step_stage is not None
+            and (
+                ledger := attempt.fixed_mass_step_stage.private_evidence_ledger()
+            )
+            is not None
+        )
+        return {
+            "schema": "bayesfilter.hmc_tune_verify_private_evidence_ledger.v1",
+            "loop_artifact_hash": self.artifact_hash,
+            "candidate_handoff_policy": (
+                self.config.operational_candidate_handoff_policy
+            ),
+            "attempts": attempt_ledgers,
+            "attempt_count": len(attempt_ledgers),
+            "private_handoff_only": True,
+            "raw_samples_exposed": False,
+            "raw_start_bank_exposed": False,
+        }
+
     def payload(self, *, include_final_mass_arrays: bool = True) -> Mapping[str, Any]:
         final_kernel_payload = self.final_kernel_payload
         if final_kernel_payload is not None and not include_final_mass_arrays:
@@ -5444,6 +5525,13 @@ class HMCKernelTuningConfig:
 
     algorithm_id: str = OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
     operational_budget_policy_id: str = OPERATIONAL_HMC_BUDGET_POLICY_ID
+    operational_evidence_policy: str = _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY
+    operational_candidate_handoff_policy: str = (
+        _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT
+    )
+    operational_candidate_handoff_policy_schema_version: str = (
+        _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_SCHEMA
+    )
     preset: str = "standard"
     target_accept_prob: float = 0.70
     acceptance_band: tuple[float, float] = (0.65, 0.75)
@@ -5499,12 +5587,63 @@ class HMCKernelTuningConfig:
             "operational_budget_policy_id",
             budget_policy_id,
         )
+        evidence_policy = str(self.operational_evidence_policy)
+        if evidence_policy not in _OPERATIONAL_EVIDENCE_POLICIES:
+            allowed = ", ".join(sorted(_OPERATIONAL_EVIDENCE_POLICIES))
+            raise ValueError(
+                f"operational_evidence_policy must be one of: {allowed}"
+            )
+        object.__setattr__(
+            self,
+            "operational_evidence_policy",
+            evidence_policy,
+        )
+        candidate_handoff_policy = (
+            _validated_operational_candidate_handoff_policy(
+                self.operational_candidate_handoff_policy
+            )
+        )
+        policy_schema = str(
+            self.operational_candidate_handoff_policy_schema_version
+        )
+        if policy_schema != _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_SCHEMA:
+            raise ValueError(
+                "operational_candidate_handoff_policy_schema_version is fixed"
+            )
+        object.__setattr__(
+            self,
+            "operational_candidate_handoff_policy",
+            candidate_handoff_policy,
+        )
+        object.__setattr__(
+            self,
+            "operational_candidate_handoff_policy_schema_version",
+            policy_schema,
+        )
         preset = str(self.preset)
         if preset not in {"smoke", "diagnostic", "diagnostic_plus", "standard", "serious"}:
             raise ValueError(
                 "preset must be 'smoke', 'diagnostic', 'diagnostic_plus', "
                 "'standard', or 'serious'"
             )
+        if (
+            evidence_policy != _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY
+            and preset != "serious"
+        ):
+            raise ValueError(
+                "non-default operational_evidence_policy requires preset='serious'"
+            )
+        if candidate_handoff_policy != _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT:
+            if preset != "serious":
+                raise ValueError(
+                    "non-default operational_candidate_handoff_policy requires "
+                    "preset='serious'"
+                )
+            if evidence_policy != _OPERATIONAL_EVIDENCE_POLICY_ONE_DOUBLING:
+                raise ValueError(
+                    "mixed operational_candidate_handoff_policy requires "
+                    "operational_evidence_policy='one_doubling'"
+                )
         object.__setattr__(self, "preset", preset)
         target = float(self.target_accept_prob)
         if not np.isfinite(target) or not 0.0 < target < 1.0:
@@ -5820,6 +5959,18 @@ class HMCKernelTuningConfig:
             "schema": "bayesfilter.hmc_kernel_tuning_config.v1",
             "algorithm_id": self.algorithm_id,
             "operational_budget_policy_id": self.operational_budget_policy_id,
+            "operational_evidence_policy": self.operational_evidence_policy,
+            "operational_candidate_handoff_policy": (
+                self.operational_candidate_handoff_policy
+            ),
+            "operational_candidate_handoff_policy_schema_version": (
+                self.operational_candidate_handoff_policy_schema_version
+            ),
+            "operational_candidate_handoff_policy_contract": (
+                candidate_handoff_policy_payload(
+                    self.operational_candidate_handoff_policy
+                )
+            ),
             "preset": self.preset,
             "target_accept_prob": self.target_accept_prob,
             "acceptance_band": self.acceptance_band,
@@ -6027,6 +6178,13 @@ class HMCKernelTuningResult:
     @property
     def artifact_hash(self) -> str:
         return stable_config_hash(self.payload(include_internal_diagnostics=True))
+
+    def private_evidence_ledger(self) -> Mapping[str, Any] | None:
+        """Return the private operational evidence ledger, when Phase 7 ran."""
+
+        if self.tune_verify_repair_loop is None:
+            return None
+        return self.tune_verify_repair_loop.private_evidence_ledger()
 
     def payload(self, *, include_internal_diagnostics: bool = True) -> Mapping[str, Any]:
         return {
@@ -8517,6 +8675,7 @@ def run_hmc_fixed_mass_step_stage(
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
     _repair_verification_reserved: bool = False,
     _selection_max_attempts: int = 1,
+    _candidate_handoff_policy: str = _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT,
 ) -> HMCFixedMassStepStageResult:
     """Run Phase 5 fixed-mass step tuning from a passed Phase 4 handoff.
 
@@ -8597,6 +8756,7 @@ def run_hmc_fixed_mass_step_stage(
             attempt_state=_attempt_state,
             repair_verification_reserved=_repair_verification_reserved,
             selection_max_attempts=_selection_max_attempts,
+            candidate_handoff_policy=_candidate_handoff_policy,
             run_full_chain=run_full_chain,
         )
     initial_state_factory = _fixed_mass_step_initial_state_factory(
@@ -9034,6 +9194,7 @@ def _run_operational_fixed_mass_step_stage(
     attempt_state: "_HMCPhaseAttemptState | None",
     repair_verification_reserved: bool,
     selection_max_attempts: int,
+    candidate_handoff_policy: str,
     run_full_chain: RunFullChainFn,
 ) -> HMCFixedMassStepStageResult:
     """Run R5 from the frozen operational bank, never historical latent zero."""
@@ -9113,6 +9274,7 @@ def _run_operational_fixed_mass_step_stage(
         use_xla=config.use_xla,
         target_status_trace_policy=config.target_status_trace_policy,
         run_full_chain=run_full_chain,
+        candidate_handoff_policy=candidate_handoff_policy,
     )
     selection = selection_loop.selection
     representative = selection.representative
@@ -10684,6 +10846,9 @@ def run_hmc_tune_verify_repair_loop(
                                 5,
                                 int(cfg.max_attempts) - int(attempt_index),
                             )
+                        ),
+                        _candidate_handoff_policy=(
+                            cfg.operational_candidate_handoff_policy
                         ),
                     )
                     _emit_phase7_progress(
@@ -12884,6 +13049,7 @@ def _public_tuning_forbidden_fields() -> tuple[str, ...]:
         "screen_num_results",
         "verification_num_results",
         "verification_num_burnin_steps",
+        "operational_evidence_extension_checkpoints",
     )
 
 
@@ -12967,6 +13133,9 @@ def _public_loop_config(
     return HMCTuneVerifyRepairLoopConfig(
         algorithm_id=config.algorithm_id,
         operational_budget_policy_id=config.operational_budget_policy_id,
+        operational_candidate_handoff_policy=(
+            config.operational_candidate_handoff_policy
+        ),
         target_accept_prob=config.target_accept_prob,
         acceptance_band=config.acceptance_band,
         repair_band=config.repair_band,
@@ -13020,7 +13189,35 @@ def _public_budget_policy_factory(
 ) -> Callable[[int, int], _HMCAttemptBudgetPolicy] | None:
     if config.preset == "serious":
         central = _geometry_scaled_budget_timing_policy()
+        initial_operational = HMCOperationalStatisticalWorkPolicy(
+            policy_id=config.operational_budget_policy_id,
+        )
+        evidence_checkpoints = (
+            ()
+            if config.operational_evidence_policy
+            == _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY
+            else (2 * initial_operational.initial_candidate_results,)
+        )
         operational = HMCOperationalStatisticalWorkPolicy(
+            initial_candidate_results=initial_operational.initial_candidate_results,
+            candidate_burnin_steps=initial_operational.candidate_burnin_steps,
+            evidence_extension_checkpoints=evidence_checkpoints,
+            exact_l_tune_adaptation_steps=(
+                initial_operational.exact_l_tune_adaptation_steps
+            ),
+            fresh_verification_results=initial_operational.fresh_verification_results,
+            fresh_verification_burnin_steps=(
+                initial_operational.fresh_verification_burnin_steps
+            ),
+            candidate_count_upper_bound=(
+                initial_operational.candidate_count_upper_bound
+            ),
+            replications_per_candidate=initial_operational.replications_per_candidate,
+            exact_l_tune_result_steps=initial_operational.exact_l_tune_result_steps,
+            fresh_verification_starts_per_outer_attempt=(
+                initial_operational.fresh_verification_starts_per_outer_attempt
+            ),
+            chain_count=initial_operational.chain_count,
             policy_id=config.operational_budget_policy_id,
         )
 
@@ -13033,6 +13230,7 @@ def _public_budget_policy_factory(
                 attempt_index,
                 mass_artifact=None if geometry is None else geometry.mass_artifact,
                 policy=central,
+                operational_policy=operational,
             )
             if policy.operational_budget_policy_hash != operational.policy_hash:
                 raise ValueError("serious operational budget policy hash mismatch")
@@ -16835,13 +17033,41 @@ def _default_attempt_budget_policy(
     attempt_index: int,
     mass_artifact: PrecomputedMassArtifact | None = None,
     policy: HMCGeometryScaledBudgetTimingPolicy | None = None,
+    operational_policy: HMCOperationalStatisticalWorkPolicy | None = None,
 ) -> _HMCAttemptBudgetPolicy:
     central = _geometry_scaled_budget_timing_policy() if policy is None else policy
-    payload = central.attempt_budget_payload(
-        target_dimension=int(target_dimension),
-        attempt_index=int(attempt_index),
-        mass_artifact=mass_artifact,
+    payload = dict(
+        central.attempt_budget_payload(
+            target_dimension=int(target_dimension),
+            attempt_index=int(attempt_index),
+            mass_artifact=mass_artifact,
+        )
     )
+    if operational_policy is not None:
+        payload.update(
+            {
+                "operational_screen_num_results": (
+                    operational_policy.initial_candidate_results
+                ),
+                "operational_screen_num_burnin_steps": (
+                    operational_policy.candidate_burnin_steps
+                ),
+                "operational_evidence_extension_checkpoints": (
+                    operational_policy.evidence_extension_checkpoints
+                ),
+                "operational_exact_l_tune_adaptation_steps": (
+                    operational_policy.exact_l_tune_adaptation_steps
+                ),
+                "operational_verification_num_results": (
+                    operational_policy.fresh_verification_results
+                ),
+                "operational_verification_num_burnin_steps": (
+                    operational_policy.fresh_verification_burnin_steps
+                ),
+                "operational_budget_policy_id": operational_policy.policy_id,
+                "operational_budget_policy_hash": operational_policy.policy_hash,
+            }
+        )
     return _attempt_budget_policy_from_payload(
         payload,
         serious_policy=True,

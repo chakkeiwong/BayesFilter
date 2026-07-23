@@ -27,8 +27,10 @@ class NeuTraPlateauConfig:
     absolute_min_delta: float = 0.0
     one_sided_critical_value: float = 1.6694022215079607
     saturation_max: float = 0.05
+    saturation_repair_enabled: bool = True
     roundtrip_max_abs: float = 1.0e-9
     moderate_shell_max_inverse_radius: float = 4.30
+    inverse_radius_policy: str = "hard_veto"
 
     def __post_init__(self) -> None:
         if int(self.validation_check_every) <= 0:
@@ -65,6 +67,10 @@ class NeuTraPlateauConfig:
             raise ValueError("absolute_min_delta must be finite and nonnegative")
         if float(self.saturation_max) > 1.0:
             raise ValueError("saturation_max cannot exceed one")
+        if self.inverse_radius_policy not in {"hard_veto", "explanatory_only"}:
+            raise ValueError(
+                "inverse_radius_policy must be 'hard_veto' or 'explanatory_only'"
+            )
 
     @property
     def minimum_learning_rate(self) -> float:
@@ -102,10 +108,15 @@ class NeuTraPlateauAction:
     best_step: int | None
     steps_since_best: int | None
     stop_reason: str | None
+    repair_trigger: str | None
 
     @property
     def should_reduce_learning_rate(self) -> bool:
-        return self.kind == "reduce_learning_rate"
+        return self.kind in {
+            "reduce_learning_rate",
+            "reduce_learning_rate_for_saturation",
+            "improved_and_reduce_learning_rate_for_saturation",
+        }
 
     @property
     def should_stop(self) -> bool:
@@ -172,20 +183,17 @@ class NeuTraPlateauController:
             moderate_shell_max_inverse_radius=moderate_shell_max_inverse_radius,
         )
         self.last_checkpoint_diagnostics = diagnostics
+        saturation_trigger = saturation > float(self.config.saturation_max)
+        saturation_repair_trigger = (
+            saturation_trigger and bool(self.config.saturation_repair_enabled)
+        )
+        # Saturation is a repair signal, not a mathematical-validity veto. A
+        # finite/support-valid saturated row remains eligible for loss-based
+        # best-state selection while the repair is recorded separately.
         eligible = not eligibility_vetoes
-
-        if saturation > float(self.config.saturation_max):
-            if self.best_step is not None:
-                self.steps_since_best = step - self.best_step
-            self.status = "stopped"
-            self.stop_reason = "scale_saturation_above_cap"
-            return self._action(
-                kind="stop",
-                step=step,
-                checkpoint_eligible=False,
-                checkpoint_eligibility_vetoes=eligibility_vetoes,
-                checkpoint_diagnostics=diagnostics,
-            )
+        repair_trigger = (
+            "scale_saturation_above_cap" if saturation_repair_trigger else None
+        )
 
         mean_delta = None
         upper = None
@@ -206,8 +214,25 @@ class NeuTraPlateauController:
             self.best_trainer_state_hash = state_hash
             self.best_checkpoint_diagnostics = diagnostics
             self.steps_since_best = 0
-            self.reduction_for_current_plateau = False
-            kind = "initialize_best" if mean_delta is None else "improved"
+            saturation_repair = (
+                saturation_repair_trigger and not self.reduction_for_current_plateau
+            )
+            if saturation_repair:
+                proposed = self.current_learning_rate * float(
+                    self.config.learning_rate_factor
+                )
+                self.reduction_for_current_plateau = True
+                self.last_reduction_step = step
+                if proposed < self.config.minimum_learning_rate:
+                    self.minimum_learning_rate_reached = True
+                    kind = "improved_saturation_repair_unavailable"
+                else:
+                    self.current_learning_rate = proposed
+                    self.learning_rate_reductions += 1
+                    kind = "improved_and_reduce_learning_rate_for_saturation"
+            else:
+                self.reduction_for_current_plateau = False
+                kind = "initialize_best" if mean_delta is None else "improved"
             if step >= int(self.config.max_steps):
                 self.status = "stopped"
                 self.stop_reason = "maximum_steps_reached"
@@ -218,8 +243,34 @@ class NeuTraPlateauController:
                 meaningful_improvement=True,
                 checkpoint_eligible=True,
                 checkpoint_diagnostics=diagnostics,
+                repair_trigger=repair_trigger,
                 paired_mean_delta=mean_delta,
                 paired_one_sided_upper=upper,
+            )
+
+        if saturation_repair_trigger and not self.reduction_for_current_plateau:
+            proposed = self.current_learning_rate * float(
+                self.config.learning_rate_factor
+            )
+            self.reduction_for_current_plateau = True
+            self.last_reduction_step = step
+            if proposed < self.config.minimum_learning_rate:
+                self.minimum_learning_rate_reached = True
+                kind = "saturation_repair_unavailable"
+            else:
+                self.current_learning_rate = proposed
+                self.learning_rate_reductions += 1
+                kind = "reduce_learning_rate_for_saturation"
+            self.steps_since_best = (
+                None if self.best_step is None else step - self.best_step
+            )
+            return self._action(
+                kind=kind,
+                step=step,
+                checkpoint_eligible=False,
+                checkpoint_eligibility_vetoes=eligibility_vetoes,
+                checkpoint_diagnostics=diagnostics,
+                repair_trigger=repair_trigger,
             )
 
         if self.best_step is None:
@@ -321,6 +372,11 @@ class NeuTraPlateauController:
             "reduction_for_current_plateau": self.reduction_for_current_plateau,
             "minimum_learning_rate_reached": self.minimum_learning_rate_reached,
             "last_observation_step": self.last_observation_step,
+            "repair_trigger_policy": (
+                "saturation_is_repair_trigger_not_veto"
+                if self.config.saturation_repair_enabled
+                else "loss_plateau_only_saturation_telemetry"
+            ),
             "status": self.status,
             "stop_reason": self.stop_reason,
         }
@@ -377,6 +433,13 @@ class NeuTraPlateauController:
         restored.last_observation_step = _optional_nonnegative_int(
             state.get("last_observation_step"), "last_observation_step"
         )
+        expected_policy = (
+            "saturation_is_repair_trigger_not_veto"
+            if self.config.saturation_repair_enabled
+            else "loss_plateau_only_saturation_telemetry"
+        )
+        if state.get("repair_trigger_policy", expected_policy) != expected_policy:
+            raise NeuTraPlateauError("unsupported repair-trigger policy")
         restored.status = str(state.get("status"))
         restored.stop_reason = state.get("stop_reason")
         if restored.status not in {"running", "stopped"}:
@@ -395,6 +458,16 @@ class NeuTraPlateauController:
             and int(self.config.post_repair_no_improvement_cycles) == 1
         ):
             supplied["post_repair_no_improvement_cycles"] = 1
+        if (
+            "saturation_repair_enabled" not in supplied
+            and bool(self.config.saturation_repair_enabled)
+        ):
+            supplied["saturation_repair_enabled"] = True
+        if (
+            "inverse_radius_policy" not in supplied
+            and self.config.inverse_radius_policy == "hard_veto"
+        ):
+            supplied["inverse_radius_policy"] = "hard_veto"
         return supplied == self.config.manifest_payload()
 
     def _validate_step(self, step: int) -> None:
@@ -425,6 +498,23 @@ class NeuTraPlateauController:
         if self.best_step is not None and self.best_checkpoint_diagnostics is None:
             raise NeuTraPlateauError("best checkpoint diagnostics are missing")
         if self.best_checkpoint_diagnostics is not None:
+            diagnostic_policy = self.best_checkpoint_diagnostics.get(
+                "inverse_radius_policy", "hard_veto"
+            )
+            if diagnostic_policy != self.config.inverse_radius_policy:
+                raise NeuTraPlateauError(
+                    "best checkpoint inverse-radius policy mismatch"
+                )
+            diagnostic_threshold = self.best_checkpoint_diagnostics.get(
+                "inverse_radius_threshold",
+                self.config.moderate_shell_max_inverse_radius,
+            )
+            if float(diagnostic_threshold) != float(
+                self.config.moderate_shell_max_inverse_radius
+            ):
+                raise NeuTraPlateauError(
+                    "best checkpoint inverse-radius threshold mismatch"
+                )
             _, vetoes = self._checkpoint_eligibility(
                 saturation_fraction=float(
                     self.best_checkpoint_diagnostics["saturation_fraction"]
@@ -464,7 +554,16 @@ class NeuTraPlateauController:
         checkpoint_diagnostics: Mapping[str, Any] | None = None,
         paired_mean_delta: float | None = None,
         paired_one_sided_upper: float | None = None,
+        repair_trigger: str | None = None,
     ) -> NeuTraPlateauAction:
+        if (
+            repair_trigger is None
+            and self.config.saturation_repair_enabled
+            and checkpoint_diagnostics is not None
+            and float(checkpoint_diagnostics.get("saturation_fraction", 0.0))
+            > float(self.config.saturation_max)
+        ):
+            repair_trigger = "scale_saturation_above_cap"
         return NeuTraPlateauAction(
             kind=kind,
             step=int(step),
@@ -478,6 +577,7 @@ class NeuTraPlateauController:
             best_step=self.best_step,
             steps_since_best=self.steps_since_best,
             stop_reason=self.stop_reason,
+            repair_trigger=repair_trigger,
         )
 
     def _checkpoint_eligibility(
@@ -496,16 +596,23 @@ class NeuTraPlateauController:
             "saturation_fraction": float(saturation_fraction),
             "roundtrip_max_abs": roundtrip,
             "moderate_shell_max_inverse_radius": radius,
+            "inverse_radius_policy": self.config.inverse_radius_policy,
+            "inverse_radius_threshold": float(
+                self.config.moderate_shell_max_inverse_radius
+            ),
+            "inverse_radius_threshold_exceeded": bool(
+                math.isfinite(radius)
+                and radius > float(self.config.moderate_shell_max_inverse_radius)
+            ),
         }
         vetoes = []
         if not finite:
             vetoes.append("checkpoint_nonfinite")
-        if saturation_fraction > float(self.config.saturation_max):
-            vetoes.append("scale_saturation_above_cap")
         if not math.isfinite(roundtrip) or roundtrip > float(self.config.roundtrip_max_abs):
             vetoes.append("roundtrip_residual_above_threshold")
-        if not math.isfinite(radius) or radius > float(
-            self.config.moderate_shell_max_inverse_radius
+        if self.config.inverse_radius_policy == "hard_veto" and (
+            not math.isfinite(radius)
+            or radius > float(self.config.moderate_shell_max_inverse_radius)
         ):
             vetoes.append("moderate_shell_missing_support")
         return diagnostics, tuple(vetoes)
@@ -621,13 +728,22 @@ def _optional_checkpoint_diagnostics(
         return None
     if not isinstance(value, Mapping):
         raise NeuTraPlateauError(f"{name} must be a mapping")
-    expected = {
+    legacy_fields = {
         "all_finite",
         "saturation_fraction",
         "roundtrip_max_abs",
         "moderate_shell_max_inverse_radius",
     }
-    if set(value) != expected:
+    policy_fields = {
+        "inverse_radius_policy",
+        "inverse_radius_threshold",
+        "inverse_radius_threshold_exceeded",
+    }
+    actual_fields = frozenset(value)
+    if actual_fields not in {
+        frozenset(legacy_fields),
+        frozenset(legacy_fields | policy_fields),
+    }:
         raise NeuTraPlateauError(f"{name} fields are invalid")
     result = {
         "all_finite": bool(value["all_finite"]),
@@ -637,6 +753,26 @@ def _optional_checkpoint_diagnostics(
             value["moderate_shell_max_inverse_radius"]
         ),
     }
+    if policy_fields <= set(value):
+        policy = str(value["inverse_radius_policy"])
+        if policy not in {"hard_veto", "explanatory_only"}:
+            raise NeuTraPlateauError(f"{name} inverse-radius policy is invalid")
+        threshold = float(value["inverse_radius_threshold"])
+        if not math.isfinite(threshold) or threshold <= 0.0:
+            raise NeuTraPlateauError(f"{name} inverse-radius threshold is invalid")
+        expected_exceeded = bool(
+            math.isfinite(result["moderate_shell_max_inverse_radius"])
+            and result["moderate_shell_max_inverse_radius"] > threshold
+        )
+        if bool(value["inverse_radius_threshold_exceeded"]) != expected_exceeded:
+            raise NeuTraPlateauError(f"{name} inverse-radius exceedance is inconsistent")
+        result.update(
+            {
+                "inverse_radius_policy": policy,
+                "inverse_radius_threshold": threshold,
+                "inverse_radius_threshold_exceeded": expected_exceeded,
+            }
+        )
     saturation = result["saturation_fraction"]
     if not math.isfinite(saturation) or not 0.0 <= saturation <= 1.0:
         raise NeuTraPlateauError(f"{name} saturation is invalid")

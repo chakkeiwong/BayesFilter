@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Mapping
 
 import tensorflow as tf
 
@@ -197,7 +197,17 @@ class SSLLSTMComplexityPosteriorTarget:
             jit_compile=self._jit_compile,
             reduce_retracing=True,
         )
+        self._compiled_status = tf.function(
+            self._value_score_status_impl,
+            input_signature=[tf.TensorSpec([4], tf.float64)],
+            jit_compile=self._jit_compile,
+            reduce_retracing=True,
+        )
         self._compiled_batches: dict[int, Any] = {}
+        self._compiled_status_batches: dict[int, Any] = {}
+        self.supports_retained_draw_batch = False
+        self.supports_retained_flat_batch = True
+        self.supports_retained_value_score_status = True
 
     @property
     def parameter_dim(self) -> int:
@@ -230,7 +240,9 @@ class SSLLSTMComplexityPosteriorTarget:
     def full_theta(self, free: tf.Tensor) -> tf.Tensor:
         return tf.tensor_scatter_nd_update(self.config.fixture, tf.constant([[i] for i in self.config.free_indices], tf.int32), free)
 
-    def _value_score_impl(self, free: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+    def _value_score_status_impl(
+        self, free: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
         full = self.full_theta(free)
         components = make_ssl_lstm_svd_ukf_components(
             full,
@@ -252,7 +264,46 @@ class SSLLSTMComplexityPosteriorTarget:
         variance = tf.constant(self.config.prior_standard_deviation ** 2, tf.float64)
         value = score_result.log_likelihood - 0.5 * tf.reduce_sum(tf.square(delta) / variance)
         score = score_result.score - delta / variance
-        return tf.ensure_shape(value, []), tf.ensure_shape(score, [4])
+        diagnostics = score_result.diagnostics.as_dict()
+        placement_floors = tf.convert_to_tensor(
+            diagnostics["placement_floor_count"], tf.int32
+        )
+        innovation_floors = tf.convert_to_tensor(
+            diagnostics["innovation_floor_count"], tf.int32
+        )
+        floor_count = placement_floors + innovation_floors
+        min_eigenvalue = tf.convert_to_tensor(
+            diagnostics["min_innovation_eigenvalue"], tf.float64
+        )
+        condition_estimate = tf.convert_to_tensor(
+            diagnostics["innovation_condition_estimate"], tf.float64
+        )
+        finite = tf.logical_and(
+            tf.math.is_finite(value),
+            tf.reduce_all(tf.math.is_finite(score)),
+        )
+        valid = tf.logical_and(
+            finite,
+            tf.logical_and(
+                tf.equal(floor_count, 0),
+                tf.logical_and(
+                    tf.math.is_finite(min_eigenvalue),
+                    min_eigenvalue > 0.0,
+                ),
+            ),
+        )
+        status = {
+            "status_code": tf.where(valid, 0, 1),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": floor_count,
+            "min_innovation_eigenvalue": min_eigenvalue,
+            "innovation_condition_estimate": condition_estimate,
+        }
+        return tf.ensure_shape(value, []), tf.ensure_shape(score, [4]), status
+
+    def _value_score_impl(self, free: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        value, score, _status = self._value_score_status_impl(free)
+        return value, score
 
     def _value_impl(self, free: tf.Tensor) -> tf.Tensor:
         full = self.full_theta(free)
@@ -282,6 +333,26 @@ class SSLLSTMComplexityPosteriorTarget:
         values, scores = tf.map_fn(self._value_score_impl, free, fn_output_signature=(tf.float64, tf.TensorSpec([4], tf.float64)))
         return values, scores
 
+    def _batch_value_score_status_impl(
+        self, free: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+        status_signature = {
+            "status_code": tf.TensorSpec([], tf.int32),
+            "valid_pre_regularized_score": tf.TensorSpec([], tf.bool),
+            "floor_count_value": tf.TensorSpec([], tf.int32),
+            "min_innovation_eigenvalue": tf.TensorSpec([], tf.float64),
+            "innovation_condition_estimate": tf.TensorSpec([], tf.float64),
+        }
+        return tf.map_fn(
+            self._value_score_status_impl,
+            free,
+            fn_output_signature=(
+                tf.float64,
+                tf.TensorSpec([4], tf.float64),
+                status_signature,
+            ),
+        )
+
     def value_and_score(self, free: Any) -> tuple[tf.Tensor, tf.Tensor]:
         return self._compiled(tf.convert_to_tensor(free, tf.float64))
 
@@ -309,6 +380,37 @@ class SSLLSTMComplexityPosteriorTarget:
 
     def log_prob_and_grad(self, free: Any) -> tuple[tf.Tensor, tf.Tensor]:
         return self.value_and_score(free)
+
+    def log_prob_and_grad_status(
+        self, free: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+        values = tf.convert_to_tensor(free, tf.float64)
+        if values.shape.rank == 1:
+            if values.shape[-1] != 4:
+                raise ValueError("log_prob_and_grad_status requires shape [4]")
+            return self._compiled_status(values)
+        if values.shape.rank != 2 or values.shape[-1] != 4:
+            raise ValueError(
+                "log_prob_and_grad_status requires shape [4] or [batch,4]"
+            )
+        batch_size = values.shape[0]
+        if batch_size is None:
+            raise ValueError("status batch requires a static batch size")
+        size = int(batch_size)
+        compiled = self._compiled_status_batches.get(size)
+        if compiled is None:
+            compiled = tf.function(
+                self._batch_value_score_status_impl,
+                input_signature=[tf.TensorSpec([size, 4], tf.float64)],
+                jit_compile=self._jit_compile,
+                reduce_retracing=True,
+            )
+            self._compiled_status_batches[size] = compiled
+        return compiled(values)
+
+    def target_status_telemetry(self, free: Any) -> Mapping[str, tf.Tensor]:
+        _value, _score, status = self.log_prob_and_grad_status(free)
+        return status
 
     def batch_value_and_score(self, free: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(free, tf.float64)

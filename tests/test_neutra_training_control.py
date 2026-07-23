@@ -201,6 +201,25 @@ def test_legacy_default_cycle_checkpoint_remains_resumable() -> None:
         incompatible.restore_state(legacy)
 
 
+def test_legacy_inverse_radius_policy_checkpoint_is_default_only() -> None:
+    controller = NeuTraPlateauController(_config())
+    _observe(controller, 0)
+    legacy = copy.deepcopy(controller.state_payload())
+    legacy.pop("state_hash")
+    legacy["config"].pop("inverse_radius_policy")
+    legacy["state_hash"] = _payload_hash(legacy)
+
+    resumed = NeuTraPlateauController(_config())
+    resumed.restore_state(legacy)
+    assert resumed.best_step == 0
+
+    explanatory = NeuTraPlateauController(
+        _config(inverse_radius_policy="explanatory_only")
+    )
+    with pytest.raises(NeuTraPlateauError, match="config mismatch"):
+        explanatory.restore_state(legacy)
+
+
 def test_improvement_after_reduction_starts_a_new_plateau() -> None:
     controller = NeuTraPlateauController(_config())
     _observe(controller, 0)
@@ -242,7 +261,7 @@ def test_insignificant_scalar_decrease_does_not_reset_patience() -> None:
     assert action.steps_since_best == 100
 
 
-def test_saturation_stops_and_cannot_replace_best() -> None:
+def test_saturation_repairs_and_loss_improvement_can_replace_best() -> None:
     controller = NeuTraPlateauController(_config())
     _observe(controller, 0)
     action = controller.observe(
@@ -251,12 +270,66 @@ def test_saturation_stops_and_cannot_replace_best() -> None:
         saturation_fraction=0.051,
         trainer_state_hash=STATE_B,
     )
-    assert action.stop_reason == "scale_saturation_above_cap"
-    assert controller.best_trainer_state_hash == STATE_A
+    assert action.stop_reason is None
+    assert action.kind == "improved_and_reduce_learning_rate_for_saturation"
+    assert action.should_reduce_learning_rate is True
+    assert action.repair_trigger == "scale_saturation_above_cap"
+    assert action.checkpoint_eligible is True
+    assert action.checkpoint_eligibility_vetoes == ()
+    assert action.current_learning_rate == pytest.approx(5.0e-4)
+    assert controller.best_trainer_state_hash == STATE_B
     stopped_state = controller.state_payload()
     resumed = NeuTraPlateauController(_config())
     resumed.restore_state(stopped_state)
     assert resumed.state_payload() == stopped_state
+
+
+def test_saturated_observation_continues_after_repair() -> None:
+    controller = NeuTraPlateauController(
+        _config(validation_check_every=100, patience_steps=500)
+    )
+    _observe(controller, 0)
+    first = controller.observe(
+        step=100,
+        per_sample_loss=(0.9, 1.9, 2.9, 3.9),
+        saturation_fraction=0.051,
+        trainer_state_hash=STATE_B,
+    )
+    assert first.kind == "improved_and_reduce_learning_rate_for_saturation"
+    second = controller.observe(
+        step=200,
+        per_sample_loss=(0.8, 1.8, 2.8, 3.8),
+        saturation_fraction=0.051,
+        trainer_state_hash=STATE_C,
+    )
+    assert second.stop_reason is None
+    assert second.kind == "improved"
+    assert second.repair_trigger == "scale_saturation_above_cap"
+    assert controller.best_trainer_state_hash == STATE_C
+
+
+def test_loss_only_control_keeps_saturation_telemetry_without_repair() -> None:
+    controller = NeuTraPlateauController(
+        _config(
+            saturation_repair_enabled=False,
+            validation_check_every=100,
+            patience_steps=500,
+        )
+    )
+    _observe(controller, 0)
+    action = controller.observe(
+        step=100,
+        per_sample_loss=(0.9, 1.9, 2.9, 3.9),
+        saturation_fraction=0.9,
+        trainer_state_hash=STATE_B,
+    )
+    assert action.kind == "improved"
+    assert action.should_reduce_learning_rate is False
+    assert action.repair_trigger is None
+    assert action.current_learning_rate == pytest.approx(1.0e-3)
+    assert action.checkpoint_eligible is True
+    payload = controller.state_payload()
+    assert payload["repair_trigger_policy"] == "loss_plateau_only_saturation_telemetry"
 
 
 def test_lower_loss_support_invalid_checkpoint_cannot_become_best() -> None:
@@ -277,6 +350,78 @@ def test_lower_loss_support_invalid_checkpoint_cannot_become_best() -> None:
     )
     assert controller.best_step == 0
     assert controller.best_trainer_state_hash == STATE_A
+
+
+def test_explanatory_inverse_radius_records_exceedance_without_veto() -> None:
+    controller = NeuTraPlateauController(
+        _config(inverse_radius_policy="explanatory_only")
+    )
+    initial = _observe(controller, 0)
+    candidate = _observe(
+        controller,
+        100,
+        losses=(0.0, 0.0, 0.0, 0.0),
+        state=STATE_B,
+        moderate_shell_max_inverse_radius=5.53,
+    )
+    assert initial.checkpoint_eligible is True
+    assert candidate.checkpoint_eligible is True
+    assert candidate.checkpoint_eligibility_vetoes == ()
+    assert candidate.meaningful_improvement is True
+    assert candidate.checkpoint_diagnostics["inverse_radius_policy"] == (
+        "explanatory_only"
+    )
+    assert candidate.checkpoint_diagnostics["inverse_radius_threshold"] == pytest.approx(
+        4.30
+    )
+    assert candidate.checkpoint_diagnostics["inverse_radius_threshold_exceeded"] is True
+    assert controller.best_step == 100
+    assert controller.best_trainer_state_hash == STATE_B
+
+
+@pytest.mark.parametrize("radius", (float("nan"), float("inf")))
+def test_explanatory_inverse_radius_keeps_nonfinite_hard_veto(radius) -> None:
+    controller = NeuTraPlateauController(
+        _config(inverse_radius_policy="explanatory_only")
+    )
+    action = _observe(
+        controller,
+        0,
+        moderate_shell_max_inverse_radius=radius,
+    )
+    assert action.checkpoint_eligible is False
+    assert action.checkpoint_eligibility_vetoes == ("checkpoint_nonfinite",)
+
+
+def test_explanatory_inverse_radius_keeps_roundtrip_hard_veto() -> None:
+    controller = NeuTraPlateauController(
+        _config(inverse_radius_policy="explanatory_only")
+    )
+    action = _observe(
+        controller,
+        0,
+        roundtrip_max_abs=2.0e-9,
+        moderate_shell_max_inverse_radius=5.53,
+    )
+    assert action.checkpoint_eligible is False
+    assert action.checkpoint_eligibility_vetoes == (
+        "roundtrip_residual_above_threshold",
+    )
+
+
+def test_inverse_radius_policy_is_validated_and_hash_bound() -> None:
+    with pytest.raises(ValueError, match="inverse_radius_policy"):
+        _config(inverse_radius_policy="ignore")
+
+    hard = NeuTraPlateauController(_config())
+    explanatory = NeuTraPlateauController(
+        _config(inverse_radius_policy="explanatory_only")
+    )
+    _observe(hard, 0)
+    _observe(explanatory, 0)
+    assert hard.state_payload()["state_hash"] != explanatory.state_payload()["state_hash"]
+    with pytest.raises(NeuTraPlateauError, match="config mismatch"):
+        explanatory.restore_state(hard.state_payload())
 
 
 def test_later_support_valid_checkpoint_can_initialize_export_candidate() -> None:
@@ -343,6 +488,9 @@ def test_resume_preserves_support_admissibility_and_best_selection() -> None:
         "saturation_fraction": 0.0,
         "roundtrip_max_abs": 2.0e-15,
         "moderate_shell_max_inverse_radius": 3.20,
+        "inverse_radius_policy": "hard_veto",
+        "inverse_radius_threshold": 4.30,
+        "inverse_radius_threshold_exceeded": False,
     }
 
 

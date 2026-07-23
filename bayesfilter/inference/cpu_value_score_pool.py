@@ -61,6 +61,9 @@ def _worker_init(
 ) -> None:
     """Initialize a worker with fail-closed CPU visibility."""
 
+    global _WORKER_TARGET, _WORKER_VALUE, _WORKER_BATCH_TARGETS, _WORKER_BATCH_VALUES
+    global _WORKER_METADATA, _WORKER_STARTUP_BARRIER
+
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "-1":
         raise RuntimeError("CPU value/score worker must inherit CUDA_VISIBLE_DEVICES=-1")
     expected_environment = _cpu_worker_environment(cores)
@@ -85,40 +88,8 @@ def _worker_init(
     module_name, symbol_name = str(factory_path).split(":", 1)
     factory = getattr(importlib.import_module(module_name), symbol_name)
     target = factory(dict(factory_config))
-    method = getattr(target, "eager_value_and_score", None)
-    if not callable(method):
-        method = target.value_and_score
-
-    @tf.function(
-        input_signature=(tf.TensorSpec([int(target.parameter_dim)], tf.float64),),
-        jit_compile=False,
-        reduce_retracing=True,
-    )
-    def scalar_value_score(row: Any) -> tuple[Any, Any]:
-        return method(row)
-
-    value_method = getattr(target, "eager_value", None)
-    if not callable(value_method):
-        value_method = lambda row: method(row)[0]
-
-    @tf.function(
-        input_signature=(tf.TensorSpec([int(target.parameter_dim)], tf.float64),),
-        jit_compile=False,
-        reduce_retracing=True,
-    )
-    def scalar_value(row: Any) -> Any:
-        return value_method(row)
-
-    target_config = getattr(target, "config", None)
-    prior_center = getattr(target_config, "prior_center", None)
-    if prior_center is None:
-        raise RuntimeError("CPU value/score worker target requires a warmup point")
-    warmup = tf.ensure_shape(
-        tf.convert_to_tensor(prior_center, tf.float64),
-        [int(target.parameter_dim)],
-    )
-    scalar_value_score(warmup)
-    scalar_value(warmup)
+    scalar_value_score = None
+    scalar_value = None
     batch_value_scores: dict[int, Any] = {}
     batch_values: dict[int, Any] = {}
     if evaluation_mode == "batch_native":
@@ -154,8 +125,41 @@ def _worker_init(
             batch_value_fn(sample)
             batch_value_scores[static_size] = batch_value_score_fn
             batch_values[static_size] = batch_value_fn
-    global _WORKER_TARGET, _WORKER_VALUE, _WORKER_BATCH_TARGETS, _WORKER_BATCH_VALUES
-    global _WORKER_METADATA, _WORKER_STARTUP_BARRIER
+    else:
+        method = getattr(target, "eager_value_and_score", None)
+        if not callable(method):
+            method = target.value_and_score
+
+        @tf.function(
+            input_signature=(tf.TensorSpec([int(target.parameter_dim)], tf.float64),),
+            jit_compile=False,
+            reduce_retracing=True,
+        )
+        def scalar_value_score(row: Any) -> tuple[Any, Any]:
+            return method(row)
+
+        value_method = getattr(target, "eager_value", None)
+        if not callable(value_method):
+            value_method = lambda row: method(row)[0]
+
+        @tf.function(
+            input_signature=(tf.TensorSpec([int(target.parameter_dim)], tf.float64),),
+            jit_compile=False,
+            reduce_retracing=True,
+        )
+        def scalar_value(row: Any) -> Any:
+            return value_method(row)
+
+        target_config = getattr(target, "config", None)
+        prior_center = getattr(target_config, "prior_center", None)
+        if prior_center is None:
+            raise RuntimeError("CPU value/score worker target requires a warmup point")
+        warmup = tf.ensure_shape(
+            tf.convert_to_tensor(prior_center, tf.float64),
+            [int(target.parameter_dim)],
+        )
+        scalar_value_score(warmup)
+        scalar_value(warmup)
     _WORKER_TARGET = scalar_value_score
     _WORKER_VALUE = scalar_value
     _WORKER_BATCH_TARGETS = batch_value_scores
@@ -172,6 +176,16 @@ def _worker_init(
         ),
         "evaluation_mode": str(evaluation_mode),
         "compiled_batch_sizes": [int(size) for size in batch_sizes],
+        "target_signature": str(target.target_signature())
+        if callable(getattr(target, "target_signature", None))
+        else "",
+        "adapter_signature": str(target.adapter_signature())
+        if callable(getattr(target, "adapter_signature", None))
+        else "",
+        "evaluation_policy": str(getattr(target, "evaluation_policy", "")),
+        "source_hashes": dict(
+            getattr(target, "signature_payload", lambda: {})().get("source_hashes", {})
+        ),
     }
     _WORKER_STARTUP_BARRIER = startup_barrier
 
@@ -439,70 +453,83 @@ class CPUValueScorePool:
         }
         os.environ.update(spawn_environment)
         try:
-            if self._executor is None:
-                context = multiprocessing.get_context("spawn")
-                self._startup_barrier = context.Barrier(
-                    int(self.config.worker_count),
-                    timeout=float(self.config.timeout_seconds),
-                )
-                self._executor = concurrent.futures.ProcessPoolExecutor(
-                    max_workers=int(self.config.worker_count),
-                    mp_context=context,
-                    initializer=_worker_init,
-                    initargs=(
-                        str(self.config.worker_factory_path),
-                        dict(self.config.worker_config),
-                        int(self.config.cores_per_worker),
-                        self._startup_barrier,
-                        str(self.config.evaluation_mode),
-                        tuple(int(size) for size in self.config.batch_sizes),
-                    ),
-                )
-                readiness_futures = [
-                    self._executor.submit(_worker_ready)
-                    for _ in range(int(self.config.worker_count))
-                ]
-                readiness = [
-                    future.result(timeout=float(self.config.timeout_seconds))
-                    for future in readiness_futures
-                ]
-                startup_worker_metadata = [
-                    dict(result["worker_metadata"]) for result in readiness
-                ]
-                startup_worker_pids = sorted(
-                    {int(record["pid"]) for record in startup_worker_metadata}
-                )
-                if len(startup_worker_pids) != int(self.config.worker_count):
-                    raise RuntimeError(
-                        "CPU value/score pool did not initialize every configured worker"
+            try:
+                if self._executor is None:
+                    context = multiprocessing.get_context("spawn")
+                    self._startup_barrier = context.Barrier(
+                        int(self.config.worker_count),
+                        timeout=float(self.config.timeout_seconds),
                     )
-                self._startup_metadata = {
-                    "configured_worker_count": int(self.config.worker_count),
-                    "startup_worker_pids": startup_worker_pids,
-                    "startup_worker_metadata": startup_worker_metadata,
-                    "startup_worker_ru_maxrss_sum_bytes": int(
-                        sum(int(result["ru_maxrss_bytes"]) for result in readiness)
-                    ),
-                }
-            futures = []
-            for worker_index in range(worker_count):
-                start = (matrix.shape[0] * worker_index) // worker_count
-                stop = (matrix.shape[0] * (worker_index + 1)) // worker_count
-                futures.append(self._executor.submit(worker_function, {
-                    "worker_index": worker_index,
-                    "item_start": start,
-                    "item_stop": stop,
-                    "request_id": request,
-                    "input_hash": input_hash,
-                    "rows": matrix[start:stop],
-                }))
+                    self._executor = concurrent.futures.ProcessPoolExecutor(
+                        max_workers=int(self.config.worker_count),
+                        mp_context=context,
+                        initializer=_worker_init,
+                        initargs=(
+                            str(self.config.worker_factory_path),
+                            dict(self.config.worker_config),
+                            int(self.config.cores_per_worker),
+                            self._startup_barrier,
+                            str(self.config.evaluation_mode),
+                            tuple(int(size) for size in self.config.batch_sizes),
+                        ),
+                    )
+                    readiness_futures = [
+                        self._executor.submit(_worker_ready)
+                        for _ in range(int(self.config.worker_count))
+                    ]
+                    readiness = [
+                        future.result(timeout=float(self.config.timeout_seconds))
+                        for future in readiness_futures
+                    ]
+                    startup_worker_metadata = [
+                        dict(result["worker_metadata"]) for result in readiness
+                    ]
+                    startup_worker_pids = sorted(
+                        {int(record["pid"]) for record in startup_worker_metadata}
+                    )
+                    if len(startup_worker_pids) != int(self.config.worker_count):
+                        raise RuntimeError(
+                            "CPU value/score pool did not initialize every configured worker"
+                        )
+                    self._startup_metadata = {
+                        "configured_worker_count": int(self.config.worker_count),
+                        "startup_worker_pids": startup_worker_pids,
+                        "startup_worker_metadata": startup_worker_metadata,
+                        "startup_worker_ru_maxrss_sum_bytes": int(
+                            sum(int(result["ru_maxrss_bytes"]) for result in readiness)
+                        ),
+                    }
+                futures = []
+                for worker_index in range(worker_count):
+                    start = (matrix.shape[0] * worker_index) // worker_count
+                    stop = (matrix.shape[0] * (worker_index + 1)) // worker_count
+                    futures.append(self._executor.submit(worker_function, {
+                        "worker_index": worker_index,
+                        "item_start": start,
+                        "item_stop": stop,
+                        "request_id": request,
+                        "input_hash": input_hash,
+                        "rows": matrix[start:stop],
+                    }))
+            except BaseException:
+                # Readiness failures and interrupts can happen before the
+                # result futures exist.  They must still terminate the pool.
+                self.abort()
+                raise
         finally:
             for key, previous in previous_environment.items():
                 if previous is None:
                     os.environ.pop(key, None)
                 else:
                     os.environ[key] = previous
-        results = [future.result(timeout=float(self.config.timeout_seconds)) for future in futures]
+        try:
+            results = [
+                future.result(timeout=float(self.config.timeout_seconds))
+                for future in futures
+            ]
+        except BaseException:
+            self.abort()
+            raise
         results.sort(key=lambda result: int(result["item_start"]))
         if any(
             result["input_hash"] != input_hash or result["request_id"] != request
@@ -575,9 +602,45 @@ class CPUValueScorePool:
         self._startup_metadata = None
         self._opened = False
 
+    def abort(self) -> None:
+        """Fail closed on interruption without waiting for worker tasks."""
+
+        executor = self._executor
+        if executor is None:
+            self._opened = False
+            return
+        processes = list(getattr(executor, "_processes", {}).values())
+        executor.shutdown(wait=False, cancel_futures=True)
+        for process in processes:
+            try:
+                if process.is_alive():
+                    process.terminate()
+            except (OSError, ProcessLookupError):
+                pass
+        for process in processes:
+            try:
+                process.join(timeout=5.0)
+            except (OSError, ProcessLookupError):
+                continue
+            # A stuck initializer or native call can ignore SIGTERM.  Do not
+            # leave a TensorFlow worker behind after an interrupted run.
+            try:
+                if process.is_alive():
+                    process.kill()
+                    process.join(timeout=5.0)
+            except (OSError, ProcessLookupError):
+                pass
+        self._executor = None
+        self._startup_barrier = None
+        self._startup_metadata = None
+        self._opened = False
+
     def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
-        del exc_type, exc, traceback
-        self.close()
+        del exc, traceback
+        if exc_type is None:
+            self.close()
+        else:
+            self.abort()
 
 
 __all__ = ["CPUValueScorePool", "CPUValueScorePoolConfig"]

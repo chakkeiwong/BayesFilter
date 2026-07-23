@@ -121,6 +121,32 @@ docs/plans/artifacts/**/checkpoints/
 docs/plans/artifacts/**/runs/
 docs/plans/artifacts/**/tmp/
 
+# Transient campaign locks are runtime state, never evidence. Keep dependency
+# lockfiles visible.
+docs/plans/artifacts/**/.material-run.lock
+
+# Compact receipts that support the current q=20 and PP-UKF decisions remain
+# visible; checkpoints, private payloads, and per-arm traces stay ignored by
+# the general JSON rule above.
+!docs/plans/artifacts/ssl-lstm-q20-32x32-hmc-tuning-2026-07-21/**/summary.json
+!docs/plans/artifacts/ssl-lstm-q20-32x32-hmc-tuning-2026-07-21/**/transformed-fd-ladder.json
+!docs/plans/artifacts/ssl-lstm-q20-32x32-hmc-tuning-2026-07-21/**/rate-refresh*.json
+!docs/plans/artifacts/ssl-lstm-q20-two-architecture-loss-gate-2026-07-21/**/final-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-two-architecture-loss-gate-2026-07-21/**/combined-gate-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-training-hierarchy-2026-07-21/**/result.json
+!docs/plans/artifacts/ssl-lstm-q20-training-hierarchy-2026-07-21/**/single-diagnostic-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-scale-vs-elu-telemetry-2026-07-21/**/result.json
+!docs/plans/artifacts/ssl-lstm-q20-scale-vs-elu-telemetry-2026-07-21/**/single-diagnostic-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-cpu-training-timing-2026-07-22/**/result.json
+!docs/plans/artifacts/ssl-lstm-q20-strict-cpu-training-2026-07-22/**/summary.json
+!docs/plans/artifacts/ssl-lstm-q20-batch-native-profile-2026-07-23/**/result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-operational-broad-grid-20260721/**/public_result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-operational-broad-grid-20260721/**/run_manifest.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-state-continuing-epsilon-repair-20260721/**/public_result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-state-continuing-epsilon-repair-20260721/**/run_manifest.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-statistical-compatibility-guard-repair-20260721/**/public_result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-statistical-compatibility-guard-repair-20260721/**/run_manifest.json
+
 # Kalman QR superseded, failed, and exploratory run roots. Terminal roots that
 # support retained results remain trackable: CPU throughput r3, formulation r2,
 # CPU lattice r4, GPU lattice gpu0_r2, literal 16-process, and matched 3-arm.
