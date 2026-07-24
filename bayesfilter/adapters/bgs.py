@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Callable
 from typing import Any, NamedTuple
 
@@ -75,7 +76,7 @@ _INV_GAMMA = tf.constant(
 )
 _TFD = tfp.distributions
 
-BGS_POSTERIOR_NONCLAIMS = (
+BGS_POSTERIOR_DEBUG_NONCLAIMS = (
     "CPU graph parity adapter only",
     "no end-to-end XLA authority",
     "no HMC tuning or sampling claim",
@@ -83,6 +84,16 @@ BGS_POSTERIOR_NONCLAIMS = (
     "no GPU readiness claim",
     "no default-readiness claim",
 )
+BGS_POSTERIOR_XLA_NONCLAIMS = (
+    "D296 synthetic-data target only",
+    "no HMC tuning claim",
+    "no posterior convergence claim",
+    "no efficiency or superiority claim",
+    "no production or default-readiness claim",
+)
+BGS_POSTERIOR_NONCLAIMS = BGS_POSTERIOR_DEBUG_NONCLAIMS
+_CAPABILITY_MODES = {"debug_graph", "target_xla_graph_chain"}
+_SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 BGS_STATUS_NONFINITE_UNCONSTRAINED = 1
 BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT = 2
@@ -241,19 +252,43 @@ class BGSPosteriorAdapter:
         constrained_likelihood_value_score: Callable[[tf.Tensor], Any],
         *,
         evidence_path: str,
+        capability_mode: str = "debug_graph",
+        likelihood_signature: str | None = None,
     ) -> None:
         if not callable(constrained_likelihood_value_score):
             raise TypeError("constrained_likelihood_value_score must be callable")
         self._likelihood = constrained_likelihood_value_score
         self._evidence_path = str(evidence_path)
+        mode = str(capability_mode)
+        if mode not in _CAPABILITY_MODES:
+            raise ValueError(
+                "capability_mode must be 'debug_graph' or "
+                "'target_xla_graph_chain'"
+            )
+        signature = None if likelihood_signature is None else str(likelihood_signature)
+        if mode == "target_xla_graph_chain" and (
+            signature is None or _SHA256_PATTERN.fullmatch(signature) is None
+        ):
+            raise ValueError(
+                "target_xla_graph_chain mode requires a lowercase SHA-256 "
+                "likelihood_signature"
+            )
+        self._capability_mode = mode
+        self._likelihood_signature = signature
         self.supports_retained_value_score_status = True
+        runtime_backend = (
+            "tensorflow_tfp_bayesfilter_qr_target_xla_graph_chain"
+            if mode == "target_xla_graph_chain"
+            else "tensorflow_tfp_bayesfilter_qr_graph_debug"
+        )
         payload = {
             "schema": "bayesfilter.bgs.posterior_adapter.v1",
             "parameter_names": PARAMETER_NAMES,
             "source_hashes": SOURCE_HASHES,
             "target_scope": "bgs_d296_synthetic_transformed_target",
-            "runtime_backend": "tensorflow_tfp_bayesfilter_qr",
-            "xla_hmc_ready": False,
+            "runtime_backend": runtime_backend,
+            "capability_mode": mode,
+            "likelihood_signature": signature,
         }
         self._signature = hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("ascii")
@@ -270,15 +305,29 @@ class BGSPosteriorAdapter:
     def adapter_signature(self) -> str:
         return self._signature
 
+    @property
+    def capability_mode(self) -> str:
+        return self._capability_mode
+
     def value_score_capability(self) -> ValueScoreCapability:
+        if self._capability_mode == "target_xla_graph_chain":
+            return ValueScoreCapability(
+                value_score_authority="reviewed_gradient_tape_xla_exception",
+                xla_hmc_ready=False,
+                full_chain_xla_diagnostic_ready=False,
+                runtime_backend="tensorflow_tfp_bayesfilter_qr_target_xla_graph_chain",
+                evidence_path=self._evidence_path,
+                target_scope="bgs_d296_synthetic_transformed_target",
+                nonclaims=BGS_POSTERIOR_XLA_NONCLAIMS,
+            )
         return ValueScoreCapability(
             value_score_authority="debug_only",
             xla_hmc_ready=False,
             full_chain_xla_diagnostic_ready=False,
-            runtime_backend="tensorflow_tfp_bayesfilter_qr",
+            runtime_backend="tensorflow_tfp_bayesfilter_qr_graph_debug",
             evidence_path=self._evidence_path,
             target_scope="bgs_d296_synthetic_transformed_target",
-            nonclaims=BGS_POSTERIOR_NONCLAIMS,
+            nonclaims=BGS_POSTERIOR_DEBUG_NONCLAIMS,
         )
 
     def components(self, u: Any) -> BGSPosteriorComponents:
@@ -472,6 +521,8 @@ __all__ = [
     "BGSPosteriorAdapter",
     "BGSPosteriorComponents",
     "BGS_POSTERIOR_NONCLAIMS",
+    "BGS_POSTERIOR_DEBUG_NONCLAIMS",
+    "BGS_POSTERIOR_XLA_NONCLAIMS",
     "BGS_STATUS_DESCRIPTOR_FAILURE",
     "BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE",
     "BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE",

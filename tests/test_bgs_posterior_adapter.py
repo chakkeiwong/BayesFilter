@@ -6,6 +6,7 @@ import os
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.adapters.bgs import (
@@ -112,6 +113,39 @@ def test_adapter_identity_score_and_capability_are_conservative():
     assert bool(status["valid_pre_regularized_score"].numpy()) is True
     assert bool(status["innovation_metrics_available"].numpy()) is False
     assert adapter.supports_retained_value_score_status is True
+    assert adapter.capability_mode == "debug_graph"
+
+
+def test_target_xla_graph_chain_mode_has_bound_identity_and_reviewed_capability():
+    debug = BGSPosteriorAdapter(
+        _quadratic_likelihood,
+        evidence_path="docs/plans/bgs-phase05-06-test-evidence.md",
+    )
+    admitted = BGSPosteriorAdapter(
+        _quadratic_likelihood,
+        evidence_path="docs/plans/bgs-phase05-06-test-evidence.md",
+        capability_mode="target_xla_graph_chain",
+        likelihood_signature="a" * 64,
+    )
+    capability = value_score_capability(admitted)
+    assert admitted.capability_mode == "target_xla_graph_chain"
+    assert admitted.adapter_signature() != debug.adapter_signature()
+    assert capability.value_score_authority == "reviewed_gradient_tape_xla_exception"
+    assert capability.xla_hmc_ready is False
+    assert capability.full_chain_xla_diagnostic_ready is False
+    assert capability.target_scope == "bgs_d296_synthetic_transformed_target"
+    assert "no posterior convergence claim" in capability.nonclaims
+
+
+def test_target_xla_graph_chain_mode_requires_reviewed_likelihood_signature():
+    for signature in (None, "", "A" * 64, "a" * 63):
+        with pytest.raises(ValueError, match="likelihood_signature"):
+            BGSPosteriorAdapter(
+                _quadratic_likelihood,
+                evidence_path="docs/plans/bgs-phase05-06-test-evidence.md",
+                capability_mode="target_xla_graph_chain",
+                likelihood_signature=signature,
+            )
 
 
 def _status_likelihood(
