@@ -68,12 +68,15 @@ SOURCE_HASHES = {
     "mod": "e433ad5c8d7f1769f839996718ae608cb911bc3f781988de30bb231a6497c16d",
     "order": "333c36c9bcc6727bfd6f6e3ecfba5e670096f719eb77106c72909f2811e2ae8b",
 }
+PRIOR_KERNEL_ID = "dynare_5_0_type1_ig_finite_chart_v1"
 _NORMAL = tf.constant([family == "NORMAL_PDF" for family in PRIOR_FAMILIES])
 _BETA = tf.constant([family == "BETA_PDF" for family in PRIOR_FAMILIES])
 _GAMMA = tf.constant([family == "GAMMA_PDF" for family in PRIOR_FAMILIES])
 _INV_GAMMA = tf.constant(
     [family == "INV_GAMMA_PDF" for family in PRIOR_FAMILIES]
 )
+_DYNARE_INV_GAMMA_TYPE1_S = tf.constant(0.0072579728170932, DTYPE)
+_DYNARE_INV_GAMMA_TYPE1_NU = tf.constant(2.1001099698909407, DTYPE)
 _TFD = tfp.distributions
 
 BGS_POSTERIOR_DEBUG_NONCLAIMS = (
@@ -166,18 +169,21 @@ def log_abs_det_jacobian(u: Any) -> tf.Tensor:
     )
 
 
-def constrained_log_prior_and_score(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
+def _constrained_log_prior_terms(
+    theta: Any,
+) -> tuple[tf.Tensor, tf.Tensor]:
     values = tf.ensure_shape(
         tf.cast(tf.convert_to_tensor(theta), DTYPE), (PARAMETER_DIMENSION,)
     )
-    width = PRIOR_UPPER - PRIOR_LOWER
-    z = (values - PRIOR_LOWER) / width
+    # Dynare's omitted generalized-prior bounds mean beta support is [0, 1].
     beta_variance = tf.where(
-        _BETA, tf.square(PRIOR_SD / width), tf.ones_like(PRIOR_SD)
+        _BETA,
+        tf.square(PRIOR_SD),
+        tf.fill((PARAMETER_DIMENSION,), tf.constant(0.05, DTYPE)),
     )
     beta_mean = tf.where(
         _BETA,
-        (PRIOR_MEAN - PRIOR_LOWER) / width,
+        PRIOR_MEAN,
         tf.fill((PARAMETER_DIMENSION,), tf.constant(0.5, DTYPE)),
     )
     beta_concentration = beta_mean * (1.0 - beta_mean) / beta_variance - 1.0
@@ -187,47 +193,71 @@ def constrained_log_prior_and_score(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
     gamma_sd = tf.where(_GAMMA, PRIOR_SD, tf.ones_like(PRIOR_SD))
     gamma_shape = tf.square(gamma_mean / gamma_sd)
     gamma_scale = tf.square(gamma_sd) / gamma_mean
-    inv_mean = tf.where(_INV_GAMMA, PRIOR_MEAN, tf.ones_like(PRIOR_MEAN))
-    inv_sd = tf.where(_INV_GAMMA, PRIOR_SD, tf.ones_like(PRIOR_SD))
-    inv_shape = 2.0 + tf.square(inv_mean / inv_sd)
-    inv_scale = inv_mean * (inv_shape - 1.0)
 
     beta_z = tf.where(
         _BETA,
-        z,
+        values,
         tf.fill((PARAMETER_DIMENSION,), tf.constant(0.5, DTYPE)),
     )
     gamma_values = tf.where(_GAMMA, values, tf.ones_like(values))
     inv_gamma_values = tf.where(_INV_GAMMA, values, tf.ones_like(values))
 
     normal_log = _TFD.Normal(PRIOR_MEAN, PRIOR_SD).log_prob(values)
-    beta_log = _TFD.Beta(beta_a, beta_b).log_prob(beta_z) - tf.math.log(width)
+    beta_log = _TFD.Beta(beta_a, beta_b).log_prob(beta_z)
     gamma_log = _TFD.Gamma(
         gamma_shape, rate=1.0 / gamma_scale
     ).log_prob(gamma_values)
-    inv_gamma_log = _TFD.InverseGamma(
-        inv_shape, scale=inv_scale
-    ).log_prob(inv_gamma_values)
+    half_nu = 0.5 * _DYNARE_INV_GAMMA_TYPE1_NU
+    inv_gamma_log = (
+        tf.math.log(tf.constant(2.0, DTYPE))
+        - tf.math.lgamma(half_nu)
+        - half_nu * (
+            tf.math.log(tf.constant(2.0, DTYPE))
+            - tf.math.log(_DYNARE_INV_GAMMA_TYPE1_S)
+        )
+        - (_DYNARE_INV_GAMMA_TYPE1_NU + 1.0) * tf.math.log(inv_gamma_values)
+        - 0.5 * _DYNARE_INV_GAMMA_TYPE1_S / tf.square(inv_gamma_values)
+    )
     contributions = tf.where(
         _NORMAL,
         normal_log,
         tf.where(_BETA, beta_log, tf.where(_GAMMA, gamma_log, inv_gamma_log)),
     )
-
     normal_score = -(values - PRIOR_MEAN) / tf.square(PRIOR_SD)
     beta_score = (
         (beta_a - 1.0) / beta_z - (beta_b - 1.0) / (1.0 - beta_z)
-    ) / width
+    )
     gamma_score = (gamma_shape - 1.0) / gamma_values - 1.0 / gamma_scale
     inv_gamma_score = (
-        -(inv_shape + 1.0) / inv_gamma_values
-        + inv_scale / tf.square(inv_gamma_values)
+        -(_DYNARE_INV_GAMMA_TYPE1_NU + 1.0) / inv_gamma_values
+        + _DYNARE_INV_GAMMA_TYPE1_S / tf.pow(inv_gamma_values, 3)
     )
-    score = tf.where(
+    scores = tf.where(
         _NORMAL,
         normal_score,
         tf.where(_BETA, beta_score, tf.where(_GAMMA, gamma_score, inv_gamma_score)),
     )
+    return contributions, scores
+
+
+@tf.function(
+    input_signature=(tf.TensorSpec((PARAMETER_DIMENSION,), DTYPE),),
+    autograph=False,
+)
+def constrained_log_prior_contributions(theta: Any) -> tf.Tensor:
+    contributions, _scores = _constrained_log_prior_terms(theta)
+    return contributions
+
+
+@tf.function(
+    input_signature=(tf.TensorSpec((PARAMETER_DIMENSION,), DTYPE),),
+    autograph=False,
+)
+def constrained_log_prior_and_score(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
+    values = tf.ensure_shape(
+        tf.cast(tf.convert_to_tensor(theta), DTYPE), (PARAMETER_DIMENSION,)
+    )
+    contributions, score = _constrained_log_prior_terms(values)
     support = tf.reduce_all(
         tf.logical_and(values > PRIOR_LOWER, values < PRIOR_UPPER)
     )
@@ -282,10 +312,11 @@ class BGSPosteriorAdapter:
             else "tensorflow_tfp_bayesfilter_qr_graph_debug"
         )
         payload = {
-            "schema": "bayesfilter.bgs.posterior_adapter.v1",
+            "schema": "bayesfilter.bgs.posterior_adapter.v2",
             "parameter_names": PARAMETER_NAMES,
             "source_hashes": SOURCE_HASHES,
             "target_scope": "bgs_d296_synthetic_transformed_target",
+            "prior_kernel_id": PRIOR_KERNEL_ID,
             "runtime_backend": runtime_backend,
             "capability_mode": mode,
             "likelihood_signature": signature,
@@ -534,12 +565,14 @@ __all__ = [
     "PARAMETER_DIMENSION",
     "PARAMETER_NAMES",
     "PRIOR_FAMILIES",
+    "PRIOR_KERNEL_ID",
     "PRIOR_LOWER",
     "PRIOR_MEAN",
     "PRIOR_SD",
     "PRIOR_UPPER",
     "SOURCE_HASHES",
     "constrained_log_prior_and_score",
+    "constrained_log_prior_contributions",
     "log_abs_det_jacobian",
     "theta_from_unconstrained",
     "unconstrained_from_theta",
