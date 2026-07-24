@@ -5,6 +5,9 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    "BGSConstrainedLikelihoodResult",
+    "BGSPosteriorAdapter",
+    "BGSPosteriorComponents",
     "CompiledValuePathClassification",
     "CompiledValuePathMode",
     "FactorBackendAuditResult",
@@ -321,6 +324,9 @@ __all__ = [
     "tf_qr_linear_gaussian_log_likelihood",
     "tf_qr_linear_gaussian_score",
     "tf_qr_linear_gaussian_score_hessian",
+    "tf_qr_sqrt_factorized_kalman_log_likelihood",
+    "tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments",
+    "tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments_graph",
     "tf_qr_sqrt_kalman_filter",
     "tf_qr_sqrt_kalman_log_likelihood",
     "tf_qr_sqrt_kalman_score_hessian",
@@ -365,6 +371,9 @@ __all__ = [
 ]
 
 _EXPORT_MODULES = {
+    "BGSConstrainedLikelihoodResult": "bayesfilter.adapters.bgs",
+    "BGSPosteriorAdapter": "bayesfilter.adapters.bgs",
+    "BGSPosteriorComponents": "bayesfilter.adapters.bgs",
     "CompiledValuePathClassification": "bayesfilter.nonlinear",
     "CompiledValuePathMode": "bayesfilter.nonlinear",
     "FactorBackendAuditResult": "bayesfilter.backends",
@@ -710,6 +719,15 @@ _EXPORT_MODULES = {
     ),
     "tf_qr_linear_gaussian_score_hessian": (
         "bayesfilter.linear.kalman_qr_derivatives_tf"
+    ),
+    "tf_qr_sqrt_factorized_kalman_log_likelihood": (
+        "bayesfilter.linear.kalman_qr_tf"
+    ),
+    "tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments": (
+        "bayesfilter.linear.kalman_qr_tf"
+    ),
+    "tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments_graph": (
+        "bayesfilter.linear.kalman_qr_tf"
     ),
     "tf_qr_sqrt_kalman_filter": "bayesfilter.linear.kalman_qr_tf",
     "tf_qr_sqrt_kalman_log_likelihood": "bayesfilter.linear.kalman_qr_tf",

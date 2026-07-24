@@ -480,6 +480,277 @@ def tf_qr_sqrt_kalman_log_likelihood_while_loop(
     return log_likelihood
 
 
+def _tf_qr_sqrt_factorized_kalman_log_likelihood_impl(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_factor: tf.Tensor,
+    jitter: tf.Tensor | float,
+    jitter_updates_filtered_covariance: bool,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Evaluate a QR likelihood from an exact rectangular process factor."""
+
+    dtype = common_floating_dtype(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_noise_factor,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_factor,
+        jitter,
+        context="factorized QR likelihood inputs",
+    )
+    y = _as_observation_matrix(observations, dtype)
+    transition_offset = _to_tensor(transition_offset, dtype)
+    transition_matrix = _to_tensor(transition_matrix, dtype)
+    transition_noise_factor = _to_tensor(transition_noise_factor, dtype)
+    observation_offset = _to_tensor(observation_offset, dtype)
+    observation_matrix = _to_tensor(observation_matrix, dtype)
+    observation_covariance = _to_tensor(observation_covariance, dtype)
+    mean0 = _to_tensor(initial_state_mean, dtype)
+    initial_state_factor = _to_tensor(initial_state_factor, dtype)
+    jitter_tensor = _to_tensor(jitter, dtype)
+
+    if transition_noise_factor.shape.rank != 2:
+        raise ValueError("transition_noise_factor must have rank 2")
+    if initial_state_factor.shape.rank != 2:
+        raise ValueError("initial_state_factor must have rank 2")
+    state_dim_static = mean0.shape[0]
+    factor_state_dim = transition_noise_factor.shape[0]
+    factor_innovation_dim = transition_noise_factor.shape[1]
+    initial_factor_state_dim = initial_state_factor.shape[0]
+    initial_factor_width = initial_state_factor.shape[1]
+    if (
+        state_dim_static is None
+        or factor_state_dim is None
+        or factor_innovation_dim is None
+        or initial_factor_state_dim is None
+        or initial_factor_width is None
+    ):
+        raise ValueError(
+            "initial state and covariance factors need static dimensions"
+        )
+    if factor_state_dim != state_dim_static:
+        raise ValueError(
+            "transition_noise_factor first dimension must equal state dimension"
+        )
+    if initial_factor_state_dim != state_dim_static:
+        raise ValueError(
+            "initial_state_factor first dimension must equal state dimension"
+        )
+
+    n_timesteps = tf.shape(y)[0]
+    state_dim = tf.shape(mean0)[0]
+    obs_dim = tf.shape(observation_matrix)[0]
+    state_identity = tf.eye(state_dim, dtype=dtype)
+    obs_identity = tf.eye(obs_dim, dtype=dtype)
+    covariance_factor0 = lower_factor_from_horizontal_stack(initial_state_factor)
+    observation_covariance_factor = cholesky_factor(
+        observation_covariance + jitter_tensor * obs_identity,
+        0.0,
+    )
+    observation_update_covariance_factor = (
+        observation_covariance_factor
+        if jitter_updates_filtered_covariance
+        else cholesky_factor(observation_covariance, 0.0)
+    )
+    increments0 = tf.zeros((tf.shape(y)[0],), dtype=dtype)
+    two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
+    t0 = tf.constant(0, dtype=tf.int32)
+    log_likelihood0 = tf.constant(0.0, dtype=dtype)
+
+    def cond(t, *_state):
+        return t < n_timesteps
+
+    def body(t, mean, covariance_factor, log_likelihood, increments):
+        predicted_mean = transition_offset + _matvec(transition_matrix, mean)
+        predicted_factor = lower_factor_from_horizontal_stack(
+            tf.concat(
+                (
+                    transition_matrix @ covariance_factor,
+                    transition_noise_factor,
+                ),
+                axis=1,
+            )
+        )
+        predicted_covariance = predicted_factor @ tf.transpose(predicted_factor)
+
+        innovation = y[t] - (
+            observation_offset + _matvec(observation_matrix, predicted_mean)
+        )
+        innovation_factor = lower_factor_from_horizontal_stack(
+            tf.concat(
+                (
+                    observation_matrix @ predicted_factor,
+                    observation_covariance_factor,
+                ),
+                axis=1,
+            )
+        )
+        innovation_precision = factor_solve(innovation_factor, obs_identity)
+        kalman_gain = (
+            predicted_covariance
+            @ tf.transpose(observation_matrix)
+            @ innovation_precision
+        )
+
+        filtered_mean = predicted_mean + _matvec(kalman_gain, innovation)
+        joseph_left = state_identity - kalman_gain @ observation_matrix
+        filtered_factor = lower_factor_from_horizontal_stack(
+            tf.concat(
+                (
+                    joseph_left @ predicted_factor,
+                    kalman_gain @ observation_update_covariance_factor,
+                ),
+                axis=1,
+            )
+        )
+
+        solve_innovation = tf.linalg.triangular_solve(
+            innovation_factor,
+            innovation[:, tf.newaxis],
+            lower=True,
+        )
+        mahalanobis = tf.reduce_sum(tf.square(solve_innovation))
+        log_det = 2.0 * tf.reduce_sum(
+            tf.math.log(tf.linalg.diag_part(innovation_factor))
+        )
+        contribution = -0.5 * (
+            tf.cast(obs_dim, dtype) * tf.math.log(two_pi)
+            + log_det
+            + mahalanobis
+        )
+        return (
+            t + 1,
+            filtered_mean,
+            filtered_factor,
+            log_likelihood + contribution,
+            tf.tensor_scatter_nd_update(
+                increments,
+                tf.reshape(t, (1, 1)),
+                tf.reshape(contribution, (1,)),
+            ),
+        )
+
+    _, _, _, log_likelihood, increments = tf.while_loop(
+        cond,
+        body,
+        (t0, mean0, covariance_factor0, log_likelihood0, increments0),
+        maximum_iterations=n_timesteps,
+        parallel_iterations=1,
+    )
+    return log_likelihood, increments
+
+
+@tf.function(jit_compile=True)
+def tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_factor: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+    jitter_updates_filtered_covariance: bool = True,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Return total and per-period QR log likelihood from a process factor.
+
+    Both covariance factors may be rectangular. The implemented covariance
+    laws are exactly ``factor @ factor.T``; no process/initial jitter or
+    spectral repair is introduced.
+    """
+
+    return _tf_qr_sqrt_factorized_kalman_log_likelihood_impl(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_noise_factor,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_factor,
+        jitter,
+        bool(jitter_updates_filtered_covariance),
+    )
+
+
+@tf.function
+def tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments_graph(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_factor: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+    jitter_updates_filtered_covariance: bool = True,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Non-XLA diagnostic counterpart to the factorized QR value kernel."""
+
+    return _tf_qr_sqrt_factorized_kalman_log_likelihood_impl(
+        observations,
+        transition_offset,
+        transition_matrix,
+        transition_noise_factor,
+        observation_offset,
+        observation_matrix,
+        observation_covariance,
+        initial_state_mean,
+        initial_state_factor,
+        jitter,
+        bool(jitter_updates_filtered_covariance),
+    )
+
+
+@tf.function(jit_compile=True)
+def tf_qr_sqrt_factorized_kalman_log_likelihood(
+    observations: tf.Tensor,
+    transition_offset: tf.Tensor,
+    transition_matrix: tf.Tensor,
+    transition_noise_factor: tf.Tensor,
+    observation_offset: tf.Tensor,
+    observation_matrix: tf.Tensor,
+    observation_covariance: tf.Tensor,
+    initial_state_mean: tf.Tensor,
+    initial_state_factor: tf.Tensor,
+    jitter: tf.Tensor | float = 0.0,
+    jitter_updates_filtered_covariance: bool = True,
+) -> tf.Tensor:
+    """Return a QR log likelihood for a possibly rank-deficient process law."""
+
+    value, _increments = (
+        tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments(
+            observations,
+            transition_offset,
+            transition_matrix,
+            transition_noise_factor,
+            observation_offset,
+            observation_matrix,
+            observation_covariance,
+            initial_state_mean,
+            initial_state_factor,
+            jitter,
+            jitter_updates_filtered_covariance,
+        )
+    )
+    return value
+
+
 @tf.function
 def tf_qr_sqrt_kalman_log_likelihood_batched_static(
     observations: tf.Tensor,
