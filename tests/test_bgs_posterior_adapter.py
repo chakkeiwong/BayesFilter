@@ -16,6 +16,7 @@ from bayesfilter.adapters.bgs import (
     BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE,
     BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE,
     BGS_STATUS_NONFINITE_UNCONSTRAINED,
+    BGS_STATUS_POSTERIOR_NONFINITE,
     BGS_STATUS_STATE_SPACE_FAILURE,
     BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT,
     PARAMETER_DIMENSION,
@@ -273,6 +274,49 @@ def test_component_failures_remain_distinguishable_in_status_telemetry():
         assert int(status["status_code"].numpy()) & expected_bit
         assert np.isneginf(value.numpy())
         np.testing.assert_array_equal(score.numpy(), np.zeros(PARAMETER_DIMENSION))
+
+
+def test_retained_target_status_preserves_exact_bgs_validity_veto():
+    cases = (
+        ({}, tf.zeros((PARAMETER_DIMENSION,), tf.float64)),
+        (
+            {},
+            tf.fill((PARAMETER_DIMENSION,), tf.constant(1.0e6, tf.float64)),
+        ),
+        (
+            {"descriptor_success": False},
+            tf.zeros((PARAMETER_DIMENSION,), tf.float64),
+        ),
+        (
+            {"numerical_state_space_success": False},
+            tf.zeros((PARAMETER_DIMENSION,), tf.float64),
+        ),
+        (
+            {"likelihood_value_finite": False},
+            tf.zeros((PARAMETER_DIMENSION,), tf.float64),
+        ),
+        (
+            {"likelihood_score_finite": False},
+            tf.zeros((PARAMETER_DIMENSION,), tf.float64),
+        ),
+    )
+    for overrides, u in cases:
+        adapter = BGSPosteriorAdapter(
+            _status_likelihood(**overrides),
+            evidence_path="docs/plans/bgs-phase04-test-evidence.md",
+        )
+        value, _score, full = adapter.log_prob_and_grad_status(u)
+        retained = adapter.retained_target_status_telemetry(value)
+        assert bool(retained["valid_pre_regularized_score"].numpy()) == bool(
+            full["valid_pre_regularized_score"].numpy()
+        )
+        assert (int(retained["status_code"].numpy()) != 0) == (
+            int(full["status_code"].numpy()) != 0
+        )
+        if int(full["status_code"].numpy()) != 0:
+            assert int(retained["status_code"].numpy()) == (
+                BGS_STATUS_POSTERIOR_NONFINITE
+            )
 
 
 def test_status_telemetry_satisfies_shared_verification_schema():

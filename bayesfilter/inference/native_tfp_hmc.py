@@ -34,6 +34,9 @@ _NONCLAIMS = (
     "no posterior validity claim",
     "no performance superiority claim",
 )
+_INDEPENDENT_CHAIN_PROBE_STAGES = frozenset(
+    {"target", "status", "bootstrap", "one_step", "one_step_status"}
+)
 
 
 @dataclass(frozen=True)
@@ -481,6 +484,7 @@ def run_native_tfp_independent_chains(
         config=config,
         initial_state_shape=tuple(int(dim) for dim in state.shape),
         initial_state_dtype=state.dtype.name,
+        target_status_trace_source=_target_status_trace_source(adapter),
     )
     metadata = {
         "runtime": "tfp.mcmc.sample_chain",
@@ -496,6 +500,7 @@ def run_native_tfp_independent_chains(
         "sample_chain_invocation_count": 1,
         "sample_chain_call_s": elapsed,
         "sample_chain_timing_role": "explanatory_only_compile_plus_execute",
+        "target_status_trace_source": _target_status_trace_source(adapter),
         "trace_count": run_chain.experimental_get_tracing_count(),
         "initial_state_shape": tuple(int(dim) for dim in state.shape),
         "initial_state_dtype": state.dtype.name,
@@ -523,6 +528,152 @@ def run_native_tfp_independent_chains(
         metadata=metadata,
         initial_state=state,
     )
+
+
+def probe_native_tfp_independent_chain_graph(
+    adapter: Any,
+    initial_state: Any,
+    config: NativeTFPIndependentChainHMCConfig,
+    *,
+    stage: str,
+) -> Mapping[str, Any]:
+    """Trace and execute one bounded independent-chain graph stage.
+
+    This diagnostic does not sample a chain or qualify a kernel. It isolates
+    target, status, bootstrap, and one-step graph costs so a failed full-chain
+    compile can be attributed without pfor, callbacks, or another sampler.
+    """
+
+    if not isinstance(config, NativeTFPIndependentChainHMCConfig):
+        raise TypeError("config must be NativeTFPIndependentChainHMCConfig")
+    stage = str(stage)
+    if stage not in _INDEPENDENT_CHAIN_PROBE_STAGES:
+        raise ValueError(
+            "stage must be one of "
+            + ", ".join(sorted(_INDEPENDENT_CHAIN_PROBE_STAGES))
+        )
+    capability = value_score_capability(adapter)
+    if capability.value_score_authority not in _REVIEWED_AUTHORITIES:
+        raise ValueError(
+            "native TFP HMC probe requires reviewed graph value/score authority"
+        )
+    if capability.target_scope != config.target_scope:
+        raise ValueError("value/score target_scope mismatch")
+    if not callable(getattr(adapter, "target_status_telemetry", None)):
+        raise TypeError(
+            "native TFP HMC probe requires adapter target_status_telemetry"
+        )
+
+    state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
+    if state.shape.rank != 2 or any(dim is None for dim in state.shape):
+        raise ValueError(
+            "independent-chain initial_state must have static shape [chain, parameter]"
+        )
+    if int(state.shape[0]) != config.chain_count:
+        raise ValueError("initial_state chain dimension does not match chain_count")
+    parameter_dim = int(state.shape[1])
+    target_log_prob = reviewed_independent_chain_target_fn(
+        adapter,
+        chain_count=config.chain_count,
+        parameter_dim=parameter_dim,
+        dtype=state.dtype,
+    )
+    kernel = tfp.mcmc.HamiltonianMonteCarlo(
+        target_log_prob_fn=target_log_prob,
+        step_size=tf.constant(config.step_size, state.dtype),
+        num_leapfrog_steps=config.num_leapfrog_steps,
+    )
+
+    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
+    def target_probe() -> Mapping[str, tf.Tensor]:
+        with tf.GradientTape() as tape:
+            tape.watch(state)
+            values = target_log_prob(state)
+            total = tf.reduce_sum(values)
+        return {"value": values, "score": tape.gradient(total, state)}
+
+    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
+    def status_probe() -> Mapping[str, tf.Tensor]:
+        return _independent_chain_status_telemetry(
+            adapter, state, chain_count=config.chain_count
+        )
+
+    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
+    def bootstrap_probe() -> Mapping[str, tf.Tensor]:
+        results = kernel.bootstrap_results(state)
+        return {
+            "target_log_prob": results.accepted_results.target_log_prob,
+            "proposed_target_log_prob": results.proposed_results.target_log_prob,
+        }
+
+    def one_step_outputs(*, include_status: bool) -> Mapping[str, tf.Tensor]:
+        previous = kernel.bootstrap_results(state)
+        next_state, results = kernel.one_step(
+            state,
+            previous,
+            seed=tf.constant(config.seed, tf.int32),
+        )
+        output = {
+            "next_state": next_state,
+            "is_accepted": results.is_accepted,
+            "log_accept_ratio": results.log_accept_ratio,
+            "target_log_prob": results.accepted_results.target_log_prob,
+            "proposed_target_log_prob": results.proposed_results.target_log_prob,
+        }
+        if include_status:
+            status = _independent_chain_trace_status_telemetry(
+                adapter,
+                next_state,
+                results.accepted_results.target_log_prob,
+                chain_count=config.chain_count,
+            )
+            output.update(
+                {f"status_{name}": value for name, value in status.items()}
+            )
+        return output
+
+    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
+    def one_step_probe() -> Mapping[str, tf.Tensor]:
+        return one_step_outputs(include_status=False)
+
+    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
+    def one_step_status_probe() -> Mapping[str, tf.Tensor]:
+        return one_step_outputs(include_status=True)
+
+    probe = {
+        "target": target_probe,
+        "status": status_probe,
+        "bootstrap": bootstrap_probe,
+        "one_step": one_step_probe,
+        "one_step_status": one_step_status_probe,
+    }[stage]
+    trace_started = time.perf_counter()
+    concrete = probe.get_concrete_function()
+    trace_elapsed = time.perf_counter() - trace_started
+    execute_started = time.perf_counter()
+    outputs = concrete()
+    execute_elapsed = time.perf_counter() - execute_started
+    finite = tuple(
+        tf.reduce_all(tf.math.is_finite(tf.cast(value, tf.float64)))
+        for value in outputs.values()
+        if value.dtype != tf.bool
+    )
+    return {
+        "stage": stage,
+        "trace_seconds": trace_elapsed,
+        "execute_seconds": execute_elapsed,
+        "trace_count": probe.experimental_get_tracing_count(),
+        "all_numeric_outputs_finite": tf.reduce_all(tf.stack(finite)),
+        "outputs": outputs,
+        "diagnostic_role": (
+            "graph_attribution_only_not_sampling_tuning_or_convergence"
+        ),
+        "nonclaims": (
+            "no retained HMC draws",
+            "no kernel qualification",
+            "no posterior or convergence claim",
+        ),
+    }
 
 
 def native_tfp_rank_normalized_diagnostics(
@@ -601,6 +752,7 @@ def write_native_tfp_retained_artifact(
         config=config,
         initial_state_shape=initial_state_shape,
         initial_state_dtype=initial_state_dtype,
+        target_status_trace_source=_target_status_trace_source(adapter),
     )
     if run.metadata.get("program_signature") != expected_program_signature:
         raise ValueError("native TFP run/config program signature mismatch")
@@ -757,14 +909,34 @@ def _independent_chain_trace_fn(adapter: Any, *, chain_count: int):
         divergence = _native_divergence_tensor(kernel_results)
         if divergence is not None:
             trace["divergence"] = divergence
-        trace["target_status_telemetry"] = _independent_chain_status_telemetry(
-            adapter,
-            state,
-            chain_count=chain_count,
+        trace["target_status_telemetry"] = (
+            _independent_chain_trace_status_telemetry(
+                adapter,
+                state,
+                kernel_results.accepted_results.target_log_prob,
+                chain_count=chain_count,
+            )
         )
         return trace
 
     return trace_fn
+
+
+def _independent_chain_trace_status_telemetry(
+    adapter: Any,
+    state: Any,
+    target_log_prob: Any,
+    *,
+    chain_count: int,
+) -> Mapping[str, tf.Tensor]:
+    retained_status = getattr(adapter, "retained_target_status_telemetry", None)
+    if callable(retained_status):
+        return _required_target_status_fields(retained_status(target_log_prob))
+    return _independent_chain_status_telemetry(
+        adapter,
+        state,
+        chain_count=chain_count,
+    )
 
 
 def _independent_chain_status_telemetry(
@@ -788,19 +960,7 @@ def _independent_chain_status_telemetry(
         condition_ta: Any,
     ):
         telemetry = adapter.target_status_telemetry(state[index])
-        required = (
-            "status_code",
-            "valid_pre_regularized_score",
-            "floor_count_value",
-            "min_innovation_eigenvalue",
-            "innovation_condition_estimate",
-        )
-        missing = tuple(name for name in required if name not in telemetry)
-        if missing:
-            raise ValueError(
-                "target_status_telemetry missing required fields: "
-                + ", ".join(missing)
-            )
+        telemetry = _required_target_status_fields(telemetry)
         return (
             index + 1,
             status_ta.write(index, tf.cast(telemetry["status_code"], tf.int32)),
@@ -843,6 +1003,24 @@ def _independent_chain_status_telemetry(
         "min_innovation_eigenvalue": min_eigenvalues.stack(),
         "innovation_condition_estimate": condition_estimates.stack(),
     }
+
+
+def _required_target_status_fields(
+    telemetry: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    required = (
+        "status_code",
+        "valid_pre_regularized_score",
+        "floor_count_value",
+        "min_innovation_eigenvalue",
+        "innovation_condition_estimate",
+    )
+    missing = tuple(name for name in required if name not in telemetry)
+    if missing:
+        raise ValueError(
+            "target_status_telemetry missing required fields: " + ", ".join(missing)
+        )
+    return {name: telemetry[name] for name in required}
 
 
 def _flatten_tensor_mapping(
@@ -905,6 +1083,7 @@ def _independent_program_signature(
     config: NativeTFPIndependentChainHMCConfig,
     initial_state_shape: tuple[Any, ...],
     initial_state_dtype: str,
+    target_status_trace_source: str,
 ) -> str:
     return _program_signature(
         {
@@ -913,8 +1092,15 @@ def _independent_program_signature(
             "config": config.signature_payload(),
             "initial_state_shape": tuple(int(dim) for dim in initial_state_shape),
             "initial_state_dtype": str(initial_state_dtype),
+            "target_status_trace_source": str(target_status_trace_source),
         }
     )
+
+
+def _target_status_trace_source(adapter: Any) -> str:
+    if callable(getattr(adapter, "retained_target_status_telemetry", None)):
+        return "retained_accepted_target_log_prob"
+    return "adapter_state_re_evaluation"
 
 
 def _standard_trace_fn(adapter: Any):

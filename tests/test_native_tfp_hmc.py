@@ -13,6 +13,7 @@ from bayesfilter.inference.native_tfp_hmc import (
     load_native_tfp_retained_artifact,
     native_tfp_rank_normalized_diagnostics,
     native_tfp_retained_diagnostics,
+    probe_native_tfp_independent_chain_graph,
     reviewed_independent_chain_target_fn,
     run_native_tfp_fixed_kernel_hmc,
     run_native_tfp_independent_chains,
@@ -53,6 +54,22 @@ class ReviewedGaussianAdapter:
             "floor_count_value": tf.constant(0, tf.int32),
             "min_innovation_eigenvalue": tf.constant(0.0, tf.float64),
             "innovation_condition_estimate": tf.constant(0.0, tf.float64),
+        }
+
+
+class RetainedStatusGaussianAdapter(ReviewedGaussianAdapter):
+    def target_status_telemetry(self, theta):
+        raise AssertionError("retained target status must avoid target re-evaluation")
+
+    def retained_target_status_telemetry(self, target_log_prob):
+        value = tf.cast(tf.convert_to_tensor(target_log_prob), tf.float64)
+        valid = tf.math.is_finite(value)
+        return {
+            "status_code": tf.where(valid, 0, 1),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": tf.zeros(tf.shape(value), tf.int32),
+            "min_innovation_eigenvalue": tf.zeros_like(value),
+            "innovation_condition_estimate": tf.zeros_like(value),
         }
 
 
@@ -241,6 +258,63 @@ def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None
     assert bool(status["all_status_valid"].numpy()) is True
     assert run.metadata["target_batching"] == "scalar_rows_tf_while_loop"
     assert run.metadata["trace_count"] == 1
+    assert run.metadata["target_status_trace_source"] == (
+        "adapter_state_re_evaluation"
+    )
+
+
+def test_independent_chain_runner_uses_adapter_retained_target_status() -> None:
+    run = run_native_tfp_independent_chains(
+        RetainedStatusGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+    )
+    status = run.diagnostics["target_status_telemetry"]
+    assert int(status["trace_entry_count"].numpy()) == 32
+    assert bool(status["all_status_valid"].numpy()) is True
+    assert run.metadata["target_status_trace_source"] == (
+        "retained_accepted_target_log_prob"
+    )
+
+
+def test_one_step_status_probe_uses_adapter_retained_target_status() -> None:
+    result = probe_native_tfp_independent_chain_graph(
+        RetainedStatusGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+        stage="one_step_status",
+    )
+    assert bool(result["all_numeric_outputs_finite"].numpy()) is True
+
+
+@pytest.mark.parametrize(
+    "stage", ("target", "status", "bootstrap", "one_step", "one_step_status")
+)
+def test_independent_chain_graph_probe_is_bounded_and_finite(stage: str) -> None:
+    result = probe_native_tfp_independent_chain_graph(
+        ReviewedGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+        stage=stage,
+    )
+    assert result["stage"] == stage
+    assert result["trace_seconds"] >= 0.0
+    assert result["execute_seconds"] >= 0.0
+    assert result["trace_count"] == 1
+    assert bool(result["all_numeric_outputs_finite"].numpy()) is True
+    assert result["diagnostic_role"] == (
+        "graph_attribution_only_not_sampling_tuning_or_convergence"
+    )
+
+
+def test_independent_chain_graph_probe_rejects_unknown_stage() -> None:
+    with pytest.raises(ValueError, match="stage must be one of"):
+        probe_native_tfp_independent_chain_graph(
+            ReviewedGaussianAdapter(),
+            _independent_initial_state(),
+            _independent_config(),
+            stage="unknown",
+        )
 
 
 def test_independent_chain_config_requires_split_diagnostic_draw_contract() -> None:

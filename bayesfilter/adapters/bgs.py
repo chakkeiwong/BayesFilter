@@ -312,7 +312,7 @@ class BGSPosteriorAdapter:
             else "tensorflow_tfp_bayesfilter_qr_graph_debug"
         )
         payload = {
-            "schema": "bayesfilter.bgs.posterior_adapter.v2",
+            "schema": "bayesfilter.bgs.posterior_adapter.v3",
             "parameter_names": PARAMETER_NAMES,
             "source_hashes": SOURCE_HASHES,
             "target_scope": "bgs_d296_synthetic_transformed_target",
@@ -320,6 +320,9 @@ class BGSPosteriorAdapter:
             "runtime_backend": runtime_backend,
             "capability_mode": mode,
             "likelihood_signature": signature,
+            "retained_target_status_policy": (
+                "finite_returned_target_exact_validity_v1"
+            ),
         }
         self._signature = hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("ascii")
@@ -519,6 +522,32 @@ class BGSPosteriorAdapter:
 
     def target_status_telemetry(self, u: Any) -> dict[str, tf.Tensor]:
         return self._status_telemetry(self.components(u))
+
+    def retained_target_status_telemetry(
+        self, target_log_prob: Any
+    ) -> dict[str, tf.Tensor]:
+        """Recover the exact BGS validity veto from a retained target value."""
+
+        value = tf.cast(tf.convert_to_tensor(target_log_prob), DTYPE)
+        valid = tf.math.is_finite(value)
+        zero = tf.zeros_like(value)
+        unavailable = tf.fill(tf.shape(value), tf.constant(float("nan"), DTYPE))
+        innovation_sentinel = tf.where(valid, zero, unavailable)
+        return {
+            "status_code": tf.where(
+                valid,
+                tf.zeros(tf.shape(value), tf.int32),
+                tf.fill(
+                    tf.shape(value),
+                    tf.constant(BGS_STATUS_POSTERIOR_NONFINITE, tf.int32),
+                ),
+            ),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": tf.zeros(tf.shape(value), tf.int32),
+            "min_innovation_eigenvalue": innovation_sentinel,
+            "innovation_condition_estimate": innovation_sentinel,
+            "innovation_metrics_available": tf.zeros(tf.shape(value), tf.bool),
+        }
 
     @staticmethod
     def _status_telemetry(
