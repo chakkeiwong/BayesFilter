@@ -156,6 +156,9 @@ class NativeTFPIndependentChainHMCConfig:
             "adaptation_policy": "fixed_kernel_no_adaptation",
             "chain_execution_mode": "tf_function",
             "parallel_iterations": 1,
+            "sample_chain_partition": (
+                "one_result_reused_graph_exact_tfp_continuation_v1"
+            ),
             "use_xla": False,
         }
 
@@ -451,20 +454,68 @@ def run_native_tfp_independent_chains(
         num_leapfrog_steps=config.num_leapfrog_steps,
     )
 
-    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
-    def run_chain() -> tuple[tf.Tensor, Mapping[str, Any]]:
-        return tfm.sample_chain(
-            num_results=config.num_results,
-            num_burnin_steps=config.num_burnin_steps,
-            current_state=state,
+    started = time.perf_counter()
+    kernel_results = kernel.bootstrap_results(state)
+    kernel_result_signature = tf.nest.map_structure(
+        lambda value: tf.TensorSpec(value.shape, value.dtype),
+        kernel_results,
+    )
+
+    @tf.function(
+        input_signature=(
+            tf.TensorSpec(state.shape, state.dtype),
+            kernel_result_signature,
+            tf.TensorSpec((2,), tf.int32),
+            tf.TensorSpec((), tf.int32),
+        ),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def run_segment(
+        segment_state: tf.Tensor,
+        segment_kernel_results: Any,
+        segment_seed: tf.Tensor,
+        segment_burnin_steps: tf.Tensor,
+    ) -> tuple[tf.Tensor, Mapping[str, Any], Any, tf.Tensor]:
+        result = tfm.sample_chain(
+            num_results=1,
+            num_burnin_steps=segment_burnin_steps,
+            current_state=segment_state,
+            previous_kernel_results=segment_kernel_results,
             kernel=kernel,
             trace_fn=trace_fn,
+            return_final_kernel_results=True,
             parallel_iterations=1,
-            seed=tf.constant(config.seed, tf.int32),
+            seed=segment_seed,
+        )
+        next_seed = _next_sample_chain_segment_seed(
+            segment_seed, segment_burnin_steps + tf.constant(1, tf.int32)
+        )
+        return (
+            result.all_states[0],
+            tf.nest.map_structure(lambda value: value[0], result.trace),
+            result.final_kernel_results,
+            next_seed,
         )
 
-    started = time.perf_counter()
-    samples, trace = run_chain()
+    segment_state = state
+    segment_seed = tf.constant(config.seed, tf.int32)
+    sample_rows = []
+    trace_rows = []
+    for result_index in range(config.num_results):
+        burnin_steps = config.num_burnin_steps if result_index == 0 else 0
+        segment_state, segment_trace, kernel_results, segment_seed = run_segment(
+            segment_state,
+            kernel_results,
+            segment_seed,
+            tf.constant(burnin_steps, tf.int32),
+        )
+        sample_rows.append(segment_state)
+        trace_rows.append(segment_trace)
+    samples = tf.stack(sample_rows, axis=0)
+    trace = tf.nest.map_structure(
+        lambda *values: tf.stack(values, axis=0), *trace_rows
+    )
     elapsed = time.perf_counter() - started
     diagnostics = dict(_diagnostics(samples, trace))
     displacement = samples[1:] - samples[:-1]
@@ -499,15 +550,20 @@ def run_native_tfp_independent_chains(
         "target_batching": "scalar_rows_tf_while_loop",
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "chain_execution_mode": "tf_function",
-        "tf_function_input_signature": (),
+        "tf_function_input_signature": (
+            "state_kernel_results_seed_burnin_steps"
+        ),
         "parallel_iterations": 1,
+        "sample_chain_partition": (
+            "one_result_reused_graph_exact_tfp_continuation_v1"
+        ),
         "use_xla": False,
         "jit_compile": False,
-        "sample_chain_invocation_count": 1,
+        "sample_chain_invocation_count": config.num_results,
         "sample_chain_call_s": elapsed,
         "sample_chain_timing_role": "explanatory_only_compile_plus_execute",
         "target_status_trace_source": _target_status_trace_source(adapter),
-        "trace_count": run_chain.experimental_get_tracing_count(),
+        "trace_count": run_segment.experimental_get_tracing_count(),
         "initial_state_shape": tuple(int(dim) for dim in state.shape),
         "initial_state_dtype": state.dtype.name,
         "value_score_authority": capability.value_score_authority,
@@ -943,6 +999,29 @@ def _independent_chain_trace_status_telemetry(
         state,
         chain_count=chain_count,
     )
+
+
+def _next_sample_chain_segment_seed(
+    seed: Any, transition_count: Any
+) -> tf.Tensor:
+    """Return the input seed whose salted value continues TFP's seed stream."""
+
+    passalong = tfp.random.sanitize_seed(seed, salt="mcmc.sample_chain")
+    count = tf.cast(tf.convert_to_tensor(transition_count), tf.int32)
+
+    def body(index: tf.Tensor, current: tf.Tensor):
+        _step_seed, next_seed = tfp.random.split_seed(current)
+        return index + 1, next_seed
+
+    _, passalong = tf.while_loop(
+        lambda index, *_: index < count,
+        body,
+        (tf.constant(0, tf.int32), passalong),
+        parallel_iterations=1,
+    )
+    # Stateless salting is an XOR fold-in, so applying the same salt gives the
+    # preimage that the next sample_chain call will map back to `passalong`.
+    return tfp.random.sanitize_seed(passalong, salt="mcmc.sample_chain")
 
 
 def _independent_chain_status_telemetry(
