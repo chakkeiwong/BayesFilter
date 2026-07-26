@@ -455,7 +455,15 @@ def run_native_tfp_independent_chains(
     )
 
     started = time.perf_counter()
-    kernel_results = kernel.bootstrap_results(state)
+    @tf.function(
+        input_signature=(tf.TensorSpec(state.shape, state.dtype),),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def bootstrap(segment_state: tf.Tensor) -> Any:
+        return kernel.bootstrap_results(segment_state)
+
+    kernel_results = bootstrap(state)
     kernel_result_signature = tf.nest.map_structure(
         lambda value: tf.TensorSpec(value.shape, value.dtype),
         kernel_results,
@@ -563,6 +571,7 @@ def run_native_tfp_independent_chains(
         "sample_chain_call_s": elapsed,
         "sample_chain_timing_role": "explanatory_only_compile_plus_execute",
         "target_status_trace_source": _target_status_trace_source(adapter),
+        "bootstrap_trace_count": bootstrap.experimental_get_tracing_count(),
         "trace_count": run_segment.experimental_get_tracing_count(),
         "initial_state_shape": tuple(int(dim) for dim in state.shape),
         "initial_state_dtype": state.dtype.name,

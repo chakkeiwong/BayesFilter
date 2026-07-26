@@ -267,6 +267,7 @@ def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None
         "one_result_reused_graph_exact_tfp_continuation_v1"
     )
     assert run.metadata["sample_chain_invocation_count"] == config.num_results
+    assert run.metadata["bootstrap_trace_count"] == 1
     assert run.metadata["target_status_trace_source"] == (
         "adapter_state_re_evaluation"
     )
