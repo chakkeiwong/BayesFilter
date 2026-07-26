@@ -82,6 +82,7 @@ class NativeTFPFixedKernelHMCConfig:
             "kernel": "tfp.mcmc.HamiltonianMonteCarlo",
             "adaptation_policy": "fixed_kernel_no_adaptation",
             "chain_execution_mode": "tf_function",
+            "parallel_iterations": 1,
             "use_xla": False,
         }
 
@@ -154,6 +155,7 @@ class NativeTFPIndependentChainHMCConfig:
             "target_batching": "scalar_rows_tf_while_loop",
             "adaptation_policy": "fixed_kernel_no_adaptation",
             "chain_execution_mode": "tf_function",
+            "parallel_iterations": 1,
             "use_xla": False,
         }
 
@@ -216,6 +218,7 @@ def run_native_tfp_fixed_kernel_hmc(
             current_state=state,
             kernel=kernel,
             trace_fn=trace_fn,
+            parallel_iterations=1,
             seed=tf.constant(config.seed, dtype=tf.int32),
         )
 
@@ -232,6 +235,7 @@ def run_native_tfp_fixed_kernel_hmc(
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "chain_execution_mode": "tf_function",
         "tf_function_input_signature": (),
+        "parallel_iterations": 1,
         "use_xla": False,
         "jit_compile": False,
         "sample_chain_invocation_count": 1,
@@ -455,6 +459,7 @@ def run_native_tfp_independent_chains(
             current_state=state,
             kernel=kernel,
             trace_fn=trace_fn,
+            parallel_iterations=1,
             seed=tf.constant(config.seed, tf.int32),
         )
 
@@ -495,6 +500,7 @@ def run_native_tfp_independent_chains(
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "chain_execution_mode": "tf_function",
         "tf_function_input_signature": (),
+        "parallel_iterations": 1,
         "use_xla": False,
         "jit_compile": False,
         "sample_chain_invocation_count": 1,

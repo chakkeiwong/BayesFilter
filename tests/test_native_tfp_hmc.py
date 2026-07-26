@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from bayesfilter.inference.native_tfp_hmc import (
     NativeTFPIndependentChainHMCConfig,
@@ -175,6 +176,7 @@ def test_native_runner_matches_historical_runner_for_identical_seed() -> None:
         "tensorflow_tensorflow_probability_only"
     )
     assert new.metadata["adaptation_policy"] == "fixed_kernel_no_adaptation"
+    assert new.metadata["parallel_iterations"] == 1
 
 
 def test_native_runner_records_valid_status_and_fixed_trace_count() -> None:
@@ -258,9 +260,52 @@ def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None
     assert bool(status["all_status_valid"].numpy()) is True
     assert run.metadata["target_batching"] == "scalar_rows_tf_while_loop"
     assert run.metadata["trace_count"] == 1
+    assert run.metadata["parallel_iterations"] == 1
     assert run.metadata["target_status_trace_source"] == (
         "adapter_state_re_evaluation"
     )
+
+
+def test_independent_chain_parallel_iterations_preserves_seeded_transition() -> None:
+    adapter = ReviewedGaussianAdapter()
+    config = _independent_config()
+    initial = _independent_initial_state()
+    target = reviewed_independent_chain_target_fn(
+        adapter,
+        chain_count=config.chain_count,
+        parameter_dim=2,
+    )
+    kernel = tfp.mcmc.HamiltonianMonteCarlo(
+        target_log_prob_fn=target,
+        step_size=tf.constant(config.step_size, tf.float64),
+        num_leapfrog_steps=config.num_leapfrog_steps,
+    )
+
+    def trace_fn(_state, results):
+        return {
+            "is_accepted": results.is_accepted,
+            "log_accept_ratio": results.log_accept_ratio,
+            "target_log_prob": results.accepted_results.target_log_prob,
+            "proposed_target_log_prob": results.proposed_results.target_log_prob,
+        }
+
+    @tf.function(input_signature=(), autograph=False)
+    def baseline():
+        return tfp.mcmc.sample_chain(
+            num_results=config.num_results,
+            num_burnin_steps=config.num_burnin_steps,
+            current_state=initial,
+            kernel=kernel,
+            trace_fn=trace_fn,
+            parallel_iterations=10,
+            seed=tf.constant(config.seed, tf.int32),
+        )
+
+    expected_samples, expected_trace = baseline()
+    actual = run_native_tfp_independent_chains(adapter, initial, config)
+    np.testing.assert_array_equal(actual.samples.numpy(), expected_samples.numpy())
+    for name, value in expected_trace.items():
+        np.testing.assert_array_equal(actual.trace[name].numpy(), value.numpy())
 
 
 def test_independent_chain_runner_uses_adapter_retained_target_status() -> None:
