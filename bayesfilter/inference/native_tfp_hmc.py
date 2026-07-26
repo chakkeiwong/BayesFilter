@@ -157,7 +157,7 @@ class NativeTFPIndependentChainHMCConfig:
             "chain_execution_mode": "tf_function",
             "parallel_iterations": 1,
             "sample_chain_partition": (
-                "one_result_reused_graph_exact_tfp_continuation_v1"
+                "one_transition_reused_graph_exact_tfp_continuation_v2"
             ),
             "use_xla": False,
         }
@@ -474,7 +474,6 @@ def run_native_tfp_independent_chains(
             tf.TensorSpec(state.shape, state.dtype),
             kernel_result_signature,
             tf.TensorSpec((2,), tf.int32),
-            tf.TensorSpec((), tf.int32),
         ),
         autograph=False,
         reduce_retracing=True,
@@ -483,11 +482,10 @@ def run_native_tfp_independent_chains(
         segment_state: tf.Tensor,
         segment_kernel_results: Any,
         segment_seed: tf.Tensor,
-        segment_burnin_steps: tf.Tensor,
     ) -> tuple[tf.Tensor, Mapping[str, Any], Any, tf.Tensor]:
         result = tfm.sample_chain(
             num_results=1,
-            num_burnin_steps=segment_burnin_steps,
+            num_burnin_steps=0,
             current_state=segment_state,
             previous_kernel_results=segment_kernel_results,
             kernel=kernel,
@@ -497,7 +495,7 @@ def run_native_tfp_independent_chains(
             seed=segment_seed,
         )
         next_seed = _next_sample_chain_segment_seed(
-            segment_seed, segment_burnin_steps + tf.constant(1, tf.int32)
+            segment_seed, tf.constant(1, tf.int32)
         )
         return (
             result.all_states[0],
@@ -510,13 +508,17 @@ def run_native_tfp_independent_chains(
     segment_seed = tf.constant(config.seed, tf.int32)
     sample_rows = []
     trace_rows = []
-    for result_index in range(config.num_results):
-        burnin_steps = config.num_burnin_steps if result_index == 0 else 0
+    for _ in range(config.num_burnin_steps):
+        segment_state, _burnin_trace, kernel_results, segment_seed = run_segment(
+            segment_state,
+            kernel_results,
+            segment_seed,
+        )
+    for _ in range(config.num_results):
         segment_state, segment_trace, kernel_results, segment_seed = run_segment(
             segment_state,
             kernel_results,
             segment_seed,
-            tf.constant(burnin_steps, tf.int32),
         )
         sample_rows.append(segment_state)
         trace_rows.append(segment_trace)
@@ -559,15 +561,17 @@ def run_native_tfp_independent_chains(
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "chain_execution_mode": "tf_function",
         "tf_function_input_signature": (
-            "state_kernel_results_seed_burnin_steps"
+            "state_kernel_results_seed"
         ),
         "parallel_iterations": 1,
         "sample_chain_partition": (
-            "one_result_reused_graph_exact_tfp_continuation_v1"
+            "one_transition_reused_graph_exact_tfp_continuation_v2"
         ),
         "use_xla": False,
         "jit_compile": False,
-        "sample_chain_invocation_count": config.num_results,
+        "sample_chain_invocation_count": (
+            config.num_burnin_steps + config.num_results
+        ),
         "sample_chain_call_s": elapsed,
         "sample_chain_timing_role": "explanatory_only_compile_plus_execute",
         "target_status_trace_source": _target_status_trace_source(adapter),
