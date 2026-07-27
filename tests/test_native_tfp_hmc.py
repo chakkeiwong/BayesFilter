@@ -274,7 +274,7 @@ def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None
     assert tuple(run.diagnostics["acceptance_rate_by_chain"].shape) == (4,)
     assert int(status["trace_entry_count"].numpy()) == 32
     assert bool(status["all_status_valid"].numpy()) is True
-    assert run.metadata["target_batching"] == "scalar_rows_tf_while_loop"
+    assert run.metadata["target_batching"] == "scalar_rows_tf_while_loop_parallel4_v1"
     assert run.metadata["trace_count"] == 1
     assert run.metadata["parallel_iterations"] == 1
     assert run.metadata["sample_chain_partition"] == (
