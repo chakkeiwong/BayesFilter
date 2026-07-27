@@ -1087,7 +1087,7 @@ def probe_native_tfp_independent_chain_segment_graph(
         segment_kernel_results: Any,
         segment_seed: tf.Tensor,
     ) -> Any:
-        return tfp.mcmc.sample_chain(
+        result = tfp.mcmc.sample_chain(
             num_results=1,
             num_burnin_steps=0,
             current_state=segment_state,
@@ -1098,6 +1098,12 @@ def probe_native_tfp_independent_chain_segment_graph(
             parallel_iterations=1,
             seed=segment_seed,
         )
+        return (
+            result.all_states[0],
+            tf.nest.map_structure(lambda value: value[0], result.trace),
+            result.final_kernel_results,
+            _next_sample_chain_segment_seed(segment_seed, tf.constant(1, tf.int32)),
+        )
 
     trace_started = time.perf_counter()
     concrete = run_segment.get_concrete_function()
@@ -1105,11 +1111,11 @@ def probe_native_tfp_independent_chain_segment_graph(
     memory_after_trace = _memory_snapshot()
     graph_def = concrete.graph.as_graph_def(add_shapes=False)
     execute_started = time.perf_counter()
-    result = concrete(state, kernel_results, tf.constant(config.seed, tf.int32))
+    next_state, trace, final_kernel_results, next_seed = concrete(
+        state, kernel_results, tf.constant(config.seed, tf.int32)
+    )
     execute_seconds = time.perf_counter() - execute_started
     memory_after_execute = _memory_snapshot()
-    next_state = result.all_states[0]
-    trace = tf.nest.map_structure(lambda value: value[0], result.trace)
 
     return {
         "schema": "bayesfilter.native_tfp_segment_graph_probe.v1",
@@ -1130,7 +1136,8 @@ def probe_native_tfp_independent_chain_segment_graph(
         "target_status_all_valid": _trace_status_all_valid(trace),
         "logical_state_bytes": _tensor_bytes(next_state),
         "logical_trace_bytes": _tensor_bytes(trace),
-        "logical_kernel_result_bytes": _tensor_bytes(result.final_kernel_results),
+        "logical_kernel_result_bytes": _tensor_bytes(final_kernel_results),
+        "logical_next_seed_bytes": _tensor_bytes(next_seed),
         "memory": {
             "before_bootstrap": memory_before_bootstrap,
             "after_bootstrap": memory_after_bootstrap,
