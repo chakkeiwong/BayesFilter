@@ -12,6 +12,7 @@ from bayesfilter.inference.native_tfp_hmc import (
     _independent_chain_trace_fn,
     NativeTFPIndependentChainHMCConfig,
     NativeTFPFixedKernelHMCConfig,
+    diagnose_native_tfp_independent_chain_memory,
     load_native_tfp_retained_artifact,
     native_tfp_rank_normalized_diagnostics,
     native_tfp_retained_diagnostics,
@@ -356,6 +357,30 @@ def test_segmented_independent_chain_matches_monolithic_full_trace_bitwise() -> 
         tf.nest.flatten(actual.trace), tf.nest.flatten(expected_trace), strict=True
     ):
         np.testing.assert_array_equal(actual_value.numpy(), expected_value.numpy())
+
+
+def test_independent_chain_memory_diagnostic_preserves_exact_final_state() -> None:
+    adapter = ReviewedGaussianAdapter()
+    config = _independent_config()
+    initial = _independent_initial_state()
+    expected = run_native_tfp_independent_chains(adapter, initial, config)
+    diagnostic = diagnose_native_tfp_independent_chain_memory(
+        adapter,
+        initial,
+        config,
+        num_transitions=config.num_burnin_steps + config.num_results,
+        retain_trace=False,
+    )
+    np.testing.assert_array_equal(
+        diagnostic["final_state"].numpy(), expected.samples[-1].numpy()
+    )
+    assert diagnostic["trace_count"] == 1
+    assert diagnostic["bootstrap_trace_count"] == 1
+    assert len(diagnostic["rows"]) == 12
+    assert {row["logical_state_bytes"] for row in diagnostic["rows"]} == {64}
+    assert len({row["logical_kernel_result_bytes"] for row in diagnostic["rows"]}) == 1
+    assert {row["logical_retained_bytes"] for row in diagnostic["rows"]} == {0}
+    assert all(row["memory"]["rss_bytes"] > 0 for row in diagnostic["rows"])
 
 
 def test_independent_chain_runner_uses_adapter_retained_target_status() -> None:

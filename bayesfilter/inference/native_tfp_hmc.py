@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import gc
+import resource
 import shutil
 import tempfile
 import time
@@ -603,6 +605,193 @@ def run_native_tfp_independent_chains(
         metadata=metadata,
         initial_state=state,
     )
+
+
+def diagnose_native_tfp_independent_chain_memory(
+    adapter: Any,
+    initial_state: Any,
+    config: NativeTFPIndependentChainHMCConfig,
+    *,
+    num_transitions: int,
+    retain_trace: bool = False,
+) -> Mapping[str, Any]:
+    """Measure memory across exact one-transition TFP continuations.
+
+    This is an attribution diagnostic, not a sampler or promotion runner. It
+    uses the same target, kernel, trace, seed continuation, and public
+    ``tfp.mcmc.sample_chain`` segment as the admitted independent-chain path,
+    but records host/runtime memory only between synchronous calls. The
+    diagnostic intentionally does not stack retained outputs unless
+    ``retain_trace`` is requested.
+    """
+
+    if not isinstance(config, NativeTFPIndependentChainHMCConfig):
+        raise TypeError("config must be NativeTFPIndependentChainHMCConfig")
+    num_transitions = int(num_transitions)
+    if num_transitions <= 0 or num_transitions > 4096:
+        raise ValueError("num_transitions must be in 1..4096")
+    if not tf.config.experimental.get_synchronous_execution():
+        raise RuntimeError("memory diagnostic requires synchronous TensorFlow execution")
+    capability = value_score_capability(adapter)
+    if capability.value_score_authority not in _REVIEWED_AUTHORITIES:
+        raise ValueError("memory diagnostic requires reviewed graph value/score authority")
+    if capability.target_scope != config.target_scope:
+        raise ValueError("value/score target_scope mismatch")
+    if not callable(getattr(adapter, "target_status_telemetry", None)):
+        raise TypeError("memory diagnostic requires adapter target_status_telemetry")
+
+    state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
+    if state.shape.rank != 2 or any(dim is None for dim in state.shape):
+        raise ValueError("initial_state must have static shape [chain, parameter]")
+    if int(state.shape[0]) != config.chain_count:
+        raise ValueError("initial_state chain dimension does not match chain_count")
+    parameter_dim = int(state.shape[1])
+    target_log_prob = reviewed_independent_chain_target_fn(
+        adapter,
+        chain_count=config.chain_count,
+        parameter_dim=parameter_dim,
+        dtype=state.dtype,
+    )
+    trace_fn = _independent_chain_trace_fn(adapter, chain_count=config.chain_count)
+    kernel = tfp.mcmc.HamiltonianMonteCarlo(
+        target_log_prob_fn=target_log_prob,
+        step_size=tf.constant(config.step_size, state.dtype),
+        num_leapfrog_steps=config.num_leapfrog_steps,
+    )
+
+    @tf.function(
+        input_signature=(tf.TensorSpec(state.shape, state.dtype),),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def bootstrap(segment_state: tf.Tensor) -> Any:
+        return kernel.bootstrap_results(segment_state)
+
+    kernel_results = bootstrap(state)
+    kernel_result_signature = tf.nest.map_structure(
+        lambda value: tf.TensorSpec(value.shape, value.dtype), kernel_results
+    )
+
+    @tf.function(
+        input_signature=(
+            tf.TensorSpec(state.shape, state.dtype),
+            kernel_result_signature,
+            tf.TensorSpec((2,), tf.int32),
+        ),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def run_segment(
+        segment_state: tf.Tensor,
+        segment_kernel_results: Any,
+        segment_seed: tf.Tensor,
+    ) -> tuple[tf.Tensor, Mapping[str, Any], Any, tf.Tensor]:
+        result = tfp.mcmc.sample_chain(
+            num_results=1,
+            num_burnin_steps=0,
+            current_state=segment_state,
+            previous_kernel_results=segment_kernel_results,
+            kernel=kernel,
+            trace_fn=trace_fn,
+            return_final_kernel_results=True,
+            parallel_iterations=1,
+            seed=segment_seed,
+        )
+        return (
+            result.all_states[0],
+            tf.nest.map_structure(lambda value: value[0], result.trace),
+            result.final_kernel_results,
+            _next_sample_chain_segment_seed(segment_seed, tf.constant(1, tf.int32)),
+        )
+
+    retained: list[Any] = []
+    rows: list[Mapping[str, Any]] = []
+    segment_seed = tf.constant(config.seed, tf.int32)
+    started = time.perf_counter()
+    for index in range(num_transitions):
+        state, trace, kernel_results, segment_seed = run_segment(
+            state, kernel_results, segment_seed
+        )
+        if retain_trace:
+            retained.append((state, trace))
+        rows.append(
+            {
+                "transition": index + 1,
+                "logical_state_bytes": _tensor_bytes(state),
+                "logical_trace_bytes": _tensor_bytes(trace),
+                "logical_kernel_result_bytes": _tensor_bytes(kernel_results),
+                "logical_retained_bytes": _tensor_bytes(retained),
+                "memory": _memory_snapshot(),
+            }
+        )
+    elapsed = time.perf_counter() - started
+    return {
+        "schema": "bayesfilter.native_tfp_segment_memory_diagnostic.v1",
+        "diagnostic_role": "memory_attribution_only_not_sampling_or_promotion",
+        "retain_trace": bool(retain_trace),
+        "num_transitions": num_transitions,
+        "trace_count": run_segment.experimental_get_tracing_count(),
+        "bootstrap_trace_count": bootstrap.experimental_get_tracing_count(),
+        "sample_chain_invocation_count": num_transitions,
+        "elapsed_seconds": elapsed,
+        "final_state": state,
+        "rows": rows,
+        "nonclaims": (
+            "no HMC tuning claim",
+            "no convergence claim",
+            "no posterior validity claim",
+            "allocator counters may omit pinned or non-BFC host allocations",
+        ),
+    }
+
+
+def _tensor_bytes(value: Any) -> int:
+    total = 0
+    for leaf in tf.nest.flatten(value):
+        if hasattr(leaf, "shape") and hasattr(leaf, "dtype") and leaf.shape.is_fully_defined():
+            total += int(leaf.shape.num_elements()) * int(leaf.dtype.size)
+    return total
+
+
+def _proc_status_bytes() -> Mapping[str, int | None]:
+    values: dict[str, int | None] = {"VmRSS": None, "RssAnon": None, "VmHWM": None}
+    try:
+        lines = Path("/proc/self/status").read_text(encoding="ascii").splitlines()
+    except OSError:
+        return values
+    for line in lines:
+        key, _, raw = line.partition(":")
+        if key in values and raw.strip():
+            values[key] = int(raw.strip().split()[0]) * 1024
+    return values
+
+
+def _memory_snapshot() -> Mapping[str, Any]:
+    status = _proc_status_bytes()
+    available: dict[str, int] = {}
+    try:
+        for line in Path("/proc/meminfo").read_text(encoding="ascii").splitlines():
+            key, _, raw = line.partition(":")
+            if key in {"MemAvailable", "SwapFree"}:
+                available[key] = int(raw.strip().split()[0]) * 1024
+    except OSError:
+        pass
+    allocator: dict[str, Any] = {}
+    for device in ("/CPU:0", "/GPU:0"):
+        try:
+            allocator[device] = tf.config.experimental.get_memory_info(device)
+        except (RuntimeError, ValueError):
+            allocator[device] = None
+    return {
+        "rss_bytes": status["VmRSS"],
+        "anonymous_rss_bytes": status["RssAnon"],
+        "peak_rss_bytes": status["VmHWM"],
+        "self_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) * 1024,
+        "mem_available_bytes": available.get("MemAvailable"),
+        "swap_free_bytes": available.get("SwapFree"),
+        "tensorflow_allocator": allocator,
+        "python_gc_objects": len(gc.get_objects()),
+    }
 
 
 def probe_native_tfp_independent_chain_graph(
