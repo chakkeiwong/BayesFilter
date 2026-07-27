@@ -614,6 +614,8 @@ def diagnose_native_tfp_independent_chain_memory(
     *,
     num_transitions: int,
     retain_trace: bool = False,
+    maximum_rss_bytes: int | None = None,
+    minimum_available_bytes: int | None = None,
 ) -> Mapping[str, Any]:
     """Measure memory across exact one-transition TFP continuations.
 
@@ -630,6 +632,10 @@ def diagnose_native_tfp_independent_chain_memory(
     num_transitions = int(num_transitions)
     if num_transitions <= 0 or num_transitions > 4096:
         raise ValueError("num_transitions must be in 1..4096")
+    if maximum_rss_bytes is not None and int(maximum_rss_bytes) <= 0:
+        raise ValueError("maximum_rss_bytes must be positive")
+    if minimum_available_bytes is not None and int(minimum_available_bytes) < 0:
+        raise ValueError("minimum_available_bytes must be nonnegative")
     if not tf.config.experimental.get_synchronous_execution():
         raise RuntimeError("memory diagnostic requires synchronous TensorFlow execution")
     capability = value_score_capability(adapter)
@@ -706,6 +712,7 @@ def diagnose_native_tfp_independent_chain_memory(
 
     retained: list[Any] = []
     rows: list[Mapping[str, Any]] = []
+    stop_reason: str | None = None
     segment_seed = tf.constant(config.seed, tf.int32)
     started = time.perf_counter()
     for index in range(num_transitions):
@@ -714,22 +721,46 @@ def diagnose_native_tfp_independent_chain_memory(
         )
         if retain_trace:
             retained.append((state, trace))
-        rows.append(
-            {
+        row = {
                 "transition": index + 1,
+                "state_all_finite": bool(
+                    tf.reduce_all(tf.math.is_finite(state))
+                ),
+                "trace_all_numeric_finite": _all_numeric_finite(trace),
+                "target_status_all_valid": _trace_status_all_valid(trace),
                 "logical_state_bytes": _tensor_bytes(state),
                 "logical_trace_bytes": _tensor_bytes(trace),
                 "logical_kernel_result_bytes": _tensor_bytes(kernel_results),
                 "logical_retained_bytes": _tensor_bytes(retained),
                 "memory": _memory_snapshot(),
             }
-        )
+        rows.append(row)
+        if not row["state_all_finite"] or not row["trace_all_numeric_finite"]:
+            stop_reason = "nonfinite_segment_output"
+            break
+        if not row["target_status_all_valid"]:
+            stop_reason = "invalid_target_status"
+            break
+        rss = row["memory"]["rss_bytes"]
+        available = row["memory"]["mem_available_bytes"]
+        if maximum_rss_bytes is not None and rss is not None and rss > int(maximum_rss_bytes):
+            stop_reason = "maximum_rss_bytes_exceeded"
+            break
+        if (
+            minimum_available_bytes is not None
+            and available is not None
+            and available < int(minimum_available_bytes)
+        ):
+            stop_reason = "minimum_available_bytes_crossed"
+            break
     elapsed = time.perf_counter() - started
     return {
         "schema": "bayesfilter.native_tfp_segment_memory_diagnostic.v1",
         "diagnostic_role": "memory_attribution_only_not_sampling_or_promotion",
         "retain_trace": bool(retain_trace),
         "num_transitions": num_transitions,
+        "transitions_completed": len(rows),
+        "stop_reason": stop_reason,
         "trace_count": run_segment.experimental_get_tracing_count(),
         "bootstrap_trace_count": bootstrap.experimental_get_tracing_count(),
         "sample_chain_invocation_count": num_transitions,
@@ -766,8 +797,39 @@ def _proc_status_bytes() -> Mapping[str, int | None]:
     return values
 
 
+def _smaps_rollup_bytes() -> Mapping[str, int | None]:
+    values: dict[str, int | None] = {"Pss": None, "Private_Dirty": None}
+    try:
+        lines = Path("/proc/self/smaps_rollup").read_text(encoding="ascii").splitlines()
+    except OSError:
+        return values
+    for line in lines:
+        key, _, raw = line.partition(":")
+        if key in values and raw.strip():
+            values[key] = int(raw.strip().split()[0]) * 1024
+    return values
+
+
+def _all_numeric_finite(value: Any) -> bool:
+    finite = []
+    for leaf in tf.nest.flatten(value):
+        if leaf.dtype.is_floating or leaf.dtype.is_complex:
+            finite.append(tf.reduce_all(tf.math.is_finite(leaf)))
+    return bool(tf.reduce_all(tf.stack(finite))) if finite else True
+
+
+def _trace_status_all_valid(trace: Mapping[str, Any]) -> bool:
+    telemetry = trace.get("target_status_telemetry")
+    if not isinstance(telemetry, Mapping):
+        return False
+    status = tf.cast(telemetry["status_code"], tf.int32)
+    valid = tf.cast(telemetry["valid_pre_regularized_score"], tf.bool)
+    return bool(tf.reduce_all(tf.equal(status, 0)) and tf.reduce_all(valid))
+
+
 def _memory_snapshot() -> Mapping[str, Any]:
     status = _proc_status_bytes()
+    smaps = _smaps_rollup_bytes()
     available: dict[str, int] = {}
     try:
         for line in Path("/proc/meminfo").read_text(encoding="ascii").splitlines():
@@ -785,6 +847,8 @@ def _memory_snapshot() -> Mapping[str, Any]:
     return {
         "rss_bytes": status["VmRSS"],
         "anonymous_rss_bytes": status["RssAnon"],
+        "proportional_set_size_bytes": smaps["Pss"],
+        "private_dirty_bytes": smaps["Private_Dirty"],
         "peak_rss_bytes": status["VmHWM"],
         "self_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) * 1024,
         "mem_available_bytes": available.get("MemAvailable"),

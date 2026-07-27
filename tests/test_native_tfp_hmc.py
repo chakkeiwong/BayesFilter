@@ -381,6 +381,10 @@ def test_independent_chain_memory_diagnostic_preserves_exact_final_state() -> No
     assert len({row["logical_kernel_result_bytes"] for row in diagnostic["rows"]}) == 1
     assert {row["logical_retained_bytes"] for row in diagnostic["rows"]} == {0}
     assert all(row["memory"]["rss_bytes"] > 0 for row in diagnostic["rows"])
+    assert all(row["state_all_finite"] for row in diagnostic["rows"])
+    assert all(row["trace_all_numeric_finite"] for row in diagnostic["rows"])
+    assert all(row["target_status_all_valid"] for row in diagnostic["rows"])
+    assert diagnostic["stop_reason"] is None
 
 
 def test_independent_chain_runner_uses_adapter_retained_target_status() -> None:
