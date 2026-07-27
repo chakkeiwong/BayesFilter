@@ -95,7 +95,11 @@ BGS_POSTERIOR_XLA_NONCLAIMS = (
     "no production or default-readiness claim",
 )
 BGS_POSTERIOR_NONCLAIMS = BGS_POSTERIOR_DEBUG_NONCLAIMS
-_CAPABILITY_MODES = {"debug_graph", "target_xla_graph_chain"}
+_CAPABILITY_MODES = {
+    "debug_graph",
+    "target_graph_chain",
+    "target_xla_graph_chain",
+}
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 BGS_STATUS_NONFINITE_UNCONSTRAINED = 1
@@ -292,25 +296,26 @@ class BGSPosteriorAdapter:
         mode = str(capability_mode)
         if mode not in _CAPABILITY_MODES:
             raise ValueError(
-                "capability_mode must be 'debug_graph' or "
-                "'target_xla_graph_chain'"
+                "capability_mode must be 'debug_graph', 'target_graph_chain', "
+                "or 'target_xla_graph_chain'"
             )
         signature = None if likelihood_signature is None else str(likelihood_signature)
-        if mode == "target_xla_graph_chain" and (
+        if mode in {"target_graph_chain", "target_xla_graph_chain"} and (
             signature is None or _SHA256_PATTERN.fullmatch(signature) is None
         ):
             raise ValueError(
-                "target_xla_graph_chain mode requires a lowercase SHA-256 "
-                "likelihood_signature"
+                f"{mode} mode requires a lowercase SHA-256 likelihood_signature"
             )
         self._capability_mode = mode
         self._likelihood_signature = signature
         self.supports_retained_value_score_status = True
-        runtime_backend = (
-            "tensorflow_tfp_bayesfilter_qr_target_xla_graph_chain"
-            if mode == "target_xla_graph_chain"
-            else "tensorflow_tfp_bayesfilter_qr_graph_debug"
-        )
+        runtime_backend = {
+            "debug_graph": "tensorflow_tfp_bayesfilter_qr_graph_debug",
+            "target_graph_chain": "tensorflow_tfp_bayesfilter_qr_target_graph_chain",
+            "target_xla_graph_chain": (
+                "tensorflow_tfp_bayesfilter_qr_target_xla_graph_chain"
+            ),
+        }[mode]
         payload = {
             "schema": "bayesfilter.bgs.posterior_adapter.v3",
             "parameter_names": PARAMETER_NAMES,
@@ -344,6 +349,16 @@ class BGSPosteriorAdapter:
         return self._capability_mode
 
     def value_score_capability(self) -> ValueScoreCapability:
+        if self._capability_mode == "target_graph_chain":
+            return ValueScoreCapability(
+                value_score_authority="graph_native",
+                xla_hmc_ready=False,
+                full_chain_xla_diagnostic_ready=False,
+                runtime_backend="tensorflow_tfp_bayesfilter_qr_target_graph_chain",
+                evidence_path=self._evidence_path,
+                target_scope="bgs_d296_synthetic_transformed_target",
+                nonclaims=BGS_POSTERIOR_XLA_NONCLAIMS,
+            )
         if self._capability_mode == "target_xla_graph_chain":
             return ValueScoreCapability(
                 value_score_authority="reviewed_gradient_tape_xla_exception",

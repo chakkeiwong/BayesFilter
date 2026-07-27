@@ -189,13 +189,38 @@ def test_target_xla_graph_chain_mode_has_bound_identity_and_reviewed_capability(
     assert "no posterior convergence claim" in capability.nonclaims
 
 
-def test_target_xla_graph_chain_mode_requires_reviewed_likelihood_signature():
+def test_target_graph_chain_mode_has_bound_graph_native_capability():
+    debug = BGSPosteriorAdapter(
+        _quadratic_likelihood,
+        evidence_path="docs/plans/bgs-graph-native-test-evidence.md",
+    )
+    admitted = BGSPosteriorAdapter(
+        _quadratic_likelihood,
+        evidence_path="docs/plans/bgs-graph-native-test-evidence.md",
+        capability_mode="target_graph_chain",
+        likelihood_signature="b" * 64,
+    )
+    capability = value_score_capability(admitted)
+    assert admitted.capability_mode == "target_graph_chain"
+    assert admitted.adapter_signature() != debug.adapter_signature()
+    assert capability.value_score_authority == "graph_native"
+    assert capability.xla_hmc_ready is False
+    assert capability.full_chain_xla_diagnostic_ready is False
+    assert capability.runtime_backend == (
+        "tensorflow_tfp_bayesfilter_qr_target_graph_chain"
+    )
+    assert capability.target_scope == "bgs_d296_synthetic_transformed_target"
+    assert "no posterior convergence claim" in capability.nonclaims
+
+
+@pytest.mark.parametrize("mode", ("target_graph_chain", "target_xla_graph_chain"))
+def test_target_chain_modes_require_reviewed_likelihood_signature(mode):
     for signature in (None, "", "A" * 64, "a" * 63):
         with pytest.raises(ValueError, match="likelihood_signature"):
             BGSPosteriorAdapter(
                 _quadratic_likelihood,
                 evidence_path="docs/plans/bgs-phase05-06-test-evidence.md",
-                capability_mode="target_xla_graph_chain",
+                capability_mode=mode,
                 likelihood_signature=signature,
             )
 
