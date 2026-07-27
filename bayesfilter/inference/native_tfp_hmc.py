@@ -10,6 +10,7 @@ import resource
 import shutil
 import tempfile
 import time
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -978,6 +979,7 @@ def probe_native_tfp_independent_chain_graph(
     trace_started = time.perf_counter()
     concrete = probe.get_concrete_function()
     trace_elapsed = time.perf_counter() - trace_started
+    graph_def = concrete.graph.as_graph_def(add_shapes=False)
     execute_started = time.perf_counter()
     outputs = concrete()
     execute_elapsed = time.perf_counter() - execute_started
@@ -991,6 +993,9 @@ def probe_native_tfp_independent_chain_graph(
         "trace_seconds": trace_elapsed,
         "execute_seconds": execute_elapsed,
         "trace_count": probe.experimental_get_tracing_count(),
+        "graph_def_bytes": graph_def.ByteSize(),
+        "graph_node_count": len(graph_def.node),
+        "graph_op_counts": dict(sorted(Counter(node.op for node in graph_def.node).items())),
         "all_numeric_outputs_finite": tf.reduce_all(tf.stack(finite)),
         "outputs": outputs,
         "diagnostic_role": (
@@ -1000,6 +1005,142 @@ def probe_native_tfp_independent_chain_graph(
             "no retained HMC draws",
             "no kernel qualification",
             "no posterior or convergence claim",
+        ),
+    }
+
+
+def probe_native_tfp_independent_chain_segment_graph(
+    adapter: Any,
+    initial_state: Any,
+    config: NativeTFPIndependentChainHMCConfig,
+    *,
+    allow_debug_authority: bool = False,
+) -> Mapping[str, Any]:
+    """Compile and execute one exact TFP continuation for attribution only.
+
+    The opt-in debug authority exists solely to compare a graph-native target
+    with the reviewed XLA target. It is unavailable to admitted sampling APIs.
+    """
+
+    if not isinstance(config, NativeTFPIndependentChainHMCConfig):
+        raise TypeError("config must be NativeTFPIndependentChainHMCConfig")
+    capability = value_score_capability(adapter)
+    authority = capability.value_score_authority
+    debug_opt_in = bool(allow_debug_authority and authority == "debug_only")
+    if authority not in _REVIEWED_AUTHORITIES and not debug_opt_in:
+        raise ValueError(
+            "native TFP segment probe requires reviewed graph value/score authority; "
+            "debug_only requires explicit diagnostic opt-in"
+        )
+    if capability.target_scope != config.target_scope:
+        raise ValueError("value/score target_scope mismatch")
+    if not callable(getattr(adapter, "target_status_telemetry", None)):
+        raise TypeError("native TFP segment probe requires adapter target_status_telemetry")
+
+    state = tf.cast(tf.convert_to_tensor(initial_state), tf.float64)
+    if state.shape.rank != 2 or any(dim is None for dim in state.shape):
+        raise ValueError("initial_state must have static shape [chain, parameter]")
+    if int(state.shape[0]) != config.chain_count:
+        raise ValueError("initial_state chain dimension does not match chain_count")
+    parameter_dim = int(state.shape[1])
+    target_log_prob = reviewed_independent_chain_target_fn(
+        adapter,
+        chain_count=config.chain_count,
+        parameter_dim=parameter_dim,
+        dtype=state.dtype,
+    )
+    trace_fn = _independent_chain_trace_fn(adapter, chain_count=config.chain_count)
+    kernel = tfp.mcmc.HamiltonianMonteCarlo(
+        target_log_prob_fn=target_log_prob,
+        step_size=tf.constant(config.step_size, state.dtype),
+        num_leapfrog_steps=config.num_leapfrog_steps,
+    )
+
+    @tf.function(
+        input_signature=(tf.TensorSpec(state.shape, state.dtype),),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def bootstrap(segment_state: tf.Tensor) -> Any:
+        return kernel.bootstrap_results(segment_state)
+
+    memory_before_bootstrap = _memory_snapshot()
+    bootstrap_started = time.perf_counter()
+    kernel_results = bootstrap(state)
+    bootstrap_seconds = time.perf_counter() - bootstrap_started
+    memory_after_bootstrap = _memory_snapshot()
+    kernel_result_signature = tf.nest.map_structure(
+        lambda value: tf.TensorSpec(value.shape, value.dtype), kernel_results
+    )
+
+    @tf.function(
+        input_signature=(
+            tf.TensorSpec(state.shape, state.dtype),
+            kernel_result_signature,
+            tf.TensorSpec((2,), tf.int32),
+        ),
+        autograph=False,
+        reduce_retracing=True,
+    )
+    def run_segment(
+        segment_state: tf.Tensor,
+        segment_kernel_results: Any,
+        segment_seed: tf.Tensor,
+    ) -> Any:
+        return tfp.mcmc.sample_chain(
+            num_results=1,
+            num_burnin_steps=0,
+            current_state=segment_state,
+            previous_kernel_results=segment_kernel_results,
+            kernel=kernel,
+            trace_fn=trace_fn,
+            return_final_kernel_results=True,
+            parallel_iterations=1,
+            seed=segment_seed,
+        )
+
+    trace_started = time.perf_counter()
+    concrete = run_segment.get_concrete_function()
+    trace_seconds = time.perf_counter() - trace_started
+    memory_after_trace = _memory_snapshot()
+    graph_def = concrete.graph.as_graph_def(add_shapes=False)
+    execute_started = time.perf_counter()
+    result = concrete(state, kernel_results, tf.constant(config.seed, tf.int32))
+    execute_seconds = time.perf_counter() - execute_started
+    memory_after_execute = _memory_snapshot()
+    next_state = result.all_states[0]
+    trace = tf.nest.map_structure(lambda value: value[0], result.trace)
+
+    return {
+        "schema": "bayesfilter.native_tfp_segment_graph_probe.v1",
+        "diagnostic_role": "compile_attribution_only_not_sampling_or_promotion",
+        "authority": authority,
+        "debug_authority_opt_in": debug_opt_in,
+        "num_leapfrog_steps": config.num_leapfrog_steps,
+        "bootstrap_seconds": bootstrap_seconds,
+        "trace_seconds": trace_seconds,
+        "execute_seconds": execute_seconds,
+        "bootstrap_trace_count": bootstrap.experimental_get_tracing_count(),
+        "segment_trace_count": run_segment.experimental_get_tracing_count(),
+        "graph_def_bytes": graph_def.ByteSize(),
+        "graph_node_count": len(graph_def.node),
+        "graph_op_counts": dict(sorted(Counter(node.op for node in graph_def.node).items())),
+        "state_all_finite": tf.reduce_all(tf.math.is_finite(next_state)),
+        "trace_all_numeric_finite": _all_numeric_finite(trace),
+        "target_status_all_valid": _trace_status_all_valid(trace),
+        "logical_state_bytes": _tensor_bytes(next_state),
+        "logical_trace_bytes": _tensor_bytes(trace),
+        "logical_kernel_result_bytes": _tensor_bytes(result.final_kernel_results),
+        "memory": {
+            "before_bootstrap": memory_before_bootstrap,
+            "after_bootstrap": memory_after_bootstrap,
+            "after_trace": memory_after_trace,
+            "after_execute": memory_after_execute,
+        },
+        "nonclaims": (
+            "no retained HMC draws",
+            "no HMC tuning or kernel qualification claim",
+            "no posterior validity or convergence claim",
         ),
     }
 

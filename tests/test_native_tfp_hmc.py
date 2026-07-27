@@ -17,6 +17,7 @@ from bayesfilter.inference.native_tfp_hmc import (
     native_tfp_rank_normalized_diagnostics,
     native_tfp_retained_diagnostics,
     probe_native_tfp_independent_chain_graph,
+    probe_native_tfp_independent_chain_segment_graph,
     reviewed_independent_chain_target_fn,
     run_native_tfp_fixed_kernel_hmc,
     run_native_tfp_independent_chains,
@@ -74,6 +75,18 @@ class RetainedStatusGaussianAdapter(ReviewedGaussianAdapter):
             "min_innovation_eigenvalue": tf.zeros_like(value),
             "innovation_condition_estimate": tf.zeros_like(value),
         }
+
+
+class DebugGaussianAdapter(ReviewedGaussianAdapter):
+    def value_score_capability(self) -> ValueScoreCapability:
+        return ValueScoreCapability(
+            value_score_authority="debug_only",
+            xla_hmc_ready=False,
+            full_chain_xla_diagnostic_ready=False,
+            runtime_backend="tensorflow_fixture_debug_only",
+            target_scope=SCOPE,
+            nonclaims=("test fixture", "diagnostic only"),
+        )
 
 
 def _config() -> NativeTFPFixedKernelHMCConfig:
@@ -439,6 +452,49 @@ def test_independent_chain_graph_probe_rejects_unknown_stage() -> None:
             _independent_config(),
             stage="unknown",
         )
+
+
+def test_independent_chain_segment_graph_probe_reports_exact_graph_telemetry() -> None:
+    result = probe_native_tfp_independent_chain_segment_graph(
+        ReviewedGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+    )
+    assert result["schema"] == "bayesfilter.native_tfp_segment_graph_probe.v1"
+    assert result["authority"] == "graph_native"
+    assert result["debug_authority_opt_in"] is False
+    assert result["num_leapfrog_steps"] == 2
+    assert result["bootstrap_trace_count"] == 1
+    assert result["segment_trace_count"] == 1
+    assert result["graph_def_bytes"] > 0
+    assert result["graph_node_count"] > 0
+    assert result["graph_op_counts"]
+    assert bool(result["state_all_finite"].numpy()) is True
+    assert result["trace_all_numeric_finite"] is True
+    assert result["target_status_all_valid"] is True
+    assert result["logical_state_bytes"] > 0
+    assert result["logical_trace_bytes"] > 0
+    assert result["logical_kernel_result_bytes"] > 0
+    assert result["memory"]["after_execute"]["rss_bytes"] > 0
+
+
+def test_independent_chain_segment_graph_probe_debug_authority_is_opt_in() -> None:
+    with pytest.raises(ValueError, match="explicit diagnostic opt-in"):
+        probe_native_tfp_independent_chain_segment_graph(
+            DebugGaussianAdapter(),
+            _independent_initial_state(),
+            _independent_config(),
+        )
+    result = probe_native_tfp_independent_chain_segment_graph(
+        DebugGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+        allow_debug_authority=True,
+    )
+    assert result["authority"] == "debug_only"
+    assert result["debug_authority_opt_in"] is True
+    assert bool(result["state_all_finite"].numpy()) is True
+    assert result["target_status_all_valid"] is True
 
 
 def test_independent_chain_config_requires_split_diagnostic_draw_contract() -> None:
