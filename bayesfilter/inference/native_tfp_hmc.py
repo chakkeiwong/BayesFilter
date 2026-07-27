@@ -160,7 +160,7 @@ class NativeTFPIndependentChainHMCConfig:
             "chain_execution_mode": "tf_function",
             "parallel_iterations": 1,
             "sample_chain_partition": (
-                "one_transition_reused_graph_exact_tfp_continuation_v2"
+                "single_call_tfp_sample_chain_v3"
             ),
             "use_xla": False,
         }
@@ -457,78 +457,20 @@ def run_native_tfp_independent_chains(
         num_leapfrog_steps=config.num_leapfrog_steps,
     )
 
-    started = time.perf_counter()
-    @tf.function(
-        input_signature=(tf.TensorSpec(state.shape, state.dtype),),
-        autograph=False,
-        reduce_retracing=True,
-    )
-    def bootstrap(segment_state: tf.Tensor) -> Any:
-        return kernel.bootstrap_results(segment_state)
-
-    kernel_results = bootstrap(state)
-    kernel_result_signature = tf.nest.map_structure(
-        lambda value: tf.TensorSpec(value.shape, value.dtype),
-        kernel_results,
-    )
-
-    @tf.function(
-        input_signature=(
-            tf.TensorSpec(state.shape, state.dtype),
-            kernel_result_signature,
-            tf.TensorSpec((2,), tf.int32),
-        ),
-        autograph=False,
-        reduce_retracing=True,
-    )
-    def run_segment(
-        segment_state: tf.Tensor,
-        segment_kernel_results: Any,
-        segment_seed: tf.Tensor,
-    ) -> tuple[tf.Tensor, Mapping[str, Any], Any, tf.Tensor]:
-        result = tfm.sample_chain(
-            num_results=1,
-            num_burnin_steps=0,
-            current_state=segment_state,
-            previous_kernel_results=segment_kernel_results,
+    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
+    def run_chain() -> tuple[tf.Tensor, Mapping[str, Any]]:
+        return tfm.sample_chain(
+            num_results=config.num_results,
+            num_burnin_steps=config.num_burnin_steps,
+            current_state=state,
             kernel=kernel,
             trace_fn=trace_fn,
-            return_final_kernel_results=True,
             parallel_iterations=1,
-            seed=segment_seed,
-        )
-        next_seed = _next_sample_chain_segment_seed(
-            segment_seed, tf.constant(1, tf.int32)
-        )
-        return (
-            result.all_states[0],
-            tf.nest.map_structure(lambda value: value[0], result.trace),
-            result.final_kernel_results,
-            next_seed,
+            seed=tf.constant(config.seed, tf.int32),
         )
 
-    segment_state = state
-    segment_seed = tf.constant(config.seed, tf.int32)
-    sample_rows = []
-    trace_rows = []
-    for _ in range(config.num_burnin_steps):
-        segment_state, _burnin_trace, kernel_results, segment_seed = run_segment(
-            segment_state,
-            kernel_results,
-            segment_seed,
-        )
-    for _ in range(config.num_results):
-        segment_state, segment_trace, kernel_results, segment_seed = run_segment(
-            segment_state,
-            kernel_results,
-            segment_seed,
-        )
-        sample_rows.append(segment_state)
-        trace_rows.append(segment_trace)
-    samples = tf.stack(sample_rows, axis=0)
-    trace = tf.nest.map_structure(
-        lambda *values: tf.stack(values, axis=0), *trace_rows
-    )
+    started = time.perf_counter()
+    samples, trace = run_chain()
     elapsed = time.perf_counter() - started
     diagnostics = dict(_diagnostics(samples, trace))
     displacement = samples[1:] - samples[:-1]
@@ -563,23 +505,16 @@ def run_native_tfp_independent_chains(
         "target_batching": "scalar_rows_tf_while_loop",
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "chain_execution_mode": "tf_function",
-        "tf_function_input_signature": (
-            "state_kernel_results_seed"
-        ),
+        "tf_function_input_signature": (),
         "parallel_iterations": 1,
-        "sample_chain_partition": (
-            "one_transition_reused_graph_exact_tfp_continuation_v2"
-        ),
+        "sample_chain_partition": "single_call_tfp_sample_chain_v3",
         "use_xla": False,
         "jit_compile": False,
-        "sample_chain_invocation_count": (
-            config.num_burnin_steps + config.num_results
-        ),
+        "sample_chain_invocation_count": 1,
         "sample_chain_call_s": elapsed,
         "sample_chain_timing_role": "explanatory_only_compile_plus_execute",
         "target_status_trace_source": _target_status_trace_source(adapter),
-        "bootstrap_trace_count": bootstrap.experimental_get_tracing_count(),
-        "trace_count": run_segment.experimental_get_tracing_count(),
+        "trace_count": run_chain.experimental_get_tracing_count(),
         "initial_state_shape": tuple(int(dim) for dim in state.shape),
         "initial_state_dtype": state.dtype.name,
         "value_score_authority": capability.value_score_authority,

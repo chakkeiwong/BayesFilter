@@ -278,12 +278,9 @@ def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None
     assert run.metadata["trace_count"] == 1
     assert run.metadata["parallel_iterations"] == 1
     assert run.metadata["sample_chain_partition"] == (
-        "one_transition_reused_graph_exact_tfp_continuation_v2"
+        "single_call_tfp_sample_chain_v3"
     )
-    assert run.metadata["sample_chain_invocation_count"] == (
-        config.num_burnin_steps + config.num_results
-    )
-    assert run.metadata["bootstrap_trace_count"] == 1
+    assert run.metadata["sample_chain_invocation_count"] == 1
     assert run.metadata["target_status_trace_source"] == (
         "adapter_state_re_evaluation"
     )
@@ -331,7 +328,7 @@ def test_independent_chain_parallel_iterations_preserves_seeded_transition() -> 
         np.testing.assert_array_equal(actual.trace[name].numpy(), value.numpy())
 
 
-def test_segmented_independent_chain_matches_monolithic_full_trace_bitwise() -> None:
+def test_single_call_independent_chain_matches_tfp_full_trace_bitwise() -> None:
     adapter = ReviewedGaussianAdapter()
     config = _independent_config()
     initial = _independent_initial_state()
