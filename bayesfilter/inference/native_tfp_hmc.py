@@ -155,7 +155,7 @@ class NativeTFPIndependentChainHMCConfig:
             "target_status_trace_policy": "per_chain_step_required",
             "runtime": "tfp.mcmc.sample_chain",
             "kernel": "tfp.mcmc.HamiltonianMonteCarlo",
-            "target_batching": "scalar_rows_tf_while_loop_parallel4_v1",
+            "target_batching": "scalar_rows_tf_while_loop",
             "adaptation_policy": "fixed_kernel_no_adaptation",
             "chain_execution_mode": "tf_function",
             "parallel_iterations": 1,
@@ -391,7 +391,7 @@ def reviewed_independent_chain_target_fn(
                 lambda index, *_: index < chain_count,
                 body,
                 (tf.constant(0, tf.int32), value_rows, score_rows),
-                parallel_iterations=chain_count,
+                parallel_iterations=1,
             )
             target = value_rows.stack()
             scores = score_rows.stack()
@@ -502,7 +502,7 @@ def run_native_tfp_independent_chains(
         "kernel": "tfp.mcmc.HamiltonianMonteCarlo",
         "implementation_module": "bayesfilter.inference.native_tfp_hmc",
         "implementation_backend": "tensorflow_tensorflow_probability_only",
-        "target_batching": "scalar_rows_tf_while_loop_parallel4_v1",
+        "target_batching": "scalar_rows_tf_while_loop",
         "adaptation_policy": "fixed_kernel_no_adaptation",
         "chain_execution_mode": "tf_function",
         "tf_function_input_signature": (),
