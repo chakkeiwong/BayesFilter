@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
+import os
+import pytest
 import tensorflow as tf
 
 from bayesfilter.inference.cpu_value_score_pool import (
@@ -12,6 +14,10 @@ from bayesfilter.inference.cpu_value_score_pool import (
 from bayesfilter.inference.neutra_training import (
     NeuTraReverseKLTrainer,
     ssl_lstm_tuned_capacity_neutra_config,
+)
+from bayesfilter.inference.tf_batch_value_score_pool import (
+    TFBatchValueScorePool,
+    TFBatchValueScorePoolConfig,
 )
 from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import (
     PRIOR_CENTER,
@@ -83,6 +89,56 @@ def test_batch_native_pool_matches_scalar_reference() -> None:
         item["worker_backend"] == "batch_native_value_score"
         for item in metadata["worker_metadata"]
     )
+
+
+def test_tf_batch_pool_pins_persistent_processes_and_chunks_by_four() -> None:
+    available = tuple(sorted(os.sched_getaffinity(0)))
+    if len(available) < 2:
+        pytest.skip("two logical CPUs are required for the affinity contract")
+    target = complexity_posterior_target(1, jit_compile=False)
+    rows = np.asarray(
+        [
+            [0.35, -0.08, 0.65, 0.05],
+            [0.37, -0.06, 0.63, 0.07],
+            [0.31, -0.04, 0.61, 0.03],
+            [0.39, -0.10, 0.67, 0.09],
+            [0.34, -0.07, 0.62, 0.04],
+        ],
+        dtype=np.float64,
+    )
+    expected = [target.eager_value_and_score(row) for row in rows]
+    expected_values = np.asarray([float(value.numpy()) for value, _ in expected])
+    expected_scores = np.asarray([score.numpy() for _, score in expected])
+    config = TFBatchValueScorePoolConfig(
+        factory_path=(
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
+        ),
+        factory_config={"q": 1, "principal_sqrt_backend": "tensorflow_eigh"},
+        dimension=4,
+        worker_count=2,
+        cores_per_worker=1,
+        batch_sizes=(1, 4),
+        batch_per_worker=4,
+        worker_cpu_ids=available[:2],
+    )
+    with TFBatchValueScorePool(config) as pool:
+        values, scores, metadata = pool.evaluate(rows, request_id="batch-four-affinity")
+    np.testing.assert_allclose(values.numpy(), expected_values, rtol=1e-9, atol=1e-9)
+    np.testing.assert_allclose(scores.numpy(), expected_scores, rtol=1e-8, atol=1e-8)
+    assert metadata["task_count"] == 2
+    assert metadata["worker_shard_sizes"] == [4, 1]
+    assert metadata["batch_per_worker"] == 4
+    assert set(metadata["worker_result_pids"]) == set(metadata["startup_worker_pids"])
+    startup = metadata["startup_worker_metadata"]
+    assert {int(row["assigned_cpu"]) for row in startup} == set(available[:2])
+    for row in startup:
+        expected_cpu = {int(row["assigned_cpu"])}
+        assert row["thread_affinity"]
+        assert {
+            tuple(int(cpu) for cpu in task["affinity"])
+            for task in row["thread_affinity"]
+        } == {tuple(expected_cpu)}
 
 
 def test_process_pool_matches_scalar_eager_target_and_records_cpu_workers():

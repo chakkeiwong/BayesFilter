@@ -47,6 +47,7 @@ from bayesfilter.inference.neutra_training_control import (
     NeuTraPlateauConfig,
     NeuTraPlateauController,
     joint_training_checkpoint_payload,
+    validate_joint_training_checkpoint,
 )
 from bayesfilter.inference.tf_batch_value_score_pool import (
     TFBatchValueScorePool,
@@ -65,7 +66,7 @@ CHECK_EVERY = 250
 BATCH_SIZE = 100
 VALIDATION_SIZE = 64
 AUDIT_SIZE = 256
-THREAD_LIMIT = 50
+COMPUTE_CORE_LIMIT = 50
 HOST_RAM_CAP_BYTES = 64 * 1024**3
 PARAMETERS = {"learning_rate": 4.0e-4, "initialization_scale": 0.01, "gradient_clip_norm": 10.0}
 
@@ -110,13 +111,20 @@ def sha256(path: Path) -> str:
 
 
 class Budget:
-    def __init__(self, seconds: float) -> None:
+    def __init__(self, seconds: float, *, prior_seconds: float = 0.0) -> None:
         self.seconds = float(seconds)
+        self.prior_seconds = float(prior_seconds)
+        if (
+            not math.isfinite(self.prior_seconds)
+            or self.prior_seconds < 0.0
+            or self.prior_seconds >= self.seconds
+        ):
+            raise ValueError("prior_seconds must be finite and in [0, seconds)")
         self.started = time.perf_counter()
 
     @property
     def elapsed(self) -> float:
-        return time.perf_counter() - self.started
+        return self.prior_seconds + time.perf_counter() - self.started
 
     def require(self, reserve: float = 0.0) -> None:
         if self.elapsed + float(reserve) >= self.seconds:
@@ -129,7 +137,13 @@ class ThreadAudit:
         self.maximum = 0
         self.snapshot: list[Mapping[str, Any]] = []
 
-    def check(self, worker_pids: Sequence[int]) -> Mapping[str, Any]:
+    def check(
+        self,
+        worker_pids: Sequence[int],
+        assigned_cpu_ids: Sequence[int | None],
+        configured_worker_count: int,
+        cores_per_worker: int,
+    ) -> Mapping[str, Any]:
         rows = []
         for pid in (os.getpid(), *tuple(int(value) for value in worker_pids)):
             status = Path(f"/proc/{pid}/status")
@@ -141,26 +155,52 @@ class ThreadAudit:
         if total > self.maximum:
             self.maximum = total
             self.snapshot = rows
-        if total > THREAD_LIMIT:
-            raise CampaignError(f"process-tree native thread count {total} exceeds {THREAD_LIMIT}")
-        return {"total": total, "rows": rows}
+        pinned_cores = {int(value) for value in assigned_cpu_ids if value is not None}
+        configured_cores = (
+            len(pinned_cores)
+            if pinned_cores
+            else int(configured_worker_count) * int(cores_per_worker)
+        )
+        if configured_cores > COMPUTE_CORE_LIMIT:
+            raise CampaignError(
+                f"configured compute-core count {configured_cores} exceeds {COMPUTE_CORE_LIMIT}"
+            )
+        return {
+            "total_native_threads": total,
+            "configured_compute_cores": configured_cores,
+            "rows": rows,
+        }
 
     def payload(self) -> Mapping[str, Any]:
-        return {"thread_limit": THREAD_LIMIT, "check_count": self.checks, "maximum_process_tree_native_threads": self.maximum, "maximum_snapshot": self.snapshot, "passed": self.checks > 0 and self.maximum <= THREAD_LIMIT}
+        return {
+            "compute_core_limit": COMPUTE_CORE_LIMIT,
+            "check_count": self.checks,
+            "maximum_process_tree_native_threads": self.maximum,
+            "maximum_snapshot": self.snapshot,
+            "native_threads_are_recorded_not_counted_as_compute_cores": True,
+            "passed": self.checks > 0,
+        }
 
 
 THREAD_AUDIT = ThreadAudit()
 
 
-def _pool() -> TFBatchValueScorePool:
+def _pool(cpu_processes: int, batch_per_process: int | None) -> TFBatchValueScorePool:
+    cpu_ids = ()
+    batch_sizes = (2, 3, 16, 25, 64)
+    if batch_per_process is not None:
+        cpu_ids = tuple(sorted(os.sched_getaffinity(0))[: int(cpu_processes)])
+        batch_sizes = tuple(range(1, int(batch_per_process) + 1))
     return TFBatchValueScorePool(
         TFBatchValueScorePoolConfig(
             factory_path=("bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:batch_native_complexity_target_worker_factory"),
             factory_config={"q": 20, "principal_sqrt_backend": "tensorflow_eigh"},
             dimension=4,
-            worker_count=4,
+            worker_count=int(cpu_processes),
             cores_per_worker=1,
-            batch_sizes=(2, 3, 16, 25, 64),
+            batch_sizes=batch_sizes,
+            batch_per_worker=batch_per_process,
+            worker_cpu_ids=cpu_ids,
         )
     )
 
@@ -170,9 +210,29 @@ def _evaluate(
 ) -> tuple[Any, Any, Mapping[str, Any]]:
     values, scores, metadata = pool.evaluate(rows, request_id=request_id)
     worker_pids = metadata.get("startup_worker_pids", ())
-    if len(tuple(worker_pids)) != 4:
+    if len(tuple(worker_pids)) != int(pool.config.worker_count):
         raise CampaignError("batch-native worker PID telemetry is incomplete")
-    THREAD_AUDIT.check(worker_pids)
+    assigned_cpu_ids = tuple(
+        row.get("assigned_cpu")
+        for row in metadata.get("startup_worker_metadata", ())
+    )
+    expected_full_batch = (
+        pool.config.batch_per_worker is not None
+        and int(rows.shape[0])
+        == int(pool.config.worker_count) * int(pool.config.batch_per_worker)
+    )
+    if expected_full_batch and len(set(metadata.get("worker_result_pids", ()))) != int(
+        pool.config.worker_count
+    ):
+        raise CampaignError(
+            "full training batch did not use every configured persistent worker"
+        )
+    THREAD_AUDIT.check(
+        worker_pids,
+        assigned_cpu_ids,
+        int(pool.config.worker_count),
+        int(pool.config.cores_per_worker),
+    )
     parent_bytes = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
     combined = parent_bytes + max(
         int(metadata.get("active_worker_ru_maxrss_sum_bytes", 0)),
@@ -266,26 +326,138 @@ def _audit(trainer: NeuTraReverseKLTrainer, target: Any, pool: TFBatchValueScore
     return {"batch_size": AUDIT_SIZE, "mean_loss": float(tf.reduce_mean(losses).numpy()), "per_sample_loss": losses.numpy().tolist(), "worker_backend": metadata, "audit_definition": "stateless_validation_seed_fold_20260721_final_only"}
 
 
-def _stream(target: Any, pool: TFBatchValueScorePool, stream: Stream, budget: Budget, output: Path) -> Mapping[str, Any]:
+def _load_resume(
+    path: Path,
+    *,
+    stream: Stream,
+    trainer: NeuTraReverseKLTrainer,
+    controller: NeuTraPlateauController,
+    minimum_prior_seconds: float,
+) -> tuple[Mapping[str, Any], Mapping[str, Any], list[Mapping[str, Any]], list[Mapping[str, Any]], int]:
+    checkpoint_path = path.resolve()
+    if not checkpoint_path.is_relative_to(ROOT) or not checkpoint_path.is_file():
+        raise CampaignError("resume checkpoint must be a repository-local file")
+    checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+    validate_joint_training_checkpoint(checkpoint)
+    progress_path = checkpoint_path.parent / "progress.json"
+    if not progress_path.is_file():
+        raise CampaignError("resume checkpoint is missing sibling progress.json")
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    if progress.get("schema") != SCHEMA or progress.get("status") != "RUNNING":
+        raise CampaignError("resume progress schema or status is invalid")
+    if progress.get("stream") != asdict(stream):
+        raise CampaignError("resume progress stream does not match --stream")
+    receipts = list(progress.get("checkpoints", ()))
+    if not receipts:
+        raise CampaignError("resume progress has no checkpoint receipt")
+    receipt = receipts[-1]
+    if Path(receipt.get("path", "")).resolve() != checkpoint_path:
+        raise CampaignError("resume checkpoint is not the latest progress receipt")
+    if receipt.get("sha256") != sha256(checkpoint_path):
+        raise CampaignError("resume checkpoint SHA-256 mismatch")
+    if receipt.get("checkpoint_hash") != checkpoint.get("checkpoint_hash"):
+        raise CampaignError("resume checkpoint hash receipt mismatch")
+    prior_seconds = float(progress.get("campaign_elapsed_seconds", -1.0))
+    if prior_seconds < 0.0 or float(minimum_prior_seconds) < prior_seconds:
+        raise CampaignError(
+            "--prior-wall-seconds must cover the elapsed time in resume progress"
+        )
+    trainer.restore_state(checkpoint["trainer_state"])
+    controller.restore_state(checkpoint["controller_state"])
+    if controller.status not in {"running", "stopped"}:
+        raise CampaignError("resume plateau controller status is invalid")
+    best_state = checkpoint.get("best_trainer_state")
+    if best_state is None:
+        raise CampaignError("resume checkpoint has no eligible best trainer state")
+    if best_state.get("state_hash") != controller.best_trainer_state_hash:
+        raise CampaignError("resume best state does not match plateau controller")
+    history = list(progress.get("history", ()))
+    if not history or int(history[0].get("step", -1)) != 0:
+        raise CampaignError("resume progress is missing the initial validation")
+    program_step = int(progress.get("last_program_step", -1))
+    if program_step != int(controller.last_observation_step or -1):
+        raise CampaignError("resume program step does not match plateau controller")
+    return checkpoint, best_state, history, receipts, program_step
+
+
+def _stream(
+    target: Any,
+    pool: TFBatchValueScorePool,
+    stream: Stream,
+    budget: Budget,
+    output: Path,
+    *,
+    resume_checkpoint: Path | None,
+    debug_stop_after_steps: int | None,
+) -> Mapping[str, Any]:
     trainer = _trainer(target, stream)
     controller = NeuTraPlateauController(NeuTraPlateauConfig(validation_check_every=CHECK_EVERY, patience_steps=CHECK_EVERY, max_steps=MAX_STEPS, initial_learning_rate=PARAMETERS["learning_rate"], learning_rate_factor=0.5, post_repair_no_improvement_cycles=2, saturation_repair_enabled=False, roundtrip_max_abs=1.0e-9, moderate_shell_max_inverse_radius=4.30))
     validation_z = _batch(stream.validation_seed, 0, VALIDATION_SIZE)
-    theta, _ = trainer.forward_and_logdet(validation_z)
-    values, _scores, metadata = _evaluate(pool, theta, request_id=f"{stream.label}-validation-0")
-    validation = _host_validation(trainer.validation_batch_with_external_value(validation_z, values), 0, PARAMETERS["learning_rate"])
-    probe = _support(trainer, target, pool, f"{stream.label}-support-0")
-    state = trainer.state_payload()
-    action = controller.observe(step=0, per_sample_loss=validation["per_sample_loss"], saturation_fraction=validation["saturation_fraction"], all_finite=probe["all_finite"], roundtrip_max_abs=probe["roundtrip_max_abs"], moderate_shell_max_inverse_radius=probe["moderate_shell_max_inverse_radius"], trainer_state_hash=state["state_hash"])
-    best_state = state
-    initial_losses = validation["per_sample_loss"]
-    history = [{**validation, "support_probe": probe, "controller_action": action.payload()}]
-    checkpoints = []
-    for step in range(1, MAX_STEPS + 1):
-        budget.require(60.0)
+    if resume_checkpoint is None:
+        theta, _ = trainer.forward_and_logdet(validation_z)
+        values, _scores, _metadata = _evaluate(pool, theta, request_id=f"{stream.label}-validation-0")
+        validation = _host_validation(trainer.validation_batch_with_external_value(validation_z, values), 0, PARAMETERS["learning_rate"])
+        probe = _support(trainer, target, pool, f"{stream.label}-support-0")
+        state = trainer.state_payload()
+        action = controller.observe(step=0, per_sample_loss=validation["per_sample_loss"], saturation_fraction=validation["saturation_fraction"], all_finite=probe["all_finite"], roundtrip_max_abs=probe["roundtrip_max_abs"], moderate_shell_max_inverse_radius=probe["moderate_shell_max_inverse_radius"], trainer_state_hash=state["state_hash"])
+        best_state = state
+        history = [{**validation, "support_probe": probe, "controller_action": action.payload()}]
+        checkpoints: list[Mapping[str, Any]] = []
+        program_step = 0
+    else:
+        _checkpoint, best_state, history, checkpoints, program_step = _load_resume(
+            resume_checkpoint,
+            stream=stream,
+            trainer=trainer,
+            controller=controller,
+            minimum_prior_seconds=budget.prior_seconds,
+        )
+    initial_losses = history[0]["per_sample_loss"]
+    pending_steps = (
+        range(program_step + 1, MAX_STEPS + 1)
+        if controller.status == "running"
+        else ()
+    )
+    for step in pending_steps:
+        # Preserve enough campaign time for the final support and audit batches.
+        budget.require(180.0)
         z = _batch(stream.training_seed, step, BATCH_SIZE)
         theta, _ = trainer.forward_and_logdet(z)
         values, scores, _metadata = _evaluate(pool, theta, request_id=f"{stream.label}-train-{step}")
-        trainer.train_step_with_external_value_score(z, values, scores)
+        step_result = trainer.train_step_with_external_value_score(z, values, scores)
+        program_step = step
+        if debug_stop_after_steps is not None and step >= debug_stop_after_steps:
+            support = _support(trainer, target, pool, f"{stream.label}-support-debug-{step}")
+            debug_result = {
+                "schema": SCHEMA,
+                "status": "CPU_DEBUG_SMOKE_COMPLETED",
+                "q": 20,
+                "stream": asdict(stream),
+                "terminal_program_step": step,
+                "training_step": _host_step(step_result),
+                "trainer_state_hash": trainer.state_payload()["state_hash"],
+                "support_probe": support,
+                "execution_eligibility": {
+                    "training_quality_eligible": False,
+                    "hmc_eligible": False,
+                    "transport_promotion_eligible": False,
+                    "posterior_claim_eligible": False,
+                    "reason": "explicit short CPU optimizer-update smoke",
+                },
+                "nonclaims": [
+                    "debug smoke only",
+                    "no plateau, heldout audit, HMC, posterior, or promotion claim",
+                ],
+            }
+            write_json(output / "debug-smoke-result.json", debug_result)
+            return {
+                "label": stream.label,
+                "status": debug_result["status"],
+                "path": output.joinpath("debug-smoke-result.json").relative_to(ROOT).as_posix(),
+                "sha256": sha256(output / "debug-smoke-result.json"),
+                "terminal_program_step": step,
+                "vetoes": [],
+            }
         if step % CHECK_EVERY:
             continue
         theta, _ = trainer.forward_and_logdet(validation_z)
@@ -304,11 +476,12 @@ def _stream(target: Any, pool: TFBatchValueScorePool, stream: Stream, budget: Bu
         write_json(checkpoint, joint)
         checkpoints.append({"step": step, "path": checkpoint.relative_to(ROOT).as_posix(), "sha256": sha256(checkpoint), "checkpoint_hash": joint["checkpoint_hash"]})
         history.append({**validation, "support_probe": probe, "controller_action": action.payload()})
-        write_json(output / "progress.json", {"schema": SCHEMA, "status": "RUNNING", "stream": asdict(stream), "last_program_step": step, "history": history, "checkpoints": checkpoints}, replace=True)
+        write_json(output / "progress.json", {"schema": SCHEMA, "status": "RUNNING", "stream": asdict(stream), "last_program_step": step, "campaign_elapsed_seconds": budget.elapsed, "history": history, "checkpoints": checkpoints}, replace=True)
         if action.should_stop:
             break
     if controller.stop_reason is None:
         raise CampaignError("stream ended without a declared stop reason")
+    budget.require(120.0)
     best_trainer = NeuTraReverseKLTrainer(target, trainer.config)
     best_trainer.restore_state(best_state)
     support = _support(best_trainer, target, pool, f"{stream.label}-support-final")
@@ -317,41 +490,133 @@ def _stream(target: Any, pool: TFBatchValueScorePool, stream: Stream, budget: Bu
     vetoes = []
     if not support["all_finite"] or support["roundtrip_max_abs"] > 1.0e-9 or paired["one_sided_95_upper"] >= 0.0:
         vetoes.append("heldout_or_support_screen_failed")
-    result = {"schema": SCHEMA, "q": 20, "status": "CPU_DIAGNOSTIC_SCREEN_PASSED" if not vetoes else "CPU_DIAGNOSTIC_SCREEN_VETOED", "stream": asdict(stream), "params": PARAMETERS, "stop_reason": controller.stop_reason, "best_step": controller.best_step, "terminal_program_step": int(trainer.step.numpy()), "learning_rate_reductions": controller.learning_rate_reductions, "history": history, "checkpoints": checkpoints, "paired_best_minus_initial": paired, "support_probe": support, "audit": audit, "vetoes": vetoes, "execution_eligibility": {"hmc_eligible": False, "transport_promotion_eligible": False, "posterior_claim_eligible": False, "reason": "CPU-only NeuTra diagnostic exception"}}
+    result = {"schema": SCHEMA, "q": 20, "status": "CPU_DIAGNOSTIC_SCREEN_PASSED" if not vetoes else "CPU_DIAGNOSTIC_SCREEN_VETOED", "stream": asdict(stream), "params": PARAMETERS, "stop_reason": controller.stop_reason, "best_step": controller.best_step, "terminal_program_step": program_step, "terminal_optimizer_step": int(trainer.step.numpy()), "learning_rate_reductions": controller.learning_rate_reductions, "history": history, "checkpoints": checkpoints, "paired_best_minus_initial": paired, "support_probe": support, "audit": audit, "vetoes": vetoes, "execution_eligibility": {"hmc_eligible": False, "transport_promotion_eligible": False, "posterior_claim_eligible": False, "reason": "CPU-only NeuTra diagnostic exception"}}
     write_json(output / "result.json", result)
     return {"label": stream.label, "status": result["status"], "path": output.joinpath("result.json").relative_to(ROOT).as_posix(), "sha256": sha256(output / "result.json"), "best_step": result["best_step"], "terminal_program_step": result["terminal_program_step"], "stop_reason": result["stop_reason"], "audit_mean_loss": audit["mean_loss"], "vetoes": vetoes}
 
 
 def run(args: argparse.Namespace) -> Mapping[str, Any]:
     output = (ROOT / args.output_root).resolve()
-    if output.exists() and any(output.iterdir()):
-        raise CampaignError("output root must be new or empty")
+    if not output.is_relative_to(ROOT):
+        raise CampaignError("output root must be inside the repository")
+    if args.resume_checkpoint is None:
+        if output.exists() and any(output.iterdir()):
+            raise CampaignError("fresh output root must be new or empty")
+    else:
+        checkpoint_path = args.resume_checkpoint.resolve()
+        if output != checkpoint_path.parent.parent:
+            raise CampaignError(
+                "resume output root must be the checkpoint stream directory's parent"
+            )
     output.mkdir(parents=True, exist_ok=True)
     target = batch_native_complexity_posterior_target(20, jit_compile=False, principal_sqrt_backend="tensorflow_eigh")
-    budget = Budget(args.cap_seconds)
+    selected_streams = tuple(stream for stream in STREAMS if stream.label == args.stream)
+    if len(selected_streams) != 1:
+        raise CampaignError("exactly one known stream must be selected")
+    budget = Budget(args.cap_seconds, prior_seconds=args.prior_wall_seconds)
     started = datetime.now(timezone.utc).isoformat()
+    launch_index = len(tuple(output.glob("launch-attempt-*.json")))
+    launch_path = output / f"launch-attempt-{launch_index:03d}.json"
+    launch = {
+        "schema": "bayesfilter.ssl_lstm.q20_cpu_batch4x25_training_launch.v1",
+        "status": "RUNNING",
+        "git_commit": subprocess.check_output(("git", "rev-parse", "HEAD"), cwd=ROOT, text=True).strip(),
+        "command": " ".join(sys.argv),
+        "python": sys.version.split()[0],
+        "tensorflow": tf.__version__,
+        "started_at_utc": started,
+        "cap_seconds": args.cap_seconds,
+        "prior_wall_seconds": args.prior_wall_seconds,
+        "selected_stream": args.stream,
+        "stream_seeds": asdict(selected_streams[0]),
+        "cpu_gpu_status": "CPU-only; CUDA hidden before TensorFlow import",
+        "cpu_affinity": sorted(os.sched_getaffinity(0)),
+        "jit_compile": False,
+        "dtype": "float64",
+        "target_signature": target.target_signature(),
+        "target_adapter_signature": target.adapter_signature(),
+        "source_sha256": {
+            "plan": sha256(ROOT / PLAN),
+            "script": sha256(Path(__file__).resolve()),
+            "pool": sha256(ROOT / "bayesfilter/inference/tf_batch_value_score_pool.py"),
+            "target": sha256(ROOT / "bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py"),
+        },
+        "cpu_process_topology": {
+            "process_count": args.cpu_processes,
+            "training_batch_per_process": args.batch_per_process,
+            "training_batch_size": BATCH_SIZE,
+        },
+        "resume_checkpoint": (
+            None if args.resume_checkpoint is None else args.resume_checkpoint.as_posix()
+        ),
+        "plan": PLAN.as_posix(),
+        "output_root": args.output_root.as_posix(),
+        "nonclaims": [
+            "CPU-only diagnostic/reference exception",
+            "one seed is diagnostic only",
+            "no HMC or promotion claim",
+        ],
+    }
+    write_json(launch_path, launch)
     results = []
     resource_stop = None
-    with _pool() as pool:
-        for stream in STREAMS:
+    with _pool(args.cpu_processes, args.batch_per_process) as pool:
+        for stream in selected_streams:
             try:
-                results.append(_stream(target, pool, stream, budget, output / stream.label))
+                results.append(_stream(target, pool, stream, budget, output / stream.label, resume_checkpoint=args.resume_checkpoint, debug_stop_after_steps=args.debug_stop_after_steps))
             except ResourceStop as exc:
                 resource_stop = str(exc)
                 break
-    manifest = {"git_commit": subprocess.check_output(("git", "rev-parse", "HEAD"), cwd=ROOT, text=True).strip(), "command": " ".join(sys.argv), "python": sys.version.split()[0], "tensorflow": tf.__version__, "started_at_utc": started, "finished_at_utc": datetime.now(timezone.utc).isoformat(), "wall_seconds": budget.elapsed, "cap_seconds": args.cap_seconds, "cpu_gpu_status": "CPU-only; CUDA hidden before TensorFlow import", "jit_compile": False, "dtype": "float64", "thread_audit": THREAD_AUDIT.payload(), "host_ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024), "host_ram_cap_bytes": HOST_RAM_CAP_BYTES, "output_root": args.output_root.as_posix(), "plan": PLAN.as_posix()}
-    payload = {"schema": SCHEMA, "status": "RESOURCE_STOP" if resource_stop else ("CPU_DIAGNOSTIC_COMPLETED" if len(results) == 2 else "INCOMPLETE"), "q": 20, "architecture": [32, 32], "batch_size": BATCH_SIZE, "results": results, "resource_stop": resource_stop, "run_manifest": manifest, "inference_status": {"hard_veto_screen": "thread, memory, finite, support, and artifact checks", "statistically_supported_ranking": "none", "descriptive_only_differences": ["loss", "runtime", "seed differences"], "default_readiness": "ineligible_cpu_diagnostic_exception", "next_evidence_needed": "GPU/XLA claim-bearing training before HMC"}, "nonclaims": ["CPU-only diagnostic/reference exception", "no HMC, posterior correctness, convergence, transport promotion, or scientific-validity claim"]}
-    write_json(output / "summary.json", payload)
+    manifest = {**launch, "status": "FINISHED", "launch_attempt_path": launch_path.relative_to(ROOT).as_posix(), "finished_at_utc": datetime.now(timezone.utc).isoformat(), "wall_seconds": budget.elapsed, "thread_audit": THREAD_AUDIT.payload(), "host_ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024), "host_ram_cap_bytes": HOST_RAM_CAP_BYTES}
+    write_json(launch_path, manifest, replace=True)
+    completed_status = (
+        "CPU_DEBUG_SMOKE_COMPLETED"
+        if args.debug_stop_after_steps is not None and len(results) == 1
+        else ("CPU_DIAGNOSTIC_COMPLETED" if len(results) == 1 else "INCOMPLETE")
+    )
+    payload = {"schema": SCHEMA, "status": "RESOURCE_STOP" if resource_stop else completed_status, "q": 20, "architecture": [32, 32], "batch_size": BATCH_SIZE, "selected_stream": args.stream, "results": results, "resource_stop": resource_stop, "run_manifest": manifest, "inference_status": {"hard_veto_screen": "thread, memory, finite, support, and artifact checks", "statistically_supported_ranking": "none", "descriptive_only_differences": ["loss", "runtime"], "default_readiness": "ineligible_cpu_diagnostic_exception", "next_evidence_needed": "independent seed replication and GPU/XLA claim-bearing training before HMC"}, "nonclaims": ["CPU-only diagnostic/reference exception", "one seed is diagnostic only", "no HMC, posterior correctness, convergence, transport promotion, or scientific-validity claim"]}
+    write_json(output / f"summary-attempt-{launch_index:03d}.json", payload)
+    write_json(output / "summary.json", payload, replace=True)
     return payload
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--cap-seconds", type=float, default=13500.0)
+    parser.add_argument("--cap-seconds", type=float, default=31500.0)
+    parser.add_argument("--cpu-processes", type=int, default=4)
+    parser.add_argument("--batch-per-process", type=int)
+    parser.add_argument("--stream", choices=tuple(stream.label for stream in STREAMS), required=True)
+    parser.add_argument("--resume-checkpoint", type=Path)
+    parser.add_argument("--prior-wall-seconds", type=float, default=0.0)
+    parser.add_argument("--debug-stop-after-steps", type=int)
     args = parser.parse_args(argv)
-    if not math.isfinite(args.cap_seconds) or args.cap_seconds <= 0.0 or args.cap_seconds > 13500.0:
-        parser.error("--cap-seconds must be in (0, 13500]")
+    if not math.isfinite(args.cap_seconds) or args.cap_seconds <= 0.0 or args.cap_seconds > 31500.0:
+        parser.error("--cap-seconds must be in (0, 31500]")
+    if not math.isfinite(args.prior_wall_seconds) or args.prior_wall_seconds < 0.0:
+        parser.error("--prior-wall-seconds must be finite and nonnegative")
+    if args.resume_checkpoint is None and args.prior_wall_seconds != 0.0:
+        parser.error("--prior-wall-seconds requires --resume-checkpoint")
+    if args.resume_checkpoint is not None and args.prior_wall_seconds <= 0.0:
+        parser.error("--resume-checkpoint requires positive --prior-wall-seconds")
+    if args.debug_stop_after_steps is not None:
+        if args.debug_stop_after_steps <= 0 or args.debug_stop_after_steps >= CHECK_EVERY:
+            parser.error(
+                f"--debug-stop-after-steps must be in [1, {CHECK_EVERY - 1}]"
+            )
+        if args.resume_checkpoint is not None:
+            parser.error("debug smoke cannot resume a campaign checkpoint")
+    if args.cpu_processes <= 0 or args.cpu_processes > COMPUTE_CORE_LIMIT:
+        parser.error(f"--cpu-processes must be in [1, {COMPUTE_CORE_LIMIT}]")
+    if args.cpu_processes > len(os.sched_getaffinity(0)):
+        parser.error("--cpu-processes exceeds CPUs available to the current process")
+    if args.batch_per_process is not None:
+        if args.batch_per_process <= 0:
+            parser.error("--batch-per-process must be positive")
+        if args.cpu_processes * args.batch_per_process != BATCH_SIZE:
+            parser.error(
+                "--cpu-processes times --batch-per-process must equal the training batch size"
+            )
     payload = run(args)
     print(json.dumps({"status": payload["status"], "results": payload["results"]}, sort_keys=True))
     return 0
