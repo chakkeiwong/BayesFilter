@@ -13,6 +13,7 @@ import platform
 import subprocess
 import sys
 import time
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -21,7 +22,9 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-PLAN = Path("docs/plans/bayesfilter-pp-ukf-true-hmc-validation-plan-2026-07-22.md")
+PLAN = Path(
+    "docs/plans/bayesfilter-pp-ukf-true-hmc-continuation-repair-plan-2026-07-30.md"
+)
 PREVIOUS_PREFLIGHT = Path(
     "docs/plans/artifacts/bayesfilter-pp-ukf-true-hmc-validation-20260722/attempt-02/preflight.json"
 )
@@ -48,6 +51,7 @@ CONTINUATION_PREFIX_RESULTS = 3_000
 ATTEMPT_09_PROGRESS_SHA256 = (
     "acd34ab3d4bd1ecf0907c193cb87a4aeed1fa95c6a2d637ece8b6bb8fdd4eec8"
 )
+CONTINUATION_CHUNK_BUDGET_RESERVE_SECONDS = 900.0
 
 
 def _sha256(path: Path) -> str:
@@ -77,7 +81,12 @@ def _write_new_json(path: Path, payload: Mapping[str, Any]) -> None:
     if path.exists():
         raise FileExistsError(f"artifact must be fresh: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_json_ready(payload), indent=2, sort_keys=True) + "\n", encoding="ascii")
+    temporary = path.with_name("." + path.name + ".tmp")
+    temporary.write_text(
+        json.dumps(_json_ready(payload), indent=2, sort_keys=True) + "\n",
+        encoding="ascii",
+    )
+    temporary.replace(path)
 
 
 def _write_progress(path: Path, payload: Mapping[str, Any]) -> None:
@@ -94,26 +103,58 @@ def _progress_payload(
     planned_candidate_count: int,
     elapsed_seconds: float,
     terminal: bool,
+    prior_elapsed_seconds: float = 0.0,
+    prior_progress_sha256: str | None = None,
 ) -> Mapping[str, Any]:
     all_rows = tuple(prior_rows) + tuple(rows)
+    elapsed = float(elapsed_seconds)
+    prior = float(prior_elapsed_seconds)
     return {
         "schema": "bayesfilter.pp_ukf.true_hmc_validation.progress.v1",
-        "completed_candidate_count": len(all_rows),
+        "completed_candidate_count": sum(
+            int(row.get("terminal_candidate_result", True)) for row in all_rows
+        ),
         "planned_candidate_count": int(planned_candidate_count),
         "candidate_rows": all_rows,
-        "elapsed_seconds": float(elapsed_seconds),
+        "elapsed_seconds": elapsed,
+        "prior_elapsed_seconds": prior,
+        "aggregate_elapsed_seconds": prior + elapsed,
+        "prior_progress_sha256": prior_progress_sha256,
         "terminal": bool(terminal),
     }
 
 
 def _campaign_budget_exhausted(
-    *, prior_elapsed_seconds: float, current_elapsed_seconds: float
+    *,
+    prior_elapsed_seconds: float,
+    current_elapsed_seconds: float,
+    reserve_seconds: float = 0.0,
 ) -> bool:
     """Return whether another chunk would violate the aggregate campaign cap."""
     return (
-        float(prior_elapsed_seconds) + float(current_elapsed_seconds)
+        float(prior_elapsed_seconds)
+        + float(current_elapsed_seconds)
+        + float(reserve_seconds)
         >= CAMPAIGN_CAP_SECONDS
     )
+
+
+def _validate_run_request(
+    *,
+    candidate_indices: tuple[int, ...] | None,
+    replacement_indices: tuple[int, ...] | None,
+    prior_elapsed_seconds: float,
+    resume_progress: Path | None,
+) -> None:
+    prior = float(prior_elapsed_seconds)
+    if not math.isfinite(prior) or prior < 0.0 or prior >= CAMPAIGN_CAP_SECONDS:
+        raise ValueError("prior_elapsed_seconds must be finite and within campaign cap")
+    if candidate_indices is not None and replacement_indices is not None:
+        raise ValueError("candidate and replacement selection modes are exclusive")
+    if replacement_indices is not None and resume_progress is None:
+        raise ValueError("replacement continuation requires --resume-progress")
+    if resume_progress is not None and not resume_progress.is_file():
+        raise FileNotFoundError(f"resume progress does not exist: {resume_progress}")
 
 
 def _archive_path(value: Any) -> Path:
@@ -130,6 +171,7 @@ def _verify_continuation_prefix(
     row: Mapping[str, Any],
     *,
     candidate: Mapping[str, Any],
+    candidate_index: int,
 ) -> Mapping[str, Any]:
     if row.get("candidate", {}).get("candidate_id") != candidate.get("candidate_id"):
         raise ValueError("continuation candidate identity mismatch")
@@ -165,7 +207,19 @@ def _verify_continuation_prefix(
         range(expected_chunks)
     ):
         raise ValueError("continuation retained chunk sequence is incomplete")
+    expected_warmup_seed = (
+        WARMUP_SEED_ROOT[0],
+        WARMUP_SEED_ROOT[1] + int(candidate_index) * 1009,
+    )
+    expected_retained_seed = (
+        RETAINED_SEED_ROOT[0],
+        RETAINED_SEED_ROOT[1] + int(candidate_index) * 1009,
+    )
+    if tuple(int(item) for item in row["config"]["warmup_seed"]) != expected_warmup_seed:
+        raise ValueError("continuation warmup seed root mismatch")
     retained_seed = tuple(int(item) for item in row["config"]["retained_seed"])
+    if retained_seed != expected_retained_seed:
+        raise ValueError("continuation retained seed root mismatch")
     from bayesfilter.inference.neutra_hmc import sequential_chunk_seed
 
     for item in chunk_rows:
@@ -208,6 +262,13 @@ def _verify_continuation_prefix(
         "latent_sha256": cumulative["latent_sha256"],
         "raw_sha256": cumulative["raw_sha256"],
         "source_row_sha256": _stable_hash(row),
+        "source_row": row,
+        "chunk_latent_paths": tuple(
+            _archive_path(item["latent_path"]) for item in chunk_rows
+        ),
+        "chunk_raw_paths": tuple(
+            _archive_path(item["raw_path"]) for item in chunk_rows
+        ),
     }
 
 
@@ -232,7 +293,9 @@ def _validate_replacement_contract(
     ):
         raise ValueError("continuation progress candidate order or identity drifted")
     prefixes = {
-        index: _verify_continuation_prefix(rows[index], candidate=candidates[index])
+        index: _verify_continuation_prefix(
+            rows[index], candidate=candidates[index], candidate_index=index
+        )
         for index in indices
     }
     return payload, prefixes
@@ -336,8 +399,11 @@ def _archive_callback(root: Path, candidate_id: str):
         raw_path = folder / f"{suffix}-raw.tftensor"
         latent = tf.convert_to_tensor(kwargs["latent_samples"], tf.float64)
         raw = tf.convert_to_tensor(kwargs["model_samples"], tf.float64)
-        latent_path.write_bytes(bytes(tf.io.serialize_tensor(latent).numpy()))
-        raw_path.write_bytes(bytes(tf.io.serialize_tensor(raw).numpy()))
+        for path, tensor in ((latent_path, latent), (raw_path, raw)):
+            serialized = bytes(tf.io.serialize_tensor(tensor).numpy())
+            temporary = path.with_name("." + path.name + ".tmp")
+            temporary.write_bytes(serialized)
+            temporary.replace(path)
         row = {
             "stage": stage,
             "chunk_index": chunk_index,
@@ -360,160 +426,136 @@ def _parse_tensor(path: Path, tf: Any) -> Any:
     return tf.io.parse_tensor(path.read_bytes(), out_type=tf.float64)
 
 
-def _run_retained_continuation(
-    *,
-    adapter: Any,
-    transport: Any,
-    candidate: Mapping[str, Any],
-    prefix: Mapping[str, Any],
-    base_adapter: Any,
-    output_root: Path,
-    thresholds: Any,
-    archive: Any,
-    tf: Any,
-    rank_normalized_hmc_diagnostics: Any,
-    config: Any,
-    campaign_started: float,
-    prior_elapsed_seconds: float,
-) -> Mapping[str, Any]:
-    from bayesfilter.inference.neutra_hmc import (
-        _build_batched_hmc_program,
-        _summarize_batched_hmc_output,
-        sequential_chunk_seed,
-    )
-
+def _load_verified_continuation_tensors(
+    prefix: Mapping[str, Any], tf: Any
+) -> tuple[Any, Any]:
     prefix_latent = _parse_tensor(prefix["latent_path"], tf)
     prefix_raw = _parse_tensor(prefix["raw_path"], tf)
-    if tuple(int(value) for value in prefix_latent.shape) != (
-        CONTINUATION_PREFIX_RESULTS,
-        CHAIN_COUNT,
-        6,
-    ) or tuple(int(value) for value in prefix_raw.shape) != tuple(
-        int(value) for value in prefix_latent.shape
-    ):
+    expected_shape = (CONTINUATION_PREFIX_RESULTS, CHAIN_COUNT, 6)
+    if tuple(int(value) for value in prefix_latent.shape) != expected_shape or tuple(
+        int(value) for value in prefix_raw.shape
+    ) != expected_shape:
         raise ValueError("continuation prefix tensor shape mismatch")
     if not bool(tf.reduce_all(tf.math.is_finite(prefix_latent)).numpy()) or not bool(
         tf.reduce_all(tf.math.is_finite(prefix_raw)).numpy()
     ):
         raise ValueError("continuation prefix tensors must be finite")
-    state = tf.convert_to_tensor(prefix_latent[-1], tf.float64)
-    compiled: dict[int, Any] = {}
-    retained_latent_chunks = [prefix_latent]
-    retained_raw_chunks = [prefix_raw]
-    retained_checks: list[Mapping[str, Any]] = []
-    hard_vetoes: list[str] = []
-    retained_count = CONTINUATION_PREFIX_RESULTS
-    retained_passed = False
-    started = time.monotonic()
-    retained_seed = tuple(int(item) for item in config.retained_seed)
-    chunk_index = int(prefix["next_retained_chunk_index"])
-    while retained_count < config.retained_max_results:
-        if _campaign_budget_exhausted(
-            prior_elapsed_seconds=prior_elapsed_seconds,
-            current_elapsed_seconds=time.monotonic() - campaign_started,
-        ):
-            hard_vetoes.append("campaign_budget_exhausted")
-            break
-        active = min(config.retained_chunk_results, config.retained_max_results - retained_count)
-        if active not in compiled:
-            compiled[active] = _build_batched_hmc_program(
-                adapter=adapter,
-                num_results=active,
-                num_burnin_steps=0,
-                step_size=config.step_size,
-                num_leapfrog_steps=config.num_leapfrog_steps,
-                jit_compile=config.jit_compile,
-            )
-        seed = sequential_chunk_seed(retained_seed, chunk_index)
-        samples, trace = compiled[active](state, tf.constant(seed, tf.int32))
-        chunk = _summarize_batched_hmc_output(
-            initial_state=state,
-            samples=samples,
-            trace=trace,
-            config=type("ContinuationChunkConfig", (), {
-                "energy_error_log_accept_threshold": config.energy_error_log_accept_threshold,
-                "jit_compile": config.jit_compile,
-            })(),
-            chain_count=CHAIN_COUNT,
-            elapsed_seconds=0.0,
-        )
-        latent_samples = tf.convert_to_tensor(chunk["samples"], tf.float64)
-        model_samples = tf.convert_to_tensor(
-            transport.forward_batch(tf.reshape(latent_samples, (-1, 6))), tf.float64
-        )
-        model_samples = tf.reshape(model_samples, tf.shape(latent_samples))
-        retained_latent_chunks.append(latent_samples)
-        retained_raw_chunks.append(model_samples)
-        state = latent_samples[-1]
-        retained_count += active
-        if archive is not None:
-            _call_archive = archive
-            _call_archive(
-                stage="retained",
-                chunk_index=chunk_index,
-                latent_samples=latent_samples,
-                model_samples=model_samples,
-                seed=seed,
-                cumulative=False,
-            )
-        cumulative_raw = tf.concat(retained_raw_chunks, axis=0)
-        diagnostic = rank_normalized_hmc_diagnostics(
-            cumulative_raw,
+    chunk_latent = tf.concat(
+        tuple(_parse_tensor(path, tf) for path in prefix["chunk_latent_paths"]),
+        axis=0,
+    )
+    chunk_raw = tf.concat(
+        tuple(_parse_tensor(path, tf) for path in prefix["chunk_raw_paths"]),
+        axis=0,
+    )
+    if tuple(int(value) for value in chunk_latent.shape) != expected_shape or tuple(
+        int(value) for value in chunk_raw.shape
+    ) != expected_shape:
+        raise ValueError("continuation chunk concatenation shape mismatch")
+    if not bool(tf.reduce_all(tf.equal(prefix_latent, chunk_latent)).numpy()) or not bool(
+        tf.reduce_all(tf.equal(prefix_raw, chunk_raw)).numpy()
+    ):
+        raise ValueError("continuation cumulative tensor differs from chunk concatenation")
+    return prefix_latent, prefix_raw
+
+
+def _continuation_prefix_payload(prefix: Mapping[str, Any]) -> Mapping[str, Any]:
+    return {
+        key: value
+        for key, value in prefix.items()
+        if key not in {"source_row", "chunk_latent_paths", "chunk_raw_paths"}
+    }
+
+
+def _continuation_row(
+    *,
+    candidate: Mapping[str, Any],
+    config: Any,
+    prefix: Mapping[str, Any],
+    continuation: Mapping[str, Any],
+    new_archive: tuple[Mapping[str, Any], ...],
+) -> Mapping[str, Any]:
+    source = prefix["source_row"]
+    source_archive = tuple(
+        {**item, "continuation_archive_origin": "attempt09_prefix"}
+        for item in source.get("archive", ())
+    )
+    continuation_archive = tuple(
+        {**item, "continuation_archive_origin": "current_attempt"}
+        for item in new_archive
+    )
+    completion_status = str(
+        continuation.get("completion_status", "continuation_in_progress")
+    )
+    terminal = completion_status in {"passed", "hard_veto", "retained_cap_reached"}
+    return {
+        "candidate": candidate,
+        "config": config.payload(chain_count=CHAIN_COUNT),
+        "passed": bool(continuation.get("passed", False)),
+        "decision": continuation.get(
+            "decision", "INCOMPLETE_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+        ),
+        "completion_status": completion_status,
+        "terminal_candidate_result": terminal,
+        "warmup_passed": True,
+        "retained_passed": bool(continuation.get("retained_passed", False)),
+        "retained_cap_hit": bool(continuation.get("retained_cap_hit", False)),
+        "warmup_results_per_chain": int(source["warmup_results_per_chain"]),
+        "retained_results_per_chain": int(
+            continuation["retained_results_per_chain"]
+        ),
+        "warmup_checks": tuple(source.get("warmup_checks", ())),
+        "retained_checks": tuple(source.get("retained_checks", ()))
+        + tuple(continuation.get("retained_checks", ())),
+        "hard_vetoes": tuple(continuation.get("hard_vetoes", ())),
+        "elapsed_seconds": float(continuation.get("elapsed_seconds", 0.0)),
+        "archive": source_archive + continuation_archive,
+        "continuation_prefix": _continuation_prefix_payload(prefix),
+        "continuation_replacement": True,
+        "continuation_prefix_results_per_chain": CONTINUATION_PREFIX_RESULTS,
+        "continuation_source_config": source.get("config"),
+        "continuation_new_check_count": len(
+            tuple(continuation.get("retained_checks", ()))
+        ),
+    }
+
+
+def _run_retained_continuation(
+    *,
+    adapter: Any,
+    transport: Any,
+    prefix: Mapping[str, Any],
+    base_adapter: Any,
+    thresholds: Any,
+    archive: Any,
+    tf: Any,
+    rank_normalized_hmc_diagnostics: Any,
+    config: Any,
+    stop_requested_fn: Any,
+    checkpoint_callback: Any,
+) -> Mapping[str, Any]:
+    from bayesfilter.inference.neutra_hmc import (
+        run_retained_neutra_hmc_continuation,
+    )
+
+    prefix_latent, prefix_raw = _load_verified_continuation_tensors(prefix, tf)
+    return run_retained_neutra_hmc_continuation(
+        adapter=adapter,
+        prefix_latent=prefix_latent,
+        prefix_model=prefix_raw,
+        model_transform=lambda values: _transform_batch(transport, values),
+        parameter_names=base_adapter.parameter_names,
+        config=config,
+        next_chunk_index=int(prefix["next_retained_chunk_index"]),
+        retained_diagnostic_fn=lambda draws: rank_normalized_hmc_diagnostics(
+            draws,
             parameter_names=base_adapter.parameter_names,
             thresholds=thresholds,
-        )
-        check = {
-            "chunk_index": chunk_index,
-            "completed_results_per_chain": retained_count,
-            "seed": seed,
-            "health": chunk["diagnostics"],
-            "diagnostic_role": "full_convergence",
-            "full_convergence": diagnostic,
-            "passed": bool(retained_count >= config.retained_min_results and diagnostic["passed"]),
-            "continuation_prefix_results_per_chain": CONTINUATION_PREFIX_RESULTS,
-        }
-        retained_checks.append(check)
-        if chunk["diagnostics"]["health_passed"] is not True:
-            hard_vetoes.append("retained_continuation_chunk_health_failed")
-            break
-        retained_passed = bool(check["passed"])
-        if retained_passed:
-            break
-        chunk_index += 1
-
-    cumulative_latent = tf.concat(retained_latent_chunks, axis=0)
-    cumulative_raw = tf.concat(retained_raw_chunks, axis=0)
-    cumulative_archive = None
-    if archive is not None:
-        cumulative_archive = archive(
-            stage="retained",
-            chunk_index=None,
-            latent_samples=cumulative_latent,
-            model_samples=cumulative_raw,
-            seed=None,
-            cumulative=True,
-        )
-    final_diagnostic = rank_normalized_hmc_diagnostics(
-        cumulative_raw,
-        parameter_names=base_adapter.parameter_names,
-        thresholds=thresholds,
+        ),
+        archive_callback=archive,
+        checkpoint_callback=checkpoint_callback,
+        stop_requested_fn=stop_requested_fn,
     )
-    return {
-        "passed": bool(retained_passed and not hard_vetoes),
-        "decision": "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL" if retained_passed and not hard_vetoes else "REJECT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL",
-        "warmup_passed": True,
-        "retained_passed": retained_passed,
-        "warmup_results_per_chain": WARMUP_MIN,
-        "retained_results_per_chain": retained_count,
-        "warmup_checks": (),
-        "retained_checks": tuple(retained_checks),
-        "hard_vetoes": tuple(dict.fromkeys(hard_vetoes)),
-        "elapsed_seconds": time.monotonic() - started,
-        "archive": getattr(archive, "metadata", ()) if archive is not None else (),
-        "continuation_prefix": prefix,
-        "final_diagnostic": final_diagnostic,
-        "cumulative_archive": cumulative_archive,
-    }
 
 
 def run_campaign(
@@ -524,6 +566,12 @@ def run_campaign(
     prior_elapsed_seconds: float = 0.0,
     resume_progress: Path | None = None,
 ) -> Mapping[str, Any]:
+    _validate_run_request(
+        candidate_indices=candidate_indices,
+        replacement_indices=replacement_indices,
+        prior_elapsed_seconds=prior_elapsed_seconds,
+        resume_progress=resume_progress,
+    )
     if output_root.exists():
         raise FileExistsError(f"output root must be fresh: {output_root}")
     output_root.mkdir(parents=True)
@@ -611,25 +659,27 @@ def run_campaign(
                 resume_progress, tuple(replacement_indices or ())
             )
             selected_indices = tuple(sorted(set(int(item) for item in replacement_indices or ())))
+            prior_rows = [
+                {
+                    **row,
+                    "completion_status": "awaiting_retained_continuation",
+                    "terminal_candidate_result": False,
+                }
+                if row_index in selected_indices
+                else row
+                for row_index, row in enumerate(prior_rows)
+            ]
         else:
             completed_ids = {str(row["candidate"]["candidate_id"]) for row in prior_rows}
             selected_indices = tuple(index for index in selected_indices if str(all_candidates[index]["candidate_id"]) not in completed_ids)
-    elif replacement_mode:
-        raise ValueError("replacement continuation requires --resume-progress")
     if not selected_indices or any(index < 0 or index >= len(all_candidates) for index in selected_indices):
         raise ValueError("candidate_indices must select valid manifest rows")
     candidates = tuple(all_candidates[index] for index in selected_indices)
     thresholds = RankNormalizedHMCThresholds(rhat_max=RETAINED_RHAT_MAX, bulk_ess_min=BULK_ESS_MIN, tail_ess_min=TAIL_ESS_MIN)
     rows: list[Mapping[str, Any]] = []
     hard_vetoes: list[str] = []
+    campaign_incomplete = False
     for index, candidate in zip(selected_indices, candidates):
-        elapsed = time.monotonic() - started
-        if _campaign_budget_exhausted(
-            prior_elapsed_seconds=prior_elapsed_seconds,
-            current_elapsed_seconds=elapsed,
-        ):
-            hard_vetoes.append("campaign_budget_exhausted")
-            break
         candidate_id = str(candidate["candidate_id"])
         archive = _archive_callback(output_root, candidate_id)
         config = SequentialNeuTraHMCConfig(
@@ -650,22 +700,67 @@ def run_campaign(
             jit_compile=True,
         )
         if replacement_mode:
+            prefix = continuation_prefixes[index]
+
+            def stop_requested() -> bool:
+                return _campaign_budget_exhausted(
+                    prior_elapsed_seconds=prior_elapsed_seconds,
+                    current_elapsed_seconds=time.monotonic() - started,
+                    reserve_seconds=CONTINUATION_CHUNK_BUDGET_RESERVE_SECONDS,
+                )
+
+            def checkpoint(continuation: Mapping[str, Any]) -> None:
+                current = _continuation_row(
+                    candidate=candidate,
+                    config=config,
+                    prefix=prefix,
+                    continuation=continuation,
+                    new_archive=tuple(archive.metadata),
+                )
+                checkpoint_rows = _merge_replacement_rows(
+                    prior_rows, list(tuple(rows) + (current,))
+                )
+                _write_progress(
+                    output_root / "progress.json",
+                    _progress_payload(
+                        prior_rows=checkpoint_rows,
+                        rows=[],
+                        planned_candidate_count=len(all_candidates),
+                        elapsed_seconds=time.monotonic() - started,
+                        terminal=False,
+                        prior_elapsed_seconds=prior_elapsed_seconds,
+                        prior_progress_sha256=prior_progress_sha256,
+                    ),
+                )
+
             run = _run_retained_continuation(
                 adapter=adapter,
                 transport=loaded.transport,
-                candidate=candidate,
-                prefix=continuation_prefixes[index],
+                prefix=prefix,
                 base_adapter=base_adapter,
-                output_root=output_root,
                 thresholds=thresholds,
                 archive=archive,
                 tf=tf,
                 rank_normalized_hmc_diagnostics=rank_normalized_hmc_diagnostics,
                 config=config,
-                campaign_started=started,
-                prior_elapsed_seconds=prior_elapsed_seconds,
+                stop_requested_fn=stop_requested,
+                checkpoint_callback=checkpoint,
+            )
+            row = _continuation_row(
+                candidate=candidate,
+                config=config,
+                prefix=prefix,
+                continuation=run,
+                new_archive=tuple(archive.metadata),
             )
         else:
+            if _campaign_budget_exhausted(
+                prior_elapsed_seconds=prior_elapsed_seconds,
+                current_elapsed_seconds=time.monotonic() - started,
+            ):
+                hard_vetoes.append("campaign_budget_exhausted")
+                campaign_incomplete = True
+                break
             run = run_sequential_neutra_hmc(
                 adapter=adapter,
                 initial_state=initial_state,
@@ -675,25 +770,23 @@ def run_campaign(
                 retained_diagnostic_fn=lambda draws: rank_normalized_hmc_diagnostics(draws, parameter_names=base_adapter.parameter_names, thresholds=thresholds),
                 archive_callback=archive,
             )
-        row = {
-            "candidate": candidate,
-            "config": config.payload(chain_count=CHAIN_COUNT),
-            "passed": bool(run["passed"]),
-            "decision": run["decision"],
-            "warmup_passed": run["warmup_passed"],
-            "retained_passed": run["retained_passed"],
-            "warmup_results_per_chain": run["warmup_results_per_chain"],
-            "retained_results_per_chain": run["retained_results_per_chain"],
-            "warmup_checks": run["warmup_checks"],
-            "retained_checks": run["retained_checks"],
-            "hard_vetoes": run["hard_vetoes"],
-            "elapsed_seconds": run["elapsed_seconds"],
-            "archive": archive.metadata,
-        }
-        if replacement_mode:
-            row["continuation_prefix"] = run["continuation_prefix"]
-            row["continuation_replacement"] = True
-            row["continuation_prefix_results_per_chain"] = CONTINUATION_PREFIX_RESULTS
+            row = {
+                "candidate": candidate,
+                "config": config.payload(chain_count=CHAIN_COUNT),
+                "passed": bool(run["passed"]),
+                "decision": run["decision"],
+                "completion_status": "passed" if run["passed"] else "terminal_rejection",
+                "terminal_candidate_result": True,
+                "warmup_passed": run["warmup_passed"],
+                "retained_passed": run["retained_passed"],
+                "warmup_results_per_chain": run["warmup_results_per_chain"],
+                "retained_results_per_chain": run["retained_results_per_chain"],
+                "warmup_checks": run["warmup_checks"],
+                "retained_checks": run["retained_checks"],
+                "hard_vetoes": run["hard_vetoes"],
+                "elapsed_seconds": run["elapsed_seconds"],
+                "archive": archive.metadata,
+            }
         rows.append(row)
         hard_vetoes.extend(f"{candidate_id}:{veto}" for veto in run["hard_vetoes"])
         checkpoint_rows = (
@@ -709,8 +802,14 @@ def run_campaign(
                 planned_candidate_count=len(all_candidates),
                 elapsed_seconds=time.monotonic() - started,
                 terminal=False,
+                prior_elapsed_seconds=prior_elapsed_seconds,
+                prior_progress_sha256=prior_progress_sha256,
             ),
         )
+        if row.get("terminal_candidate_result") is not True:
+            hard_vetoes.append("campaign_budget_exhausted")
+            campaign_incomplete = True
+            break
 
     wall = time.monotonic() - started
     aggregate_elapsed = float(prior_elapsed_seconds) + wall
@@ -719,12 +818,28 @@ def run_campaign(
         if replacement_mode
         else list(tuple(prior_rows) + tuple(rows))
     )
+    selected_terminal_count = sum(
+        int(row.get("terminal_candidate_result", True)) for row in rows
+    )
+    campaign_completed = bool(
+        len(rows) == len(candidates)
+        and selected_terminal_count == len(candidates)
+        and not campaign_incomplete
+    )
     result = {
         "schema": "bayesfilter.pp_ukf.true_hmc_validation.result.v1",
-        "status": "completed_selected_candidates" if len(rows) == len(candidates) else "budget_or_veto_stopped",
+        "status": (
+            "completed_selected_candidates"
+            if campaign_completed
+            else "budget_stopped_incomplete"
+        ),
         "candidate_rows": tuple(final_rows),
-        "candidate_count_completed": len(final_rows),
+        "candidate_count_completed": sum(
+            int(row.get("terminal_candidate_result", True)) for row in final_rows
+        ),
         "candidate_count_planned": len(all_candidates),
+        "selected_candidate_count_completed": selected_terminal_count,
+        "selected_candidate_count_planned": len(candidates),
         "selected_candidate_indices": selected_indices,
         "prior_elapsed_seconds": float(prior_elapsed_seconds),
         "prior_progress_sha256": prior_progress_sha256,
@@ -741,6 +856,11 @@ def run_campaign(
         "thresholds": thresholds.payload(),
         "memory_policy": memory_policy,
         "devices": tuple(str(d) for d in tf.config.list_logical_devices()),
+        "dtype": "float64",
+        "jit_compile": True,
+        "tf32_enabled": bool(
+            tf.config.experimental.tensor_float_32_execution_enabled()
+        ),
         "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "plan": str(PLAN),
         "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
@@ -751,9 +871,17 @@ def run_campaign(
             CONTINUATION_PREFIX_RESULTS if replacement_mode else None
         ),
         "continuation_prefixes": (
-            tuple(continuation_prefixes[index] for index in selected_indices)
+            tuple(
+                _continuation_prefix_payload(continuation_prefixes[index])
+                for index in selected_indices
+            )
             if replacement_mode
             else ()
+        ),
+        "continuation_chunk_budget_reserve_seconds": (
+            CONTINUATION_CHUNK_BUDGET_RESERVE_SECONDS
+            if replacement_mode
+            else None
         ),
         "nonclaims": ("no sampler superiority", "no default readiness", "no claim beyond declared PP-UKF validation scope"),
     }
@@ -765,6 +893,8 @@ def run_campaign(
         "finished_utc": datetime.now(timezone.utc).isoformat(),
         "git_commit": result["git_commit"],
         "python": sys.version,
+        "python_executable": sys.executable,
+        "conda_default_env": os.environ.get("CONDA_DEFAULT_ENV"),
         "platform": platform.platform(),
         "campaign_cap_seconds": CAMPAIGN_CAP_SECONDS,
         "wall_seconds": wall,
@@ -776,6 +906,46 @@ def run_campaign(
         "thresholds": thresholds.payload(),
         "memory_policy": memory_policy,
         "devices": tuple(str(d) for d in tf.config.list_logical_devices()),
+        "dtype": "float64",
+        "jit_compile": True,
+        "tf32_enabled": bool(
+            tf.config.experimental.tensor_float_32_execution_enabled()
+        ),
+        "selected_candidate_configs": tuple(
+            {
+                "candidate_id": candidate["candidate_id"],
+                "candidate_index": index,
+                "config": SequentialNeuTraHMCConfig(
+                    step_size=float(candidate["step_size"]),
+                    num_leapfrog_steps=int(candidate["num_leapfrog_steps"]),
+                    warmup_seed=(
+                        WARMUP_SEED_ROOT[0],
+                        WARMUP_SEED_ROOT[1] + index * 1009,
+                    ),
+                    retained_seed=(
+                        RETAINED_SEED_ROOT[0],
+                        RETAINED_SEED_ROOT[1] + index * 1009,
+                    ),
+                    warmup_chunk_results=250,
+                    warmup_min_results=WARMUP_MIN,
+                    warmup_check_window_results=1000,
+                    warmup_max_results=MAX_RESULTS,
+                    warmup_rhat_max=WARMUP_RHAT_MAX,
+                    retained_chunk_results=500,
+                    retained_min_results=RETAINED_MIN,
+                    retained_max_results=MAX_RESULTS,
+                    retained_rhat_max=RETAINED_RHAT_MAX,
+                    minimum_chain_count=CHAIN_COUNT,
+                    jit_compile=True,
+                ).payload(chain_count=CHAIN_COUNT),
+            }
+            for index, candidate in zip(selected_indices, candidates)
+        ),
+        "output_root": str(output_root),
+        "progress_path": str(output_root / "progress.json"),
+        "public_result_path": str(output_root / "public_result.json"),
+        "run_manifest_path": str(output_root / "run_manifest.json"),
+        "plan": str(PLAN),
         "sampling_launched": True,
         "warmup_excluded_from_posterior": True,
         "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
@@ -785,6 +955,11 @@ def run_campaign(
             CONTINUATION_PREFIX_RESULTS if replacement_mode else None
         ),
         "prior_progress_sha256": prior_progress_sha256,
+        "continuation_chunk_budget_reserve_seconds": (
+            CONTINUATION_CHUNK_BUDGET_RESERVE_SECONDS
+            if replacement_mode
+            else None
+        ),
     })
     _write_progress(
         output_root / "progress.json",
@@ -794,6 +969,8 @@ def run_campaign(
             planned_candidate_count=len(all_candidates),
             elapsed_seconds=wall,
             terminal=True,
+            prior_elapsed_seconds=prior_elapsed_seconds,
+            prior_progress_sha256=prior_progress_sha256,
         ),
     )
     return result
@@ -807,13 +984,36 @@ def main() -> int:
     parser.add_argument("--prior-elapsed-seconds", type=float, default=0.0)
     parser.add_argument("--resume-progress", type=Path)
     args = parser.parse_args()
-    result = run_campaign(
-        args.output_root,
-        candidate_indices=None if args.candidate_index is None else tuple(args.candidate_index),
-        replacement_indices=None if args.replace_candidate_index is None else tuple(args.replace_candidate_index),
-        prior_elapsed_seconds=args.prior_elapsed_seconds,
-        resume_progress=args.resume_progress,
-    )
+    try:
+        result = run_campaign(
+            args.output_root,
+            candidate_indices=None if args.candidate_index is None else tuple(args.candidate_index),
+            replacement_indices=None if args.replace_candidate_index is None else tuple(args.replace_candidate_index),
+            prior_elapsed_seconds=args.prior_elapsed_seconds,
+            resume_progress=args.resume_progress,
+        )
+    except Exception as exc:
+        if args.output_root.is_dir():
+            failure_path = args.output_root / "failure.json"
+            if not failure_path.exists():
+                _write_new_json(
+                    failure_path,
+                    {
+                        "schema": "bayesfilter.pp_ukf.true_hmc_validation.failure.v1",
+                        "status": "harness_exception",
+                        "failed_utc": datetime.now(timezone.utc).isoformat(),
+                        "exception_type": type(exc).__name__,
+                        "exception_message": str(exc),
+                        "traceback": traceback.format_exc(),
+                        "command": sys.argv,
+                        "git_commit": subprocess.check_output(
+                            ["git", "rev-parse", "HEAD"], text=True
+                        ).strip(),
+                        "plan": str(PLAN),
+                        "prior_elapsed_seconds": args.prior_elapsed_seconds,
+                    },
+                )
+        raise
     print(json.dumps({"status": result["status"], "completed": result["candidate_count_completed"], "planned": result["candidate_count_planned"], "wall_seconds": result["wall_seconds"]}, sort_keys=True))
     return 0
 

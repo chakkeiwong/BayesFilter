@@ -207,6 +207,7 @@ __all__ = [
     "generate_cpu_sample_batch",
     "load_validated_p0_registry",
     "run_batched_hmc",
+    "run_retained_neutra_hmc_continuation",
     "run_sequential_neutra_hmc",
     "sequential_chunk_seed",
     "_make_hmc_target_log_prob_fn",
