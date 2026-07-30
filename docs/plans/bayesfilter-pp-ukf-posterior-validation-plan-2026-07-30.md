@@ -2,7 +2,10 @@
 
 Date: 2026-07-30
 
-Status: `READY_FOR_REPRODUCIBLE_ATTEMPT_07`
+Status: `COMPLETED`
+
+Terminal result:
+`docs/plans/bayesfilter-pp-ukf-posterior-validation-result-2026-07-30.md`
 
 ## Research intent ledger
 
@@ -129,7 +132,10 @@ All ten repaired HMC convergence screens reproduced their terminal pass status.
 - Every candidate's point estimate is within its practical tolerance.
 - No ranking was performed.
 
-Provisional verdict: `PASS_TWO_EQUIVALENT_EIGHT_INCONCLUSIVE_ZERO_DISAGREEMENT`.
+Attempt 7 reran the identical frozen computation after commit `b926a58c` and
+its scientific payload matched attempt 6 exactly after excluding timestamps and
+wall time. Its manifest binds the committed harness. Terminal verdict:
+`PASS_TWO_EQUIVALENT_EIGHT_INCONCLUSIVE_ZERO_DISAGREEMENT`.
 No HMC rerun occurred or is required to preserve this result. A later decision
 to qualify any of the eight inconclusive kernels would require additional
 retained evidence under a new bounded continuation plan; this result does not
