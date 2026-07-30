@@ -2,7 +2,10 @@
 
 Date: 2026-07-30
 
-Status: `PLAN_REVIEWED_READY_FOR_EXECUTION`
+Status: `COMPLETED_ATTEMPT_11`
+
+Terminal result:
+`docs/plans/bayesfilter-pp-ukf-true-hmc-validation-terminal-result-2026-07-30.md`
 
 Parent plan: `docs/plans/bayesfilter-pp-ukf-true-hmc-continuation-plan-2026-07-23.md`
 
