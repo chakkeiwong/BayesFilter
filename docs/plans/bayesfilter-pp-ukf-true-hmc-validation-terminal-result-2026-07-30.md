@@ -86,13 +86,20 @@ recorded value `not_exposed_by_tfp_hamiltonian_monte_carlo` is not evidence of
 zero divergences. Finite log-acceptance values below `-1000` remain explanatory
 extreme proposals, not an energy veto.
 
-The launch log emitted 72 warnings that a `complex128` value was cast to
-`float64`, discarding its imaginary component. The declared state, target,
-gradient-driven transition, telemetry, movement, and convergence checks stayed
-finite and passed, so this warning does not retrospectively invalidate the
-frozen screen. Its mathematical origin and the magnitude of the discarded
-component were not measured here. It therefore remains a repair/localization
-requirement before a stronger posterior-correctness or scientific claim.
+The original launch log emitted 72 warnings that a `complex128` value was cast
+to `float64`, discarding its imaginary component. Source tracing showed that
+all 72 came from TFP's FFT-backed ESS diagnostic: 24 retained diagnostic
+evaluations times three ESS calls each. The PP-UKF target and HMC transition
+are real-valued.
+
+This warning was repaired after the run in
+`docs/plans/bayesfilter-real-fft-hmc-ess-cast-warning-repair-plan-2026-07-30.md`.
+The replacement uses TensorFlow `rfft`/`irfft` while matching TFP 0.25's ESS
+formula. On the final `L=9` attempt-11 model-coordinate tensor, the maximum
+direct ESS difference from TFP was `3.64e-11`; the diagnostic reproduced the
+same pass metrics and emitted zero complex-cast warnings. The historical
+attempt-11 artifact is unchanged, and no rerun is required for this
+post-sampling diagnostic repair.
 
 ## Post-run red team
 

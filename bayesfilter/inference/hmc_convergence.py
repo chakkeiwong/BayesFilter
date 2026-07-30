@@ -45,6 +45,86 @@ class RankNormalizedHMCThresholds:
         }
 
 
+def _real_fft_cross_chain_ess(states: Any) -> tf.Tensor:
+    """Match TFP cross-chain ESS without a complex-to-real cast.
+
+    TFP 0.25 computes real-input autocorrelation by promoting the signal to
+    ``complex128`` for a full FFT and casting the inverse transform back to
+    ``float64``.  This helper keeps the same cross-chain variance correction
+    and Geyer positive-pair truncation, but uses TensorFlow's real FFT pair.
+    It is intentionally scoped to the rank-3, sample-major HMC diagnostic
+    contract used by this module.
+    """
+
+    values = tf.convert_to_tensor(states, dtype=tf.float64)
+    if values.shape.rank != 3:
+        raise ValueError("states must have shape [draw, chain, parameter]")
+    static_shape = values.shape.as_list()
+    if any(dim is None for dim in static_shape):
+        raise ValueError("states must have a fully static shape")
+    draw_count, chain_count, parameter_count = (int(dim) for dim in static_shape)
+    if draw_count < 2 or chain_count < 2 or parameter_count < 1:
+        raise ValueError("states must contain at least two draws and chains")
+
+    # Match TFP's next power-of-two padding, which is at least twice the draw
+    # count. The transformed axis is last for tf.signal.rfft.
+    fft_size = 1 << (max(2, 2 * draw_count) - 1).bit_length()
+    centered = tf.transpose(values, [1, 2, 0])
+    centered -= tf.reduce_mean(centered, axis=-1, keepdims=True)
+    centered = tf.pad(centered, [[0, 0], [0, 0], [0, fft_size - draw_count]])
+    spectrum = tf.signal.rfft(centered, fft_length=[fft_size])
+    power = spectrum * tf.math.conj(spectrum)
+    autocovariance = tf.transpose(
+        tf.signal.irfft(power, fft_length=[fft_size])[..., :draw_count],
+        [2, 0, 1],
+    )
+    lag_denominator = tf.cast(
+        tf.range(draw_count, 0, -1), tf.float64
+    )[:, tf.newaxis, tf.newaxis]
+    autocovariance /= lag_denominator
+
+    chain_means = tf.reduce_mean(values, axis=0)
+    chain_mean_centered = chain_means - tf.reduce_mean(
+        chain_means, axis=0, keepdims=True
+    )
+    chain_count_tensor = tf.cast(chain_count, tf.float64)
+    between_chain_variance_div_n = (
+        chain_count_tensor
+        / (chain_count_tensor - 1.0)
+        * tf.reduce_mean(tf.square(chain_mean_centered), axis=0)
+    )
+    biased_within_chain_variance = tf.reduce_mean(autocovariance[0], axis=0)
+    approx_variance = (
+        biased_within_chain_variance + between_chain_variance_div_n
+    )
+    mean_auto_covariance = tf.reduce_mean(autocovariance, axis=1)
+    auto_corr = 1.0 - (
+        biased_within_chain_variance[tf.newaxis, :] - mean_auto_covariance
+    ) / approx_variance[tf.newaxis, :]
+
+    lag = tf.cast(tf.range(draw_count), tf.float64)
+    weighted_auto_corr = ((float(draw_count) - lag) / float(draw_count))[
+        :, tf.newaxis
+    ] * auto_corr
+    pair_count = draw_count // 2
+    pair_auto_corr = tf.reshape(
+        auto_corr[: 2 * pair_count], [pair_count, 2, parameter_count]
+    )
+    pair_sums = tf.reduce_sum(pair_auto_corr, axis=1)
+    negative_pair_mask = tf.cast(pair_sums < 0.0, tf.float64)
+    cumulative_negative_pairs = tf.cumsum(negative_pair_mask, axis=0)
+    active_pair_mask = tf.maximum(1.0 - cumulative_negative_pairs, 0.0)
+    pair_weighted_auto_corr = tf.reshape(
+        weighted_auto_corr[: 2 * pair_count],
+        [pair_count, 2, parameter_count],
+    )
+    weighted_pair_sums = tf.reduce_sum(pair_weighted_auto_corr, axis=1)
+    weighted_pair_sums *= active_pair_mask
+    return chain_count_tensor * float(draw_count) / (
+        -1.0 + 2.0 * tf.reduce_sum(weighted_pair_sums, axis=0)
+    )
+
+
 def rank_normalized_split_rhat_summary(
     draws: Any,
     *,
@@ -192,11 +272,7 @@ def rank_normalized_hmc_diagnostics(
     rhat = tf.constant(rhat_summary["rhat"], dtype=tf.float64)
     rank_values = _rank_normalize(values)
     split_rank = _split_chains(rank_values)
-    bulk_ess = tfp.mcmc.effective_sample_size(
-        split_rank,
-        filter_beyond_positive_pairs=True,
-        cross_chain_dims=1,
-    )
+    bulk_ess = _real_fft_cross_chain_ess(split_rank)
 
     q05 = tfp.stats.percentile(
         values,
@@ -212,16 +288,8 @@ def rank_normalized_hmc_diagnostics(
     )
     lower_indicator = tf.cast(values <= q05[tf.newaxis, tf.newaxis, :], tf.float64)
     upper_indicator = tf.cast(values >= q95[tf.newaxis, tf.newaxis, :], tf.float64)
-    lower_ess = tfp.mcmc.effective_sample_size(
-        _split_chains(lower_indicator),
-        filter_beyond_positive_pairs=True,
-        cross_chain_dims=1,
-    )
-    upper_ess = tfp.mcmc.effective_sample_size(
-        _split_chains(upper_indicator),
-        filter_beyond_positive_pairs=True,
-        cross_chain_dims=1,
-    )
+    lower_ess = _real_fft_cross_chain_ess(_split_chains(lower_indicator))
+    upper_ess = _real_fft_cross_chain_ess(_split_chains(upper_indicator))
     tail_ess = tf.minimum(lower_ess, upper_ess)
 
     finite_diagnostics = tf.logical_and(
@@ -268,7 +336,10 @@ def rank_normalized_hmc_diagnostics(
             "rhat": RANK_NORMALIZED_SPLIT_RHAT_DEFINITION,
             "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
             "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators",
-            "autocorrelation_truncation": "TFP initial positive pairs",
+            "autocorrelation_truncation": (
+                "Geyer initial positive pairs; TFP 0.25 formula parity via "
+                "TensorFlow real FFT"
+            ),
             "quantile_interpolation": "linear",
         },
         "max_rhat": float(tf.reduce_max(rhat).numpy()),
