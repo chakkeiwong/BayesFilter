@@ -2058,3 +2058,325 @@ output cloud construction, and the differentiation contract that the recovered
 custom-gradient bridge and later learned-transport chapters build on.
 
 \FloatBarrier
+
+\section{A complete higher-moment Contract E candidate}
+\label{sec:bf-eot-higher-moment-contract-e}
+
+This section defines the complete opt-in algorithm that is implemented and
+tested below.  It is important to name the object correctly.  A classical
+unscented transform replaces the distribution of an input \(x\) by sigma
+points and evaluates the nonlinear map \(f\) at those sigma points.  The
+algorithm here instead propagates the particle rows through \(f\), evaluates
+their likelihoods, applies entropic OT and Contract~E, and then applies a
+finite higher-moment correction to the carried cloud.  GenUT supplies the
+motivation and the selected diagonal moment targets, but this is not the
+classical GenUT quadrature algorithm.  The existing Contract~E route remains
+unchanged when the correction iteration count is zero.
+
+\subsection{Finite filtering, OT, and Contract E stages}
+
+Let \(x_{t-1,i}^{+}\in\mathbb R^d\), \(i=1,\ldots,N\), be the equally
+weighted cloud carried from time \(t-1\).  The innovation rows \(e_{t,i}\),
+their ordering, and all numerical controls are fixed as part of the finite
+route.  The transition and likelihood stages are
+\begin{align}
+ x_{t,i}^{-}&=f_\theta(x_{t-1,i}^{+},e_{t,i}),
+ \label{eq:bf-eot-hm-transition}\\
+ \ell_{t,i}&=\log g_\theta(y_t\mid x_{t,i}^{-}),
+ &\widehat\ell_t^N&=\log\!\left(\frac1N\sum_{i=1}^N
+ e^{\ell_{t,i}}\right),
+ \label{eq:bf-eot-hm-likelihood}\\
+ \alpha_{t,i}&=
+ \frac{e^{\ell_{t,i}}}{\sum_{j=1}^N e^{\ell_{t,j}}}.
+ \label{eq:bf-eot-hm-weights}
+\end{align}
+The weighted empirical target, its mean, and its population covariance are
+\begin{align}
+ \widehat\pi_t^w&=\sum_{i=1}^N\alpha_{t,i}\delta_{x_{t,i}^{-}},
+ &\mu_w&=\sum_{i=1}^N\alpha_{t,i}x_{t,i}^{-},\\
+ P_w&=\sum_{i=1}^N\alpha_{t,i}
+ (x_{t,i}^{-}-\mu_w)(x_{t,i}^{-}-\mu_w)^\top.
+ \label{eq:bf-eot-hm-weighted-moments}
+\end{align}
+
+For completeness, the implemented finite Sinkhorn stage uses the cost
+\(C_{ij}=\lVert x_{t,i}^{-}-x_{t,j}^{-}\rVert_2^2\), a positive kernel
+\(K_{ij}=\exp\{-C_{ij}/(\epsilon\bar C)\}\), where
+\(\bar C=\max(N^{-2}\sum_{ij}C_{ij},10^{-3})\), and fixed iteration counts.
+Writing \(u_i=1/N\), each iteration applies
+\begin{equation}
+ a\leftarrow u\oslash(Kb+\tau\mathbf1),
+ \qquad
+ b\leftarrow\alpha\oslash(K^\top a+\tau\mathbf1),
+ \qquad \tau=10^{-7},
+ \label{eq:bf-eot-hm-sinkhorn}
+\end{equation}
+and returns the finite nonnegative coupling
+\(\Pi=\operatorname{diag}(a)K\operatorname{diag}(b)\).  Because a finite
+iteration need not satisfy either marginal exactly, the carried barycenter is
+the row quotient
+\begin{equation}
+ m_i=\sum_j\Pi_{ij},
+ \qquad
+ y_i^+=\frac{\sum_j\Pi_{ij}x_{t,j}^{-}}{m_i}.
+ \label{eq:bf-eot-hm-barycentric}
+\end{equation}
+The route fails closed unless every \(m_i>\tau\) and the source marginal of
+the quotient coupling
+\(\overline\Pi_{ij}=u_i\Pi_{ij}/m_i\) satisfies its declared tolerance.
+Replacing the quotient by \(N\sum_j\Pi_{ij}x_j\) is valid only when the finite
+row marginal is already exactly \(u\).
+
+Let \(\bar y=N^{-1}\sum_i y_i^+\) and
+\(P_+=N^{-1}\sum_i(y_i^+-\bar y)(y_i^+-\bar y)^\top\).  Contract~E uses a
+fixed zero-mean residual design \(\Xi\in\mathbb R^{N\times d}\) and
+\begin{align}
+ G&=\operatorname{sym}(P_w-P_+),
+ &B&=\operatorname{chol}(G+\lambda I_d),\\
+ \widetilde y_i&=y_i^++\Xi_iB^\top,
+ &\overline{\widetilde y}&=N^{-1}\sum_i\widetilde y_i.
+ \label{eq:bf-eot-hm-residual}
+\end{align}
+If \(P_\Xi=N^{-1}\Xi^\top\Xi\) and
+\(C_{y\Xi}=N^{-1}\sum_i(y_i^+-\bar y)\Xi_i^\top\), then its realized
+population covariance is
+\begin{equation}
+ \widetilde P=P_++C_{y\Xi}B^\top+BC_{y\Xi}^\top+BP_\Xi B^\top.
+ \label{eq:bf-eot-hm-cross-covariance}
+\end{equation}
+Thus \(BB^\top\) alone is not the injected covariance when the cross term is
+nonzero.  The second Contract~E stage uses the realized \(\widetilde P\):
+\begin{align}
+ L_wL_w^\top&=P_w+\lambda I_d,
+ &L_EL_E^\top&=\widetilde P+\lambda I_d,\\
+ A&=L_wL_E^{-1},
+ &x_i^E&=\mu_w+(\widetilde y_i-\overline{\widetilde y})A^\top.
+ \label{eq:bf-eot-hm-contract-e}
+\end{align}
+Every inverse in this section denotes a triangular solve.
+
+\begin{proposition}[Contract E mean and ridged covariance]
+\label{prop:bf-eot-hm-contract-e}
+Suppose \(G+\lambda I_d\), \(P_w+\lambda I_d\), and
+\(\widetilde P+\lambda I_d\) are strictly positive definite.  Under the
+population-covariance convention, the cloud in
+\eqref{eq:bf-eot-hm-contract-e} has mean \(\mu_w\) and covariance \(P_E\)
+satisfying
+\begin{equation}
+ P_E+\lambda AA^\top=P_w+\lambda I_d,
+ \qquad
+ P_E-P_w=\lambda(I_d-AA^\top).
+ \label{eq:bf-eot-hm-ridged-identity}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The centered rows in \eqref{eq:bf-eot-hm-contract-e} sum to zero, so their
+affine image has mean \(\mu_w\).  Its covariance is
+\(P_E=A\widetilde P A^\top\).  The Cholesky definitions give
+\[
+ A(\widetilde P+\lambda I_d)A^\top
+ =L_wL_E^{-1}L_EL_E^\top L_E^{-\top}L_w^\top
+ =L_wL_w^\top=P_w+\lambda I_d.
+\]
+Subtraction of \(\lambda AA^\top\) proves both identities.  In particular,
+the first stage alone does not prove covariance restoration, and positive
+ridge does not generally give the un-ridged equality \(P_E=P_w\).
+\end{proof}
+
+\begin{proposition}[Current-increment value boundary]
+\label{prop:bf-eot-hm-current-value}
+Any reset applied after \eqref{eq:bf-eot-hm-likelihood} leaves the current
+increment \(\widehat\ell_t^N\) exactly unchanged.  It generally changes later
+increments and therefore generally changes the complete finite filtering
+value.
+\end{proposition}
+
+\begin{proof}
+The current increment is a function only of the pre-reset rows
+\(x_{t,i}^{-}\) and their likelihoods.  A reset changes the rows supplied to
+the next transition.  Unless all later transition and likelihood functionals
+are insensitive to that change, a later increment changes.  This is a
+program-order identity for the finite estimator, not equality with the exact
+filtering likelihood.
+\end{proof}
+
+\subsection{Finite higher-moment correction}
+
+Assume now that the un-ridged weighted covariance is strictly positive
+definite and write \(C_wC_w^\top=P_w\).  With row-vector notation, define
+\begin{equation}
+ z_i=(x_{t,i}^{-}-\mu_w)C_w^{-\top},
+ \qquad
+ s_a=\sum_i\alpha_{t,i}z_{ia}^3,
+ \qquad
+ k_a=\sum_i\alpha_{t,i}z_{ia}^4.
+ \label{eq:bf-eot-hm-target-moments}
+\end{equation}
+These are the selected standardized diagonal moments motivated by the GenUT
+axis rule of Proposition~\ref{prop:bf-eot-genut-axis}.  Mixed third- and
+fourth-order tensors are deliberately not formed.
+
+At one correction iteration, standardize the current equal-weight rows to
+\(u_{ia}\) so that \(N^{-1}\sum_i u_i=0\) and
+\(N^{-1}\sum_i u_i u_i^\top=I_d\).  Let
+\begin{equation}
+ m_{r,a}=\frac1N\sum_i u_{ia}^r,
+ \qquad d_a=\begin{bmatrix}s_a-m_{3,a}\\ k_a-m_{4,a}\end{bmatrix}.
+ \label{eq:bf-eot-hm-moment-residual}
+\end{equation}
+For each coordinate define two projected moment directions
+\begin{align}
+ q_{3,ia}&=u_{ia}^2-1-m_{3,a}u_{ia},\\
+ q_{4,ia}&=u_{ia}^3-m_{3,a}-m_{4,a}u_{ia}.
+ \label{eq:bf-eot-hm-directions}
+\end{align}
+The \(2\times2\) local moment Jacobian is
+\begin{equation}
+ J_a=
+ \begin{bmatrix}
+ 3N^{-1}\sum_i u_{ia}^2q_{3,ia} &
+ 3N^{-1}\sum_i u_{ia}^2q_{4,ia}\\
+ 4N^{-1}\sum_i u_{ia}^3q_{3,ia} &
+ 4N^{-1}\sum_i u_{ia}^3q_{4,ia}
+ \end{bmatrix}.
+ \label{eq:bf-eot-hm-jacobian}
+\end{equation}
+For damping \(\delta>0\) and strength \(\rho\geq0\), the finite update is
+\begin{align}
+ c_a&=\rho(J_a^\top J_a+\delta I_2)^{-1}J_a^\top d_a,
+ \label{eq:bf-eot-hm-coefficients}\\
+ v_{ia}&=u_{ia}+c_{a,1}q_{3,ia}+c_{a,2}q_{4,ia}.
+ \label{eq:bf-eot-hm-correction}
+\end{align}
+The corrected \(v_i\) are re-centered and re-whitened before the next finite
+iteration.  After the declared number \(S\) of iterations, the standardized
+rows \(u_i^H\) are mapped back by
+\begin{equation}
+ x_i^H=\mu_w+u_i^H C_w^\top.
+ \label{eq:bf-eot-hm-map-back}
+\end{equation}
+
+\begin{proposition}[Projected directions and local moment Jacobian]
+\label{prop:bf-eot-hm-projected-jacobian}
+For each coordinate, both directions in
+\eqref{eq:bf-eot-hm-directions} have zero empirical mean and zero empirical
+inner product with \(u_a\).  Moreover, \(J_a\) in
+\eqref{eq:bf-eot-hm-jacobian} is the derivative at \(c_a=0\) of the map from
+the two correction coefficients to the third and fourth empirical moments
+before rewhitening.
+\end{proposition}
+
+\begin{proof}
+Because \(m_{1,a}=0\) and \(m_{2,a}=1\),
+\[
+ N^{-1}\sum_iq_{3,ia}=m_{2,a}-1-m_{3,a}m_{1,a}=0,
+ \quad
+ N^{-1}\sum_i u_{ia}q_{3,ia}=m_{3,a}-m_{1,a}-m_{3,a}m_{2,a}=0.
+\]
+The corresponding expressions for \(q_4\) are
+\(m_{3,a}-m_{3,a}-m_{4,a}m_{1,a}=0\) and
+\(m_{4,a}-m_{3,a}m_{1,a}-m_{4,a}m_{2,a}=0\).
+For \(v=u+c_1q_3+c_2q_4\), differentiation of
+\(N^{-1}\sum_i v_i^3\) and \(N^{-1}\sum_i v_i^4\) at \(c=0\) gives
+respectively \(3N^{-1}\sum_i u_i^2q_j\) and
+\(4N^{-1}\sum_i u_i^3q_j\), which are exactly the rows of \(J_a\).
+Thus the directions preserve mean and variance to first order, while the
+subsequent finite rewhitening enforces those two moments exactly.
+\end{proof}
+
+\begin{proposition}[Exact first and second moments after rewhitening]
+\label{prop:bf-eot-hm-rewhitening}
+Let \(v_i\in\mathbb R^d\) have population mean \(\bar v\), strictly positive
+definite population covariance \(Q\), and Cholesky factor \(RR^\top=Q\).
+Set \(u_i=(v_i-\bar v)R^{-\top}\).  Then
+\begin{equation}
+ \frac1N\sum_i u_i=0,
+ \qquad
+ \frac1N\sum_i u_i u_i^\top=I_d.
+\end{equation}
+Consequently \eqref{eq:bf-eot-hm-map-back} has mean \(\mu_w\) and exactly
+the un-ridged population covariance \(P_w\).
+\end{proposition}
+
+\begin{proof}
+Centering proves the first identity.  Row-vector multiplication gives
+\[
+ \frac1N\sum_i u_i^\top u_i=R^{-1}QR^{-\top}=I_d.
+\]
+The affine map in \eqref{eq:bf-eot-hm-map-back} therefore has covariance
+\(C_wI_dC_w^\top=P_w\), and its centered rows sum to zero.
+\end{proof}
+
+The update \eqref{eq:bf-eot-hm-coefficients} is a damped local
+Gauss--Newton step, not an exact projection.  Rewhitening can change the third
+and fourth moments, and the nonlinear moment-feasibility problem can be
+infeasible or have multiple solutions.  The implementation therefore reports
+the post-rewhitening residuals and makes no exact higher-moment matching claim.
+
+\subsection{Complete algorithm and score statement}
+
+One time step of the candidate is the following fixed composition:
+\begin{enumerate}[label=(\arabic*)]
+ \item propagate every particle row by \eqref{eq:bf-eot-hm-transition};
+ \item compute the likelihood increment and normalized weights using
+       \eqref{eq:bf-eot-hm-likelihood}--\eqref{eq:bf-eot-hm-weights};
+ \item run the declared finite Sinkhorn and balance iterations in
+       \eqref{eq:bf-eot-hm-sinkhorn}, form the row quotient
+       \eqref{eq:bf-eot-hm-barycentric}, and check its marginal diagnostics;
+ \item apply the residual injection \eqref{eq:bf-eot-hm-residual} and the
+       Contract~E affine restoration \eqref{eq:bf-eot-hm-contract-e};
+ \item if \(S>0\), compute \eqref{eq:bf-eot-hm-target-moments}, apply
+       \eqref{eq:bf-eot-hm-coefficients}--\eqref{eq:bf-eot-hm-correction}
+       exactly \(S\) times with rewhitening after each iteration, then map back
+       by \eqref{eq:bf-eot-hm-map-back};
+ \item carry \(x_i^H\), or \(x_i^E\) when \(S=0\), with uniform weights to
+       the next time step.
+\end{enumerate}
+The particle count must satisfy the chosen residual-design rule: \(N\) is
+divisible by \(2d\) for replicated cubature, and a positive GenUT design must
+have exactly representable replication masses.  These requirements concern
+the fixed residual design; the adaptive correction itself keeps all \(N\)
+particle rows and uses \(O(Nd+d^2)\) storage beyond the OT workspace.
+
+\begin{proposition}[Finite-route total-score correctness]
+\label{prop:bf-eot-hm-score}
+Fix the innovation rows and ordering, residual design, finite Sinkhorn and
+balance counts, \(\epsilon\), \(\lambda\), \(\rho\), \(\delta\), and \(S\).
+Assume every required covariance is strictly positive definite, every row mass
+is positive, the maximum branch in the cost scale is fixed locally, and every
+validity condition holds.  If the recursive tangent includes every operation
+listed above, then its accumulated score is the total derivative with respect
+to \(\theta\) of the same finite scalar
+\(\widehat L^N(\theta)=\sum_t\widehat\ell_t^N(\theta)\) executed by the value
+program.
+\end{proposition}
+
+\begin{proof}
+On the stated branch, the transition and likelihood adapters, normalization,
+finite Sinkhorn recurrences, row quotient, moment maps, matrix products,
+Cholesky factors, triangular solves, \(2\times2\) damped solves, and finite
+rewhitening maps are differentiable.  The ordinary chain rule therefore
+applies to their finite composition.  The implemented tangent includes the
+dependence of the normalized weights, OT kernel and scalings, target moments,
+directions \(q_3,q_4\), Jacobians \(J_a\), damped coefficients \(c_a\), and
+both standardization maps.  Induction over time then shows that the carried
+particle tangent is the derivative of the carried particle value and that the
+sum of increment tangents is \(d\widehat L^N/d\theta\).
+
+This proves correctness for the executed finite approximation.  It does not
+prove that \(\widehat L^N\) equals the exact filtering log likelihood or that
+its derivative equals the exact filtering score.  Those are model-specific
+statistical approximation questions tested against available references.
+\end{proof}
+
+\paragraph{Correctness boundary.}
+The propositions establish the OT quotient semantics, the Contract~E ridged
+identity, exact post-correction empirical mean and covariance, and the total
+derivative of one fixed finite program.  They do not establish global
+higher-moment feasibility, exact mixed moments, unbiased likelihood, exact
+posterior score, superiority over Contract~E, HMC readiness, or a default
+change.  The model campaign below can reject this candidate or keep it viable;
+it cannot by itself prove broad nonlinear-model validity.
+
+\FloatBarrier

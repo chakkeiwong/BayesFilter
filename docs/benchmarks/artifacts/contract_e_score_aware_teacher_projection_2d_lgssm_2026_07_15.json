@@ -1,0 +1,322 @@
+{
+  "schema": "contract_e_score_aware_teacher_projection_2d_lgssm_v1",
+  "status": "PASS",
+  "execution": {
+    "backend": "TensorFlow float64 CPU reference",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "reason": "small independent reference and finite-difference witness",
+    "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-contract-e-score-aware python docs/benchmarks/contract_e_score_aware_teacher_projection_2d_lgssm.py",
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "source_worktree_note": "dirty shared research worktree; evidence is bound to the script and JSON paths",
+    "wall_time_seconds": 1.785250194996479
+  },
+  "model": {
+    "theta_names": [
+      "rho",
+      "log_q_scale",
+      "log_r_scale"
+    ],
+    "theta": [
+      0.72,
+      -1.05,
+      -0.7
+    ],
+    "prior_mean": [
+      0.25,
+      -0.3
+    ],
+    "prior_covariance": [
+      [
+        0.7,
+        0.16
+      ],
+      [
+        0.16,
+        0.45
+      ]
+    ],
+    "observations": [
+      0.4,
+      -0.15
+    ],
+    "observation_vector": [
+      1.0,
+      0.35
+    ],
+    "transition_at_theta": [
+      [
+        0.72,
+        0.18
+      ],
+      [
+        -0.12,
+        0.83
+      ]
+    ],
+    "process_covariance_at_theta": [
+      [
+        0.12245642825298189,
+        0.026940414215656017
+      ],
+      [
+        0.026940414215656017,
+        0.07959667836443823
+      ]
+    ],
+    "observation_variance_at_theta": 0.2465969639416065
+  },
+  "teacher": {
+    "construction": "81-point tensor Gauss-Hermite parent rule by 81-point tensor Gauss-Hermite innovation rule",
+    "one_dimensional_gauss_hermite_order": 9,
+    "parent_count": 81,
+    "innovation_count": 81,
+    "candidate_count": 6561,
+    "parent_rule_weight_sum": 1.0000000000000002,
+    "innovation_rule_weight_sum": 1.0000000000000002,
+    "posterior_weight_sum": 1.0000000000000002,
+    "feature_names": [
+      "mass",
+      "x1",
+      "x2",
+      "x1_sq",
+      "x1_x2",
+      "x2_sq",
+      "next_predictive_density"
+    ],
+    "feature_targets": [
+      0.9999999999999994,
+      0.3621577280349382,
+      -0.17625679073495165,
+      0.30049062505690893,
+      -0.09979768123112044,
+      0.3285213945992848,
+      0.5042458039886022
+    ],
+    "feature_target_jacobian": [
+      [
+        9.030337293952543e-17,
+        3.094271269583459e-17,
+        5.051003011678621e-17
+      ],
+      [
+        0.24514557036414603,
+        0.029134833517427464,
+        -0.12622983263385873
+      ],
+      [
+        -0.1715928719028803,
+        0.010434240221014347,
+        -0.05517887559067041
+      ],
+      [
+        0.31138897973435636,
+        0.05265164364178659,
+        0.10764312437795431
+      ],
+      [
+        -0.1937394910843024,
+        -0.036898117469574755,
+        0.08900121022713224
+      ],
+      [
+        0.11758942880842838,
+        0.11797864867631139,
+        0.05705319925217243
+      ],
+      [
+        -0.22032926965982771,
+        -0.13415698278631671,
+        -0.2219691910355962
+      ]
+    ]
+  },
+  "student": {
+    "candidate_count": 7,
+    "active_indices_zero_based": [
+      108,
+      221,
+      2317,
+      2402,
+      2474,
+      3942,
+      4001
+    ],
+    "active_set_preparation": "positive basic feasible set selected once at theta0, then frozen for the differentiated finite program",
+    "weights": [
+      0.0013273171630924646,
+      0.00029612211860157757,
+      0.03197246241434581,
+      0.037785821151157827,
+      0.039370360941121535,
+      0.054164725039877466,
+      0.8350831911718027
+    ],
+    "points": [
+      [
+        -3.4768598774072363,
+        -3.5565129989130706
+      ],
+      [
+        -2.261397846077093,
+        -1.2129585132418157
+      ],
+      [
+        -0.5385388272117131,
+        -1.9705700613618544
+      ],
+      [
+        -0.4079200865377529,
+        -0.14341498192635926
+      ],
+      [
+        -0.6440561084059124,
+        0.3400861365553095
+      ],
+      [
+        1.3859662460508761,
+        -1.8303729321778326
+      ],
+      [
+        0.41955164002449774,
+        -0.02035919726557256
+      ]
+    ],
+    "selection_center_weights_from_numpy": [
+      0.0013273171630925234,
+      0.0002961221186015934,
+      0.031972462414345766,
+      0.03778582115115749,
+      0.03937036094112217,
+      0.05416472503987748,
+      0.8350831911718024
+    ],
+    "minimum_weight": 0.00029612211860157757,
+    "scaled_feature_matrix_condition_number": 84.26064554729527,
+    "fixed_row_scale": [
+      1.0,
+      5.1012693387019965,
+      4.522840653349041,
+      26.022948865981103,
+      21.932472504120415,
+      20.456087575586782,
+      0.6326344960582179
+    ],
+    "feature_targets": [
+      0.9999999999999994,
+      0.36215772803493873,
+      -0.1762567907349518,
+      0.3004906250569095,
+      -0.09979768123112175,
+      0.32852139459928464,
+      0.5042458039886022
+    ],
+    "feature_target_jacobian": [
+      [
+        9.030337293952543e-17,
+        3.094271269583459e-17,
+        5.051003011678621e-17
+      ],
+      [
+        0.24514557036414572,
+        0.02913483351742748,
+        -0.12622983263385867
+      ],
+      [
+        -0.17159287190288042,
+        0.010434240221013939,
+        -0.055178875590670355
+      ],
+      [
+        0.31138897973435725,
+        0.05265164364178729,
+        0.10764312437795424
+      ],
+      [
+        -0.19373949108430635,
+        -0.03689811746957472,
+        0.08900121022713235
+      ],
+      [
+        0.11758942880842432,
+        0.11797864867631092,
+        0.05705319925217245
+      ],
+      [
+        -0.22032926965982771,
+        -0.13415698278631674,
+        -0.22196919103559623
+      ]
+    ]
+  },
+  "likelihood_and_score": {
+    "teacher_current_increment": -0.9528507089254514,
+    "teacher_next_increment": -0.6846914234742533,
+    "student_next_increment": -0.6846914234742533,
+    "teacher_total_two_observation_value": -1.6375421323997048,
+    "student_total_two_observation_value": -1.6375421323997048,
+    "teacher_next_score": [
+      -0.43694814694939504,
+      -0.2660547330788481,
+      -0.44020037307164883
+    ],
+    "student_next_score": [
+      -0.436948146949395,
+      -0.266054733078848,
+      -0.4402003730716488
+    ],
+    "teacher_total_score": [
+      -0.8436383836701407,
+      -0.405408322445641,
+      -0.6676773258840799
+    ],
+    "student_total_score": [
+      -0.8436383836701407,
+      -0.40540832244564096,
+      -0.66767732588408
+    ],
+    "kalman_increment_values": [
+      -0.9528400333568513,
+      -0.6847050835115317
+    ],
+    "kalman_total_value": -1.637545116868383,
+    "kalman_increment_score_jacobian": [
+      [
+        -0.406577238181573,
+        -0.13940722393770003,
+        -0.22756646034693404
+      ],
+      [
+        -0.4372636455510888,
+        -0.26598753917020823,
+        -0.4401446141602721
+      ]
+    ],
+    "kalman_total_score": [
+      -0.8438408837326619,
+      -0.40539476310790823,
+      -0.6677110745072061
+    ]
+  },
+  "residuals": {
+    "feature_value_max_abs": 1.304512053934559e-15,
+    "feature_tangent_max_abs": 4.052314039881821e-15,
+    "next_increment_abs": 0.0,
+    "next_score_max_abs": 5.551115123125783e-17,
+    "total_value_abs": 0.0,
+    "total_score_max_abs": 1.1102230246251565e-16,
+    "autodiff_central_fd_max_abs": 1.827806100918039e-10,
+    "fd_step": 1e-05
+  },
+  "decision": {
+    "finite_teacher_selected_feature_and_score_witness": "PASS",
+    "hard_vetoes_supported": [],
+    "what_is_not_concluded": [
+      "exactness outside the selected feature span",
+      "universal nonlinear or NAWM validity",
+      "HMC readiness",
+      "GPU/XLA or production readiness",
+      "canonical status for contract_e_chol_v1"
+    ]
+  }
+}

@@ -14,6 +14,7 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+from bayesfilter.inference.hmc_tuning import build_windowed_warmup_schedule
 from bayesfilter.hmc_route_contract import (
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
@@ -335,6 +336,18 @@ def test_fixed_identity_windowed_diagnostic_makes_no_mass_updates() -> None:
     assert result.mass_updates == ()
     assert result.final_mass_artifact_signature == result.initial_mass_artifact_signature
     assert result.semantic_checks()["fixed_identity_signature_unchanged"] is True
+
+
+def test_public_windowed_stage_propagates_fixed_identity_to_internal_config() -> None:
+    internal = hmc_kernel_tuning._windowed_mass_stage_internal_config(
+        mass_policy="fixed_identity",
+    )
+
+    assert internal.mass_policy == "fixed_identity"
+    assert all(
+        not window.update_mass
+        for window in build_windowed_warmup_schedule(internal)
+    )
 
 
 def test_windowed_mass_stage_runs_retained_draw_route_and_preserves_nonclaims() -> None:

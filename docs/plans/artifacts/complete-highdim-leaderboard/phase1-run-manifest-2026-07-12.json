@@ -1,0 +1,119 @@
+{
+  "schema_version": "bayesfilter.complete_highdim.phase1_run_manifest.v1",
+  "run_id": "complete-highdim-leaderboard-local-20260712-134906",
+  "phase": 1,
+  "status": "pass_engineering_gates_no_numeric_cell_admission",
+  "timestamp_completed": "2026-07-12T19:43:08+08:00",
+  "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "git_status_short_entry_count": 244,
+  "git_status_short_sha256": "f21d4d82572a01b1fcc678cfe7ad59b6eadc8e2748faa3f9bdcda5d66bc74fa3",
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "conda_prefix": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "python_version": "3.11.14",
+    "tensorflow_version": "2.19.1",
+    "tensorflow_probability_version": "0.25.0",
+    "cpu_gpu_status": "deliberate_cpu_hidden_engineering_checks_only",
+    "cuda_visible_devices": "-1",
+    "gpu_execution_performed": false,
+    "xla_gpu_execution_performed": false
+  },
+  "randomness": {
+    "runtime_randomness_executed": false,
+    "frozen_future_ledh_seeds": [81120, 81121, 81122, 81123, 81124],
+    "target_generation_identities": "bound_by_phase1_canonical_target_artifact"
+  },
+  "governance": {
+    "master_program": "docs/plans/bayesfilter-complete-highdim-leaderboard-master-program-2026-07-11.md",
+    "phase1_subplan": "docs/plans/bayesfilter-complete-highdim-leaderboard-phase1-ledh-harness-subplan-2026-07-11.md",
+    "phase1_entry_amendment": "docs/plans/bayesfilter-complete-highdim-leaderboard-phase1-entry-amendment-2026-07-12.md",
+    "phase1_entry_amendment_sha256": "cdf6439185a65c4121b51d179179ee8b331ec809c44e6310465878562efb8869",
+    "p1a_receipt": "docs/plans/artifacts/complete-highdim-leaderboard/phase1-p1a-gate-receipt-2026-07-11.json",
+    "p1a_receipt_sha256": "41fafd0eed4abb10a002d525ccb10e3544a2f52ce81f7b0e76c1d57e040edaef",
+    "p1b_receipt": "docs/plans/artifacts/complete-highdim-leaderboard/phase1-p1b-gate-receipt-2026-07-11.json",
+    "p1b_receipt_sha256": "af0547a53097cb5af6579c8ae993c1868dcd75a570dcfe3e08c2248c57dd1718",
+    "material_review": "docs/reviews/bayesfilter-complete-highdim-leaderboard-phase1-implementation-result-local-review-2026-07-12.md",
+    "material_review_sha256": "f8ae4a4097904dbd3c7cee5ab0b408e5b581899b962cad43e9010c47c48dc8ef"
+  },
+  "artifacts": {
+    "canonical_targets": {
+      "path": "docs/plans/artifacts/complete-highdim-leaderboard/phase1-canonical-targets-2026-07-11.json",
+      "sha256": "1cc83076b491b7c059fadbef85cacbb138c974a39502f5418d9018c17ef8fec8"
+    },
+    "harness": {
+      "path": "docs/benchmarks/benchmark_ledh_compact_score_gpu_xla.py",
+      "sha256": "f19df4cd55baff2927c3dd2eb4b891228063c89186f2e61c930ac43224f090cd"
+    },
+    "lgssm_adapter": {
+      "path": "docs/benchmarks/benchmark_ledh_same_target_lgssm_m3_t50_compact_score_adapter.py",
+      "sha256": "ef0c6dc02707ffc54075b0e2d6178958e7bad85c9769c7f84c38ed051c8cac66"
+    },
+    "command_builder": {
+      "path": "docs/benchmarks/build_complete_highdim_ledh_phase2_phase3_command_manifest.py",
+      "sha256": "dd010e804480a36b0fd5c1cbe3f6d58688e85e7c31b8ed8a7c6ced7bb42eeb68"
+    },
+    "harness_tests": {
+      "path": "tests/highdim/test_ledh_compact_score_gpu_xla_harness.py",
+      "sha256": "f21af0e765c70ab06e23e3cca54e8f0740fac68d498b23592294d1e11b96813b"
+    },
+    "exact_command_manifest": {
+      "path": "docs/plans/complete-highdim-leaderboard-ledh-phase2-phase3-exact-commands-2026-07-11.json",
+      "sha256": "fa77f32fbf50333c0ae5e0e1a0c26e9772f9b568d9e0a017790e3d86c3d27433",
+      "command_set_sha256": "985795301e33ccbdb18068f01c70d0231f7797c36033b2d61f156ef30954790d",
+      "command_count": 96,
+      "phase2_command_count": 42,
+      "phase3_command_count": 48,
+      "aggregate_command_count": 6,
+      "required_directory_count": 24,
+      "execution_authority_status": "absent_required_before_each_phase"
+    }
+  },
+  "checks": [
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp pytest -q tests/highdim/test_ledh_compact_score_gpu_xla_harness.py -x",
+      "result": "131 passed",
+      "elapsed_seconds": 105.96
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp pytest -q tests/highdim/test_ledh_lgssm_score_phase2_contract.py tests/highdim/test_ledh_fixed_sir_score_phase3_contract.py tests/highdim/test_ledh_predator_prey_score_phase4_contract.py tests/highdim/test_ledh_actual_sv_score_phase5_contract.py tests/highdim/test_ledh_generalized_sv_score_phase6_contract.py tests/highdim/test_ledh_ksc_sv_score_phase7_contract.py tests/highdim/test_ledh_score_wiring_phase8_cross_model.py -x",
+      "result": "146 passed",
+      "elapsed_seconds": 311.25
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 python docs/benchmarks/check_complete_highdim_phase1_canonical_targets.py --artifact docs/plans/artifacts/complete-highdim-leaderboard/phase1-canonical-targets-2026-07-11.json",
+      "result": "PASS_PHASE1_CANONICAL_TARGET_INDEPENDENT_CHECK"
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp python docs/benchmarks/build_complete_highdim_ledh_phase2_phase3_command_manifest.py --output docs/plans/complete-highdim-leaderboard-ledh-phase2-phase3-exact-commands-2026-07-11.json --check",
+      "result": "PASS_COMPLETE_HIGHDIM_LED_H_COMMAND_MANIFEST_CHECK"
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp pytest -q tests/highdim/test_ledh_compact_score_gpu_xla_harness.py -k 'complete_highdim_exact or score_shard_validator or fd_shard_validator or offline_aggregate' -x",
+      "result": "70 passed"
+    },
+    {
+      "command": "python -m py_compile docs/benchmarks/benchmark_ledh_compact_score_gpu_xla.py docs/benchmarks/benchmark_ledh_same_target_lgssm_m3_t50_compact_score_adapter.py docs/benchmarks/build_complete_highdim_ledh_phase2_phase3_command_manifest.py tests/highdim/test_ledh_compact_score_gpu_xla_harness.py",
+      "result": "pass"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "evidence_classification": {
+    "hard_veto_screen": "passed_for_phase1_engineering_and_artifact_contracts",
+    "statistically_supported_ranking": "none",
+    "descriptive_only_differences": "none_no_numeric_benchmark_run",
+    "default_readiness": "not_evaluated",
+    "numeric_cell_admission": 0,
+    "next_evidence_needed": "trusted_gpu_xla_phase2_prefix_and_full_time_seed81120_evidence"
+  },
+  "nonclaims": [
+    "no leaderboard cell is admitted by Phase 1",
+    "no GPU readiness or full-time feasibility is established",
+    "no ranking, superiority, HMC, posterior, confidence-coverage, source-faithfulness, or release claim",
+    "all six Zhao-Cui adapters remain extension_or_invention only",
+    "the exact command manifest freezes commands but is not execution authority"
+  ]
+}

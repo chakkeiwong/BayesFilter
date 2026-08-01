@@ -19,7 +19,7 @@ def _load_module():
     return module
 
 
-def test_phase1_zhao_cui_sv_and_ksc_rows_use_manual_tt_scores(monkeypatch) -> None:
+def test_phase1_zhao_cui_sv_and_ksc_rows_use_fixed_variant_manual_scores(monkeypatch) -> None:
     module = _load_module()
     full_observations = module._sv_observations()
     original_config = module._zhao_cui_scalar_tt_config
@@ -39,6 +39,8 @@ def test_phase1_zhao_cui_sv_and_ksc_rows_use_manual_tt_scores(monkeypatch) -> No
     for row in rows:
         assert row["algorithm_id"] == "zhao_cui_scalar_or_multistate"
         assert row["comparison_status"] == "executed_value_score"
+        assert row["route_role"] == "fixed_variant_analytical_hmc_route"
+        assert row["hmc_target_scope_admitted"] is True
         assert row["score_status"] == "analytical_score_emitted"
         assert row["score_coordinate_system"] == "theta=[probit_gamma,log_beta]"
         assert isinstance(row["score"], list)
@@ -74,6 +76,10 @@ def test_phase1_enforcement_admits_only_repaired_manual_zhao_cui_rows() -> None:
         "score_derivative_provenance": (
             "zhao_cui_scalar_fixed_branch_tt_exact_transformed_sv_manual_parameter_score_methods_only"
         ),
+        "route_id": "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": "zhao_cui_fixed_variant_hmc_default_v1",
+        "hmc_target_scope_admitted": True,
         "nonclaims": [],
     }
     autodiff = {

@@ -1,0 +1,13 @@
+# One-Seed GenUT/Zhao-Cui Reduced SIR Diagnostic
+
+Status: `diagnostic_only_same_target_one_seed`.
+
+| T | Dense value | GenUT value | Zhao-Cui value | GenUT score | Zhao-Cui score | Dense score |
+|---:|---:|---:|---:|---|---|---|
+| 2 | -1.2016557 | -1.1988742 | -1.260592 | [-1.3732158549828455e-05, 0.0005961718852631748, -0.7015558481216431] | [3.303184788264906e-05, 0.0010618386873291067, -0.08647669236248512] | [-8.242855997026073e-05, 0.0027418210301371087, -0.7768533069235367] |
+| 5 | -3.2478242 | -3.345165 | -3.4448152 | [-0.0002638589940033853, 0.006413359194993973, -1.305150032043457] | [-0.0017857595728046727, 0.018943124852026327, 0.8336588950532486] | [-0.001149276053709112, 0.023061423033356725, -1.4812906916113469] |
+| 10 | -8.5769109 | -8.7372017 | -9.2757392 | [-0.0013457306195050478, 0.01903017982840538, 0.320772647857666] | [-0.01273864451891142, 0.06217709003899338, 4.760340292178452] | [-0.00357334142212422, 0.05017725623537492, -0.013846969470666215] |
+
+Both methods use the same initial-observation-first target. Zhao-Cui is a diagnostic retained-grid approximation, not an oracle; the dense grid is the accuracy anchor.
+
+JSON: `/home/chakwong/BayesFilter/docs/benchmarks/artifacts/genut_sir_zhaocui_one_seed_20260722/attempt02/result.json`

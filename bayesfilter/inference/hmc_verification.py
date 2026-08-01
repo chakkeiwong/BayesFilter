@@ -218,11 +218,24 @@ def _evaluate_retained_target_health(
     evaluated = 0
     shared: list[str] = []
 
-    def evaluate_value_score(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        value, score = evaluator(tf.convert_to_tensor(values, dtype=tf.float64))
+    supports_combined = bool(
+        getattr(adapter, "supports_retained_value_score_status", False)
+        and callable(getattr(adapter, "log_prob_and_grad_status", None))
+    )
+
+    def evaluate_value_score(
+        values: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, Mapping[str, Any] | None]:
+        tensor = tf.convert_to_tensor(values, dtype=tf.float64)
+        if supports_combined:
+            value, score, status = adapter.log_prob_and_grad_status(tensor)
+        else:
+            value, score = evaluator(tensor)
+            status = None
         return (
             np.asarray(value.numpy() if hasattr(value, "numpy") else value, dtype=float),
             np.asarray(score.numpy() if hasattr(score, "numpy") else score, dtype=float),
+            status,
         )
 
     supports_draw_batch = bool(
@@ -256,7 +269,7 @@ def _evaluate_retained_target_health(
             else tuple(int(item) for item in callback_values.shape[:-1])
         )
         try:
-            value_array, score_array = evaluate_value_score(callback_values)
+            value_array, score_array, status_payload = evaluate_value_score(callback_values)
         except Exception:  # noqa: BLE001 - target callback authority is broken.
             value_finite = False
             score_finite = False
@@ -279,7 +292,7 @@ def _evaluate_retained_target_health(
             for offset, draw in enumerate(chunk):
                 draw_expected_shape = tuple(int(item) for item in draw.shape[:-1])
                 try:
-                    draw_value, draw_score = evaluate_value_score(draw)
+                    draw_value, draw_score, _draw_status = evaluate_value_score(draw)
                 except Exception:  # noqa: BLE001 - callback authority is broken.
                     evaluated += offset
                     value_finite = False
@@ -307,9 +320,12 @@ def _evaluate_retained_target_health(
             break
         if policy == "per_chain_step":
             try:
-                status_payload = telemetry(
-                    tf.convert_to_tensor(callback_values, dtype=tf.float64)
-                )
+                if not supports_combined:
+                    status_payload = telemetry(
+                        tf.convert_to_tensor(callback_values, dtype=tf.float64)
+                    )
+                if not isinstance(status_payload, Mapping):
+                    raise TypeError("combined target status must be a mapping")
             except Exception:  # noqa: BLE001 - target callback authority is broken.
                 shared.append("shared_callback_invalid")
                 break
@@ -342,9 +358,14 @@ def _evaluate_retained_target_health(
                             int(item) for item in draw.shape[:-1]
                         )
                         try:
-                            draw_payload = telemetry(
-                                tf.convert_to_tensor(draw, dtype=tf.float64)
-                            )
+                            if supports_combined:
+                                _draw_value, _draw_score, draw_payload = (
+                                    evaluate_value_score(draw)
+                                )
+                            else:
+                                draw_payload = telemetry(
+                                    tf.convert_to_tensor(draw, dtype=tf.float64)
+                                )
                         except Exception:  # noqa: BLE001 - callback authority is broken.
                             evaluated += offset
                             shared.append("shared_callback_invalid")

@@ -1,0 +1,1093 @@
+\chapter[Neural-Force HMC]{Metropolis-Corrected Neural-Force Hamiltonian Monte Carlo}
+\label{ch:bf-hnn-surrogate-hmc}
+
+This chapter studies a tempting acceleration of Hamiltonian Monte Carlo for
+state-space models.  A filtering likelihood and its score may require one
+complete recursion through the observations.  Ordinary HMC calls that score at
+every leapfrog kick.  A learned force can make the interior trajectory cheap;
+one then evaluates the declared filtering posterior at the proposed endpoint
+and applies a Metropolis correction.
+
+That summary is attractive but incomplete.  A true endpoint posterior value
+does not correct an arbitrary neural proposal.  The simple HMC acceptance
+formula is valid only after the proposal map has the required discrete
+reversibility and volume properties, and its endpoint energy must include the
+final momentum.  A stochastic filtering likelihood adds a separate target
+problem: a fresh particle-filter estimate is not a deterministic potential and
+cannot be inserted naively into that formula.
+
+The chapter therefore does four things.  It derives a sufficient construction
+for a frozen learned force, proves its invariant target, identifies precisely
+why broader learned-Hamiltonian constructions need additional proof or
+correction, states the filtering boundary for every relevant target class, and
+ends with an implementation and validation contract for BayesFilter.  The
+presentation is self-contained.  The proposal of
+\citet{dhulipala2022latent} and its official implementation motivate the audit,
+but no theorem below depends on accepting that paper's stationarity argument.
+
+\section{The computational question}
+\label{sec:bf-hnn-question}
+
+Let $u\in\R^d$ be unconstrained sampler coordinates and let $y_{1:T}$ denote
+the observations.  For a deterministic filtering backend $F$, define
+\begin{equation}
+  \ell_F(u)=\log p(u)+\log L_F(y_{1:T}\mid u)+J(u),
+  \qquad U_F(u)=-\ell_F(u),
+  \label{eq:bf-hnn-filter-potential}
+\end{equation}
+where $J$ contains every parameter-transform log Jacobian.  The subscript $F$
+is essential.  If $F$ is a Kalman filter, $L_F$ may be the exact likelihood of
+the declared linear Gaussian model.  If $F$ is a UKF or fixed SGQF,
+$L_F$ is normally an approximate filtering likelihood.  In either case,
+\eqref{eq:bf-hnn-filter-potential} is a deterministic scalar once the model,
+data, numerical branch, and filter settings are frozen.
+
+With mass matrix $M\succ0$, ordinary HMC uses
+\begin{equation}
+ H_F(u,p)=U_F(u)+K(p),\qquad
+ K(p)=\tfrac12p^\top M^{-1}p,
+ \label{eq:bf-hnn-true-hamiltonian}
+\end{equation}
+and repeatedly evaluates $\nabla U_F$.  Write $C_V$ for one new evaluation of
+$U_F$, $C_G$ for one evaluation of $\nabla U_F$ together with whatever value
+the implementation returns, and $C_S$ for one learned-force call.  For $L$
+leapfrog steps, the leading proposal costs are approximately
+\begin{align}
+ C_{\rm ordinary}&\simeq L C_G,\label{eq:bf-hnn-cost-ordinary}\\
+ C_{\rm neural}&\simeq L C_S+C_V.\label{eq:bf-hnn-cost-neural}
+\end{align}
+The current state's true value can be cached, so the corrected neural proposal
+usually needs only one new endpoint value.  Equations
+\eqref{eq:bf-hnn-cost-ordinary}--\eqref{eq:bf-hnn-cost-neural} are accounting
+identities, not speedup theorems: acceptance, autocorrelation, fallback,
+training, compilation, batching, and device utilization determine actual ESS
+per second.
+
+\begin{proposition}[When a neural-force proposal can reduce filtering work]
+\label{prop:bf-hnn-cost-condition}
+Suppose ordinary and neural-force kernels use the same number $L$ of interior
+steps.  Ignore one-time compilation and training, and suppose each kernel
+produces the same effective sample size per accepted transition.  Then the
+neural-force kernel has lower leading cost per transition exactly when
+\begin{equation}
+  L C_S+C_V<L C_G.
+  \label{eq:bf-hnn-cost-condition}
+\end{equation}
+If training costs $C_{\rm train}$ and the per-transition saving is
+$\Delta C=L C_G-(L C_S+C_V)>0$, at least
+$C_{\rm train}/\Delta C$ transitions are required to amortize training under
+these assumptions.
+\end{proposition}
+
+\begin{proof}
+Subtract \eqref{eq:bf-hnn-cost-neural} from
+\eqref{eq:bf-hnn-cost-ordinary}.  The neural route is cheaper precisely when
+the difference $\Delta C$ is positive.  After $N$ transitions the accumulated
+saving is $N\Delta C$; it covers training if and only if
+$N\Delta C\ge C_{\rm train}$.
+\end{proof}
+
+The equal-efficiency premise in Proposition~\ref{prop:bf-hnn-cost-condition}
+is deliberately strong.  A useful experiment must instead compare ESS per
+wall-clock second after charging training and fallback.  The proposition only
+explains why expensive filtering scores make the method worth investigating.
+
+\section{Phase-space Metropolis correction}
+\label{sec:bf-hnn-phase-space-mh}
+
+The target of one HMC transition is the joint density
+\begin{equation}
+ \rho_F(u,p)=Z_H^{-1}\exp\{-H_F(u,p)\}.
+ \label{eq:bf-hnn-joint-target}
+\end{equation}
+Marginalizing $p$ recovers the posterior proportional to $e^{-U_F(u)}$.
+Before each transition, momentum is refreshed from $\calN(0,M)$.  Proposal
+validity is easiest to state for a deterministic phase-space map.
+
+Let $R(u,p)=(u,-p)$ be the momentum flip.  Let $\Phi$ be a differentiable
+bijection of phase space and define the proposal map $F=R\circ\Phi$.  The
+following proposition gives the exact conditions behind the familiar HMC
+acceptance probability.
+
+\begin{proposition}[Deterministic involutive Metropolis proposal]
+\label{prop:bf-hnn-deterministic-mh}
+Assume $F:\R^{2d}\to\R^{2d}$ is a differentiable involution,
+$F\circ F=I$, and $|\det DF(x)|=1$ for every $x$.  From state $x=(u,p)$,
+propose $x'=F(x)$ and accept with
+\begin{equation}
+ \alpha(x)=\min\{1,\rho_F(x')/\rho_F(x)\}
+ =\min\{1,\exp[-H_F(x')+H_F(x)]\}.
+ \label{eq:bf-hnn-true-energy-acceptance}
+\end{equation}
+Then the accept/reject kernel is reversible with respect to $\rho_F$ and hence
+leaves $\rho_F$ invariant.
+\end{proposition}
+
+\begin{proof}
+For any measurable sets $A,B$, the accepted flow from $A$ to $B$ is
+\begin{equation}
+ \int_A \rho_F(x)\alpha(x)\mathbf1\{F(x)\in B\}\,dx
+ =\int_A\min\{\rho_F(x),\rho_F(Fx)\}
+   \mathbf1\{F(x)\in B\}\,dx.
+\end{equation}
+Change variables $y=F(x)$.  Involution gives $x=F(y)$ and the unit-Jacobian
+assumption gives $dx=dy$.  The expression becomes
+\begin{equation}
+ \int_B\min\{\rho_F(Fy),\rho_F(y)\}
+   \mathbf1\{F(y)\in A\}\,dy,
+\end{equation}
+which is the accepted flow from $B$ to $A$.  Rejections remain at the same
+state and are automatically balanced.  Thus detailed balance holds.  Taking
+$A$ to be the full state space proves invariance.
+\end{proof}
+
+\begin{remark}[Terms in the endpoint correction]
+Equation \eqref{eq:bf-hnn-true-energy-acceptance} contains
+$K(p')-K(p)$ as well as $U_F(u')-U_F(u)$.  A correction based only on
+$\ell_F(u')-\ell_F(u)$ is generally wrong.  Momentum cancels only for a
+proposal that preserves kinetic energy exactly, which ordinary leapfrog does
+not guarantee.
+\end{remark}
+
+\begin{proposition}[Omitting endpoint kinetic energy is wrong in general]
+\label{prop:bf-hnn-kinetic-required}
+There exist volume-preserving involutive proposals for which the
+position-only acceptance
+\begin{equation}
+ \alpha_U(x)=\min\{1,\exp[-U_F(u')+U_F(u)]\}
+ \end{equation}
+does not leave \eqref{eq:bf-hnn-joint-target} invariant.
+\end{proposition}
+
+\begin{proof}
+Take $d=1$, $U_F(u)=u^2/2$, $K(p)=p^2/2$, and the involution
+$F(u,p)=(p,u)$.  Its Jacobian determinant is $-1$.  Because
+$H_F(Fx)=H_F(x)$, the correct acceptance is one.  The position-only rule is
+$\min\{1,\exp[-p^2/2+u^2/2]\}$ and rejects a set of positive Gaussian measure,
+for example whenever $|p|>|u|$.  The reverse move from $(p,u)$ uses the
+reciprocal position ratio.  The accepted forward mass is proportional to
+\begin{equation}
+ e^{-(u^2+p^2)/2}\min\{1,e^{(u^2-p^2)/2}\},
+\end{equation}
+while the accepted reverse mass is proportional to
+\begin{equation}
+ e^{-(u^2+p^2)/2}\min\{1,e^{(p^2-u^2)/2}\}.
+\end{equation}
+They differ whenever $|u|\ne|p|$, so detailed balance fails.  The missing
+kinetic term is therefore not optional.
+\end{proof}
+
+\section{A sufficient learned-force construction}
+\label{sec:bf-hnn-safe-construction}
+
+The cleanest construction learns only a position potential
+$\widehat U_\phi(u)$.  Its force
+\begin{equation}
+ g_\phi(u)=\nabla\widehat U_\phi(u)
+ \label{eq:bf-hnn-learned-force}
+\end{equation}
+may be inaccurate.  It is frozen before warmup used for inference and remains
+fixed throughout the retained chain.  Define a kick, drift, and one symmetric
+step by
+\begin{align}
+ K_{a}(u,p)&=(u,p-a g_\phi(u)),\label{eq:bf-hnn-kick}\\
+ D_b(u,p)&=(u+bM^{-1}p,p),\label{eq:bf-hnn-drift}\\
+ \Psi_\epsilon&=K_{\epsilon/2}\circ D_\epsilon
+                 \circ K_{\epsilon/2}.\label{eq:bf-hnn-kdk}
+\end{align}
+The rightmost map acts first.
+
+\begin{lemma}[Kick and drift are volume-preserving]
+\label{lem:bf-hnn-shear-volume}
+If $g_\phi$ is continuously differentiable, both maps in
+\eqref{eq:bf-hnn-kick}--\eqref{eq:bf-hnn-drift} have Jacobian determinant one.
+Consequently, $\Psi_\epsilon$ and every finite composition of its steps are
+volume-preserving.
+\end{lemma}
+
+\begin{proof}
+Their Jacobians have block form
+\begin{equation}
+ DK_a(u,p)=
+ \begin{pmatrix}I&0\\-aDg_\phi(u)&I\end{pmatrix},\qquad
+ DD_b(u,p)=
+ \begin{pmatrix}I&bM^{-1}\\0&I\end{pmatrix}.
+\end{equation}
+Both are block triangular with identity diagonal blocks, hence determinant
+one.  Determinants multiply under composition.
+\end{proof}
+
+\begin{lemma}[Momentum-flip reversibility]
+\label{lem:bf-hnn-kdk-reversible}
+For the momentum flip $R(u,p)=(u,-p)$,
+\begin{equation}
+ R\circ\Psi_\epsilon\circ R=\Psi_\epsilon^{-1}=\Psi_{-\epsilon}.
+ \label{eq:bf-hnn-kdk-reversibility}
+\end{equation}
+The same identity holds for $\Phi_{\epsilon,L}=\Psi_\epsilon^L$.
+\end{lemma}
+
+\begin{proof}
+Direct substitution gives
+$R K_a R=K_{-a}=K_a^{-1}$ and
+$R D_b R=D_{-b}=D_b^{-1}$.  Therefore
+\begin{align}
+ R\Psi_\epsilon R
+ &=K_{-\epsilon/2}\circ D_{-\epsilon}
+   \circ K_{-\epsilon/2}\\
+ &=\left(K_{\epsilon/2}\circ D_\epsilon
+   \circ K_{\epsilon/2}\right)^{-1}.
+\end{align}
+For $L$ steps,
+$R\Psi_\epsilon^L R=(R\Psi_\epsilon R)^L
+=(\Psi_\epsilon^{-1})^L=(\Psi_\epsilon^L)^{-1}$.
+\end{proof}
+
+\begin{proposition}[Exact invariance for a frozen learned position force]
+\label{prop:bf-hnn-safe-exactness}
+Let $\Phi_{\epsilon,L}=\Psi_\epsilon^L$ use any fixed continuously
+differentiable $g_\phi:\R^d\to\R^d$ in the symmetric construction above.
+The force need not equal $\nabla U_F$.  Define
+$F=R\circ\Phi_{\epsilon,L}$ and accept $F(u,p)$ with the true joint-energy
+probability \eqref{eq:bf-hnn-true-energy-acceptance}.  Then the transition
+leaves \eqref{eq:bf-hnn-joint-target} invariant.  After momentum refresh, its
+position marginal leaves the deterministic filter-defined posterior
+proportional to $e^{-U_F(u)}$ invariant.
+\end{proposition}
+
+\begin{proof}
+Lemma~\ref{lem:bf-hnn-shear-volume} and the definition of $R$ give
+\begin{equation}
+ |\det D\Phi_{\epsilon,L}|=1,
+ \qquad
+ |\det DR|=1.
+\end{equation}
+By Lemma~\ref{lem:bf-hnn-kdk-reversible},
+\begin{align}
+ F^2
+ &=R\Phi_{\epsilon,L}R\Phi_{\epsilon,L}
+ =\Phi_{\epsilon,L}^{-1}\Phi_{\epsilon,L}=I.
+\end{align}
+Proposition~\ref{prop:bf-hnn-deterministic-mh} therefore proves joint
+invariance.  Momentum refresh draws from the conditional momentum factor of
+\eqref{eq:bf-hnn-joint-target} and also preserves the joint density.
+Marginalization over $p$ gives the stated posterior invariance.
+\end{proof}
+
+\begin{remark}[Conservative learning is useful but not required for this proof]
+Writing $g_\phi=\nabla\widehat U_\phi$ guarantees a conservative learned force
+and permits scalar value/gradient training.  The shear and reversibility proof
+above actually needs only a frozen position-only $g_\phi$.  The stronger
+potential representation remains preferable because it constrains learning,
+supports energy diagnostics, and prevents accidental momentum dependence.
+\end{remark}
+
+\begin{proposition}[Surrogate error affects efficiency, not this invariant target]
+\label{prop:bf-hnn-error-efficiency}
+Under Proposition~\ref{prop:bf-hnn-safe-exactness}, replacing $g_\phi$ by any
+other fixed finite position-only force does not change the invariant target.
+However, if the resulting proposal has large true energy error
+$\Delta H_F=H_F(Fx)-H_F(x)$ on typical states, its acceptance is small for
+positive $\Delta H_F$, so it can have arbitrarily poor efficiency.
+\end{proposition}
+
+\begin{proof}
+The invariance proof uses only the map properties, not equality between
+$g_\phi$ and $\nabla U_F$.  Acceptance is
+$\min\{1,e^{-\Delta H_F}\}$.  For any $B>0$, states with
+$\Delta H_F\ge B$ have acceptance at most $e^{-B}$.  Thus invariance does not
+bound mixing away from zero.
+\end{proof}
+
+\section{Limits of the broader learned-Hamiltonian argument}
+\label{sec:bf-hnn-paper-audit}
+
+The method in \citet{dhulipala2022latent} learns a scalar Hamiltonian from both
+position and momentum, obtains its vector field by differentiation, advances
+that field using a synchronized-leapfrog formula, and applies a true endpoint
+Hamiltonian test.  Its Sections~3.2--3.3 and Algorithms~3.2--3.3 are the
+relevant source anchors.  The paper appeals to Liouville's theorem and observed
+forward/reverse trajectories.  Those facts do not by themselves prove the
+discrete proposal required by Proposition~\ref{prop:bf-hnn-deterministic-mh}.
+
+The issue is mathematical, not terminological.  There are three different
+claims:
+\begin{enumerate}
+ \item a Hamiltonian vector field has zero divergence and its exact flow
+ preserves phase volume;
+ \item an exact Hamiltonian flow is reversible under momentum flip only when
+ the Hamiltonian has the appropriate momentum symmetry;
+ \item a numerical map must itself be volume-preserving and reversible, or its
+ actual proposal/Jacobian terms must enter MH.
+\end{enumerate}
+None of these claims implies the next without additional assumptions.
+
+\begin{proposition}[Liouville volume preservation does not prove time reversal]
+\label{prop:bf-hnn-liouville-not-reversibility}
+There are smooth Hamiltonians whose exact flows preserve phase volume but are
+not reversible under $R(u,p)=(u,-p)$.
+\end{proposition}
+
+\begin{proof}
+Take one dimension and
+\begin{equation}
+ \widehat H(u,p)=\tfrac12u^2+\tfrac12p^2+cp,
+ \qquad c\ne0.
+\end{equation}
+Hamilton's equations are $\dot u=p+c$ and $\dot p=-u$.  Their vector field has
+divergence
+$\partial_u(p+c)+\partial_p(-u)=0$, so Liouville's formula gives unit volume.
+But $\widehat H(u,-p)=\widehat H(u,p)-2cp$, so the Hamiltonian is not even in
+momentum.  If $(u(t),p(t))$ is a solution, the putative reversed path
+$(u(-t),-p(-t))$ has first derivative
+$-\dot u(-t)=-(p(-t)+c)$, whereas the equation evaluated on the reversed state
+requires $-p(-t)+c$.  They differ by $2c$.  Momentum-flip reversibility fails
+although volume is preserved.
+\end{proof}
+
+\begin{proposition}[Momentum evenness implies exact-flow reversibility]
+\label{prop:bf-hnn-even-momentum}
+If a smooth Hamiltonian satisfies
+$\widehat H(u,-p)=\widehat H(u,p)$, then, for every $t$ for which its exact
+flow $\varphi_t$ is defined,
+\begin{equation}
+ R\varphi_tR=\varphi_{-t}=\varphi_t^{-1}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Evenness in $p$ makes $\nabla_p\widehat H(u,p)$ odd in $p$ and
+$\nabla_u\widehat H(u,p)$ even in $p$.  If
+$z(t)=(u(t),p(t))$ solves Hamilton's equations, define
+$\widetilde z(t)=Rz(-t)=(u(-t),-p(-t))$.  Differentiating and applying those
+parities shows
+\begin{align}
+ \dot{\widetilde u}(t)
+ &=-\nabla_p\widehat H(u(-t),p(-t))
+ =\nabla_p\widehat H(\widetilde u(t),\widetilde p(t)),\\
+ \dot{\widetilde p}(t)
+ &=\dot p(-t)
+ =-\nabla_u\widehat H(\widetilde u(t),\widetilde p(t)).
+\end{align}
+Thus $\widetilde z$ is the Hamiltonian solution starting from $Rz(0)$.
+Uniqueness of the ODE solution yields the identity.
+\end{proof}
+
+The latent-HNN architecture in the cited paper takes $(u,p)$ jointly as input
+and does not impose exact evenness in $p$.  Consequently,
+Proposition~\ref{prop:bf-hnn-even-momentum} is unavailable without an added
+architectural constraint or a different reversal operation.
+
+There is also an integrator mismatch.  The position-Verlet formula used in the
+paper's Algorithm~3.2 is derived for a separable Hamiltonian
+$\widehat U(u)+K(p)$ with known quadratic $K$.  If a learned
+$\widehat H(u,p)$ has general momentum dependence, then
+$\dot u=\nabla_p\widehat H(u,p)$ need not equal $M^{-1}p$.  In the paper's
+notation, the executed position update is
+\begin{equation}
+ u_i(t+\epsilon)=u_i(t)+\frac{\epsilon}{m_i}p_i(t)
+ -\frac{\epsilon^2}{2m_i}
+  \frac{\partial\widehat H}{\partial u_i}(u(t),p(t)).
+ \label{eq:bf-hnn-paper-position-update}
+\end{equation}
+Its leading velocity is $p_i/m_i$, not the general learned velocity
+$\partial\widehat H/\partial p_i$.  Unless
+$\nabla_p\widehat H(u,p)=M^{-1}p$, the executed update is not an integrator of
+the learned Hamiltonian vector field it claims to approximate.  A label such as
+``synchronized leapfrog'' does not prove that the resulting discrete map is
+symplectic or reversible for that general learned Hamiltonian.
+
+\begin{proposition}[The ordinary energy ratio is incomplete for a general map]
+\label{prop:bf-hnn-general-map-jacobian}
+Let $F$ be a differentiable involution but do not assume it preserves volume.
+The deterministic Metropolis acceptance that balances $\rho_F$ is
+\begin{equation}
+ \alpha_J(x)=\min\left\{1,
+ \frac{\rho_F(Fx)|\det DF(x)|}{\rho_F(x)}\right\}.
+ \label{eq:bf-hnn-jacobian-acceptance}
+\end{equation}
+Thus the energy-only ratio
+\eqref{eq:bf-hnn-true-energy-acceptance} is justified only when the absolute
+Jacobian determinant is one.
+\end{proposition}
+
+\begin{proof}
+The accepted mass density sent from $x$ to $y=F(x)$ is
+$\rho_F(x)\alpha_J(x)dx$.  Since $dy=|\det DF(x)|dx$, balance with the reverse
+accepted mass requires
+\begin{equation}
+ \rho_F(x)\alpha_J(x)
+ =\rho_F(Fx)\alpha_J(Fx)|\det DF(x)|.
+\end{equation}
+Involution implies
+$|\det DF(Fx)|=|\det DF(x)|^{-1}$.  Substituting
+\eqref{eq:bf-hnn-jacobian-acceptance} on both sides gives the same minimum of
+$\rho_F(x)$ and $\rho_F(Fx)|\det DF(x)|$, proving balance.  Removing the
+Jacobian is valid only when it equals one.
+\end{proof}
+
+For a proposal that is neither an involution nor otherwise supplied with a
+tractable reverse proposal density, even
+\eqref{eq:bf-hnn-jacobian-acceptance} is not enough.  One must construct an
+involutive extension, randomize over forward/reverse directions with the right
+law, or use the full Hastings ratio.  Therefore ``evaluate the true posterior
+at the endpoint'' is not a general correctness theorem.
+
+\section{True-energy and delayed-acceptance kernels}
+\label{sec:bf-hnn-delayed-acceptance}
+
+Two valid algorithms are often conflated.
+
+\paragraph{One-stage true-energy correction.}
+Generate the deterministic learned-force proposal of
+Section~\ref{sec:bf-hnn-safe-construction} and apply only
+\eqref{eq:bf-hnn-true-energy-acceptance}.  This is the preferred first
+BayesFilter implementation because its proof is direct.
+
+\paragraph{Two-stage delayed acceptance.}
+Let $\widehat\rho(x)\propto e^{-\widehat H(x)}$ be a cheap surrogate joint
+density, and let $q(y\mid x)$ be a proposal kernel that is reversible with
+respect to $\widehat\rho$.  Stage one accepts the proposal using the surrogate
+kernel; conditional on that acceptance, stage two accepts with
+\begin{equation}
+ \alpha_2(x,y)=\min\left\{1,
+ \frac{\rho_F(y)\widehat\rho(x)}
+      {\rho_F(x)\widehat\rho(y)}\right\}.
+ \label{eq:bf-hnn-stage2-da}
+\end{equation}
+
+\begin{proposition}[Two-stage delayed-acceptance balance]
+\label{prop:bf-hnn-da-balance}
+Suppose the stage-one accepted proposal kernel satisfies
+\begin{equation}
+ \widehat\rho(x)q(y\mid x)\alpha_1(x,y)
+ =\widehat\rho(y)q(x\mid y)\alpha_1(y,x).
+ \label{eq:bf-hnn-stage1-balance}
+\end{equation}
+Then accepting a stage-one move with
+\eqref{eq:bf-hnn-stage2-da} yields a kernel reversible with respect to
+$\rho_F$.
+\end{proposition}
+
+\begin{proof}
+For $x\ne y$, multiply the forward accepted flow by its reverse counterpart's
+denominator:
+\begin{align}
+ &\rho_F(x)q(y\mid x)\alpha_1(x,y)
+ \min\left\{1,
+ \frac{\rho_F(y)\widehat\rho(x)}
+      {\rho_F(x)\widehat\rho(y)}\right\}\\
+ &=q(y\mid x)\alpha_1(x,y)
+ \min\left\{\rho_F(x),
+ \frac{\rho_F(y)\widehat\rho(x)}{\widehat\rho(y)}\right\}.
+\end{align}
+Use \eqref{eq:bf-hnn-stage1-balance} to replace
+$q(y\mid x)\alpha_1(x,y)$ by
+$\widehat\rho(y)q(x\mid y)\alpha_1(y,x)/\widehat\rho(x)$.  The result is
+\begin{equation}
+ q(x\mid y)\alpha_1(y,x)
+ \min\left\{
+ \frac{\rho_F(x)\widehat\rho(y)}{\widehat\rho(x)},
+ \rho_F(y)\right\},
+\end{equation}
+which is the reverse accepted flow.  Rejections balance on the diagonal.
+\end{proof}
+
+\begin{proposition}[A stage-two ratio cannot replace a missing stage one]
+\label{prop:bf-hnn-missing-stage1}
+The correction \eqref{eq:bf-hnn-stage2-da} alone does not generally target
+$\rho_F$ when the proposal kernel is not already reversible with respect to
+$\widehat\rho$.
+\end{proposition}
+
+\begin{proof}
+Take $\rho_F=\widehat\rho$ on a three-state space
+$\{0,1,2\}$.  Then \eqref{eq:bf-hnn-stage2-da} equals one for every move.
+Let the proposal deterministically cycle $0\mapsto1\mapsto2\mapsto0$.
+For a nonuniform $\rho_F$, for example masses $(1/2,1/3,1/6)$, the resulting
+chain merely rotates those masses and does not preserve $\rho_F$.  Thus the
+stage-two ratio cannot repair an arbitrary proposal.  The missing premise is
+exactly the stage-one balance identity
+\eqref{eq:bf-hnn-stage1-balance}.
+\end{proof}
+
+This proposition identifies the local historical implementation problem.  In
+the audited earlier \code{dsge\_hmc.estimation.DelayedAcceptanceHMC}, the
+executed logic is schematically
+\begin{align}
+ y,\widehat\alpha_1&\leftarrow
+   \operatorname{surrogate\_leapfrog}(x),\\
+ \operatorname{adapt}(\widehat\alpha_1)&\quad\text{during warmup},\\
+ \alpha_{\rm executed}(x,y)&=
+ \min\left\{1,
+ \frac{\rho_F(y)\widehat\rho(x)}
+      {\rho_F(x)\widehat\rho(y)}\right\},
+ \end{align}
+with no Bernoulli accept/reject using $\widehat\alpha_1$ between the first and
+third lines.  Thus the surrogate statistic affects adaptation but is not the
+stage-one kernel assumed by \eqref{eq:bf-hnn-stage1-balance}.  The
+documentation claims the two-stage theorem while the executed kernel omits a
+premise of Proposition~\ref{prop:bf-hnn-da-balance}.  The implementation is
+therefore wrong relative to that exact-posterior claim.  The clean repair is
+either the one-stage true joint-energy kernel of
+Proposition~\ref{prop:bf-hnn-safe-exactness}, or a complete two-stage kernel
+that retains both endpoint momenta and performs both acceptances.
+
+\section{The filtering boundary}
+\label{sec:bf-hnn-filtering-boundary}
+
+The proposal proof and the target definition are separate obligations.  Even a
+perfect proposal kernel is exact only for the scalar placed in its MH ratio.
+This section states that boundary precisely.
+
+Let the latent state-space model be
+\begin{align}
+ x_0&\sim\mu_u,\\
+ x_t\mid x_{t-1}&\sim f_u(\cdot\mid x_{t-1}),\\
+ y_t\mid x_t&\sim g_u(\cdot\mid x_t),
+\end{align}
+with exact likelihood
+\begin{equation}
+ L(u)=\int \mu_u(dx_0)
+ \prod_{t=1}^T f_u(dx_t\mid x_{t-1})g_u(y_t\mid x_t).
+ \label{eq:bf-hnn-exact-ssm-likelihood}
+\end{equation}
+The exact unconstrained posterior is
+\begin{equation}
+ \pi(u\mid y)\propto p(u)L(u)e^{J(u)}.
+ \label{eq:bf-hnn-exact-posterior}
+\end{equation}
+
+\subsection{Deterministic exact and approximate filters}
+
+Let a deterministic filter $F$ return a positive scalar $L_F(u)$.  Define
+\begin{equation}
+ \pi_F(u\mid y)\propto p(u)L_F(u)e^{J(u)}.
+ \label{eq:bf-hnn-filter-posterior}
+\end{equation}
+
+\begin{proposition}[Exactness relative to the declared deterministic filter]
+\label{prop:bf-hnn-filter-relative-exactness}
+If the endpoint correction in
+Proposition~\ref{prop:bf-hnn-safe-exactness} evaluates
+$U_F(u)=-\log p(u)-\log L_F(u)-J(u)$ deterministically, the kernel leaves
+$\pi_F$ invariant.  It leaves the exact posterior
+\eqref{eq:bf-hnn-exact-posterior} invariant by this argument only if
+$L_F(u)=cL(u)$ almost everywhere for a constant $c>0$ independent of $u$.
+\end{proposition}
+
+\begin{proof}
+The first claim is Proposition~\ref{prop:bf-hnn-safe-exactness} with the named
+potential.  The normalized densities $\pi_F$ and $\pi$ are equal if their
+unnormalized likelihood factors differ by a positive $u$-independent constant.
+Conversely, if the priors and charts agree and the two normalized posterior
+densities are equal wherever the prior is positive, then their likelihood
+ratio is the ratio of their normalizing constants and is therefore constant
+almost everywhere.
+\end{proof}
+
+Thus a Kalman filter for the declared linear Gaussian model can supply the
+exact $L$.  A UKF, SGQF, assumed-density filter, deterministic particle flow,
+or fixed low-rank filter ordinarily supplies a named $L_F\ne L$.  Corrected
+neural-force HMC can be exact for that approximate-filter posterior, not for
+the latent model posterior.  The MH step corrects the trajectory surrogate; it
+does not correct the filtering approximation.
+
+\subsection{Fixed randomness and relaxed filters}
+
+Suppose a randomized program returns
+$\widehat L(u;\omega)$ for random numbers $\omega$.  Freezing one realization
+$\omega_0$ makes
+\begin{equation}
+ \pi_{\omega_0}(u)\propto p(u)\widehat L(u;\omega_0)e^{J(u)}
+ \label{eq:bf-hnn-fixed-randomness-target}
+\end{equation}
+a deterministic target, provided the executed branch is well defined.
+
+\begin{proposition}[What frozen randomness does and does not prove]
+\label{prop:bf-hnn-frozen-randomness}
+Under the conditions of Proposition~\ref{prop:bf-hnn-safe-exactness}, using the
+same $\omega_0$ for every endpoint value can produce a valid HMC kernel for
+$\pi_{\omega_0}$.  Unbiasedness
+$\E_\omega[\widehat L(u;\omega)]=L(u)$ does not imply
+$\pi_{\omega_0}=\pi$ for any fixed realization, nor does it imply
+$\E[\log\widehat L]=\log L$.
+\end{proposition}
+
+\begin{proof}
+With $\omega_0$ frozen, the previous deterministic-target proof applies to
+\eqref{eq:bf-hnn-fixed-randomness-target}.  For the nonimplications, take
+$\omega\sim\operatorname{Unif}[-1,1]$ and
+\begin{equation}
+ \widehat L(u;\omega)=L(u)\{1+a(u)\omega\},
+ \qquad |a(u)|<1,
+\end{equation}
+where $a(u)$ is nonconstant.  The estimator is positive and unbiased because
+$\E\omega=0$.  For any fixed $\omega_0\ne0$, its realized ratio to $L(u)$ is
+$1+a(u)\omega_0$, which is nonconstant, so the realized posterior generally
+differs from $\pi$.  Moreover, strict concavity of log gives
+$\E\log\widehat L\le\log\E\widehat L=\log L$, with strict inequality for a
+nondegenerate estimator.  Neither desired conclusion follows from likelihood
+unbiasedness alone.
+\end{proof}
+
+A continuous relaxation of resampling, a deterministic optimal-transport
+replacement, or a frozen branch may improve differentiability.  It defines
+the scalar it executes.  Unless that scalar equals the original likelihood up
+to a constant, it is a relaxed or branch-conditional target; the neural-force
+MH step cannot silently upgrade it.
+
+\subsection{Pseudo-marginal likelihoods}
+
+Assume $\widehat L(u;\omega)\ge0$.  Let $\nu(d\omega)$ be a dominating measure
+and write $m(\omega\mid u)$ for the density, with respect to $\nu$, of the
+auxiliary random variables used by the estimator.  Define the extended
+density with respect to $du\,\nu(d\omega)$ by
+\begin{equation}
+ \widetilde\pi(u,\omega)
+ =\frac{p(u)e^{J(u)}\widehat L(u;\omega)
+         m(\omega\mid u)}{Z}.
+ \label{eq:bf-hnn-pseudo-marginal-target}
+\end{equation}
+
+\begin{proposition}[Pseudo-marginal marginalization]
+\label{prop:bf-hnn-pseudo-marginal}
+If $\widehat L$ is nonnegative and unbiased,
+\begin{equation}
+ \int\widehat L(u;\omega)m(\omega\mid u)\nu(d\omega)=L(u),
+ \end{equation}
+then the $u$-marginal of
+\eqref{eq:bf-hnn-pseudo-marginal-target} is the exact posterior
+\eqref{eq:bf-hnn-exact-posterior}.
+\end{proposition}
+
+\begin{proof}
+Integrating \eqref{eq:bf-hnn-pseudo-marginal-target} over $\omega$ gives
+$Z^{-1}p(u)e^{J(u)}L(u)$ by unbiasedness, which is the normalized exact
+posterior.
+\end{proof}
+
+This proposition does not authorize naive HMC on
+$-\log\widehat L(u;\omega)$ with fresh $\omega$ at each force or endpoint
+evaluation.  The Markov state is $(u,\omega)$, and a valid kernel must preserve
+the extended density.  If $m(\omega\mid u)$ depends on $u$, its log density is
+also part of the conditional $u$-energy.  More explicitly, conditional on
+fixed $\omega$, that energy contains
+\begin{equation}
+ -\log p(u)-J(u)-\log\widehat L(u;\omega)-\log m(\omega\mid u).
+\end{equation}
+Thus using only
+$-\log\widehat L(u;\omega)$ differentiates and corrects the wrong extended
+scalar.  Discrete resampling variables do not automatically
+admit Hamiltonian dynamics; refreshing them requires an MH/Gibbs/pseudo-
+marginal step with the appropriate forward and reverse laws.  A neural force
+may propose $u$ conditional on retained $\omega$, but correctness then depends
+on a complete extended-state kernel, not on
+Proposition~\ref{prop:bf-hnn-safe-exactness} applied only to $u$.
+
+\begin{proposition}[Fresh noisy endpoint values do not define the deterministic MH ratio]
+\label{prop:bf-hnn-fresh-noise-invalid}
+Replacing $L_F(u)$ in
+\eqref{eq:bf-hnn-true-energy-acceptance} by independent fresh estimates at the
+current and proposed states is not, in general, a valid implementation of
+either deterministic HMC for $\pi$ or pseudo-marginal MCMC for
+$\widetilde\pi$.
+\end{proposition}
+
+\begin{proof}
+The deterministic proof fails because the acceptance probability is random
+conditional on $(u,p)$ and is not a function of one fixed target density.
+The pseudo-marginal proof fails because the estimator realization at the
+current state is part of the extended state and must be retained on rejection;
+redrawing it changes the denominator without an extended-state proposal ratio.
+Only special noisy-MCMC constructions with their own balance proof avoid this
+conclusion for $\widetilde\pi$.
+\end{proof}
+
+\subsection{Filtering target taxonomy}
+
+The boundary can be summarized without ambiguity:
+{\small
+\begin{longtable}{@{}p{0.19\textwidth}p{0.25\textwidth}p{0.28\textwidth}p{0.20\textwidth}@{}}
+\caption{What a corrected neural-force proposal targets.}
+\label{tab:bf-hnn-filtering-boundary}\\
+\toprule
+Endpoint scalar & Markov state & Supported target & Unsupported upgrade \\
+\midrule
+\endfirsthead
+\toprule
+Endpoint scalar & Markov state & Supported target & Unsupported upgrade \\
+\midrule
+\endhead
+Exact deterministic $L(u)$ & $(u,p)$ & Exact latent-model posterior & None beyond finite-run convergence \\
+Deterministic approximate $L_F(u)$ & $(u,p)$ & Exact for the named filter-defined posterior & Exact latent-model posterior \\
+Fixed $\widehat L(u;\omega_0)$ & $(u,p)$ with frozen $\omega_0$ & Exact for the fixed-randomness scalar & Pseudo-marginal exactness \\
+Relaxed or learned filter scalar & $(u,p)$ & Exact for the relaxed/learned target & Original-filter or latent-model posterior \\
+Unbiased nonnegative $\widehat L$ & $(u,p,\omega)$ under a proved extended kernel & Exact marginal posterior under pseudo-marginal assumptions & Naive HMC with fresh estimator noise \\
+Fresh noisy log likelihood & Incompletely specified & No general exactness claim & Deterministic or pseudo-marginal HMC \\
+\bottomrule
+\end{longtable}
+}
+
+\section{Training a useful position potential}
+\label{sec:bf-hnn-training}
+
+Correctness does not require an accurate force, but efficiency does.  A robust
+design uses a known baseline plus a learned residual.  In affine or NeuTra
+coordinates $z$, write
+\begin{equation}
+ \widehat U_\phi(z)=\tfrac12z^\top M_0^{-1}z+r_\phi(z).
+ \label{eq:bf-hnn-residual-potential}
+\end{equation}
+The zero residual is already a meaningful no-training baseline.  It tests
+whether the chosen coordinates have made the target nearly Gaussian.  Learning
+$r_\phi$ should be attempted only if this baseline leaves a material force or
+acceptance gap.
+
+Given training triples $(z_i,U_F(z_i),\nabla U_F(z_i))$, a typical scalar
+potential loss is
+\begin{equation}
+ \mathcal L(\phi)
+ =\lambda_V\frac1N\sum_i
+   \left(\widehat U_\phi(z_i)-U_F(z_i)-c\right)^2
+ +\lambda_G\frac1N\sum_i
+   \left\|\nabla\widehat U_\phi(z_i)-\nabla U_F(z_i)\right\|_{W_i}^2,
+ \label{eq:bf-hnn-training-loss}
+\end{equation}
+where $c$ absorbs the irrelevant potential offset and $W_i\succeq0$ records
+the declared scaling or robust weighting.  Training on values alone may fit a
+potential while missing its force.  Training on force alone determines the
+potential only up to a constant, which is harmless for leapfrog but still
+requires heldout energy diagnostics.
+
+\begin{proposition}[Potential offsets do not affect the learned-force kernel]
+\label{prop:bf-hnn-offset}
+Replacing $\widehat U_\phi$ by $\widehat U_\phi+c$ for any constant $c$ leaves
+every learned-force proposal and the true endpoint acceptance unchanged.
+\end{proposition}
+
+\begin{proof}
+The gradient of a constant is zero, so every kick is unchanged.  The MH ratio
+uses $H_F$, not $\widehat U_\phi$, so its value is also unchanged.
+\end{proof}
+
+Training points must cover posterior-relevant trajectories, not merely a large
+axis-aligned box.  Useful sources include tuned ordinary-HMC warmup states,
+NeuTra base draws mapped into source coordinates, accepted and rejected
+endpoints, and selected interior points.  Validation must be split by
+trajectory or chain rather than randomly splitting highly correlated points.
+Tail and mode coverage remain explicit failure modes.
+
+The network is frozen before the kernel is used for inference.  Online updates
+during retained sampling make the proposal time-inhomogeneous and invalidate
+the fixed-kernel proof unless an adaptive-MCMC theorem with diminishing
+adaptation and containment is supplied.  The safe operational response to a
+large energy-error alarm is to use a separately valid fallback transition and
+record the event, not silently retrain inside the retained chain.
+
+\begin{proposition}[Mixtures of valid fallback kernels remain valid]
+\label{prop:bf-hnn-mixture-kernels}
+Let $P_1$ be the corrected learned-force kernel and $P_2$ an ordinary HMC or
+random-walk MH kernel, each invariant for the same $\pi_F$.  For a fixed
+$a\in[0,1]$, the mixture $P=aP_1+(1-a)P_2$ is invariant for $\pi_F$.
+\end{proposition}
+
+\begin{proof}
+Linearity of integration gives
+$\pi_FP=a\pi_FP_1+(1-a)\pi_FP_2=a\pi_F+(1-a)\pi_F=\pi_F$.
+\end{proof}
+
+A state-dependent fallback probability is not covered by this proposition; it
+requires its own balance argument.  One safe design draws the kernel identity
+independently before the transition.  A second safe pattern rejects a proposal
+using a pair-symmetric veto, for example
+$\mathbf1\{|H_F(Fx)-H_F(x)|\le B\}$, because the absolute energy difference is
+the same for $x$ and $Fx$ when $F$ is an involution; the ordinary MH balance
+proof then applies on the surviving pairs.  A one-sided alarm or a fallback
+selected after inspecting only the proposed endpoint is not covered.  After a
+diagnostic rejection, a separately scheduled fixed-mixture fallback may be
+used on a later transition.
+
+\section{Algorithm and implementation contract}
+\label{sec:bf-hnn-algorithm}
+
+For a deterministic filter-defined potential, the minimal valid algorithm is:
+
+\begin{algorithm}[htbp]
+\caption{True-energy-corrected neural-force HMC}
+\label{alg:bf-hnn-safe-hmc}
+\begin{algorithmic}[1]
+\Require Current $u$ and cached $U_F(u)$; frozen $g_\phi$; $M\succ0$;
+         step size $\epsilon$; steps $L$.
+\State Draw $p\sim\calN(0,M)$ and store $p_0\gets p$, $u_0\gets u$.
+\State $p\gets p-(\epsilon/2)g_\phi(u)$.
+\For{$j=1,\ldots,L$}
+  \State $u\gets u+\epsilon M^{-1}p$.
+  \If{$j<L$}
+    \State $p\gets p-\epsilon g_\phi(u)$.
+  \EndIf
+\EndFor
+\State $p\gets p-(\epsilon/2)g_\phi(u)$.
+\State Set $(u',p')\gets(u,-p)$ and evaluate the new true value $U_F(u')$.
+\State $\Delta H\gets U_F(u')+K(p')-U_F(u_0)-K(p_0)$.
+\State Accept $(u',U_F(u'))$ with probability $\min\{1,e^{-\Delta H}\}$;
+       otherwise retain $(u_0,U_F(u_0))$.
+\end{algorithmic}
+\end{algorithm}
+
+The implementation must preserve the following contracts.
+\begin{enumerate}
+ \item \textbf{Target identity.}  Endpoint values include the same prior,
+ parameter chart, Jacobian, data, filter, branch policy, and numerical settings
+ as the declared posterior.
+ \item \textbf{Joint energy.}  Initial and final momenta are retained until
+ $\Delta H$ is computed.  A posterior-only correction is forbidden.
+ \item \textbf{Frozen proposal.}  Network weights, normalization, affine or
+ NeuTra map, mass matrix, $\epsilon$, and $L$ are fixed during retained
+ sampling.  Warmup adaptation ends before evidence draws.
+ \item \textbf{Symmetric map.}  The executed update is exactly the symmetric
+ kick--drift--kick composition.  Early termination, clipping, projection,
+ state-dependent step size, non-symmetric finite-value rescue, or a direct
+ neural state-update map needs a new proof.
+ \item \textbf{Deterministic endpoint.}  Deterministic filters must reproduce
+ the same value on repeat calls.  Stochastic filters must use a separately
+ specified extended-state construction.
+ \item \textbf{Precision and failure.}  A mathematically declared
+ out-of-support endpoint has $U_F=+\infty$ and rejects.  By contrast, an
+ undefined learned force, failed factorization, overflow, or numerically
+ indeterminate filter value means that the executed proposal or target is not
+ the proved map.  It must emit a failed-transition diagnostic and block
+ promotion; it must not be hidden as ordinary rejection.  Replacing any failed
+ true value by a convenient neural value changes the kernel and is forbidden.
+ \item \textbf{Batching and XLA.}  Chain and training batches should be
+ TensorFlow/XLA operations on the BayesFilter route.  Batching is an efficiency
+ requirement; it does not alter the proof.
+\end{enumerate}
+
+\section{Tests that answer the mathematical question}
+\label{sec:bf-hnn-tests}
+
+Unit tests should target the proof assumptions rather than only finite output.
+
+\paragraph{Map tests.}
+For random finite phase points, verify
+\begin{equation}
+ \|R\Phi_{\epsilon,L}R\Phi_{\epsilon,L}(x)-x\|
+ \end{equation}
+at a dtype-appropriate tolerance.  Check a small-dimensional autodiff Jacobian
+against determinant magnitude one.  These tests do not prove the property in
+all dimensions, but they catch implementation drift from the proved formula.
+
+\paragraph{Acceptance tests.}
+On a Gaussian target with an exact force, acceptance should approach one as
+$\epsilon\to0$, but need not equal one for finite $\epsilon$.  Tests that
+require identically one because the surrogate equals the target are testing the
+wrong statement: leapfrog still has discretization error.  A deliberately
+biased force should be tested for agreement with Gaussian moments under a
+long-enough, irreducible corrected-chain experiment, while recognizing that
+poor mixing can make a finite run inconclusive.
+
+\paragraph{Counterexample tests.}
+Test three deliberate defects: remove the final kinetic term; make the force
+momentum-dependent; and omit stage-one delayed acceptance.  Small reference
+tests should then detect stationary-moment or detailed-balance failure.  These
+negative tests guard the exact mistakes documented in this chapter.
+
+\paragraph{Filtering tests.}
+For deterministic filters, repeat endpoint values and compare direct versus
+cached evaluations.  For an exact LGSSM, compare the corrected chain with the
+analytic/Kalman posterior.  For UKF or SGQF, label results as filter-defined and
+compare to an independent higher-fidelity likelihood only as a sensitivity
+study.  For a particle filter, reject any harness that refreshes estimator
+randomness inside a nominally deterministic HMC ratio without an extended-
+state manifest.
+
+\section{Scientific evaluation ladder}
+\label{sec:bf-hnn-evaluation}
+
+The smallest informative comparison is not HNN-HMC versus an untuned HMC.  Use
+the following matched ladder:
+\begin{enumerate}
+ \item tuned ordinary HMC on $U_F$;
+ \item affine or NeuTra coordinates with ordinary true gradients;
+ \item the same coordinates with the zero-residual Gaussian force from
+ \eqref{eq:bf-hnn-residual-potential};
+ \item the trained residual potential with true-energy correction;
+ \item the trained route plus a predeclared fixed-probability valid fallback,
+ if fallback is needed.
+\end{enumerate}
+All arms use the same target, retained-draw policy, diagnostic thresholds, and
+hardware class.  Training data generation and network training are charged in
+the amortized comparison.  Report at least true endpoint values, learned-force
+calls, true-gradient calls, acceptance, modern rank/folded $\widehat R$, bulk
+and tail ESS, energy-error tails, fallback rate, wall time, and ESS per second.
+
+Pointwise value RMSE, force cosine similarity, and validation loss are
+explanatory diagnostics.  They can reject a clearly broken learner but cannot
+promote it.  The promotion criterion is downstream corrected-chain validity
+and amortized efficiency against the tuned matched baselines.  Passing one
+filter-defined posterior does not establish latent-model exactness or broad
+cross-model superiority.
+
+\section{Historical evidence and its proper interpretation}
+\label{sec:bf-hnn-historical-evidence}
+
+The earlier work in \code{/home/chakwong/python} contains several reusable
+artifacts.  These include a scalar \code{PotentialEnergySurrogate}, a
+historical \code{DelayedAcceptanceHMC}, contract tests, and SGU result files.
+They provide useful knowledge transfer, but not a successful result for the
+method proposed here.
+
+The preserved \code{sgu\_surrogate\_hmc.npz} records four chains of 500 draws,
+zero acceptance, ESS near four, extreme reported $\widehat R$, and negative
+mean learned-versus-true gradient cosine agreement.  It is a failed surrogate
+candidate.  The later \code{sgu\_surrogate\_dahmc.npz} preserves samples and
+wall times but omits the acceptance, $\widehat R$, ESS, energy, and proposal
+telemetry needed to establish correctness or efficiency.  Neither artifact
+tests the corrected one-stage joint-energy kernel of
+Algorithm~\ref{alg:bf-hnn-safe-hmc}.
+
+The cited paper reports large reductions in numerical target-gradient calls on
+several synthetic distributions, as well as improved ESS per gradient.  It
+also uses a fallback for NUTS based on error monitoring.  Those experiments
+support the research motivation.  They do not prove that the discrete general
+L-HNN map is reversible and volume-preserving, nor do they cover
+filtering-target identity or supply BayesFilter evidence.
+
+The official repository is archived.  Its HMC code evaluates a true endpoint
+Hamiltonian, while its learned map uses the general $(u,p)$ network and the
+synchronized update discussed above.  The implementation is a valuable source
+for auditing what was computed; it is not a proof of the missing discrete-map
+properties.
+
+\section{BayesFilter corrected-kernel experiments}
+\label{sec:bf-hnn-corrected-experiments}
+
+\paragraph{Retrospective tuning correction.}
+The experiments in this section are historical mechanics and fixed-kernel
+observations, not valid tuned performance comparisons.  A later audit found
+that their fixed-grid selector did not use BayesFilter's native dual-averaging
+tuner, used short-chain $\widehat R$ in candidate selection, and did not bind a
+native mass artifact.  Consequently every tuned runtime, seconds-per-ESS,
+speed, break-even, and performance-pass claim in the historical tables below
+is unsupported pending successful native retuning.  In the native PP--UKF
+canary, both arms reached the prescribed acceptance interval, but the learned
+arm failed folded rank-normalized split $\widehat R$ and the exact arm failed
+modern $\widehat R$ plus an energy-tail veto.  Nothing in this section promotes
+either PP--UKF kernel.
+
+The July 2026 BayesFilter campaign tested the narrower construction proved in
+this chapter, not the historical delayed-acceptance implementation.  Every
+tested arm used a frozen target-specific NeuTra chart, a frozen position-only
+scalar residual force, the symmetric map in
+Algorithm~\ref{alg:bf-hnn-safe-hmc}, and the complete true endpoint energy in
+the transformed coordinate.  Each transition paid for one new value-only
+endpoint evaluation; archived traces reconstructed the full kinetic-plus-
+potential energy difference.  Warm-up draws were retained.  The sampler gate
+used the maximum of rank-normalized split and folded rank-normalized split
+$\widehat R$, with final thresholds $\widehat R\leq1.01$, bulk ESS at least
+$1000$, and tail ESS at least $400$.
+
+The campaign produced corrected-kernel results for five posterior-target
+configurations in four model families.  Table~\ref{tab:bf-hnn-corrected-results}
+reports the learned-residual arm.  The zero-residual Gaussian-force control also
+passed every one of these five cells.  The truth-tail column is the minimum
+parameter-wise two-sided empirical posterior tail probability of the generating
+value; it is a one-seed centrality diagnostic, not a frequentist calibration
+test.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Target & $\epsilon,L$ & Accept. & max $\widehat R$ & bulk/tail ESS & min truth tail \\
+\midrule
+LGSSM--KF & $0.8,6$ & $0.678$ & $1.00673$ & $2069/3005$ & $0.0664$ \\
+Predator--prey UKF & $0.2,10$ & $0.970$ & $1.00534$ & $5188/2198$ & $0.2062$ \\
+Predator--prey SGQF & $0.2,10$ & $0.970$ & $1.00179$ & $6680/3187$ & $0.2177$ \\
+Spatial SIR SGQF & $0.8,10$ & $0.898$ & $1.00055$ & $5770/3519$ & $0.3697$ \\
+Structural UKF & $0.2,8$ & $0.896$ & $1.00543$ & $2204/2121$ & $0.2777$ \\
+\bottomrule
+\end{tabular}
+\caption{Historical one-seed learned-force observations produced with the
+superseded non-native tuner.  They are preserved for provenance and are not
+promoted tuning, convergence, accuracy, or performance evidence.}
+\label{tab:bf-hnn-corrected-results}
+\end{table}
+
+Endpoint parity against the complete transformed target was at most
+$4.27\times10^{-14}$ across the five cells, and the archived full-energy
+reconstruction error was zero.  The SIR and predator--prey cells passed their
+admitted physical-posterior-mean comparisons with tuned plain HMC.  The
+structural raw-coordinate comparator remained unavailable because of the
+preserved source-geometry blocker; no substitute comparator was invented.  Its
+scientific pass therefore rests on the predeclared truth-tail and sampler
+criteria plus the deterministic structural identity
+$k_t-\phi k_{t-1}-\gamma m_t^2=0$.  No artificial process noise was added to
+$k_t$.
+
+Only the LGSSM cell contained the complete matched performance ledger required
+by Section~\ref{sec:bf-hnn-evaluation}.  For its learned arm, reuse-scenario
+seconds per minimum bulk ESS were $0.2483$, versus $0.6193$ for same-chart
+true-gradient HMC; sampling-only values were $0.1098$ and $0.2279$.  This passes
+the campaign's descriptive performance screen.  The zero-residual arm was
+descriptively better still, at $0.1367$ and $0.06767$, so the experiment does
+not establish that residual learning is needed once the NeuTra chart is strong.
+The other four cells did not preserve a matched true-gradient cost and
+amortization ledger.  Their performance status is therefore \emph{not
+demonstrated because the matched ledger is missing}, not an inferred
+performance pass or a claim that the candidate is intrinsically slow.
+
+Eight further historical NeuTra configurations were audited: funnel,
+ill-conditioned Gaussian, German logistic regression, three NK targets, and
+two Rotemberg targets.  They were not counted as corrected-kernel tests.  Their
+exact historical targets or result notes often survived, but their selected
+frozen chart tensors did not.  Retraining a new chart would answer a different
+question.  The campaign consequently recorded eight cell-local
+\code{REQUALIFICATION\_BLOCKED} outcomes rather than fabricating a replay.
+This is a knowledge-transfer and artifact-preservation failure, not evidence
+that the historical NeuTra results or the corrected kernel are wrong.
+
+These historical experiments were later found to use an ad hoc fixed-grid HMC
+tuner rather than BayesFilter's native dual-averaging tuner.  Their tuned
+runtime, seconds-per-ESS, speed, break-even, and performance-pass claims are
+therefore unsupported pending native retuning.  A native PP--UKF canary did
+reach the prescribed acceptance interval for both arms, but the learned arm
+failed folded rank-normalized split R-hat and the exact arm failed both modern
+R-hat and an energy-tail veto.  The historical fixed-kernel observations do
+not establish a valid tuned comparison.  The resulting scientific statement
+is consequently narrower: the corrected position-only proposal mechanism is
+implemented and worth further investigation, but current nonlinear evidence
+does not establish a promoted HNN--NeuTra sampler, calibrated performance,
+universal reliability, statistically supported superiority,
+residual-learning necessity, or default readiness.
+
+\section{Conclusions and nonclaims}
+
+Metropolis-corrected neural-force HMC is a good research direction for
+filtering posteriors because it can replace $L$ expensive filtering scores by
+$L$ cheap neural-force calls and one new true endpoint value.  The valid core
+is narrower than the slogan:
+\begin{equation}
+ \boxed{\text{frozen position-only symmetric proposal}
+ +\text{ true joint endpoint energy}.}
+\end{equation}
+Under the proved assumptions, force approximation affects efficiency rather
+than the invariant deterministic target.  The result does not extend to any of
+the following constructions without additional analysis:
+\begin{itemize}
+ \item an arbitrary neural state-update map;
+ \item a momentum-dependent learned Hamiltonian without proved symmetry and
+ integrator properties;
+ \item a Metropolis correction that drops endpoint kinetic energy; or
+ \item a nominal delayed-acceptance kernel that omits stage one.
+\end{itemize}
+
+Most importantly, exactness is relative to the endpoint scalar.  Exact Kalman
+likelihood yields the corresponding latent-model posterior.  UKF, SGQF, fixed
+branch, relaxed, or learned filtering likelihoods yield their named
+filter-defined posteriors.  An unbiased particle likelihood can recover the
+exact posterior only through a valid extended-state pseudo-marginal kernel;
+fresh noisy endpoint estimates are not a substitute.  No amount of accuracy in
+the neural force crosses that filtering boundary.

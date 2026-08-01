@@ -1,0 +1,566 @@
+{
+  "analytic_fine_fd_gap": 1.44503978560806e-07,
+  "audit_points": [
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      1.3648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      0.1813606360356248,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      1.021310428208619,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      0.21482517165487092,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -0.22347557454189493
+    ],
+    [
+      0.3648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.8186393639643752,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      0.021310428208618837,
+      -0.2851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      -0.7851748283451291,
+      -0.7234755745418949
+    ],
+    [
+      0.8648943586852835,
+      -0.3186393639643752,
+      0.5213104282086188,
+      -0.2851748283451291,
+      -1.223475574541895
+    ],
+    [
+      1.5,
+      -1.0,
+      1.2,
+      -1.4,
+      0.8
+    ],
+    [
+      -1.3,
+      1.4,
+      -1.1,
+      1.0,
+      -1.5
+    ]
+  ],
+  "cell_id": "STR-UKF",
+  "dataset": {
+    "horizon": 100,
+    "observation_sha256": "ab7885b135d8098c6e516e06733ef99399ea07f4a39292670b578da4a0efbae3",
+    "seed": [
+      20260716,
+      15001
+    ],
+    "state_sha256": "fe77f0e0000db93281116e7e81ddd303e9706b9e402bfaf7141a1aa1005c0ca9"
+  },
+  "decision": "ADMIT_STR_UKF_POSTERIOR_IDENTITY",
+  "device_intent": "cpu",
+  "elapsed_seconds": 63.40950912798871,
+  "fine_coarse_fd_step_gap": 4.391154106997419e-07,
+  "jit_compile": true,
+  "mathematical_target_signature": "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06",
+  "memory_policy": null,
+  "nonclaims": [
+    "typed posterior identity and value-score admission only",
+    "no HMC, NeuTra, filter exactness, global identifiability, calibration, or readiness claim"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0"
+  ],
+  "passed": true,
+  "permutation_score_gap": 0.0,
+  "permutation_status_equal": true,
+  "permutation_value_gap": 0.0,
+  "program_id": "multimodel-neutra-filter-posterior-20260715",
+  "recomposition": {
+    "adapter_signature": "5d371809752815d5baf7969543268ee3d4527a93a7eecea4f07ed221ce26fa81",
+    "admission_signature": "f0b811fd0736cb802efe87d0967b698ebf2c0af510c6512b11d1853bb02f8509",
+    "component_identities": [
+      {
+        "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+        "qualname": "structural_source_uniform_prior_value_score",
+        "role": "prior",
+        "source_sha256": "725524b7c18f4507f59dc62592024519f4dc5ce6970ab7d506556371f26ddd46"
+      },
+      {
+        "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+        "qualname": "StructuralUKFLikelihoodRecomposer.__call__",
+        "role": "filter_likelihood",
+        "source_sha256": "b41fa86802c3ad1de02853c19f7d120a3abf6871ddece3e755a1d40692eaf806"
+      },
+      {
+        "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+        "qualname": "structural_source_probit_jacobian_value_score",
+        "role": "unconstraining_jacobian",
+        "source_sha256": "1297e09e266efaede162f1c0586fb2317dbc6119346b46be65c51f70999a5067"
+      }
+    ],
+    "dtype": "float64",
+    "mathematical_target_signature": "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06",
+    "maximum_absolute_score_error": 0.0,
+    "maximum_absolute_value_error": 0.0,
+    "parameter_dim": 5,
+    "passed": true,
+    "point_count": 14,
+    "points_sha256": "6a5c6242460b7544d2b701662652fae775202bf0827999c4e39df791b3c6c57e",
+    "schema": "bayesfilter.neutra.posterior_recomposition_admission.v1",
+    "score_tolerance": 1e-08,
+    "value_tolerance": 1e-09
+  },
+  "registry_row": {
+    "cell_id": "STR-UKF",
+    "dataset_sha256": "ab7885b135d8098c6e516e06733ef99399ea07f4a39292670b578da4a0efbae3",
+    "previous_state": "TARGET_BLOCKED",
+    "program_id": "multimodel-neutra-filter-posterior-20260715",
+    "remaining_blockers": [],
+    "repair_evidence": "docs/plans/bayesfilter-multimodel-neutra-filter-posterior-p5-structural-target-design-result-2026-07-16.md",
+    "schema": "bayesfilter.multimodel_neutra_p5_structural_registry.v1",
+    "state": "VALUE_SCORE_ADMITTED",
+    "target_signature": "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06"
+  },
+  "schema": "bayesfilter.multimodel_neutra_p5_structural_r1b.v1",
+  "score": [
+    [
+      -5.541280983347558,
+      -7.968051889592071,
+      -7.160716520673635,
+      -6.100988683901435,
+      -1.334869509165916
+    ],
+    [
+      7.357958528651008,
+      -10.453338921755309,
+      4.736363609091388,
+      -1.5976544214434807,
+      -9.083678371125554
+    ],
+    [
+      -23.945924017530135,
+      -29.244224532923173,
+      -10.299857687026394,
+      -19.85157356368862,
+      1.0579462374177124
+    ],
+    [
+      -26.459342804526422,
+      -43.91958834783725,
+      -14.761585472858402,
+      -30.347273172389492,
+      -6.535512947439057
+    ],
+    [
+      -5.9978885255943934,
+      -9.831934235340018,
+      -17.578650788471528,
+      -8.060833392214414,
+      0.8143121085966842
+    ],
+    [
+      -13.183521882036565,
+      -24.582719064890142,
+      -9.881705753611648,
+      -9.83523515194218,
+      -3.1545473884620354
+    ],
+    [
+      -3.4851759753159417,
+      -10.04994117167584,
+      -2.2270111612564953,
+      -3.9213884421689,
+      -8.299974630493054
+    ],
+    [
+      9.06665454751001,
+      11.589323831802858,
+      1.295715489178896,
+      3.878386756603113,
+      -1.1226216504690791
+    ],
+    [
+      11.342441225548352,
+      42.778421744652775,
+      -1.7952465970438576,
+      7.713398815044083,
+      15.237653956760177
+    ],
+    [
+      -1.1576530973185886,
+      -2.4901445388714887,
+      -0.21485219305065273,
+      -0.643134558241499,
+      -1.9220330245664496
+    ],
+    [
+      1.352127769246559,
+      7.803898739585812,
+      1.251314605633921,
+      5.613036525418187,
+      0.7382893447843004
+    ],
+    [
+      -5.847503278542787,
+      6.784791261678474,
+      -9.068109244144095,
+      -2.8296845209248347,
+      8.93474640329456
+    ],
+    [
+      2.7410262829016983,
+      19.92087504434143,
+      -1.5537973951252706,
+      5.365849390912137,
+      -4.158391478229998
+    ],
+    [
+      1.3168670420386492,
+      -25.11873501089809,
+      1.7045721895427774,
+      -20.166226245035123,
+      0.37327751848135726
+    ]
+  ],
+  "status": {
+    "deterministic_residual": [
+      6.567362562182224e-16,
+      1.9965751907707832e-16,
+      5.012259766864414e-16,
+      3.320517873309486e-16,
+      4.1735716085921503e-16,
+      3.9748106620475716e-16,
+      3.100997546505564e-16,
+      2.5286834916099185e-16,
+      3.3072312098835614e-16,
+      2.920245818999922e-16,
+      2.949899611594635e-16,
+      3.0769415037521165e-16,
+      1.3497091358249933e-16,
+      6.018269416608136e-16
+    ],
+    "floor_count_value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "innovation_condition_estimate": [
+      5.19196516641083,
+      2.776222862820249,
+      8.443981191343347,
+      5.560997874893203,
+      4.73270344980231,
+      5.8044298520682975,
+      3.7317596060494576,
+      3.91258932739774,
+      3.1270993680467547,
+      5.1934065802490625,
+      3.811283007748675,
+      7.8608403105039555,
+      1.3026812233992162,
+      1.1325331410489468
+    ],
+    "min_innovation_eigen_gap": [
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity,
+      Infinity
+    ],
+    "min_innovation_eigenvalue": [
+      0.39020553000319563,
+      0.9580265513730806,
+      0.37940698041184096,
+      0.7162825514666666,
+      0.4202904690111376,
+      0.4683316615444683,
+      0.6180701848964596,
+      0.4103620122923598,
+      0.3059047211638136,
+      0.400972099689487,
+      0.3844209401835618,
+      0.23002073564365272,
+      0.9235755050160106,
+      6.220446822329593
+    ],
+    "min_placement_eigen_gap": [
+      0.003885110217673571,
+      0.02838622870609031,
+      0.02982691704489855,
+      0.0018044487677282284,
+      0.0033562105598778924,
+      0.010504831856550156,
+      0.029487118482797836,
+      0.03796138145529559,
+      0.03796138145529559,
+      0.03796138145529559,
+      0.03796138145529559,
+      0.01422944901388045,
+      0.02911483897629495,
+      0.03885797335986275
+    ],
+    "min_placement_eigenvalue": [
+      0.025854309807994025,
+      0.03672110862492043,
+      0.03325615137761536,
+      0.03325615137761536,
+      0.03325615137761536,
+      0.03325615137761536,
+      0.03233214051369364,
+      0.030787334159968118,
+      0.008569367668758756,
+      0.018842847810506935,
+      0.017821759234987654,
+      0.020812360111686745,
+      0.00385352126109092,
+      0.02306218980545835
+    ],
+    "principal_sqrt_target_row_class_code": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "status_code": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "valid_pre_regularized_score": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "substitution_negatives": {
+    "all_mutations_rejected_by_signature": true,
+    "artificial_route_eligible_for_baseline_registry": false,
+    "artificial_route_innovation_dim": 2,
+    "baseline_mathematical_signature": "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06",
+    "duplicated_jacobian_rejected": true,
+    "duplicated_jacobian_value_gap": 8.652917909534125,
+    "missing_jacobian_rejected": true,
+    "missing_jacobian_value_gap": 8.652917909534125,
+    "mutated_signatures": {
+      "artificial_k_noise_route": "a2113a53cf387568e02886e252d95de4a900fb63a4fb9b7a4d598080a34bff72",
+      "changed_R_chart_upper": "6dc4bf61d7103aa0cbbad606a7204e4c0e607e8e94e5d9f0d9810219ab096dad",
+      "changed_observation_hash": "de423e8230e5c7736575cfc4edbc8a660378cc98a4db5e46e00ed1b80f29cfa4",
+      "changed_prior_order": "eb44113b8a956123953ec0d2a8ff10ab703637770dd234ba1d5623ea1389911f"
+    }
+  },
+  "target_identity": {
+    "adapter_signature": "5d371809752815d5baf7969543268ee3d4527a93a7eecea4f07ed221ce26fa81",
+    "batch_execution_surface": {
+      "adapter_signature": "5d371809752815d5baf7969543268ee3d4527a93a7eecea4f07ed221ce26fa81",
+      "backend_id": "tensorflow_batched_principal_sqrt_ukf_structural",
+      "callable_module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+      "callable_qualname": "StructuralUKFNeuTraAdapter.neutra_batch_log_prob_and_grad_status",
+      "callable_source_sha256": "78e3ec409ef46a2fc4acef2dba4a8477abb295c5ea7ed1b6ca30b376016d2d5d",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_structural_posterior_value_score_status",
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "qualname": "_structural_posterior_value_score_status",
+          "source_sha256": "dfc902264b42d91d65fff6fa19cc2675956a8050fd78461889ef9752660590c9"
+        }
+      ],
+      "dependency_closure_sha256": "84501883324288415ce69e3a80b2d17aa0431825409795fb3f8f6453097859aa",
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "source_sha256": "9e96519d09b88517b34195c66a2679d5c92e483a95b91ef40ae104fa5948b124"
+        }
+      ],
+      "evidence_path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+      "jit_compile_required": true,
+      "method_name": "neutra_batch_log_prob_and_grad_status",
+      "minimum_batch_size": 2,
+      "row_mapped_scalar_target_used": false,
+      "sample_axis_python_loop_used": false,
+      "scalar_fallback_used": false,
+      "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+      "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+      "status_telemetry_required": true,
+      "target_scope": "STR-UKF-five-probit-T100-structural-innovation-v1"
+    },
+    "dtype": "float64",
+    "mathematical_target_signature": "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06",
+    "nonclaims": [
+      "typed target identity and execution binding only",
+      "no HMC convergence or posterior recovery claim",
+      "no NeuTra training quality or production readiness claim"
+    ],
+    "parameter_dim": 5,
+    "posterior_execution_surface": {
+      "callable_module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+      "callable_qualname": "StructuralUKFNeuTraAdapter.log_prob_and_grad",
+      "callable_source_sha256": "384f49c51d7f88ba74d855ea4b6646dfd55820ecedf9c7c3ccfd070b50d2f840",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_structural_posterior_value_score_status",
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "qualname": "_structural_posterior_value_score_status",
+          "source_sha256": "dfc902264b42d91d65fff6fa19cc2675956a8050fd78461889ef9752660590c9"
+        }
+      ],
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "source_sha256": "9e96519d09b88517b34195c66a2679d5c92e483a95b91ef40ae104fa5948b124"
+        }
+      ],
+      "method_name": "log_prob_and_grad"
+    },
+    "program_id": "multimodel-neutra-filter-posterior-20260715",
+    "recomposition_signature": "f0b811fd0736cb802efe87d0967b698ebf2c0af510c6512b11d1853bb02f8509",
+    "registry_artifact_sha256": "b5d7e9e9800e30267059eacd8bec4bdbfb79ea397a95cafced7fe08cb1712ab2",
+    "schema": "bayesfilter.neutra.typed_target_identity.v1",
+    "scope_id": "STR-UKF",
+    "scope_kind": "model_cell",
+    "status_execution_surface": {
+      "callable_module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+      "callable_qualname": "StructuralUKFNeuTraAdapter.target_status_telemetry",
+      "callable_source_sha256": "269130ed8ea9092aa18191abdf8d8247342277268cf6ec6a64b47aaa9c5a1422",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_structural_posterior_value_score_status",
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "qualname": "_structural_posterior_value_score_status",
+          "source_sha256": "dfc902264b42d91d65fff6fa19cc2675956a8050fd78461889ef9752660590c9"
+        }
+      ],
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "source_sha256": "9e96519d09b88517b34195c66a2679d5c92e483a95b91ef40ae104fa5948b124"
+        }
+      ],
+      "method_name": "target_status_telemetry"
+    },
+    "target_signature": "76a1a95a63816f3fc94106c3c22ba8704ebdc76caf4994e98c5ddc817b258d71"
+  },
+  "value": [
+    -129.92036035984026,
+    -141.2698449353461,
+    -135.74549440534878,
+    -142.4332275792356,
+    -136.02486539182058,
+    -133.50749796278075,
+    -132.60443192840722,
+    -131.40094823083766,
+    -139.7144488323032,
+    -130.00658060628894,
+    -131.00455909440666,
+    -131.84637573928651,
+    -149.48689092037918,
+    -202.2138771329828
+  ]
+}

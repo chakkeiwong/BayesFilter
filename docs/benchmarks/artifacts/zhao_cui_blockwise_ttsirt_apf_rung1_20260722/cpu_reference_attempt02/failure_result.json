@@ -1,0 +1,20 @@
+{
+  "command": "docs/benchmarks/run_zhao_cui_blockwise_ttsirt_apf_rung1.py --output-root docs/benchmarks/artifacts/zhao_cui_blockwise_ttsirt_apf_rung1_20260722/cpu_reference_attempt02 --dimension 24 --time-steps 3 --particle-count 256 --seed 220723 --cpu-reference",
+  "exception_message": "Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b''\nb'x and y not equal to tolerance rtol = tf.Tensor(0.0, shape=(), dtype=float32), atol = tf.Tensor(0.0, shape=(), dtype=float32)'\nb'x (shape=() dtype=float32) = '\n-89.33295\nb'y (shape=() dtype=float32) = '\n-89.33295",
+  "exception_type": "InvalidArgumentError",
+  "failure_classification": "not_candidate_evidence",
+  "git": {
+    "commit": "71f659aa2620adfaa9fdb34d66c0816543365c82",
+    "dirty": true,
+    "dirty_line_count": 18
+  },
+  "nonclaims": [
+    "no candidate rejection",
+    "no research-direction rejection",
+    "no scientific or performance interpretation"
+  ],
+  "recorded_at_utc": "2026-07-22T09:09:13.716016+00:00",
+  "schema": "bayesfilter.zhao_cui_blockwise_ttsirt_apf.rung1.failure.v1",
+  "status": "FAIL_INFRASTRUCTURE_OR_HARNESS",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_zhao_cui_blockwise_ttsirt_apf_rung1.py\", line 1377, in <module>\n    main()\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_zhao_cui_blockwise_ttsirt_apf_rung1.py\", line 1178, in main\n    arms[name], programs[name] = _evaluate_arm(model, branch, theta)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_zhao_cui_blockwise_ttsirt_apf_rung1.py\", line 889, in _evaluate_arm\n    tf.debugging.assert_near(\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/ops/control_flow_assert.py\", line 102, in Assert\n    raise errors.InvalidArgumentError(\ntensorflow.python.framework.errors_impl.InvalidArgumentError: Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b''\nb'x and y not equal to tolerance rtol = tf.Tensor(0.0, shape=(), dtype=float32), atol = tf.Tensor(0.0, shape=(), dtype=float32)'\nb'x (shape=() dtype=float32) = '\n-89.33295\nb'y (shape=() dtype=float32) = '\n-89.33295\n"
+}

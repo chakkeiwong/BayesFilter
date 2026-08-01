@@ -1,0 +1,381 @@
+{
+  "config": {
+    "adjacent_rank": 2,
+    "axis_order": [
+      "x_t",
+      "x_t_minus_1"
+    ],
+    "degree": 8,
+    "density_tau": 0.0,
+    "max_sweeps": 2,
+    "quadrature_order_per_axis": 17,
+    "ridge": 1e-10,
+    "status": "warm_start_hypothesis_not_default"
+  },
+  "finite_program": {
+    "compatibility_hash": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+    "log_increments": [
+      -1.758321254750773,
+      -2.149752029815983
+    ],
+    "previous_marginal_derivative_included": true,
+    "score_backend": "tensorflow_total_autodiff_same_finite_program",
+    "steps": [
+      {
+        "axis_order": [
+          "x_0"
+        ],
+        "fit_dimension": 1,
+        "fit_residual": 0.05613921368833598,
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [],
+        "log_scale_shift_index": 8,
+        "marginal_mass": 0.9999999999999994,
+        "target_kind": "initial_state_observation",
+        "time_index": 0
+      },
+      {
+        "axis_order": [
+          "x_t",
+          "x_t_minus_1"
+        ],
+        "fit_dimension": 2,
+        "fit_residual": 0.0555768743630064,
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [
+          1
+        ],
+        "log_scale_shift_index": 144,
+        "marginal_mass": 0.9999999999999996,
+        "target_kind": "adjacent_state_update",
+        "time_index": 1
+      }
+    ]
+  },
+  "hard_vetoes": {
+    "carried_marginal_mass_errors": [
+      5.551115123125783e-16,
+      4.440892098500626e-16
+    ],
+    "carried_marginal_mass_tolerance": 5.911715561524034e-11,
+    "carried_marginal_mass_tolerance_rule": "256 * float64_epsilon * max(1, 65 * degree * adjacent_rank)",
+    "carried_marginal_mass_valid": true,
+    "finite_value_and_score": true,
+    "forbidden_retained_grid_route_used": false,
+    "oracle_alias_used": false,
+    "own_scalar_fd": "pass",
+    "previous_state_axis_present_from_t1": true
+  },
+  "horizon": 2,
+  "metadata_date": "2026-07-15",
+  "own_scalar_fd": {
+    "owner_fd_only_policy": {
+      "base_relative_tolerance": 0.05,
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "diagnostic_scope": "finite_difference_only",
+      "dimension_scaling": "sqrt(num_parameters)",
+      "max_coordinate_relative_error": 0.00021037576482138402,
+      "max_coordinate_relative_error_margin": 0.07050030235383338,
+      "max_coordinate_relative_error_threshold": 0.07071067811865477,
+      "max_error_parameter": "gamma_unconstrained",
+      "num_parameters": 2,
+      "parameters": [
+        {
+          "absolute_error": 3.998434579985388e-05,
+          "finite_difference": -0.19002157447397158,
+          "parameter": "gamma_unconstrained",
+          "relative_error": 0.00021037576482138402,
+          "relative_error_scale": 0.19006155881977144,
+          "score": -0.19006155881977144
+        },
+        {
+          "absolute_error": 4.589863873616373e-05,
+          "finite_difference": 0.5791345425620875,
+          "parameter": "log_beta",
+          "relative_error": 7.925384407759284e-05,
+          "relative_error_scale": 0.5791345425620875,
+          "score": 0.5790886439233514
+        }
+      ],
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "status": "pass"
+    },
+    "rows": [
+      {
+        "absolute_error": 3.428613710237949e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": -0.19002727268266906,
+        "h": 0.01,
+        "legacy_row_relative_error": 3.428613710237949e-05,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.19006155881977144
+      },
+      {
+        "absolute_error": 3.960392677024305e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": -0.1900219548930012,
+        "h": 0.003,
+        "legacy_row_relative_error": 3.960392677024305e-05,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.19006155881977144
+      },
+      {
+        "absolute_error": 3.975992872234935e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": -0.1900217988910491,
+        "h": 0.001,
+        "legacy_row_relative_error": 3.975992872234935e-05,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.19006155881977144
+      },
+      {
+        "absolute_error": 3.998434579985388e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": -0.19002157447397158,
+        "h": 0.0003,
+        "legacy_row_relative_error": 3.998434579985388e-05,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.19006155881977144
+      },
+      {
+        "absolute_error": 0.00010703932422839735,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": 0.5791956832475798,
+        "h": 0.01,
+        "legacy_row_relative_error": 0.00010703932422839735,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.5790886439233514
+      },
+      {
+        "absolute_error": 5.106516009500961e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": 0.5791397090834464,
+        "h": 0.003,
+        "legacy_row_relative_error": 5.106516009500961e-05,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.5790886439233514
+      },
+      {
+        "absolute_error": 4.61585743647408e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": 0.5791348024977161,
+        "h": 0.001,
+        "legacy_row_relative_error": 4.61585743647408e-05,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.5790886439233514
+      },
+      {
+        "absolute_error": 4.589863873616373e-05,
+        "branch_hash_base": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_minus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "branch_hash_plus": "ede99ba553bd6c728fd5f1909ebc700e894fb9255f1a100d885bafa930724528",
+        "finite_difference": 0.5791345425620875,
+        "h": 0.0003,
+        "legacy_row_relative_error": 4.589863873616373e-05,
+        "parameter": "log_beta",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": 0.5790886439233514
+      }
+    ],
+    "selected_fd_for_policy": [
+      -0.19002157447397158,
+      0.5791345425620875
+    ],
+    "stable_windows": [
+      {
+        "parameter": "gamma_unconstrained",
+        "status": "pass",
+        "threshold": 0.07071067811865477,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 0.0001803949063413281,
+            "relative_error_small": 0.00020837420789439085
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 0.00020837420789439085,
+            "relative_error_small": 0.00020919500486709289
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 0.00020919500486709289,
+            "relative_error_small": 0.00021037576482138402
+          }
+        ]
+      },
+      {
+        "parameter": "log_beta",
+        "status": "pass",
+        "threshold": 0.07071067811865477,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 0.00018480684045886253,
+            "relative_error_small": 8.817416470341149e-05
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 8.817416470341149e-05,
+            "relative_error_small": 7.970264291779087e-05
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 7.970264291779087e-05,
+            "relative_error_small": 7.925384407759284e-05
+          }
+        ]
+      }
+    ],
+    "status": "pass",
+    "steps": [
+      0.01,
+      0.003,
+      0.001,
+      0.0003
+    ]
+  },
+  "parameter_names": [
+    "gamma_unconstrained",
+    "log_beta"
+  ],
+  "route_classification": "fixed_hmc_adaptation",
+  "route_id": "zhao_cui_fixed_adjacent_state_squared_tt_v1",
+  "row": "actual_sv",
+  "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-contract-e-tp-phase6 python docs/benchmarks/run_contract_e_tp_phase6_zhao_cui_comparator.py --row actual_sv --horizon 2 --degree 8 --order 17 --rank 2 --seed contract-e-tp-phase6-actual-sv-rung2 --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase6_zhao_cui_comparators/actual_sv_t2_degree8_order17_rank2_result.json",
+    "conda_environment": "tf-gpu",
+    "cpu_gpu_status": "CPU-only; CUDA_VISIBLE_DEVICES=-1",
+    "data_seed": 81101,
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "jit_compile": false,
+    "jit_status": "explicit_nondefault_cpu_reference_diagnostic",
+    "output_artifact": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase6_zhao_cui_comparators/actual_sv_t2_degree8_order17_rank2_result.json",
+    "plan": "docs/plans/bayesfilter-contract-e-tp-phase6-zhao-cui-comparator-certification-plan-2026-07-15.md",
+    "seed": "contract-e-tp-phase6-actual-sv-rung2",
+    "wall_time_seconds": 2.192041303991573
+  },
+  "schema_version": "contract_e_tp.phase6.zhao_cui_comparator.v1",
+  "score": [
+    -0.19006155881977144,
+    0.5790886439233514
+  ],
+  "source_anchors": [
+    "Zhao-Cui 2024 equations 15-16 and Algorithm 2",
+    "third_party/audit/tensor-ssm-paper-demo/models/full_sol.m:72",
+    "third_party/audit/tensor-ssm-paper-demo/models/full_sol.m:101",
+    "third_party/audit/tensor-ssm-paper-demo/models/full_sol.m:124",
+    "third_party/audit/tensor-ssm-paper-demo/models/sv/transition.m:1",
+    "third_party/audit/tensor-ssm-paper-demo/models/sv/like.m:1"
+  ],
+  "status": "certified_fixed_hmc_adaptation",
+  "theta": [
+    0.2533471031357997,
+    -0.916290731874155
+  ],
+  "value": -3.908073284566756,
+  "what_is_not_concluded": [
+    "not adaptive TT-cross or TTSIRT reproduction",
+    "not source-faithful",
+    "not exact filtering",
+    "not cross-method equivalence",
+    "not superiority or ranking",
+    "not HMC, default, leaderboard, GPU, or full-horizon readiness"
+  ]
+}

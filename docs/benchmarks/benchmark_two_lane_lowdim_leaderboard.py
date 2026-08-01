@@ -379,6 +379,29 @@ def _row_payload(*, lane: str, row_id: str, algorithm_id: str, reference_type: s
     }
 
 
+def _mark_fixed_variant_zhao_cui_value_row(row: dict[str, Any], *, route_id: str) -> dict[str, Any]:
+    """Identify a fixed-branch Zhao-Cui value comparator without a score claim."""
+
+    row = dict(row)
+    row.update(
+        {
+            "route_id": route_id,
+            "route_role": "fixed_variant_value_only_comparator",
+            "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+            "hmc_target_scope_admitted": False,
+            "score_status": "value_only_no_analytical_score_in_lowdim_harness",
+            "score_status_reason": (
+                "This lowdim harness evaluates the fixed-branch value only; "
+                "it does not emit an analytical HMC score"
+            ),
+        }
+    )
+    row["notes"] = list(row.get("notes", [])) + [
+        "fixed-branch value comparator; no analytical-score admission",
+    ]
+    return row
+
+
 def build_rows(repeats: int) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
@@ -391,11 +414,12 @@ def build_rows(repeats: int) -> list[dict[str, Any]]:
         for algorithm_id, fn in [
             ("ukf", _lgssm_ukf_value),
             ("cut4", _lgssm_cut4_value),
-            ("zhao_cui_scalar_or_multistate", _lgssm_zhaocui_value),
             ("fixed_sgqf", _lgssm_fixed_sgqf_value),
         ]:
             value, first, steady = _time_call(lambda fn=fn: fn(dim), repeats)
             rows.append(_row_payload(lane="lowdim_same_target", row_id=row_id, algorithm_id=algorithm_id, reference_type="exact", comparison_status="executed_rankable", reason=None, log_likelihood=_safe_float(value.numpy()), reference_log_likelihood=ref_value, first_seconds=_safe_float(first), steady_seconds=_safe_float(steady), repeats=repeats, notes=["same-target lowdim LGSSM"]))
+        value, first, steady = _time_call(lambda: _lgssm_zhaocui_value(dim), repeats)
+        rows.append(_mark_fixed_variant_zhao_cui_value_row(_row_payload(lane="lowdim_same_target", row_id=row_id, algorithm_id="zhao_cui_scalar_or_multistate", reference_type="exact", comparison_status="diagnostic_only", reason="value-only Zhao-Cui comparator; analytical score not emitted by this lowdim harness", log_likelihood=_safe_float(value.numpy()), reference_log_likelihood=ref_value, first_seconds=_safe_float(first), steady_seconds=_safe_float(steady), repeats=repeats, notes=["value-only comparator"]), route_id="zhao_cui_lgssm_exact_oracle_affine_adapter"))
 
     # Lowdim rankable surrogate: KSC dims 1-3.
     for dim in (1, 2, 3):
@@ -407,10 +431,11 @@ def build_rows(repeats: int) -> list[dict[str, Any]]:
             ("ukf", _ksc_ukf_value, ["same-target surrogate lane"]),
             ("cut4", _ksc_cut4_value, ["same-target surrogate lane"]),
             ("fixed_sgqf", _ksc_fixed_sgqf_value, ["tiny_same_target_surrogate_fixture_only"]),
-            ("zhao_cui_scalar_or_multistate", _ksc_zhaocui_value, ["same-target surrogate lane"]),
         ]:
             value, first, steady = _time_call(lambda fn=fn: fn(dim), repeats)
             rows.append(_row_payload(lane="lowdim_same_target", row_id=row_id, algorithm_id=algorithm_id, reference_type="gaussian_mixture_surrogate", comparison_status="executed_rankable", reason=None, log_likelihood=_safe_float(value.numpy()), reference_log_likelihood=ref_value, first_seconds=_safe_float(first), steady_seconds=_safe_float(steady), repeats=repeats, notes=notes))
+        value, first, steady = _time_call(lambda: _ksc_zhaocui_value(dim), repeats)
+        rows.append(_mark_fixed_variant_zhao_cui_value_row(_row_payload(lane="lowdim_same_target", row_id=row_id, algorithm_id="zhao_cui_scalar_or_multistate", reference_type="gaussian_mixture_surrogate", comparison_status="diagnostic_only", reason="value-only Zhao-Cui comparator; analytical score not emitted by this lowdim harness", log_likelihood=_safe_float(value.numpy()), reference_log_likelihood=ref_value, first_seconds=_safe_float(first), steady_seconds=_safe_float(steady), repeats=repeats, notes=["value-only comparator"]), route_id="zhao_cui_ksc_mixture_fixed_branch_tt"))
 
     # Dedicated SGQF-only lowdim exact-eligible fixture so SGQF timing/accuracy is real, but status-only for cross-algorithm leaderboard.
     model_c, observations = _model_c_case()

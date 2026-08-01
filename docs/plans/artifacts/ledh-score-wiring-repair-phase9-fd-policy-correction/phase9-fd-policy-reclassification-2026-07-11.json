@@ -1,0 +1,1097 @@
+{
+  "artifact_status": "completed",
+  "correction_status": "old_0p005_and_intervening_wrong_policy_bases_superseded",
+  "entries": [
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.01703317968228022,
+        "max_coordinate_relative_error_margin": 0.06956936069616365,
+        "max_coordinate_relative_error_threshold": 0.08660254037844387,
+        "max_error_parameter": "log_obs_noise_scale",
+        "num_parameters": 3,
+        "parameters": [
+          {
+            "absolute_error": 0.15147781372070312,
+            "finite_difference": -9.60540771484375,
+            "parameter": "log_kappa_scale",
+            "relative_error": 0.015770055599682288,
+            "relative_error_scale": 9.60540771484375,
+            "score": -9.453929901123047
+          },
+          {
+            "absolute_error": 0.025554180145263672,
+            "finite_difference": 3.601073980331421,
+            "parameter": "log_nu_scale",
+            "relative_error": 0.007096266359657466,
+            "relative_error_scale": 3.601073980331421,
+            "score": 3.5755198001861572
+          },
+          {
+            "absolute_error": 0.09424829483032227,
+            "finite_difference": 5.533217906951904,
+            "parameter": "log_obs_noise_scale",
+            "relative_error": 0.01703317968228022,
+            "relative_error_scale": 5.533217906951904,
+            "score": 5.438969612121582
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "0f8a71afdce3571e952c061f036efd66923c08c42392b08999d1fb72c7631f18",
+      "fd_step": 0.001,
+      "gate_order": 0,
+      "historical_terminal_decision": false,
+      "id": "gate-b-fixed-sir-t1-n4-seed81120",
+      "legacy_policy": {
+        "atol": 0.01,
+        "max_abs_error": 0.15147781372070312,
+        "max_relative_error": 0.01703317968228022,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.05,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "pass"
+      },
+      "num_particles": 4,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "fixed-sir",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/fixed-sir-t1-n4-seed81120-fd.json",
+        "sha256": "1e1c3ceeb9e793298903b6853db463abfca13d41e73fb0126037807cdfe759be"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/fixed-sir-t1-n4-seed81120-score.json",
+        "sha256": "0f8a71afdce3571e952c061f036efd66923c08c42392b08999d1fb72c7631f18"
+      },
+      "time_steps": 1
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": true,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 1.0,
+        "max_coordinate_relative_error_margin": -0.8775255128608411,
+        "max_coordinate_relative_error_threshold": 0.1224744871391589,
+        "max_error_parameter": "a",
+        "num_parameters": 6,
+        "parameters": [
+          {
+            "absolute_error": 0.10516357421875,
+            "finite_difference": -183.4869384765625,
+            "parameter": "r",
+            "relative_error": 0.0005728109926518623,
+            "relative_error_scale": 183.59210205078125,
+            "score": -183.59210205078125
+          },
+          {
+            "absolute_error": 0.3162194490432739,
+            "finite_difference": -0.9918212890625,
+            "parameter": "K",
+            "relative_error": 0.2417504591647535,
+            "relative_error_scale": 1.308040738105774,
+            "score": -1.308040738105774
+          },
+          {
+            "absolute_error": 0.1401509791612625,
+            "finite_difference": 0.0,
+            "parameter": "a",
+            "relative_error": 1.0,
+            "relative_error_scale": 0.1401509791612625,
+            "score": -0.1401509791612625
+          },
+          {
+            "absolute_error": 0.026525497436523438,
+            "finite_difference": 26.58843994140625,
+            "parameter": "s",
+            "relative_error": 0.0009976327116212338,
+            "relative_error_scale": 26.58843994140625,
+            "score": 26.561914443969727
+          },
+          {
+            "absolute_error": 0.16179466247558594,
+            "finite_difference": 8.27789306640625,
+            "parameter": "u",
+            "relative_error": 0.019170693001104903,
+            "relative_error_scale": 8.439687728881836,
+            "score": 8.439687728881836
+          },
+          {
+            "absolute_error": 0.14673233032226562,
+            "finite_difference": -11.8255615234375,
+            "parameter": "v",
+            "relative_error": 0.012255991384323229,
+            "relative_error_scale": 11.972293853759766,
+            "score": -11.972293853759766
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "fail"
+      },
+      "fd_declared_score_reference_sha256": "82eb75a8710a6c4219419b5f9c14f670e371554a3c7943a2a3fb5e03f1c28f5c",
+      "fd_step": 0.0001,
+      "gate_order": 0,
+      "historical_terminal_decision": true,
+      "id": "gate-b-predator-prey-t1-n2-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.3162194490432739,
+        "max_relative_error": 1.0,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "fail"
+      },
+      "num_particles": 2,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "predator-prey",
+      "row_id": "zhao_cui_predator_prey_T20",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/predator-prey-t1-n2-seed81120-fd.json",
+        "sha256": "738c59f9967ec86dfc09be7bfb315e4cc9fdfc04a22cec95292527405f1b3127"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/predator-prey-t1-n2-seed81120-score.json",
+        "sha256": "82eb75a8710a6c4219419b5f9c14f670e371554a3c7943a2a3fb5e03f1c28f5c"
+      },
+      "time_steps": 1
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.01911978155339806,
+        "max_coordinate_relative_error_margin": 0.05159089656525671,
+        "max_coordinate_relative_error_threshold": 0.07071067811865477,
+        "max_error_parameter": "gamma_unconstrained",
+        "num_parameters": 2,
+        "parameters": [
+          {
+            "absolute_error": 0.0011738166213035583,
+            "finite_difference": -0.061392784118652344,
+            "parameter": "gamma_unconstrained",
+            "relative_error": 0.01911978155339806,
+            "relative_error_scale": 0.061392784118652344,
+            "score": -0.060218967497348785
+          },
+          {
+            "absolute_error": 0.0007840991020202637,
+            "finite_difference": -0.4011392593383789,
+            "parameter": "log_beta",
+            "relative_error": 0.001954680534918276,
+            "relative_error_scale": 0.4011392593383789,
+            "score": -0.40035516023635864
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "ad697c4bd06749cab022281b128b772e61286c0c8a506de623e49b0f03ea6e55",
+      "fd_step": 0.0001,
+      "gate_order": 0,
+      "historical_terminal_decision": false,
+      "id": "gate-b-actual-sv-t1-n4-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.0011738166213035583,
+        "max_relative_error": 0.01911978155339806,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "pass"
+      },
+      "num_particles": 4,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "actual-sv",
+      "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/actual-sv-t1-n4-seed81120-fd.json",
+        "sha256": "c5cda3c38e05564aa011168353b7f519bb1ce676b02127401f2fa618c41c6a92"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/actual-sv-t1-n4-seed81120-score.json",
+        "sha256": "ad697c4bd06749cab022281b128b772e61286c0c8a506de623e49b0f03ea6e55"
+      },
+      "time_steps": 1
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.04161176257266316,
+        "max_coordinate_relative_error_margin": 0.04499077780578071,
+        "max_coordinate_relative_error_threshold": 0.08660254037844387,
+        "max_error_parameter": "gamma_unconstrained",
+        "num_parameters": 3,
+        "parameters": [
+          {
+            "absolute_error": 0.0009057801216840744,
+            "finite_difference": 0.02086162567138672,
+            "parameter": "gamma_unconstrained",
+            "relative_error": 0.04161176257266316,
+            "relative_error_scale": 0.021767405793070793,
+            "score": 0.021767405793070793
+          },
+          {
+            "absolute_error": 0.0001412276178598404,
+            "finite_difference": 0.03039836883544922,
+            "parameter": "log_tau",
+            "relative_error": 0.0046244100859603185,
+            "relative_error_scale": 0.03053959645330906,
+            "score": 0.03053959645330906
+          },
+          {
+            "absolute_error": 0.0009666457772254944,
+            "finite_difference": -0.037550926208496094,
+            "parameter": "mu",
+            "relative_error": 0.025742261904761903,
+            "relative_error_scale": 0.037550926208496094,
+            "score": -0.0365842804312706
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "db0891693d55faa77e0dac689b26bf8d8394d802dd724847ff5ba3849a27a7d8",
+      "fd_step": 0.0001,
+      "gate_order": 0,
+      "historical_terminal_decision": false,
+      "id": "gate-b-generalized-sv-t1-n4-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.0009666457772254944,
+        "max_relative_error": 0.04161176257266316,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "pass"
+      },
+      "num_particles": 4,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "generalized-sv",
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/generalized-sv-t1-n4-seed81120-fd.json",
+        "sha256": "4fa4f8280b5d0f2d4ced2f8c048a79c0f358d16ab41874fd22d0020ec5a327ce"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/generalized-sv-t1-n4-seed81120-score.json",
+        "sha256": "db0891693d55faa77e0dac689b26bf8d8394d802dd724847ff5ba3849a27a7d8"
+      },
+      "time_steps": 1
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.0031043512658227848,
+        "max_coordinate_relative_error_margin": 0.06760632685283198,
+        "max_coordinate_relative_error_threshold": 0.07071067811865477,
+        "max_error_parameter": "gamma_unconstrained",
+        "num_parameters": 2,
+        "parameters": [
+          {
+            "absolute_error": 0.00014617666602134705,
+            "finite_difference": -0.047087669372558594,
+            "parameter": "gamma_unconstrained",
+            "relative_error": 0.0031043512658227848,
+            "relative_error_scale": 0.047087669372558594,
+            "score": -0.04694149270653725
+          },
+          {
+            "absolute_error": 0.0008873343467712402,
+            "finite_difference": -0.4017353057861328,
+            "parameter": "log_beta",
+            "relative_error": 0.002208753709198813,
+            "relative_error_scale": 0.4017353057861328,
+            "score": -0.4008479714393616
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "832d183455de798c6794594a87e4c6b5630dc36201b7000e399342b5077cdbf6",
+      "fd_step": 0.0001,
+      "gate_order": 0,
+      "historical_terminal_decision": false,
+      "id": "gate-b-ksc-sv-t1-n4-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.0008873343467712402,
+        "max_relative_error": 0.0031043512658227848,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "pass"
+      },
+      "num_particles": 4,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "ksc-sv",
+      "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/ksc-sv-t1-n4-seed81120-fd.json",
+        "sha256": "2fc17704717383352a06362a951b7d3b8b38c1c06a9aa7d2cf712d0e2c04b641"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-b/ksc-sv-t1-n4-seed81120-score.json",
+        "sha256": "832d183455de798c6794594a87e4c6b5630dc36201b7000e399342b5077cdbf6"
+      },
+      "time_steps": 1
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.017157361455748553,
+        "max_coordinate_relative_error_margin": 0.0694451789226953,
+        "max_coordinate_relative_error_threshold": 0.08660254037844387,
+        "max_error_parameter": "log_obs_noise_scale",
+        "num_parameters": 3,
+        "parameters": [
+          {
+            "absolute_error": 0.00215911865234375,
+            "finite_difference": -8.852005004882812,
+            "parameter": "log_kappa_scale",
+            "relative_error": 0.00024391294979530273,
+            "relative_error_scale": 8.852005004882812,
+            "score": -8.849845886230469
+          },
+          {
+            "absolute_error": 0.00011849403381347656,
+            "finite_difference": 3.337859869003296,
+            "parameter": "log_nu_scale",
+            "relative_error": 3.5500002535714466e-05,
+            "relative_error_scale": 3.337859869003296,
+            "score": 3.3377413749694824
+          },
+          {
+            "absolute_error": 0.07912921905517578,
+            "finite_difference": 4.611968994140625,
+            "parameter": "log_obs_noise_scale",
+            "relative_error": 0.017157361455748553,
+            "relative_error_scale": 4.611968994140625,
+            "score": 4.532839775085449
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "ca991fa7c4dad820d715fcecedc3f591c5d52a144308cc68bdf2d5287240e794",
+      "fd_step": 0.001,
+      "gate_order": 1,
+      "historical_terminal_decision": false,
+      "id": "gate-c-fixed-sir-t1-n10000-seed81120",
+      "legacy_policy": {
+        "atol": 0.01,
+        "max_abs_error": 0.07912921905517578,
+        "max_relative_error": 0.017157361455748553,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.05,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "pass"
+      },
+      "num_particles": 10000,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "fixed-sir",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/fixed-sir-t1-n10000-seed81120-fd.json",
+        "sha256": "606c194d7dc2d7264bd41f1f7a0b7ebcf08219fb74ff429ca97492280fbc1c4a"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/fixed-sir-t1-n10000-seed81120-score.json",
+        "sha256": "ca991fa7c4dad820d715fcecedc3f591c5d52a144308cc68bdf2d5287240e794"
+      },
+      "time_steps": 1
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.0020681782358869523,
+        "max_coordinate_relative_error_margin": 0.08453436214255691,
+        "max_coordinate_relative_error_threshold": 0.08660254037844387,
+        "max_error_parameter": "log_nu_scale",
+        "num_parameters": 3,
+        "parameters": [
+          {
+            "absolute_error": 2.568359375,
+            "finite_difference": -1355.8883056640625,
+            "parameter": "log_kappa_scale",
+            "relative_error": 0.0018906450541255556,
+            "relative_error_scale": 1358.4566650390625,
+            "score": -1358.4566650390625
+          },
+          {
+            "absolute_error": 1.3214111328125,
+            "finite_difference": 637.603759765625,
+            "parameter": "log_nu_scale",
+            "relative_error": 0.0020681782358869523,
+            "relative_error_scale": 638.9251708984375,
+            "score": 638.9251708984375
+          },
+          {
+            "absolute_error": 0.2750701904296875,
+            "finite_difference": 155.00640869140625,
+            "parameter": "log_obs_noise_scale",
+            "relative_error": 0.0017714294867001287,
+            "relative_error_scale": 155.28147888183594,
+            "score": 155.28147888183594
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "2a19ef266749e876f741a0955556d92d56cf15178c041585ac9671fa3aa878f1",
+      "fd_step": 0.001,
+      "gate_order": 1,
+      "historical_terminal_decision": false,
+      "id": "gate-c-fixed-sir-t5-n10000-seed81120",
+      "legacy_policy": {
+        "atol": 0.01,
+        "max_abs_error": 2.568359375,
+        "max_relative_error": 0.0020681782358869523,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.05,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "pass"
+      },
+      "num_particles": 10000,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "fixed-sir",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/fixed-sir-t5-n10000-seed81120-fd.json",
+        "sha256": "18cc1c4fc18bb1800109cf54440fa33cadab3f0367f34349e4d50afb4b09b299"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/fixed-sir-t5-n10000-seed81120-score.json",
+        "sha256": "2a19ef266749e876f741a0955556d92d56cf15178c041585ac9671fa3aa878f1"
+      },
+      "time_steps": 5
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.05667000855870846,
+        "max_coordinate_relative_error_margin": 0.029932531819735403,
+        "max_coordinate_relative_error_threshold": 0.08660254037844387,
+        "max_error_parameter": "log_nu_scale",
+        "num_parameters": 3,
+        "parameters": [
+          {
+            "absolute_error": 7.853515625,
+            "finite_difference": -2982.848876953125,
+            "parameter": "log_kappa_scale",
+            "relative_error": 0.002625976976007266,
+            "relative_error_scale": 2990.702392578125,
+            "score": -2990.702392578125
+          },
+          {
+            "absolute_error": 1.5473270416259766,
+            "finite_difference": 25.756834030151367,
+            "parameter": "log_nu_scale",
+            "relative_error": 0.05667000855870846,
+            "relative_error_scale": 27.304161071777344,
+            "score": 27.304161071777344
+          },
+          {
+            "absolute_error": 5.561737060546875,
+            "finite_difference": 416.9921569824219,
+            "parameter": "log_obs_noise_scale",
+            "relative_error": 0.013162195731608409,
+            "relative_error_scale": 422.55389404296875,
+            "score": 422.55389404296875
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "7acf4612b4082533cfa076635f1788015ffae43da94f15eb4e818e57c2036773",
+      "fd_step": 0.001,
+      "gate_order": 1,
+      "historical_terminal_decision": true,
+      "id": "gate-c-fixed-sir-t20-n10000-seed81120",
+      "legacy_policy": {
+        "atol": 0.01,
+        "max_abs_error": 7.853515625,
+        "max_relative_error": 0.05667000855870846,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.05,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "fail"
+      },
+      "num_particles": 10000,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "fixed-sir",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/fixed-sir-t20-n10000-seed81120-fd.json",
+        "sha256": "00944bcb7f756f914b56f920b62709e9c4d9a950b5dffcf8589ac83fd68f0036"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/fixed-sir-t20-n10000-seed81120-score.json",
+        "sha256": "7acf4612b4082533cfa076635f1788015ffae43da94f15eb4e818e57c2036773"
+      },
+      "time_steps": 20
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.06029246881250902,
+        "max_coordinate_relative_error_margin": 0.010418209306145745,
+        "max_coordinate_relative_error_threshold": 0.07071067811865477,
+        "max_error_parameter": "log_beta",
+        "num_parameters": 2,
+        "parameters": [
+          {
+            "absolute_error": 0.0004672110080718994,
+            "finite_difference": -0.2765655517578125,
+            "parameter": "gamma_unconstrained",
+            "relative_error": 0.0016893318965517242,
+            "relative_error_scale": 0.2765655517578125,
+            "score": -0.2760983407497406
+          },
+          {
+            "absolute_error": 0.00948423147201538,
+            "finite_difference": 0.14781951904296875,
+            "parameter": "log_beta",
+            "relative_error": 0.06029246881250902,
+            "relative_error_scale": 0.15730375051498413,
+            "score": 0.15730375051498413
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "6320f04eab3f03157e3c1789de5b1927cefb33c9752e2fb0a7cfe787797f86b7",
+      "fd_step": 0.0001,
+      "gate_order": 1,
+      "historical_terminal_decision": true,
+      "id": "gate-c-actual-sv-t4-n10000-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.00948423147201538,
+        "max_relative_error": 0.06029246881250902,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "fail"
+      },
+      "num_particles": 10000,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "actual-sv",
+      "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/actual-sv-t4-n10000-seed81120-fd.json",
+        "sha256": "9547b853db09e2974f2dfa2adf8d5d3d19b274b5dfb74dab8358895e8b03bdaf"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/actual-sv-t4-n10000-seed81120-score.json",
+        "sha256": "6320f04eab3f03157e3c1789de5b1927cefb33c9752e2fb0a7cfe787797f86b7"
+      },
+      "time_steps": 4
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": true,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.4427539621608173,
+        "max_coordinate_relative_error_margin": -0.35615142178237347,
+        "max_coordinate_relative_error_threshold": 0.08660254037844387,
+        "max_error_parameter": "log_tau",
+        "num_parameters": 3,
+        "parameters": [
+          {
+            "absolute_error": 0.0037838388234376907,
+            "finite_difference": -0.019073486328125,
+            "parameter": "gamma_unconstrained",
+            "relative_error": 0.19838212890625,
+            "relative_error_scale": 0.019073486328125,
+            "score": -0.01528964750468731
+          },
+          {
+            "absolute_error": 0.015154637396335602,
+            "finite_difference": -0.019073486328125,
+            "parameter": "log_tau",
+            "relative_error": 0.4427539621608173,
+            "relative_error_scale": 0.0342281237244606,
+            "score": -0.0342281237244606
+          },
+          {
+            "absolute_error": 0.0007007494568824768,
+            "finite_difference": -0.0286102294921875,
+            "parameter": "mu",
+            "relative_error": 0.023907405416246297,
+            "relative_error_scale": 0.029310978949069977,
+            "score": -0.029310978949069977
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "fail"
+      },
+      "fd_declared_score_reference_sha256": "3fb140284b74a02efb8fe57562f0f33ee75a1012bd1dd6cdc554be71c59e71d6",
+      "fd_step": 0.0001,
+      "gate_order": 1,
+      "historical_terminal_decision": true,
+      "id": "gate-c-generalized-sv-t4-n10000-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.015154637396335602,
+        "max_relative_error": 0.4427539621608173,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "fail"
+      },
+      "num_particles": 10000,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "generalized-sv",
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/generalized-sv-t4-n10000-seed81120-fd.json",
+        "sha256": "edc896ef4a41772e29487257b3c6e01c8543b780aacf930fa607dd43479b8b08"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/generalized-sv-t4-n10000-seed81120-score.json",
+        "sha256": "3fb140284b74a02efb8fe57562f0f33ee75a1012bd1dd6cdc554be71c59e71d6"
+      },
+      "time_steps": 4
+    },
+    {
+      "batch_seeds": [
+        81120
+      ],
+      "corrected_ladder_stop": false,
+      "corrected_policy": {
+        "base_relative_tolerance": 0.05,
+        "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+        "diagnostic_scope": "finite_difference_only",
+        "dimension_scaling": "sqrt(num_parameters)",
+        "max_coordinate_relative_error": 0.036935149298161114,
+        "max_coordinate_relative_error_margin": 0.03377552882049365,
+        "max_coordinate_relative_error_threshold": 0.07071067811865477,
+        "max_error_parameter": "gamma_unconstrained",
+        "num_parameters": 2,
+        "parameters": [
+          {
+            "absolute_error": 0.010241001844406128,
+            "finite_difference": -0.26702880859375,
+            "parameter": "gamma_unconstrained",
+            "relative_error": 0.036935149298161114,
+            "relative_error_scale": 0.27726981043815613,
+            "score": -0.27726981043815613
+          },
+          {
+            "absolute_error": 0.0058317482471466064,
+            "finite_difference": 0.1621246337890625,
+            "parameter": "log_beta",
+            "relative_error": 0.03597077205882353,
+            "relative_error_scale": 0.1621246337890625,
+            "score": 0.1562928855419159
+          }
+        ],
+        "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+        "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+        "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+        "status": "pass"
+      },
+      "fd_declared_score_reference_sha256": "232c28ae76c945efc843f296e412f58ef30d3db38e28e958d47be633c9311dae",
+      "fd_step": 0.0001,
+      "gate_order": 1,
+      "historical_terminal_decision": true,
+      "id": "gate-c-ksc-sv-t4-n10000-seed81120",
+      "legacy_policy": {
+        "atol": 0.005,
+        "max_abs_error": 0.010241001844406128,
+        "max_relative_error": 0.036935149298161114,
+        "pass_rule": "max_abs_error <= atol OR max_relative_error <= rtol",
+        "rtol": 0.005,
+        "scientific_status": "superseded_unsupported_threshold_basis",
+        "status": "fail"
+      },
+      "num_particles": 10000,
+      "precision": {
+        "active_dtype": "float32",
+        "default_algorithm_target": "ledh_pfpf_ot_tf32",
+        "default_dtype": "float32",
+        "default_execution_target": "gpu",
+        "default_route_acceptance": "accepted_default_use_whenever_possible",
+        "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+        "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+        "default_target_status": "production_default_by_owner_directive",
+        "default_tf32_mode": "enabled",
+        "dtype": "float32",
+        "fp64_reference_requires_explicit_dtype": true,
+        "historical_module_path": "experiments/dpf_implementation",
+        "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+        "public_api_exposure": "separately_gated",
+        "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+        "tf32_execution_enabled": true,
+        "tf32_mode": "enabled",
+        "tf_dtype": "float32"
+      },
+      "row": "ksc-sv",
+      "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "source_fd": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/ksc-sv-t4-n10000-seed81120-fd.json",
+        "sha256": "288f997acb7dcc0440a5bcd653e34ca626884fc1421e35e2c3fd25048bde366d"
+      },
+      "source_score": {
+        "path": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/gate-c/ksc-sv-t4-n10000-seed81120-score.json",
+        "sha256": "232c28ae76c945efc843f296e412f58ef30d3db38e28e958d47be633c9311dae"
+      },
+      "time_steps": 4
+    }
+  ],
+  "nonclaims": [
+    "The 5% constant mirrors the conventional 95% threshold; this FD calculation is not a calibrated confidence interval.",
+    "This policy applies only to the finite-difference diagnostic.",
+    "A pass does not establish general score correctness, HMC readiness, posterior correctness, full-row admission, or default readiness.",
+    "A fail does not isolate compact-score error from float32 finite-difference resolution.",
+    "No stochastic ranking or scientific superiority claim is supported."
+  ],
+  "policy": {
+    "base_relative_tolerance": 0.05,
+    "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+    "diagnostic_scope": "finite_difference_only",
+    "dimension_scaling": "sqrt(num_parameters)",
+    "owner_motivation": "5% selected to mirror the conventional 95% confidence/significance threshold",
+    "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+    "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+    "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed"
+  },
+  "run_manifest": {
+    "command": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python docs/benchmarks/reclassify_ledh_phase9_fd_policy.py --manifest docs/plans/ledh-score-wiring-repair-phase9-fd-reclassification-inputs-2026-07-11.json --output docs/plans/artifacts/ledh-score-wiring-repair-phase9-fd-policy-correction/phase9-fd-policy-reclassification-2026-07-11.json --markdown-output docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-fd-policy-correction-result-2026-07-11.md",
+    "conda_prefix": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "cuda_visible_devices": "-1",
+    "data_version": "SHA-256-bound immutable Phase 9 score/FD JSON shards",
+    "execution_target": "cpu_only_offline_reclassification",
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_status_short": "M .gitignore\n M bayesfilter/linear/kalman_qr_tf.py\n M docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/kernel_tuning.json\n M docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/kernel_tuning_public/hmc_kernel_tuning_progress.json\n M docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/kernel_tuning_public/hmc_kernel_tuning_result.json\n M docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/kernel_tuning_public/private_diagnostics/hmc_tuning_events.jsonl\n M docs/benchmarks/benchmark_ledh_same_target_actual_sv_score.py\n M docs/benchmarks/benchmark_ledh_same_target_fixed_sir_score.py\n M docs/benchmarks/benchmark_ledh_same_target_generalized_sv_score.py\n M docs/benchmarks/benchmark_ledh_same_target_ksc_sv_score.py\n M docs/benchmarks/benchmark_ledh_same_target_predator_prey_score.py\n M docs/benchmarks/benchmark_p8p_parameterized_sir_gradient.py\n M docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py\n M docs/plans/bayesfilter-deterministic-lgssm-hmc-tuning-visible-execution-ledger-2026-07-09.md\n M docs/plans/bayesfilter-deterministic-lgssm-hmc-tuning-visible-gated-execution-runbook-2026-07-09.md\n M docs/plans/bayesfilter-deterministic-lgssm-hmc-tuning-visible-stop-handoff-2026-07-09.md\n M docs/plans/bayesfilter-ledh-score-wiring-repair-phase3-fixed-sir-result-2026-07-10.md\n M docs/plans/bayesfilter-ledh-score-wiring-repair-phase4-predator-prey-result-2026-07-10.md\n M docs/plans/bayesfilter-ledh-score-wiring-repair-phase5-actual-sv-result-2026-07-10.md\n M docs/plans/bayesfilter-ledh-score-wiring-repair-reset-memo-2026-07-10.md\n M docs/plans/bayesfilter-ledh-score-wiring-repair-visible-execution-ledger-2026-07-10.md\n M docs/plans/bayesfilter-ledh-score-wiring-repair-visible-stop-handoff-2026-07-10.md\n M tests/highdim/test_ledh_actual_sv_score_phase5_contract.py\n M tests/highdim/test_ledh_fixed_sir_score_phase3_contract.py\n M tests/highdim/test_ledh_generalized_sv_score_phase6_contract.py\n M tests/highdim/test_ledh_ksc_sv_score_phase7_contract.py\n M tests/highdim/test_ledh_predator_prey_score_phase4_contract.py\n M tests/test_deterministic_lgssm_hmc_tuning_driver.py\n?? bayesfilter/inference/hmc_convergence.py\n?? bayesfilter/inference/hmc_identity.py\n?? bayesfilter/ledh_fd_policy.py\n?? bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py\n?? docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/burnin_sampling.json\n?? docs/benchmarks/benchmark_ledh_compact_score_gpu_xla.py\n?? docs/benchmarks/build_ledh_phase9_gpu_command_manifest.py\n?? docs/benchmarks/configs/multidim_lgssm_phase7_burnin_sampling_2026_07_11.json\n?? docs/benchmarks/reclassify_ledh_phase9_fd_policy.py\n?? docs/plans/artifacts/ledh-score-wiring-repair-phase9-gpu-xla/\n?? docs/plans/bayesfilter-deterministic-lgssm-hmc-phase7-repair-and-execution-plan-2026-07-11.md\n?? docs/plans/bayesfilter-deterministic-lgssm-hmc-tuning-phase7-burnin-sampling-result-2026-07-09.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-master-program-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-phase0-governance-result-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-phase0-governance-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-phase1-consumer-audit-result-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-phase1-consumer-audit-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-phase2-schema-implementation-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-visible-ledger-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-visible-runbook-2026-07-11.md\n?? docs/plans/bayesfilter-hmc-semantic-identity-migration-visible-stop-handoff-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase6-generalized-sv-result-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase7-ksc-sv-result-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase7-ksc-sv-subplan-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase8-cross-model-tests-result-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase8-cross-model-tests-subplan-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-fd-policy-correction-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-fd-policy-correction-subplan-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-a-harness-result-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-cross-row-extraction-repair-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-fixed-sir-repair-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-actual-sv-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-fixed-sir-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-generalized-sv-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-ksc-sv-result-2026-07-11.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gpu-execution-manifest-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gpu-score-memory-result-2026-07-10.md\n?? docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gpu-score-memory-subplan-2026-07-10.md\n?? docs/plans/bayesfilter-post-integration-reboot-reset-memo-2026-07-10.md\n?? docs/plans/logs/ledh-score-wiring-repair-phase9-gpu-xla/\n?? docs/reviews/bayesfilter-deterministic-lgssm-hmc-phase7-implementation-preruntime-codex-review-2026-07-11.md\n?? docs/reviews/bayesfilter-deterministic-lgssm-hmc-phase7-plan-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-deterministic-lgssm-hmc-phase7-preflight-blocker-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-hmc-semantic-identity-migration-phase0-master-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-hmc-semantic-identity-migration-phase0-master-review-bundle-2026-07-11.md\n?? docs/reviews/bayesfilter-hmc-semantic-identity-migration-phase1-result-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-hmc-semantic-identity-migration-phase1-subplan-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-hmc-semantic-identity-migration-phase2-implementation-codex-review-iter1-2026-07-11.md\n?? docs/reviews/bayesfilter-hmc-semantic-identity-migration-phase2-subplan-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase5-result-phase6-subplan-codex-substitute-review-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase6-repair-phase7-result-phase8-subplan-codex-substitute-review-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase6-repair-phase7-result-phase8-subplan-review-bundle-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase6-result-phase7-subplan-codex-substitute-review-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase6-result-phase7-subplan-review-bundle-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase8-result-phase9-subplan-codex-substitute-review-iter1-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase8-result-phase9-subplan-codex-substitute-review-iter2-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase8-result-phase9-subplan-review-bundle-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-fd-policy-correction-codex-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-a-manifest-codex-substitute-review-iter1-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-a-manifest-codex-substitute-review-iter2-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-a-manifest-codex-substitute-review-iter2b-2026-07-10.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-cross-row-extraction-repair-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-fixed-sir-repair-codex-substitute-review-iter1-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-fixed-sir-repair-codex-substitute-review-iter2-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-result-codex-substitute-review-iter1-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-result-codex-substitute-review-iter2-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-b-result-codex-substitute-review-iter2b-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-actual-sv-result-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-fixed-sir-result-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-generalized-sv-result-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gate-c-ksc-sv-result-codex-substitute-review-2026-07-11.md\n?? docs/reviews/bayesfilter-ledh-score-wiring-repair-phase9-gpu-score-memory-result-codex-substitute-review-2026-07-11.md\n?? tests/__init__.py\n?? tests/highdim/test_ledh_compact_score_gpu_xla_harness.py\n?? tests/highdim/test_ledh_phase9_fd_policy_reclassifier.py\n?? tests/highdim/test_ledh_score_wiring_phase8_cross_model.py\n?? tests/test_deterministic_lgssm_hmc_phase7_tf.py\n?? tests/test_hmc_convergence.py\n?? tests/test_hmc_identity.py",
+    "gpu_execution_performed": false,
+    "historical_result_path": "docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-gpu-score-memory-result-2026-07-10.md",
+    "host": "DESKTOP-RF1Q5IJ",
+    "input_manifest": "docs/plans/ledh-score-wiring-repair-phase9-fd-reclassification-inputs-2026-07-11.json",
+    "input_manifest_sha256": "83da76f12f16d915c2f9f6722ce4e65fc91c81fddd90acb696a12358162eb044",
+    "output_json": "docs/plans/artifacts/ledh-score-wiring-repair-phase9-fd-policy-correction/phase9-fd-policy-reclassification-2026-07-11.json",
+    "output_markdown": "docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-fd-policy-correction-result-2026-07-11.md",
+    "plan_path": "docs/plans/bayesfilter-ledh-score-wiring-repair-phase9-fd-policy-correction-subplan-2026-07-11.md",
+    "plan_sha256": "935f27eea038813442be2cde7cd9ceece9a2827ed7dc6852a1c999476ad9d12a",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "policy_module_path": "bayesfilter/ledh_fd_policy.py",
+    "policy_module_sha256": "e1999cbe08312048abd2eab30c15dc33adaf520b5d745f47e139aac3eac79da2",
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "python_version": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "random_seeds": "preserved from source shards; no new randomness",
+    "reclassifier_path": "docs/benchmarks/reclassify_ledh_phase9_fd_policy.py",
+    "reclassifier_sha256": "ffe0277122e8ba15e99992e6ae27723609ae3fbe1087d816df956e8ce93fa897",
+    "wall_time_seconds": 0.01887111086398363,
+    "working_directory": "/home/chakwong/BayesFilter"
+  },
+  "schema_version": "bayesfilter.ledh.phase9_fd_policy_reclassification.v2",
+  "scientific_question": "Does each stored FD comparison satisfy max_j(relative_error_j) <= 0.05 * sqrt(p)?",
+  "summary": {
+    "all_rungs": {
+      "fail": 2,
+      "pass": 9
+    },
+    "corrected_ladder_stops": {
+      "fail": 2,
+      "pass": 0
+    },
+    "historical_terminal_reclassification": {
+      "fail": 2,
+      "pass": 3
+    },
+    "hmc_readiness_established": false,
+    "num_corrected_ladder_stops": 2,
+    "num_historical_terminal_decisions": 5,
+    "num_reclassified_rungs": 11,
+    "ranking_statistically_supported": false,
+    "rows_with_stored_fd_failure": [
+      "generalized-sv",
+      "predator-prey"
+    ],
+    "rows_without_stored_fd_failure": [
+      "actual-sv",
+      "fixed-sir",
+      "ksc-sv"
+    ]
+  },
+  "timestamp_utc": "2026-07-10T20:57:30.597443+00:00"
+}

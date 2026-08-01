@@ -1,0 +1,84 @@
+{
+  "schema": "bayesfilter.contract_e_tp.phase9_lgssm_gpu_xla.v1",
+  "status": "PASS_GPU_XLA_FLOAT64",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "target": {
+    "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+    "time_steps": 50,
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "feature_mode": "finite_lookahead",
+    "lookahead_steps": 8
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8b_lgssm_t50_order5_lookahead8_attempt1_20260715/charts.json",
+    "sha256": "b5bee34dd3e94e34b5ec548384c34af42f18116f9037b27133ecc985ef2f47c2"
+  },
+  "cpu_reference": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8b_lgssm_t50_order5_lookahead8_attempt1_20260715/result_aggregate.json",
+    "sha256": "227259be82e81f82222d6503bf7c093bd431e722ba257734c7c962966f127c26",
+    "value": -136.07684238987892,
+    "score": [
+      5.647315420952837,
+      -3.836563386959321,
+      0.303145892221661,
+      -1.903066258150076,
+      4.363066180277658
+    ]
+  },
+  "gpu": {
+    "value": -136.07684238987898,
+    "score": [
+      5.647315420952825,
+      -3.836563386959356,
+      0.30314589222167376,
+      -1.9030662581502638,
+      4.363066180277426
+    ],
+    "value_difference_from_cpu": -5.684341886080802e-14,
+    "score_difference_from_cpu": [
+      -1.1546319456101628e-14,
+      -3.5083047578154947e-14,
+      1.27675647831893e-14,
+      -1.8784973576657649e-13,
+      -2.318145675417327e-13
+    ],
+    "chart_valid": true,
+    "minimum_weight": 0.00017781670579932775,
+    "maximum_condition_number": 2228.0965263570993,
+    "maximum_feature_residual_abs": 5.306866057708248e-14
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "tensorflow_version": "2.19.1",
+    "visible_gpu": "/physical_device:GPU:0",
+    "output_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "dtype": "float64",
+    "tf32_enabled": true,
+    "tf32_relevant_to_dtype": false,
+    "jit_compile": true,
+    "compile_plus_first_execution_seconds": 14.129347345995484,
+    "warmed_execution_seconds": 2.7621150860213675,
+    "gpu_allocator_current_bytes": 152832,
+    "gpu_allocator_peak_bytes": 67261952,
+    "graph_operation_count": 4014,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "command": "docs/benchmarks/run_contract_e_tp_phase9_lgssm_gpu_xla.py --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8b_lgssm_t50_order5_lookahead8_attempt1_20260715/charts.json --cpu-result docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8b_lgssm_t50_order5_lookahead8_attempt1_20260715/result_aggregate.json --output docs/benchmarks/artifacts/contract_e_tp_clean_xla_loop_repair_20260715/gpu_t50_attempt1/result.json"
+  },
+  "capability_gaps": {
+    "float32_tf32": "blocked_dtype_generic_refactor_required",
+    "scalar_sv_recursive_xla": "blocked_xla_factory_not_implemented",
+    "predator_prey_recursive_xla": "blocked_xla_factory_not_implemented"
+  },
+  "nonclaims": [
+    "float64 GPU/XLA engineering evidence only",
+    "not float32/TF32 production-target readiness",
+    "not nonlinear GPU readiness",
+    "not HMC, canonical, default, or leaderboard admission"
+  ]
+}

@@ -1525,11 +1525,16 @@ class PredatorPreySSM:
     observation_covariance: tf.Tensor | None = None
     initial_covariance: tf.Tensor | None = None
     domain_policy: str = "diagnose_negative_after_noise"
+    dtype: tf.DType = tf.float64
 
     def __post_init__(self) -> None:
-        initial_mean = tf.convert_to_tensor(self.initial_mean, dtype=tf.float64)
-        delta = tf.convert_to_tensor(self.delta, dtype=tf.float64)
-        rk4_internal_step = tf.convert_to_tensor(self.rk4_internal_step, dtype=tf.float64)
+        if self.dtype not in (tf.float32, tf.float64):
+            raise ValueError("PredatorPreySSM dtype must be float32 or float64")
+        initial_mean = tf.cast(tf.convert_to_tensor(self.initial_mean), self.dtype)
+        delta = tf.convert_to_tensor(self.delta, dtype=self.dtype)
+        rk4_internal_step = tf.convert_to_tensor(
+            self.rk4_internal_step, dtype=self.dtype
+        )
         if initial_mean.shape != (2,):
             raise ValueError(f"initial_mean: {HighDimStatus.INVALID_SHAPE.value}")
         if delta.shape.rank != 0 or rk4_internal_step.shape.rank != 0:
@@ -1544,22 +1549,27 @@ class PredatorPreySSM:
             raise ValueError(f"PredatorPreySSM: {HighDimStatus.NONFINITE_VALUE.value}")
         ratio = delta / rk4_internal_step
         substeps = int(tf.round(ratio).numpy())
-        if substeps <= 0 or abs(float((ratio - tf.cast(substeps, tf.float64)).numpy())) > 1e-12:
+        schedule_tolerance = 1e-6 if self.dtype == tf.float32 else 1e-12
+        if substeps <= 0 or abs(
+            float((ratio - tf.cast(substeps, self.dtype)).numpy())
+        ) > schedule_tolerance:
             raise ValueError("delta must be an integer multiple of rk4_internal_step")
         process_covariance = (
-            4.0 * tf.eye(2, dtype=tf.float64)
+            4.0 * tf.eye(2, dtype=self.dtype)
             if self.process_covariance is None
-            else tf.convert_to_tensor(self.process_covariance, dtype=tf.float64)
+            else tf.cast(tf.convert_to_tensor(self.process_covariance), self.dtype)
         )
         observation_covariance = (
-            4.0 * tf.eye(2, dtype=tf.float64)
+            4.0 * tf.eye(2, dtype=self.dtype)
             if self.observation_covariance is None
-            else tf.convert_to_tensor(self.observation_covariance, dtype=tf.float64)
+            else tf.cast(
+                tf.convert_to_tensor(self.observation_covariance), self.dtype
+            )
         )
         initial_covariance = (
-            tf.eye(2, dtype=tf.float64)
+            tf.eye(2, dtype=self.dtype)
             if self.initial_covariance is None
-            else tf.convert_to_tensor(self.initial_covariance, dtype=tf.float64)
+            else tf.cast(tf.convert_to_tensor(self.initial_covariance), self.dtype)
         )
         for name, value in (
             ("process_covariance", process_covariance),
@@ -1600,26 +1610,46 @@ class PredatorPreySSM:
         }
 
     def true_parameters(self) -> tf.Tensor:
-        return tf.constant([0.6, 114.0, 25.0, 0.3, 0.5, 0.5], dtype=tf.float64)
+        return tf.constant(
+            [0.6, 114.0, 25.0, 0.3, 0.5, 0.5], dtype=self.dtype
+        )
 
     def validate_parameter_box(self, theta: tf.Tensor) -> bool:
-        vector = _as_parameter_vector(theta, self.parameter_dim(), "theta")
-        bounds = tf.constant(list(self.parameter_box().values()), dtype=tf.float64)
-        return bool(tf.reduce_all(vector >= bounds[:, 0]).numpy() and tf.reduce_all(vector <= bounds[:, 1]).numpy())
+        vector = self._parameter_vector(theta, "theta")
+        bounds = tf.constant(list(self.parameter_box().values()), dtype=self.dtype)
+        inside = tf.reduce_all((vector >= bounds[:, 0]) & (vector <= bounds[:, 1]))
+        if not tf.executing_eagerly():
+            raise RuntimeError(
+                "validate_parameter_box() returns a Python bool and is eager-only; "
+                "use the graph-native density methods inside tf.function"
+            )
+        return bool(inside.numpy())
+
+    def frozen_apf_measure_id(self) -> str:
+        """Declare the nonsingular full-state measure used by fixed APF routes."""
+
+        return "full_state_lebesgue_v1"
+
+    def frozen_apf_score_backend_id(self) -> str:
+        """Declare the reviewed manual parameter-score implementation."""
+
+        return "analytical_parameter_score_no_autodiff_v1"
 
     def initial_log_density(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
         del theta
-        values = _as_row_matrix(x0, self.state_dim(), "x0")
-        return _mvn_log_prob(values, self.initial_mean, self.initial_covariance)
+        values = self._row_matrix(x0, "x0")
+        return _mvn_log_prob_typed(
+            values, self.initial_mean, self.initial_covariance, self.dtype
+        )
 
     def transition_mean(self, theta: tf.Tensor, x_prev: tf.Tensor) -> tf.Tensor:
         """Return the deterministic RK4 mean in P30 equation ``eq:p27-pp4``."""
 
-        parameters = _as_parameter_vector(theta, self.parameter_dim(), "theta")
-        if not self.validate_parameter_box(parameters):
+        parameters = self._parameter_vector(theta, "theta")
+        if tf.executing_eagerly() and not self.validate_parameter_box(parameters):
             raise ValueError("theta outside P30 predator-prey parameter box")
-        state = _as_row_matrix(x_prev, self.state_dim(), "x_prev")
-        step = self.delta / tf.cast(self._rk4_substeps, tf.float64)
+        state = self._row_matrix(x_prev, "x_prev")
+        step = self.delta / tf.cast(self._rk4_substeps, self.dtype)
         for _ in range(int(self._rk4_substeps)):
             state = self._rk4_step(parameters, state, step)
         return state
@@ -1632,9 +1662,14 @@ class PredatorPreySSM:
         t: int,
     ) -> tf.Tensor:
         del t
-        previous = _as_row_matrix(x_prev, self.state_dim(), "x_prev")
-        next_values = _as_row_matrix(x_next, self.state_dim(), "x_next")
-        return _mvn_log_prob(next_values, self.transition_mean(theta, previous), self.process_covariance)
+        previous = self._row_matrix(x_prev, "x_prev")
+        next_values = self._row_matrix(x_next, "x_next")
+        return _mvn_log_prob_typed(
+            next_values,
+            self.transition_mean(theta, previous),
+            self.process_covariance,
+            self.dtype,
+        )
 
     def transition_mean_parameter_jacobian(
         self,
@@ -1647,15 +1682,15 @@ class PredatorPreySSM:
         theta coordinates ``(r, K, a, s, u, v)``.
         """
 
-        parameters = _as_parameter_vector(theta, self.parameter_dim(), "theta")
-        if not self.validate_parameter_box(parameters):
+        parameters = self._parameter_vector(theta, "theta")
+        if tf.executing_eagerly() and not self.validate_parameter_box(parameters):
             raise ValueError("theta outside P30 predator-prey parameter box")
-        state = _as_row_matrix(x_prev, self.state_dim(), "x_prev")
+        state = self._row_matrix(x_prev, "x_prev")
         d_state = tf.zeros(
             [self.parameter_dim(), tf.shape(state)[0], self.state_dim()],
-            dtype=tf.float64,
+            dtype=self.dtype,
         )
-        step = self.delta / tf.cast(self._rk4_substeps, tf.float64)
+        step = self.delta / tf.cast(self._rk4_substeps, self.dtype)
         for _ in range(int(self._rk4_substeps)):
             state, d_state = self._rk4_step_parameter_jacobian(
                 parameters,
@@ -1668,9 +1703,11 @@ class PredatorPreySSM:
     def initial_log_density_parameter_score(self, theta: tf.Tensor, x0: tf.Tensor) -> tf.Tensor:
         """Return manual theta score for the fixed initial Gaussian density."""
 
-        values = _as_row_matrix(x0, self.state_dim(), "x0")
+        values = self._row_matrix(x0, "x0")
         del theta
-        return tf.zeros([tf.shape(values)[0], self.parameter_dim()], dtype=tf.float64)
+        return tf.zeros(
+            [tf.shape(values)[0], self.parameter_dim()], dtype=self.dtype
+        )
 
     def transition_log_density_parameter_score(
         self,
@@ -1682,8 +1719,8 @@ class PredatorPreySSM:
         """Return manual theta score for the Gaussian RK4 transition density."""
 
         del t
-        previous = _as_row_matrix(x_prev, self.state_dim(), "x_prev")
-        next_values = _as_row_matrix(x_next, self.state_dim(), "x_next")
+        previous = self._row_matrix(x_prev, "x_prev")
+        next_values = self._row_matrix(x_next, "x_next")
         mean, d_mean = self.transition_mean_parameter_jacobian(theta, previous)
         residual = next_values - mean
         chol = tf.linalg.cholesky(self.process_covariance)
@@ -1700,12 +1737,15 @@ class PredatorPreySSM:
         t: int,
     ) -> tf.Tensor:
         del theta, t
-        values = _as_row_matrix(x_t, self.state_dim(), "x_t")
-        observation = tf.reshape(tf.convert_to_tensor(y_t, dtype=tf.float64), [self.observation_dim()])
-        return _mvn_log_prob(
+        values = self._row_matrix(x_t, "x_t")
+        observation = tf.reshape(
+            tf.cast(tf.convert_to_tensor(y_t), self.dtype), [self.observation_dim()]
+        )
+        return _mvn_log_prob_typed(
             tf.broadcast_to(observation, tf.shape(values)),
             values,
             self.observation_covariance,
+            self.dtype,
         )
 
     def observation_log_density_parameter_score(
@@ -1717,9 +1757,11 @@ class PredatorPreySSM:
     ) -> tf.Tensor:
         """Return manual theta score for the fixed observation density."""
 
-        values = _as_row_matrix(x_t, self.state_dim(), "x_t")
+        values = self._row_matrix(x_t, "x_t")
         del theta, y_t, t
-        return tf.zeros([tf.shape(values)[0], self.parameter_dim()], dtype=tf.float64)
+        return tf.zeros(
+            [tf.shape(values)[0], self.parameter_dim()], dtype=self.dtype
+        )
 
     def simulate(
         self,
@@ -1731,7 +1773,7 @@ class PredatorPreySSM:
 
         if int(final_time) < 0:
             raise ValueError("final_time must be nonnegative")
-        parameters = _as_parameter_vector(theta, self.parameter_dim(), "theta")
+        parameters = self._parameter_vector(theta, "theta")
         if not self.validate_parameter_box(parameters):
             raise ValueError("theta outside P30 predator-prey parameter box")
         generator = tf.random.Generator.from_seed(int(seed))
@@ -1740,28 +1782,28 @@ class PredatorPreySSM:
         observation_chol = tf.linalg.cholesky(self.observation_covariance)
         state = self.initial_mean + tf.linalg.matvec(
             initial_chol,
-            generator.normal([self.state_dim()], dtype=tf.float64),
+            generator.normal([self.state_dim()], dtype=self.dtype),
         )
         states = [state]
         observations = [
             state
             + tf.linalg.matvec(
                 observation_chol,
-                generator.normal([self.observation_dim()], dtype=tf.float64),
+                generator.normal([self.observation_dim()], dtype=self.dtype),
             )
         ]
         for _time_index in range(1, int(final_time) + 1):
             mean = self.transition_mean(parameters, state)[0]
             state = mean + tf.linalg.matvec(
                 process_chol,
-                generator.normal([self.state_dim()], dtype=tf.float64),
+                generator.normal([self.state_dim()], dtype=self.dtype),
             )
             states.append(state)
             observations.append(
                 state
                 + tf.linalg.matvec(
                     observation_chol,
-                    generator.normal([self.observation_dim()], dtype=tf.float64),
+                    generator.normal([self.observation_dim()], dtype=self.dtype),
                 )
             )
         return tf.stack(states), tf.stack(observations)
@@ -1771,14 +1813,14 @@ class PredatorPreySSM:
         truth_path: tf.Tensor,
         estimate_path: tf.Tensor,
     ) -> tf.Tensor:
-        truth = _as_path_matrix(truth_path, self.state_dim(), "truth_path")
-        estimate = _as_path_matrix(estimate_path, self.state_dim(), "estimate_path")
+        truth = self._path_matrix(truth_path, "truth_path")
+        estimate = self._path_matrix(estimate_path, "estimate_path")
         if truth.shape != estimate.shape:
             raise ValueError(f"estimate_path: {HighDimStatus.INVALID_SHAPE.value}")
         return tf.sqrt(tf.reduce_mean(tf.square(truth - estimate)))
 
     def domain_diagnostics(self, path: tf.Tensor) -> Mapping[str, object]:
-        values = _as_path_matrix(path, self.state_dim(), "path")
+        values = self._path_matrix(path, "path")
         return {
             "domain_policy": self.domain_policy,
             "min_state": tf.reduce_min(values),
@@ -1811,6 +1853,7 @@ class PredatorPreySSM:
             "delta": self.delta,
             "rk4_internal_step": self.rk4_internal_step,
             "rk4_substeps": int(self._rk4_substeps),
+            "dtype": self.dtype.name,
             "domain_policy": self.domain_policy,
             "what_is_not_claimed": (
                 "nonlinear_preconditioning_usefulness",
@@ -1836,37 +1879,39 @@ class PredatorPreySSM:
         step: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor]:
         k1, d_k1 = self._rhs_parameter_jacobian(theta, state, d_state)
-        k2_input = state + tf.constant(0.5, dtype=tf.float64) * step * k1
-        d_k2_input = d_state + tf.constant(0.5, dtype=tf.float64) * step * d_k1
+        k2_input = state + tf.constant(0.5, dtype=self.dtype) * step * k1
+        d_k2_input = d_state + tf.constant(0.5, dtype=self.dtype) * step * d_k1
         k2, d_k2 = self._rhs_parameter_jacobian(theta, k2_input, d_k2_input)
-        k3_input = state + tf.constant(0.5, dtype=tf.float64) * step * k2
-        d_k3_input = d_state + tf.constant(0.5, dtype=tf.float64) * step * d_k2
+        k3_input = state + tf.constant(0.5, dtype=self.dtype) * step * k2
+        d_k3_input = d_state + tf.constant(0.5, dtype=self.dtype) * step * d_k2
         k3, d_k3 = self._rhs_parameter_jacobian(theta, k3_input, d_k3_input)
         k4_input = state + step * k3
         d_k4_input = d_state + step * d_k3
         k4, d_k4 = self._rhs_parameter_jacobian(theta, k4_input, d_k4_input)
-        next_state = state + (step / tf.constant(6.0, dtype=tf.float64)) * (
+        next_state = state + (step / tf.constant(6.0, dtype=self.dtype)) * (
             k1
-            + tf.constant(2.0, dtype=tf.float64) * k2
-            + tf.constant(2.0, dtype=tf.float64) * k3
+            + tf.constant(2.0, dtype=self.dtype) * k2
+            + tf.constant(2.0, dtype=self.dtype) * k3
             + k4
         )
-        next_d_state = d_state + (step / tf.constant(6.0, dtype=tf.float64)) * (
+        next_d_state = d_state + (step / tf.constant(6.0, dtype=self.dtype)) * (
             d_k1
-            + tf.constant(2.0, dtype=tf.float64) * d_k2
-            + tf.constant(2.0, dtype=tf.float64) * d_k3
+            + tf.constant(2.0, dtype=self.dtype) * d_k2
+            + tf.constant(2.0, dtype=self.dtype) * d_k3
             + d_k4
         )
         return next_state, next_d_state
 
     def _rhs(self, theta: tf.Tensor, state: tf.Tensor) -> tf.Tensor:
-        parameters = _as_parameter_vector(theta, self.parameter_dim(), "theta")
-        values = _as_row_matrix(state, self.state_dim(), "state")
+        parameters = self._parameter_vector(theta, "theta")
+        values = self._row_matrix(state, "state")
         r, k_capacity, a_half, s_rate, u_rate, v_rate = tf.unstack(parameters)
         prey = values[:, 0]
         predator = values[:, 1]
         denominator = a_half + prey
-        if bool(tf.reduce_any(tf.abs(denominator) <= 0.0).numpy()):
+        if tf.executing_eagerly() and bool(
+            tf.reduce_any(tf.abs(denominator) <= 0.0).numpy()
+        ):
             raise ValueError(f"predator-prey denominator: {HighDimStatus.NONFINITE_VALUE.value}")
         interaction = prey * predator / denominator
         d_prey = r * prey * (1.0 - prey / k_capacity) - s_rate * interaction
@@ -1879,12 +1924,14 @@ class PredatorPreySSM:
         state: tf.Tensor,
         d_state: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor]:
-        parameters = _as_parameter_vector(theta, self.parameter_dim(), "theta")
-        values = _as_row_matrix(state, self.state_dim(), "state")
-        d_values = tf.convert_to_tensor(d_state, dtype=tf.float64)
+        parameters = self._parameter_vector(theta, "theta")
+        values = self._row_matrix(state, "state")
+        d_values = tf.convert_to_tensor(d_state, dtype=self.dtype)
         if d_values.shape.rank != 3 or d_values.shape[0] != self.parameter_dim() or d_values.shape[2] != self.state_dim():
             raise ValueError(f"d_state: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(d_values)).numpy()):
+        if tf.executing_eagerly() and not bool(
+            tf.reduce_all(tf.math.is_finite(d_values)).numpy()
+        ):
             raise ValueError(f"d_state: {HighDimStatus.NONFINITE_VALUE.value}")
 
         r, k_capacity, a_half, s_rate, u_rate, v_rate = tf.unstack(parameters)
@@ -1894,14 +1941,16 @@ class PredatorPreySSM:
         d_predator = d_values[:, :, 1]
 
         denominator = a_half + prey
-        if bool(tf.reduce_any(tf.abs(denominator) <= 0.0).numpy()):
+        if tf.executing_eagerly() and bool(
+            tf.reduce_any(tf.abs(denominator) <= 0.0).numpy()
+        ):
             raise ValueError(f"predator-prey denominator: {HighDimStatus.NONFINITE_VALUE.value}")
         interaction = prey * predator / denominator
         d_interaction_state = (
             predator[tf.newaxis, :] * (a_half / tf.square(denominator))[tf.newaxis, :] * d_prey
             + (prey / denominator)[tf.newaxis, :] * d_predator
         )
-        basis = tf.eye(self.parameter_dim(), dtype=tf.float64)
+        basis = tf.eye(self.parameter_dim(), dtype=self.dtype)
         d_r = basis[:, 0][:, tf.newaxis]
         d_k = basis[:, 1][:, tf.newaxis]
         d_a = basis[:, 2][:, tf.newaxis]
@@ -1933,6 +1982,28 @@ class PredatorPreySSM:
             - v_rate * d_predator
         )
         return self._rhs(parameters, values), tf.stack([d_rhs_prey, d_rhs_predator], axis=2)
+
+    def _parameter_vector(self, values: tf.Tensor, name: str) -> tf.Tensor:
+        tensor = tf.cast(tf.convert_to_tensor(values), self.dtype)
+        if tensor.shape.rank == 2 and tensor.shape[0] == 1:
+            tensor = tensor[0]
+        if tensor.shape != (self.parameter_dim(),):
+            raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
+        return _require_finite_tensor(tensor, name)
+
+    def _row_matrix(self, values: tf.Tensor, name: str) -> tf.Tensor:
+        tensor = tf.cast(tf.convert_to_tensor(values), self.dtype)
+        if tensor.shape.rank == 1:
+            tensor = tensor[tf.newaxis, :]
+        if tensor.shape.rank != 2 or tensor.shape[1] != self.state_dim():
+            raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
+        return _require_finite_tensor(tensor, name)
+
+    def _path_matrix(self, values: tf.Tensor, name: str) -> tf.Tensor:
+        tensor = tf.cast(tf.convert_to_tensor(values), self.dtype)
+        if tensor.shape.rank != 2 or tensor.shape[1] != self.state_dim():
+            raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
+        return _require_finite_tensor(tensor, name)
 
 
 def p30_predator_prey_fixture_model() -> PredatorPreySSM:
@@ -1985,6 +2056,25 @@ def _mvn_log_prob(values: tf.Tensor, loc: tf.Tensor, covariance: tf.Tensor) -> t
     chol = tf.linalg.cholesky(covariance)
     distribution = tfp.distributions.MultivariateNormalTriL(loc=loc, scale_tril=chol)
     return distribution.log_prob(values)
+
+
+def _mvn_log_prob_typed(
+    values: tf.Tensor,
+    loc: tf.Tensor,
+    covariance: tf.Tensor,
+    dtype: tf.DType,
+) -> tf.Tensor:
+    """Evaluate an MVN log density without changing the caller's float dtype."""
+
+    covariance_tensor = tf.cast(tf.convert_to_tensor(covariance), dtype)
+    covariance_tensor = 0.5 * (
+        covariance_tensor + tf.linalg.matrix_transpose(covariance_tensor)
+    )
+    chol = tf.linalg.cholesky(covariance_tensor)
+    distribution = tfp.distributions.MultivariateNormalTriL(
+        loc=tf.cast(tf.convert_to_tensor(loc), dtype), scale_tril=chol
+    )
+    return distribution.log_prob(tf.cast(tf.convert_to_tensor(values), dtype))
 
 
 def _symmetrize(matrix: tf.Tensor) -> tf.Tensor:

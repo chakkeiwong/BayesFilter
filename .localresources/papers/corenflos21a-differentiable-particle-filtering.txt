@@ -1,0 +1,806 @@
+  Differentiable Particle Filtering via Entropy-Regularized Optimal Transport
+
+
+                 Adrien Corenflos * 1 James Thornton * 2 George Deligiannidis 2 Arnaud Doucet 2
+
+
+                        Abstract                                 process (Xt )t≥1 and Y-valued observations (Yt )t≥1 satis-
+                                                                 fying X1 ∼ µθ (·) and for t ≥ 1
+     Particle Filtering (PF) methods are an established
+     class of procedures for performing inference in              Xt+1 |{Xt = x} ∼ fθ (·|x), Yt |{Xt = x} ∼ gθ (·|x), (1)
+     non-linear state-space models. Resampling is a
+     key ingredient of PF, necessary to obtain low vari-         where θ ∈ Θ is a parameter of interest. Given observations
+     ance likelihood and states estimates. However,              (yt )t≥1 and parameter values θ, one may perform state in-
+     traditional resampling methods result in PF-based           ference at time t by computing the posterior of Xt given
+     loss functions being non-differentiable with re-            y1:t := (y1 , ..., yt ) where
+     spect to model and PF parameters. In a varia-                                       Z
+     tional inference context, resampling also yields              pθ (xt |y1:t−1 ) = fθ (xt |xt−1 )pθ (xt−1 |y1:t−1 )dxt−1 ,
+     high variance gradient estimates of the PF-based
+     evidence lower bound. By leveraging optimal                                             gθ (yt |xt )pθ (xt |y1:t−1 )
+                                                                      pθ (xt |y1:t ) = R                                    ,
+     transport ideas, we introduce a principled differ-                                     gθ (yt |xt )pθ (xt |y1:t−1 )dxt
+     entiable particle filter and provide convergence
+                                                                 with pθ (x1 |y0 ) := µθ (x1 ).
+     results. We demonstrate this novel method on a
+     variety of applications.                                    The log-likelihood `(θ) = log pθ (y1:T ) is then given by
+                                                                                             T
+                                                                                             X
+                                                                                 `(θ) =            log pθ (yt |y1:t−1 ),
+1. Introduction                                                                              t=1
+
+In this section we provide a brief introduction to state-space
+                                                                                        R
+                                                                 with pθ (y1 |y0 ) :=   gθ (y1 |x1 )µθ (x1 )dx1 and for t ≥ 2
+models (SSMs) and PF methods. We then illustrate one                                      Z
+of the well-known limitations of PF (Kantas et al., 2015):             pθ (yt |y1:t−1 ) = gθ (yt |xt )pθ (xt |y1:t−1 )dxt .
+resampling steps are required in order to compute low-
+variance estimates, but these estimates are not differentiable
+                                                                 The posteriors pθ (xt |y1:t ) and log-likelihood pθ (y1:T ) are
+w.r.t. to model and PF parameters. This hinders end-to-end
+                                                                 available analytically for only a very restricted class of SSM
+training. We discuss recent approaches to address this prob-
+                                                                 such as linear Gaussian models. For non-linear SSM, PF
+lem in econometrics, statistics and machine learning (ML),
+                                                                 provides approximations of such quantities.
+outline their limitations and our contributions.
+                                                                 1.2. Particle Filtering
+1.1. State-Space Models
+                                                                 PF are Monte Carlo methods entailing the propagation
+SSMs are an expressive class of sequential models, used in
+                                                                 of N weighted particles (wti , Xti )i∈[N ] , here [N ] :=
+numerous scientific domains including econometrics, ecol-
+                                                                 {1, ..., N }, over time to approximate the filtering distribu-
+ogy, ML and robotics; see e.g. (Chopin & Papaspiliopoulos,
+                                                                 tions pθ (xt |y1:t ) and log-likelihood `(θ). Here Xti ∈ X
+2020; Douc et al., 2014; Doucet & Lee, 2018; Kitagawa &
+                                                                 denotes the value of the ith particle at timeP    t and wt :=
+Gersch, 1996; Lindsten & Schön, 2013; Thrun et al., 2005).                                                          N
+                                                                 (wt1 , ..., wtN ) are weights satisfying wti ≥ 0,        i
+                                                                                                                     i=1 wt = 1.
+SSM may be characterized by a latent X -valued Markov
+                                                                 Unlike variational methods, PF methods provide consis-
+   *
+     Equal contribution 1 Department of Electrical Engineering   tent approximations under weak assumptions as N → ∞
+and Automation, Aalto University 2 Department of Statis-         (Del Moral, 2004). In the general setting, particles are sam-
+tics, University of Oxford.      Correspondence to: Adrien       pled according to proposal distributions qφ (x1 |y1 ) at time
+Corenflos <adrien.corenflos@aalto.fi>, James Thornton            t = 1 and qφ (xt |xt−1 , yt ) at time t ≥ 2 prior to weighting
+<james.thornton@spc.ox.ac.uk>.
+                                                                 and resampling. One often chooses θ = φ but this is not
+Proceedings of the 38 th International Conference on Machine     necessarily the case (Le et al., 2018; Maddison et al., 2017;
+Learning, PMLR 139, 2021. Copyright 2021 by the author(s).       Naesseth et al., 2018).
+                                                    Differentiable Particle Filtering
+
+Algorithm 1 Standard Particle Filter
+                  i.i.d.
+ 1: Sample X1i ∼ qφ (·|y1 ) for i ∈ [N ]
+                           p (X i ,y )
+ 2: Compute ω1i = q θ (X1i |y1 ) for i ∈ [N ]
+                            φ   1   1
+    ˆ ← 1       PN       i
+ 3: `(θ)    N       i=1 ω1
+ 4: for t = 2, ..., T do             PN
+                           i    i          i
+ 5:   Normalize weights wt−1 ∝ ωt−1 , i=1 wt−1 =1
+                  i
+                                    PN i
+ 6:    Resample X̃t−1 ∼        i=1 wt−1 δXt−1  i    for i ∈ [N ]
+               i              i
+ 7:    Sample Xt ∼ qφ (·|X̃t−1 , yt ) for i ∈ [N ]                                           (a) Kalman Filter
+                     p (X i ,y |X̃ i )
+ 8:    Compute ωti = q θ (Xti |X̃t i t−1
+                                      ,yt )
+                                            for i ∈ [N ]
+                      φ     t   t−1
+                                    PN
+ 9:   Compute p̂θ (yt |y1:t−1 ) = N1 i=1 ωti
+10:   ˆ ← `(θ)
+      `(θ)    ˆ + log p̂θ (yt |y1:t−1 )
+11: end for
+                                     ˆ = log p̂θ (y1:T )
+12: Return: log-likelihood estimate `(θ)
+
+
+A generic PF is described in Algorithm 1 where
+pθ (x1 , y1 ) := µθ (x1 )gθ (y1 |x1 ) and pθ (xt , yt |xt−1 ) :=
+                                                                                              (b) Standard PF
+fθ (xt |xt−1 )gθ (yt |xt ). Resampling is performed in step 6 of
+Algorithm 1; it ensures particles with high weights are repli-
+cated and those with low weights are discarded, allowing
+one to focus computational efforts on ‘promising’ regions.
+The scheme used in Algorithm 1 is known as multinomial
+resampling and is unbiased (as are other traditional schemes
+such as stratified and systematic (Chopin & Papaspiliopou-
+los, 2020)), i.e.
+            h P               i     hP                 i
+                  N                     N
+         E N1 i=1 ψ(X̃ti ) = E                i     i
+                                        i=1 wt ψ(Xt ) ,       (2)
+                                                                                           (c) Differentiable PF
+                                                    ˆ
+for any ψ : X → R. This property guarantees exp(`(θ))    is                                                                ˆ φ, u) for
+                                                                      Figure 1. Left: Log-likelihood `(θ) and PF estimates `(θ;
+an unbiased estimate of the likelihood exp(`(θ)) for any N .
+                                                                      linear Gaussian SSM, given in Section 5.1, with dθ = 2 dx = 2,
+Henceforth, let X = Rdx , θ ∈ Θ = Rdθ and φ ∈ Φ = Rdφ .               and T = 150, N = 50. Right: ∇θ `(θ) and ∇θ `(θ; ˆ φ, u).
+We assume here that θ 7→ µθ (x), θ 7→ fθ (x0 |x) and
+θ 7→ gθ (yt |x) are differentiable for all x, x0 and t ∈ [T ]         For dx = 1, Malik & Pitt (2011) make θ 7→ `(θ;       ˆ φ, u)
+and θ 7→ `(θ) is differentiable. These assumptions are sat-           continuous w.r.t. θ by sorting the particles and then sam-
+isfied by a large class of SSMs. We also assume that we               pling from a smooth approximation of their cumulative
+can use the reparameterization trick (Kingma & Welling,               distribution function. For dx > 1, Lee (2008) proposes
+2014) to sample the particles; i.e. we have Γφ (y1 , U ) ∼            a smoother but only piecewise continuous estimate. De-
+qφ (x1 |y1 ), Ψφ (yt , xt−1 , U ) ∼ qφ (xt |xt−1 , yt ) for some      Jong et al. (2013) returns a differentiable log-likelihood
+mappings Γφ , Ψφ differentiable w.r.t. φ and U ∼ λ, λ                            ˆ φ, u) by using a marginal PF (Klaas et al.,
+                                                                      estimate `(θ;
+being independent of φ.                                               2005), where importance sampling is performed on a col-
+                                                                      lapsed state-space. However, the proposal distribution typ-
+1.3. Related Work and Contributions                                   ically used in Pthe marginal PF is the mixture distribution
+                                                                                        N
+                                                                      qφ (xt ) := N1 i=1 qφ (xt |X̃t−1
+                                                                                                     i
+                                                                                                         , yt ) from which one can-
+Let U be the set of all random variables used to sample
+                                                                      not sample smoothly in general. As a consequence they
+and resample the particles. The distribution of U is (θ, φ)-
+                                                                      instead suggest using a simple Gaussian distribution for
+independent as we use the reparameterization trick1 . How-
+                                                                      qφ (xt ), which can lead to poor estimates for multimodal pos-
+ever, even if we sample and fix U = u, resampling involves
+                                                                      teriors. Moreover, in contrast to standard PF, this marginal
+sampling from an atomic distribution and introduces discon-
+                                                                      PF cannot be applied in scenarios where the transition den-
+tinuities in the particles selected when θ, φ vary.
+                                                                      sity can be sampled from (e.g. using the reparameterization
+   1
+     For example, multinomial resampling relies on N uniform          trick) but not evaluated pointwise (Murray et al., 2013), as
+random variables.                                                     the importance weight would be intractable.
+                                                  Differentiable Particle Filtering
+
+In the context of robot localization, a modified resampling          • We provide quantitative convergence results on the dif-
+scheme has been proposed in (Karkus et al., 2018; Ma et al.,           ferentiable resampling scheme and establish consistency
+2020a;b) referred to as ‘soft-resampling’ (SPF). SPF has               results for DPF.
+parameter α ∈ [0, 1] where α = 1 corresponds to reg-                 • We show that existing techniques provide inconsistent
+ular PF resampling and α = 0 is essentially sampling                   gradient estimates and that the non-vanishing bias can be
+particles uniformly at random. The resulting PF-net is                 very significant, leading practically to unreliable parame-
+said to be differentiable but computes gradients that ignore           ter estimates.
+the non-differentiable component of the resampling step.             • We demonstrate that DPF empirically outperforms recent
+Jonschkowski et al. (2018) proposed another PF scheme                  alternatives for end-to-end parameter estimation on a
+which is said to be differentiable but simply ignores the non-         variety of applications.
+differentiable resampling terms and proposes new states
+based on the observation and some neural network. This ap-          Proofs of results are given in the Supplementary Material.
+proach however does not propagate gradients through time.
+Finally, Zhu et al. (2020) propose a differentiable resam-          2. Resampling via Optimal Transport
+pling scheme based on transformers but they report that the
+best results are achieved when not backpropagating through          2.1. Optimal Transport and the Wasserstein Metric
+it, due to exploding gradients. Hence no fully differentiable       Since Optimal Transport (OT) (Peyré & Cuturi, 2019; Vil-
+PF is currently available in the literature (Kloss et al., 2020).   lani, 2008) is a core component of our scheme, the basics
+PF methods have also been fruitfully exploited in Vari-             are presented here. Given two probability measures α, β on
+ational Inference (VI) to estimate θ, φ (Le et al., 2018;           X = Rdx the squared 2-Wasserstein metric between these
+Maddison et al., 2017;    Naesseth et al., 2018). As                measures is given by
+          ˆ φ, U) ] = exp(`(θ)) is an unbiased estimate
+                    
+EU [exp `(θ;                                                               W22 (α, β) = min E(U,V )∼P ||U − V ||2 , (4)
+                                                                                                                     
+of exp(`(θ)) for any N, φ for standard PF, then one has                                  P∈U (α,β)
+indeed by Jensen’s inequality                                       where U(α, β) the set of distributions on X × X with
+                              ˆ φ, U)] ≤ `(θ).                      marginals α and β, and the minimizing argument of (4)
+          `ELBO (θ, φ) := EU [`(θ;                           (3)
+                                                                    is the OT plan denoted P OT . Any element P ∈ U(α, β)
+                                                                    allows one to “transport” α to β (and vice-versa) i.e.
+The standard ELBO corresponds to N = 1 and many varia-                               Z                Z
+tional families for approximating pθ (x1:T |y1:T ) have been
+                                                                           β(dv) = P(du, dv) = P(dv|u)α(du).
+proposed in this context (Archer et al., 2015; Krishnan et al.,
+2017; Rangapuram et al., 2018). The variational family in-                                                       PN
+duced by a PF differs significantly as `ELBO (θ, φ) → `(θ)          For atomic probability measures αN =            i=1 ai δui and
+                                                                              PN
+as N → ∞ and thus yields a variational approximation con-           βN =          j=1 bj δvj with weights a = (ai )i∈[N ] , b =
+verging to pθ (x1:T |y1:T ). This attractive property comes at      (bj )j∈[N ] , and atoms u = (ui )i∈[N ] , v = (vj )j∈[N ] , one
+a computational cost; i.e. the PF approach trades off fidelity      can show that
+to the posterior with computational complexity. While un-                  W22 (αN , βN ) = min
+                                                                                                      PN PN
+                                                                                                         i=1    j=1 ci,j pi,j ,  (5)
+biased gradient estimates of the PF-ELBO (3) can be com-                                     P∈S(a,b)
+puted, they suffer from high variance as the resampling             where any P ∈ U(αN , βN ) is of the form
+steps require having to use REINFORCE gradient estimates                                 P
+(Williams, 1992). Consequently, Hirt & Dellaportas (2019);                   P(du, dv) = i,j pi,j δui (du)δvj (dv),
+Le et al. (2018); Maddison et al. (2017); Naesseth et al.
+                                                                    ci,j = ||ui − vj ||2 , P = (pi,j )i,j∈[N ] and S(a, b) is the
+(2018) use biased gradient estimates which ignore these
+                                                                    following set of matrices
+terms, yet report improvements as N increases over standard
+VI approaches and Importance Weighted Auto-Encoders                                             N
+                                                                                                X             N
+                                                                                                              X
+                                                                                         N ×N
+                                                                             
+(IWAE) (Burda et al., 2016).                                        S(a, b) = P ∈ [0, 1]      :   pi,j = ai ,   pi,j = bj .
+                                                                                                     j=1               i=1
+The contributions of this paper are four-fold.
+                                                                    In such cases, one has
+• We propose the first fully Differentiable Particle Filter                                        P    −1
+                                                                                P(dv|u = ui ) =      j ai pi,j δvj (dv).        (6)
+  (DPF), which unlike (DeJong et al., 2013), can use gen-
+  eral proposal distributions. DPF provides a differentiable        The optimization problem (5) may be solved through lin-
+  estimate of `(θ), see Figure 1-c, and more generally dif-         ear programming. It is also possible to exploit the dual
+  ferentiable estimates of PF-based losses. Empirically, in         formulation
+  a VI context, DPF-ELBO gradient estimates also exhibit
+  much smaller variance than those of PF-ELBO.                                  W22 (αN , βN ) =     max       at f + bt g,     (7)
+                                                                                                   f ,g∈R(C)
+                                                    Differentiable Particle Filtering
+
+                                                                         2
+where f = (fi ), g = (gi ), C = (ci,j ) and R(C) = {f , g ∈            W2, (αN , βN ) can also be computed using the regularized
+RN |fi + gj ≤ ci,j , i, j ∈ [N ]}.                                                 2
+                                                                       dual; i.e. W2, (αN , βN ) = maxf ,g DOT (f , g) with
+
+                                                                                  DOT (f , g) := at f + bt g − at Mb              (10)
+2.2. Ensemble Transform Resampling
+                                                                       where (M)i,j := exp −1 (fi + gj − ci,j ) − 1 and f , g are
+                                                                                                                     
+The use of OT for resampling in PF has been pioneered by
+Reich (2013). Unlike standard resampling schemes (Chopin               now unconstrained. For the dual pair (f ∗ , g∗ ) maximizing
+& Papaspiliopoulos, 2020; Doucet & Lee, 2018), it relies               (10), we have ∇f ,g DOT (f , g)|(f ∗ ,g∗ ) = 0. This first-order
+not only on the particle weights but also on their locations.          condition leads to
+
+At time t, after the sampling step (Step 7 in Algo-                       fi∗ = T (b, g∗ , Ci: ),       gi∗ = T (a, f ∗ , C:i ),     (11)
+                (t)       PN
+rithm 1), αN = N1 i=1 δXti is a particle approxima-                    where Ci: (resp. C:i ) is the ith row (resp. column) of C.
+tion of α(t) :=
+                      R
+                         qφ (xt |xt−1 , yt )pθ (xt−1 |y1:t−1 )dxt−1    Here T : RN × RN × RN → RN denotes the mapping
+        (t)        P i
+and βN =             wt δXti is an approximation of β (t) :=                                      X
+                                                                                                    exp log ak +−1 (fk − ck,i ) .
+                                                                                                        
+                                                                       T (a, f , C:,i ) = − log
+pθ (xt |y1:t ). Under mild regularity conditions, the OT plan
+                                                                                                     k
+minimizing W2 (α(t) , β (t) ) is of the form P OT (dx, dx0 ) =
+α(t) (dx)δT(t) (x) (dx0 ) where T(t) : X → X is a determin-            One may then recover the regularized transport matrix as
+istic map; i.e if X ∼ α(t) then T(t) (X) ∼ β (t) . It is shown                pOT                   −1 ∗
+                                                                                                      (fi + gj∗ − ci,j ) .
+                                                                                                                        
+                                                                                ,i,j = ai bj exp                          (12)
+in (Reich, 2013) that one can one approximate this trans-
+                                                                 (t)
+port map with the ‘Ensemble Transform’ (ET) denoted TN .               The dual can be maximized using the Sinkhorn algorithm
+                                                                 (t)
+This is found by solving the OT problem (5) between αN                 introduced for OT in the seminal paper of Cuturi (2013).
+       (t)                                                             Algorithm 2 presents the implementation of Feydy et al.
+and βN and taking an expectation w.r.t. (6), that is
+                                                                       (2019) where the fixed point updates based on Equation (11)
+                      PN                        (t)
+              X̃ti = N k=1 pOT         k
+                                 i,k Xt := TN (Xt ),
+                                                      i
+                                                                (8)    have been stabilized.
+                                             (t)
+where we slightly abuse notation as TN is a function of                Algorithm 2 Sinkhorn Algorithm
+X 1:N . Reich (2013) uses this update instead of using X̃ti ∼           1: Function Potentials(a, b, u, v)
+PtN      i
+  i=1 wt δXti . This is justified by the fact that, as N →              2: Local variables: f , g ∈ RN
+       (t)
+∞, TN (Xti ) → T(t) (Xti ) in some weak sense (Reich,                   3: Initialize: f = 0, g = 0
+2013; Myers et al., 2021). Compared to standard resampling              4: Set C ← uut + vvt − 2uvt
+schemes, the ET only satisfies (2) for affine functions ψ.              5: while stopping criterion not met do
+                                                                        6:   for i ∈ [N ] do
+This OT approach to resampling involves solving the linear              7:      fi ← 12 (fi + T (b, g, Ci: ))
+program (4) at cost O(N 3 log N ) (Bertsimas & Tsitsiklis,              8:      gi ← 12 (gi + T (a, f , C:i ))
+1997). This is not only prohibitively expensive but moreover            9:   end for
+the resulting ET is not differentiable. To address these               10: end while
+problems, one may instead rely on entropy-regularized OT               11: Return f , g
+(Cuturi, 2013).
+                                                                       The resulting dual vectors (f ∗ , g∗ ) can then be differentiated
+3. Differentiable Resampling via                                       for example using automatic differentiation through the
+   Entropy-Regularized Optimal Transport                               Sinkhorn algorithm loop (Flamary et al., 2018), or more
+                                                                       efficiently using “gradient stitching” on the dual vectors at
+3.1. Entropy-Regularized Optimal Transport                             convergence, which we do here (see Feydy et al. (2019) for
+Entropy-regularized OT may be used to compute a trans-                 details). The derivatives of POT     are readily accessible by
+port matrix that is differentiable with respect to inputs and          combining the derivatives of (11) with the derivatives of
+computationally cheaper than the non-regularized version,              (12), using automatic differentiation at no additional cost.
+i.e. we consider the following regularized version of (5) for
+some  > 0 (Cuturi, 2013; Peyré & Cuturi, 2019)                       3.2. Differentiable Ensemble Transform Resampling
+                              N                                                                                                  (t)
+ 2
+                              X                    pi,j              We obtain a differentiable ET (DET), denoted TN, , by
+W2, (αN , βN ) = min             pi,j ci,j +  log        . (9)       computing the entropy-regularized OT using Algorithm 3
+                   P∈S(a,b)
+                            i,j=1
+                                                    ai bj
+                                                                       for the weighted particles (Xt , wt , N ) at time t
+The function minimized in (9) is strictly convex and hence                               PN                       (t)
+admits a unique minimizing argument POT         = (pOT                           X̃ti = N k=1 pOT         k              i
+                                                                                                   ,i,k Xt := TN, (Xt ). (13)
+                                                     ,i,j ).
+                                                  Differentiable Particle Filtering
+
+Algorithm 3 DET Resampling                                          et al., 2018; Le et al., 2018; Ma et al., 2020b; Maddison
+ 1: Function EnsembleTransform(X, w, N )                            et al., 2017; Naesseth et al., 2018). We limit ourselves
+                          1
+ 2: f , g ← Potentials(w, N 1, X, X)                                here to the ELBO loss. Similar analysis can be carried out
+ 3: for i ∈ [N ] do                                                 for the non-differentiable resampling schemes and losses
+ 4:     for j ∈ [N ] do                                            considered in robotics.
+                                  
+                  wi         f +gj −ci,j                            Proposition 4.1. Consider the PF in Algorithm 1 where
+ 5:      pOT
+          ,i,j = N exp
+                         i
+                                 
+ 6:   end for                                                       φ is distinct from θ then, under regularity conditions, the
+                                                                    expectation of the ELBO gradient estimate ∇         ˆ θ `ELBO (θ, φ)
+ 7: end for
+ 8: Return X̃ = N POT
+                                                                    ignoring resampling terms considered in (Le et al., 2018;
+                      X
+                                                                    Maddison et al., 2017; Naesseth et al., 2018) converges as
+                                                                    N → ∞ to
+                                                                                            Z
+Compared to the ET, the DET is differentiable and can be              E[∇ˆ θ `ELBO (θ, φ)]→ ∇θ log pθ (x1 , y1 ) pθ (x1 |y1 )dx1
+computed at cost O(N 2 ) as it relies on the Sinkhorn algo-
+                                                                          T
+                                                                              Z
+rithm. This algorithm converges quickly (Altschuler et al.,           +
+                                                                         P
+                                                                                 ∇θ log pθ (xt , yt |xt−1 ) pθ (xt−1:t |y1:t )dxt−1:t
+2017) and is particularly amenable to GPU implementation.                t=2
+
+The DPF proposed in this paper is similar to Algorithm 1            whereas Fisher’s identity yields
+except that we sample from the proposal qφ using the repa-                     Z
+rameterization trick and Step 6 is replaced by the DET.
+                                                                     ∇θ `(θ) = ∇θ log pθ (x1 , y1 ) pθ (x1 |y1:T )dx1
+While such a differentiable approximation of the ET has
+previously been suggested in ML (Cuturi & Doucet, 2014;                 PT
+                                                                           Z
+Seguy et al., 2018), it has never been realized before that          +        ∇θ log pθ (xt , yt |xt−1 ) pθ (xt−1:t |y1:T )dxt−1:t .
+                                                                         t=2
+this could be exploited to obtain a DPF. In particular, we
+obtain differentiable estimates of expectations w.r.t. the fil-
+tering distributions with respect to θ and φ and, for a fixed       Hence, whereas we have ∇θ `ELBO (θ, φ) → ∇θ `(θ) as
+“seed” U = u 2 , we obtain a differentiable estimate of the         N → ∞ under regularity assumptions, the asymptotic
+log-likelihood function θ 7→ `ˆ (θ; φ, u).                         bias of ∇ ˆ θ `ELBO (θ, φ) only vanishes if pθ (xt−1:t |y1:t ) =
+                                                                    pθ (xt−1:t |y1:T ); i.e. for models where the Xt are indepen-
+Like ET, DET only satisfies (2) for affine functions ψ.             dent. When yt+1:T do not bring significant information
+Unlike POT , POT     is sensitive to the scale of Xt . To          about Xt given yt:T , as for the models considered in (Le
+mitigate
+√         this sensitivity,  one may compute δ(Xt ) =               et al., 2018; Maddison et al., 2017; Naesseth et al., 2018),
+                        i
+  dx maxk∈[dx ] stdi (Xt,k ) for Xt ∈ RN ×dx and rescale C          this is a reasonable approximation which explains the good
+accordingly to ensure that  is approximately independent           performance reported therein. However, we show in Sec-
+of the scale and dimension of the problem.                          tion 5 that this bias can also lead practically to inaccurate
+                                                                    parameter estimation.
+4. Theoretical Analysis
+                                                                    4.2. Quantitative Bounds on the DET
+We show here that the gradient estimates of PF-based losses
+ignoring gradients terms due to resampling are not consis-          Weak convergence results for the ET have been established
+tent and can suffer from a large non-vanishing bias. On             in (Reich, 2013; Myers et al., 2021) and the DET in (Seguy
+the contrary, we establish that DPF provides consistent and         et al., 2018). We provide here the first quantitative bound for
+differentiable estimates of the filtering distributions and log-    the ET ( = 0) and DET ( > 0) which holds for any N ≥
+likelihood function. This is achieved by obtaining novel            1 by building upon results of (Li & Nochetto,     R 2021) and
+quantitative convergence results for the DET.                       (Weed, 2018). We use the notation ν(ψ) := ψ(x)ν(dx)
+                                                                    for any measure ν and function ψ.
+4.1. Gradient Bias from Ignoring Resampling Terms                   Proposition
+                                                                           PN 4.2. Consider atomic probability
+                                                                                                             PN   measures
+We first provide theoretical results on the asymptotic bias of      αN = i=1 ai δY i with ai > 0 and βN = i=1 bi δX i ,
+                                                                                                    PN
+the gradient estimates computed from PF-losses, by drop-            with support X ⊂ Rd . Let β̃N =   i=1 ai δX̃ i  where
+                                                                                                                            N,
+ping the gradient terms from resampling, as adopted in (Hirt        X̃N, = ∆−1 POT                                         OT
+                                                                                      X for ∆ = diag(a1 , ..., aN ) and P
+& Dellaportas, 2019; Jonschkowski et al., 2018; Karkus              is the transport matrix corresponding to the -regularized
+      2
+    Here U denotes only the set of θ, φ-independent random vari-    OT coupling, POT,N , between αN and βN . Let α, β be two
+ables used to generate particles as, contrary to standard PF, DET   other probability measures, also supported on X , such that
+resampling does not rely on any additional random variable.         there exists a unique λ-Lipschitz optimal transport map T
+                                                      Differentiable Particle Filtering
+
+between them. Then for any bounded 1-Lipschitz function                          p̂N (y1:T )   κ
+                                                                           log               ≤    max Lip [g(yt | ·)]
+ψ, we have                                                                         p(y1:T )    ∆ t∈[1:T ]
+                                                                                               T
+                                                                                                       (t)
+                                                      i1/2                                     X
+                                                                                           ×         G,δ/T,N,d (λ(c, C, d, T, N, δ)) ,
+                                       h
+                             1/2 1/2       1/2
+    βN (ψ) − β̃N (ψ) ≤ 2λ         E        d     +E
+                                                                                               t=1
+          + max{λ, 1} [W2 (αN , α) + W2 (βN , β)] , (14)
+                                                                                                       r                            
+                                                                                                                        log(CT /δ)
+where d := supx,y∈X |x − y| and E = W2 (αN , α) +                       for λ(c, C, d, T, N, δ) =            fd−1                        where c, C
+             √                                                                                                              cN
+W2 (βN , β) + 2 log N .                                                are finite constants independent of T, and Lip[f ] is the
+                                                                                                                   (t)
+If W2 (αN , α), W2 (βN , β) → 0 and we choose N =                      Lipschitz constant of the function f, and GN, , fd defined
+o(1/ log N ) the bound given in (14) vanishes with N → ∞.               in Appendix D are two functions such that if we set N =
+This suggested dependence of  on N comes from the en-                  o(1/ log N ) then we have in probability
+tropic radius, see Lemma C.1 in the Supplementary and
+(Weed, 2018), and is closely related to the fact that entropy-                   (t)                                      p̂N (y1:T )
+regularized OT is sensitive to the scale of X. Equiva-                       |β̃N (ψ) − β (t) (ψ)| → 0,             log               → 0.
+                                                                                                                            p(y1:T )
+lently one may rescale X by a factor log N when com-
+puting the cost matrix. In particular when αN and βN
+are Monte Carlo approximations of α and β, we expect                    The above bounds are certainly not sharp. A glimpse into the
+W2 (αN , α), W2 (βN , β) = O(N −1/d ) with high probabil-               behavior of the above bounds in terms of T can be obtained
+ity (Fournier & Guillin, 2015).                                         through careful consideration of the quantities appearing in
+                                                                        Proposition D.1 in the supplement. In particular, for κ small
+4.3. Consistency of DPF                                                 enough, it suggests that the bound on the error of the log-
+                                                                        likelihood estimator grows linearly with T as for standard
+The parameters θ, φ are here fixed and omitted from no-
+                                                                        PF under mixing assumptions. Sharper bounds are certainly
+tation. We now establish consistency results for DPF,
+                                                                        possible, e.g. using a L1 version of Theorem 3.5 in (Li &
+showing that both the resulting particle approximations
+  (t)        PN                                                         Nochetto, 2021). It would also be of interest to weaken the
+β̃N = N1 i=1 δX̃ i of β (t) = p(xt |y1:t ) and the cor-                 assumptions, in particular, to remove the bounded space
+                       t
+responding log-likelihood approximation log p̂N (y1:T ) of              assumption although it is very commonly made in the PF
+log p(y1:T ) are consistent. In the interest of simplicity, we          literature to obtain quantitative bounds; see e.g. (Del Moral,
+limit ourselves to the scenario where the proposal is the tran-         2004; Douc et al., 2014). Although this is not made explicit
+sition, q = f , so ω(xt−1 , xt , yt ) = g(yt |xt ), known as the        in the expressions above, there is an exponential dependence
+bootstrap PF and study a slightly non-standard version of it            of the bounds on the state dimension dx . This is unavoidable
+proposed in (Del Moral & Guionnet, 2001); see Appendix D                however and a well-known limitation of PF methods.
+for details. Consistency is established under regularity as-
+sumptions detailed in the Supplementary. Assumption B.1                 Finally note that DPF provides a biased estimate of
+is that the space X ⊂ Rd has a finite diameter d. Assump-               the likelihood contrary to standard PF, so we can-
+tion B.2 implies that the proposal mixes exponentially fast             not guarantee that the expectation of its logarithm,
+in the Wasserstein sense at a rate κ, which is reasonable               `ELBO
+                                                                              (θ, φ) := EU [`ˆ (θ; φ, U)]. is actually a valid ELBO.
+given compactness, and essential for the error to not accu-             However in all our experiments, see e.g. Section 5.1,
+mulate. Assumption B.3 assumes a bounded importance                     |`ELBO
+                                                                               (θ, φ) − `ELBO (θ, φ)| is significantly smaller than
+weight function i.e. g(yt |xt ) ∈ [∆, ∆−1 ], again not un-              `(θ) − `ELBO (θ, φ) so `ELBO
+                                                                                                       (θ, φ) < `(θ). Hence we keep
+reasonable given compactness. Assumption B.4 states that                the ELBO terminology.
+at each time step, the optimal transport problem between
+α(t) and β (t) is solved uniquely by a deterministic, globally          5. Experiments
+Lipschitz map. Uniqueness is crucial for the quantitative
+stability results provided in the following proposition.                In Section 5.1, we assess the sensitivity of the DPF to the
+                                                                        regularization parameter . All other DPF experiments pre-
+Proposition 4.3. Under Assumptions B.1, B.2, B.3 and B.4,               sented here use the DET Resampling detailed in Algorithm 3
+for any δ > 0, with probability at least 1 − 2δ over the                with  = 0.5, which ensures stability of the gradient calcula-
+sampling steps, for any bounded 1-Lipschitz ψ, for any                  tions while adding little bias to the calculation of the ELBO
+t ∈ [1 : T ], the approximations of the filtering distributions         compared to standard PF. Our method is implemented in
+and log-likelihood computed by the bootstrap DPF satisfy                both PyTorch and TensorFlow, the code to replicate the ex-
+    (t)                     (t)                                         periments as well as further experiments may be found at
+ |β̃N (ψ) − β (t) (ψ)| ≤ G,δ/T,N,d (λ(c, C, d, T, N, δ)) ,
+                                                                        https://github.com/JTT94/filterflow.
+                                                  Differentiable Particle Filtering
+
+5.1. Linear Gaussian State-Space Model                              with ∆φ = diag(φ1 , . . . , φdx ) and a dx × dy matrix
+                                                                    Γφ = diagdx ,dy (φ1 , . . . , φdx ) with φi on the diagonal for
+We consider here a simple two-dimensional linear Gaussian
+                                                                    dx first rows and zeros elsewhere. The locally optimal pro-
+SSM for which the exact likelihood can be computed exactly
+                                                                    posal p(xt |xt−1 , yt ) ∝ g(yt |xt )f (xt |xt−1 ) in (Doucet &
+using the Kalman filter
+                                                                    Johansen, 2009) corresponds to φ = 1, the vector with unit
+       Xt+1 |{Xt = x} ∼ N (diag(θ1 θ2 )x, 0.5I2 ) ,                 entries of dimension dφ = dx + dy .
+          Yt |{Xt = x} ∼ N (x, 0.1I2 ).                             For dx = 25, dy = 1, M = 100 realizations of T = 100
+                                                                    observations using (15)-(16), we learn φ on each realization
+We simulate T = 150 observations using θ = (θ1 , θ2 ) =
+                                                                    using 100 steps of stochastic gradient ascent with learning
+(0.5, 0.5), for which we evaluate the ELBO at θ =
+                                                                    rate 0.1 on the `ELBO (φ) using regular PF with biased gradi-
+(0.25, 0.25), θ = (0.5, 0.5), and θ = (0.75, 0.75). More
+                                                                    ents as in (Maddison et al., 2017; Le et al., 2018; Naesseth
+precisely, using a standard PF with N = 25 particles, we
+                                                   ˆ U) −           et al., 2018) and `ELBO (φ) with four independent filters us-
+compute the mean and standard deviation of T1 (`(θ;
+                                                                    ing DPF. We use N = 500 for regular PF and N = 25 for
+`(θ)) over 100 realizations of U. The mean is an estimate
+                                                                    DPF so as to match the computational complexity. While
+of the ELBO minus the true log-likelihood (rescaled by
+                                                                    p(xt |xt−1 , yt ) is not guaranteed to maximize the ELBO,
+1/T ). We then perform the same calculations for the DPF
+                                                                    our experiments showed that it outperforms optimized pro-
+using the same number of particles and  = 0.25, 0.5, 0.75.
+                                                                    posals. We therefore report the RMSE of φ − 1 and the
+As mentioned in Section 3.2 and Section 4.3, the DET re-
+                                                                    average Effective Sample Size (ESS) (Doucet & Johansen,
+sampling scheme is only satisfying Equation (2) for affine
+                                                                    2009) as proxy performance metrics. On both metrics, DPF
+functions ψ so the DPF provides a biased estimate of the
+                                                                    outperforms regular PF. The RMSE over 100 experiments
+likelihood. Hence we cannot guarantee that the expectation
+                                                                    is 0.11 for DPF vs 0.22 for regular PF while the average
+of the corresponding log-likelihood estimate is a true ELBO.
+                                                                    ESS after convergence is around 60% for DPF vs 25% for
+However, from Table 1, we observe that the difference be-
+                                                                    regular PF. The average time per iteration was around 15
+tween the ELBO estimates computed using PF and DPF is
+                                                                    seconds for both DPF and PF.
+negligible for the three values of . The standard deviation
+of the log-likelihood estimates is also similar.
+                                                                    5.3. Variational Recurrent Neural Network (VRNN)
+
+                                     ˆ U) − `(θ))                   A VRNN is an SSM introduced by (Chung et al., 2015)
+          Table 1. Mean & std of T1 (`(θ;
+                                                                    to improve upon LSTMs (Long Short Term Memory net-
+              θ1 , θ2             0.25      0.5      0.75           works) with the addition of a stochastic component to the
+                                                                    hidden state, this extends variational auto-encoders to a se-
+                           mean   -1.13   -0.93     -1.05           quential setting. Indeed let latent state be Xt = (Rt , Zt )
+                  PF
+                            std    0.20    0.18      0.17           where Rt is an RNN state and Zt a latent Gaussian variable,
+                           mean   -1.14   -0.94     -1.07           here Yt is a vector of binary observations. The VRNN is
+     DPF ( = 0.25)                                                 detailed as follows. RNNθ denotes the forward call of an
+                            std    0.20    0.18      0.19
+                                                                    LSTM cell which at time t emits the next RNN state Rt+1
+                           mean   -1.14   -0.94     -1.08
+      DPF ( = 0.5)                                                 and output Ot+1 . Eθ , hθ , µθ , σθ are fully connected neu-
+                            std    0.20    0.18      0.18
+                                                                    ral networks; detailed fully in the Supplementary Material.
+                           mean   -1.14   -0.94     -1.08           This model is trained on the polyphonic music benchmark
+     DPF ( = 0.75)
+                            std    0.20    0.18      0.18           datasets (Boulanger-Lewandowski et al., 2012), whereby
+                                                                    Yt represents which notes are active. The observation se-
+                                                                    quences are capped to length 150 for each dataset, with each
+5.2. Learning the Proposal Distribution
+                                                                    observation of dimension 88. We chose latent states Zt and
+We consider a similar example as in (Naesseth et al., 2018)         Rt to be of dimension dz = 8 and dr = 16 respectively so
+where one learns the parameters φ of the proposal using the         dx = 24. We use qφ (xt |xt−1 , yt ) = fθ (xt |xt−1 ).
+ELBO for the following linear Gaussian SSM:
+                                                                             (Rt+1 , Ot+1 ) = RNNθ (Rt , Y1:t , Eθ (Zt )),
+            Xt+1 |{Xt = x} ∼ N (Ax, Idx ) ,                 (15)
+                                                                                      Zt+1 ∼ N (µθ (Ot+1 ), σθ (Ot+1 )),
+             Yt |{Xt = x} ∼ N (Idy ,dx x, Idy ),            (16)
+                                                                                       p̂t+1 = hθ (Eθ (Zt+1 ), Ot+1 ),
+                 |i−j|+1
+with A = (0.42          )1≤i,j≤dx , Idy ,dx is a dy × dx ma-                          Yt |Xt ∼ Ber(p̂t ).
+trix with 1 on the diagonal for the dy first rows and zeros
+elsewhere. For φ ∈ Rdx +dy , we consider
+                                                                    The VRNN model is trained by maximizing `ELBO
+                                                                                                                  (θ) us-
+  qφ (xt |xt−1 , yt ) = N (xt |∆−1
+                                φ (Axt−1 + Γφ yt ) , ∆φ ),          ing DPF. We compare this to the same model trained by
+                                                 Differentiable Particle Filtering
+
+                                                                   given observations Ot . Let the latent state be denoted
+Table 2. ELBO ± Standard Deviation evaluated using Test Data.               (1)   (2)                 (1)   (2)
+                                                                   St = (Xt , Xt , γt ) where (Xt , Xt ) are location co-
+            M USE DATA          JSB         N OTTINGHAM            ordinates and γt the robot’s orientation. In our setting obser-
+    DPF     −7.59±0.01      −7.67±0.08       −3.79±0.02            vations Ot are images, which are encoded to extract useful
+    PF      −7.60±0.06      −7.92±0.13       −3.81±0.02            features using a neural network Eθ , where Yt = Eθ (Ot ).
+    SPF     −7.73±0.14      −8.17±0.07       −3.91±0.05            This problem requires learning the relationship between the
+                                                                   robot’s location, orientation and the observations. Given
+                                                                                   (1) (2)
+                                                                   actions at = (vt , vt , ωt ), we have
+                                                                                                                    i.i.d.
+                                                                           St+1 = Fθ (St , at ) + νt ,      νt ∼ N (0, ΣF ),
+                                                                                                           i.i.d.   2
+                                                                              Yt = Gθ (St ) + t ,      t ∼ N (0, σG Ied ),
+                                                                   where ΣF = diag(σx2 , σx2 , σθ2 ) and the relationship between
+                                                                   state St and image encoding Yt may be parameterized by
+                                                                   another neural network Gθ . We consider here a simple
+                                                                   linear model of the dynamics
+                                                                                                                             
+                                                                                         (1)     (1)              (2)
+                                                                                       Xt + vt cos(γt ) + vt sin(γt )
+                                                                       F (St , at ) = Xt(2) + vt(1) sin(γt ) − vt(2) cos(γt ) .
+                                                                                                                             
+Figure 2. ELBO during training, evaluated on Test Data for JSB.
+                                                                                                      γt + ωt
+
+maximizing `ELBO (θ) computed with regular PF (Maddi-              Dθ denotes a decoder neural network, mapping the encoding
+son et al., 2017) and also trained with ‘soft-resampling’          back to the original image. Eθ , Gθ and Dθ are trained using
+(SPF) introduced by (Karkus et al., 2018) and described            a loss function consisting of the PF-estimated log-likelihood
+in Section 1.3, SPF is used here with parameter α = 0.1.           L̂PF ; PF-based mean squared error (MSE), L̂MSE ; and auto-
+Unlike regular resampling, SPF partially preserves a gradi-        encoder loss, L̂AE , given per-batch as in (Wen et al., 2020):
+ent through the resampling step, however SPF still involves                        T          N
+                                                                                1X       ∗
+                                                                                             X                          1ˆ
+a non-differentiable operation, again resulting in a biased         L̂MSE :=          ||Xt −     wti Xti ||2 , L̂PF := − `(θ),
+gradient. SPF also produces higher variance estimates as                        T t=1        i=1
+                                                                                                                        T
+the resampled approximation is not uniformly weighted,                          T
+                                                                                X
+essentially interpolating between PF and IWAE. Each of the            L̂AE :=         ||Dθ (Eθ (Ot )) − Ot ||2 ,
+methods are performed with N = 32 particles. Although                           t=1
+DET is computationally more expensive than the other re-
+                                                                   where Xt? are the true states available from training data and
+sampling schemes, the computational times of DPF, PF, and          PN     i i
+SPF are very similar due to most of the complexity com-              i=1 wt Xt are the PF estimates of E[Xt |y1:t ]. The auto-
+
+ing from neural network operations. The learned models             encoder / reconstruction loss L̂AE ensures the encoder is
+are then evaluated on test data using multinomial resam-           informative and prevents the case whereby networks Gθ , Eθ
+pling for comparable ELBO results. Due to the fact that            map to a constant. The PF-based loss terms L̂MSE and L̂PF
+our observation model is Ber(p̂t ), this recovers the negative     are not differentiable w.r.t. θ under traditional resampling
+log-predictive cross-entropy.                                      schemes.
+
+Figure 2 and Table 2 illustrate the benefit of using DPF           We use the setup from (Jonschkowski et al., 2018) with data
+over regular PF and SPF for the JSB dataset. Although              from DeepMind Lab (Beattie et al., 2016). This consists of
+DPF remains competitive compared to other heuristic ap-            3 maze layouts of varying sizes. We have access to ‘true’
+proaches, the difference is relatively minor for the other         trajectories of length 1, 000 steps for each maze. Each step
+datasets. We speculate that the performance of the heuristic       has an associated state, action and observation image, as de-
+methods is likely due to low predictive uncertainty for the        scribed above. The visual observation Ot consists of 32×32
+next observation given the previous one.                           RGB pixel images, compressed to 24 × 24, as shown in Fig-
+                                                                   ure 3. Random, noisy subsets of fixed length are sampled at
+                                                                   each training iteration. To illustrate the benefits of our pro-
+5.4. Robot Localization
+                                                                   posed method, we select the random subsets to be of length
+Consider the setting of a robot/agent in a maze (Jon-              50 as opposed to length 20 as chosen in (Jonschkowski et al.,
+schkowski et al., 2018; Karkus et al., 2018). Given the            2018). Training details in terms of learning rates, number of
+agent’s initial state, S1 , and inputs at , one would like         training steps and neural network architectures for Eθ , Gθ
+to infer the location of the agent at any specific time            and Dθ are given in the Appendices.
+                                                      Differentiable Particle Filtering
+
+                                                                        6. Discussion
+                                                                        This paper introduces the first principled, fully differentiable
+                                                                        PF (DPF) which permits parameter inference in state-space
+                                                                        models using end-to-end gradient based optimization. This
+                                                                        property allows the use of PF routines in general differen-
+                                                                        tiable programming pipelines, in particular as a differen-
+                             (1),i     (2),i
+Figure 3. Left: Particles (Xt , Xt ) (green), PF estimate of            tiable sampling method for inference in probabilistic pro-
+E[Xt |y1:t ] (blue), true state Xt∗ (red). Right: Observation, Ot .     gramming languages (Dillon et al., 2017; Ge et al., 2018;
+                                                                        van de Meent et al., 2018).
+
+We compare our method, DPF, to regular PF used in (Mad-                 For a given number of particles N , existing PF methods ig-
+dison et al., 2017) and Soft PF (SPF) used in (Karkus et al.,           noring resampling gradient terms have computational com-
+2018; Ma et al., 2020a;b), whereby the soft resampling is               plexity O(N ). Training with these resampling schemes
+used with α = 0.1. As most of the computational complex-                however is unreliable and performance cannot be improved
+ity arises from neural network operations, DPF is of similar            by increasing N as gradient estimates are inconsistent and
+overall computational cost to SPF and PF. As shown in Table             the limiting bias can be significant. DPF has complexity
+3 and Figure 4, DPF significantly outperforms previously                O(N 2 ) during training. However, this cost is dwarfed when
+considered PF methods in this experiment. The observation               training large neural networks. Additionally, once the model
+model becomes increasingly important for longer sequences               is trained, standard PF may be ran at complexity O(N ). The
+due to resampling and weighting operations. Indeed, as                  benefits of DPF are confirmed by our experimental results
+shown in Figure 5, the error is small for both models at the            where it was shown to outperform existing techniques, even
+start of the sequence, however the error at later stages in the         when an equivalent computational budget was used. More-
+sequence is visibly smaller for the model trained using DPF.            over, recent techniques have been proposed to speed up the
+                                                                        Sinkhorn algorithm (Altschuler et al., 2019; Scetbon & Cu-
+                                                                        turi, 2020) at the core of DPF and could potentially be used
+Table 3. MSE and ± Standard Deviation evaluated on Test Data:           here to reduce its complexity.
+Lower is better
+                                                                        Regularization parameter  was not fine-tuned in our exper-
+                  M AZE 1            M AZE 2      M AZE 3               iments. In future work, it would be interesting to obtain
+        DPF     3.55±0.20       4.65±0.50        4.44±0.26              sharper quantitative bounds on DPF to propose principled
+        PF      10.71±0.45      11.86±0.57       12.88±0.65             guidelines on choosing , further improving its performance.
+        SPF      9.14±0.39      10.12±0.40       11.42±0.37             Finally, we have focused on the use of the differentiable
+                                                                        ensemble transform to obtain a differentiable resampling
+                                                                        scheme. However, alternative OT approaches could also
+                                                                        be proposed such as a differentiable version of the second
+                                                                        order ET presented in (Acevedo et al., 2017), or techniques
+                                                                        based on point cloud optimization (Cuturi & Doucet, 2014;
+                                                                        Peyré & Cuturi, 2019) relying on the Sinkhorn divergence
+                                                                        (Genevay et al., 2018) or the sliced-Wasserstein metric. Al-
+                                                                        ternative non-entropic regularizations, such as the recently
+                                                                        proposed Gaussian smoothed OT (Goldfeld & Greenewald,
+     (a) Maze 1             (b) Maze 2              (c) Maze 3          2020), could also lead to DPFs of interest.
+
+Figure 4. MSE of PF (red), SPF (green) and DPF (blue) estimates,
+evaluated on test data during training.                                 Acknowledgments
+                                                                        The work of Adrien Corenflos was supported by the
+                                                                        Academy of Finland (projects 321900 and 321891). Arnaud
+                                                                        Doucet is supported by the EPSRC CoSInES (COmputa-
+                                                                        tional Statistical INference for Engineering and Security)
+                                                                        grant EP/R034710/1, James Thornton by the OxWaSP CDT
+                                                                        through grant EP/L016710/1. Computing resources pro-
+        (a) Standard PF                   (b) Differentiable PF         vided through the Google Cloud Platform Research Credits
+                                                                        Programme.
+Figure 5. Illustrative Example: PF estimate of path compared to
+true path (black) on a single 50-step trajectory from test data.
+                                               Differentiable Particle Filtering
+
+References                                                       Del Moral, P. Feynman-Kac Formulae. Springer, 2004.
+Acevedo, W., de Wiljes, J., and Reich, S. Second-order ac-       Del Moral, P. and Guionnet, A. On the stability of interact-
+  curate ensemble transform particle filters. SIAM Journal         ing processes with applications to filtering and genetic
+  on Scientific Computing, 39(5):A1834–A1850, 2017.                algorithms. In Annales de l’Institut Henri Poincaré (B)
+                                                                   Probability and Statistics, volume 37, pp. 155–194, 2001.
+Altschuler, J., Niles-Weed, J., and Rigollet, P. Near-linear
+  time approximation algorithms for optimal transport via        Dillon, J. V., Langmore, I., Tran, D., Brevdo, E., Vasudevan,
+  Sinkhorn iteration. In Advances in Neural Information            S., Moore, D., Patton, B., Alemi, A., Hoffman, M., and
+  Processing Systems, pp. 1964–1974, 2017.                         Saurous, R. A. Tensorflow distributions. arXiv preprint
+Altschuler, J., Bach, F., Rudi, A., and Niles-Weed, J.             arXiv:1711.10604, 2017.
+  Massively scalable Sinkhorn distances via the Nyström         Douc, R., Moulines, E., and Stoffer, D. Nonlinear Time Se-
+  method. In Advances in Neural Information Processing             ries: Theory, Methods and Applications with R Examples.
+  Systems, pp. 4429–4439, 2019.                                    CRC press, 2014.
+Archer, E., Park, I. M., Buesing, L., Cunningham, J., and        Doucet, A. and Johansen, A. M. A tutorial on particle
+  Paninski, L. Black box variational inference for state           filtering and smoothing: Fifteen years later. Handbook of
+  space models. arXiv preprint arXiv:1511.07367, 2015.            Nonlinear Filtering, 12:656–704, 2009.
+Beattie, C., Leibo, J. Z., Teplyashin, D., Ward, T., Wain-
+                                                                 Doucet, A. and Lee, A. Sequential Monte Carlo methods.
+  wright, M., Küttler, H., Lefrancq, A., Green, S., Valdés,
+                                                                  Handbook of Graphical Models, pp. 165–189, 2018.
+  V., Sadik, A., Schrittwieser, J., Anderson, K., York, S.,
+  Cant, M., Cain, A., Bolton, A., Gaffney, S., King, H.,         Feydy, J., Séjourné, T., Vialard, F.-X., Amari, S.-I., Trouvé,
+  Hassabis, D., Legg, S., and Petersen, S. DeepMind Lab,           A., and Peyré, G. Interpolating between optimal transport
+  2016.                                                            and MMD using Sinkhorn divergences. In International
+                                                                   Conference on Artificial Intelligence and Statistics, 2019.
+Bertsimas, D. and Tsitsiklis, J. N. Introduction to Linear
+  Optimization. Athena Scientific Belmont, MA, 1997.             Flamary, R., Cuturi, M., Courty, N., and Rakotomamonjy,
+                                                                   A. Wasserstein discriminant analysis. Machine Learning,
+Boulanger-Lewandowski, N., Bengio, Y., and Vincent, P.
+                                                                   107(12):1923–1945, 2018.
+  Modeling temporal dependencies in high-dimensional se-
+  quences: Application to polyphonic music generation and        Fournier, N. and Guillin, A. On the rate of convergence in
+  transcription. In International Conference on Machine            Wasserstein distance of the empirical measure. Probabil-
+  Learning, pp. 1881–1888, 2012.                                   ity Theory and Related Fields, 162(3):707–738, 2015.
+Burda, Y., Grosse, R. B., and Salakhutdinov, R. Importance       Ge, H., Xu, K. X., and Ghahramani, Z. Turing: A lan-
+  weighted autoencoders. In International Conference on            guage for flexible probabilistic inference. In International
+  Learning Representations, 2016.                                  Conference on Artificial Intelligence and Statistics, pp.
+Chopin, N. and Papaspiliopoulos, O. An Introduction to            1682–1690, 2018.
+  Sequential Monte Carlo. Springer, 2020.                        Genevay, A., Peyré, G., and Cuturi, M. Learning genera-
+Chung, J., Kastner, K., Dinh, L., Goel, K., Courville, A. C.,      tive models with Sinkhorn divergences. In International
+  and Bengio, Y. A recurrent latent variable model for             Conference on Artificial Intelligence and Statistics, pp.
+  sequential data. In Advances in Neural Information Pro-         1608–1617, 2018.
+  cessing Systems, pp. 2980–2988, 2015.
+                                                                 Goldfeld, Z. and Greenewald, K. Gaussian-smooth optimal
+Cuturi, M. Sinkhorn distances: Lightspeed computation              transport: Metric structure and statistical efficiency. arXiv
+  of optimal transport. In Advances in Neural Information          preprint arXiv 2001.09206, 2020.
+  Processing Systems, pp. 2292–2300, 2013.
+                                                                 Hirt, M. and Dellaportas, P. Scalable Bayesian learning
+Cuturi, M. and Doucet, A. Fast computation of Wasserstein          for state space models using variational inference with
+  barycenters. In International Conference on Machine              SMC samplers. In International Conference on Artificial
+  Learning, pp. 685–693, 2014.                                     Intelligence and Statistics, pp. 76–86, 2019.
+DeJong, D. N., Liesenfeld, R., Moura, G. V., Richard, J.-F.,     Jonschkowski, R., Rastogi, D., and Brock, O. Differentiable
+  and Dharmarajan, H. Efficient likelihood evaluation of           particle filters: End-to-end learning with algorithmic pri-
+  state-space representations. Review of Economic Studies,         ors. In Proceedings of Robotics: Science and Systems,
+  80(2):538–567, 2013.                                             2018.
+                                                Differentiable Particle Filtering
+
+Kantas, N., Doucet, A., Singh, S. S., Maciejowski, J., and        Malik, S. and Pitt, M. K. Particle filters for continuous like-
+  Chopin, N. On particle methods for parameter estimation          lihood evaluation and maximisation. Journal of Econo-
+  in state-space models. Statistical Science, 30(3):328–351,       metrics, 165(2):190–209, 2011.
+  2015.
+                                                                  Murray, L. M., Jones, E. M., and Parslow, J. On disturbance
+Karkus, P., Hsu, D., and Lee, W. S. Particle filter networks       state-space models and the particle marginal Metropolis–
+  with application to visual localization. In Conference on        Hastings sampler. SIAM/ASA Journal on Uncertainty
+  Robot Learning, 2018.                                            Quantification, 1(1):494–521, 2013.
+Kingma, D. P. and Welling, M. Auto-encoding variational           Myers, A., Thiery, A. H., Wang, K., and Bui-Thanh, T.
+  Bayes. In International Conference on Learning Repre-            Sequential ensemble transform for Bayesian inverse prob-
+  sentations, 2014.                                                lems. Journal of Computational Physics, 427:110055,
+                                                                   2021.
+Kitagawa, G. and Gersch, W. Smoothness Priors Analysis
+  of Time Series, volume 116. Springer Science & Business         Naesseth, C. A., Linderman, S. W., Ranganath, R., and Blei,
+  Media, 1996.                                                      D. M. Variational sequential Monte Carlo. In Interna-
+Klaas, M., De Freitas, N., and Doucet, A. Toward practical          tional Conference on Artificial Intelligence and Statistics,
+  N 2 Monte Carlo: the marginal particle filter. Uncertainty        2018.
+  in Artificial Intelligence, 2005.                               Peyré, G. and Cuturi, M. Computational optimal transport.
+Kloss, A., Martius, G., and Bohg, J. How to train your              Foundations and Trends R in Machine Learning, 11(5-6):
+  differentiable filter. arXiv preprint arXiv:2012.14313,           355–607, 2019.
+  2020.                                                           Rangapuram, S. S., Seeger, M. W., Gasthaus, J., Stella,
+Krishnan, R. G., Shalit, U., and Sontag, D. Structured in-          L., Wang, Y., and Januschowski, T. Deep state space
+  ference networks for nonlinear state space models. In             models for time series forecasting. In Advances in Neural
+  AAAI Conference on Artificial Intelligence, pp. 2101–             Information Processing Systems, pp. 7785–7794, 2018.
+  2109, 2017.
+                                                                  Reich, S. A nonparametric ensemble transform method for
+Le, T. A., Igl, M., Rainforth, T., Jin, T., and Wood, F. Auto-      Bayesian inference. SIAM Journal on Scientific Comput-
+  encoding sequential Monte Carlo. In International Con-            ing, 35(4):A2013–A2024, 2013.
+  ference on Learning Representations, 2018.
+                                                                  Scetbon, M. and Cuturi, M. Linear time Sinkhorn diver-
+Lee, A. Towards smooth particle filters for likelihood esti-        gences using positive features. In Advances in Neural
+  mation with multivariate latent variables. Master’s thesis,       Information Processing Systems, 2020.
+  University of British Columbia, 2008.
+                                                                  Seguy, V., Damodaran, B. B., Flamary, R., Courty, N., Ro-
+Li, W. and Nochetto, R. H. Quantitative stability and error         let, A., and Blondel, M. Large-scale optimal transport
+  estimates for optimal transport plans. IMA Journal of             and mapping estimation. In International Conference on
+  Numerical Analysis, 2021.                                         Learning Representations, 2018.
+
+Lindsten, F. and Schön, T. B. Backward simulation methods        Thrun, S., Burgard, W., and Fox, D. Probabilistic Robotics.
+  for Monte Carlo statistical inference. Foundations and            MIT Press, 2005.
+  Trends R in Machine Learning, 6(1):1–143, 2013.
+                                                                  van de Meent, J.-W., Paige, B., Hongseok, Y., and Wood,
+Ma, X., Karkus, P., Hsu, D., and Lee, W. S. Particle fil-           F. An introduction to probabilistic programming. arXiv
+ ter recurrent neural networks. In AAAI Conference on               preprint arXiv:1809.10756, 2018.
+ Artificial Intelligence, 2020a.
+                                                                  Villani, C. Optimal Transport: Old and New, volume 338.
+Ma, X., Karkus, P., Ye, N., Hsu, D., and Lee, W. S. Dis-            Springer Science & Business Media, 2008.
+ criminative particle filter reinforcement learning for com-
+ plex partial observations. In International Conference on        Weed, J. An explicit analysis of the entropic penalty in linear
+ Learning Representations, 2020b.                                  programming. In Proceedings of the 31st Conference On
+                                                                   Learning Theory, 2018.
+Maddison, C. J., Lawson, D., Tucker, G., Heess, N.,
+ Norouzi, M., Mnih, A., Doucet, A., and Teh, Y. W. Filter-        Wen, H., Chen, X., Papagiannis, G., Hu, C., and Li, Y. End-
+ ing variational objectives. In Advances in Neural Infor-          to-end semi-supervised learning for differentiable particle
+ mation Processing Systems, 2017.                                  filters. arXiv preprint arXiv:2011.05748, 2020.
+                                             Differentiable Particle Filtering
+
+Williams, R. J. Simple statistical gradient-following algo-
+ rithms for connectionist reinforcement learning. Machine
+ Learning, 8(3-4):229–256, 1992.
+Zhu, M., Murphy, K., and Jonschkowski, R. Towards dif-
+  ferentiable resampling. arXiv preprint arXiv:2004.11938,
+  2020.
+

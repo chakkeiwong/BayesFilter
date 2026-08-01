@@ -1,0 +1,1560 @@
+{
+  "accuracy": {
+    "learned_residual": {
+      "passed": true,
+      "sampler_validity": true,
+      "truth_status": "PASS",
+      "truth_tail": {
+        "definition": "F=(n_less+0.5*n_equal+0.5)/(N+1); p_truth=2*min(F,1-F)",
+        "marginal_parameters": [],
+        "minimum_p_truth": 0.19270182454386403,
+        "passed": true,
+        "rows": [
+          {
+            "p_truth": 0.2196950762309422,
+            "parameter": "r",
+            "status": "PASS",
+            "truth": 0.6
+          },
+          {
+            "p_truth": 0.19270182454386403,
+            "parameter": "K",
+            "status": "PASS",
+            "truth": 114.0
+          },
+          {
+            "p_truth": 0.9495126218445389,
+            "parameter": "a",
+            "status": "PASS",
+            "truth": 25.0
+          },
+          {
+            "p_truth": 0.7115721069732568,
+            "parameter": "s",
+            "status": "PASS",
+            "truth": 0.3
+          },
+          {
+            "p_truth": 0.8510372406898274,
+            "parameter": "u",
+            "status": "PASS",
+            "truth": 0.5
+          },
+          {
+            "p_truth": 0.9565108722819295,
+            "parameter": "v",
+            "status": "PASS",
+            "truth": 0.5
+          }
+        ],
+        "severe_parameters": []
+      }
+    },
+    "true_gradient": {
+      "passed": true,
+      "sampler_validity": true,
+      "truth_status": "PASS",
+      "truth_tail": {
+        "definition": "F=(n_less+0.5*n_equal+0.5)/(N+1); p_truth=2*min(F,1-F)",
+        "marginal_parameters": [],
+        "minimum_p_truth": 0.1937015746063484,
+        "passed": true,
+        "rows": [
+          {
+            "p_truth": 0.22019495126218436,
+            "parameter": "r",
+            "status": "PASS",
+            "truth": 0.6
+          },
+          {
+            "p_truth": 0.1937015746063484,
+            "parameter": "K",
+            "status": "PASS",
+            "truth": 114.0
+          },
+          {
+            "p_truth": 0.9635091227193202,
+            "parameter": "a",
+            "status": "PASS",
+            "truth": 25.0
+          },
+          {
+            "p_truth": 0.7105723569107723,
+            "parameter": "s",
+            "status": "PASS",
+            "truth": 0.3
+          },
+          {
+            "p_truth": 0.8620344913771558,
+            "parameter": "u",
+            "status": "PASS",
+            "truth": 0.5
+          },
+          {
+            "p_truth": 0.9670082479380155,
+            "parameter": "v",
+            "status": "PASS",
+            "truth": 0.5
+          }
+        ],
+        "severe_parameters": []
+      }
+    }
+  },
+  "cell": "PP-SGQF",
+  "completed": true,
+  "cost_ledger": {
+    "break_even_transition_batches": 0,
+    "common_neutra_chart_training_seconds": "not_reconstructed",
+    "efficiency_status": {
+      "learned_residual": "available",
+      "true_gradient": "available"
+    },
+    "from_scratch_total_seconds": null,
+    "from_scratch_total_status": "unsupported_missing_common_chart_training_cost",
+    "hnn_preparation_seconds": 54.90091730398126,
+    "hnn_specific_overhead_seconds": 0.0,
+    "matched_saving_seconds_per_transition_batch": 0.362148105115979,
+    "minimum_bulk_ess": {
+      "learned_residual": 6981.53315697306,
+      "true_gradient": 6966.231012513808
+    },
+    "preparation_break_even_transition_batches": 152,
+    "reuse_campaign_break_even_transition_batches": 0,
+    "reuse_campaign_pre_sampling_delta_seconds": -1259.5348821509979,
+    "reuse_scenario_seconds": {
+      "learned_residual": 187.76981520693516,
+      "true_gradient": 2537.6955238979426
+    },
+    "sampling_warm_seconds": {
+      "learned_residual": 46.47816449397942,
+      "true_gradient": 1136.868991033989
+    },
+    "schema": "bayesfilter.hnn_neutra_cost_ledger.v1",
+    "supervision_generation_seconds": 44.91889666899806,
+    "timing_synchronized": true,
+    "training_grid_wall_seconds": 9.9820206349832,
+    "training_optimization_only": {
+      "final_seconds": 3.3254625520203263,
+      "screen_seconds": 5.182633472955786
+    },
+    "tuned_seconds_per_minimum_bulk_ess": {
+      "learned_residual": 0.0066573005454479105,
+      "true_gradient": 0.16319714189663984
+    },
+    "tuning_cold_seconds": {
+      "learned_residual": 86.39073340897448,
+      "true_gradient": 1400.8265328639536
+    }
+  },
+  "decision": "ONE_SEED_ACCURACY_AND_DESCRIPTIVE_PERFORMANCE_PASS",
+  "derived_artifact_repairs": [
+    {
+      "implementation": "bayesfilter/testing/hnn_neutra_exact_comparison_tf.py::cost_ledger",
+      "previous_cost_ledger_sha256": "08f9db5a7c6a0a26229f26f8ddcd145fa598c26c1d31d9782b6990a2b971147a",
+      "reason": "separate HNN preparation break-even from independently tuned reuse-campaign break-even",
+      "refreshed_cost_ledger_sha256": "1ef2c621663766e364e2e7ef0b3ea9a228390765bdf9b2730952cf17d9a38147",
+      "repaired_at_utc": "2026-07-18T00:38:28.713212+00:00",
+      "schema": "bayesfilter.hnn_neutra_derived_artifact_repair.v1",
+      "scope": "derived_cost_ledger_only_no_chain_or_timing_rerun"
+    }
+  ],
+  "direct_posterior_agreement": {
+    "claim_scope": "same-filter physical posterior mean agreement only",
+    "criterion": "interval overlap and pooled-MCSE z_MC; fail >=3, marginal >1.96",
+    "passed": true,
+    "rows": [
+      {
+        "absolute_mean_difference": 0.0002955034438473225,
+        "exact_interval_95": [
+          0.4420733709056965,
+          0.6461936706875278
+        ],
+        "exact_mcse": 0.0006285038579957276,
+        "exact_mean": 0.5353551930080045,
+        "intervals_overlap": true,
+        "learned_interval_95": [
+          0.4427279000761977,
+          0.6430813999620761
+        ],
+        "learned_mcse": 0.0006179822136822142,
+        "learned_mean": 0.5350596895641572,
+        "parameter": "r",
+        "status": "PASS",
+        "z_mc": 0.3352545208369419
+      },
+      {
+        "absolute_mean_difference": 0.0030397601148308695,
+        "exact_interval_95": [
+          113.36031013892165,
+          117.15734615284947
+        ],
+        "exact_mcse": 0.01033352146767816,
+        "exact_mean": 115.20768953856651,
+        "intervals_overlap": true,
+        "learned_interval_95": [
+          113.36756439383299,
+          117.15611926610231
+        ],
+        "learned_mcse": 0.011040532940987858,
+        "learned_mean": 115.21072929868134,
+        "parameter": "K",
+        "status": "PASS",
+        "z_mc": 0.20101568052453922
+      },
+      {
+        "absolute_mean_difference": 0.01565458408890663,
+        "exact_interval_95": [
+          20.232124667593634,
+          29.744515050428895
+        ],
+        "exact_mcse": 0.033120683741538974,
+        "exact_mean": 25.094927595060962,
+        "intervals_overlap": true,
+        "learned_interval_95": [
+          20.21984892478514,
+          29.74918249733442
+        ],
+        "learned_mcse": 0.03387190641567795,
+        "learned_mean": 25.11058217914987,
+        "parameter": "a",
+        "status": "PASS",
+        "z_mc": 0.33044749133673446
+      },
+      {
+        "absolute_mean_difference": 0.0013597017423765956,
+        "exact_interval_95": [
+          0.10548856007743379,
+          0.739429904383902
+        ],
+        "exact_mcse": 0.0019907325355401854,
+        "exact_mean": 0.28664153037543366,
+        "intervals_overlap": true,
+        "learned_interval_95": [
+          0.10552446587952868,
+          0.7298710365884513
+        ],
+        "learned_mcse": 0.001961974921247837,
+        "learned_mean": 0.28528182863305707,
+        "parameter": "s",
+        "status": "PASS",
+        "z_mc": 0.48646599234068116
+      },
+      {
+        "absolute_mean_difference": 0.0024940952843535147,
+        "exact_interval_95": [
+          0.019586183365685274,
+          0.9649269329814902
+        ],
+        "exact_mcse": 0.003158814697543384,
+        "exact_mean": 0.4523681641989468,
+        "intervals_overlap": true,
+        "learned_interval_95": [
+          0.021431837245558357,
+          0.9648515896914052
+        ],
+        "learned_mcse": 0.003248005485248685,
+        "learned_mean": 0.4498740689145933,
+        "parameter": "u",
+        "status": "PASS",
+        "z_mc": 0.5504823829998499
+      },
+      {
+        "absolute_mean_difference": 0.0028274394933888725,
+        "exact_interval_95": [
+          0.09471791060590627,
+          0.94286458242582
+        ],
+        "exact_mcse": 0.002894738104356589,
+        "exact_mean": 0.4986967533991634,
+        "intervals_overlap": true,
+        "learned_interval_95": [
+          0.09813263788309866,
+          0.9383499523762092
+        ],
+        "learned_mcse": 0.0028378629658271934,
+        "learned_mean": 0.49586931390577454,
+        "parameter": "v",
+        "status": "PASS",
+        "z_mc": 0.6974855648084922
+      }
+    ],
+    "schema": "bayesfilter.hnn_neutra_direct_posterior_agreement.v1",
+    "second_seed_required": false,
+    "status": "PASS"
+  },
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": "all one-seed runtime and ESS differences",
+    "hard_veto_screen": "passed",
+    "next_evidence_needed": "conditional second seed only for marginal direct or truth agreement",
+    "statistically_supported_ranking": false
+  },
+  "matched_mechanics": {
+    "alternating_orders": [
+      [
+        "learned_residual",
+        "true_gradient"
+      ],
+      [
+        "true_gradient",
+        "learned_residual"
+      ],
+      [
+        "learned_residual",
+        "true_gradient"
+      ]
+    ],
+    "compile_probe_seconds": {
+      "learned_residual": 12.224041575973388,
+      "true_gradient": 208.7982107650023
+    },
+    "learned_faster": true,
+    "mechanics": {
+      "chain_count": 4,
+      "endpoint_batch_invocations": 500,
+      "endpoint_scalar_values": 2000,
+      "force_batch_invocations": 5500,
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260718,
+        84001
+      ],
+      "step_size": 0.2,
+      "transitions_per_chain": 500
+    },
+    "passed": true,
+    "role": "mechanism_cost_only_not_convergence_evidence",
+    "schema": "bayesfilter.hnn_neutra_matched_mechanics.v1",
+    "seconds_per_transition_batch": {
+      "learned_residual": 0.014546837901929394,
+      "true_gradient": 0.37669494301790835
+    },
+    "speed_ratio_exact_over_learned": 25.895314538972496,
+    "timing_synchronized": true,
+    "warm_median_seconds": {
+      "learned_residual": 7.273418950964697,
+      "true_gradient": 188.3474715089542
+    },
+    "warm_repeats_seconds": {
+      "learned_residual": [
+        8.49859488295624,
+        7.273418950964697,
+        7.218322813976556
+      ],
+      "true_gradient": [
+        187.6300414489815,
+        188.3474715089542,
+        189.87960626598215
+      ]
+    }
+  },
+  "nonclaims": [
+    "one fixture and one seed per arm",
+    "no universal superiority or default-readiness claim",
+    "filter-defined posterior accuracy is not latent-model exactness"
+  ],
+  "passed": true,
+  "performance_passed": true,
+  "primary_arm_set": [
+    "learned_residual",
+    "true_gradient"
+  ],
+  "run_manifest": {
+    "canary": false,
+    "cell": "PP-SGQF",
+    "command": "docs/benchmarks/run_hnn_neutra_exact_comparison_2026_07_18.py --cell PP-SGQF --output-root docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01",
+    "device": "/GPU:0",
+    "dtype": "float64",
+    "environment": "tf-gpu",
+    "git_commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01",
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "plan_file": "docs/plans/bayesfilter-hnn-neutra-exact-gradient-comparison-repair-plan-2026-07-18.md",
+    "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/result.json",
+    "schema": "bayesfilter.hnn_neutra_exact_comparison_manifest.v1",
+    "started_at_utc": "2026-07-17T22:32:39.539767+00:00",
+    "tensorflow_probability_version": "0.25.0",
+    "tensorflow_version": "2.19.1",
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 3985.5999504550127
+  },
+  "runs": {
+    "learned_residual": {
+      "acceptance_rate": 0.969,
+      "archives": {
+        "retained_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:11d87147b93c99f3716a5c4eb1bdd6c690db9eb8bde898b13e15d10d09f4cb3b",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "14239360f80ff91786bbcd2df148527eade7d665125a5db658aadd77847c3375",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/learned_residual/samples/retained_raw.tftensor"
+        },
+        "retained_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:404c84bca7c9f750df036dc4d9abe2a170148ae71fc8425a2609c4273bbe5ae1",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "b4580b9ec0970b697034fef570cb61131ddc5557759624789627f33b83033d66",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/learned_residual/samples/retained_trace.tftensor"
+        },
+        "retained_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:f60db6043db7d2f77beb237e15a8b95e1d412fbe084d9890fbf56cbd7472bb65",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "987e904742a6eb7a39a5d8a8109bcd38e31683c63740e6ed5948e67281b74e6a",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/learned_residual/samples/retained_z.tftensor"
+        },
+        "warmup_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:0ba9d5caaaf058710c5ce036015c330d324613435e7c7c6283d45a3817f06e8e",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "43474f846509c79954cc30c2eeafc2577671eec8106781adbd1325cc737715dd",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/learned_residual/samples/warmup_raw.tftensor"
+        },
+        "warmup_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:488bf97017fc13652644bde613e6c2998344e5cdbfb290fc07115d245ed6acd5",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "8c062a24ae929c3a2d0abb5afc645e024c5afe0dcdf3c7cdb3e8065085bedb07",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/learned_residual/samples/warmup_trace.tftensor"
+        },
+        "warmup_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:784e2fbe609ab1dae26efe612908eed4db9c7f90373ef39d9be3f48571133871",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "learned_residual",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "55737742864ab2adf68d5790c867854d5716cc1e0e18a3b6ab0f633ab361db2d",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/learned_residual/samples/warmup_z.tftensor"
+        }
+      },
+      "arm_id": "learned_residual",
+      "compile_included_in_sampling_execution_seconds": false,
+      "compile_probe_seconds": 19.686687878973316,
+      "elapsed_seconds": 70.02481198497117,
+      "endpoint_batch_invocations": 3000,
+      "endpoint_scalar_values": 12000,
+      "force_batch_invocations": 33000,
+      "full_energy_identity_max_error": 0.0,
+      "hard_vetoes": [],
+      "num_leapfrog_steps": 10,
+      "passed": true,
+      "retained_checks": [
+        {
+          "full_convergence": {
+            "chain_count": 4,
+            "definitions": {
+              "autocorrelation_truncation": "TFP initial positive pairs",
+              "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+              "quantile_interpolation": "linear",
+              "rank_transform": "Blom average-rank normal score",
+              "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+            },
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_rhat": 1.0054709790326373,
+            "min_bulk_ess": 6981.53315697306,
+            "min_tail_ess": 3080.3073073603864,
+            "nonclaims": [
+              "all-parameter HMC convergence screen only",
+              "no posterior recovery claim",
+              "no sampler superiority claim",
+              "no production or default readiness claim"
+            ],
+            "parameter_count": 6,
+            "parameter_diagnostics": [
+              {
+                "bulk_ess": 7083.20618549242,
+                "folded_rank_normalized_split_rhat": 1.0054709790326373,
+                "lower_tail_ess": 3900.8317586105377,
+                "parameter": "r_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9997962924384308,
+                "rhat": 1.0054709790326373,
+                "tail_ess": 3080.3073073603864,
+                "upper_tail_ess": 3080.3073073603864
+              },
+              {
+                "bulk_ess": 7525.166100289979,
+                "folded_rank_normalized_split_rhat": 1.0007624471507486,
+                "lower_tail_ess": 3939.57718809253,
+                "parameter": "K_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9990896517577453,
+                "rhat": 1.0007624471507486,
+                "tail_ess": 3732.322347804874,
+                "upper_tail_ess": 3732.322347804874
+              },
+              {
+                "bulk_ess": 7177.997877441627,
+                "folded_rank_normalized_split_rhat": 1.0017059689140717,
+                "lower_tail_ess": 3956.5334191843162,
+                "parameter": "a_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9989002094908966,
+                "rhat": 1.0017059689140717,
+                "tail_ess": 3956.5334191843162,
+                "upper_tail_ess": 4145.34920595561
+              },
+              {
+                "bulk_ess": 6981.53315697306,
+                "folded_rank_normalized_split_rhat": 1.0033470521050056,
+                "lower_tail_ess": 3909.944451886073,
+                "parameter": "s_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0004868062242165,
+                "rhat": 1.0033470521050056,
+                "tail_ess": 3876.213283334322,
+                "upper_tail_ess": 3876.213283334322
+              },
+              {
+                "bulk_ess": 7593.972694132509,
+                "folded_rank_normalized_split_rhat": 0.9998929443705217,
+                "lower_tail_ess": 4215.391865173958,
+                "parameter": "u_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0006374113789671,
+                "rhat": 1.0006374113789671,
+                "tail_ess": 3975.7685292099645,
+                "upper_tail_ess": 3975.7685292099645
+              },
+              {
+                "bulk_ess": 7190.416449547509,
+                "folded_rank_normalized_split_rhat": 0.9999270099545877,
+                "lower_tail_ess": 3385.515591162099,
+                "parameter": "v_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0004573067598754,
+                "rhat": 1.0004573067598754,
+                "tail_ess": 3385.515591162099,
+                "upper_tail_ess": 3577.8629547441305
+              }
+            ],
+            "passed": true,
+            "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500,
+            "thresholds": {
+              "bulk_ess_min": 1000.0,
+              "rhat_max": 1.01,
+              "tail_ess_min": 400.0
+            }
+          },
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 1.08597757320047,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "passed": true,
+          "results_per_chain": 1000
+        }
+      ],
+      "retained_results_per_chain": 1000,
+      "sampling_execution_seconds": 46.47816449397942,
+      "step_size": 0.2,
+      "timing_scope": "synchronized_warm_chunk_execution",
+      "timing_synchronized": true,
+      "warmup_checks": [
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 1.6003803809252908,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 6,
+            "folded_rank_normalized_split_rhat": [
+              1.002912896960719,
+              1.0036033800113482,
+              1.0005035207979978,
+              1.0013143960168813,
+              1.002052567315948,
+              1.002029833347306
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0036033800113482,
+            "max_folded_rank_normalized_split_rhat": 1.0036033800113482,
+            "max_rank_normalized_split_rhat": 1.0011066424010826,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 6,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              0.9986793658484959,
+              0.999068015585089,
+              0.9991905683615304,
+              0.9993842836438734,
+              1.0002491256868666,
+              1.0011066424010826
+            ],
+            "rhat": [
+              1.002912896960719,
+              1.0036033800113482,
+              1.0005035207979978,
+              1.0013143960168813,
+              1.002052567315948,
+              1.002029833347306
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": false,
+          "results_per_chain": 1000
+        },
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 2.9662678769436504,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 6,
+            "folded_rank_normalized_split_rhat": [
+              1.0014865448925139,
+              1.0011902862403241,
+              0.999053918464205,
+              1.0019467370281054,
+              0.9988775217978273,
+              1.0004392248619134
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0019467370281054,
+            "max_folded_rank_normalized_split_rhat": 1.0019467370281054,
+            "max_rank_normalized_split_rhat": 1.0000263383336097,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 6,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              0.9988986019772349,
+              0.9989154869889404,
+              0.9994193923037514,
+              0.9998676649677715,
+              0.9991759578856686,
+              1.0000263383336097
+            ],
+            "rhat": [
+              1.0014865448925139,
+              1.0011902862403241,
+              0.9994193923037514,
+              1.0019467370281054,
+              0.9991759578856686,
+              1.0004392248619134
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": true,
+          "results_per_chain": 2000
+        }
+      ],
+      "warmup_results_per_chain": 2000
+    },
+    "true_gradient": {
+      "acceptance_rate": 0.9905,
+      "archives": {
+        "retained_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:a563ee619033f9397c1fed64995b21f2388b6526c49e7c0eb14a09565b11203e",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "615728ed010f9d97a89e05293e80da0b160db9f991f10cc08878f571ecb5efc0",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/true_gradient/samples/retained_raw.tftensor"
+        },
+        "retained_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:097d4095a781a7df3ce6cf364a11146f747db2270e2b9ab75edc4aaa9deccb8f",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "f2f0e29449b81f277efa7ca30a438062e62b93bc4ccda6d341beae19d68c41f8",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/true_gradient/samples/retained_trace.tftensor"
+        },
+        "retained_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:4cee1daa53590f9b825945dd1e1da7916763ae872a7e4f3e3d81f3eafa057012",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "stage": "retained"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            1000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "5fee9f1ee2368fab858cf701600cb181d8af4c1f4d3ff5d8ad545d8297674552",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/true_gradient/samples/retained_z.tftensor"
+        },
+        "warmup_raw": {
+          "all_finite": true,
+          "artifact_hash": "sha256:ac588b280ab0c6129aa984d060e0bb90c808f59926438595485e2790f927ff96",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "ee92f323535692d705b1a1d5624525fcd9ddfff6c318c60b9402e0719201aba4",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/true_gradient/samples/warmup_raw.tftensor"
+        },
+        "warmup_trace": {
+          "all_finite": true,
+          "artifact_hash": "sha256:5f5d96e66db53457149879d682c507a6814ae0d24b2b6ff850b7706b1b374d17",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "columns": [
+              "initial_potential",
+              "final_potential",
+              "initial_kinetic",
+              "final_kinetic",
+              "delta_h",
+              "log_acceptance_ratio"
+            ],
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "84cb0b8cb4270f377fafa35d108c467c004268f6e4f2260bd7e379fdd15798c4",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/true_gradient/samples/warmup_trace.tftensor"
+        },
+        "warmup_z": {
+          "all_finite": true,
+          "artifact_hash": "sha256:0114d58774632b83d118e60d151d14d4efe05f635e5c886d357b0b5691b89390",
+          "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+          "dtype": "float64",
+          "metadata": {
+            "arm": "true_gradient",
+            "stage": "warmup"
+          },
+          "schema": "bayesfilter.lgssm_neutra_tensor_archive.v1",
+          "shape": [
+            2000,
+            4,
+            6
+          ],
+          "tensor_file_sha256": "b483a67a1e5577844e0aaadaf56f87b3f2a055b881de6b2443d96dc637bff069",
+          "tensor_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/sampling/true_gradient/samples/warmup_z.tftensor"
+        }
+      },
+      "arm_id": "true_gradient",
+      "compile_included_in_sampling_execution_seconds": false,
+      "compile_probe_seconds": 392.928508676996,
+      "elapsed_seconds": 1532.9582414599718,
+      "endpoint_batch_invocations": 3000,
+      "endpoint_scalar_values": 12000,
+      "force_batch_invocations": 33000,
+      "full_energy_identity_max_error": 0.0,
+      "hard_vetoes": [],
+      "num_leapfrog_steps": 10,
+      "passed": true,
+      "retained_checks": [
+        {
+          "full_convergence": {
+            "chain_count": 4,
+            "definitions": {
+              "autocorrelation_truncation": "TFP initial positive pairs",
+              "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+              "quantile_interpolation": "linear",
+              "rank_transform": "Blom average-rank normal score",
+              "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+            },
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_rhat": 1.00390702235288,
+            "min_bulk_ess": 6966.231012513808,
+            "min_tail_ess": 3172.341552464548,
+            "nonclaims": [
+              "all-parameter HMC convergence screen only",
+              "no posterior recovery claim",
+              "no sampler superiority claim",
+              "no production or default readiness claim"
+            ],
+            "parameter_count": 6,
+            "parameter_diagnostics": [
+              {
+                "bulk_ess": 6966.231012513808,
+                "folded_rank_normalized_split_rhat": 1.00390702235288,
+                "lower_tail_ess": 4265.552158898156,
+                "parameter": "r_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0001893676762503,
+                "rhat": 1.00390702235288,
+                "tail_ess": 3613.901509966124,
+                "upper_tail_ess": 3613.901509966124
+              },
+              {
+                "bulk_ess": 8649.228064961977,
+                "folded_rank_normalized_split_rhat": 1.0011756510388685,
+                "lower_tail_ess": 4113.34062735421,
+                "parameter": "K_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9989411049283395,
+                "rhat": 1.0011756510388685,
+                "tail_ess": 3950.939922192857,
+                "upper_tail_ess": 3950.939922192857
+              },
+              {
+                "bulk_ess": 7457.509698767241,
+                "folded_rank_normalized_split_rhat": 1.0017513795869242,
+                "lower_tail_ess": 4362.522417293615,
+                "parameter": "a_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9989947644340414,
+                "rhat": 1.0017513795869242,
+                "tail_ess": 4188.574942828131,
+                "upper_tail_ess": 4188.574942828131
+              },
+              {
+                "bulk_ess": 7080.457093627247,
+                "folded_rank_normalized_split_rhat": 1.002597277764461,
+                "lower_tail_ess": 3991.968871154487,
+                "parameter": "s_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0006083645388615,
+                "rhat": 1.002597277764461,
+                "tail_ess": 3172.341552464548,
+                "upper_tail_ess": 3172.341552464548
+              },
+              {
+                "bulk_ess": 8085.567121047481,
+                "folded_rank_normalized_split_rhat": 1.0003703076763362,
+                "lower_tail_ess": 4364.557494304573,
+                "parameter": "u_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9999811466705074,
+                "rhat": 1.0003703076763362,
+                "tail_ess": 3753.5431424764356,
+                "upper_tail_ess": 3753.5431424764356
+              },
+              {
+                "bulk_ess": 7027.330478781851,
+                "folded_rank_normalized_split_rhat": 1.0004815656523962,
+                "lower_tail_ess": 3617.2470936594123,
+                "parameter": "v_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.000093607203027,
+                "rhat": 1.0004815656523962,
+                "tail_ess": 3471.709221179603,
+                "upper_tail_ess": 3471.709221179603
+              }
+            ],
+            "passed": true,
+            "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500,
+            "thresholds": {
+              "bulk_ess_min": 1000.0,
+              "rhat_max": 1.01,
+              "tail_ess_min": 400.0
+            }
+          },
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 0.2433846444757286,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "passed": true,
+          "results_per_chain": 1000
+        }
+      ],
+      "retained_results_per_chain": 1000,
+      "sampling_execution_seconds": 1136.868991033989,
+      "step_size": 0.2,
+      "timing_scope": "synchronized_warm_chunk_execution",
+      "timing_synchronized": true,
+      "warmup_checks": [
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 0.15906638016497165,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 6,
+            "folded_rank_normalized_split_rhat": [
+              1.0019377075459661,
+              1.0032420597015441,
+              0.9999944521342966,
+              1.0008744757524963,
+              1.0023537074964206,
+              1.0035226802852872
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0035226802852872,
+            "max_folded_rank_normalized_split_rhat": 1.0035226802852872,
+            "max_rank_normalized_split_rhat": 0.9999604867097497,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 6,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              0.998319452695097,
+              0.9988198813960775,
+              0.99872710341992,
+              0.9987190559668359,
+              0.9995116027593506,
+              0.9999604867097497
+            ],
+            "rhat": [
+              1.0019377075459661,
+              1.0032420597015441,
+              0.9999944521342966,
+              1.0008744757524963,
+              1.0023537074964206,
+              1.0035226802852872
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": false,
+          "results_per_chain": 1000
+        },
+        {
+          "health": {
+            "all_finite": true,
+            "energy_error_veto_clear": true,
+            "maximum_absolute_delta_h": 0.16171373297837732,
+            "one_new_endpoint_call_per_transition": true,
+            "passed": true
+          },
+          "modern_rhat": {
+            "chain_count": 4,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 1000,
+            "finite_rhat_count": 6,
+            "folded_rank_normalized_split_rhat": [
+              1.0007954333748228,
+              1.0006577068774563,
+              0.9993494566486033,
+              1.0001147364635539,
+              0.9989793925712801,
+              0.999389562044536
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.0007954333748228,
+            "max_folded_rank_normalized_split_rhat": 1.0007954333748228,
+            "max_rank_normalized_split_rhat": 0.9997868186242719,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 6,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              0.9992529279957935,
+              0.9994669622768325,
+              0.9996309746742941,
+              0.9986531601963938,
+              0.9985704261194205,
+              0.9997868186242719
+            ],
+            "rhat": [
+              1.0007954333748228,
+              1.0006577068774563,
+              0.9996309746742941,
+              1.0001147364635539,
+              0.9989793925712801,
+              0.9997868186242719
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 1.05,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 500
+          },
+          "passed": true,
+          "results_per_chain": 2000
+        }
+      ],
+      "warmup_results_per_chain": 2000
+    }
+  },
+  "schema": "bayesfilter.hnn_neutra_exact_comparison_result.v1",
+  "second_seed_required": false,
+  "structural_contract": null,
+  "supervision": {
+    "disjoint_archive_slices": true,
+    "heldout_rows": 1024,
+    "parity": {
+      "absolute_tolerance": 2e-08,
+      "endpoint_uses_true_gradient": false,
+      "maximum_absolute_error": 0.0,
+      "passed": true,
+      "point_count": 8,
+      "schema": "bayesfilter.neural_force_value_only_endpoint_parity.v1"
+    },
+    "supervision_generation_seconds": 44.91889666899806,
+    "timing_synchronized": true,
+    "train_rows": 2048
+  },
+  "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+  "training": {
+    "cost": {
+      "final_optimization_seconds": 3.3254625520203263,
+      "grid_wall_seconds": 9.9820206349832,
+      "optimization_timers_exclude_supervision_generation": true,
+      "screen_optimization_seconds": 5.182633472955786,
+      "timing_synchronized": true
+    },
+    "final_metrics": {
+      "heldout": {
+        "centered_standardized_potential_rmse": 0.06539640527840819,
+        "mean_force_cosine": 0.9981984958395451,
+        "predictions_all_finite": true,
+        "role": "nomination_or_veto_only",
+        "row_count": 1024,
+        "standardized_force_rmse": 0.09016188407810015
+      },
+      "train": {
+        "centered_standardized_potential_rmse": 0.02468843081774668,
+        "mean_force_cosine": 0.9990876105852127,
+        "predictions_all_finite": true,
+        "role": "nomination_or_veto_only",
+        "row_count": 2048,
+        "standardized_force_rmse": 0.05055343225156216
+      }
+    },
+    "final_result_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/force-training/final/w24_lr0.005_b256/result.json",
+    "screen": [
+      {
+        "batch_size": 128,
+        "elapsed_seconds": 1.1929876619833522,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.19747233488477453,
+          "mean_force_cosine": 0.9895332813780087,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.20803864956681625
+        },
+        "layers": [
+          12,
+          12
+        ],
+        "learning_rate": 0.001,
+        "recipe_id": "w12_lr0.001_b128",
+        "result_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/force-training/screen/w12_lr0.001_b128/result.json"
+      },
+      {
+        "batch_size": 128,
+        "elapsed_seconds": 1.0910879739676602,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.16484224205997977,
+          "mean_force_cosine": 0.9927620425143415,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.17725938569907837
+        },
+        "layers": [
+          12,
+          12
+        ],
+        "learning_rate": 0.005,
+        "recipe_id": "w12_lr0.005_b128",
+        "result_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/force-training/screen/w12_lr0.005_b128/result.json"
+      },
+      {
+        "batch_size": 256,
+        "elapsed_seconds": 1.5805009989999235,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.18787852881510753,
+          "mean_force_cosine": 0.9919513063030748,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.19308368215444718
+        },
+        "layers": [
+          24,
+          24
+        ],
+        "learning_rate": 0.001,
+        "recipe_id": "w24_lr0.001_b256",
+        "result_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/force-training/screen/w24_lr0.001_b256/result.json"
+      },
+      {
+        "batch_size": 256,
+        "elapsed_seconds": 1.3180568380048499,
+        "heldout": {
+          "centered_standardized_potential_rmse": 0.15657212674164148,
+          "mean_force_cosine": 0.9948990052410069,
+          "predictions_all_finite": true,
+          "role": "nomination_or_veto_only",
+          "row_count": 1024,
+          "standardized_force_rmse": 0.15739791218947924
+        },
+        "layers": [
+          24,
+          24
+        ],
+        "learning_rate": 0.005,
+        "recipe_id": "w24_lr0.005_b256",
+        "result_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/force-training/screen/w24_lr0.005_b256/result.json"
+      }
+    ],
+    "selected": {
+      "batch_size": 256,
+      "elapsed_seconds": 1.3180568380048499,
+      "heldout": {
+        "centered_standardized_potential_rmse": 0.15657212674164148,
+        "mean_force_cosine": 0.9948990052410069,
+        "predictions_all_finite": true,
+        "role": "nomination_or_veto_only",
+        "row_count": 1024,
+        "standardized_force_rmse": 0.15739791218947924
+      },
+      "layers": [
+        24,
+        24
+      ],
+      "learning_rate": 0.005,
+      "recipe_id": "w24_lr0.005_b256",
+      "result_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-exact-gradient-comparison-repair-20260718/phase3-serious/PP-SGQF/attempt-01/force-training/screen/w24_lr0.005_b256/result.json"
+    }
+  },
+  "transport_signature": "603a07c420579788e3981aa44dd67892902dc8c32da6ddf7c171918300da6811",
+  "tuning": {
+    "learned_residual": {
+      "rows": [
+        {
+          "acceptance_rate": 0.969,
+          "candidate_id": "eps0.2_l6",
+          "elapsed_seconds": 12.37491258099908,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 1.3529609833562186,
+          "modern_rhat": 1.0274371900126833,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.978,
+          "candidate_id": "eps0.2_l10",
+          "elapsed_seconds": 11.476814125024248,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 2.416643481038802,
+          "modern_rhat": 1.006061533111852,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.9605,
+          "candidate_id": "eps0.4_l6",
+          "elapsed_seconds": 9.970233991974965,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 1.5146696183222543,
+          "modern_rhat": 1.0136840736846449,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.4,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.9475,
+          "candidate_id": "eps0.4_l10",
+          "elapsed_seconds": 10.207288117031567,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 10.593159556165489,
+          "modern_rhat": 1.0072681227352305,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.4,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.9035,
+          "candidate_id": "eps0.6_l6",
+          "elapsed_seconds": 10.897341153991874,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 12.615270201268821,
+          "modern_rhat": 1.181938771183968,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.6,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.9245,
+          "candidate_id": "eps0.6_l10",
+          "elapsed_seconds": 10.632257849967573,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 2.888011622223523,
+          "modern_rhat": 1.105723436260747,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.6,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.813,
+          "candidate_id": "eps0.8_l6",
+          "elapsed_seconds": 10.69251466699643,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 6.015538601445986,
+          "modern_rhat": 1.013780226505377,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.8,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.792,
+          "candidate_id": "eps0.8_l10",
+          "elapsed_seconds": 10.139370922988746,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 8.23852878229874,
+          "modern_rhat": 1.0153326121260717,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.8,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        }
+      ],
+      "selected": {
+        "candidate_id": "eps0.2_l10",
+        "num_leapfrog_steps": 10,
+        "step_size": 0.2
+      }
+    },
+    "true_gradient": {
+      "rows": [
+        {
+          "acceptance_rate": 0.9895,
+          "candidate_id": "eps0.2_l6",
+          "elapsed_seconds": 140.67449106596177,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 0.1507052927687731,
+          "modern_rhat": 1.02411311186521,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.992,
+          "candidate_id": "eps0.2_l10",
+          "elapsed_seconds": 200.4934560310212,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 0.14604593009603484,
+          "modern_rhat": 1.002430227459294,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.2,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.9655,
+          "candidate_id": "eps0.4_l6",
+          "elapsed_seconds": 135.3928039499442,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 0.7164572353981584,
+          "modern_rhat": 1.01957000225561,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.4,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.9655,
+          "candidate_id": "eps0.4_l10",
+          "elapsed_seconds": 213.68580447899876,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 0.5657007321679166,
+          "modern_rhat": 1.0142235271420428,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.4,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.917,
+          "candidate_id": "eps0.6_l6",
+          "elapsed_seconds": 144.1476348550059,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 15.153691941713307,
+          "modern_rhat": 1.0911025349765964,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.6,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.917,
+          "candidate_id": "eps0.6_l10",
+          "elapsed_seconds": 214.13978344399948,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 2.4971991167708207,
+          "modern_rhat": 1.1096060184556167,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.6,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.7925,
+          "candidate_id": "eps0.8_l6",
+          "elapsed_seconds": 139.81467059801798,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 3500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 43.922404319905006,
+          "modern_rhat": 1.0183330614364485,
+          "num_leapfrog_steps": 6,
+          "role": "tuning_nomination_only",
+          "step_size": 0.8,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        },
+        {
+          "acceptance_rate": 0.7845,
+          "candidate_id": "eps0.8_l10",
+          "elapsed_seconds": 212.47788844100432,
+          "endpoint_batch_invocations": 500,
+          "force_batch_invocations": 5500,
+          "health_passed": true,
+          "maximum_absolute_delta_h": 69.45578605296001,
+          "modern_rhat": 1.0227547752841535,
+          "num_leapfrog_steps": 10,
+          "role": "tuning_nomination_only",
+          "step_size": 0.8,
+          "timing_scope": "cold_compile_plus_500_transition_batches",
+          "timing_synchronized": true
+        }
+      ],
+      "selected": {
+        "candidate_id": "eps0.2_l10",
+        "num_leapfrog_steps": 10,
+        "step_size": 0.2
+      }
+    }
+  },
+  "value_only_endpoint_parity": {
+    "absolute_tolerance": 2e-08,
+    "endpoint_uses_true_gradient": false,
+    "maximum_absolute_error": 0.0,
+    "passed": true,
+    "point_count": 8,
+    "schema": "bayesfilter.neural_force_value_only_endpoint_parity.v1"
+  },
+  "wall_time_seconds": 3980.3224018549663
+}

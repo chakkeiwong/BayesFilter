@@ -1,0 +1,479 @@
+{
+  "config": {
+    "adjacent_rank": 4,
+    "axis_order": [
+      "x_t",
+      "x_t_minus_1"
+    ],
+    "degree": 8,
+    "density_tau": 0.0,
+    "initializer_id": "orthonormal_mode_diagonal_norm_balanced_v1",
+    "max_sweeps": 2,
+    "parameter_treatment": "theta_external_fixed_query_not_tt_coordinate",
+    "quadrature_order_per_axis": 17,
+    "ridge": 1e-10,
+    "status": "warm_start_hypothesis_not_default",
+    "transition_before_first_observation": true
+  },
+  "finite_program": {
+    "compatibility_hash": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+    "log_increments": [
+      -1.1280371183804407
+    ],
+    "previous_marginal_derivative_included": true,
+    "score_backend": "tensorflow_total_autodiff_same_finite_program",
+    "steps": [
+      {
+        "axis_order": [
+          "x_t",
+          "x_t_minus_1"
+        ],
+        "fit_condition_numbers": [
+          1.0000000000000684,
+          9.327856127231877,
+          9.327856127231877,
+          3.341074773033642,
+          3.341074773033642,
+          8.484273906946209,
+          8.484273906946209,
+          3.3472074036239676
+        ],
+        "fit_dimension": 2,
+        "fit_residual": 0.04254598691024034,
+        "fit_unscaled_normal_condition_numbers": [
+          1.0000000000001377,
+          322.82130430962354,
+          322.82130430962354,
+          10.865619489976513,
+          10.865619489976513,
+          280.93477512687707,
+          280.93477512687707,
+          10.90790965448716
+        ],
+        "fit_update_structure": [
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            1,
+            "OK"
+          ],
+          [
+            0,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            1,
+            "OK"
+          ],
+          [
+            1,
+            0,
+            "OK"
+          ]
+        ],
+        "integrated_axes": [
+          1
+        ],
+        "log_scale_shift_index": 144,
+        "marginal_mass": 0.9999999999999992,
+        "target_kind": "transitioned_initial_adjacent_state_update",
+        "time_index": 0
+      }
+    ]
+  },
+  "hard_vetoes": {
+    "carried_marginal_mass_errors": [
+      7.771561172376096e-16
+    ],
+    "carried_marginal_mass_tolerance": 1.1823431123048067e-10,
+    "carried_marginal_mass_tolerance_rule": "256 * float64_epsilon * max(1, 65 * degree * adjacent_rank)",
+    "carried_marginal_mass_valid": true,
+    "finite_value_and_score": true,
+    "first_step_time_order_valid": true,
+    "forbidden_retained_grid_route_used": false,
+    "oracle_alias_used": false,
+    "own_scalar_fd": "pass",
+    "previous_state_axis_present_from_t1": true,
+    "transition_before_first_observation": true
+  },
+  "horizon": 1,
+  "metadata_date": "2026-07-15",
+  "own_scalar_fd": {
+    "owner_fd_only_policy": {
+      "base_relative_tolerance": 0.05,
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "diagnostic_scope": "finite_difference_only",
+      "dimension_scaling": "sqrt(num_parameters)",
+      "max_coordinate_relative_error": 5.113317598164662e-07,
+      "max_coordinate_relative_error_margin": 0.08660202904668404,
+      "max_coordinate_relative_error_threshold": 0.08660254037844387,
+      "max_error_parameter": "gamma_unconstrained",
+      "num_parameters": 3,
+      "parameters": [
+        {
+          "absolute_error": 8.247102140090945e-09,
+          "finite_difference": -0.016128671809963656,
+          "parameter": "gamma_unconstrained",
+          "relative_error": 5.113317598164662e-07,
+          "relative_error_scale": 0.016128671809963656,
+          "score": -0.016128663562861516
+        },
+        {
+          "absolute_error": 3.888745133198701e-10,
+          "finite_difference": -0.004282983262123471,
+          "parameter": "log_tau",
+          "relative_error": 9.079524469751699e-08,
+          "relative_error_scale": 0.004282983262123471,
+          "score": -0.004282982873248958
+        },
+        {
+          "absolute_error": 3.640898346701782e-13,
+          "finite_difference": -0.005176829662723038,
+          "parameter": "mu_over_tau",
+          "relative_error": 7.033065763517095e-11,
+          "relative_error_scale": 0.005176829663087128,
+          "score": -0.005176829663087128
+        }
+      ],
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "status": "pass"
+    },
+    "rows": [
+      {
+        "absolute_error": 9.166204575979109e-06,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.016137829767437495,
+        "h": 0.01,
+        "legacy_row_relative_error": 9.166204575979109e-06,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.016128663562861516
+      },
+      {
+        "absolute_error": 8.24944182471754e-07,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.016129488507043988,
+        "h": 0.003,
+        "legacy_row_relative_error": 8.24944182471754e-07,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.016128663562861516
+      },
+      {
+        "absolute_error": 9.166097054286171e-08,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.01612875522383206,
+        "h": 0.001,
+        "legacy_row_relative_error": 9.166097054286171e-08,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.016128663562861516
+      },
+      {
+        "absolute_error": 8.247102140090945e-09,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.016128671809963656,
+        "h": 0.0003,
+        "legacy_row_relative_error": 8.247102140090945e-09,
+        "parameter": "gamma_unconstrained",
+        "parameter_index": 0,
+        "row_status": "VALID",
+        "score": -0.016128663562861516
+      },
+      {
+        "absolute_error": 4.3457064652970695e-07,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.0042834174438954875,
+        "h": 0.01,
+        "legacy_row_relative_error": 4.3457064652970695e-07,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.004282982873248958
+      },
+      {
+        "absolute_error": 3.910953082393587e-08,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.004283021982779782,
+        "h": 0.003,
+        "legacy_row_relative_error": 3.910953082393587e-08,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.004282982873248958
+      },
+      {
+        "absolute_error": 4.3454133130324535e-09,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.004282987218662271,
+        "h": 0.001,
+        "legacy_row_relative_error": 4.3454133130324535e-09,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.004282982873248958
+      },
+      {
+        "absolute_error": 3.888745133198701e-10,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.004282983262123471,
+        "h": 0.0003,
+        "legacy_row_relative_error": 3.888745133198701e-10,
+        "parameter": "log_tau",
+        "parameter_index": 1,
+        "row_status": "VALID",
+        "score": -0.004282982873248958
+      },
+      {
+        "absolute_error": 2.2474016397877605e-10,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.005176829438346964,
+        "h": 0.01,
+        "legacy_row_relative_error": 2.2474016397877605e-10,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.005176829663087128
+      },
+      {
+        "absolute_error": 2.0348105145284734e-11,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.005176829642739023,
+        "h": 0.003,
+        "legacy_row_relative_error": 2.0348105145284734e-11,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.005176829663087128
+      },
+      {
+        "absolute_error": 2.362492146357198e-12,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.005176829660724636,
+        "h": 0.001,
+        "legacy_row_relative_error": 2.362492146357198e-12,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.005176829663087128
+      },
+      {
+        "absolute_error": 3.640898346701782e-13,
+        "branch_hash_base": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_minus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "branch_hash_plus": "11df2cc0d0d3f753daa93645118c420f24336866bfb28233347e319ffc6d9625",
+        "finite_difference": -0.005176829662723038,
+        "h": 0.0003,
+        "legacy_row_relative_error": 3.640898346701782e-13,
+        "parameter": "mu_over_tau",
+        "parameter_index": 2,
+        "row_status": "VALID",
+        "score": -0.005176829663087128
+      }
+    ],
+    "selected_fd_for_policy": [
+      -0.016128671809963656,
+      -0.004282983262123471,
+      -0.005176829662723038
+    ],
+    "stable_windows": [
+      {
+        "parameter": "gamma_unconstrained",
+        "status": "pass",
+        "threshold": 0.08660254037844387,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 0.000567994873416898,
+            "relative_error_small": 5.1145092549679345e-05
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 5.1145092549679345e-05,
+            "relative_error_small": 5.683077786897173e-06
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 5.683077786897173e-06,
+            "relative_error_small": 5.113317598164662e-07
+          }
+        ]
+      },
+      {
+        "parameter": "log_tau",
+        "status": "pass",
+        "threshold": 0.08660254037844387,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 0.00010145418984298047,
+            "relative_error_small": 9.13129350752313e-06
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 9.13129350752313e-06,
+            "relative_error_small": 1.01457536321803e-06
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 1.01457536321803e-06,
+            "relative_error_small": 9.079524469751699e-08
+          }
+        ]
+      },
+      {
+        "parameter": "mu_over_tau",
+        "status": "pass",
+        "threshold": 0.08660254037844387,
+        "windows": [
+          {
+            "h_large": 0.01,
+            "h_small": 0.003,
+            "pass": true,
+            "relative_error_large": 4.3412702098595896e-08,
+            "relative_error_small": 3.930611294857717e-09
+          },
+          {
+            "h_large": 0.003,
+            "h_small": 0.001,
+            "pass": true,
+            "relative_error_large": 3.930611294857717e-09,
+            "relative_error_small": 4.563588721496314e-10
+          },
+          {
+            "h_large": 0.001,
+            "h_small": 0.0003,
+            "pass": true,
+            "relative_error_large": 4.563588721496314e-10,
+            "relative_error_small": 7.033065763517095e-11
+          }
+        ]
+      }
+    ],
+    "status": "pass",
+    "steps": [
+      0.01,
+      0.003,
+      0.001,
+      0.0003
+    ]
+  },
+  "parameter_names": [
+    "gamma_unconstrained",
+    "log_tau",
+    "mu_over_tau"
+  ],
+  "route_classification": "extension_or_invention",
+  "route_id": "zhao_cui_fixed_adjacent_state_squared_tt_v1",
+  "route_subtype": "fixed_parameter_adjacent_state_squared_tt_extension",
+  "row": "generalized_sv",
+  "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+  "run_manifest": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-contract-e-tp-phase6 python docs/benchmarks/run_contract_e_tp_phase6_zhao_cui_comparator.py --row generalized_sv --horizon 1 --degree 8 --order 17 --rank 4 --seed contract-e-tp-phase8-refinement --target-preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_generalized_sv_t1_bound_target_preparation_20260715.json --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_refinement_20260715/generalized_sv_t1_degree8_order17_rank4_result.json",
+    "conda_environment": "tf-gpu",
+    "cpu_gpu_status": "CPU-only; CUDA_VISIBLE_DEVICES=-1",
+    "data_seed": 81105,
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "jit_compile": false,
+    "jit_status": "explicit_nondefault_cpu_reference_diagnostic",
+    "output_artifact": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_refinement_20260715/generalized_sv_t1_degree8_order17_rank4_result.json",
+    "plan": "docs/plans/bayesfilter-contract-e-tp-phase6-zhao-cui-comparator-certification-plan-2026-07-15.md",
+    "seed": "contract-e-tp-phase8-refinement",
+    "wall_time_seconds": 3.637374476995319
+  },
+  "schema_version": "contract_e_tp.phase6.zhao_cui_comparator.v1",
+  "score": [
+    -0.016128663562861516,
+    -0.004282982873248958,
+    -0.005176829663087128
+  ],
+  "source_anchors": [
+    "Zhao-Cui 2024 equations 15-16 and Algorithm 2 for parent recursion",
+    "generalized-SV model operations are not author-source operations"
+  ],
+  "status": "certified_extension_or_invention",
+  "target": {
+    "preparation": {
+      "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_generalized_sv_t1_bound_target_preparation_20260715.json",
+      "sha256": "3457f5aa51822da4176887b64e13b0d0bdba620e12b8e8c80276a43f7e67c442"
+    },
+    "target_observation_policy": "raw_zero_mean_normal_generalized_sv",
+    "target_observations_sha256": "d460eb0c8387c3e57b8eaa547cf14f24aad453b4cdc41b082354232c88d940f2",
+    "time_steps": 1,
+    "transition_before_first_observation": true
+  },
+  "theta": [
+    1.0824113944610982,
+    -2.076793740349318,
+    0.0
+  ],
+  "value": -1.1280371183804407,
+  "what_is_not_concluded": [
+    "not adaptive TT-cross or TTSIRT reproduction",
+    "not source-faithful",
+    "not exact filtering",
+    "not cross-method equivalence",
+    "not superiority or ranking",
+    "not HMC, default, leaderboard, GPU, or full-horizon readiness"
+  ]
+}

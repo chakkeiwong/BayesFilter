@@ -1,0 +1,87 @@
+{
+  "all_executable_completed": false,
+  "blocked_inventory": [
+    {
+      "cell_id": "SVX-SGQF",
+      "reason": "no frozen SGQF level passed filter admission",
+      "reentry_rung": "filter admission",
+      "state": "TARGET_BLOCKED_FILTER_ADMISSION"
+    },
+    {
+      "cell_id": "SVX-ZC",
+      "reason": "current wrapper is not the production source route",
+      "reentry_rung": "source-route design",
+      "state": "TARGET_BLOCKED_SOURCE_ROUTE_MISMATCH"
+    },
+    {
+      "cell_id": "KSC-UKF",
+      "reason": "dense-reference value/score admission failed",
+      "reentry_rung": "filter admission",
+      "state": "TARGET_BLOCKED_FILTER_ADMISSION"
+    },
+    {
+      "cell_id": "PP-ZC",
+      "reason": "generic retained-grid route is production-ineligible",
+      "reentry_rung": "source-route design",
+      "state": "TARGET_BLOCKED_SOURCE_ROUTE_MISMATCH"
+    },
+    {
+      "cell_id": "STR-ZC",
+      "reason": "extension target is absent",
+      "reentry_rung": "extension-target design",
+      "state": "TARGET_BLOCKED_EXTENSION_ROUTE_NOT_DESIGNED"
+    },
+    {
+      "cell_id": "SIR-UKF",
+      "reason": "preserved GPU/CPU score-parity blocker",
+      "reentry_rung": "GPU score parity",
+      "state": "IMPLEMENTATION_BLOCKED_GPU_SCORE_PARITY"
+    },
+    {
+      "cell_id": "SIR-ZC",
+      "reason": "observed-data parameter-score closure is absent",
+      "reentry_rung": "observed-data score route",
+      "state": "TARGET_BLOCKED_MISSING_OBSERVED_DATA_SCORE_ROUTE"
+    }
+  ],
+  "blocked_inventory_count": 7,
+  "campaign_id": "bayesfilter-neutra-all-executable-models-e2e-20260718",
+  "cell_rows": [
+    {
+      "cell_id": "LGSSM-EXACT",
+      "continuation_veto": false,
+      "decision": "TUNING_FAILED",
+      "passed": false,
+      "result_path": "docs/plans/artifacts/bayesfilter-neutra-all-executable-models-e2e-20260718/serious-attempt-01/LGSSM-EXACT/result.json"
+    },
+    {
+      "cell_id": "PP-UKF",
+      "continuation_veto": false,
+      "decision": "TUNING_FAILED",
+      "passed": false,
+      "result_path": "docs/plans/artifacts/bayesfilter-neutra-all-executable-models-e2e-20260718/serious-attempt-01/PP-UKF/result.json"
+    },
+    {
+      "cell_id": "PP-SGQF",
+      "classification": "SHARED_OR_CELL_HARNESS_FAILURE",
+      "continuation_veto": true,
+      "process_returncode": 1,
+      "stderr_tail": "2026-07-18 21:15:39.644117: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.\n2026-07-18 21:15:39.652645: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nE0000 00:00:1784380539.664080  753448 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered\nE0000 00:00:1784380539.667537  753448 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered\nW0000 00:00:1784380539.676965  753448 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.\nW0000 00:00:1784380539.677106  753448 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.\nW0000 00:00:1784380539.677111  753448 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.\nW0000 00:00:1784380539.677113  753448 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.\n2026-07-18 21:15:39.679784: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.\nTo enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.\nI0000 00:00:1784380540.175485  753448 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:01:00.0, compute capability: 8.9\nI0000 00:00:1784380541.097347  753448 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x29682490\nTraceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py\", line 201, in <module>\n    main()\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py\", line 187, in main\n    payload = _run_cell(args)\n              ^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py\", line 65, in _run_cell\n    return run_neutra_end_to_end_cell(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/inference/neutra_end_to_end.py\", line 174, in run_neutra_end_to_end_cell\n    raise NeuTraEndToEndError(\nbayesfilter.inference.neutra_end_to_end.NeuTraEndToEndError: target signature mismatch for PP-SGQF: 90286845d284d9af29b729e72055d21dacc6f56136ddfc00e595375f4a7cdef5 != 32616875faa8a9e7440b58c896e66917dfedf296d480c70739dee8cdd51c5960\n",
+      "stdout_tail": ""
+    }
+  ],
+  "completed_executable_count": 3,
+  "declared_executable_count": 5,
+  "default_readiness": false,
+  "descriptive_only": "runtime, acceptance, posterior moments, and tail magnitudes",
+  "elapsed_seconds": 2362.5045473130303,
+  "nonclaims": [
+    "blocked inventory cells were not launched and are not NeuTra failures",
+    "one seed per executable target only",
+    "no cross-model ranking, universal validity, or default-readiness claim"
+  ],
+  "passed_cell_count": 0,
+  "plan_path": "docs/plans/bayesfilter-neutra-all-executable-models-end-to-end-python-plan-2026-07-18.md",
+  "schema": "bayesfilter.neutra.all_models.aggregate_result.v1",
+  "statistically_supported_ranking": false
+}

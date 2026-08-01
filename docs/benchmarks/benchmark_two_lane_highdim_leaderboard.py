@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
+import platform
+import subprocess
 import sys
 import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +24,16 @@ if str(ROOT) not in sys.path:
 import tensorflow as tf
 import tensorflow_probability as tfp
 import bayesfilter.highdim as highdim
+from bayesfilter.highdim.fixed_sir_sgqf_tf import make_fixed_sir_sgqf_route
+from bayesfilter.highdim.generalized_sv_sgqf_tf import (
+    GENERALIZED_SV_SGQF_ROUTE_ID,
+    make_generalized_sv_sgqf_route,
+)
+from bayesfilter.highdim.source_sv_sgqf_tf import make_source_order_sv_dataset
+from bayesfilter.testing.predator_prey_sgqf_neutra_target_tf import (
+    PP_SOURCE_SGQF_ROUTE_ID,
+    make_predator_prey_source_sgqf_route,
+)
 from bayesfilter.linear.kalman_tf import tf_linear_gaussian_log_likelihood
 from bayesfilter.nonlinear.fixed_sgqf_derivatives_tf import (
     TFFixedSGQFDerivatives,
@@ -63,7 +77,6 @@ OMITTED_ALGORITHMS = [
     "ledh_pfpf_alg1_ukf_current",
     "ledh_pfpf_ot",
 ]
-
 HIGHDIM_ALGOS = [
     "fixed_sgqf",
     "ukf",
@@ -71,6 +84,14 @@ HIGHDIM_ALGOS = [
 ]
 FIXED_SIR_ROW = "zhao_cui_spatial_sir_austria_j9_T20"
 PARAMETERIZED_SIR_ROW = "zhao_cui_spatial_sir_austria_j9_T20_parameterized_logscale"
+SGQF_GPU_EVIDENCE = {
+    FIXED_SIR_ROW: ROOT
+    / "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt02/fixed-sir/gpu/result.json",
+    "zhao_cui_predator_prey_T20": ROOT
+    / "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt01/predator-prey/gpu/result.json",
+    "zhao_cui_generalized_sv_synthetic_from_estimated_values": ROOT
+    / "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt03/generalized-sv/gpu-attempt02/result.json",
+}
 HIGHDIM_ROWS = [
     "benchmark_lgssm_exact_oracle_m3_T50",
     "zhao_cui_sv_actual_nongaussian_T1000",
@@ -80,6 +101,11 @@ HIGHDIM_ROWS = [
     "zhao_cui_predator_prey_T20",
     "zhao_cui_generalized_sv_synthetic_from_estimated_values",
 ]
+
+_FREE_THETA_MAIN_ROWS = frozenset(HIGHDIM_ROWS) - {
+    FIXED_SIR_ROW,
+    PARAMETERIZED_SIR_ROW,
+}
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -94,6 +120,18 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, list):
         return [_json_safe(item) for item in value]
     return value
+
+
+def _semantic_hash(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+        "ascii"
+    )
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _tensor_hash(value: Any) -> str:
+    tensor = tf.convert_to_tensor(value, dtype=DTYPE)
+    return hashlib.sha256(bytes(tf.io.serialize_tensor(tensor).numpy())).hexdigest()
 
 
 def _same_value_score_loglik(
@@ -118,17 +156,87 @@ def _same_value_score_loglik(
     return score, None
 
 
+def _cell_requirement(row_id: str, algorithm_id: str) -> tuple[str, str]:
+    """Return repository-owned applicability and result-kind requirements."""
+
+    if row_id not in HIGHDIM_ROWS:
+        raise ValueError(f"unclassified highdim leaderboard row: {row_id}")
+    if algorithm_id not in HIGHDIM_ALGOS:
+        raise ValueError(f"unclassified highdim leaderboard algorithm: {algorithm_id}")
+    if row_id == PARAMETERIZED_SIR_ROW:
+        if algorithm_id == "zhao_cui_scalar_or_multistate":
+            return "applicable", "value_score"
+        return "not_applicable_scoped_row", "not_applicable"
+    if row_id == FIXED_SIR_ROW:
+        return "applicable", "value_only_no_free_theta"
+    if row_id in _FREE_THETA_MAIN_ROWS:
+        return "applicable", "value_score"
+    raise AssertionError(f"unreachable row requirement: {row_id}")
+
+
+def _apply_applicability_contract(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    updated: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for original in rows:
+        row = dict(original)
+        row_id = str(row.get("row_id"))
+        algorithm_id = str(row.get("algorithm_id"))
+        key = (row_id, algorithm_id)
+        if key in seen:
+            raise ValueError(f"duplicate highdim leaderboard cell: {key}")
+        seen.add(key)
+        applicability, result_kind = _cell_requirement(row_id, algorithm_id)
+        status = row.get("comparison_status")
+        value_admitted = status in {
+            "executed_value_only",
+            "executed_value_score",
+            "executed_mc_value_only",
+        }
+        score_admitted = status == "executed_value_score"
+        if result_kind == "value_score":
+            result_complete = score_admitted
+        elif result_kind == "value_only_no_free_theta":
+            result_complete = status == "executed_value_only"
+        else:
+            result_complete = True
+        row.update(
+            {
+                "algorithm_applicability": applicability,
+                "required_result_kind": result_kind,
+                "value_admitted": value_admitted if applicability == "applicable" else None,
+                "score_admitted": score_admitted if result_kind == "value_score" else None,
+                "cell_result_complete": result_complete,
+            }
+        )
+        updated.append(row)
+
+    expected = {(row_id, algorithm_id) for row_id in HIGHDIM_ROWS for algorithm_id in HIGHDIM_ALGOS}
+    missing = expected - seen
+    if missing:
+        raise ValueError(f"missing highdim leaderboard cells: {sorted(missing)}")
+    return updated
+
+
 def _row_summary_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     row_summary = []
     for row_id in HIGHDIM_ROWS:
         row_cells = [row for row in rows if row["row_id"] == row_id]
         executed = [row["algorithm_id"] for row in row_cells if row["comparison_status"].startswith("executed")]
         score_admitted = [row["algorithm_id"] for row in row_cells if row["comparison_status"] == "executed_value_score"]
-        scoped_component_row = any(
-            row.get("row_admission_status") == "scoped_component_row_admitted"
-            for row in row_cells
-        )
+        scoped_component_row = row_id == PARAMETERIZED_SIR_ROW
         full_ready = (not scoped_component_row) and set(score_admitted) == set(HIGHDIM_ALGOS)
+        applicable_cells = [
+            row for row in row_cells if row["algorithm_applicability"] == "applicable"
+        ]
+        score_required_cells = [
+            row for row in applicable_cells if row["required_result_kind"] == "value_score"
+        ]
+        value_complete = all(row["value_admitted"] is True for row in applicable_cells)
+        score_complete = all(row["score_admitted"] is True for row in score_required_cells)
+        comparison_ready = (
+            not scoped_component_row
+            and all(row["cell_result_complete"] is True for row in applicable_cells)
+        )
         row_summary.append(
             {
                 "row_id": row_id,
@@ -139,16 +247,34 @@ def _row_summary_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 ),
                 "executed_algorithms": executed,
                 "score_admitted_algorithms": score_admitted,
+                "value_complete": value_complete,
+                "score_complete": score_complete,
+                "comparison_ready": comparison_ready,
+                "sgqf_complete": next(
+                    row["cell_result_complete"]
+                    for row in row_cells
+                    if row["algorithm_id"] == "fixed_sgqf"
+                ),
                 "full_three_way_ready": full_ready,
-                "scoped_component_ready": scoped_component_row and bool(score_admitted),
+                "full_three_way_ready_deprecated": True,
+                "scoped_component_ready": (
+                    scoped_component_row
+                    and all(row["cell_result_complete"] is True for row in applicable_cells)
+                ),
                 "blocked_or_missing_algorithms": [
                     row["algorithm_id"]
                     for row in row_cells
-                    if not row["comparison_status"].startswith("executed")
+                    if row["algorithm_applicability"] == "applicable"
+                    and not row["cell_result_complete"]
                 ],
             }
         )
     return row_summary
+
+
+def _sgqf_column_complete(row_summary: list[dict[str, Any]]) -> bool:
+    main_rows = [row for row in row_summary if row["row_scope"] == "main_observed_data_filtering_row"]
+    return all(row["sgqf_complete"] is True for row in main_rows)
 
 
 def _value_score_route_id(row: dict[str, Any]) -> str | None:
@@ -186,7 +312,10 @@ def _value_score_route_id(row: dict[str, Any]) -> str | None:
             "zhao_cui_ksc_mixture_fixed_branch_tt"
         ),
         ("fixed_sgqf", "zhao_cui_predator_prey_T20"): (
-            "fixed_sgqf_direct_predator_prey_t20"
+            PP_SOURCE_SGQF_ROUTE_ID
+        ),
+        ("fixed_sgqf", "zhao_cui_generalized_sv_synthetic_from_estimated_values"): (
+            GENERALIZED_SV_SGQF_ROUTE_ID
         ),
         ("zhao_cui_scalar_or_multistate", "zhao_cui_predator_prey_T20"): (
             "zhao_cui_predator_prey_t20_multistate_fixed_design_tt"
@@ -212,6 +341,105 @@ def _apply_value_score_route_contract(rows: list[dict[str, Any]]) -> list[dict[s
             row["value_score_route_status"] = "same_route_value_score"
         updated.append(row)
     return updated
+
+
+def _zhao_cui_hmc_route_is_admissible(row: dict[str, Any]) -> bool:
+    """Require a fixed-variant identity before HMC score admission.
+
+    Zhao-Cui has multiple model-specific fixed-branch analytical adapters.  A
+    route does not have to use the high-dimensional source-route implementation,
+    but it must identify its actual fixed value/score program.  Generic
+    retained-grid and adaptive routes remain ineligible.
+    """
+
+    return (
+        row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+        and row.get("route_id") in highdim.ZHAO_CUI_FIXED_VARIANT_ROUTE_IDS
+        and row.get("hmc_route_policy_id") == highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID
+        and row.get("hmc_target_scope_admitted") is True
+    )
+
+
+def _normalize_legacy_zhao_cui_route_identity(row: dict[str, Any]) -> dict[str, Any]:
+    """Issue route identity for exact known pre-identity leaderboard rows.
+
+    The July 1/3 artifacts predate explicit route fields.  Their exact row,
+    numeric-status, and analytical-provenance tuple is repository-owned legacy
+    evidence; arbitrary caller fields are not accepted as identity.
+    """
+
+    if row.get("algorithm_id") != "zhao_cui_scalar_or_multistate":
+        return row
+    key = (
+        row.get("row_id"),
+        row.get("numeric_execution_status"),
+        row.get("score_derivative_provenance"),
+    )
+    known = {
+        (
+            "zhao_cui_sv_actual_nongaussian_T1000",
+            "executed_zhao_cui_exact_transformed_sv_fixed_branch_tt_value_score",
+            "zhao_cui_scalar_fixed_branch_tt_exact_transformed_sv_manual_parameter_score_methods_only",
+        ): "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+        (
+            "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+            "executed_zhao_cui_ksc_fixed_branch_tt_value_score",
+            "zhao_cui_scalar_fixed_branch_tt_ksc_mixture_manual_parameter_score_methods_only",
+        ): "zhao_cui_ksc_mixture_fixed_branch_tt",
+        (
+            "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+            "executed_zhao_cui_generalized_sv_prior_mean_scalar_tt_value_score",
+            "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt_manual_parameter_score_methods_only",
+        ): "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+        (
+            PARAMETERIZED_SIR_ROW,
+            "executed_zhao_cui_parameterized_sir_t20_local_complete_data_value_score",
+            "zhao_cui_sir_d18_local_complete_data_manual_parameter_score_methods",
+        ): "zhao_cui_sir_d18_local_complete_data_manual_component",
+    }
+    route_id = known.get(key)
+    if route_id is None:
+        return row
+    row = dict(row)
+    row["route_id"] = route_id
+    row["route_role"] = (
+        highdim.ZHAO_CUI_FIXED_VARIANT_ROUTE_ID
+        if route_id == "zhao_cui_sir_d18_local_complete_data_manual_component"
+        else "fixed_variant_analytical_hmc_route"
+    )
+    row["hmc_route_policy_id"] = highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID
+    row["hmc_target_scope_admitted"] = True
+    return row
+
+
+def _demote_zhao_cui_historical_score(row: dict[str, Any]) -> dict[str, Any]:
+    """Keep historical value evidence, but remove its HMC score admission."""
+
+    row["comparison_status"] = "executed_value_only"
+    row["numeric_execution_status"] = (
+        "executed_numeric_value_only_historical_zhao_cui_route_not_hmc_admitted"
+    )
+    row["score_status"] = "blocked_historical_zhao_cui_route_not_hmc_admitted"
+    row["score_status_reason"] = (
+        "Zhao-Cui HMC/leaderboard score admission requires the fixed-variant "
+        "source-route identity; this evaluator is historical/diagnostic only"
+    )
+    row["reason"] = row["score_status_reason"]
+    row["score"] = None
+    row["score_l2_norm"] = None
+    row["score_coordinate_system"] = None
+    row["route_role"] = highdim.ZHAO_CUI_HISTORICAL_ROUTE_STATUS
+    row["hmc_route_policy_id"] = None
+    row["hmc_target_scope_admitted"] = False
+    row["nonclaims"] = list(row.get("nonclaims", [])) + [
+        "historical/diagnostic Zhao-Cui route; not the fixed-variant HMC evaluator",
+        "its analytical score is not admitted for HMC or leaderboard use",
+    ]
+    row["reason_codes"] = list(row.get("reason_codes", [])) + [
+        "ZHAO_CUI_NONFIXED_ROUTE_DEMOTED_HISTORICAL",
+        "HMC_REQUIRES_FIXED_VARIANT_SOURCE_ROUTE",
+    ]
+    return row
 
 
 def _status_from_manifest(manifest: dict[str, Any]) -> str | None:
@@ -261,8 +489,13 @@ def _sv_theta() -> tf.Tensor:
     return model.unconstrained_from_physical(gamma=0.6, beta=0.4)
 
 
+@lru_cache(maxsize=1)
+def _source_order_sv_dataset():
+    return make_source_order_sv_dataset()
+
+
 def _sv_observations() -> tf.Tensor:
-    return tf.convert_to_tensor(_sv_dataset(81101)["observations"], dtype=DTYPE)
+    return _source_order_sv_dataset().observations
 
 
 def _predator_prey_theta() -> tf.Tensor:
@@ -603,56 +836,21 @@ def _lgssm_reference_and_sgqf() -> tuple[float, float | None, list[float] | None
 
 
 def _predator_reference_and_sgqf() -> tuple[float, float | None, list[float] | None, float | None, str | None]:
-    theta = _predator_prey_theta()
-    observations = _predator_prey_observations()
-    model = highdim.p30_predator_prey_fixture_model()
-    adapted = tf_predator_prey_to_fixed_sgqf_model(model, theta, with_derivatives=True)
-    if not adapted.eligible or adapted.model is None:
-        return float("nan"), None, None, None, adapted.reason or "predator-prey SGQF adapter ineligible"
-
-    cloud = tf_fixed_sgqf_cloud(dim=2, sparse_level=2)
-    branch = TFFixedSGQFBranchConfig(predictive_epsilon=1e-10, innovation_epsilon=1e-10)
-    value = tf_fixed_sgqf_filter(
-        observations,
-        adapted.model,
-        cloud=cloud,
-        branch_config=branch,
-        return_filtered=True,
-    )
-    if value.failure is not None or value.log_likelihood is None:
-        stage = value.failure.stage if value.failure is not None else "unknown"
-        return float("nan"), None, None, None, f"predator-prey SGQF value failure at {stage}"
-
-    if adapted.derivatives is None:
-        return float("nan"), float(value.log_likelihood.numpy()), None, None, "predator-prey SGQF derivatives missing"
-
-    score = tf_fixed_sgqf_score(
-        observations,
-        adapted.model,
-        adapted.derivatives,
-        cloud=cloud,
-        branch_config=branch,
-        expected_branch_identity=value.branch_identity,
-    )
-    if score.failure is not None or score.score is None:
-        stage = score.failure.stage if score.failure is not None else "unknown"
-        return float("nan"), float(value.log_likelihood.numpy()), None, None, f"predator-prey SGQF score failure at {stage}"
-
+    route = make_predator_prey_source_sgqf_route()
+    physical = _predator_prey_theta()[tf.newaxis, :]
+    value, score, status = route.physical_value_score_status(physical)
+    value_only, value_status = route.physical_value_only_status(physical)
+    if int(status["status_code"][0].numpy()) != 0:
+        return float("nan"), None, None, None, "source-order predator-prey SGQF score status veto"
+    if int(value_status["status_code"][0].numpy()) != 0:
+        return float("nan"), None, None, None, "source-order predator-prey SGQF value status veto"
     loglik, mismatch_reason = _same_value_score_loglik(
-        value.log_likelihood,
-        score.log_likelihood,
-        "predator-prey fixed-SGQF",
+        value_only[0], value[0], "source-order predator-prey fixed-SGQF"
     )
     if loglik is None:
         return float("nan"), None, None, None, mismatch_reason
-    return (
-        float("nan"),
-        loglik,
-        [float(v) for v in score.score.numpy()],
-        float(tf.linalg.norm(score.score).numpy()),
-        None,
-    )
-
+    score_values = [float(item) for item in score[0].numpy()]
+    return float("nan"), loglik, score_values, float(tf.linalg.norm(score[0]).numpy()), None
 
 def _ksc_source_scope_sgqf_from_lowdim() -> tuple[float | None, float | None, list[float] | None, float | None, str | None]:
     theta = _sv_theta()
@@ -763,6 +961,46 @@ def _actual_sv_direct_sgqf_value_score() -> tuple[float | None, float | None, li
         return None, loglik, None, None, "direct exact-transformed SGQF actual-SV score was non-finite"
     time_count = float(tf.shape(observations)[0].numpy())
     return float(loglik / time_count), loglik, score, float(tf.linalg.norm(score_result.score).numpy()), None
+
+
+def _generalized_sv_sgqf_value_score() -> tuple[
+    float | None,
+    float | None,
+    list[float] | None,
+    float | None,
+    object | None,
+    str | None,
+]:
+    start = time.perf_counter()
+    try:
+        route = make_generalized_sv_sgqf_route()
+        value, score, status = route.value_score_status()
+        value_only, value_status = route.value_only_status()
+        runtime = time.perf_counter() - start
+        if int(status["status_code"].numpy()) != 0:
+            return None, None, None, runtime, route, "generalized-SV SGQF score status veto"
+        if int(value_status["status_code"].numpy()) != 0:
+            return None, None, None, runtime, route, "generalized-SV SGQF value status veto"
+        loglik, mismatch_reason = _same_value_score_loglik(
+            value_only, value, "generalized-SV raw-y fixed-SGQF"
+        )
+        if loglik is None:
+            return None, None, None, runtime, route, mismatch_reason
+        score_values = [float(item) for item in score.numpy()]
+        if any(not math.isfinite(item) for item in score_values):
+            return None, loglik, None, runtime, route, "generalized-SV SGQF score was non-finite"
+        return (
+            float(loglik / float(route.observations.shape[0])),
+            loglik,
+            score_values,
+            runtime,
+            route,
+            None,
+        )
+    except Exception as exc:
+        return None, None, None, time.perf_counter() - start, None, (
+            f"generalized-SV SGQF route failed: {type(exc).__name__}: {exc}"
+        )
 
 
 def _zhao_cui_derivative_config_no_fd() -> highdim.FixedBranchDerivativeConfig:
@@ -980,6 +1218,10 @@ def _zhao_cui_actual_sv_tt_cell() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "comparison_status": "executed_value_score" if executed_score else "blocked",
         "numeric_execution_status": (
             "executed_zhao_cui_exact_transformed_sv_fixed_branch_tt_value_score"
@@ -1032,8 +1274,17 @@ def _zhao_cui_actual_sv_tt_cell() -> dict[str, Any]:
 
 
 def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
-    avg_loglik, loglik, score, score_l2, runtime, reason = _zhao_cui_predator_prey_tt_value_score()
-    executed_score = loglik is not None and score is not None
+    # The retained-grid multistate evaluator is historical and cannot be used
+    # as an HMC/leaderboard fallback.  Predator-prey has no implemented
+    # fixed-variant source-route evaluator yet, so fail closed here while
+    # preserving the old route in its historical artifacts.
+    avg_loglik = loglik = score = score_l2 = runtime = None
+    reason = (
+        "Predator-prey fixed-variant Zhao-Cui source-route analytical-gradient "
+        "evaluator is not implemented; the historical multistate retained-grid "
+        "result is not admitted for HMC or leaderboard use"
+    )
+    executed_score = False
     return {
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_predator_prey_T20",
@@ -1062,9 +1313,7 @@ def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
         "mc_standard_error": None,
         "score_status": "analytical_score_emitted" if executed_score else "blocked_manual_tt_score_adapter",
         "score_status_reason": (
-            "Zhao-Cui predator-prey T20 score emitted by multistate fixed-design TT manual parameter-score adapter"
-            if executed_score
-            else reason
+            reason
         ),
         "target_contract_status": (
             "target_compatible_predator_prey_t20_fixed_design_multistate_tt"
@@ -1073,12 +1322,13 @@ def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
         ),
         "reason": reason,
         "reason_codes": [
-            (
-                "ZHAO_CUI_PREDATOR_PREY_T20_MULTISTATE_MANUAL_TT_VALUE_SCORE_ROUTE"
-                if executed_score
-                else "ZHAO_CUI_PREDATOR_PREY_T20_MULTISTATE_MANUAL_TT_ROUTE_BLOCKED"
-            )
+            "ZHAO_CUI_PREDATOR_PREY_FIXED_VARIANT_EVALUATOR_MISSING",
+            "ZHAO_CUI_NONFIXED_RETAINED_GRID_ROUTE_DEMOTED_HISTORICAL",
         ],
+        "route_id": "zhao_cui_predator_prey_t20_multistate_fixed_design_tt",
+        "route_role": highdim.ZHAO_CUI_HISTORICAL_ROUTE_STATUS,
+        "hmc_route_policy_id": None,
+        "hmc_target_scope_admitted": False,
         "nonclaims": [
             "T20 source-scope additive-Gaussian RK4 closure, not native/non-Gaussian predator-prey likelihood",
             "fixed-design multistate TT route, not adaptive MATLAB TT-cross/SIRT reproduction",
@@ -1086,6 +1336,7 @@ def _zhao_cui_predator_prey_tt_cell() -> dict[str, Any]:
             "P47 two-observation lower-rung evidence is not reported as this T20 row",
             "not a production-GPU timing result",
             "not HMC readiness evidence",
+            "historical retained-grid result is preserved only as diagnostic evidence",
         ],
     }
 
@@ -1097,6 +1348,10 @@ def _zhao_cui_generalized_sv_tt_cell() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "comparison_status": "executed_value_score" if executed_score else "blocked_or_status_only",
         "numeric_execution_status": (
             "executed_zhao_cui_generalized_sv_prior_mean_scalar_tt_value_score"
@@ -1164,6 +1419,10 @@ def _zhao_cui_ksc_tt_cell() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_ksc_mixture_fixed_branch_tt",
+        "route_role": "fixed_variant_analytical_hmc_route",
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "comparison_status": "executed_value_score" if executed_score else "blocked",
         "numeric_execution_status": (
             "executed_zhao_cui_ksc_fixed_branch_tt_value_score"
@@ -1425,6 +1684,10 @@ def _zhao_cui_lgssm_exact_oracle_adapter() -> dict[str, Any]:
         "lane": "highdim_source_scope",
         "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
         "algorithm_id": "zhao_cui_scalar_or_multistate",
+        "route_id": "zhao_cui_lgssm_exact_oracle_affine_adapter",
+        "route_role": highdim.ZHAO_CUI_HISTORICAL_ROUTE_STATUS,
+        "hmc_route_policy_id": None,
+        "hmc_target_scope_admitted": False,
         "comparison_status": "executed_value_score",
         "numeric_execution_status": "executed_lgssm_exact_oracle_adapter_value_score",
         "average_log_likelihood": float(kalman_cell["average_log_likelihood"]),
@@ -1626,7 +1889,10 @@ def _zhao_cui_parameterized_sir_local_complete_data_cell() -> dict[str, Any]:
         ),
         "row_admission_status": "scoped_component_row_admitted" if executed_score else "blocked",
         "target_scope": "local_complete_data_zhao_cui_sir_d18_component",
+        "route_id": "zhao_cui_sir_d18_local_complete_data_manual_component",
         "route_role": highdim.FIXED_VARIANT_ZHAO_CUI_PRODUCTION_ROUTE,
+        "hmc_route_policy_id": highdim.ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "hmc_target_scope_admitted": True,
         "retained_grid_route_role": highdim.MULTISTATE_RETAINED_GRID_ROUTE_ROLE,
         "retained_grid_leaderboard_admission": highdim.MULTISTATE_RETAINED_GRID_LEADERBOARD_ADMISSION,
         "average_log_likelihood": avg_loglik,
@@ -1719,6 +1985,81 @@ def _cell_for_fixed_sgqf(row_id: str) -> dict[str, Any]:
         row = _blocked_scoped_parameterized_sir_cell("fixed_sgqf")
         row["route_role"] = "not_applicable_to_scoped_component_row"
         return row
+    if row_id == FIXED_SIR_ROW:
+        start = time.perf_counter()
+        try:
+            route = make_fixed_sir_sgqf_route()
+            value, status = route.value_only_status()
+            runtime = time.perf_counter() - start
+            valid = int(status["status_code"].numpy()) == 0
+            loglik = float(value.numpy()) if valid else None
+            reason = None if valid else "fixed SIR SGQF covariance/status veto fired"
+        except Exception as exc:
+            route = None
+            status = {}
+            runtime = time.perf_counter() - start
+            loglik = None
+            reason = f"fixed SIR SGQF value route failed: {exc}"
+        manifest = dict(route.manifest) if route is not None else {}
+        return {
+            "lane": "highdim_source_scope",
+            "row_id": row_id,
+            "algorithm_id": "fixed_sgqf",
+            "comparison_status": "executed_value_only" if loglik is not None else "blocked",
+            "numeric_execution_status": (
+                "executed_fixed_sir_source_order_sgqf_value_only"
+                if loglik is not None
+                else "blocked_fixed_sir_source_order_sgqf_value"
+            ),
+            "average_log_likelihood": loglik / 20.0 if loglik is not None else None,
+            "log_likelihood": loglik,
+            "reference_log_likelihood": None,
+            "absolute_value_gap_to_kalman": None,
+            "score": None,
+            "score_l2_norm": None,
+            "score_coordinate_system": None,
+            "score_derivative_provenance": None,
+            "score_status": "not_applicable_no_free_theta",
+            "score_status_reason": (
+                "Fixed Zhao-Cui SIR row has parameter_dim=0; a score is not mathematically applicable."
+            ),
+            "runtime_seconds": runtime,
+            "mc_standard_error": None,
+            "target_contract_status": (
+                "target_compatible_fixed_sir_transition_then_observe_value_only"
+                if loglik is not None
+                else "blocked_fixed_sir_transition_then_observe_value_only"
+            ),
+            "route_id": manifest.get("route_id"),
+            "route_identity": route.route_identity if route is not None else None,
+            "target_id": manifest.get("target_id"),
+            "data_state_sha256": manifest.get("state_sha256"),
+            "data_observation_sha256": manifest.get("observation_sha256"),
+            "cloud_sha256": manifest.get("cloud_sha256"),
+            "cloud_level": manifest.get("cloud_level"),
+            "cloud_point_count": manifest.get("cloud_point_count"),
+            "time_order": manifest.get("time_order"),
+            "value_status": {
+                key: (
+                    float(item.numpy())
+                    if item.dtype.is_floating
+                    else bool(item.numpy())
+                    if item.dtype == tf.bool
+                    else int(item.numpy())
+                )
+                for key, item in status.items()
+            },
+            "reason": reason,
+            "reason_codes": [
+                "FIXED_SIR_SOURCE_ORDER_LEVEL2_SGQF_VALUE_ONLY"
+                if loglik is not None
+                else "FIXED_SIR_SOURCE_ORDER_LEVEL2_SGQF_VALUE_BLOCKED"
+            ],
+            "nonclaims": list(manifest.get("nonclaims", [])) + [
+                "37-point level-2 cloud has one negative center weight and misses mixed fourth moments",
+                "GPU/XLA readiness is a separate engineering gate",
+            ],
+        }
     if row_id == "benchmark_lgssm_exact_oracle_m3_T50":
         reference, loglik, score, score_l2, reason = _lgssm_reference_and_sgqf()
         executed_score = loglik is not None and score is not None
@@ -1749,6 +2090,8 @@ def _cell_for_fixed_sgqf(row_id: str) -> dict[str, Any]:
     if row_id == "zhao_cui_predator_prey_T20":
         reference, loglik, score, score_l2, reason = _predator_reference_and_sgqf()
         executed_score = loglik is not None and score is not None
+        route = make_predator_prey_source_sgqf_route() if executed_score else None
+        manifest = dict(route.manifest) if route is not None else {}
         return {
             "lane": "highdim_source_scope",
             "row_id": row_id,
@@ -1761,16 +2104,25 @@ def _cell_for_fixed_sgqf(row_id: str) -> dict[str, Any]:
             "absolute_value_gap_to_kalman": None,
             "score": score,
             "score_l2_norm": score_l2,
-            "score_coordinate_system": "source_scope_predator_prey_theta_pending_t20_evaluator" if loglik is not None else None,
-            "score_derivative_provenance": "fixed_sgqf_analytic_first_order_fixed_branch_predator_prey_score" if executed_score else None,
+            "score_coordinate_system": "physical=(r,K,a,s,u,v)" if loglik is not None else None,
+            "score_derivative_provenance": "fixed_sgqf_manual_analytical_rk4_cholesky_moment_forward_sensitivity_physical_chain_rule" if executed_score else None,
             "runtime_seconds": None,
             "mc_standard_error": None,
-            "target_contract_status": "target_compatible_direct_predator_prey_sgqf" if loglik is not None else "blocked_missing_t20_fixed_sgqf_evaluator",
+            "target_contract_status": "target_compatible_source_order_predator_prey_t20_sgqf" if loglik is not None else "blocked_missing_t20_fixed_sgqf_evaluator",
+            "route_id": manifest.get("route_id"),
+            "route_identity": route.route_identity if route is not None else None,
+            "target_id": manifest.get("target_id"),
+            "data_state_sha256": manifest.get("state_sha256"),
+            "data_observation_sha256": manifest.get("observation_sha256"),
+            "cloud_level": manifest.get("cloud_level"),
+            "cloud_point_count": manifest.get("cloud_point_count"),
+            "time_order": manifest.get("time_order"),
             "reason": reason,
             "reason_codes": ["DIRECT_PREDATOR_PREY_SGQF_VALUE_SCORE_ROUTE" if executed_score else ("DIRECT_PREDATOR_PREY_SGQF_ROUTE" if loglik is not None else "PREDATOR_PREY_T20_FIXED_SGQF_EVALUATOR_REQUIRED")],
             "nonclaims": [
-                "direct SGQF predator-prey value plus analytical fixed-branch score route" if executed_score else "no fixed-SGQF T20 predator-prey value emitted in this phase",
+                "source-order transition-then-observe SGQF value plus physical manual score route" if executed_score else "no fixed-SGQF T20 predator-prey value emitted in this phase",
                 "P47 two-observation lower-rung SGQF diagnostic is not reported as the T20 source-scope row",
+                "old initial-observation-first value -103.13789 is a different target and is not a baseline for this cell",
                 "not a production-GPU timing result",
             ],
         }
@@ -1831,26 +2183,75 @@ def _cell_for_fixed_sgqf(row_id: str) -> dict[str, Any]:
                 "not a production-GPU timing result",
             ],
         }
+    if row_id == "zhao_cui_generalized_sv_synthetic_from_estimated_values":
+        avg_loglik, loglik, score, runtime, route, reason = (
+            _generalized_sv_sgqf_value_score()
+        )
+        executed_score = loglik is not None and score is not None
+        manifest = dict(route.manifest) if route is not None else {}
+        return {
+            "lane": "highdim_source_scope",
+            "row_id": row_id,
+            "algorithm_id": "fixed_sgqf",
+            "comparison_status": "executed_value_score" if executed_score else "blocked",
+            "numeric_execution_status": (
+                "executed_generalized_sv_raw_y_sgqf_value_score"
+                if executed_score
+                else "blocked_generalized_sv_raw_y_sgqf_value_score"
+            ),
+            "average_log_likelihood": avg_loglik,
+            "log_likelihood": loglik,
+            "reference_log_likelihood": None,
+            "absolute_value_gap_to_kalman": None,
+            "score": score,
+            "score_l2_norm": (
+                math.sqrt(sum(item * item for item in score))
+                if score is not None
+                else None
+            ),
+            "score_coordinate_system": manifest.get("parameter_coordinate"),
+            "score_derivative_provenance": (
+                "fixed_sgqf_generalized_sv_raw_y_manual_analytical_forward_sensitivity_same_scalar"
+                if executed_score
+                else None
+            ),
+            "runtime_seconds": runtime,
+            "mc_standard_error": None,
+            "target_contract_status": (
+                "target_compatible_generalized_sv_prior_mean_raw_y_gaussian_projection"
+                if executed_score
+                else "blocked_generalized_sv_prior_mean_raw_y_gaussian_projection"
+            ),
+            "route_id": manifest.get("route_id"),
+            "route_identity": route.route_identity if route is not None else None,
+            "target_id": manifest.get("target_id"),
+            "data_state_sha256": manifest.get("state_sha256"),
+            "data_observation_sha256": manifest.get("observation_sha256"),
+            "cloud_sha256": manifest.get("cloud_sha256"),
+            "cloud_level": manifest.get("cloud_level"),
+            "cloud_point_count": manifest.get("cloud_point_count"),
+            "time_order": manifest.get("time_order"),
+            "reason": reason,
+            "reason_codes": [
+                "GENERALIZED_SV_RAW_Y_SGQF_MANUAL_VALUE_SCORE_ROUTE"
+                if executed_score
+                else "GENERALIZED_SV_RAW_Y_SGQF_VALUE_SCORE_BLOCKED"
+            ],
+            "nonclaims": list(manifest.get("nonclaims", [])) + [
+                "level-3 one-dimensional quadrature is a fixed approximation",
+                "GPU/XLA readiness is a separate engineering gate",
+            ],
+        }
     # Genuine blocks under current route set.
-    generalized_sv = row_id == "zhao_cui_generalized_sv_synthetic_from_estimated_values"
     reasons = {
         "zhao_cui_spatial_sir_austria_j9_T20": "no reviewed SGQF source-scope spatial SIR route is wired",
-        "zhao_cui_generalized_sv_synthetic_from_estimated_values": (
-            "blocked_source_row_evaluator_missing: no reviewed fixed-SGQF exact-row evaluator is wired for "
-            "zhao_cui_generalized_sv_synthetic_from_estimated_values; native-oracle, precursor, auxiliary, actual-SV, "
-            "and KSC evidence are not source-row admission evidence"
-        ),
     }
     return {
         "lane": "highdim_source_scope",
         "row_id": row_id,
         "algorithm_id": "fixed_sgqf",
         "comparison_status": "blocked",
-        "numeric_execution_status": (
-            "blocked_generalized_sv_fixed_sgqf_source_row_evaluator_missing"
-            if generalized_sv
-            else "blocked_by_two_lane_contract_or_missing_source_scope_evaluator"
-        ),
+        "numeric_execution_status": "blocked_by_two_lane_contract_or_missing_source_scope_evaluator",
         "average_log_likelihood": None,
         "log_likelihood": None,
         "reference_log_likelihood": None,
@@ -1861,27 +2262,12 @@ def _cell_for_fixed_sgqf(row_id: str) -> dict[str, Any]:
         "score_derivative_provenance": None,
         "runtime_seconds": None,
         "mc_standard_error": None,
-        "target_contract_status": (
-            "blocked_exact_source_row_evaluator_missing"
-            if generalized_sv
-            else "blocked_fixed_sgqf_current_scope"
-        ),
+        "target_contract_status": "blocked_fixed_sgqf_current_scope",
         "reason": reasons[row_id],
-        "reason_codes": (
-            [
-                "GENERALIZED_SV_EXACT_SOURCE_ROW_FIXED_SGQF_EVALUATOR_REQUIRED",
-                "PRECURSOR_NATIVE_ORACLE_AUXILIARY_ACTUAL_SV_KSC_NOT_ADMISSION_EVIDENCE",
-            ]
-            if generalized_sv
-            else ["TWO_LANE_FIXED_SGQF_BLOCK_OR_MISSING_EVALUATOR"]
-        ),
+        "reason_codes": ["TWO_LANE_FIXED_SGQF_BLOCK_OR_MISSING_EVALUATOR"],
         "nonclaims": [
             "not executed in the current source-scope leaderboard lane",
-            (
-                "native dense oracle, precursor, auxiliary, actual-SV, and KSC evidence may inform debugging only and do not admit this fixed-SGQF source-row cell"
-                if generalized_sv
-                else "no SGQF broad high-dimensional admission is implied"
-            ),
+            "no SGQF broad high-dimensional admission is implied",
         ],
     }
 
@@ -1894,7 +2280,7 @@ def _apply_score_status(row: dict[str, Any]) -> dict[str, Any]:
         row["score_status"] = "analytical_score_emitted"
         row["score_status_reason"] = "SGQF score vector emitted by reviewed analytical fixed-branch score path"
         return row
-    if row["row_id"] == PARAMETERIZED_SIR_ROW and row.get("score_status"):
+    if row["row_id"] in {FIXED_SIR_ROW, PARAMETERIZED_SIR_ROW} and row.get("score_status"):
         return row
     mapping = {
         "benchmark_lgssm_exact_oracle_m3_T50": (
@@ -1981,6 +2367,14 @@ def _validate_analytical_score_contract(rows: list[dict[str, Any]]) -> None:
             raise ValueError(
                 f"{row['row_id']} {row['algorithm_id']}: admitted score row must declare same_route_value_score"
             )
+        if (
+            row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+            and not _zhao_cui_hmc_route_is_admissible(row)
+        ):
+            raise ValueError(
+                f"{row['row_id']} {row['algorithm_id']}: admitted Zhao-Cui score "
+                "requires the fixed-variant HMC filtering route identity"
+            )
         lower = provenance.lower()
         if "autodiff" in lower or "gradienttape" in lower or "gradient_tape" in lower:
             raise ValueError(f"{row['row_id']} {row['algorithm_id']}: score provenance must not use autodiff/tape fallback")
@@ -2014,7 +2408,7 @@ def _score_provenance_is_autodiff_or_historical_svd_ukf(row: dict[str, Any]) -> 
 def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     updated: list[dict[str, Any]] = []
     for row in rows:
-        row = dict(row)
+        row = _normalize_legacy_zhao_cui_route_identity(dict(row))
         provenance = str(row.get("score_derivative_provenance") or "").lower()
         repaired_zhao_cui_tt = (
             row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
@@ -2025,6 +2419,7 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
                 "zhao_cui_generalized_sv_synthetic_from_estimated_values",
             }
             and "manual_parameter_score_methods_only" in provenance
+            and _zhao_cui_hmc_route_is_admissible(row)
         )
         repaired_parameterized_sir = (
             row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
@@ -2032,8 +2427,9 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
             and provenance == "zhao_cui_sir_d18_local_complete_data_manual_parameter_score_methods"
             and row.get("target_scope") == "local_complete_data_zhao_cui_sir_d18_component"
             and row.get("row_admission_status") == "scoped_component_row_admitted"
+            and _zhao_cui_hmc_route_is_admissible(row)
         )
-        if (repaired_zhao_cui_tt or repaired_parameterized_sir) and row.get("comparison_status") == "executed_value_score":
+        if repaired_parameterized_sir and row.get("comparison_status") == "executed_value_score":
             updated.append(row)
             continue
         if (
@@ -2046,7 +2442,8 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
             row["score_status"] = "blocked_scoped_component_metadata_guard_failed"
             row["score_status_reason"] = (
                 "parameterized SIR scoped component row requires explicit "
-                "row_admission_status and target_scope metadata before score admission"
+                "row_admission_status, target_scope, and fixed-variant HMC "
+                "route metadata before score admission"
             )
             row["reason"] = row["score_status_reason"]
             row["score"] = None
@@ -2055,6 +2452,38 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
                 "row id alone is insufficient for scoped component score admission",
             ]
             updated.append(row)
+            continue
+        if repaired_zhao_cui_tt and row.get("comparison_status") == "executed_value_score":
+            updated.append(row)
+            continue
+        if (
+            row.get("comparison_status") == "executed_value_score"
+            and row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+            and _score_provenance_is_autodiff_or_historical_svd_ukf(row)
+        ):
+            row["comparison_status"] = "executed_value_only"
+            row["numeric_execution_status"] = (
+                "executed_numeric_value_only_autodiff_score_not_admitted"
+            )
+            row["score_status"] = "blocked_autodiff_not_admitted"
+            row["score_status_reason"] = (
+                "autodiff score provenance is diagnostic only; analytical "
+                "gradient accuracy is required"
+            )
+            row["reason"] = row["score_status_reason"]
+            row["score"] = None
+            row["score_l2_norm"] = None
+            row["score_coordinate_system"] = None
+            row["nonclaims"] = list(row.get("nonclaims", [])) + [
+                "autodiff or historical SVD score provenance is diagnostic only",
+            ]
+            updated.append(row)
+            continue
+        if (
+            row.get("algorithm_id") == "zhao_cui_scalar_or_multistate"
+            and row.get("comparison_status") == "executed_value_score"
+        ):
+            updated.append(_demote_zhao_cui_historical_score(row))
             continue
         if row.get("comparison_status") == "executed_value_score" and _score_provenance_is_autodiff_or_historical_svd_ukf(row):
             is_historical_svd_ukf = row.get("algorithm_id") == "ukf" and (
@@ -2111,6 +2540,17 @@ def _enforce_analytical_score_admission(rows: list[dict[str, Any]]) -> list[dict
 
 
 def _phase7_batch_gpu_xla_status(row: dict[str, Any]) -> dict[str, Any]:
+    if row.get("algorithm_applicability") == "not_applicable_scoped_row":
+        return {
+            "scope": "scoped_component_row",
+            "batch_status": "not_applicable_scoped_row",
+            "cpu_timing_status": "not_applicable_scoped_row",
+            "gpu_xla_status": "not_applicable_scoped_row",
+            "timing_rank_status": "not_rankable_not_applicable",
+            "evidence_paths": [],
+            "reason": "SGQF is not applicable to this scoped Zhao-Cui component row.",
+            "nonclaims": ["not a blocked SGQF main-row result"],
+        }
     if row.get("row_admission_status") == "scoped_component_row_admitted":
         return {
             "scope": "scoped_component_row",
@@ -2128,8 +2568,33 @@ def _phase7_batch_gpu_xla_status(row: dict[str, Any]) -> dict[str, Any]:
                 "not ranked as a full three-algorithm observed-data/filtering row",
             ],
         }
-    full_value_score = row["comparison_status"] == "executed_value_score"
-    if full_value_score:
+    required_result_complete = row.get("cell_result_complete") is True
+    if required_result_complete:
+        evidence_path = SGQF_GPU_EVIDENCE.get(str(row.get("row_id")))
+        if row.get("algorithm_id") == "fixed_sgqf" and evidence_path is not None:
+            evidence = _load(evidence_path)
+            if evidence.get("status") != "PASS":
+                raise ValueError(f"trusted SGQF GPU evidence is not PASS: {evidence_path}")
+            if evidence.get("route_identity") != row.get("route_identity"):
+                raise ValueError(
+                    f"trusted SGQF GPU route identity mismatch: {evidence_path}"
+                )
+            return {
+                "scope": "main_leaderboard_row",
+                "batch_status": "not_claimed_no_reviewed_batched_main_row_evaluator",
+                "cpu_timing_status": "source_runtime_reused_explanatory_only",
+                "gpu_xla_status": "trusted_row_specific_gpu_xla_pass",
+                "timing_rank_status": "not_ranked_by_phase7_timing",
+                "evidence_paths": [str(evidence_path.relative_to(ROOT))],
+                "reason": (
+                    "Route-identity-matched trusted GPU/XLA engineering evidence passes; "
+                    "timing is not used for ranking."
+                ),
+                "nonclaims": [
+                    "GPU/XLA execution is engineering evidence only",
+                    "not ranked by GPU timing",
+                ],
+            }
         cpu_status = (
             "source_runtime_reused_explanatory_only"
             if row.get("runtime_seconds") is not None
@@ -2144,7 +2609,7 @@ def _phase7_batch_gpu_xla_status(row: dict[str, Any]) -> dict[str, Any]:
             "evidence_paths": [],
             "reason": (
                 "Phase 7 did not run or admit a row-specific batched/GPU/XLA "
-                "main leaderboard benchmark for this value/score cell."
+                "main leaderboard benchmark for this admitted cell."
             ),
             "nonclaims": [
                 "no row-specific batched main evaluator claim",
@@ -2154,14 +2619,14 @@ def _phase7_batch_gpu_xla_status(row: dict[str, Any]) -> dict[str, Any]:
         }
     return {
         "scope": "main_leaderboard_row",
-        "batch_status": "not_applicable_until_value_score_row_exists",
-        "cpu_timing_status": "not_applicable_until_value_score_row_exists",
-        "gpu_xla_status": "not_applicable_until_value_score_row_exists",
+        "batch_status": "not_applicable_until_required_result_exists",
+        "cpu_timing_status": "not_applicable_until_required_result_exists",
+        "gpu_xla_status": "not_applicable_until_required_result_exists",
         "timing_rank_status": "not_rankable_correctness_gate_open",
         "evidence_paths": [],
-        "reason": "Value/score row is not admitted, so timing cannot rank or rescue this cell.",
+        "reason": "The required row result is not admitted, so timing cannot rank or rescue this cell.",
         "nonclaims": [
-            "no batch/GPU/XLA readiness claim while value/score gate remains open",
+            "no batch/GPU/XLA readiness claim while the required-result gate remains open",
             "not ranked by timing",
         ],
     }
@@ -2171,6 +2636,88 @@ def _apply_phase7_status(row: dict[str, Any]) -> dict[str, Any]:
     row = dict(row)
     row["phase7_batch_gpu_xla_status"] = _phase7_batch_gpu_xla_status(row)
     return row
+
+
+def _attach_reset_source_data_identity(row: dict[str, Any]) -> dict[str, Any]:
+    """Bind every actual/KSC algorithm cell to the same reset SV data."""
+
+    if row.get("row_id") not in {
+        "zhao_cui_sv_actual_nongaussian_T1000",
+        "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+    }:
+        return row
+    dataset = _source_order_sv_dataset()
+    manifest = dataset.manifest
+    updated = dict(row)
+    updated.update(
+        {
+            "data_target_id": manifest["target_id"],
+            "data_identity": dataset.identity,
+            "data_state_sha256": manifest["state_sha256"],
+            "data_observation_sha256": manifest["observation_sha256"],
+            "time_order": manifest["time_order"],
+            "data_seed": manifest["seed"],
+        }
+    )
+    updated["nonclaims"] = list(updated.get("nonclaims", [])) + [
+        "reset seed-81101 transition-first data; old initial-observation-first values are historical only"
+    ]
+    return updated
+
+
+def _attach_repository_sgqf_route_identity(row: dict[str, Any]) -> dict[str, Any]:
+    """Issue identities for legacy direct SGQF routes from repository facts."""
+
+    if row.get("algorithm_id") != "fixed_sgqf":
+        return row
+    if not str(row.get("comparison_status", "")).startswith("executed"):
+        return row
+    if row.get("route_identity"):
+        return row
+    route_id = row.get("value_route_id") or row.get("route_id")
+    if not isinstance(route_id, str) or not route_id:
+        raise ValueError(
+            f"{row.get('row_id')} fixed_sgqf executed route lacks repository route id"
+        )
+    updated = dict(row)
+    row_id = str(row["row_id"])
+    if row_id == "benchmark_lgssm_exact_oracle_m3_T50":
+        dataset = _lgssm_dataset(81100)
+        updated.update(
+            {
+                "data_target_id": "bayesfilter_lgssm_seed81100_transition_then_observe_v1",
+                "data_seed": 81100,
+                "data_state_sha256": _tensor_hash(dataset["states"]),
+                "data_observation_sha256": _tensor_hash(dataset["observations"]),
+                "time_order": "50_transition_then_observe_steps",
+            }
+        )
+    elif row_id in {
+        "zhao_cui_sv_actual_nongaussian_T1000",
+        "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+    }:
+        updated["cloud_level"] = 2
+        updated["cloud_point_count"] = 3
+    payload = {
+        "schema": "bayesfilter.repository_sgqf_route_identity.v1",
+        "row_id": row_id,
+        "algorithm_id": "fixed_sgqf",
+        "route_id": route_id,
+        "result_kind": _cell_requirement(row_id, "fixed_sgqf")[1],
+        "data_target_id": updated.get("data_target_id") or updated.get("target_id"),
+        "data_identity": updated.get("data_identity"),
+        "data_state_sha256": updated.get("data_state_sha256"),
+        "data_observation_sha256": updated.get("data_observation_sha256"),
+        "time_order": updated.get("time_order"),
+        "cloud_level": updated.get("cloud_level"),
+        "cloud_point_count": updated.get("cloud_point_count"),
+        "score_derivative_provenance": updated.get("score_derivative_provenance"),
+        "dtype": "float64",
+    }
+    updated["route_id"] = route_id
+    updated["route_identity"] = _semantic_hash(payload)
+    updated["route_identity_manifest"] = payload
+    return updated
 
 
 def build_artifact() -> dict[str, Any]:
@@ -2207,10 +2754,14 @@ def build_artifact() -> dict[str, Any]:
                 row = _cell_from_p8d(algorithm_id, row_id, cell)
             row = _apply_p91_zhao_cui_status(row)
             rows.append(row)
+    rows = [_attach_reset_source_data_identity(row) for row in rows]
     rows = _enforce_analytical_score_admission(rows)
     rows = _apply_value_score_route_contract(rows)
+    rows = [_attach_repository_sgqf_route_identity(row) for row in rows]
+    rows = _apply_applicability_contract(rows)
     rows = [_apply_phase7_status(row) for row in rows]
     _validate_analytical_score_contract(rows)
+    row_summary = _row_summary_from_rows(rows)
 
     return _json_safe(
         {
@@ -2234,7 +2785,8 @@ def build_artifact() -> dict[str, Any]:
                 ),
             },
             "rows": rows,
-            "row_summary": _row_summary_from_rows(rows),
+            "row_summary": row_summary,
+            "sgqf_column_complete": _sgqf_column_complete(row_summary),
             "nonclaims": [
                 "This highdim packet combines the reviewed P8d numeric artifact with direct SGQF row routes where already supported in code/tests.",
                 "CUT4 is excluded from the highdim lane by contract.",
@@ -2250,6 +2802,134 @@ def build_artifact() -> dict[str, Any]:
                 PARAMETERIZED_SIR_ROW
             ],
             "comparison_algorithm_ids": HIGHDIM_ALGOS,
+        }
+    )
+
+
+def build_sgqf_column_artifact() -> dict[str, Any]:
+    """Execute the SGQF column without invoking unrelated slow algorithms."""
+
+    rows = [
+        _attach_reset_source_data_identity(
+            _apply_score_status(_cell_for_fixed_sgqf(row_id))
+        )
+        for row_id in HIGHDIM_ROWS
+    ]
+    rows = _enforce_analytical_score_admission(rows)
+    rows = _apply_value_score_route_contract(rows)
+    rows = [_attach_repository_sgqf_route_identity(row) for row in rows]
+    contracted = []
+    for original in rows:
+        row = dict(original)
+        applicability, result_kind = _cell_requirement(
+            row["row_id"], "fixed_sgqf"
+        )
+        if applicability == "not_applicable_scoped_row":
+            row["comparison_status"] = "not_applicable"
+            row["numeric_execution_status"] = "not_applicable_scoped_row"
+        status = row.get("comparison_status")
+        value_admitted = status in {
+            "executed_value_only",
+            "executed_value_score",
+            "executed_mc_value_only",
+        }
+        score_admitted = status == "executed_value_score"
+        if result_kind == "value_score":
+            complete = score_admitted
+        elif result_kind == "value_only_no_free_theta":
+            complete = status == "executed_value_only"
+        else:
+            complete = True
+        row.update(
+            {
+                "algorithm_applicability": applicability,
+                "required_result_kind": result_kind,
+                "value_admitted": (
+                    value_admitted if applicability == "applicable" else None
+                ),
+                "score_admitted": (
+                    score_admitted if result_kind == "value_score" else None
+                ),
+                "cell_result_complete": complete,
+            }
+        )
+        contracted.append(_apply_phase7_status(row))
+    _validate_analytical_score_contract(contracted)
+
+    row_summary = []
+    for row in contracted:
+        scoped = row["row_id"] == PARAMETERIZED_SIR_ROW
+        complete = row["cell_result_complete"] is True
+        row_summary.append(
+            {
+                "row_id": row["row_id"],
+                "row_scope": (
+                    "scoped_component_row"
+                    if scoped
+                    else "main_observed_data_filtering_row"
+                ),
+                "executed_algorithms": (
+                    ["fixed_sgqf"]
+                    if str(row["comparison_status"]).startswith("executed")
+                    else []
+                ),
+                "score_admitted_algorithms": (
+                    ["fixed_sgqf"]
+                    if row["comparison_status"] == "executed_value_score"
+                    else []
+                ),
+                "value_complete": (
+                    True
+                    if scoped
+                    else row["value_admitted"] is True
+                ),
+                "score_complete": (
+                    True
+                    if row["required_result_kind"] != "value_score"
+                    else row["score_admitted"] is True
+                ),
+                "comparison_ready": False,
+                "sgqf_complete": complete,
+                "full_three_way_ready": False,
+                "full_three_way_ready_deprecated": True,
+                "scoped_component_ready": scoped and complete,
+                "blocked_or_missing_algorithms": (
+                    [] if complete or scoped else ["fixed_sgqf"]
+                ),
+            }
+        )
+    column_complete = all(
+        row["sgqf_complete"] is True
+        for row in row_summary
+        if row["row_scope"] == "main_observed_data_filtering_row"
+    )
+    return _json_safe(
+        {
+            "benchmark": "bayesfilter_sgqf_highdim_column",
+            "metadata_date": "2026-07-22",
+            "manifest": {
+                "execution_mode": "row_selective_sgqf_column_only",
+                "comparison_program_master": MASTER_PROGRAM,
+                "repair_program": (
+                    "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-"
+                    "repair-master-program-2026-07-22.md"
+                ),
+                "algorithm_id": "fixed_sgqf",
+                "row_count": len(HIGHDIM_ROWS),
+                "main_row_count": len(HIGHDIM_ROWS) - 1,
+                "scoped_not_applicable_row_count": 1,
+            },
+            "rows": contracted,
+            "row_summary": row_summary,
+            "sgqf_column_complete": column_complete,
+            "nonclaims": [
+                "This artifact executes only fixed_sgqf cells and does not rerun UKF or Zhao-Cui comparators.",
+                "sgqf_column_complete is independent of three-way comparison readiness.",
+                "A completed deterministic column does not establish exact nonlinear likelihoods, superiority, or statistically supported ranking.",
+                "The parameterized SIR local complete-data component is not applicable to SGQF and is excluded from the column denominator.",
+            ],
+            "source_scope_row_ids": list(HIGHDIM_ROWS),
+            "comparison_algorithm_ids": ["fixed_sgqf"],
         }
     )
 
@@ -2282,8 +2962,10 @@ def build_artifact_from_cached_baseline(
     rows.extend(patch_rows)
     rows = _enforce_analytical_score_admission(rows)
     rows = _apply_value_score_route_contract(rows)
+    rows = _apply_applicability_contract(rows)
     rows = [_apply_phase7_status(row) for row in rows]
     _validate_analytical_score_contract(rows)
+    row_summary = _row_summary_from_rows(rows)
 
     manifest = dict(baseline.get("manifest", {}))
     manifest.update(
@@ -2328,7 +3010,8 @@ def build_artifact_from_cached_baseline(
             "metadata_date": "2026-07-03",
             "manifest": manifest,
             "rows": rows,
-            "row_summary": _row_summary_from_rows(rows),
+            "row_summary": row_summary,
+            "sgqf_column_complete": _sgqf_column_complete(row_summary),
             "nonclaims": nonclaims,
             "source_scope_row_ids": row_ids,
             "comparison_algorithm_ids": baseline.get("comparison_algorithm_ids", HIGHDIM_ALGOS),
@@ -2370,13 +3053,17 @@ def _markdown(payload: dict[str, Any], json_path: Path) -> str:
         "",
         "## Row readiness summary",
         "",
-        "| Row | Scope | Executed algorithms | Full three-way ready | Scoped component ready | Blocked / missing algorithms |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Row | Scope | Executed algorithms | Value complete | Score complete | Comparison ready | SGQF complete | Full three-way ready (deprecated) | Scoped component ready | Blocked / missing algorithms |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     for row in payload["row_summary"]:
         lines.append(
-            f"| {row['row_id']} | {row.get('row_scope') or ''} | {', '.join(row['executed_algorithms']) or 'none'} | {row['full_three_way_ready']} | {row.get('scoped_component_ready')} | {', '.join(row['blocked_or_missing_algorithms']) or 'none'} |"
+            f"| {row['row_id']} | {row.get('row_scope') or ''} | {', '.join(row['executed_algorithms']) or 'none'} | {row['value_complete']} | {row['score_complete']} | {row['comparison_ready']} | {row['sgqf_complete']} | {row['full_three_way_ready']} | {row.get('scoped_component_ready')} | {', '.join(row['blocked_or_missing_algorithms']) or 'none'} |"
         )
+    lines.extend([
+        "",
+        f"SGQF column complete: `{payload['sgqf_column_complete']}`.",
+    ])
     lines.extend([
         "",
         "## Nonclaims",
@@ -2402,10 +3089,20 @@ def main() -> None:
         default=None,
         help="Optional validated scoped-row JSON to merge into --cached-baseline.",
     )
+    parser.add_argument(
+        "--sgqf-only",
+        action="store_true",
+        help="Execute only the applicability-aware SGQF column.",
+    )
     args = parser.parse_args()
     if (args.cached_baseline is None) != (args.scoped_patch is None):
         parser.error("--cached-baseline and --scoped-patch must be supplied together")
-    if args.cached_baseline is not None and args.scoped_patch is not None:
+    if args.sgqf_only and args.cached_baseline is not None:
+        parser.error("--sgqf-only cannot be combined with cached split/merge mode")
+    started = time.perf_counter()
+    if args.sgqf_only:
+        payload = build_sgqf_column_artifact()
+    elif args.cached_baseline is not None and args.scoped_patch is not None:
         payload = build_artifact_from_cached_baseline(
             _load(args.cached_baseline),
             _load(args.scoped_patch),
@@ -2414,6 +3111,38 @@ def main() -> None:
         )
     else:
         payload = build_artifact()
+    if args.sgqf_only:
+        diff = subprocess.check_output(
+            ["git", "diff", "--no-ext-diff", "--binary"], cwd=ROOT
+        )
+        payload["run_manifest"] = {
+            "git_commit": subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+            ).strip(),
+            "git_diff_sha256": hashlib.sha256(diff).hexdigest(),
+            "command": [sys.executable, *sys.argv],
+            "environment": sys.prefix,
+            "python": sys.version.split()[0],
+            "tensorflow": tf.__version__,
+            "tensorflow_probability": tfp.__version__,
+            "platform": platform.platform(),
+            "host": platform.node(),
+            "cpu_gpu_status": "cpu_only_gpu_intentionally_hidden",
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "unset"),
+            "data_version": "repository_sealed_per_row_tensor_hashes",
+            "random_seeds": [81100, 81101, 81103, 81104, 81105],
+            "wall_seconds": time.perf_counter() - started,
+            "output_json": _display_path(args.output),
+            "output_markdown": _display_path(args.markdown_output),
+            "plan": (
+                "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-repair-"
+                "master-program-2026-07-22.md"
+            ),
+            "result": (
+                "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-repair-"
+                "result-2026-07-22.md"
+            ),
+        }
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     args.markdown_output.write_text(_markdown(payload, args.output) + "\n", encoding="utf-8")
     print(json.dumps(payload, indent=2, sort_keys=True))

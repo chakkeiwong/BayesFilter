@@ -1,0 +1,3033 @@
+{
+  "cell_id": "PP-UKF",
+  "decision": "TUNING_FAILED",
+  "elapsed_seconds": 130.4093643840024,
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/campaign-01/PP-UKF/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "b7a558db1e9a48fcd79333e65771d933342a1933e93869a8d5193ce166019221",
+    "target_signature": "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5",
+    "training_state_hash": "sha256:70e6e49bef68672e43c2e44b4847ef105ec3b7c8ef5e22f2eead292d50ff561c"
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "preserved-transport public-tuner validation only",
+    "no convergence, truth recovery, or NeuTra validity claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-pp-ukf-offline-tuning-only-20260721-01/PP-UKF",
+  "parameter_names": [
+    "r",
+    "K",
+    "a",
+    "s",
+    "u",
+    "v"
+  ],
+  "passed": false,
+  "schema": "bayesfilter.neutra.all_models.cell_result.v1",
+  "target_signature": "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5",
+  "tuning": {
+    "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+    "artifact_path": "docs/plans/artifacts/bayesfilter-pp-ukf-offline-tuning-only-20260721-01/PP-UKF/tuning/hmc_kernel_tuning_result.json",
+    "bootstrap": {
+      "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "bootstrap_scoped_reusable_runner",
+        "bootstrap_round_count": 6,
+        "distinct_static_runner_contract_count": 2,
+        "distinct_static_runner_contracts": [
+          {
+            "static_contract_hash": "249c95b636ba70d2481b934f9963e451a4c622c3645aed10cccbb9120b988c5b",
+            "static_contract_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "excluded_dynamic_fields": [
+                "seed",
+                "step_size"
+              ],
+              "hmc_adapter_signature": "85ede0d7bf35e5360f106a0b1445bd2e76883bb2ed9795fd5a1848cb12966226",
+              "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+              "num_burnin_steps": 8,
+              "num_leapfrog_steps": 5,
+              "num_results": 32,
+              "runner": "build_reusable_full_chain_tfp_hmc_runner",
+              "semantic_source": "run_hmc_bootstrap_screen",
+              "target_dimension": 6,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            }
+          },
+          {
+            "static_contract_hash": "5ff34845e85b8291402e995bddce61fa0ecde3e32d06c91236f2fb1214035f5e",
+            "static_contract_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "excluded_dynamic_fields": [
+                "seed",
+                "step_size"
+              ],
+              "hmc_adapter_signature": "85ede0d7bf35e5360f106a0b1445bd2e76883bb2ed9795fd5a1848cb12966226",
+              "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+              "num_burnin_steps": 8,
+              "num_leapfrog_steps": 3,
+              "num_results": 32,
+              "runner": "build_reusable_full_chain_tfp_hmc_runner",
+              "semantic_source": "run_hmc_bootstrap_screen",
+              "target_dimension": 6,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            }
+          }
+        ],
+        "dynamic_inputs_preserve_round_semantics": true,
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "fallback_status": "none",
+        "fallback_to_single_use_runner": false,
+        "injected_runner_call_count": 0,
+        "reusable_runner_build_count": 2,
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": false,
+            "static_contract_hash": "249c95b636ba70d2481b934f9963e451a4c622c3645aed10cccbb9120b988c5b",
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 1,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": false,
+            "static_contract_hash": "5ff34845e85b8291402e995bddce61fa0ecde3e32d06c91236f2fb1214035f5e",
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 2,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": true,
+            "static_contract_hash": "5ff34845e85b8291402e995bddce61fa0ecde3e32d06c91236f2fb1214035f5e",
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 3,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": true,
+            "static_contract_hash": "5ff34845e85b8291402e995bddce61fa0ecde3e32d06c91236f2fb1214035f5e",
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 4,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": true,
+            "static_contract_hash": "5ff34845e85b8291402e995bddce61fa0ecde3e32d06c91236f2fb1214035f5e",
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 5,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": true,
+            "static_contract_hash": "5ff34845e85b8291402e995bddce61fa0ecde3e32d06c91236f2fb1214035f5e",
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "num_leapfrog_steps": null,
+          "payload_hash": null,
+          "preserved": false,
+          "screen_config_payload": null,
+          "seed": null,
+          "selected_round_index": null,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "step_size": null
+        },
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0
+      },
+      "config": {
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "chain_execution_mode": "tf_function",
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "screen_num_burnin_steps": 8,
+        "screen_num_results": 32,
+        "seed": [
+          20263648,
+          9184
+        ],
+        "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.bootstrap",
+        "target_accept_prob": 0.7,
+        "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+        "target_status_trace_policy": "per_chain_step",
+        "use_xla": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "adapter_signature_match": "hard_veto",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repair_band": "bootstrap_repair_trigger",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic",
+        "target_log_prob_finite": "hard_veto"
+      },
+      "final_status": "repair_budget_exhausted",
+      "geometry_artifact_hash": "7f1c5638cbeb699dd0fc3a26af80be083f2c38b9079e489215e8b58e8f8c37bd",
+      "hmc_adapter_signature": "85ede0d7bf35e5360f106a0b1445bd2e76883bb2ed9795fd5a1848cb12966226",
+      "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "passed": false,
+      "reports_gpu_or_xla_readiness": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_trajectory_tuning": false,
+      "rounds": [
+        {
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "diagnostics": {
+            "acceptance_rate": 0.9375,
+            "compile_chain_with_xla": true,
+            "divergence_count": null,
+            "divergence_status": "not_exposed_by_kernel",
+            "finite_sample_count": 32,
+            "jit_compile_metadata": "true",
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.16799531887475894,
+            "nonfinite_sample_count": 0,
+            "num_adaptation_steps": null,
+            "raw_diagnostics": {
+              "acceptance_rate": 0.9375,
+              "divergence_count": null,
+              "divergence_source": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "finite_sample_count": 32,
+              "hmc_health_diagnostics": {
+                "acceptance_finite": true,
+                "acceptance_rate": 0.9375,
+                "diagnostic_role": "hmc_health_diagnostics_not_native_divergence",
+                "log_accept_ratio": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 0.16799531887475894,
+                  "nonfinite_count": 0
+                },
+                "log_acceptance_correction": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 5.816167881360698,
+                  "nonfinite_count": 0
+                },
+                "nonclaims": [
+                  "acceptance/log-accept/target-log-prob diagnostics are not native divergence telemetry",
+                  "no sampler convergence claim"
+                ],
+                "proposed_target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.53670301280891,
+                  "min": -119.57678227926031
+                },
+                "target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.53670301280891,
+                  "min": -119.57678227926031
+                }
+              },
+              "max_target_log_prob": -114.53670301280891,
+              "min_target_log_prob": -119.57678227926031,
+              "native_divergence_status": "not_exposed_by_kernel",
+              "nonclaims": [
+                "finite tiny-chain diagnostics only",
+                "no sampler convergence claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "nonfinite_sample_count": 0,
+              "sample_shape": [
+                32,
+                6
+              ],
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "floor_count_total": 0,
+                "max_floor_count_value": 0,
+                "max_innovation_condition_estimate": 1.2855603137510574,
+                "min_min_innovation_eigenvalue": 8.067926563744196,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false,
+                "trace_entry_count": 32
+              },
+              "trace_policy": "standard",
+              "tuning_telemetry": {
+                "binary_acceptance_rate": 0.9375,
+                "binary_acceptance_rate_by_chain": [
+                  0.9375
+                ],
+                "chain_count": 1,
+                "diagnostic_roles": {
+                  "binary_acceptance_rate": "explanatory_movement_diagnostic",
+                  "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                  "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+                  "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+                  "path_return_fraction_by_chain": "promotion_veto_and_resonance_repair_trigger",
+                  "signed_log_accept_ratio_tails": "explanatory_alert_only"
+                },
+                "draw_count": 32,
+                "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+                "log_accept_ratio_finite_count": 32,
+                "log_accept_ratio_nonfinite_count": 0,
+                "max_abs_log_accept_energy_proxy": 0.16799531887475894,
+                "max_log_accept_ratio": 0.16799531887475894,
+                "mean_acceptance_probability": 0.9747060661361661,
+                "mean_acceptance_probability_by_chain": [
+                  0.9747060661361661
+                ],
+                "mean_displacement_l2_by_chain": [
+                  3.1250181312541976
+                ],
+                "min_log_accept_ratio": -0.11438678445658423,
+                "movement_rate_by_chain": [
+                  0.9354838709677419
+                ],
+                "movement_summary_available": true,
+                "negative_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "negative_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "nonclaims": [
+                  "bounded kernel-tuning telemetry only",
+                  "absolute log acceptance is not native Hamiltonian energy error",
+                  "no posterior convergence claim"
+                ],
+                "normalized_return_displacement_by_chain": [
+                  1.4860225880510693
+                ],
+                "path_return_fraction_by_chain": [
+                  0.03333333333333333
+                ],
+                "positive_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "positive_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "proxy_alert_threshold": 1000.0,
+                "repeated_state_fraction_by_chain": [
+                  0.06451612903225812
+                ],
+                "schema": "bayesfilter.hmc_tuning_telemetry.v4"
+              }
+            },
+            "runtime_finite": true,
+            "runtime_metadata": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "adaptation_policy_source": "reviewed_stage_7_phase_3",
+              "chain_execution_mode": "tf_function",
+              "current_state_source": "runtime_tensor_argument",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "dynamic_num_leapfrog_steps": false,
+              "first_call_s": 37.61508513499575,
+              "first_sample_chain_compile_execute_s": 37.61508513499575,
+              "initial_state_dtype": "float64",
+              "initial_state_shape": [
+                6
+              ],
+              "jit_compile": true,
+              "nonclaims": [
+                "reusable full-chain HMC engineering runner only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "no GPU readiness claim",
+                "no performance superiority claim"
+              ],
+              "num_leapfrog_steps": 5,
+              "num_leapfrog_steps_source": "static_runner_config",
+              "program_signature": "96718ecf366cc51ecc13abd154fb5f39ae14ffc0075f65f8f9b4f3b1b6324671",
+              "requested_target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "reusable_runner": true,
+              "runner_build_s": 0.0005193519900785759,
+              "runtime": "tfp.mcmc.sample_chain",
+              "sample_chain_call_s": 37.61508513499575,
+              "sample_chain_invocation_count": 1,
+              "sample_chain_timing_scope": "reusable_tf_function_xla_first_call_compile_plus_execute_then_warm_execute",
+              "seed_source": "runtime_tensor_argument",
+              "step_size_source": "runtime_tensor_argument",
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "timing_buckets": {
+                "first_call_s": "explanatory_only_first_sample_chain_compile_plus_execute_when_tf_function",
+                "runner_build_s": "explanatory_only_runner_callable_construction",
+                "trace_capture_s": "explanatory_only_post_sample_chain_trace_diagnostics_capture",
+                "warm_call_s": "explanatory_only_subsequent_sample_chain_execute"
+              },
+              "trace_capture_s": 1.7691019149933709,
+              "trace_capture_timing_scope": "post_sample_chain_public_safe_trace_diagnostics_capture",
+              "trace_policy": "standard",
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              },
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true,
+              "value_score_authority": "graph_native",
+              "warm_call_s": null,
+              "warm_sample_chain_execute_s": null,
+              "warm_sample_shape": null,
+              "warm_trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ]
+            },
+            "runtime_s": 37.61508513499575,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "checks": {
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "hmc_error_absent": true,
+                "latent_initial_scale_zero": true,
+                "log_accept_nonfinite_count_zero": true,
+                "num_adaptation_steps_zero": true,
+                "required_arrays_finite": true,
+                "sample_chain_returned": true,
+                "zero_divergences": false
+              },
+              "diagnostic_roles": {
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "hmc_error_absent": "hard_veto",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "required_arrays_finite": "hard_veto",
+                "sample_chain_returned": "hard_veto",
+                "screen": "bootstrap fixed-kernel screen only",
+                "zero_divergences": "hard_veto"
+              },
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ]
+            },
+            "target_accept_prob": null,
+            "target_log_prob_finite": true,
+            "target_log_prob_max": -114.53670301280891,
+            "target_log_prob_min": -119.57678227926031,
+            "target_status_telemetry": {
+              "all_status_valid": true,
+              "floor_count_total": 0,
+              "max_floor_count_value": 0,
+              "max_innovation_condition_estimate": 1.2855603137510574,
+              "min_min_innovation_eigenvalue": 8.067926563744196,
+              "status_nonvalid_count": 0,
+              "telemetry_failure_veto": false,
+              "telemetry_failure_veto_bool": false,
+              "trace_entry_count": 32
+            },
+            "trace_policy": "standard",
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ],
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              }
+            },
+            "use_xla": true,
+            "xla_requested": true
+          },
+          "hard_vetoes": [],
+          "leapfrog_clamped": false,
+          "num_leapfrog_steps": 5,
+          "repair_action": "increase_epsilon_recompute_l",
+          "repair_triggers": [
+            "acceptance_above_repair_band",
+            "increase_epsilon_recompute_l"
+          ],
+          "round_index": 0,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 5,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9184
+            ],
+            "step_size": 0.3194715521231362,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9184
+          ],
+          "step_size": 0.3194715521231362,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 5
+        },
+        {
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "diagnostics": {
+            "acceptance_rate": 0.96875,
+            "compile_chain_with_xla": true,
+            "divergence_count": null,
+            "divergence_status": "not_exposed_by_kernel",
+            "finite_sample_count": 32,
+            "jit_compile_metadata": "true",
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.7710828312684361,
+            "nonfinite_sample_count": 0,
+            "num_adaptation_steps": null,
+            "raw_diagnostics": {
+              "acceptance_rate": 0.96875,
+              "divergence_count": null,
+              "divergence_source": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "finite_sample_count": 32,
+              "hmc_health_diagnostics": {
+                "acceptance_finite": true,
+                "acceptance_rate": 0.96875,
+                "diagnostic_role": "hmc_health_diagnostics_not_native_divergence",
+                "log_accept_ratio": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 0.7710828312684361,
+                  "nonfinite_count": 0
+                },
+                "log_acceptance_correction": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 4.26026059910357,
+                  "nonfinite_count": 0
+                },
+                "nonclaims": [
+                  "acceptance/log-accept/target-log-prob diagnostics are not native divergence telemetry",
+                  "no sampler convergence claim"
+                ],
+                "proposed_target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.3677146712633,
+                  "min": -120.83988248864253
+                },
+                "target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.3677146712633,
+                  "min": -120.68884541892461
+                }
+              },
+              "max_target_log_prob": -114.3677146712633,
+              "min_target_log_prob": -120.68884541892461,
+              "native_divergence_status": "not_exposed_by_kernel",
+              "nonclaims": [
+                "finite tiny-chain diagnostics only",
+                "no sampler convergence claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "nonfinite_sample_count": 0,
+              "sample_shape": [
+                32,
+                6
+              ],
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "floor_count_total": 0,
+                "max_floor_count_value": 0,
+                "max_innovation_condition_estimate": 1.270197671751318,
+                "min_min_innovation_eigenvalue": 8.097116286165571,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false,
+                "trace_entry_count": 32
+              },
+              "trace_policy": "standard",
+              "tuning_telemetry": {
+                "binary_acceptance_rate": 0.96875,
+                "binary_acceptance_rate_by_chain": [
+                  0.96875
+                ],
+                "chain_count": 1,
+                "diagnostic_roles": {
+                  "binary_acceptance_rate": "explanatory_movement_diagnostic",
+                  "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                  "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+                  "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+                  "path_return_fraction_by_chain": "promotion_veto_and_resonance_repair_trigger",
+                  "signed_log_accept_ratio_tails": "explanatory_alert_only"
+                },
+                "draw_count": 32,
+                "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+                "log_accept_ratio_finite_count": 32,
+                "log_accept_ratio_nonfinite_count": 0,
+                "max_abs_log_accept_energy_proxy": 0.7710828312684361,
+                "max_log_accept_ratio": 0.7710828312684361,
+                "mean_acceptance_probability": 0.9001272039394714,
+                "mean_acceptance_probability_by_chain": [
+                  0.9001272039394714
+                ],
+                "mean_displacement_l2_by_chain": [
+                  3.8493154241744163
+                ],
+                "min_log_accept_ratio": -0.6312960360258817,
+                "movement_rate_by_chain": [
+                  0.967741935483871
+                ],
+                "movement_summary_available": true,
+                "negative_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "negative_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "nonclaims": [
+                  "bounded kernel-tuning telemetry only",
+                  "absolute log acceptance is not native Hamiltonian energy error",
+                  "no posterior convergence claim"
+                ],
+                "normalized_return_displacement_by_chain": [
+                  0.9926397036143095
+                ],
+                "path_return_fraction_by_chain": [
+                  0.0
+                ],
+                "positive_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "positive_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "proxy_alert_threshold": 1000.0,
+                "repeated_state_fraction_by_chain": [
+                  0.032258064516129004
+                ],
+                "schema": "bayesfilter.hmc_tuning_telemetry.v4"
+              }
+            },
+            "runtime_finite": true,
+            "runtime_metadata": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "adaptation_policy_source": "reviewed_stage_7_phase_3",
+              "chain_execution_mode": "tf_function",
+              "current_state_source": "runtime_tensor_argument",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "dynamic_num_leapfrog_steps": false,
+              "first_call_s": 30.43188431399176,
+              "first_sample_chain_compile_execute_s": 30.43188431399176,
+              "initial_state_dtype": "float64",
+              "initial_state_shape": [
+                6
+              ],
+              "jit_compile": true,
+              "nonclaims": [
+                "reusable full-chain HMC engineering runner only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "no GPU readiness claim",
+                "no performance superiority claim"
+              ],
+              "num_leapfrog_steps": 3,
+              "num_leapfrog_steps_source": "static_runner_config",
+              "program_signature": "4f4fdb8750c6744747d6f4151ce72a96f530cbc3bb4a99c2f3e406ed22fabf62",
+              "requested_target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "reusable_runner": true,
+              "runner_build_s": 0.0003095059946645051,
+              "runtime": "tfp.mcmc.sample_chain",
+              "sample_chain_call_s": 30.43188431399176,
+              "sample_chain_invocation_count": 1,
+              "sample_chain_timing_scope": "reusable_tf_function_xla_first_call_compile_plus_execute_then_warm_execute",
+              "seed_source": "runtime_tensor_argument",
+              "step_size_source": "runtime_tensor_argument",
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "timing_buckets": {
+                "first_call_s": "explanatory_only_first_sample_chain_compile_plus_execute_when_tf_function",
+                "runner_build_s": "explanatory_only_runner_callable_construction",
+                "trace_capture_s": "explanatory_only_post_sample_chain_trace_diagnostics_capture",
+                "warm_call_s": "explanatory_only_subsequent_sample_chain_execute"
+              },
+              "trace_capture_s": 0.05196572399290744,
+              "trace_capture_timing_scope": "post_sample_chain_public_safe_trace_diagnostics_capture",
+              "trace_policy": "standard",
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              },
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true,
+              "value_score_authority": "graph_native",
+              "warm_call_s": null,
+              "warm_sample_chain_execute_s": null,
+              "warm_sample_shape": null,
+              "warm_trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ]
+            },
+            "runtime_s": 30.43188431399176,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "checks": {
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "hmc_error_absent": true,
+                "latent_initial_scale_zero": true,
+                "log_accept_nonfinite_count_zero": true,
+                "num_adaptation_steps_zero": true,
+                "required_arrays_finite": true,
+                "sample_chain_returned": true,
+                "zero_divergences": false
+              },
+              "diagnostic_roles": {
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "hmc_error_absent": "hard_veto",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "required_arrays_finite": "hard_veto",
+                "sample_chain_returned": "hard_veto",
+                "screen": "bootstrap fixed-kernel screen only",
+                "zero_divergences": "hard_veto"
+              },
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ]
+            },
+            "target_accept_prob": null,
+            "target_log_prob_finite": true,
+            "target_log_prob_max": -114.3677146712633,
+            "target_log_prob_min": -120.68884541892461,
+            "target_status_telemetry": {
+              "all_status_valid": true,
+              "floor_count_total": 0,
+              "max_floor_count_value": 0,
+              "max_innovation_condition_estimate": 1.270197671751318,
+              "min_min_innovation_eigenvalue": 8.097116286165571,
+              "status_nonvalid_count": 0,
+              "telemetry_failure_veto": false,
+              "telemetry_failure_veto_bool": false,
+              "trace_entry_count": 32
+            },
+            "trace_policy": "standard",
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ],
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              }
+            },
+            "use_xla": true,
+            "xla_requested": true
+          },
+          "hard_vetoes": [],
+          "leapfrog_clamped": false,
+          "num_leapfrog_steps": 3,
+          "repair_action": "increase_epsilon_recompute_l",
+          "repair_triggers": [
+            "acceptance_above_repair_band",
+            "increase_epsilon_recompute_l"
+          ],
+          "round_index": 1,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 3,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9185
+            ],
+            "step_size": 0.6389431042462724,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9185
+          ],
+          "step_size": 0.6389431042462724,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 3
+        },
+        {
+          "clamp_direction": "min",
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "diagnostics": {
+            "acceptance_rate": 0.46875,
+            "compile_chain_with_xla": true,
+            "divergence_count": null,
+            "divergence_status": "not_exposed_by_kernel",
+            "finite_sample_count": 32,
+            "jit_compile_metadata": "true",
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 62.60699162389888,
+            "nonfinite_sample_count": 0,
+            "num_adaptation_steps": null,
+            "raw_diagnostics": {
+              "acceptance_rate": 0.46875,
+              "divergence_count": null,
+              "divergence_source": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "finite_sample_count": 32,
+              "hmc_health_diagnostics": {
+                "acceptance_finite": true,
+                "acceptance_rate": 0.46875,
+                "diagnostic_role": "hmc_health_diagnostics_not_native_divergence",
+                "log_accept_ratio": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 62.60699162389888,
+                  "nonfinite_count": 0
+                },
+                "log_acceptance_correction": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 16.403362256045607,
+                  "nonfinite_count": 0
+                },
+                "nonclaims": [
+                  "acceptance/log-accept/target-log-prob diagnostics are not native divergence telemetry",
+                  "no sampler convergence claim"
+                ],
+                "proposed_target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.63001263122273,
+                  "min": -163.25140293805055
+                },
+                "target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.63001263122273,
+                  "min": -119.00490351466969
+                }
+              },
+              "max_target_log_prob": -114.63001263122273,
+              "min_target_log_prob": -119.00490351466969,
+              "native_divergence_status": "not_exposed_by_kernel",
+              "nonclaims": [
+                "finite tiny-chain diagnostics only",
+                "no sampler convergence claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "nonfinite_sample_count": 0,
+              "sample_shape": [
+                32,
+                6
+              ],
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "floor_count_total": 0,
+                "max_floor_count_value": 0,
+                "max_innovation_condition_estimate": 1.236239521292159,
+                "min_min_innovation_eigenvalue": 8.121788566029878,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false,
+                "trace_entry_count": 32
+              },
+              "trace_policy": "standard",
+              "tuning_telemetry": {
+                "binary_acceptance_rate": 0.46875,
+                "binary_acceptance_rate_by_chain": [
+                  0.46875
+                ],
+                "chain_count": 1,
+                "diagnostic_roles": {
+                  "binary_acceptance_rate": "explanatory_movement_diagnostic",
+                  "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                  "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+                  "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+                  "path_return_fraction_by_chain": "promotion_veto_and_resonance_repair_trigger",
+                  "signed_log_accept_ratio_tails": "explanatory_alert_only"
+                },
+                "draw_count": 32,
+                "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+                "log_accept_ratio_finite_count": 32,
+                "log_accept_ratio_nonfinite_count": 0,
+                "max_abs_log_accept_energy_proxy": 62.60699162389888,
+                "max_log_accept_ratio": 1.7940932742627012,
+                "mean_acceptance_probability": 0.46878136002386017,
+                "mean_acceptance_probability_by_chain": [
+                  0.46878136002386017
+                ],
+                "mean_displacement_l2_by_chain": [
+                  1.9721175292455404
+                ],
+                "min_log_accept_ratio": -62.60699162389888,
+                "movement_rate_by_chain": [
+                  0.45161290322580644
+                ],
+                "movement_summary_available": true,
+                "negative_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "negative_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "nonclaims": [
+                  "bounded kernel-tuning telemetry only",
+                  "absolute log acceptance is not native Hamiltonian energy error",
+                  "no posterior convergence claim"
+                ],
+                "normalized_return_displacement_by_chain": [
+                  1.8036228841513346
+                ],
+                "path_return_fraction_by_chain": [
+                  0.3
+                ],
+                "positive_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "positive_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "proxy_alert_threshold": 1000.0,
+                "repeated_state_fraction_by_chain": [
+                  0.5483870967741935
+                ],
+                "schema": "bayesfilter.hmc_tuning_telemetry.v4"
+              }
+            },
+            "runtime_finite": true,
+            "runtime_metadata": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "adaptation_policy_source": "reviewed_stage_7_phase_3",
+              "chain_execution_mode": "tf_function",
+              "current_state_source": "runtime_tensor_argument",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "dynamic_num_leapfrog_steps": false,
+              "first_call_s": 30.43188431399176,
+              "first_sample_chain_compile_execute_s": 30.43188431399176,
+              "initial_state_dtype": "float64",
+              "initial_state_shape": [
+                6
+              ],
+              "jit_compile": true,
+              "nonclaims": [
+                "reusable full-chain HMC engineering runner only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "no GPU readiness claim",
+                "no performance superiority claim"
+              ],
+              "num_leapfrog_steps": 3,
+              "num_leapfrog_steps_source": "static_runner_config",
+              "program_signature": "4f4fdb8750c6744747d6f4151ce72a96f530cbc3bb4a99c2f3e406ed22fabf62",
+              "requested_target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "reusable_runner": true,
+              "runner_build_s": 0.0003095059946645051,
+              "runtime": "tfp.mcmc.sample_chain",
+              "sample_chain_call_s": 14.339497819004464,
+              "sample_chain_invocation_count": 2,
+              "sample_chain_timing_scope": "reusable_tf_function_xla_first_call_compile_plus_execute_then_warm_execute",
+              "seed_source": "runtime_tensor_argument",
+              "step_size_source": "runtime_tensor_argument",
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "timing_buckets": {
+                "first_call_s": "explanatory_only_first_sample_chain_compile_plus_execute_when_tf_function",
+                "runner_build_s": "explanatory_only_runner_callable_construction",
+                "trace_capture_s": "explanatory_only_post_sample_chain_trace_diagnostics_capture",
+                "warm_call_s": "explanatory_only_subsequent_sample_chain_execute"
+              },
+              "trace_capture_s": 0.060461815999588,
+              "trace_capture_timing_scope": "post_sample_chain_public_safe_trace_diagnostics_capture",
+              "trace_policy": "standard",
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              },
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true,
+              "value_score_authority": "graph_native",
+              "warm_call_s": 14.339497819004464,
+              "warm_sample_chain_execute_s": 14.339497819004464,
+              "warm_sample_shape": null,
+              "warm_trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ]
+            },
+            "runtime_s": 14.339497819004464,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "checks": {
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "hmc_error_absent": true,
+                "latent_initial_scale_zero": true,
+                "log_accept_nonfinite_count_zero": true,
+                "num_adaptation_steps_zero": true,
+                "required_arrays_finite": true,
+                "sample_chain_returned": true,
+                "zero_divergences": false
+              },
+              "diagnostic_roles": {
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "hmc_error_absent": "hard_veto",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "required_arrays_finite": "hard_veto",
+                "sample_chain_returned": "hard_veto",
+                "screen": "bootstrap fixed-kernel screen only",
+                "zero_divergences": "hard_veto"
+              },
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ]
+            },
+            "target_accept_prob": null,
+            "target_log_prob_finite": true,
+            "target_log_prob_max": -114.63001263122273,
+            "target_log_prob_min": -119.00490351466969,
+            "target_status_telemetry": {
+              "all_status_valid": true,
+              "floor_count_total": 0,
+              "max_floor_count_value": 0,
+              "max_innovation_condition_estimate": 1.236239521292159,
+              "min_min_innovation_eigenvalue": 8.121788566029878,
+              "status_nonvalid_count": 0,
+              "telemetry_failure_veto": false,
+              "telemetry_failure_veto_bool": false,
+              "trace_entry_count": 32
+            },
+            "trace_policy": "standard",
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ],
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              }
+            },
+            "use_xla": true,
+            "xla_requested": true
+          },
+          "hard_vetoes": [],
+          "leapfrog_clamped": true,
+          "num_leapfrog_steps": 3,
+          "repair_action": "bracketed_log_step_midpoint_recompute_l",
+          "repair_triggers": [
+            "acceptance_below_repair_band",
+            "bracketed_log_step_midpoint_recompute_l"
+          ],
+          "round_index": 2,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 3,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9186
+            ],
+            "step_size": 1.2778862084925449,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9186
+          ],
+          "step_size": 1.2778862084925449,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 2
+        },
+        {
+          "clamp_direction": "min",
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "diagnostics": {
+            "acceptance_rate": 0.84375,
+            "compile_chain_with_xla": true,
+            "divergence_count": null,
+            "divergence_status": "not_exposed_by_kernel",
+            "finite_sample_count": 32,
+            "jit_compile_metadata": "true",
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 1.47985583208495,
+            "nonfinite_sample_count": 0,
+            "num_adaptation_steps": null,
+            "raw_diagnostics": {
+              "acceptance_rate": 0.84375,
+              "divergence_count": null,
+              "divergence_source": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "finite_sample_count": 32,
+              "hmc_health_diagnostics": {
+                "acceptance_finite": true,
+                "acceptance_rate": 0.84375,
+                "diagnostic_role": "hmc_health_diagnostics_not_native_divergence",
+                "log_accept_ratio": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 1.47985583208495,
+                  "nonfinite_count": 0
+                },
+                "log_acceptance_correction": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 1.2460467296906286,
+                  "nonfinite_count": 0
+                },
+                "nonclaims": [
+                  "acceptance/log-accept/target-log-prob diagnostics are not native divergence telemetry",
+                  "no sampler convergence claim"
+                ],
+                "proposed_target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.53438182754121,
+                  "min": -120.89093975873543
+                },
+                "target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.53438182754121,
+                  "min": -119.25759605098007
+                }
+              },
+              "max_target_log_prob": -114.53438182754121,
+              "min_target_log_prob": -119.25759605098007,
+              "native_divergence_status": "not_exposed_by_kernel",
+              "nonclaims": [
+                "finite tiny-chain diagnostics only",
+                "no sampler convergence claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "nonfinite_sample_count": 0,
+              "sample_shape": [
+                32,
+                6
+              ],
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "floor_count_total": 0,
+                "max_floor_count_value": 0,
+                "max_innovation_condition_estimate": 1.2186871233389525,
+                "min_min_innovation_eigenvalue": 8.098667603680656,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false,
+                "trace_entry_count": 32
+              },
+              "trace_policy": "standard",
+              "tuning_telemetry": {
+                "binary_acceptance_rate": 0.84375,
+                "binary_acceptance_rate_by_chain": [
+                  0.84375
+                ],
+                "chain_count": 1,
+                "diagnostic_roles": {
+                  "binary_acceptance_rate": "explanatory_movement_diagnostic",
+                  "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                  "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+                  "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+                  "path_return_fraction_by_chain": "promotion_veto_and_resonance_repair_trigger",
+                  "signed_log_accept_ratio_tails": "explanatory_alert_only"
+                },
+                "draw_count": 32,
+                "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+                "log_accept_ratio_finite_count": 32,
+                "log_accept_ratio_nonfinite_count": 0,
+                "max_abs_log_accept_energy_proxy": 1.47985583208495,
+                "max_log_accept_ratio": 1.47985583208495,
+                "mean_acceptance_probability": 0.8631413023070917,
+                "mean_acceptance_probability_by_chain": [
+                  0.8631413023070917
+                ],
+                "mean_displacement_l2_by_chain": [
+                  3.451783584053619
+                ],
+                "min_log_accept_ratio": -1.0485910301845118,
+                "movement_rate_by_chain": [
+                  0.8387096774193549
+                ],
+                "movement_summary_available": true,
+                "negative_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "negative_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "nonclaims": [
+                  "bounded kernel-tuning telemetry only",
+                  "absolute log acceptance is not native Hamiltonian energy error",
+                  "no posterior convergence claim"
+                ],
+                "normalized_return_displacement_by_chain": [
+                  1.2509039684665986
+                ],
+                "path_return_fraction_by_chain": [
+                  0.03333333333333333
+                ],
+                "positive_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "positive_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "proxy_alert_threshold": 1000.0,
+                "repeated_state_fraction_by_chain": [
+                  0.16129032258064513
+                ],
+                "schema": "bayesfilter.hmc_tuning_telemetry.v4"
+              }
+            },
+            "runtime_finite": true,
+            "runtime_metadata": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "adaptation_policy_source": "reviewed_stage_7_phase_3",
+              "chain_execution_mode": "tf_function",
+              "current_state_source": "runtime_tensor_argument",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "dynamic_num_leapfrog_steps": false,
+              "first_call_s": 30.43188431399176,
+              "first_sample_chain_compile_execute_s": 30.43188431399176,
+              "initial_state_dtype": "float64",
+              "initial_state_shape": [
+                6
+              ],
+              "jit_compile": true,
+              "nonclaims": [
+                "reusable full-chain HMC engineering runner only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "no GPU readiness claim",
+                "no performance superiority claim"
+              ],
+              "num_leapfrog_steps": 3,
+              "num_leapfrog_steps_source": "static_runner_config",
+              "program_signature": "4f4fdb8750c6744747d6f4151ce72a96f530cbc3bb4a99c2f3e406ed22fabf62",
+              "requested_target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "reusable_runner": true,
+              "runner_build_s": 0.0003095059946645051,
+              "runtime": "tfp.mcmc.sample_chain",
+              "sample_chain_call_s": 14.549964463993092,
+              "sample_chain_invocation_count": 3,
+              "sample_chain_timing_scope": "reusable_tf_function_xla_first_call_compile_plus_execute_then_warm_execute",
+              "seed_source": "runtime_tensor_argument",
+              "step_size_source": "runtime_tensor_argument",
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "timing_buckets": {
+                "first_call_s": "explanatory_only_first_sample_chain_compile_plus_execute_when_tf_function",
+                "runner_build_s": "explanatory_only_runner_callable_construction",
+                "trace_capture_s": "explanatory_only_post_sample_chain_trace_diagnostics_capture",
+                "warm_call_s": "explanatory_only_subsequent_sample_chain_execute"
+              },
+              "trace_capture_s": 0.04837665500235744,
+              "trace_capture_timing_scope": "post_sample_chain_public_safe_trace_diagnostics_capture",
+              "trace_policy": "standard",
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              },
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true,
+              "value_score_authority": "graph_native",
+              "warm_call_s": 14.549964463993092,
+              "warm_sample_chain_execute_s": 14.549964463993092,
+              "warm_sample_shape": null,
+              "warm_trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ]
+            },
+            "runtime_s": 14.549964463993092,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "checks": {
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "hmc_error_absent": true,
+                "latent_initial_scale_zero": true,
+                "log_accept_nonfinite_count_zero": true,
+                "num_adaptation_steps_zero": true,
+                "required_arrays_finite": true,
+                "sample_chain_returned": true,
+                "zero_divergences": false
+              },
+              "diagnostic_roles": {
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "hmc_error_absent": "hard_veto",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "required_arrays_finite": "hard_veto",
+                "sample_chain_returned": "hard_veto",
+                "screen": "bootstrap fixed-kernel screen only",
+                "zero_divergences": "hard_veto"
+              },
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ]
+            },
+            "target_accept_prob": null,
+            "target_log_prob_finite": true,
+            "target_log_prob_max": -114.53438182754121,
+            "target_log_prob_min": -119.25759605098007,
+            "target_status_telemetry": {
+              "all_status_valid": true,
+              "floor_count_total": 0,
+              "max_floor_count_value": 0,
+              "max_innovation_condition_estimate": 1.2186871233389525,
+              "min_min_innovation_eigenvalue": 8.098667603680656,
+              "status_nonvalid_count": 0,
+              "telemetry_failure_veto": false,
+              "telemetry_failure_veto_bool": false,
+              "trace_entry_count": 32
+            },
+            "trace_policy": "standard",
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ],
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              }
+            },
+            "use_xla": true,
+            "xla_requested": true
+          },
+          "hard_vetoes": [],
+          "leapfrog_clamped": true,
+          "num_leapfrog_steps": 3,
+          "repair_action": "bracketed_log_step_midpoint_recompute_l",
+          "repair_triggers": [
+            "acceptance_above_acceptance_band_inside_repair_band",
+            "bracketed_log_step_midpoint_recompute_l"
+          ],
+          "round_index": 3,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 3,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9187
+            ],
+            "step_size": 0.9036020036098448,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9187
+          ],
+          "step_size": 0.9036020036098448,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 2
+        },
+        {
+          "clamp_direction": "min",
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "diagnostics": {
+            "acceptance_rate": 0.625,
+            "compile_chain_with_xla": true,
+            "divergence_count": null,
+            "divergence_status": "not_exposed_by_kernel",
+            "finite_sample_count": 32,
+            "jit_compile_metadata": "true",
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 13.396147782677197,
+            "nonfinite_sample_count": 0,
+            "num_adaptation_steps": null,
+            "raw_diagnostics": {
+              "acceptance_rate": 0.625,
+              "divergence_count": null,
+              "divergence_source": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "finite_sample_count": 32,
+              "hmc_health_diagnostics": {
+                "acceptance_finite": true,
+                "acceptance_rate": 0.625,
+                "diagnostic_role": "hmc_health_diagnostics_not_native_divergence",
+                "log_accept_ratio": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 13.396147782677197,
+                  "nonfinite_count": 0
+                },
+                "log_acceptance_correction": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 4.545160787188827,
+                  "nonfinite_count": 0
+                },
+                "nonclaims": [
+                  "acceptance/log-accept/target-log-prob diagnostics are not native divergence telemetry",
+                  "no sampler convergence claim"
+                ],
+                "proposed_target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.30522104464704,
+                  "min": -134.15947043371168
+                },
+                "target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.30522104464704,
+                  "min": -119.26524827035213
+                }
+              },
+              "max_target_log_prob": -114.30522104464704,
+              "min_target_log_prob": -119.26524827035213,
+              "native_divergence_status": "not_exposed_by_kernel",
+              "nonclaims": [
+                "finite tiny-chain diagnostics only",
+                "no sampler convergence claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "nonfinite_sample_count": 0,
+              "sample_shape": [
+                32,
+                6
+              ],
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "floor_count_total": 0,
+                "max_floor_count_value": 0,
+                "max_innovation_condition_estimate": 1.2619137491754835,
+                "min_min_innovation_eigenvalue": 8.09625155017855,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false,
+                "trace_entry_count": 32
+              },
+              "trace_policy": "standard",
+              "tuning_telemetry": {
+                "binary_acceptance_rate": 0.625,
+                "binary_acceptance_rate_by_chain": [
+                  0.625
+                ],
+                "chain_count": 1,
+                "diagnostic_roles": {
+                  "binary_acceptance_rate": "explanatory_movement_diagnostic",
+                  "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                  "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+                  "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+                  "path_return_fraction_by_chain": "promotion_veto_and_resonance_repair_trigger",
+                  "signed_log_accept_ratio_tails": "explanatory_alert_only"
+                },
+                "draw_count": 32,
+                "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+                "log_accept_ratio_finite_count": 32,
+                "log_accept_ratio_nonfinite_count": 0,
+                "max_abs_log_accept_energy_proxy": 13.396147782677197,
+                "max_log_accept_ratio": 2.4290824229804664,
+                "mean_acceptance_probability": 0.6226478709969696,
+                "mean_acceptance_probability_by_chain": [
+                  0.6226478709969696
+                ],
+                "mean_displacement_l2_by_chain": [
+                  2.596768448746515
+                ],
+                "min_log_accept_ratio": -13.396147782677197,
+                "movement_rate_by_chain": [
+                  0.6451612903225806
+                ],
+                "movement_summary_available": true,
+                "negative_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "negative_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "nonclaims": [
+                  "bounded kernel-tuning telemetry only",
+                  "absolute log acceptance is not native Hamiltonian energy error",
+                  "no posterior convergence claim"
+                ],
+                "normalized_return_displacement_by_chain": [
+                  1.5900937761989475
+                ],
+                "path_return_fraction_by_chain": [
+                  0.2
+                ],
+                "positive_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "positive_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "proxy_alert_threshold": 1000.0,
+                "repeated_state_fraction_by_chain": [
+                  0.3548387096774194
+                ],
+                "schema": "bayesfilter.hmc_tuning_telemetry.v4"
+              }
+            },
+            "runtime_finite": true,
+            "runtime_metadata": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "adaptation_policy_source": "reviewed_stage_7_phase_3",
+              "chain_execution_mode": "tf_function",
+              "current_state_source": "runtime_tensor_argument",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "dynamic_num_leapfrog_steps": false,
+              "first_call_s": 30.43188431399176,
+              "first_sample_chain_compile_execute_s": 30.43188431399176,
+              "initial_state_dtype": "float64",
+              "initial_state_shape": [
+                6
+              ],
+              "jit_compile": true,
+              "nonclaims": [
+                "reusable full-chain HMC engineering runner only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "no GPU readiness claim",
+                "no performance superiority claim"
+              ],
+              "num_leapfrog_steps": 3,
+              "num_leapfrog_steps_source": "static_runner_config",
+              "program_signature": "4f4fdb8750c6744747d6f4151ce72a96f530cbc3bb4a99c2f3e406ed22fabf62",
+              "requested_target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "reusable_runner": true,
+              "runner_build_s": 0.0003095059946645051,
+              "runtime": "tfp.mcmc.sample_chain",
+              "sample_chain_call_s": 14.300325286996667,
+              "sample_chain_invocation_count": 4,
+              "sample_chain_timing_scope": "reusable_tf_function_xla_first_call_compile_plus_execute_then_warm_execute",
+              "seed_source": "runtime_tensor_argument",
+              "step_size_source": "runtime_tensor_argument",
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "timing_buckets": {
+                "first_call_s": "explanatory_only_first_sample_chain_compile_plus_execute_when_tf_function",
+                "runner_build_s": "explanatory_only_runner_callable_construction",
+                "trace_capture_s": "explanatory_only_post_sample_chain_trace_diagnostics_capture",
+                "warm_call_s": "explanatory_only_subsequent_sample_chain_execute"
+              },
+              "trace_capture_s": 0.0584933850041125,
+              "trace_capture_timing_scope": "post_sample_chain_public_safe_trace_diagnostics_capture",
+              "trace_policy": "standard",
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              },
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true,
+              "value_score_authority": "graph_native",
+              "warm_call_s": 14.300325286996667,
+              "warm_sample_chain_execute_s": 14.300325286996667,
+              "warm_sample_shape": null,
+              "warm_trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ]
+            },
+            "runtime_s": 14.300325286996667,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "checks": {
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "hmc_error_absent": true,
+                "latent_initial_scale_zero": true,
+                "log_accept_nonfinite_count_zero": true,
+                "num_adaptation_steps_zero": true,
+                "required_arrays_finite": true,
+                "sample_chain_returned": true,
+                "zero_divergences": false
+              },
+              "diagnostic_roles": {
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "hmc_error_absent": "hard_veto",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "required_arrays_finite": "hard_veto",
+                "sample_chain_returned": "hard_veto",
+                "screen": "bootstrap fixed-kernel screen only",
+                "zero_divergences": "hard_veto"
+              },
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ]
+            },
+            "target_accept_prob": null,
+            "target_log_prob_finite": true,
+            "target_log_prob_max": -114.30522104464704,
+            "target_log_prob_min": -119.26524827035213,
+            "target_status_telemetry": {
+              "all_status_valid": true,
+              "floor_count_total": 0,
+              "max_floor_count_value": 0,
+              "max_innovation_condition_estimate": 1.2619137491754835,
+              "min_min_innovation_eigenvalue": 8.09625155017855,
+              "status_nonvalid_count": 0,
+              "telemetry_failure_veto": false,
+              "telemetry_failure_veto_bool": false,
+              "trace_entry_count": 32
+            },
+            "trace_policy": "standard",
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ],
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              }
+            },
+            "use_xla": true,
+            "xla_requested": true
+          },
+          "hard_vetoes": [],
+          "leapfrog_clamped": true,
+          "num_leapfrog_steps": 3,
+          "repair_action": "bracketed_log_step_midpoint_recompute_l",
+          "repair_triggers": [
+            "acceptance_below_acceptance_band_inside_repair_band",
+            "bracketed_log_step_midpoint_recompute_l"
+          ],
+          "round_index": 4,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 3,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9188
+            ],
+            "step_size": 1.0745699318235418,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9188
+          ],
+          "step_size": 1.0745699318235418,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 2
+        },
+        {
+          "clamp_direction": "min",
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "diagnostics": {
+            "acceptance_rate": 0.8125,
+            "compile_chain_with_xla": true,
+            "divergence_count": null,
+            "divergence_status": "not_exposed_by_kernel",
+            "finite_sample_count": 32,
+            "jit_compile_metadata": "true",
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 1.8012386869388846,
+            "nonfinite_sample_count": 0,
+            "num_adaptation_steps": null,
+            "raw_diagnostics": {
+              "acceptance_rate": 0.8125,
+              "divergence_count": null,
+              "divergence_source": null,
+              "divergence_status": "not_exposed_by_kernel",
+              "finite_sample_count": 32,
+              "hmc_health_diagnostics": {
+                "acceptance_finite": true,
+                "acceptance_rate": 0.8125,
+                "diagnostic_role": "hmc_health_diagnostics_not_native_divergence",
+                "log_accept_ratio": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 1.8012386869388846,
+                  "nonfinite_count": 0
+                },
+                "log_acceptance_correction": {
+                  "available": true,
+                  "finite": true,
+                  "finite_count": 32,
+                  "max_abs_finite": 2.7028310962075923,
+                  "nonfinite_count": 0
+                },
+                "nonclaims": [
+                  "acceptance/log-accept/target-log-prob diagnostics are not native divergence telemetry",
+                  "no sampler convergence claim"
+                ],
+                "proposed_target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.09594850710829,
+                  "min": -121.16167692550265
+                },
+                "target_log_prob": {
+                  "available": true,
+                  "finite": true,
+                  "max": -114.09594850710829,
+                  "min": -118.7669038341837
+                }
+              },
+              "max_target_log_prob": -114.09594850710829,
+              "min_target_log_prob": -118.7669038341837,
+              "native_divergence_status": "not_exposed_by_kernel",
+              "nonclaims": [
+                "finite tiny-chain diagnostics only",
+                "no sampler convergence claim",
+                "native divergence unavailability is not zero divergences"
+              ],
+              "nonfinite_sample_count": 0,
+              "sample_shape": [
+                32,
+                6
+              ],
+              "target_status_telemetry": {
+                "all_status_valid": true,
+                "floor_count_total": 0,
+                "max_floor_count_value": 0,
+                "max_innovation_condition_estimate": 1.3072518386367162,
+                "min_min_innovation_eigenvalue": 8.089438617287028,
+                "status_nonvalid_count": 0,
+                "telemetry_failure_veto": false,
+                "trace_entry_count": 32
+              },
+              "trace_policy": "standard",
+              "tuning_telemetry": {
+                "binary_acceptance_rate": 0.8125,
+                "binary_acceptance_rate_by_chain": [
+                  0.8125
+                ],
+                "chain_count": 1,
+                "diagnostic_roles": {
+                  "binary_acceptance_rate": "explanatory_movement_diagnostic",
+                  "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                  "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+                  "movement_rate_by_chain": "promotion_veto_and_repair_trigger",
+                  "path_return_fraction_by_chain": "promotion_veto_and_resonance_repair_trigger",
+                  "signed_log_accept_ratio_tails": "explanatory_alert_only"
+                },
+                "draw_count": 32,
+                "energy_proxy_role": "absolute_log_accept_ratio_not_hamiltonian_energy_error",
+                "log_accept_ratio_finite_count": 32,
+                "log_accept_ratio_nonfinite_count": 0,
+                "max_abs_log_accept_energy_proxy": 1.8012386869388846,
+                "max_log_accept_ratio": 0.3855628375569311,
+                "mean_acceptance_probability": 0.7905229572325133,
+                "mean_acceptance_probability_by_chain": [
+                  0.7905229572325133
+                ],
+                "mean_displacement_l2_by_chain": [
+                  2.2229887175553906
+                ],
+                "min_log_accept_ratio": -1.8012386869388846,
+                "movement_rate_by_chain": [
+                  0.8064516129032258
+                ],
+                "movement_summary_available": true,
+                "negative_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "negative_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "nonclaims": [
+                  "bounded kernel-tuning telemetry only",
+                  "absolute log acceptance is not native Hamiltonian energy error",
+                  "no posterior convergence claim"
+                ],
+                "normalized_return_displacement_by_chain": [
+                  1.726792895444736
+                ],
+                "path_return_fraction_by_chain": [
+                  0.03333333333333333
+                ],
+                "positive_proxy_exceedance_count_by_chain": [
+                  0
+                ],
+                "positive_proxy_exceedance_rate_by_chain": [
+                  0.0
+                ],
+                "proxy_alert_threshold": 1000.0,
+                "repeated_state_fraction_by_chain": [
+                  0.19354838709677424
+                ],
+                "schema": "bayesfilter.hmc_tuning_telemetry.v4"
+              }
+            },
+            "runtime_finite": true,
+            "runtime_metadata": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "adaptation_policy_source": "reviewed_stage_7_phase_3",
+              "chain_execution_mode": "tf_function",
+              "current_state_source": "runtime_tensor_argument",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "dynamic_num_leapfrog_steps": false,
+              "first_call_s": 30.43188431399176,
+              "first_sample_chain_compile_execute_s": 30.43188431399176,
+              "initial_state_dtype": "float64",
+              "initial_state_shape": [
+                6
+              ],
+              "jit_compile": true,
+              "nonclaims": [
+                "reusable full-chain HMC engineering runner only",
+                "no sampler convergence claim",
+                "no posterior validity claim",
+                "no GPU readiness claim",
+                "no performance superiority claim"
+              ],
+              "num_leapfrog_steps": 3,
+              "num_leapfrog_steps_source": "static_runner_config",
+              "program_signature": "4f4fdb8750c6744747d6f4151ce72a96f530cbc3bb4a99c2f3e406ed22fabf62",
+              "requested_target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "reusable_runner": true,
+              "runner_build_s": 0.0003095059946645051,
+              "runtime": "tfp.mcmc.sample_chain",
+              "sample_chain_call_s": 15.495654883008683,
+              "sample_chain_invocation_count": 5,
+              "sample_chain_timing_scope": "reusable_tf_function_xla_first_call_compile_plus_execute_then_warm_execute",
+              "seed_source": "runtime_tensor_argument",
+              "step_size_source": "runtime_tensor_argument",
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "timing_buckets": {
+                "first_call_s": "explanatory_only_first_sample_chain_compile_plus_execute_when_tf_function",
+                "runner_build_s": "explanatory_only_runner_callable_construction",
+                "trace_capture_s": "explanatory_only_post_sample_chain_trace_diagnostics_capture",
+                "warm_call_s": "explanatory_only_subsequent_sample_chain_execute"
+              },
+              "trace_capture_s": 0.15653074799047317,
+              "trace_capture_timing_scope": "post_sample_chain_public_safe_trace_diagnostics_capture",
+              "trace_policy": "standard",
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              },
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true,
+              "value_score_authority": "graph_native",
+              "warm_call_s": 15.495654883008683,
+              "warm_sample_chain_execute_s": 15.495654883008683,
+              "warm_sample_shape": null,
+              "warm_trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ]
+            },
+            "runtime_s": 15.495654883008683,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "checks": {
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "hmc_error_absent": true,
+                "latent_initial_scale_zero": true,
+                "log_accept_nonfinite_count_zero": true,
+                "num_adaptation_steps_zero": true,
+                "required_arrays_finite": true,
+                "sample_chain_returned": true,
+                "zero_divergences": false
+              },
+              "diagnostic_roles": {
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "hmc_error_absent": "hard_veto",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "required_arrays_finite": "hard_veto",
+                "sample_chain_returned": "hard_veto",
+                "screen": "bootstrap fixed-kernel screen only",
+                "zero_divergences": "hard_veto"
+              },
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ]
+            },
+            "target_accept_prob": null,
+            "target_log_prob_finite": true,
+            "target_log_prob_max": -114.09594850710829,
+            "target_log_prob_min": -118.7669038341837,
+            "target_status_telemetry": {
+              "all_status_valid": true,
+              "floor_count_total": 0,
+              "max_floor_count_value": 0,
+              "max_innovation_condition_estimate": 1.3072518386367162,
+              "min_min_innovation_eigenvalue": 8.089438617287028,
+              "status_nonvalid_count": 0,
+              "telemetry_failure_veto": false,
+              "telemetry_failure_veto_bool": false,
+              "trace_entry_count": 32
+            },
+            "trace_policy": "standard",
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "log_acceptance_correction",
+                "proposed_target_log_prob",
+                "target_log_prob",
+                "target_status_telemetry"
+              ],
+              "trace_unavailability": {
+                "divergence": "native boolean divergence field not exposed by TensorFlow Probability HMC kernel results"
+              }
+            },
+            "use_xla": true,
+            "xla_requested": true
+          },
+          "hard_vetoes": [],
+          "leapfrog_clamped": true,
+          "num_leapfrog_steps": 3,
+          "repair_action": "bracketed_log_step_midpoint_recompute_l",
+          "repair_triggers": [
+            "acceptance_above_acceptance_band_inside_repair_band",
+            "bracketed_log_step_midpoint_recompute_l"
+          ],
+          "round_index": 5,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 3,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9189
+            ],
+            "step_size": 0.9853849721883557,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9189
+          ],
+          "step_size": 0.9853849721883557,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 2
+        }
+      ],
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "seed_report": {
+        "bootstrap_root_seed": [
+          20263648,
+          9184
+        ],
+        "bootstrap_stage_seed": [
+          20263648,
+          18360
+        ],
+        "geometry_root_seed": [
+          20262639,
+          9184
+        ],
+        "geometry_seed": [
+          20262639,
+          18360
+        ],
+        "geometry_seed_distinct_from_bootstrap_seed": true,
+        "screen_round_seeds": [
+          [
+            20263648,
+            9184
+          ],
+          [
+            20263648,
+            9185
+          ],
+          [
+            20263648,
+            9186
+          ],
+          [
+            20263648,
+            9187
+          ],
+          [
+            20263648,
+            9188
+          ],
+          [
+            20263648,
+            9189
+          ]
+        ],
+        "seed_owner": "BayesFilter"
+      },
+      "selected_kernel_hash": null,
+      "selected_kernel_payload": null,
+      "selected_round_index": null,
+      "target_dimension": 6
+    },
+    "bootstrap_artifact_hash": "dcf61bd5f097a3cd3f460928ff625f26e4d238b0a5a06801158df0caf90aae13",
+    "config": {
+      "acceptance_band": [
+        0.65,
+        0.75
+      ],
+      "algorithm_id": "operational_paired_fixed_trajectory_selection_v3",
+      "allow_geometry_fallback": false,
+      "bootstrap_diagnostic_screen_num_burnin_steps": null,
+      "bootstrap_diagnostic_screen_num_results": null,
+      "bootstrap_diagnostic_sizing_claim": "public observability diagnostic only; not sampler promotion",
+      "bootstrap_max_repairs": 5,
+      "chain_execution_mode": "tf_function",
+      "covariance_jitter": 1e-09,
+      "eigenvalue_floor": 1e-09,
+      "forbidden_public_fields": [
+        "step_size",
+        "initial_step_size",
+        "num_leapfrog_steps",
+        "leapfrog_count",
+        "min_leapfrog",
+        "max_leapfrog",
+        "candidate_l_grid",
+        "trajectory_grid",
+        "mass_window_schedule",
+        "warmup_budget_schedule",
+        "tuning_budget_schedule",
+        "tune_num_results",
+        "screen_num_results",
+        "verification_num_results",
+        "verification_num_burnin_steps"
+      ],
+      "geometry_position_role": "initial_position",
+      "geometry_scaled_budget_timing_policy": {
+        "bootstrap_formula_parameters": {
+          "burnin_fraction": 0.25,
+          "max_results": 1024,
+          "min_results": 32,
+          "sqrt_dimension_factor": 4.0
+        },
+        "budget_formula_parameters": {
+          "anisotropy_sqrt_weight": 0.5,
+          "condition_log10_weight": 0.25,
+          "diagonal_fallback_multiplier": 1.5,
+          "dimension_factor": 20.0,
+          "max_geometry_multiplier": 4.0,
+          "max_initial_budget": 5000,
+          "max_tune_budget": 10000,
+          "min_geometry_multiplier": 1.0,
+          "min_initial_budget": 1000,
+          "regularization_clip_weight": 0.05,
+          "regularization_nonpositive_weight": 0.25
+        },
+        "emergency_timing_policy": {
+          "global_cap_s": 86400.0,
+          "max_stage_s": 21600.0,
+          "min_stage_s": 3600.0,
+          "progress_monitor_is_separate": true,
+          "reserve_s": 600.0,
+          "role": "machine_protection_only_not_scientific_stop_rule",
+          "stage_time_budget_multiplier": {
+            "fixed_mass_step": 1.0,
+            "fresh_fixed_kernel_verification": 1.0,
+            "frozen_step_trajectory": 1.0,
+            "geometry_and_bootstrap": 1.0,
+            "phase7_pre_windowed": 1.0,
+            "windowed_mass": 1.0
+          }
+        },
+        "hmc_mechanics_exposed": false,
+        "mass_arrays_exposed": false,
+        "policy_id": "bayesfilter_hmc_geometry_scaled_budget_timing_v1",
+        "public_safe": true,
+        "raw_eigenvalues_exposed": false,
+        "reports_posterior_convergence": false,
+        "reports_sampler_superiority": false,
+        "schema": "bayesfilter.hmc_geometry_scaled_budget_timing_policy.v1",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.geometry_scaled_budget_timing_policy"
+      },
+      "geometry_scaling_c": 0.5,
+      "handoff_screen_policy": "phase22_heuristic_viability_gate",
+      "hmc_mechanics_owned_by_bayesfilter": true,
+      "incall_progress_heartbeat_s": null,
+      "mass_policy": "fixed_identity",
+      "max_attempts": 5,
+      "max_condition_number": null,
+      "max_leapfrog_steps": 25,
+      "negative_hessian_source": "negative_hessian",
+      "operational_budget_policy_id": "bayesfilter.hmc_operational_statistical_work.v1",
+      "preset": "serious",
+      "preset_role": "dimension_scaled_tuning_policy_only",
+      "public_timeout_budget_s": null,
+      "repair_band": [
+        0.55,
+        0.85
+      ],
+      "repair_nonfinite_proposal_screen": true,
+      "reports_default_readiness": false,
+      "reports_gpu_or_xla_readiness": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "schema": "bayesfilter.hmc_kernel_tuning_config.v1",
+      "seed": [
+        20260621,
+        8
+      ],
+      "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner",
+      "stability_guard": 0.8,
+      "staged_timeout_enlargement_rounds": null,
+      "staged_timeout_global_started_perf_counter_s": null,
+      "staged_timeout_policy": null,
+      "staged_timeout_stage_started_perf_counter_s": null,
+      "step_repair_factor": 2.0,
+      "step_repair_high_acceptance_directional_factor": 2.0,
+      "step_repair_high_acceptance_ladder_max_factor": 2.0,
+      "step_repair_min_directional_factor": 1.25,
+      "target_accept_prob": 0.7,
+      "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+      "target_status_trace_policy": "per_chain_step",
+      "terminal_phase6_repair_extra_attempts": 0,
+      "trajectory_window_lower_multiplier": 0.3,
+      "trajectory_window_upper_multiplier": 3.0,
+      "use_xla": true,
+      "verification_chunk_max_results": null,
+      "verification_compile_sizing_claim": "XLA compile-shape policy only; not a reduced verification evidence gate",
+      "verification_min_retained_results_for_pass": null
+    },
+    "diagnostic_role": "hard_veto",
+    "diagnostic_roles": {
+      "bootstrap_screen": "promotion_or_repair_or_hard_veto",
+      "fresh_fixed_kernel_verification": "kernel_handoff_screen_only",
+      "geometry_initialization": "hard_veto_when_invalid",
+      "output_artifact": "audit_evidence_only_not_public_reconstruction_api",
+      "tune_verify_repair_loop": "promotion_or_repair_or_hard_veto"
+    },
+    "failure_diagnostics": null,
+    "final_kernel_hash": null,
+    "final_kernel_payload": null,
+    "final_kernel_requires_phase7_pass": true,
+    "final_status": "hard_veto",
+    "geometry": {
+      "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+      "artifact_type": "bayesfilter_hmc_geometry_initialization_result",
+      "config": {
+        "allow_geometry_fallback": false,
+        "covariance_jitter": 1e-09,
+        "eigenvalue_floor": 1e-09,
+        "geometry_scaling_c": 0.5,
+        "mass_policy": "fixed_identity",
+        "max_condition_number": null,
+        "max_leapfrog_steps": 25,
+        "negative_hessian_source": "negative_hessian",
+        "position_role": "initial_position",
+        "seed": [
+          20262639,
+          9184
+        ],
+        "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.geometry",
+        "stability_guard": 0.8
+      },
+      "curvature_report": {
+        "finite": true,
+        "omega_count": 6,
+        "omega_max": 1.0,
+        "omega_median": 1.0,
+        "omega_min": 1.0,
+        "omega_rms": 1.0,
+        "positive": true
+      },
+      "formula_report": {
+        "default_max_leapfrog_steps": 25,
+        "formula": "epsilon=min(c*d^(-1/4)/rms(omega), rho*2/max(omega)); L=ceil(tau/epsilon)",
+        "geometry_scaling_c": 0.5,
+        "internal_max_leapfrog": 25,
+        "internal_min_leapfrog": 3,
+        "leapfrog_clamped": false,
+        "stability_guard": 0.8,
+        "target_trajectory_length": 1.5707963267948966
+      },
+      "hint_report": {
+        "fallback_failures": [
+          {
+            "kind": "fixed_identity",
+            "reason": "caller geometry hints ignored by explicit mass policy"
+          }
+        ],
+        "fallback_used": true,
+        "hint_precedence": [
+          "negative_hessian",
+          "initial_covariance",
+          "parameter_scales",
+          "identity"
+        ],
+        "parameterization": "same as initial_position",
+        "regularization_report": {
+          "method": "identity_fallback"
+        },
+        "selected_hint": "identity",
+        "supplied_hints": {
+          "initial_covariance": false,
+          "negative_hessian": false,
+          "parameter_scales": false
+        }
+      },
+      "initial_num_leapfrog_steps": 5,
+      "initial_step_size": 0.3194715521231362,
+      "mass_artifact_payload": {
+        "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+        "artifact_type": "bayesfilter_precomputed_mass_artifact",
+        "covariance_source": "identity",
+        "dimension": 6,
+        "eigen_summary": {
+          "condition_number": 1.0,
+          "eigenvalues": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 1.0,
+          "positive": true
+        },
+        "factor_orientation": "row_right_transpose",
+        "include_arrays": false,
+        "log_jacobian_convention": "constant_omitted",
+        "matrix_used_for_square_root": "geometry_initialization_covariance",
+        "nonclaims": [
+          "geometry initialization only",
+          "no HMC runtime claim",
+          "no tuning success claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim"
+        ],
+        "position_role": "initial_position",
+        "precision_eigen_summary": null,
+        "reconstruction_atol": 1e-10,
+        "reconstruction_rtol": 1e-10,
+        "regularization_report": {
+          "geometry_initializer_source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.geometry",
+          "method": "identity_fallback"
+        },
+        "schema_version": 1,
+        "source": "geometry_initialization_identity"
+      },
+      "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+      "nonclaims": [
+        "geometry initialization only",
+        "no HMC runtime claim",
+        "no tuning success claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim"
+      ],
+      "reports_hmc_runtime_readiness": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_tuning_success": false,
+      "schema_version": 1,
+      "seed_report": {
+        "fresh_verification_seed_reserved": [
+          20267684,
+          18360
+        ],
+        "geometry_seed": [
+          20262639,
+          18360
+        ],
+        "nonclaim": "geometry seed provenance only; no HMC run executed",
+        "root_seed": [
+          20262639,
+          9184
+        ],
+        "seed_owner": "BayesFilter"
+      },
+      "target_dimension": 6,
+      "target_trajectory_length": 1.5707963267948966,
+      "unclamped_num_leapfrog_steps": 5
+    },
+    "geometry_artifact_hash": "7f1c5638cbeb699dd0fc3a26af80be083f2c38b9079e489215e8b58e8f8c37bd",
+    "hard_vetoes": [
+      "phase7_runtime_error"
+    ],
+    "loop_artifact_hash": "e1f898921cf288fd0008a470f19006575ec99e6812251dede9a02836b853bfa8",
+    "nonclaims": [
+      "BayesFilter one-call HMC kernel tuning only",
+      "final frozen kernel is a handoff artifact only",
+      "tuning screens do not establish posterior convergence",
+      "no posterior convergence claim",
+      "no sampler superiority claim",
+      "no default-readiness claim",
+      "no external-client scientific claim",
+      "no GPU readiness claim",
+      "XLA execution, when requested, is runtime selection only"
+    ],
+    "passed": false,
+    "phase7_early_closeout_public_summary": null,
+    "repair_triggers": [],
+    "reports_default_readiness": false,
+    "reports_external_client_scientific_claim": false,
+    "reports_gpu_or_xla_readiness": false,
+    "reports_posterior_convergence": false,
+    "reports_sampler_superiority": false,
+    "schema": "bayesfilter.hmc_kernel_tuning_result.v1",
+    "smoke_result_is_contract_only": false,
+    "target_dimension": 6,
+    "tune_verify_repair_loop": {
+      "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+      "attempt_count": 1,
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "budget_policy": {
+            "attempt_index": 0,
+            "budget": 1000,
+            "budget0_after_floor_and_cap": 1000,
+            "budget0_uncapped": 120,
+            "budget_claim": "dimension/geometry-scaled tuning work budget; not posterior convergence or sampler-validity evidence",
+            "budget_formula": "budget0=clamp(ceil(dimension_factor*d*geometry_multiplier), min_initial_budget, max_initial_budget); budget_k=min(max_tune_budget, budget0*2**attempt_index)",
+            "budget_formula_parameters": {
+              "anisotropy_sqrt_weight": 0.5,
+              "condition_log10_weight": 0.25,
+              "diagonal_fallback_multiplier": 1.5,
+              "dimension_factor": 20.0,
+              "max_geometry_multiplier": 4.0,
+              "max_initial_budget": 5000,
+              "max_tune_budget": 10000,
+              "min_geometry_multiplier": 1.0,
+              "min_initial_budget": 1000,
+              "regularization_clip_weight": 0.05,
+              "regularization_nonpositive_weight": 0.25
+            },
+            "diagnostic_role": "public_kernel_tuning_budget",
+            "geometry_budget_summary": {
+              "anisotropy_ratio": 1.0,
+              "condition_log10": 0.0,
+              "condition_number": 1.0,
+              "dimension": 6,
+              "effective_dimension": 6.0,
+              "effective_dimension_ratio": 1.0,
+              "geometry_multiplier": 1.0,
+              "geometry_source": "mass_artifact_metadata",
+              "hmc_mechanics_exposed": false,
+              "mass_arrays_exposed": false,
+              "raw_eigenvalues_exposed": false,
+              "regularization_pressure": {
+                "clipped_eigenvalue_count": 0,
+                "diagonal_fallback_used": false,
+                "raw_nonpositive_eigenvalue_count": 0,
+                "regularization_fields_used": [
+                  "clipped_eigenvalue_count",
+                  "raw_nonpositive_eigenvalue_count",
+                  "diagonal_fallback_used"
+                ]
+              },
+              "reports_posterior_convergence": false,
+              "schema": "bayesfilter.hmc_geometry_scaled_budget_summary.v1"
+            },
+            "internal_policy_only": true,
+            "nonclaims": [
+              "BayesFilter HMC tune-verify-repair loop only",
+              "fresh fixed-kernel verification is a kernel handoff screen only",
+              "no posterior convergence claim",
+              "no sampler superiority claim",
+              "no default-readiness claim",
+              "no external-client scientific claim",
+              "no GPU or XLA readiness claim"
+            ],
+            "operational_budget_policy_hash": "bbb9121c75ab2a468c319e2f8b57a0d080ab9fb40357935d7e6b7f79baeec118",
+            "operational_budget_policy_id": "bayesfilter.hmc_operational_statistical_work.v1",
+            "operational_evidence_extension_checkpoints": [],
+            "operational_exact_l_tune_adaptation_steps": 64,
+            "operational_screen_num_burnin_steps": 16,
+            "operational_screen_num_results": 64,
+            "operational_verification_num_burnin_steps": 16,
+            "operational_verification_num_results": 64,
+            "phase4_warmup_steps": 1000,
+            "phase5_screen_burnin_steps": 63,
+            "phase5_screen_num_results": 250,
+            "phase5_tune_budgets": [
+              250,
+              500,
+              1000
+            ],
+            "phase6_screen_burnin_steps": 63,
+            "phase6_screen_num_results": 250,
+            "public_budget_cap": null,
+            "public_budget_class": null,
+            "public_diagnostic_preset": null,
+            "public_max_attempts": null,
+            "serious_policy": true,
+            "subbudget_formula": {
+              "operational": "independent named policy; no field is derived from budget_k",
+              "phase4_warmup_steps": "budget_k",
+              "phase5_screen": "results=max(32, ceil(budget_k/4)); burnin=max(8, ceil(results/4))",
+              "phase5_tune_budgets": "(ceil(budget_k/4), ceil(budget_k/2), budget_k)",
+              "phase6_screen": "results=max(32, ceil(budget_k/4)); burnin=max(8, ceil(results/4))",
+              "verification": "results=max(64, ceil(budget_k/2)); burnin=max(16, ceil(results/4))"
+            },
+            "target_dimension": 6,
+            "verification_num_burnin_steps": 125,
+            "verification_num_results": 500
+          },
+          "diagnostic_role": "hard_veto",
+          "final_status": "hard_veto",
+          "fixed_mass_step_stage": null,
+          "frozen_step_trajectory_stage": null,
+          "handoff_state": null,
+          "hard_vetoes": [
+            "phase7_runtime_error"
+          ],
+          "incoming_state": null,
+          "passed": false,
+          "repair_triggers": [],
+          "verification_callback_result": {
+            "continuation_vetoes": [],
+            "diagnostics": {},
+            "hard_vetoes": [],
+            "promotion_vetoes": [],
+            "repair_triggers": []
+          },
+          "verification_config_payload": null,
+          "verification_diagnostics": {
+            "attempt_index": 0,
+            "error_message": "HMC algorithm route blocked: operational_windowed_warmup_xla_not_validated (windowed_mass: operational_interleaved_windowed_warmup_v2)",
+            "error_type": "UnsupportedHMCAlgorithmRoute",
+            "nonclaims": [
+              "BayesFilter HMC tune-verify-repair loop only",
+              "fresh fixed-kernel verification is a kernel handoff screen only",
+              "no posterior convergence claim",
+              "no sampler superiority claim",
+              "no default-readiness claim",
+              "no external-client scientific claim",
+              "no GPU or XLA readiness claim"
+            ],
+            "reports_posterior_convergence": false
+          },
+          "windowed_stage": null
+        }
+      ],
+      "bootstrap_artifact_hash": "dcf61bd5f097a3cd3f460928ff625f26e4d238b0a5a06801158df0caf90aae13",
+      "budget_exhausted_is_non_promoting": false,
+      "budget_history": [
+        {
+          "attempt_index": 0,
+          "budget": 1000,
+          "budget0_after_floor_and_cap": 1000,
+          "budget0_uncapped": 120,
+          "budget_claim": "dimension/geometry-scaled tuning work budget; not posterior convergence or sampler-validity evidence",
+          "budget_formula": "budget0=clamp(ceil(dimension_factor*d*geometry_multiplier), min_initial_budget, max_initial_budget); budget_k=min(max_tune_budget, budget0*2**attempt_index)",
+          "budget_formula_parameters": {
+            "anisotropy_sqrt_weight": 0.5,
+            "condition_log10_weight": 0.25,
+            "diagonal_fallback_multiplier": 1.5,
+            "dimension_factor": 20.0,
+            "max_geometry_multiplier": 4.0,
+            "max_initial_budget": 5000,
+            "max_tune_budget": 10000,
+            "min_geometry_multiplier": 1.0,
+            "min_initial_budget": 1000,
+            "regularization_clip_weight": 0.05,
+            "regularization_nonpositive_weight": 0.25
+          },
+          "diagnostic_role": "public_kernel_tuning_budget",
+          "geometry_budget_summary": {
+            "anisotropy_ratio": 1.0,
+            "condition_log10": 0.0,
+            "condition_number": 1.0,
+            "dimension": 6,
+            "effective_dimension": 6.0,
+            "effective_dimension_ratio": 1.0,
+            "geometry_multiplier": 1.0,
+            "geometry_source": "mass_artifact_metadata",
+            "hmc_mechanics_exposed": false,
+            "mass_arrays_exposed": false,
+            "raw_eigenvalues_exposed": false,
+            "regularization_pressure": {
+              "clipped_eigenvalue_count": 0,
+              "diagonal_fallback_used": false,
+              "raw_nonpositive_eigenvalue_count": 0,
+              "regularization_fields_used": [
+                "clipped_eigenvalue_count",
+                "raw_nonpositive_eigenvalue_count",
+                "diagonal_fallback_used"
+              ]
+            },
+            "reports_posterior_convergence": false,
+            "schema": "bayesfilter.hmc_geometry_scaled_budget_summary.v1"
+          },
+          "internal_policy_only": true,
+          "nonclaims": [
+            "BayesFilter HMC tune-verify-repair loop only",
+            "fresh fixed-kernel verification is a kernel handoff screen only",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no default-readiness claim",
+            "no external-client scientific claim",
+            "no GPU or XLA readiness claim"
+          ],
+          "operational_budget_policy_hash": "bbb9121c75ab2a468c319e2f8b57a0d080ab9fb40357935d7e6b7f79baeec118",
+          "operational_budget_policy_id": "bayesfilter.hmc_operational_statistical_work.v1",
+          "operational_evidence_extension_checkpoints": [],
+          "operational_exact_l_tune_adaptation_steps": 64,
+          "operational_screen_num_burnin_steps": 16,
+          "operational_screen_num_results": 64,
+          "operational_verification_num_burnin_steps": 16,
+          "operational_verification_num_results": 64,
+          "phase4_warmup_steps": 1000,
+          "phase5_screen_burnin_steps": 63,
+          "phase5_screen_num_results": 250,
+          "phase5_tune_budgets": [
+            250,
+            500,
+            1000
+          ],
+          "phase6_screen_burnin_steps": 63,
+          "phase6_screen_num_results": 250,
+          "public_budget_cap": null,
+          "public_budget_class": null,
+          "public_diagnostic_preset": null,
+          "public_max_attempts": null,
+          "serious_policy": true,
+          "subbudget_formula": {
+            "operational": "independent named policy; no field is derived from budget_k",
+            "phase4_warmup_steps": "budget_k",
+            "phase5_screen": "results=max(32, ceil(budget_k/4)); burnin=max(8, ceil(results/4))",
+            "phase5_tune_budgets": "(ceil(budget_k/4), ceil(budget_k/2), budget_k)",
+            "phase6_screen": "results=max(32, ceil(budget_k/4)); burnin=max(8, ceil(results/4))",
+            "verification": "results=max(64, ceil(budget_k/2)); burnin=max(16, ceil(results/4))"
+          },
+          "target_dimension": 6,
+          "verification_num_burnin_steps": 125,
+          "verification_num_results": 500
+        }
+      ],
+      "config": {
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "algorithm_id": "operational_paired_fixed_trajectory_selection_v3",
+        "chain_execution_mode": "tf_function",
+        "handoff_screen_policy": "phase22_heuristic_viability_gate",
+        "incall_progress_heartbeat_s": null,
+        "mass_policy": "fixed_identity",
+        "max_attempts": 5,
+        "max_leapfrog_steps": 25,
+        "operational_budget_policy_id": "bayesfilter.hmc_operational_statistical_work.v1",
+        "public_timeout_budget_s": null,
+        "public_timeout_started_perf_counter_s": null,
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "repair_nonfinite_proposal_screen": true,
+        "seed": [
+          20267684,
+          9184
+        ],
+        "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.tune_verify_repair_loop",
+        "staged_timeout_enlargement_rounds": null,
+        "staged_timeout_global_started_perf_counter_s": null,
+        "staged_timeout_policy": null,
+        "staged_timeout_stage_started_perf_counter_s": null,
+        "step_repair_factor": 2.0,
+        "step_repair_high_acceptance_directional_factor": 2.0,
+        "step_repair_high_acceptance_ladder_max_factor": 2.0,
+        "step_repair_min_directional_factor": 1.25,
+        "target_accept_prob": 0.7,
+        "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+        "target_status_trace_policy": "per_chain_step",
+        "terminal_phase6_repair_extra_attempts": 0,
+        "trajectory_window_lower_multiplier": 0.3,
+        "trajectory_window_upper_multiplier": 3.0,
+        "use_xla": true,
+        "verification_chunk_max_results": null,
+        "verification_min_retained_results_for_pass": null
+      },
+      "diagnostic_role": "hard_veto",
+      "diagnostic_roles": {
+        "architecture_blocked": "terminal_non_promoting_private_plumbing_blocker",
+        "budget_exhausted": "terminal_non_promoting_repair_status",
+        "callback_continuation_veto": "hard_veto",
+        "callback_hard_veto": "hard_veto",
+        "callback_promotion_veto": "repair_or_retry",
+        "callback_repair_trigger": "repair_or_retry",
+        "fresh_fixed_kernel_verification": "promotion_or_repair_or_hard_veto",
+        "mass_step_l_invariant": "hard_veto",
+        "phase6_handoff_screen": "handoff_screen_repair_trigger_non_promoting",
+        "runtime": "hard_veto_when_error",
+        "trajectory_window": "engineering_viability_gate_non_scientific",
+        "verification_acceptance_budget_blocked": "terminal_non_promoting_public_budget_guard"
+      },
+      "final_kernel_hash": null,
+      "final_kernel_payload": null,
+      "final_status": "hard_veto",
+      "geometry_artifact_hash": "7f1c5638cbeb699dd0fc3a26af80be083f2c38b9079e489215e8b58e8f8c37bd",
+      "hard_vetoes": [
+        "phase7_runtime_error"
+      ],
+      "nonclaims": [
+        "BayesFilter HMC tune-verify-repair loop only",
+        "fresh fixed-kernel verification is a kernel handoff screen only",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no external-client scientific claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "passed": false,
+      "repair_triggers": [],
+      "reports_default_readiness": false,
+      "reports_external_client_scientific_claim": false,
+      "reports_gpu_or_xla_readiness": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "schema": "bayesfilter.hmc_tune_verify_repair_loop.v1",
+      "seed_report": {
+        "attempt_seeds": [
+          [
+            20277774,
+            18360
+          ]
+        ],
+        "direct_candidate_verification_seed_maps": [],
+        "direct_candidate_verification_seed_policy": "bayesfilter.phase7_direct_candidate_seed.v1",
+        "direct_seed_maps_private_handoff_only": true,
+        "historical_verification_seed_policy": "bayesfilter.phase7_historical_phase6_seed.v1",
+        "phase7_root_seed": [
+          20267684,
+          9184
+        ],
+        "seed_owner": "BayesFilter",
+        "verification_seed_independent_of_stage_seeds": true,
+        "verification_seeds": [
+          [
+            20281810,
+            27536
+          ]
+        ],
+        "verification_seeds_role": "historical_phase6_compatibility_seed_per_attempt"
+      },
+      "target_dimension": 6,
+      "terminal_budget_guard": null
+    }
+  }
+}

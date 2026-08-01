@@ -1,0 +1,187 @@
+{
+  "schema": "bayesfilter.contract_e_tp.scalar_sv_prefix_result.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+  "scope": "center_only_prefix_diagnostic",
+  "target": {
+    "time_steps": 10,
+    "theta": [
+      0.2533471031357997,
+      -0.916290731874155
+    ],
+    "parameter_names": [
+      "gamma_unconstrained",
+      "log_beta"
+    ],
+    "target_observation_policy": "exact_log_y_square_log_chi_square",
+    "flow_observation_policy": "gaussianized_log_square_affine_surface"
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_actual_sv_t10_order25_lookahead2_preparation_20260715.json",
+    "sha256": "68aaaaecd3339bbd1fc6664765cf57245f4029f40f783f226fd3bc3c2d08b7e9",
+    "teacher_order": 25,
+    "continuation_order": 65,
+    "continuation_radius": 8.0,
+    "lookahead_steps": 2
+  },
+  "candidate": {
+    "value": -19.98963061463148,
+    "score": [
+      -0.7770213769428316,
+      0.6710754204421742
+    ],
+    "increment_history": [
+      -1.7403140780271713,
+      -2.053081838506326,
+      -2.1833170863961264,
+      -1.675169631817689,
+      -1.757402017056981,
+      -3.4290009479411987,
+      -1.8579071113629004,
+      -1.7605979971070025,
+      -1.6527813148885948,
+      -1.8800585915274861
+    ],
+    "same_scalar_finite_difference": [
+      -0.7770213773738986,
+      0.6710754213656855
+    ],
+    "same_scalar_fd_policy": {
+      "policy_id": "owner_directed_individual_direction_relative_5pct_sqrt_p_v1",
+      "diagnostic_scope": "finite_difference_only",
+      "status": "pass",
+      "num_parameters": 2,
+      "base_relative_tolerance": 0.05,
+      "dimension_scaling": "sqrt(num_parameters)",
+      "coordinate_relative_error_denominator": "max(abs(score), abs(finite_difference), 1e-12)",
+      "pass_rule": "max_coordinate_relative_error <= 0.05 * sqrt(num_parameters)",
+      "statistical_interpretation": "five_percent_selected_to_mirror_the_conventional_95pct_threshold; no_confidence_interval_or_coverage_calibration_is_computed",
+      "max_coordinate_relative_error": 1.3761662982704878e-09,
+      "max_coordinate_relative_error_threshold": 0.07071067811865477,
+      "max_coordinate_relative_error_margin": 0.07071067674248847,
+      "max_error_parameter": "log_beta",
+      "parameters": [
+        {
+          "parameter": "gamma_unconstrained",
+          "score": -0.7770213769428316,
+          "finite_difference": -0.7770213773738986,
+          "absolute_error": 4.3106707092732677e-10,
+          "relative_error_scale": 0.7770213773738986,
+          "relative_error": 5.547686118806735e-10
+        },
+        {
+          "parameter": "log_beta",
+          "score": 0.6710754204421742,
+          "finite_difference": 0.6710754213656855,
+          "absolute_error": 9.235113784811233e-10,
+          "relative_error_scale": 0.6710754213656855,
+          "relative_error": 1.3761662982704878e-09
+        }
+      ]
+    }
+  },
+  "dense_references": [
+    {
+      "order": 129,
+      "radius": 10.0,
+      "value": -19.995662970095886,
+      "score": [
+        -0.7072002872029357,
+        0.5905713623317334
+      ]
+    },
+    {
+      "order": 257,
+      "radius": 10.0,
+      "value": -19.99566297009612,
+      "score": [
+        -0.7072002872029357,
+        0.5905713623317342
+      ]
+    }
+  ],
+  "reference_refinement": {
+    "finest_two_value_difference": -2.3447910280083306e-13,
+    "finest_two_score_difference": [
+      0.0,
+      8.881784197001252e-16
+    ],
+    "classification": "descriptive_numerical_refinement_not_exact_error_bound"
+  },
+  "candidate_vs_finest_reference": {
+    "value_difference": 0.0060323554646402044,
+    "score_difference": [
+      -0.06982108973989587,
+      0.08050405811043992
+    ],
+    "componentwise_relative_error": [
+      0.08985736018564246,
+      0.11996275777377674
+    ],
+    "sign_reversal": [
+      false,
+      false
+    ],
+    "equivalence_classification": "descriptive_only_margin_unavailable"
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.0057056407055616,
+      0.0006846230961830013,
+      0.021183846743075142,
+      0.0026882347064589723,
+      0.0022866043171188444,
+      0.009730768673681911,
+      0.022113575032616264,
+      0.001748821773005319,
+      0.0011269197169865436
+    ],
+    "condition_number_history": [
+      69.92641385258628,
+      207.14961505672989,
+      9570.752840912368,
+      12.26769190001665,
+      672.1608544535579,
+      1349.7198984098893,
+      569.2316760174352,
+      773.4576228416785,
+      20.33749188949248
+    ],
+    "maximum_feature_residual_abs": 5.995204332975845e-15,
+    "chart_pass": true
+  },
+  "decision": {
+    "hard_veto_screen_pass": true,
+    "candidate_remains_viable": true,
+    "statistically_supported_ranking": false,
+    "default_readiness": false,
+    "next_evidence": "teacher/continuation refinement or next declared prefix"
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow_float64_CPU_reference_exception",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 2.9513156850007363,
+    "command": "docs/benchmarks/run_contract_e_tp_scalar_sv_prefix.py --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_actual_sv_t10_order25_lookahead2_preparation_20260715.json --reference-orders 129,257 --reference-radius 10 --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase5_actual_sv_t10_order25_lookahead2_result_20260715.json"
+  },
+  "nonclaims": [
+    "no unsupported cross-method equivalence threshold",
+    "not full-horizon or parameter-region evidence",
+    "not HMC, canonical, or default readiness",
+    "not a statistically supported method ranking"
+  ]
+}

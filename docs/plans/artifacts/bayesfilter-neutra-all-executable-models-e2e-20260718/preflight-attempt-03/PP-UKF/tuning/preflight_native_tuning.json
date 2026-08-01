@@ -1,0 +1,667 @@
+{
+  "artifact_path": "docs/plans/artifacts/bayesfilter-neutra-all-executable-models-e2e-20260718/preflight-attempt-03/PP-UKF/tuning/preflight_native_tuning.json",
+  "base_adapter_signature": "999dde39d6f994a7f72d386c4cefe431a66904fce07baa5d8cf33c0ca19c7209",
+  "candidates": [
+    {
+      "candidate_index": 0,
+      "diagnostic_role": "ladder_nonpass",
+      "final_status": "ladder_hard_veto",
+      "fixed_kernel_step_size": null,
+      "handoff_source": "fixed_mass_dual_averaging_ladder",
+      "hard_vetoes": [
+        "tune_hmc_error",
+        "tune_acceptance_missing_or_nonfinite",
+        "tune_final_step_missing_or_nonfinite",
+        "tune_log_accept_nonfinite_or_missing",
+        "tune_samples_nonfinite_or_missing"
+      ],
+      "ladder": {
+        "adapter_signature": "1fb14fa444509dd85da306518011f6e24b99882d8e947de63ebb244edb154d6a",
+        "artifact_hash_components": {
+          "hash_function": "bayesfilter.runtime.stable_config_hash",
+          "json_normalization": "sort_keys_compact_json"
+        },
+        "config": {
+          "acceptance_band": [
+            0.65,
+            0.75
+          ],
+          "budget_schedule": [
+            2
+          ],
+          "chain_execution_mode": "tf_function",
+          "extra_repair_screen_count": 2,
+          "incall_progress_heartbeat_s": null,
+          "initial_fixed_mass_bracket_state": null,
+          "initial_fixed_mass_bracket_state_available": false,
+          "initial_step_size": 0.2,
+          "num_leapfrog_steps": 6,
+          "public_timeout_budget_s": null,
+          "public_timeout_closeout_reserve_s": 60.0,
+          "public_timeout_started_perf_counter_s": null,
+          "repair_band": [
+            0.55,
+            0.85
+          ],
+          "repair_nonfinite_proposal_screen": false,
+          "screen_num_burnin_steps": 1,
+          "screen_num_results": 4,
+          "screen_seed_base": [
+            20260718,
+            1822
+          ],
+          "screen_trace_policy": "standard",
+          "source": "bayesfilter.neutra_all_models_preflight",
+          "stale_bracket_bound_ratio": 1.25,
+          "step_repair_factor": 2.0,
+          "step_repair_high_acceptance_directional_factor": 2.0,
+          "step_repair_high_acceptance_ladder_max_factor": 2.0,
+          "step_repair_max_step_size": null,
+          "step_repair_min_directional_factor": 1.25,
+          "step_stability_is_hard_veto": false,
+          "step_stability_rtol": null,
+          "target_accept_prob": 0.7,
+          "target_scope": "PP-UKF:preflight_native_tuning",
+          "target_status_trace_policy": "per_chain_step",
+          "tune_num_results": 2,
+          "tune_seed_base": [
+            20260718,
+            1821
+          ],
+          "tuning_trace_policy": "standard",
+          "use_xla": true
+        },
+        "diagnostic_roles": {
+          "acceptance_band": "tuning_screen_promotion_only",
+          "callback_continuation_vetoes": "continuation_veto",
+          "callback_hard_vetoes": "hard_veto",
+          "callback_promotion_vetoes": "promotion_veto_repair_trigger",
+          "callback_repair_triggers": "promotion_veto_repair_trigger",
+          "finite_samples": "hard_veto",
+          "log_accept_ratio_finite": "hard_veto",
+          "repair_band": "acceptance_repair_trigger",
+          "runtime": "explanatory_diagnostic",
+          "step_stability": "explanatory_or_hard_veto_when_configured",
+          "target_status_telemetry": "hard_veto_when_enabled"
+        },
+        "final_status": "hard_veto",
+        "hmc_adapter_signature": "e98a87a75ce0d534377ea8fc481aa77e95431de43a5e4696a84d0490a7c91cd5",
+        "mass_artifact_payload": {
+          "adapter_signature": "1fb14fa444509dd85da306518011f6e24b99882d8e947de63ebb244edb154d6a",
+          "artifact_type": "bayesfilter_precomputed_mass_artifact",
+          "covariance": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "covariance_source": "fixed_identity_z",
+          "dimension": 6,
+          "eigen_summary": {
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "finite": true,
+            "max": 1.0,
+            "min": 1.0,
+            "positive": true
+          },
+          "factor": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "factor_orientation": "row_right_transpose",
+          "include_arrays": true,
+          "log_jacobian_convention": "constant_omitted",
+          "matrix_used_for_square_root": "identity_z",
+          "nonclaims": [
+            "fixed identity mass in trained-transport z coordinates",
+            "no residual mass adaptation claim",
+            "no MAP quality claim",
+            "no posterior convergence claim"
+          ],
+          "position": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "position_role": "fixed_neutra_initial_z",
+          "precision_eigen_summary": null,
+          "reconstruction_atol": 1e-10,
+          "reconstruction_rtol": 1e-10,
+          "regularization_report": {
+            "regularization_applied": false
+          },
+          "schema_version": 1,
+          "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+        },
+        "mass_artifact_signature": "ad39e0b70d4596e890b95e4f58ab5676da03f47e11680138d7036eb34df9207d",
+        "nonclaims": [
+          "fixed-mass HMC tuning-budget ladder only",
+          "acceptance is a tuning-screen diagnostic only",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default sampler readiness claim",
+          "no empirical validity claim",
+          "no GPU or XLA readiness claim"
+        ],
+        "passed": false,
+        "repair_config_available": false,
+        "repair_config_hash": null,
+        "repair_config_payload_exposed": false,
+        "reports_posterior_convergence": false,
+        "rounds": [
+          {
+            "budget": 2,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "hard_veto",
+            "continuation_vetoes": [],
+            "diagnostic_role": "hard_veto",
+            "hard_vetoes": [
+              "tune_hmc_error",
+              "tune_acceptance_missing_or_nonfinite",
+              "tune_final_step_missing_or_nonfinite",
+              "tune_log_accept_nonfinite_or_missing",
+              "tune_samples_nonfinite_or_missing"
+            ],
+            "initial_step_size": 0.2,
+            "promotion_vetoes": [],
+            "repair_triggers": [],
+            "round_index": 0,
+            "screen_config_payload": null,
+            "screen_diagnostics": {},
+            "screen_seed": [
+              20260718,
+              1822
+            ],
+            "tune_config_payload": {
+              "adaptation_policy": "dual_averaging_step_size",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 2,
+              "num_leapfrog_steps": 6,
+              "num_results": 2,
+              "seed": [
+                20260718,
+                1821
+              ],
+              "step_size": 0.2,
+              "target_scope": "PP-UKF:preflight_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "dual_averaging_step_size",
+                "diagnostic_role": "fixed-mass dual-averaging diagnostic only",
+                "enabled": true,
+                "implemented": true,
+                "label": "fixed_mass_dual_averaging",
+                "nonclaims": [
+                  "fixed-mass dual-averaging diagnostic only",
+                  "mass matrix is supplied/fixed; no windowed mass adaptation claim",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 2,
+                "source": "bayesfilter.neutra_all_models_preflight",
+                "target_accept_prob": 0.7
+              },
+              "use_xla": true
+            },
+            "tune_diagnostics": {
+              "acceptance_rate": null,
+              "error_message": "target_status_telemetry missing required fields: floor_count_value, min_innovation_eigenvalue, innovation_condition_estimate",
+              "error_type": "ValueError",
+              "final_step_size": null,
+              "final_step_size_finite": false,
+              "log_accept_ratio_finite": false,
+              "samples_all_finite": false,
+              "step_stability": {
+                "previous_step": 0.2,
+                "relative_change": null,
+                "rtol": null,
+                "tuned_step": null,
+                "within_rtol": null
+              },
+              "target_log_prob_finite": false
+            },
+            "tune_seed": [
+              20260718,
+              1821
+            ],
+            "tuned_step_size": null
+          }
+        ],
+        "runner_route_summary": {
+          "active_route": "fixed_mass_scoped_reusable_runner",
+          "distinct_static_runner_contract_count": 1,
+          "distinct_static_runner_contracts": [
+            {
+              "static_contract_hash": "365bfcd97598dd8ddb425b4f98397bc7202fc3ef01aec72556696fc9e71b8cb1",
+              "static_contract_payload": {
+                "dynamic_inputs": [
+                  "current_state",
+                  "seed",
+                  "step_size"
+                ],
+                "dynamic_num_leapfrog_steps": false,
+                "hmc_adapter_signature": "e98a87a75ce0d534377ea8fc481aa77e95431de43a5e4696a84d0490a7c91cd5",
+                "initial_state_dtype": "float64",
+                "initial_state_dtype_source": "tf.cast(tf.convert_to_tensor(initial_state), tf.float64)",
+                "initial_state_shape": [
+                  4,
+                  6
+                ],
+                "mass_artifact_signature": "ad39e0b70d4596e890b95e4f58ab5676da03f47e11680138d7036eb34df9207d",
+                "runner": "build_reusable_full_chain_tfp_hmc_runner",
+                "static_config": {
+                  "adaptation_policy": "dual_averaging_step_size",
+                  "chain_execution_mode": "tf_function",
+                  "num_burnin_steps": 2,
+                  "num_leapfrog_steps": 6,
+                  "num_results": 2,
+                  "target_scope": "PP-UKF:preflight_native_tuning",
+                  "target_status_trace_policy": "per_chain_step",
+                  "trace_policy": "standard",
+                  "tuning_policy": {
+                    "adaptation_policy": "dual_averaging_step_size",
+                    "diagnostic_role": "fixed-mass dual-averaging diagnostic only",
+                    "enabled": true,
+                    "implemented": true,
+                    "label": "fixed_mass_dual_averaging",
+                    "nonclaims": [
+                      "fixed-mass dual-averaging diagnostic only",
+                      "mass matrix is supplied/fixed; no windowed mass adaptation claim",
+                      "no posterior convergence claim",
+                      "no sampler superiority claim",
+                      "no default adaptation readiness claim"
+                    ],
+                    "num_adaptation_steps": 2,
+                    "source": "bayesfilter.neutra_all_models_preflight",
+                    "target_accept_prob": 0.7
+                  },
+                  "use_xla": true
+                },
+                "target_dimension": 6
+              }
+            }
+          ],
+          "fallback_status": "none",
+          "fallback_to_single_use_runner": false,
+          "injected_runner_call_count": 0,
+          "reusable_runner_build_count": 1,
+          "round_route_events": [],
+          "route_nonclaims": [
+            "route telemetry is engineering evidence only",
+            "does not change selected step or HMC kernel semantics",
+            "does not establish posterior convergence or sampler superiority"
+          ],
+          "semantic_source": "run_fixed_mass_hmc_tuning_budget_ladder",
+          "single_use_build_count": 0
+        },
+        "schema": "bayesfilter.fixed_mass_hmc_tuning_budget_ladder.v1",
+        "selected_config_hash": null,
+        "selected_config_payload": null,
+        "selected_round_index": null,
+        "target_dimension": 6
+      },
+      "ladder_artifact_hash": "44e0c9adea222c89e6ebc50bb204a0972c11d7960949fc952691cdd26980b559",
+      "num_leapfrog_steps": 6,
+      "passed": false,
+      "repair_triggers": [],
+      "reports_posterior_convergence": false,
+      "selected_step_size": null,
+      "verification_config_payload": null,
+      "verification_diagnostics": {}
+    }
+  ],
+  "config": {
+    "acceptance_band": [
+      0.65,
+      0.75
+    ],
+    "budget_schedule": [
+      2
+    ],
+    "chain_count": 4,
+    "chain_execution_mode": "tf_function",
+    "fixed_grid_base_step_size_candidates": [],
+    "fixed_grid_fallback_acceptance_max": 0.85,
+    "fixed_grid_max_attempts": 5,
+    "fixed_grid_num_leapfrog_steps": null,
+    "fixed_grid_scale_candidates": [],
+    "initial_step_size": 0.2,
+    "leapfrog_grid": [
+      6
+    ],
+    "maximum_absolute_energy_error": 1000.0,
+    "output_filename": "preflight_native_tuning.json",
+    "proposal_dynamics_identity": "exact_transformed_gradient",
+    "repair_band": [
+      0.55,
+      0.85
+    ],
+    "require_modern_rank_normalized_verification": false,
+    "screen_num_burnin_steps": 1,
+    "screen_num_results": 4,
+    "screen_seed_base": [
+      20260718,
+      1822
+    ],
+    "source": "bayesfilter.neutra_all_models_preflight",
+    "step_repair_factor": 2.0,
+    "step_repair_min_directional_factor": 1.25,
+    "target_accept_prob": 0.7,
+    "target_scope": "PP-UKF:preflight_native_tuning",
+    "target_status_trace_policy": "per_chain_step",
+    "tune_num_results": 2,
+    "tune_seed_base": [
+      20260718,
+      1821
+    ],
+    "use_xla": true,
+    "verification_min_retained_results_per_chain": 1000,
+    "verification_num_burnin_steps": 1,
+    "verification_num_results": 4,
+    "verification_rhat_max": 1.01,
+    "verification_seed_base": [
+      20260718,
+      1823
+    ]
+  },
+  "diagnostic_roles": {
+    "acceptance": "promotion_screen_and_repair_trigger",
+    "base_value_score_authority": "hard_veto_if_gradient_tape_fallback",
+    "candidate_ladder": "step_tuning_screen",
+    "fixed_transport_manifest_hash": "artifact_identity",
+    "fresh_verification": "handoff_promotion_screen",
+    "identity_z_mass_policy": "hard_boundary",
+    "modern_rank_folded_rhat": "required_when_configured_handoff_promotion_screen",
+    "runtime": "explanatory_diagnostic"
+  },
+  "final_kernel_hash": null,
+  "final_kernel_payload": null,
+  "final_status": "no_viable_candidate",
+  "fixed_grid_scale_selection": null,
+  "fixed_transport_manifest_hash": "ab20e60c4698d946c6b653287ef1af36a3a8c80d65b98ee9d88942eb14041ed6",
+  "hard_vetoes": [
+    "tune_hmc_error",
+    "tune_acceptance_missing_or_nonfinite",
+    "tune_final_step_missing_or_nonfinite",
+    "tune_log_accept_nonfinite_or_missing",
+    "tune_samples_nonfinite_or_missing"
+  ],
+  "identity_z_mass_artifact_payload": {
+    "adapter_signature": "1fb14fa444509dd85da306518011f6e24b99882d8e947de63ebb244edb154d6a",
+    "artifact_type": "bayesfilter_precomputed_mass_artifact",
+    "covariance": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "covariance_source": "fixed_identity_z",
+    "dimension": 6,
+    "eigen_summary": {
+      "condition_number": 1.0,
+      "eigenvalues": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "finite": true,
+      "max": 1.0,
+      "min": 1.0,
+      "positive": true
+    },
+    "factor": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "factor_orientation": "row_right_transpose",
+    "include_arrays": true,
+    "log_jacobian_convention": "constant_omitted",
+    "matrix_used_for_square_root": "identity_z",
+    "nonclaims": [
+      "fixed identity mass in trained-transport z coordinates",
+      "no residual mass adaptation claim",
+      "no MAP quality claim",
+      "no posterior convergence claim"
+    ],
+    "position": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "position_role": "fixed_neutra_initial_z",
+    "precision_eigen_summary": null,
+    "reconstruction_atol": 1e-10,
+    "reconstruction_rtol": 1e-10,
+    "regularization_report": {
+      "regularization_applied": false
+    },
+    "schema_version": 1,
+    "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+  },
+  "identity_z_mass_artifact_signature": "ad39e0b70d4596e890b95e4f58ab5676da03f47e11680138d7036eb34df9207d",
+  "nonclaims": [
+    "fixed trained transport HMC tuning only",
+    "transport is not trained or adapted by this tuner",
+    "identity z-mass policy only",
+    "no windowed mass adaptation claim",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+    "no external-client scientific claim"
+  ],
+  "passed": false,
+  "repair_triggers": [],
+  "reports_default_readiness": false,
+  "reports_external_client_scientific_claim": false,
+  "reports_posterior_convergence": false,
+  "reports_sampler_superiority": false,
+  "schema": "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v1",
+  "selected_candidate_index": null,
+  "target_dimension": 6,
+  "transformed_adapter_signature": "1fb14fa444509dd85da306518011f6e24b99882d8e947de63ebb244edb154d6a"
+}

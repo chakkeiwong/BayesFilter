@@ -1,0 +1,129 @@
+{
+  "attempt_id": "lgssm-t50-attempt01",
+  "campaign_id": "ledh-offline-ot-cheaper-first-tuning-20260718",
+  "command": [
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py",
+    "--output-root",
+    "docs/benchmarks/artifacts/ledh_per_scope_tuning_20260719/lgssm_t50_attempt01",
+    "--attempt-id",
+    "lgssm-t50-attempt01",
+    "--time-steps",
+    "50",
+    "--tuning-seed-start",
+    "81800",
+    "--claim-seed-start",
+    "81820",
+    "--sinkhorn-candidates",
+    "20,25,30,40",
+    "--balance-candidates",
+    "3,5,8,12,16,25,32"
+  ],
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "dtype": "float32",
+    "gpu_memory_limit_mib": 8192,
+    "gpu_required": true,
+    "jit_compile": true,
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true
+  },
+  "failure": {
+    "message": "Virtual devices cannot be modified after being initialized",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py\", line 353, in main\n    device = runner._configure_gpu(tf.float32)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py\", line 75, in _configure_gpu\n    tf.config.set_logical_device_configuration(\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/config.py\", line 912, in set_logical_device_configuration\n    context.context().set_logical_device_configuration(device, logical_devices)\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/context.py\", line 2052, in set_logical_device_configuration\n    raise RuntimeError(\nRuntimeError: Virtual devices cannot be modified after being initialized\n",
+    "type": "RuntimeError"
+  },
+  "finished_at_utc": "2026-07-18T18:59:04.494662+00:00",
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "partitions": {
+    "calibration": [
+      81800,
+      81801,
+      81802,
+      81803,
+      81804,
+      81805,
+      81806,
+      81807
+    ],
+    "claim": [
+      81820,
+      81821,
+      81822,
+      81823,
+      81824,
+      81825,
+      81826,
+      81827,
+      81828,
+      81829,
+      81830,
+      81831,
+      81832,
+      81833,
+      81834,
+      81835
+    ],
+    "validation": [
+      81808,
+      81809,
+      81810,
+      81811,
+      81812,
+      81813,
+      81814,
+      81815
+    ]
+  },
+  "plan_path": "docs/plans/bayesfilter-ledh-offline-ot-cheaper-first-tuning-master-plan-2026-07-18.md",
+  "schema_version": "bayesfilter.ledh_offline_ot_tuning.v1",
+  "search_order": {
+    "balance_steps": [
+      3,
+      5,
+      8,
+      12,
+      16,
+      25,
+      32
+    ],
+    "rule": "exhaust_balance_ladder_before_next_sinkhorn",
+    "sinkhorn_steps": [
+      20,
+      25,
+      30,
+      40
+    ]
+  },
+  "selection_metric": {
+    "kalman_used": false,
+    "maximum_row_error_tolerance": 0.01,
+    "tv_column_tolerance": 0.0001
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "1f10544339052d48768fedb54718b28803c0999ccead7e0d1eee910070a8625b",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "60362d85954090ba84f192b2e3e44f58c070326b1634cff630b914cb0cec973d",
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py": "fef9c561c29b74c0de6c458006a4fc13265c88a03e3cd1c382a5d47e665ac338",
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py": "075213b4690b07ed9928ea7fbef521bb6cd55233fc7e9d99649aa00fb5897951",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "dd5f6230c14c51166da3252f5838221716a5d25809474c34cd696f42501993a9"
+  },
+  "status": "CAMPAIGN_EXECUTION_FAILURE",
+  "tuning_scope": {
+    "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "control_family_id": "streaming_ot_sinkhorn_balance_v1",
+    "dtype": "float32",
+    "horizon": 50,
+    "jit_compile": true,
+    "model_id": "canonical_lgssm_m3",
+    "parameter_count": 5,
+    "particle_count": 1024,
+    "prepared_data_id": "lgssm_dataset_seed_81100_observation_prefix_t50",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route_id": "contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1",
+    "state_dimension": 3,
+    "target_id": "canonical_lgssm_dataset_seed_81100_theta_0p72_0p55_0p35_0p35_0p45",
+    "tf32_enabled": true
+  },
+  "tuning_scope_sha256": "451d361ac856bfeea9df93a84f07999967db8199dbb9ce948fa214c074ea5f2d",
+  "wall_time_seconds": 0.0044721069862134755
+}

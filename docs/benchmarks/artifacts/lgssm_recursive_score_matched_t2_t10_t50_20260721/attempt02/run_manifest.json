@@ -1,0 +1,105 @@
+{
+  "schema_version": "bayesfilter.scientific_run_manifest.v1",
+  "campaign_id": "lgssm-recursive-score-matched-t2-t10-t50-20260721",
+  "attempt": "attempt02",
+  "created_at_utc": "2026-07-21T04:23:27Z",
+  "git_commit": "0fff464ab456b72a010007e552c1e2d761624afe",
+  "command": "python docs/benchmarks/run_lgssm_recursive_score_matched_comparison.py --output-root docs/benchmarks/artifacts/lgssm_recursive_score_matched_t2_t10_t50_20260721/attempt02",
+  "working_directory": "/home/chakwong/BayesFilter",
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "python_version": "3.11.14",
+    "tensorflow_version": "2.19.1",
+    "tensorflow_probability_version": "0.25.0",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "hardware": {
+    "host": "DESKTOP-RF1Q5IJ",
+    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+    "gpu_driver_version": "591.86",
+    "gpu_memory_total_mib": 16376,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "execution": {
+    "backend": "TensorFlow/TensorFlow Probability GPU",
+    "dtype": "float32",
+    "tf32_enabled": true,
+    "jit_compile": false,
+    "jit_classification": "diagnostic_no_xla_exception",
+    "wall_time_seconds": 209.2812552730029,
+    "gpu_allocator_current_bytes": 668160,
+    "gpu_allocator_peak_bytes": 474037248,
+    "executed_particle_rows": 96
+  },
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "logical_device_memory_limit_mib": null,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true
+  },
+  "data": {
+    "version": "synthetic_lgssm_dgp_dataset_seed_81100",
+    "dataset_seed": 81100,
+    "horizons": [
+      2,
+      10,
+      50
+    ]
+  },
+  "random_seeds": {
+    "particle_seeds": [
+      82220,
+      82221,
+      82222,
+      82223,
+      82224,
+      82225,
+      82226,
+      82227,
+      82228,
+      82229,
+      82230,
+      82231,
+      82232,
+      82233,
+      82234,
+      82235
+    ]
+  },
+  "plan_file": "docs/plans/bayesfilter-lgssm-recursive-score-matched-three-horizon-comparison-plan-2026-07-21.md",
+  "result_file": "docs/plans/bayesfilter-lgssm-recursive-score-matched-three-horizon-comparison-result-2026-07-21.md",
+  "artifacts": {
+    "result_json": {
+      "path": "docs/benchmarks/artifacts/lgssm_recursive_score_matched_t2_t10_t50_20260721/attempt02/result.json",
+      "sha256": "5e55cfcf91cfd1b2ed2385e735656f54902e081e1763a1567a852bd6e84b5663"
+    },
+    "generated_markdown": {
+      "path": "docs/benchmarks/artifacts/lgssm_recursive_score_matched_t2_t10_t50_20260721/attempt02/result.md",
+      "sha256": "352592d6877cf41c1b958b8584a834be4698a669454a0b6ca26fefd267042387"
+    }
+  },
+  "source_sha256": {
+    "runner": "f07a0122e5687de18f2ae9d72d7a745e6f0380b11a85d487d573dd949b0b62bd",
+    "campaign": "18596442272b67794c901ad998bd48b73794588ae28c7ea20c2bdefbe9697a5e",
+    "plan": "48fb0103ca04c16f26c6a8986bbc339f2d20665dc93dc9362f9d2bc2fdb1a125"
+  },
+  "validity": {
+    "hard_valid": true,
+    "focused_tests": "11 passed, 2 warnings in 6.13s",
+    "attempt01_failure": "repository-root import bootstrap failed before GPU work; no result artifact was created",
+    "attempt02_repair": "added repository-root sys.path bootstrap and reran the unchanged scientific scope"
+  },
+  "nonclaims": [
+    "no broad method superiority claim",
+    "no nonlinear-model or NAWM claim",
+    "no HMC or XLA readiness claim",
+    "Gaussian GenUT is not independent evidence from Cubature"
+  ]
+}

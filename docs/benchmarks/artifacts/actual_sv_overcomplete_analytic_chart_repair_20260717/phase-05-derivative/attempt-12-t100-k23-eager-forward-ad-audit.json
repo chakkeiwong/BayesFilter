@@ -1,0 +1,51 @@
+{
+  "schema": "bayesfilter.contract_e_tp.actual_sv_overcomplete_eager_forward_ad_audit.v1",
+  "status": "PASS_FORWARD_AD",
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-03-pilot/attempt-03-t100-k23-preparation.json",
+    "sha256": "476e4c117b4855358c9b2179d5e5c45623408be5f583f1df04a491ff5e8ace03"
+  },
+  "manual_result": {
+    "path": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-05-derivative/attempt-04-t100-k23-score-fd-xla-result.json",
+    "sha256": "861fe6d097c2d18828fd458c724619a1fec84a781919ec1736cb75f00a89361d"
+  },
+  "time_steps": 100,
+  "theta": [
+    0.2533471031357997,
+    -0.916290731874155
+  ],
+  "objective_eager": -226.47356806462196,
+  "objective_xla_manual_result": -226.4735680646219,
+  "objective_bitwise_equal_as_float": false,
+  "objective_absolute_difference": 5.684341886080802e-14,
+  "objective_comparison_role": "descriptive_cross_eager_xla_roundoff_only",
+  "score_forward_ad": [
+    1.0188639968830482,
+    2.9592148037434116
+  ],
+  "score_manual": [
+    1.018863996885564,
+    2.9592148037571016
+  ],
+  "maximum_absolute_difference": 1.368993807204788e-11,
+  "relative_difference": 4.447444400460831e-12,
+  "relative_tolerance": 1.4901161193847656e-08,
+  "relative_tolerance_provenance": "sqrt(float64 machine epsilon)",
+  "score_agrees": true,
+  "all_forward_ad_finite": true,
+  "wall_time_seconds": 158.02389416197548,
+  "execution": {
+    "backend": "TensorFlow_eager_ForwardAccumulator_CPU_reference_exception",
+    "jit_compile": false,
+    "cuda_visible_devices": "-1"
+  },
+  "oracle_limitations": {
+    "reverse_mode": "NaN from extreme tiny-weight adjoint path at T>=100",
+    "forward_ad_tf_function_xla": "nonconstant transpose permutation in transformed nested loop",
+    "forward_ad_tf_function_nonjit": "TensorList shape invariant failure in transformed nested loop"
+  },
+  "nonclaims": [
+    "eager CPU reference is not the default production execution path",
+    "autodiff agreement does not establish scientific target equivalence"
+  ]
+}

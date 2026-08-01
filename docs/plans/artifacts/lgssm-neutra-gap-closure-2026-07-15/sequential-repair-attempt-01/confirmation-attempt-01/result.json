@@ -1,0 +1,61 @@
+{
+  "artifact_hash": "sha256:ced8f1f952b711bc2af932af771eff9ed68b0da0cf52d55f3ee2d55d66440858",
+  "artifact_hash_semantics": "stable_json_sha256_excluding_artifact_hash_fields",
+  "candidate_order": [
+    "dense_seed1201",
+    "dense_seed1202"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "dense_seed1201",
+      "decision": "PASS_EXACT_FIXTURE_NEUTRA_CONFIRMATION",
+      "hard_vetoes": [],
+      "max_abs_mean_minus_truth_over_sd": 1.6290379472053655,
+      "max_posterior_agreement_combined_mcse": 2.08019473326664,
+      "max_rhat": 1.0021491710558892,
+      "min_bulk_ess": 4571.607739421656,
+      "min_tail_ess": 3976.950764814658,
+      "passed": true,
+      "result_artifact_hash": "sha256:46bad6b8f920ce90946d177b13405298dab995f2c66b32cad421ef3c4ec15ec0",
+      "result_path": "docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/confirmation-attempt-01/dense_seed1201/result.json",
+      "retained_results_per_chain": 4000,
+      "warmup_results_per_chain": 2000
+    },
+    {
+      "candidate_id": "dense_seed1202",
+      "decision": "REJECT_CANDIDATE_CONFIRMATORY_GATES",
+      "hard_vetoes": [
+        "warmup_chunk_health_failed"
+      ],
+      "max_abs_mean_minus_truth_over_sd": null,
+      "max_posterior_agreement_combined_mcse": null,
+      "max_rhat": null,
+      "min_bulk_ess": null,
+      "min_tail_ess": null,
+      "passed": false,
+      "result_artifact_hash": "sha256:596f2b80f7443b984a20fe59944676b1d51b9c7a6a4e22042fb02519ccf0f61c",
+      "result_path": "docs/plans/artifacts/lgssm-neutra-gap-closure-2026-07-15/sequential-repair-attempt-01/confirmation-attempt-01/dense_seed1202/result.json",
+      "retained_results_per_chain": 0,
+      "warmup_results_per_chain": 2000
+    }
+  ],
+  "decision": "PASS_NEUTRA_ON_EXACT_FAVORABLE_LGSSM_FIXTURE",
+  "nonclaims": [
+    "one favorably truth-centered 18D LGSSM fixture only",
+    "plain-HMC agreement is not exact-posterior correctness evidence",
+    "training loss and acceptance alone are explanatory only",
+    "no sampler superiority, calibration, robustness, or generalization claim",
+    "no production or default-readiness claim"
+  ],
+  "nonpassing_candidates": [
+    "dense_seed1202"
+  ],
+  "passed": true,
+  "passing_candidates": [
+    "dense_seed1201"
+  ],
+  "phase": "R2",
+  "positive_claim_scope": "at_least_one_specific_frozen_neutra_candidate_passes_recorded_hmc_convergence_plain_hmc_agreement_and_truth_recovery_gates_on_this_exact_favorable_18d_lgssm_fixture",
+  "schema": "bayesfilter.lgssm_neutra_confirmatory_hmc_result.v1",
+  "statistically_supported_ranking": null
+}

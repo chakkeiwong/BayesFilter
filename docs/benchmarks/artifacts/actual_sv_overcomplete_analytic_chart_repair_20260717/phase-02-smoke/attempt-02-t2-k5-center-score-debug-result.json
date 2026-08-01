@@ -1,0 +1,88 @@
+{
+  "schema": "bayesfilter.contract_e_tp.actual_sv_overcomplete_result.v1",
+  "status": "PASS_FINITE_PROGRAM",
+  "route_id": "actual_sv_overcomplete_pearson_fixed_reference_v1",
+  "plan": "docs/plans/bayesfilter-actual-sv-overcomplete-analytic-chart-repair-plan-2026-07-17.md",
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-02-smoke/attempt-01-t2-k5-preparation.json",
+    "sha256": "3256e4b741b21612b6f54a079424d50766cc7ba2e170da9c17e70e001fb758aa"
+  },
+  "point_set": "center",
+  "evaluation_mode": "score",
+  "time_steps": 2,
+  "capacity": 5,
+  "rows": [
+    {
+      "name": "center",
+      "theta": [
+        0.2533471031357997,
+        -0.916290731874155
+      ],
+      "valid": true,
+      "objective": {
+        "shape": [],
+        "values": -3.775773696772646,
+        "serialized_tensor_sha256": "f09a26124845bf814fddd2fecb9ff6200803fef31ffc37d42d51460d06775d45"
+      },
+      "minimum_weight": 0.06600604115686594,
+      "weakest_time_zero_based": 0,
+      "maximum_gram_condition_number": 350507.16359694547,
+      "maximum_scaled_relative_residual": 9.27828534386182e-17,
+      "maximum_feature_residual_abs": 2.220446049250313e-16,
+      "evaluation_seconds": 0.9117296420154162,
+      "score_manual": {
+        "shape": [
+          2
+        ],
+        "values": [
+          -0.22024891835455512,
+          0.5291909160022005
+        ],
+        "serialized_tensor_sha256": "70615ebe1b8d037a6d539e4fa8c6b59b676f542f129f7611a6aea98a348c3788"
+      },
+      "score_autodiff_oracle": {
+        "shape": [
+          2
+        ],
+        "values": [
+          -0.22024891835456611,
+          0.5291909160022459
+        ],
+        "serialized_tensor_sha256": "76b4ddae927d18915617aa7302caaef8cd814f5abce7e48466a51f4932094f5c"
+      },
+      "manual_autodiff_max_absolute_difference": 4.54081217071689e-14,
+      "manual_autodiff_symmetric_relative_difference": 8.150701288126743e-14
+    }
+  ],
+  "summary": {
+    "all_valid": true,
+    "minimum_weight": 0.06600604115686594,
+    "weakest_point": "center"
+  },
+  "timing": {
+    "trace_seconds": 5.4467675010091625,
+    "first_compile_and_evaluation_seconds": 0.9117296420154162,
+    "subsequent_warm_evaluation_seconds_total": 0.0,
+    "total_seconds": 6.379663212981541
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_dirty": true,
+    "command": "docs/benchmarks/run_actual_sv_overcomplete_analytic_chart.py --device cpu --preparation docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-02-smoke/attempt-01-t2-k5-preparation.json --point-set center --evaluation-mode score --no-jit-compile --output docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-02-smoke/attempt-02-t2-k5-center-score-debug-result.json",
+    "tensorflow_version": "2.19.1",
+    "device": "cpu",
+    "physical_gpus": [],
+    "logical_gpus": [],
+    "logical_device_memory_limit_mib": null,
+    "memory_growth": false,
+    "jit_compile": false,
+    "dtype": "float64"
+  },
+  "derivative_status": "manual_total_jvp_with_autodiff_oracle",
+  "nonclaims": [
+    "not manual score certification",
+    "not finite-difference certification",
+    "not scientific score equivalence",
+    "not HMC or canonical Contract E readiness"
+  ]
+}

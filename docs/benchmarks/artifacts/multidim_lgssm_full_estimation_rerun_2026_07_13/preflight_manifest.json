@@ -1,0 +1,251 @@
+{
+  "artifact_hash": "sha256:590d87c85313a89cbae151926eda9d670caf3503c5803f7e9681117659034ac3",
+  "artifact_root": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13",
+  "commands": [
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--stage",
+      "fixture"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--stage",
+      "xla_score"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--stage",
+      "geometry_mass"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--stage",
+      "kernel_tuning"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "scripts/build_hmc_full_estimation_phase7_config.py",
+      "--tuning-config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--output",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_phase7_2026_07_13.json"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--phase7-config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_phase7_2026_07_13.json",
+      "--stage",
+      "burnin_sampling",
+      "--phase7-smoke",
+      "--phase7-output-dir",
+      "/tmp/bayesfilter-full-estimation-smoke-20260713"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "scripts/run_hmc_full_estimation_campaign.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_phase7_2026_07_13.json",
+      "--campaign-root",
+      "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/phase7_campaign"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+      "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+      "--config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+      "--phase7-config",
+      "docs/benchmarks/configs/multidim_lgssm_full_estimation_phase7_2026_07_13.json",
+      "--stage",
+      "final_recovery"
+    ]
+  ],
+  "config_file_sha256": "cc42fbfa61fb46f5e81299944facd44bcfca4ff5443442df3ce09af9b4b3c582",
+  "config_hash": "sha256:db756a124582fd5080c6b76c59af609d85806a6a00135a5ccf2ab1fe28d258b3",
+  "config_path": "docs/benchmarks/configs/multidim_lgssm_full_estimation_rerun_2026_07_13.json",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "MPLCONFIGDIR": "/tmp/matplotlib-bayesfilter-full-rerun",
+    "jit_compile": true,
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python3.11",
+    "sample_generation_device": "deliberate_cpu_only",
+    "tensorflow_dtype": "float64",
+    "use_xla": true
+  },
+  "evidence_contract": {
+    "continuation_vetoes": [
+      "invalid target or score",
+      "corrupt or stale artifact",
+      "no corrected tuning candidate",
+      "nonfinite transition",
+      "XLA fallback",
+      "serious diagnostic cap failure",
+      "wall-time cap"
+    ],
+    "explanatory_only": [
+      "smoke diagnostics",
+      "runtime",
+      "compile time",
+      "posterior contraction"
+    ],
+    "forbidden_claims": [
+      "calibration",
+      "generality",
+      "sampler superiority",
+      "GPU readiness",
+      "production or default readiness"
+    ],
+    "primary_criterion": "target, corrected tuning, serious convergence, retained integrity, and all-parameter recovery jointly pass"
+  },
+  "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "historical_artifact_root_consumed_as_input": false,
+  "no_overwrite": true,
+  "nonclaims": [
+    "configuration only",
+    "not an HMC run",
+    "not HMC convergence evidence",
+    "not posterior recovery evidence",
+    "not sampler superiority evidence",
+    "not production readiness",
+    "not default readiness",
+    "not a DSGE claim"
+  ],
+  "output_paths": {
+    "burnin_sampling": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/phase7_campaign/result.json",
+    "final_result": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/final_recovery_result.json",
+    "fixture": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/fixture_T120_seed20260709_301.json",
+    "geometry": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/geometry.json",
+    "kernel_tuning": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/kernel_tuning.json",
+    "log": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/run.log",
+    "mass": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/mass.json",
+    "root": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13",
+    "xla_compile": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/xla_compile_gate.json"
+  },
+  "phase0_checks": {
+    "claude_initial_review": "FEASIBILITY_MISSING_HARDCODED_IDENTITY_REPAIR",
+    "claude_post_revision_recheck": "unavailable_external_disclosure_rejected_no_retry",
+    "focused_tests": "74 passed",
+    "forbidden_nonjit_static_scan": "passed",
+    "local_post_revision_review": "passed",
+    "python_compilation": "passed",
+    "v1_v2_regressions": "passed"
+  },
+  "phase7_config_path_after_tuning": "docs/benchmarks/configs/multidim_lgssm_full_estimation_phase7_2026_07_13.json",
+  "plan_path": "docs/plans/bayesfilter-deterministic-lgssm-hmc-full-estimation-rerun-plan-2026-07-13.md",
+  "result_path": "docs/plans/bayesfilter-deterministic-lgssm-hmc-full-estimation-rerun-result-2026-07-13.md",
+  "schema": "bayesfilter.hmc_full_estimation_preflight_manifest.v1",
+  "seeds": {
+    "geometry": [
+      20260709,
+      401
+    ],
+    "serious_sampling": [
+      20260713,
+      701
+    ],
+    "simulation": [
+      20260709,
+      301
+    ],
+    "tuning": [
+      20260709,
+      501
+    ],
+    "tuning_and_serious_seeds_differ": true
+  },
+  "source_inventory": {
+    "bayesfilter/inference/hmc.py": {
+      "byte_count": 275569,
+      "file_sha256": "3bba3d826e66091be41cc02f6bca7a47dbc61ae364cf5d9edfb1fa94d3eb78fb"
+    },
+    "bayesfilter/inference/hmc_convergence.py": {
+      "byte_count": 15322,
+      "file_sha256": "43b90fc37dcdbf118f10146ecec081f0daf401cf1c7533d47299c6c2868bbc0c"
+    },
+    "bayesfilter/inference/hmc_identity.py": {
+      "byte_count": 55863,
+      "file_sha256": "420cc6434a8e94641c26fad74c545ddec306beb3dd7e6c37f7901c4dd5a24bd1"
+    },
+    "bayesfilter/inference/hmc_identity_integration.py": {
+      "byte_count": 42525,
+      "file_sha256": "48b7e67d047a4397bb6a9da9bae7c4961f6bf9161035c0114a90d92a20f3a0d0"
+    },
+    "bayesfilter/inference/hmc_kernel_tuning.py": {
+      "byte_count": 760149,
+      "file_sha256": "5d43580ad57fc771ce42b444dd045c184ca7d4eb16f544112d06c499c8e51165"
+    },
+    "bayesfilter/inference/mass_matrix.py": {
+      "byte_count": 9586,
+      "file_sha256": "46baf901a3ae86e245fc5ed8d120329a7ea35d0ec3dea627413559c271c0ce27"
+    },
+    "bayesfilter/inference/quadratic_geometry.py": {
+      "byte_count": 33629,
+      "file_sha256": "e010f2dd303a3071e7749b690da782b5073750f59cd23b0a861c6ca1b718cab6"
+    },
+    "bayesfilter/linear/kalman_svd_derivatives_tf.py": {
+      "byte_count": 40751,
+      "file_sha256": "ba0e77672221409e01c1fb5fbc4139f8b661e61f3cf9ddc01e628a0d05ecfcad"
+    },
+    "bayesfilter/linear/kalman_svd_tf.py": {
+      "byte_count": 20032,
+      "file_sha256": "3a21cfbedae3d94f3fe1c4f5a9d73015a2d9345ca555f34e5544651306583d03"
+    },
+    "bayesfilter/linear/types_tf.py": {
+      "byte_count": 10942,
+      "file_sha256": "f801893b82b6f56a6872ffad822dbebe69cc72050ab293b8c5718679789f63c0"
+    },
+    "bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py": {
+      "byte_count": 167785,
+      "file_sha256": "a318f017147fdf740a709d0fd92e1aac84a022b4b8aff2b05d36429548ccf491"
+    },
+    "bayesfilter/testing/multidim_triangular_lgssm_tf.py": {
+      "byte_count": 19639,
+      "file_sha256": "92951662ef8f211b4e99500855fa594fce28f02c85a21b5964ca796df3e767c9"
+    },
+    "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py": {
+      "byte_count": 70300,
+      "file_sha256": "fdfb069840d1e80e7fd8c959dae3c84a3647968747eab4894c383bcc66e49bfb"
+    },
+    "scripts/build_hmc_full_estimation_phase7_config.py": {
+      "byte_count": 10385,
+      "file_sha256": "19c2ad38f16c71c822cdf49bd4279c51b058129e920706e365ae27d11ea4b293"
+    },
+    "scripts/build_hmc_full_estimation_preflight_manifest.py": {
+      "byte_count": 13411,
+      "file_sha256": "8c264e1d20a10257995e01ea024ef47303160a26389e7aa9904f34352337d431"
+    },
+    "scripts/run_hmc_full_estimation_campaign.py": {
+      "byte_count": 13044,
+      "file_sha256": "086ab9174bdd880613da5425bc1e5d88fccdb411506295dc5cc2d2884ecb4ed6"
+    }
+  },
+  "source_inventory_hash": "sha256:6b968110919b0c79c9c3259eae2bb4536b57dca79bb524b3dbbe8671f89e33f4",
+  "status": "preflight_passed_no_experiment_started",
+  "thresholds": {
+    "recovery_max_abs_z": 3.0,
+    "serious_bulk_ess_min": 1000,
+    "serious_rhat_max": 1.01,
+    "serious_tail_ess_min": 400,
+    "tuning_acceptance_band": [
+      0.65,
+      0.75
+    ],
+    "tuning_min_retained_draws": 1000,
+    "tuning_rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+    "tuning_rhat_max": 1.01
+  }
+}

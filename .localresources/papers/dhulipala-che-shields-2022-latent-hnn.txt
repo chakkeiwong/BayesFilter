@@ -1,0 +1,2045 @@
+                                         BAYESIAN INFERENCE WITH LATENT HAMILTONIAN NEURAL
+                                                             NETWORKS∗
+                                             SOMAYAJULU L. N. DHULIPALA† , YIFENG CHE† , AND MICHAEL D. SHIELDS‡
+
+                                              Abstract. When sampling for Bayesian inference, one popular approach is to use Hamiltonian
+                                         Monte Carlo (HMC) and specifically the No-U-Turn Sampler (NUTS) which automatically decides
+                                         the end time of the Hamiltonian trajectory. However, HMC and NUTS can require numerous numer-
+                                         ical gradients of the target density, and can prove slow in practice. We propose Hamiltonian neural
+                                         networks (HNNs) with HMC and NUTS for solving Bayesian inference problems. Once trained,
+                                         HNNs do not require numerical gradients of the target density during sampling. Moreover, they
+arXiv:2208.06120v2 [cs.LG] 24 Oct 2022
+
+
+
+
+                                         satisfy important properties such as perfect time reversibility and Hamiltonian conservation, mak-
+                                         ing them well-suited for use within HMC and NUTS because stationarity can be shown. We also
+                                         propose an HNN extension called latent HNNs (L-HNNs), which are capable of predicting latent
+                                         variable outputs. Compared to HNNs, L-HNNs offer improved expressivity and reduced integration
+                                         errors. Finally, we employ L-HNNs in NUTS with an online error monitoring scheme to prevent
+                                         sample degeneracy in regions of low probability density. We demonstrate L-HNNs in NUTS with on-
+                                         line error monitoring on several examples involving complex, heavy-tailed, and high-local-curvature
+                                         probability densities. Overall, L-HNNs in NUTS with online error monitoring satisfactorily inferred
+                                         these probability densities. Compared to traditional NUTS, L-HNNs in NUTS with online error
+                                         monitoring required 1–2 orders of magnitude fewer numerical gradients of the target density and
+                                         improved the effective sample size (ESS) per gradient by an order of magnitude.
+
+                                            Key words. Bayesian Inference, Physics-based learning, Deep neural networks, Hamiltonian
+                                         Monte Carlo, Symplectic integration, No-u-turn sampler
+
+                                            AMS subject classifications. 60J22, 68T07, 65C05, 37Jxx, 62F15
+
+
+
+                                              1. Introduction. Bayesian inference is a principal method for parameter cali-
+                                         bration and uncertainty quantification in many scientific and engineering fields. Since
+                                         closed-form solutions usually do not exist for practical Bayesian inference problems,
+                                         Markov chain Monte Carlo (MCMC) algorithms are employed to sample from the
+                                         target probability density. While random-walk MCMC algorithms are popular, they
+                                         have poor scalability with the number of dimensions, and can feature large serial cor-
+                                         relations between the samples. Therefore, algorithms under the Hamiltonian Monte
+                                         Carlo (HMC) [18] framework (including the No-U-Turn Sampler [NUTS] [12]) are
+                                         often employed. HMC methods simulate Hamiltonian dynamics to propose new sam-
+                                         ples, instead of drawing them randomly, which can drastically improve the sampling
+                                         acceptance rate. However, the HMC class of algorithms can require numerous numer-
+                                         ical gradients of the target density, which are computationally expensive, especially if
+                                         the likelihood function involves iterating over a large dataset or calling a costly com-
+                                         putational model. This paper proposes latent Hamiltonian neural networks (HNNs)
+                                         [10] with HMC and NUTS for solving Bayesian inference problems. Once trained,
+                                         latent HNNs do not require evaluating numerical gradients of the target density while
+                                         sampling, and can therefore lead to computational gains over traditional HMC and
+                                         NUTS.
+
+
+                                           ∗ Code available at: https://github.com/IdahoLabResearch/BIhNNs.
+
+                                              Funding: This research is supported through the INL Laboratory Directed Research & Devel-
+                                         opment (LDRD) Program under DOE Idaho Operations Office Contract DE-AC07-05ID14517.
+                                            † Idaho National Laboratory,      Idaho Falls, ID 83415, USA (Som.Dhulipala@inl.gov,
+                                         Yifeng.Che@inl.gov).
+                                            ‡ Johns Hopkins University, Baltimore, MD 21218, USA (michael.shields@jhu.edu).
+
+                                                                                         1
+2                             S. L. N. DHULIPALA ET AL.
+
+
+     1.1. Literature review. Owing to the high computational cost of Bayesian
+inference, machine learning have garnered considerable interest to accelerate this
+process. For example, Che et al. [6] and Dhulipala et al. [7] utilized Gaussian
+processes to accelerate random-walk MCMC by replacing computationally expen-
+sive models for the likelihood evaluation. Gradient-based inference methods (e.g.,
+Langevin dynamics sampling and HMC) have better scalability than random-walk
+MCMC, and machine learning techniques are being employed to accelerate these meth-
+ods as well. For example, Gu et al. [11] trained neural networks that take as inputs
+the current position and gradient of the log-likelihood and predict the new position in
+the Metropolis-adjusted Langevin algorithm (MALA). Li et al. [15] proposed neural
+networks that learn the log-likelihood, and applied neural network gradients instead
+of the target density gradients in an HMC. Levy et al. [14] devised neural networks
+that take the log-likelihood as the input and predict the transition kernel in an HMC,
+which then showed improved performance over traditional HMC for complex cases
+such as multi-modal densities. One thing all these efforts for accelerating Bayesian
+inference have in common is the use of purely data-driven machine learning models.
+Moreover, although neural-network-aided HMC has shown improved performance over
+traditional HMC, Hoffman and Gelman [12] demonstrated NUTS to be at least an or-
+der of magnitude more efficient than conventional HMC (in terms of effective sample
+size [ESS] [23] per gradient), even without relying on machine learning. The efficiency
+of NUTS over HMC, MALA, and random-walk MCMC has also been demonstrated
+in many other studies (e.g., [19]).
+     To efficiently predict the behavior of dynamical systems, recent studies have in-
+vestigated physics-based neural networks. Greydanus et al. [10] proposed HNNs for
+learning Hamiltonian systems in an unsupervised fashion through a loss function that
+accounts for Hamilton’s equations. HNNs have interesting properties such as perfect
+time reversibility and Hamiltonian conservation, and thus proved superior in perfor-
+mance compared to data-driven neural networks and black-box ordinary differential
+equation (ODE) solvers such as neural ODEs [22]. More recently, newer architec-
+tures to learn Hamiltonian systems have been proposed. Physics-informed HNNs
+[17], Symplectic ODE-Net [25], and symplectic neural networks [13] are examples of
+such architectures. Efforts along these lines, however, were all driven from the stand-
+point of efficiently identifying and learning dynamical systems, rather than solving
+Bayesian inference problems. As such, the example applications that these studies
+have demonstrated correspond to classical mechanics problems such as the behavior
+of a n-pendulum, the gravitational attraction between bodies (e.g., planets), and the
+dynamics of predator-prey systems, etc.
+
+     1.2. Contributions of this paper. We propose to use HNNs for Bayesian in-
+ference problems. As summarized in Figure 1, once trained, HNNs do not require
+numerical gradients of the target density. As discussed earlier, HNNs satisfy impor-
+tant properties such as perfect time reversibility and Hamiltonian conservation, which
+make them amenable for HMC sampling, since stationarity, an important condition
+satisfied by MCMC samplers, can be shown. We also propose an HNN extension
+called latent HNNs (L-HNNs), which use latent variable outputs to improve the ex-
+pressivity of HNNs. L-HNNs have reduced integration errors when simulating the
+Hamiltonian dynamics, and show better performance than HNNs when sampling for
+Bayesian inference. Moreover, given that the performance of NUTS has generally
+proven superior to that of HMC, MALA, and random-walk MCMC, we propose to
+use L-HNNs in NUTS with an online error monitoring scheme. This error monitoring
+                                      BAYESIAN INFERENCE WITH L-HNNS                                                           3
+
+scheme reverts to using numerical gradients of the target density for a few samples
+whenever L-HNN integration errors are large, which may be the result of inadequate
+training data in certain regions of the uncertainty space. Overall, the online error
+monitoring scheme prevents sampling degeneracy when L-HNNs are used in NUTS.
+In summary, the novel contributions of this paper are:
+• Use of HNNs for Bayesian inference problems without requiring numerous numerical
+  gradients of the target density.
+• Development of latent variable outputs in HNNs (L-HNNs) for improved expressiv-
+  ity and reduced integration errors when simulating Hamiltonian dynamics.
+• Use of L-HNNs in NUTS with an online error monitoring scheme to prevent sam-
+  pling degeneracy.
+
+                                                                                       Inference with Hamiltonian Monte
+                 Bayesian inference                Required posterior distribution
+                                                                                      Carlo-No U Turn Sampler (expensive)
+
+                Likelihood (computational
+                   model; large dataset)
+                                                         Prob. density
+
+
+
+
+                                                                                             Momentum
+           𝑓 𝒒 𝒚 ∝ 𝑓 𝒚 𝒒 𝑓(𝒒)
+
+                                  Prior
+                                                                          𝒒
+                                                                                                        Position
+
+
+
+                                                                                         (L)-HNNs efficiently sample the
+           (L)-HNNs learn the Hamiltonian            (L)-HNNs satisfy important
+                                                                                         posterior uncertainties without
+                      dynamics                        mathematical properties
+                                                                                          gradients of the target density
+
+                                                                                         Initial
+                                                                                       conditions
+                                                    1.          Conservation of the
+                                                                Hamiltonian
+
+                                                    2.          Time reversibility                                 Required
+                                                                                                                   posterior
+
+
+
+
+Fig. 1: Schematic of the use of (L)-HNNs for efficient Bayesian inference. Once
+trained, (L)-HNNs do not require numerical gradients of the posterior distribu-
+tion—which are expensive to compute—for sampling.
+
+   2. Preliminaries. This section provides a brief background on Hamiltonian dy-
+namics simulation and HMC sampling.
+     2.1. Simulating Hamiltonian dynamics. The basics of Hamiltonian dynam-
+ics and its numerical simulation using time integration schemes have been discussed
+thoroughly (e.g., [18, 16]). If q and p represent the position and momentum vectors,
+respectively, the Hamiltonian of a system is defined as:
+
+(2.1)                                       H(zz = {qq , p }) = U (qq ) + K(pp)
+
+where z is a concatenated vector of the vectors q and p , U (.) is the potential energy,
+and K(.) is the kinetic energy. Hamilton’s equations are given by:
+                                                    dzz
+(2.2)                                                   = J ∇H(zz )
+                                                    dt
+where ∇ is the gradient operator, and if d is the dimensionality of the system, J is a
+2d × 2d matrix given by:
+                                                   
+                                      0 d×d I d×d
+(2.3)                          J =
+                                     −II d×d 0 d×d
+4                                 S. L. N. DHULIPALA ET AL.
+
+
+where I is an identity matrix and 0 is a zero matrix. The equations in Equation (2.2)
+can be expressed explicitly in each of the d dimensions as:
+                             dqi   ∂H
+                                 =
+                              dt   ∂pi
+(2.4)                                           ∀       i ∈ [1, . . . , d].
+                             dpi    ∂H
+                                 =−
+                             dt     ∂qi
+
+Equation (2.2) is a coupled first-order ODE with general solution given by:
+                                                Z T
+(2.5)                        z (T ) = z (0) +           J ∇H(zz ) dt
+                                                    0
+
+     Hamiltonian dynamics is numerically simulated using a symplectic time integrator
+[4, 5]. A symplectic time integrator is better suited than other integrators (e.g., Runge-
+Kutta) because it satisfies two key properties: (1) time reversibility and (2) volume
+preservation in the {qq , p } phase space. Both properties are critical to accurately
+simulating Hamiltonian dynamics over long trajectories. This paper uses the basic
+symplectic integrator known as the synchronized leapfrog integration scheme. It is first
+assumed that the mass matrix associated with the kinetic energy K(pp) is a diagonal
+matrix and thus K(pp) can be expressed as:
+                                     d
+                                     X p2   i
+(2.6)                     K(pp) ∝                   ∀      i ∈ [1, . . . , d]
+                                      i=1
+                                          2mi
+
+where mi is the mass associated with dimension i. In the synchronized leapfrog
+integration scheme, the position in dimension i (qi ) is first updated by:
+
+                                 ∆t          ∆t2                    ∆t          ∆t2 ∂H
+(2.7)   qi (t + ∆t) = qi (t) +      pi (t) +     ṗi (t) = qi (t) +    pi (t) −
+                                 mi          2mi                    mi          2mi ∂qi (t)
+
+where ∆t is the integration time step and ṗi (t) is replaced with − ∂q∂H
+                                                                        i (t)
+                                                                              from Equation
+(2.4). Next, the momentum in dimension i (pi ) is updated by:
+                                                                                     
+                          ∆t                                 ∆t    ∂H             ∂H
+(2.8) pi (t+∆t) = pi (t)+      ṗi (t)+ṗi (t+∆t) = pi (t)−                +
+                          2                                   2   ∂qi (t) ∂qi (t + ∆t)
+
+where ṗi (t) is again replaced with − ∂q∂H
+                                          i (t)
+                                                from Equation (2.4). The positions and
+momenta across all the dimensions are iteratively updated at each time step until a
+specified end time T is reached.
+    2.2. Hamiltonian Monte Carlo. The fundamentals of HMC are discussed
+thoroughly in several resources (e.g. [18, 3, 24]). The HMC algorithm aims to sample
+from a joint probability distribution of the following form:
+                                                                    
+(2.9)                   f (zz = {qq , p }) ∝ exp − H(zz = {qq , p })
+
+Using the definition of the Hamiltonian from Equation (2.1), the joint distribution
+can be explicitly expressed to include contributions from the potential and kinetic
+energies as:
+                                                             
+(2.10)                f ({qq , p}) ∝ exp − U (qq ) exp − K(pp)
+                          BAYESIAN INFERENCE WITH L-HNNS                                   5
+
+The potential energy U (qq ) is defined as the negative logarithm of the likelihood func-
+tion times the prior distribution:
+                                                              
+(2.11)                          U (qq ) ∝ − log L(qq |D) g(qq )
+
+where L(qq |D) is the likelihood function of the data D, and g(qq ) is the prior distri-
+bution. K(pp) is also defined to simulate Hamiltonian dynamics. In the basic HMC
+algorithm, p is assumed to follow a multivariate Gaussian with a diagonal covariance
+matrix M . M has d diagonal components: mi ∀ i ∈ [1, . . . , d]. K(pp) is then defined
+as the negative logarithm of a multivariate Gaussian, and is given by Equation (2.6).
+This definition of M implies that the Hamiltonian dynamics operates in a Euclidean
+space. In contrast, if M is non-diagonal but symmetric positive definite and depends
+on q , then the Hamiltonian dynamics operates in a Riemannian space [9], and the
+associated Monte Carlo algorithm is called Riemannian HMC.
+    In the basic HMC algorithm, p is drawn from a multivariate Gaussian with a
+diagonal M , Hamiltonian dynamics is simulated given T and the starting position
+vector q 0 , and the {qq , p } vector at the end of the time integration serves as the
+Markov chain proposal {qq ∗ , p ∗ }. This proposed sample is accepted as the next sample
+with the following probability:
+
+                   α = min 1, exp H({qq i−1 , p i−1 }) − H({qq ∗ , p ∗ })
+                                                                        
+(2.12)
+
+where {qq i−1 , p i−1 } is an accepted sample from the previous iteration of HMC.
+    3. Sampling with L-HNNs. Greydanus et al. [10] introduced HNNs as un-
+supervised machine learning architectures to learn Hamiltonian systems. Specifically,
+HNNs learn the gradients of the Hamiltonian which can be further used in an time inte-
+gration scheme to predict the Hamiltonian trajectories. Given training data {qq , p }, nu-
+                                                                                 q ∆p  p
+merical gradients are first computed to give the numerical time derivatives { ∆q
+                                                                               ∆t , ∆t },
+per Hamilton’s equations in (2.4). For some network parameters θ , the HNN-predicted
+Hamiltonians (i.e., Hθ ) and their corresponding gradients (i.e., ∂H      ∂Hθ
+                                                                    p and ∂qq ) are also
+                                                                   ∂p
+                                                                     θ
+
+
+computed. HNNs optimize the network parameters θ to minimize the following loss
+function:
+                                ∂Hθ    ∆qq                 ∂Hθ    ∆pp
+(3.1)                    L=          −     +           −        −
+                                 ∂pp   ∆t                   ∂qq   ∆t
+Algorithm 3.1 summarizes the procedure for training HNNs. During the evaluation
+phase, HNNs predict the numerical gradients of the Hamiltonian { ∂H        θ
+                                                                             , ∂Hθ }, without
+                                                                       ∂pp ∂qq
+explicit calls to the joint density f ({qq , p }) ∝ exp − H({qq , p }) . Therefore, during
+evaluation, HNNs require    neither the  numerical gradients of the potential energy
+function U (qq ) ∝ − log L(qq |D) g(qq ) nor explicit calls to it. This by itself leads to
+computational gains since these gradients only need to be evaluated during HNN
+training, which requires comparatively small data sets. Moreover, evaluating the
+likelihood L(.) in U (qq ) can require calling an expensive computational model or a large
+dataset whose numerical gradients are very expensive to evaluate. Thus, avoiding
+numerical gradients of U (qq ) can lead to even more computational gains. Finally,
+gradients predicted by HNNs can be used to solve the following initial value problem
+to predict Hamiltonian dynamics:
+                                                Z T
+(3.2)                        z (T ) = z (0) +         J ∇Hθ (zz ) dt
+                                                 0
+6                                S. L. N. DHULIPALA ET AL.
+
+
+where ∇Hθ (zz ) = { ∂H    ∂Hθ
+                      p , ∂qq } are predicted by HNNs. Equation (3.2) can be nu-
+                     ∂p
+                       θ
+
+
+merically solved using the synchronized leapfrog symplectic integrator, as presented
+in Algorithm 3.2. The gradients of the Hamiltonian are provided by HNNs (i.e.,
+line 5 in Algorithm 3.2) rather than relying on numerical gradient evaluations of the
+Hamiltonian function.
+
+Algorithm 3.1 Hamiltonian neural network training
+    1: HNN parameters: θ ; Training data: {q
+                                           q, p}
+                                                 ∆qq         p
+                                                            ∆p
+    2: Evaluate gradients of the training data ∆t and ∆t
+    3: Initialize HNN parameters θ
+    4: Compute HNN Hamiltonian Hθ
+                               ∂H         ∂H
+    5: Compute Hθ gradients ∂ppθ and − ∂qqθ
+                            ∂H     ∆qq         ∂H       p
+                                                       ∆p
+    6: Compute loss L = || ∂ppθ − ∆t || + || − ∂qqθ − ∆t ||
+    7: Minimize L with respect to θ
+
+
+
+
+Algorithm 3.2 Hamiltonian neural networks evaluation in leapfrog integration
+    1: Hamiltonian: H; Initial conditions: z (0) = {qq (0), p (0)}; Dimensions: d; Steps:
+    N ; End time: T
+           T
+ 2: ∆t = N
+ 3: for j = 0 : N − 1 do
+ 4:   t = j ∆t
+                                             ∂Hθ
+ 5:   Compute HNN output gradient ∂q          q (t)
+ 6:   for i = 1 : d do
+                                ∆t            ∆t2 ∂Hθ
+ 7:      qi (t + ∆t) = qi (t) + mi
+                                   pi (t) − 2m    i ∂qi (t)
+ 8:   end for
+                                                ∂Hθ
+ 9:   Compute HNN output gradient ∂qq (t+∆t)
+10:   for i = 1 : d do                                     
+                                ∆t     ∂Hθ          ∂Hθ
+11:      pi (t + ∆t) = pi (t) − 2     ∂qi (t) + ∂qi (t+∆t)
+12:   end for
+13: end for
+
+
+     To generate the training data for HNNs and to further use them to solve Equation
+(3.2), Greydanus et al. [10] relied on the Runge-Kutta scheme. A noteworthy differ-
+ence in our approach is that we rely on the synchronized leapfrog integrator. Being
+a symplectic integrator, synchronized leapfrog leads to stable Hamiltonian dynamics
+and better training data quality under relatively larger time steps. In addition, for
+the numerical evaluation of Equation (3.2) using HNNs, our initial studies indicated
+that synchronized leapfrog improves Hamiltonian conservation, which is key to an
+effective sampling scheme, as discussed in Section 3.3.
+
+     3.1. Latent outputs in HNNs. The HNNs proposed by Greydanus et al. [10]
+take as inputs the {qq , p } coordinates during the forward pass, and return a scalar
+output value (i.e., the “Hamiltonian” [Hθ ]). Gradients are computed with respect to
+this Hamiltonian value and the loss function in Equation (3.1) is minimized. However,
+for Bayesian inference, it may be more beneficial for the HNNs to predict d latent
+variables λi {i ∈ 1, . . . , d} denoted by the vector λ, where d is the dimensionality of
+                           BAYESIAN INFERENCE WITH L-HNNS                                7
+
+the uncertainty space. The architecture of L-HNNs is formally defined as:
+
+                               w p−1 u p−1 + b p−1 ), {p ∈ 1, . . . , P }
+                       u p = φ(w
+(3.3)
+                       λ = w P uP + bP
+
+where P is the number of hidden layers indexed by p, u p are the outputs of the
+hidden layer p, w p and b p are the weights and biases, respectively, φ(.) is the nonlinear
+activation function, and u 0 are the inputs z = {qq , p }. The Hamiltonian computed by
+L-HNNs is defined as:
+                                                   d
+                                                   X
+(3.4)                                      Hθ =          λi
+                                                   i=1
+
+Gradients are then computed with respect to the Hamiltonian in Equation (3.4) and
+the loss function in Equation (3.1) is minimized. Through these latent variables,
+L-HNNs have more degrees of freedom and expressivity than traditional HNNs, po-
+tentially leading to reduced integration errors when predicting the Hamiltonian dy-
+namics. As a result, L-HNNs can show improved sampling efficiency relative to HNNs.
+A comparison between the performance of L-HNNs and HNNs is presented in Section
+5 for a 3-D Rosenbrock density function.
+    3.2. Sampling. HMC sampling using L-HNNs proceeds in similar fashion to
+traditional HMC. The key difference is that, given the initial conditions {qq (0), p (0)},
+the Hamiltonian dynamics is approximated using L-HNNs via Algorithm 3.2 rather
+than through direct integration. Once the new proposal {qq ∗ , p ∗ } is simulated, the
+Metropolis acceptance criterion is used to decide whether to accept this proposal,
+based on the conservation of the Hamiltonian:
+
+               {qq i , p i } ← {qq ∗ , p ∗ } with probability α
+(3.5)
+               where α = min{1, exp H({qq i−1 , p i−1 }) − H({qq ∗ , p ∗ }) }
+                                                                           
+
+This procedure is summarized in Algorithm 3.3.
+
+Algorithm 3.3 L-HNNs in Hamiltonian Monte Carlo
+ 1: Hamiltonian:    H = U (qq ) + K(pp); Samples: M; Starting sample: {qq 0 , p 0 }; End
+    time for trajectory: T ; Steps: N ; Dimensions: d
+ 2: for i = 1 : M do
+ 3:   p (0) ∼ N (00, I d )
+ 4:   q (0) = q i−1
+ 5:   Compute {qq ∗ , p ∗ } = {qq (T ), p (T )} with Algorithm
+                                                             3.2
+ 6:   α = min{1, exp H({qq i−1 , p i−1 }) − H({qq ∗ , p ∗ }) }
+ 7:   With probability α, set {qq i , p i } ← {qq ∗ , p ∗ }
+ 8: end for
+
+
+    For a simple demonstration of using L-HNNs in HMC, we consider the following
+1-D Gaussian mixture density, which has modes at +1 and −1, both having a standard
+deviation of 0.35:
+                                           !                     !
+                                  (q − 1)2              (q + 1)2
+(3.6)            f (q) ∝ 0.5 exp             + 0.5 exp
+                                 2 × 0.352             2 × 0.352
+ 8                                                  S. L. N. DHULIPALA ET AL.
+
+
+ The L-HNNs have three hidden layers with 100 neurons each. To generate the training
+ data, we simulated the Hamiltonian dynamics for 20 samples, each with T = 20 units.
+ The number of leapfrog steps was 20 per unit, meaning that ∆t = 0.05. The initial
+ condition for the first sample was set to zeros. The initial conditions for the rest
+ of the samples were defined as follows: (1) position q(0) was the final position from
+ the previous sample, and (2) momentum p(0) was drawn randomly from a standard
+ Gaussian distribution. In total, the training of L-HNNs took 8, 000 numerical gradient
+ evaluations.
+      Figure 2a compares the {q, p} phase space between L-HNNs and numerical gradi-
+ ents for several initial momentum values p(0) and identical initial position q(0) = 0.
+ Note that the phase space plots predicted using numerical gradients and L-HNNs
+ compare satisfactorily. We further performed HMC using numerical gradients and
+ L-HNNs to generate 5,000 samples from the distribution in Equation (3.6), with the
+ first 1,000 considered as burn-in. Each sample had an end time of T = 5 units, with
+ each unit being discretized into 20 steps (i.e., ∆t = 0.05). The histogram plots com-
+ pare well between traditional HMC (Figure 2b) and HMC using HNNs (Figure 2c).
+ Moreover, for this simple example, using L-HNNs for HMC requires only the 8000
+ numerical gradients of the target density from the training, whereas HMC required
+ 500,000 numerical gradients for the same number of samples (a 98.4% reduction).
+
+               4                                         500                                     500
+               3
+                                                         400                                     400
+               2
+Momentum (p)
+
+
+
+
+               1                                         300                                     300
+                       Numerical gradients
+                                                 Count
+
+
+
+
+                                                                                         Count
+
+
+
+
+               0       L-HNNs
+               1                                         200                                     200
+               2
+               3                                         100                                     100
+               4                                           0                                       0
+                   2   1     0       1       2                 2   1      0      1   2                 2   1      0      1   2
+                        Position (q)                                     Value                                   Value
+
+                         (a)                                           (b)                                     (c)
+ Fig. 2: (a) {q, p} phase space plot corresponding to different energy levels. (b) and (c)
+ Histogram of samples from a 1-D Gaussian mixture density using traditional HMC and
+ L-HNNs in HMC, respectively. L-HNNs in HMC requires only 1.6% of the numerical
+ gradients of target density required by traditional HMC.
+     3.3. Discussion of stationarity. MCMC samplers should be stationary with
+ respect to the target density π. The formal theorem on the stationarity of an ideal-
+ ized HMC sampler, in which no numerical errors are introduced when simulating the
+ Hamiltonian dynamics, is presented in Theorem 3.1.
+     Theorem 3.1 (Stationarity [24]). Let f : Rd → R be a differentiable function.
+ Let ∆t > 0 be the step size of the idealized HMC. Let ψ∆t (qq , p ) denote the position in
+ the phase space at step ∆t. Suppose {qq , p } is a sample from the density
+                                                                         1
+                                         π(qq , p ) ∝ exp − U (qq ) exp − kppk2 )
+                                                                                 
+                                                                         2
+ Then, the density of ψ∆t (qq , p) is π for any ∆t > 0. Moreover, the density of ψ∆t (qq , ξ ),
+ where ξ ∼ N (00, I d ), is also π. Thus, the idealized HMC preserves π.
+     Proof. The proof of the theorem relies on the Hamiltonian dynamics being time-
+ reversible and the Hamiltonian being conserved. The formal proof is presented in
+                                     BAYESIAN INFERENCE WITH L-HNNS                                       9
+
+Vishnoi [24].
+     As discussed in Greydanus et al. [10], the Hamiltonian dynamics simulated by
+HNNs and L-HNNs are perfectly time-reversible as a result of Liouville’s theorem.
+This feature can also be seen in Figure 3a, wherein two Hamiltonian trajectories for
+the 1-D Gaussian mixture density are simulated in forward and reverse time using L-
+HNNs. Both trajectories have the same initial position in forward time, but different
+initial momenta. To simulate the reverse-time trajectories, the final {q, p} values at
+the end time during forward integration were used as the initial conditions. Backward
+time integration was then performed using L-HNNs.
+     By virtue of their loss function (Equation (3.1)), L-HNNs can also conserve the
+Hamiltonian in an approximate sense. The degree to which the Hamiltonian is con-
+served may depend on the target distribution of interest and the training data. For
+example, Figure 3b presents the Hamiltonian evolution with time for the 1-D Gaussian
+mixture density, considering several initial conditions {q(0), p(0)} using ∆t = 0.05.
+Overall, the Hamiltonian values are seen to be approximately constant with time.
+For comparison, the Hamiltonian values obtained using traditional numerical gradi-
+ents are also presented, and are also approximately constant with time. Owing to
+some numerical errors in the Hamiltonian conservation, and in line with the tradi-
+tional HMC procedure, the use of a Metropolis acceptance criterion in Equation (3.5)
+is important to ensure stationarity when using HNNs in HMC. The Metropolis ac-
+ceptance criterion leaves the target density π invariant, as discussed in Roberts and
+Rosenthal [21].
+
+                                         Forward time                              Numerical gradients
+                  2                      Reverse time                 10           L-HNNs
+                  1
+                                                        Hamiltonian
+   Position (q)
+
+
+
+
+                                                                       8
+                  0
+
+                  1                                                    6
+                  2
+                                                                       4
+                      0   1   2          3    4     5                      0   1   2          3   4   5
+                                  Time                                                 Time
+                              (a)                                                  (b)
+Fig. 3: (a) Time reversibility of the L-HNNs in predicting the Hamiltonian dynamics
+under two different sets of initial conditions, given a 1-D Gaussian mixture density.
+(b) Conservation of the Hamiltonian for different energy levels given a 1-D Gaussian
+mixture density.
+
+    4. No-U-Turn Sampling (NUTS) with L-HNNs. Traditional HMC re-
+quires the end time T to be specified. For all but simple problems, specifying T
+is not only challenging but also has considerable impact on HMC sampler perfor-
+mance diagnostics (e.g., the serial auto-correlations between the samples). Hoffman
+and Gelman [12] introduced the NUTS algorithm to automatically decide T for each
+sample in HMC. In summary, NUTS works by building the set of candidate {qq , p}
+states B, using a binary tree. At each iteration, the tree length is doubled by inte-
+grating randomly in either the forward or reverse direction. Out of the states B, a
+subset of states C is selected so as not to violate the detailed balance condition. A
+10                              S. L. N. DHULIPALA ET AL.
+
+
+slice variable u is often used in NUTS to facilitate the selection of subset C. The
+doubling procedure for building the binary tree is stopped when a u-turn is made, as
+defined by the criterion:
+
+(4.1)                  (qq + − q − ) · p − < 0 or (qq + − q − ) · p + < 0
+
+where {qq + , p + } and {qq − , p − } are, respectively, the leftmost and rightmost states of
+a sub-tree in the binary tree. The doubling procedure may also be stopped when the
+integration error while simulating the Hamiltonian dynamics exceeds a threshold, as
+defined by:
+                                          
+(4.2)                          ε ≡ H q , p + ln u > ∆max
+
+where {qq , p } is the current candidate state and ∆max is a threshold recommended
+by Hoffman and Gelman to be set to 1,000 [12]. From the subset of states C, the
+next state is randomly selected with a uniform probability. This version of the NUTS
+algorithm is referred to as naive NUTS, since it requires storing O(2j ) (j is the number
+of doubling iterations in the binary tree) candidate states, leading to large memory
+requirements. Naive NUTS also requires simulating the full tree—even when the
+stopping criteria are satisfied in the middle of the doubling iteration—leading to an
+expenditure of computational resources. Hoffman and Gelman [12] introduced an
+efficient version of NUTS to alleviate these issues by using a sophisticated transition
+kernel for building the binary tree which only requires storing O(j) candidate states
+in memory, but generating an extra O(2j ) random numbers (an insignificant cost).
+The efficient version of NUTS is used in this paper.
+
+     4.1. L-HNNs in NUTS. Here, we use L-HNNs in place of the leapfrog integra-
+tor in the efficient NUTS algorithm to build the binary tree. As a simple demonstra-
+tion, consider the 1-D Gaussian mixture density discussed in Section 3.2. Details of
+the L-HNN training remain the same. Using L-HNNs in efficient NUTS, 5,000 sam-
+ples were simulated, with the first 1,000 samples considered as burn-in and ∆t = 0.05.
+Table 1 compares the Effective Sample Size (ESS) of traditional NUTS with that of
+L-HNNs in NUTS, where the ESS is normalized by the total number of gradient
+evaluations (either from the HMC or the L-HNN training). Also presented are the
+normalized ESS values for traditional HMC and L-HNNs in HMC. Overall, the ESS
+per gradient of the target density is considerably better for L-HNNs in HMC and
+L-HNNs in NUTS compared to traditional HMC and traditional NUTS. Although
+the ESS per gradient of the target density is similar between L-HNNs in HMC and
+L-HNNs in NUTS, for achieving a similar value of the ESS, while L-HNNs in HMC
+required 500, 000 neural network gradients, L-HNNs in NUTS required only around
+91, 000. This difference demonstrates the efficacy of NUTS over HMC with L-HNNs
+for this simple problem. For more complex high-dimensional problems, the efficacy of
+L-HNNs in NUTS is expected to be even since it is difficult to know the optimal end
+time for the Hamiltonian trajectory a priori.
+     Hoffman and Gelman [12] also proposed a dual averaging scheme to automatically
+tune the step size ∆t given a target acceptance ratio. While this automatic step size
+determination will be interesting to explore for L-HNNs in NUTS, in this paper, we
+fix the step size to the same small value for both L-HNNs in NUTS and traditional
+NUTS. This helps facilitate a fair comparison between these algorithms, and step size
+tuning will be covered in a future study.
+                         BAYESIAN INFERENCE WITH L-HNNS                   11
+Table 1: Comparison of the performance of traditional HMC, traditional NUTS,
+HNN-HMC, and HNN-NUTS, considering a 1-D Gaussian mixture density. ESS per
+gradient is used as the performance metric.
+
+                                                                 ESS per gradient
+                                                                 of target density
+                               L-HNNs in HMC                         4.59E − 3
+                               Traditional HMC                       8.42E − 5
+                               L-HNNs in NUTS                        4.83E − 3
+                               Traditional NUTS                       4.4E − 4
+
+
+     4.2. Online error monitoring. While direct use of L-HNNs in NUTS works for
+a simple 1-D Gaussian mixture density, for more complex distributions care must be
+taken to avoid large integration errors when building the binary tree. Large integra-
+tion errors can arise when sampling in the tails of a distribution, since limited L-HNN
+training data may be available in these regions of low probability density. While
+building the binary tree, when such a region of low probability density is reached and
+integration errors are large, NUTS prematurely terminates the tree building proce-
+dure. As a result, the next sample will likely be in the same vicinity as the previous
+one. This cycle of generating a new sample near the previous sample continues, lead-
+ing to degenerate clusters of samples in regions of low probability density. Figure
+4 presents an example of this sampling degeneracy when using L-HNNs in NUTS
+for a 3-D Rosenbrock density with heavy tails [20]. Note that the sampler is unable
+to rapidly move to regions of high probability density after visiting a region of low
+probability density, as a result of large integration errors when building the binary
+tree. This sort of degeneracy in sampling may be less concerning when using L-HNNs
+in HMC, by virtue of the Metropolis acceptance criterion in Equation (3.5), which
+rejects a proposed sample when the difference in the Hamiltonian values is very large.
+At the same time, the Metropolis criterion can also prevent L-HNNs in HMC from
+efficiently exploring the uncertainty space.
+
+                                                                                     80
+     2                                       8
+                                                                                     60
+     1                                       6
+     0                                       4                                       40
+                                        q2
+q1
+
+
+
+
+                                                                                q3
+
+
+
+
+     1
+                                             2                                       20
+     2
+                                             0
+     3                                                                                0
+         0   1000 2000 3000 4000 5000            0   1000 2000 3000 4000 5000             0   1000 2000 3000 4000 5000
+                 Sample index                            Sample index                             Sample index
+
+                  (a)                                      (b)                                     (c)
+Fig. 4: Degeneracy in sampling when using L-HNNs in NUTS for a 3-D Rosenbrock
+density. These trace plots correspond to the dimensions (a) q1 , (b) q2 , and (c) q3 .
+    To alleviate the above-mentioned issues caused by large integration errors, we
+propose an online error monitoring scheme for L-HNNs in NUTS. This error monitor-
+ing scheme relies on the stopping criterion in Equation 4.2, as introduced by Hoffman
+and Gelman [12]. This criterion monitors the integration errors when simulating the
+Hamiltonian trajectories and terminates the tree building procedure when they are
+large. In theory, if the integration errors are non-existent, then the quantity ε in
+12                               S. L. N. DHULIPALA ET AL.
+
+
+Equation 4.2 will always be less than zero. But for practical applications with non-
+negligible integration errors, the error metric (ε ≡ H(qq , p ) + ln u) can be greater than
+zero during a doubling iteration. We define a threshold ∆hnn     max for the error metric ε
+while using L-HNNs. When this quantity exceeds ∆hnn        max the L-HNN is abandoned
+                                                               ,
+and standard leapfrog integration using numerical gradients of the target density
+takes over. We also introduce a parameter Nlf , which sets the number of leapfrog
+samples to take before reintroducing the L-HNN. Nlf can be viewed as the number
+of “cooldown” samples needed to return the sampler to regions where the L-HNN is
+sufficiently trained. In the traditional version of efficient NUTS, Hoffman and Gelman
+[12] recommend that the error threshold for leapfrog integration be set to a large value
+(e.g., ∆lf
+         max = 1, 000). In setting the threshold for L-HNNs, we recommend a more
+conservative value of around ∆hnn max = 10 to prevent sampling degeneracy in regions
+of low probability density. Nlf can be set to a low value of 5–20 samples in order to
+essentially return the sampler to regions of high probability density. These settings
+will contribute to the sampler exploring the uncertainty space well while ensuring
+that L-HNNs integration errors in certain regions of the space do not cause sampling
+degeneracy.
+     Algorithms 4.1 and 4.2 present the pseudocode for using L-HNNs in efficient
+NUTS with online error monitoring. These algorithms differ somewhat from the
+traditional version of efficient NUTS proposed by Hoffman and Gelman [12]. The
+most notable difference is the use of L-HNNs for predicting the Hamiltonian dynamics
+in the BuildTree(.) function of Algorithm 4.2. In addition, the BuildTree(.)
+function takes and returns an indicator variable 1lf to determine whether L-HNNs
+or the leapfrog scheme with numerical gradients of the target density should be used
+to simulate the Hamiltonian dynamics. The main loop (Algorithm 4.1) monitors the
+number of samples to which the leapfrog scheme with numerical gradients of the target
+density is applied, and facilitates reversion to L-HNNs once this number equals Nlf .
+There are two error thresholds (i.e., ∆lf            hnn                         lf
+                                         max and ∆max ) in the pseudocode. ∆max is the
+error threshold for the leapfrog scheme using numerical gradients of the target density.
+∆hnn                                                 hnn         lf
+  max is the error threshold for L-HNNs with ∆max << ∆max . With respect to the
+convergence between L-HNNs in NUTS with online error monitoring and traditional
+NUTS, Proposition 4.1 can be shown.
+    Proposition 4.1. With ∆hnn
+                             max → −∞ and Nlf = C, where C is an integer
+greater than 0, L-HNNs in NUTS with online error monitoring converges to traditional
+NUTS.
+    Proof. It is straightforward to show this by virtue of lines 8–13 in Algorithm 4.1
+and lines 7–10 in Algorithm 4.2. As ∆hnnmax → −∞, 1lf = 1 and Algorithms 4.1 and
+4.2 simply never call L-HNNs for predicting the Hamiltonian dynamics, but instead
+always rely on the leapfrog integration with numerical gradients, thus converging to
+traditional NUTS.
+     5. Sampling from a 3-D Rosenbrock density. A 3-D Rosenbrock density
+[20] is considered to demonstrate the performance differences between HNNs and L-
+HNNs, and to investigate the performance of L-HNNs considering different amounts
+of training data. A 3-D Rosenbrock density makes for a particularly interesting case
+study, due to its heavy tails. The density function is defined by [20]:
+
+                                  N −1
+                                   X                                      
+                                           100(qi+1 − qi2 )2 + (1 − qi )2 /20
+                                          
+(5.1)            f (qq ) ∝ exp −
+                                   i=1
+                            BAYESIAN INFERENCE WITH L-HNNS                                       13
+
+Algorithm 4.1 L-HNNs in efficient NUTS with online error monitoring (main loop)
+ 1: Hamiltonian:     H = U (qq ) + K(pp), Samples: M; Starting sample: {qq 0 , p 0 }; Step
+    size: ∆t; Threshold for leapfrog: ∆lf                                hnn
+                                           max ; Threshold for L-HNNs: ∆max ; Number
+    of leapfrog samples: Nlf
+ 2: Initialize 1lf = 0, nlf = 0
+ 3: for i = 1 : M do
+ 4:    p (0) ∼ N (00, I d )
+ 5:    q (0) = q i−1 h
+                                                  i
+ 6:    u ∼ U nif orm 0, exp {−H q (0), p (0) }
+ 7:   Initialize q − = q (0), q + = q (0), p − = p (0), p + = p (0), j = 0, q ∗ = q i−1 , n =
+      1, s = 1
+ 8:   if 1lf = 1 then
+ 9:      nlf ← nlf + 1
+10:   end if
+11:   if nlf = Nlf then
+12:      1lf = 0, nlf = 0
+13:   end if
+14:   while s = 1 do
+15:      Choose direction νj ∼ U nif orm({−1, 1})
+16:      if j = −1 then
+17:         q − , p − , , , q 0 , p 0 , n0 , s0 , 1lf = BuildTree(qq − , p − , u, νj , j, ∆t, 1lf )
+18:      else
+19:          , , q + , p + , q 0 , p 0 , n0 , s0 , 1lf = BuildTree(qq + , p + , u, νj , j, ∆t, 1lf )
+20:      end if
+21:      if s0 = 1 then
+                                                        0
+22:         With probability min{1, nn }, set {qq i , p i } ← {qq 0 , p 0 }
+23:      end if
+24:      n ← n + n0
+         s ← s0 1 (qq + − q − ) · p − ≥ 0 1 (qq + − q − ) · p + ≥ 0
+                                                                           
+25:
+26:      j ←j+1
+27:   end while
+28: end for
+
+
+
+    We trained HNNs and L-HNNs with the same training data, which contained 40
+samples from HMC, each with an end time of T = 40 using a ∆t = 0.025. Both
+the HNNs and L-HNNs had three hidden layers with 100 neurons each. A total of
+100, 000 steps at a learning rate of 5E − 4 was used for training the HNNs and L-
+HNNs. A sine activation function was used, per the recommendations of Mattheakis
+et al. [17]. Efficient NUTS with online error monitoring (i.e., Algorithms 4.1 and
+4.2) was employed to simulate 35,000 samples from the target density. HNNs and
+L-HNNs were independently used to simulate the Hamiltonian dynamics within the
+BuildTree(.) function. ∆hnn   max was set to 10—and when exceeded, the leapfrog
+scheme with numerical gradients of the target density was set to take over—and Nlf
+was set to 20.
+    Figures 5a and 5b present trace plots for the dimension q1 , obtained using HNNs
+and L-HNNs, respectively. Note that, whether using HNNs or L-HNNs, efficient NUTS
+with online error monitoring mitigates degeneracy in sampling, compared to Figure 4a.
+Perhaps more important are the integration errors when predicting the Hamiltonian
+14                                      S. L. N. DHULIPALA ET AL.
+
+
+Algorithm 4.2 L-HNNs in efficient NUTS with online error monitoring (build tree
+function)
+ 1: function BuildTree(q    q , p , u, ν, j, ∆t, 1lf )
+ 2: if j = 0 then
+ 3:    Base case taking one leapfrog step
+ 4:    q 0 , p 0 ← Algorithm 3.2 with initial conditions:             z (0) = {qq , p }, Steps: 1; End
+      Time: ∆t
+      1lf ← 1lf or 1 H q 0 , p 0 + ln u > ∆hnn
+                                                                  
+ 5:                                                             max
+ 6:   s0 ← 1 H q 0 , p 0 + ln u ≤ ∆hnn              max
+ 7:   if 1lf = 1 then
+ 8:      q 0 , p 0 ← Leapfrog integration with initial conditions: z (0) = {qq , p }, Steps: 1;
+         End Time:      ∆t 
+         s0 ← 1 H q 0 , p 0 + ln u ≤ ∆lf
+                                                             
+ 9:                                                     max
+10:   end if 
+      n0 ← 1 u ≤ exp {−H q 0 , p 0 }
+                                                   
+11:
+12:   return q 0 , p 0 , q 0 , p 0 , q 0 , p 0 , n0 , s0 , 1lf
+13: else
+14:   Recursion to build left and right sub-trees (follows from Algorithm 3 in [12],
+      with 1lf additionally passed to and retrieved from every BuildTree evaluation)
+
+15:   return q − , p − , q + , p + , q 0 , p 0 , n0 , s0 , 1lf
+16: end if
+
+
+
+
+dynamics. Figures 6a and 6b present these errors—defined as [ε ≡ H(qq 0 , p 0 ) + ln u] in
+Algorithm 4.2—as obtained using HNNs and L-HNNs, respectively. The errors when
+using HNNs are substantially larger across the sample indices, compared to using
+L-HNNs. Large integration errors lead to an increase in the number of samples for
+which the leapfrog scheme with numerical gradients of the target density is called.
+While using HNNs, the number of samples for which traditional leapfrog is used is
+4,706; using L-HNNs, this number reduces to only 180. In total, HNNs and L-HNNs,
+require an additional 1,437,900 and 63,598 numerical gradients of the target density,
+respectively (above what is required to generate the training data)—a substantial
+difference.
+     To investigate the influence of training data set size, we consider three training
+datasets for L-HNNs. All three sets include Mt = 40 samples from the 3-D Rosenbrock
+density simulated using traditional HMC, but with different end times — T = 100,
+150, and 250 units — and ∆t = 0.025. We simulated 125, 000 samples from the
+3-D Rosenbrock density, with the first 5, 000 samples considered as burn-in. For effi-
+cient NUTS with online error monitoring, we set ∆hnn max = 10 and Nlf = 20. Figure 7
+presents empirical cumulative distribution function (eCDF) plots for the three dimen-
+sions. In this figure, LHNN-NUTS 1, LHNN-NUTS 2, and LHNN-NUTS 3 correspond
+to end times of T = 100, 150, and 250 units, respectively. Note that irrespective of
+the amount of training data, in general, the eCDFs of LHNN-NUTS with online error
+monitoring closely match the eCDFs simulated using traditional NUTS with numer-
+ical gradients of the target density. Moreover, LHNN-NUTS 2 and LHNN-NUTS 3,
+which were trained on HMC samples with longer Hamiltonian trajectories, almost
+exactly match the reference eCDFs, as compared to LHNN-NUTS 1, which shows
+slight deviations in dimensions q2 (Figure 7b) and q3 (Figure 7c).
+                                                     BAYESIAN INFERENCE WITH L-HNNS                                                                                          15
+
+                        3                                                                             3
+                        2                                                                             2
+                        1                                                                             1
+                        0                                                                             0
+                q1
+
+
+
+
+                                                                                              q1
+                        1                                                                             1
+                        2                                                                             2
+                        3                                                                             3
+                             0          10000 20000 30000                                                  0             10000 20000 30000
+                                           Sample index                                                                     Sample index
+                                           (a)                                                                                          (b)
+ Fig. 5: Trace plots of dimension q1 for a 3-D Rosenbrock density simulated via efficient
+ NUTS with online error monitoring using (a) HNNs and (b) L-HNNs. Note that the
+ sort of degeneracy presented in Figure 4 is absent due to the online error monitoring
+ scheme.
+
+                        20                                                                            20
+                        15                                                                            15
+                        10                                                                            10
+                         5                                                                             5
+               Error
+
+
+
+
+                                                                                              Error
+
+
+
+
+                         0                                                                             0
+                         5                                                                             5
+                        10                                                                            10
+                              0         10000 20000 30000                                                  0               10000 20000 30000
+                                           Sample index                                                                       Sample index
+                    (a)                                   (b)
+ Fig. 6: L-HNNs error metric, as defined by the quantity [ε ≡ H q 0 , p 0 + ln u] in
+                                                                         
+
+ Algorithm 4.2, while generating samples from a 3-D Rosenbrock density using (a)
+ HNNs and (b) L-HNNs in efficient NUTS with online error monitoring. These error
+ values are considerably lower when using L-HNNs than HNNs.
+              1.0           NUTS                                        1.0                                                       1.0
+                            LHNN-NUTS 1
+              0.8           LHNN-NUTS 2                                 0.8                                                       0.8
+                            LHNN-NUTS 3
+Probability
+
+
+
+
+              0.6
+                                                          Probability
+
+
+
+
+                                                                        0.6
+                                                                                                                    Probability
+
+
+
+
+                                                                                                                                  0.6
+
+              0.4                                                       0.4                                                       0.4
+
+              0.2                                                       0.2                                                       0.2
+
+              0.0                                                       0.0                                                       0.0
+                    3    2        1   0    1     2    3                       0   2     4       6      8       10                       0     20   40        60   80   100
+                                      q1                                                 q2                                                             q3
+
+                                  (a)                                                 (b)                                                          (c)
+ Fig. 7: Empirical CDF plots of samples from a 3-D Rosenbrock density simulated via
+ NUTS and L-HNNs in NUTS with online error monitoring, using different training
+ datasets. eCDF plots are presented for the dimensions (a) q1 , (b) q2 , and (c) q3 .
+ Details of the L-HNN training data are given in Table 2.
+16                               S. L. N. DHULIPALA ET AL.
+
+
+      Table 2 compares the performance of the traditional NUTS with the LHNN-NUTS
+with online error monitoring in terms of ESS, number of gradients of the target density,
+and average ESS across all the dimensions per gradient of the target density. In short,
+all LHNN-NUTS results show significant improvement over the traditional NUTS
+method in terms of required gradient evaluations, while accurately matching the target
+eCDFs (Figure 7) and producing samples with comparable ESS values. Even for
+short training trajectories with T = 100, the total number of gradient evaluations is
+reduced by 83% and the average ESS per gradient evaluation increases by 5 times.
+For longer training trajectories, the number of gradient evaluations reduces from
+approximately 16 million to only approximately 600,000 while the ESS per gradient
+evaluation improves by more than an order of magnitude relative to traditional NUTS.
+It is worth noting, however, that there is no noticeable improvement in performance
+by increasing T from 150 to 250 for the training data generation, which implies that
+there is a critical length T for the training data.
+Table 2: Performance comparison between traditional NUTS and HNN-NUTS with
+different training data characteristics, considering a 3-D degenerate Rosenbrock den-
+sity.
+
+                                                                        Avg. ESS per
+                                                  # gradients of
+                                 ESS                                      gradient of
+                                                  target density
+                                                                        target density
+           NUTS           (1396.59, 2338.99,
+                                                    15, 899, 976           0.000128
+            [12]              2411.40)
+                                                    2, 711, 240
+      Mt = 40; T = 100    (1339.13, 1665.76,
+                                                 Training: 160,000         0.000572
+      [LHNN-NUTS 1]           1648.85)
+                                               Evaluation: 2,551,240
+                                                      607, 298
+      Mt = 40; T = 150    (1217.63, 1710.97,
+                                                 Training: 240,000          0.00251
+      [LHNN-NUTS 2]           1654.11)
+                                                Evaluation: 367,298
+                                                      642, 414
+      Mt = 40; T = 250    (1445.03, 1729.98,
+                                                 Training: 400,000          0.00236
+      [LHNN-NUTS 3]           1387.91)
+                                                Evaluation: 242,414
+     - Notations. Mt : Number of training samples; T : End time for trajectory
+     - Avg. ESS represents the ESS values averaged across the three dimensions.
+     - Evaluation in the table implies the use of L-HNNs in NUTS with online error monitoring
+
+    For a small value of Mt , as expected, L-HNNs in NUTS would require more
+numerical gradients of the target density during evaluation because the training data
+does not adequately capture the randomization of the momenta. But for a large
+value of Mt , although the additional numerical gradients of the target density may
+become small, the upfront cost for generating the training data may be high. We
+found from the 3-D Rosenbrock example that fixing Mt = 40 provides a balance
+between the upfront costs for generating the training data and additional numerical
+gradients required during the evaluation. Therefore, we use Mt = 40 for the case
+study examples to be discussed in Section 6.
+     6. Results. We considered five case studies to demonstrate the LHNN-NUTS
+with online error monitoring and compared its performance to the traditional NUTS.
+Table 3 summarizes the main performance metrics for the five case studies. In the
+following sections, the case studies are defined along with the training details for L-
+HNNs, results from Table 3 are discussed, and plots of the samples from the target
+densities are presented.
+                         BAYESIAN INFERENCE WITH L-HNNS                    17
+Table 3: Summary of the performance of LHNN-NUTS with online error monitoring
+across the different case studies considered.
+
+                                                 # gradients          Avg. ESS per
+                             ESS                   of target            gradient of
+                                                    density           target density
+                               3-D degenerate Rosenbrock
+                                                    642, 414
+                       (1445.03, 1729.98,
+    LHNN-NUTS                                 Training: 400, 000          0.00236
+                            1387.91)
+                                             Evaluation: 242, 414
+                       (1396.59, 2338.99,
+        NUTS                                      15, 899, 976            0.000128
+                            2411.40)
+                              5-D ill-conditioned Gaussian
+                       (20000, 17741.21,            408, 800
+    LHNN-NUTS          13906.42, 8382.5,      Training: 400, 000           0.0307
+                            2763.38)          Evaluation: 8, 800
+                       (20000, 17877.90,
+        NUTS           14645.54, 7931.68,         11, 817, 469            0.00106
+                            2657.19)
+                              10-D degenerate Rosenbrock
+                     (15535.69, 28217.40,
+                      28965.00, 27280.67,           418, 936
+    LHNN-NUTS         21268.00, 13532.28,     Training: 400, 000           0.0368
+                       8418.80, 5731.09,      Evaluation: 18, 936
+                       3299.92, 2045.02)
+                      (15771.46, 27125.5,
+                       27825.9, 25107.02,
+        NUTS           21963.9, 13553.21,          7, 015, 025            0.00219
+                       8548.44, 5631.39,
+                       2921.78, 1698.69)
+                           24-D Bayesian logistic regression
+                                                    400, 000
+    LHNN-NUTS               97254.18          Training: 400, 000           0.243
+                                                 Evaluation: –
+        NUTS                97702.96               1, 256, 229             0.0777
+                                     100-D rough well
+                                                    422, 272
+     HNN-NUTS                2744.97          Training: 400, 000           0.0065
+                                              Evaluation: 22, 272
+        NUTS                 4775.33               1, 279, 873            0.00373
+                                     2-D Neal’s funnel
+                                                   3, 596, 688
+    LHNN-NUTS          (1019.87, 666.73)      Training: 400, 000          0.000234
+                                            Evaluation: 3, 196, 688
+        NUTS           (1012.45, 718.07)          16, 639, 072            0.000052
+   - For dimension greater than 10, only the average ESS across all dimensions is reported.
+   - Evaluation in the table implies the use of L-HNNs in NUTS with online error monitoring.
+
+
+    6.1. Case studies. We considered the following five case studies. Corresponding
+results are presented herein. For all cases, except where otherwise noted, the L-HNNs
+were trained using Mt = 40 HMC samples each, with an end time of T = 250 units
+and a step size of ∆t = 0.025. The architecture of the L-HNNs was composed of
+three hidden layers, each with 100 neurons, and a sine activation function [17]. For
+18                            S. L. N. DHULIPALA ET AL.
+
+
+training, a total of 100,000 steps were used at a learning rate of 5E − 4 and ∆hnn
+                                                                               max and
+Nlf in LHNN-NUTS with online error monitoring were set to 10 and 20, respectively.
+
+    6.1.1. 5-D ill-conditioned Gaussian. A 5-D ill-conditioned Gaussian distri-
+bution from Levy et al. [14] with a zero mean vector and a diagonal covariance matrix
+was considered. The diagonal elements of the covariance matrix scale in log-linear
+fashion, as presented below:
+
+(6.1)                         Σ) = [0.01, 0.1, 1.0, 10.0, 100.0]
+                         diag(Σ
+
+     In this example, the L-HNNs had 10 inputs (five position variables and five mo-
+menta) and predicted five latent variables, whose sum was treated as the Hamiltonian,
+as discussed in Section 3.1. A total of 25, 000 samples were simulated from the target
+density, with the first 5, 000 samples treated as burn-in.
+     From Table 3, we see that using LHNN-NUTS reduces the number of gradient
+evaluations by a factor of nearly 30, while improving the ESS per gradient evalua-
+tion by more than an order of magnitude. Moreover, as we can see from Figure 8,
+which shows scatter plots of the samples from the 5-D ill-conditioned Gaussian using
+LHNN-NUTS and traditional NUTS, the LHNN-NUTS with online error monitoring
+satisfactorily samples from the target density. This is further verified by the ESS
+values in Table 3, which are consistent between the two methods.
+
+
+
+
+Fig. 8: Scatter plot comparison between NUTS and LHNN-NUTS with online error
+monitoring for a 5-D ill-conditioned Gaussian distribution. (Blue dots: traditional
+NUTS; Red dots: LHNN-NUTS with online error monitoring)
+                        BAYESIAN INFERENCE WITH L-HNNS                             19
+
+    6.1.2. 10-D degenerate Rosenbrock density. Here, A 10-D version of the
+Rosenbrock density in Equation (5.1) was considered. The L-HNNs had 20 inputs (10
+position variables and 10 momenta) and predicted 10 latent variables, whose sum was
+treated as the Hamiltonian. Approximately 125, 000 samples were simulated from the
+target density, with the first 5, 000 samples treated as burn-in.
+    From Table 3, we again see drastic reduction in the number of gradient evaluations
+(approximately a factor of 17) and more than an order of magnitude reduction in ESS
+per gradient evaluation. Figure 9 presents scatter plots of the samples generated
+with LHNN-NUTS and the traditional NUTS. Although for dimensions q9 and q10 ,
+traditional NUTS included a few more samples in the tails than LHNN-NUTS, the
+scatter plots overall match satisfactorily. Moreover, the eCDF plots for dimensions q9
+and q10 from LHNN-NUTS closely matched the reference eCDFs.
+
+
+
+
+Fig. 9: Scatter plot comparison between NUTS and LHNN-NUTS with online er-
+ror monitoring, considering a 10-D degenerate Rosenbrock distribution. (Blue dots:
+traditional NUTS; Red dots: LHNN-NUTS with online error monitoring)
+    6.1.3. 24-D Bayesian logistic regression. Next, a 24-D Bayesian logistic re-
+gression on the German credit dataset [8] was performed. The likelihood function is
+given by:
+                       L(qq |yi , z i ) ∝ 1/ 1 + exp (−yiq >z i )
+                                                                 
+(6.2)
+where z i are the predictors, yi is the response for the data point i and q are the
+parameters to be inferred. All the predictor variables were normalized to have zero
+20                                  S. L. N. DHULIPALA ET AL.
+
+
+mean and unit variance. The prior distribution of the parameters was assumed to
+follow a multivariate Gaussian distribution with identity covariance:
+(6.3)                                       g(qq ) = N (00, I )
+Given the likelihood and prior, the negative log posterior (i.e., the potential energy
+function) is given by:
+                                                  K         
+                                                  X                                 
+(6.4) U (qq ) = − ln f (qq |{zz i , yi }K
+                                        i=1 ) =           ln 1/ 1 + exp (−yiq >z i ) + ||qq ||2 /(2K)
+                                                  i=1
+
+where K is the number of data points.
+    The L-HNNs had 48 inputs (24 positions and 24 momenta) and predicted 24 latent
+variables, whose sum was treated as the Hamiltonian. A total of 125, 000 samples were
+simulated from the target density, with the first 5, 000 samples treated as burn-in.
+    In this case, Table 3 shows that no additional gradient evaluations were necessary
+due to the error monitoring step; hence all gradient evaluations occurred during train-
+ing. Again, a huge savings was achieved in the total number of gradient evaluations
+and the ESS per gradient evaluation although the traditional NUTS required far fewer
+evaluations than in the previous examples.
+    Owing to the high dimensionality, the posterior mean and standard deviations of
+the 24 parameters are presented in Figures 10a and 10b, respectively. The statistics
+predicted by LHNN-NUTS satisfactorily match the reference values obtained using
+traditional NUTS.
+
+                                 NUTS
+       0.10                      LHNN-NUTS                                  0.08
+                                                       Standard deviation
+
+
+
+
+       0.05                                                                 0.07
+Mean
+
+
+
+
+       0.00
+                                                                            0.06
+       0.05
+                                                                            0.05
+       0.10
+              0   5      10    15     20          25                               0   5      10    15     20   25
+                      Parameter index                                                      Parameter index
+                        (a)                                                                  (b)
+Fig. 10: (a) Means and (b) standard deviations of the inferred parameters for the
+24-D Bayesian logistic regression problem.
+
+     6.1.4. 100-D rough well. A 100-D rough well distribution from Levy et al.
+[14] and Gu and Sun [11] was considered:
+                                  n 1         X     q i o
+(6.5)                f (qq ) ∝ exp − q >q − η   cos
+                                     2        i
+                                                    η
+
+with η = 0.01. Levy et al. [14] point out that for a small η, although the cosine term
+alters the potential energy negligibly, it perturbs the gradient by a high frequency
+noise oscillation between -1 and 1.
+                        BAYESIAN INFERENCE WITH L-HNNS                              21
+
+     The architecture of the L-HNNs was composed of three hidden layers, each with
+500 neurons. For training, a total of 100,000 steps at a learning rate of 1E − 4 were
+used. ∆hnnmax and Nlf in LHNN-NUTS with online error monitoring were set to 20
+and 5, respectively. All other architecture details follow those above. The L-HNNs
+had 200 inputs (100 positions and 100 momenta) and predicted 100 latent variables,
+whose sum was treated as the Hamiltonian. A total of 10, 000 samples were simulated
+from the target density, with the first 2, 000 samples treated as burn-in.
+     For this very high-dimensional example, Table 3 shows that we still achieve a very
+large reduction in the number of gradient evaluations, although the ESS is smaller
+which reduces the improvement in ESS per gradient evaluation to only a factor of
+∼ 2. Nonetheless, the method outperforms the traditional NUTS and produces sat-
+isfactory samples as shown in Figure 11, which presents scatter plots for 10 of the
+100 dimensions. Whereas L-HNNs in NUTS with online error monitoring takes only
+several hours to simulate these 10, 000 samples, traditional NUTS takes several days.
+
+
+
+
+Fig. 11: Scatter plot comparison between NUTS and LHNN-NUTS with online error
+monitoring for the 100-D rough well distribution showing 10 of the 100 dimensions.
+(Blue dots: traditional NUTS; Red dots: LHNN-NUTS with online error monitoring)
+22                                  S. L. N. DHULIPALA ET AL.
+
+
+    6.1.5. 2-D Neal’s funnel density. As a final example, the following 2-D Neal’s
+funnel density was considered:
+                                     (
+                                      q1 = N (0, 3)
+(6.6)                      f (qq ) ∝
+                                      q2 = N (0, expq1 )
+
+This density can be complex to sample from, due its extreme curvature. The L-HNNs
+had four inputs (two positions and two momenta) and predicted two latent variables,
+whose sum was treated as the Hamiltonian. A total of 25, 000 samples were simulated
+from the target density, with the first 5, 000 samples treated as burn-in.
+    In this case, the online error monitoring scheme was used extensively as seen in Ta-
+ble 3 due to the difficulty in training L-HNNs for this complex problem. Nonetheless,
+we see a reduction of more than 13 million gradient evaluations (traditional NUTS
+requires a huge number of gradient evaluations) and nearly an order of magitude im-
+provement in the ESS per gradient evaluation. Figure 12a presents a scatter plot of
+the samples generated using LHNN-NUTS and traditional NUTS. Figures 12b and
+12c compare the eCDF plots for the two dimensions. Note that the plots generated
+using LHNN-NUTS compare well with those obtained using traditional NUTS.
+
+                                          1.0       NUTS                                 1.0
+                                                    LHNN-NUTS
+                                          0.8                                            0.8
+                            Probability
+
+
+
+
+                                          0.6
+                                                                           Probability
+
+
+
+
+                                                                                         0.6
+
+                                          0.4                                            0.4
+
+                                          0.2                                            0.2
+
+                                          0.0                                            0.0
+                                                5     0      5   10   15                    600 400 200 0    200 400 600
+                                                            q1                                          q2
+
+            (a)                                           (b)                                        (c)
+Fig. 12: (a) Scatter plot comparison of samples generated from a 2-D Neal’s funnel
+density, using NUTS and L-HNNs in NUTS with online error monitoring. Comparison
+of the eCDF plots for the dimensions (b) q1 and (c) q2 .
+
+     6.2. Summary of the performance metrics. Overall, as shown in Table 3,
+LHNN-NUTS requires significantly fewer gradients of the target density and produces
+ESSs per gradient that are about an order of magnitude better than those generated
+using traditional NUTS. This, of course, varies over the examples considered and is
+strongly dependent on a few factors: 1. the number of additional gradients needed
+from the online monitoring scheme; 2. the general efficiency of the NUTS algorithm
+for the specific problem; and 3. the size of the training set (which was held constant
+across all problems). For most of the cases, the additional gradients of the target
+density required during the online error monitoring scheme are small compared to the
+gradient evaluations needed to generate the training data where the number of addi-
+tional gradients during online error monitoring seems to depend on the complexity of
+the target density. In particular, the 3-D Rosenbrock density, which has heavy tails,
+required a large number of additional gradients and the 2-D Neal’s funnel density,
+which has a high local curvature, required the highest number of additional gradi-
+ents. Note that, in both of these cases, the traditional NUTS algorithm required a
+huge number of gradient evaluations (∼ 16 Million). On the other hand, the 24D
+                        BAYESIAN INFERENCE WITH L-HNNS                               23
+
+logistic regression problem required no additional gradient evaluations during the on-
+line error monitoring, while traditional NUTS is relatively efficient compared to the
+other problems (requiring only 1.25 Million evaluations). We therefore generalize and
+loosely state that, for problems where the NUTS algorithm requires a large number
+of gradient evaluations, we expect that the LHNN-NUTS will require a large num-
+ber of additional evaluations due to error monitoring with some exceptions (e.g. 5D
+ill-conditioned Gaussian). Nonetheless, in all cases the LHNN-NUTS with online er-
+ror monitoring offers considerable computational gains while producing samples that
+satisfactorily match the reference target density.
+
+
+     7. Discussion of future work. In HMC and NUTS, there are opportunities
+to explore more recent neural network architectures that learn Hamiltonian systems,
+with the potential for improved performance over HNNs and L-HNNs. This line
+of investigation is motivated by a 100-D Gaussian with Wishart inverse covariance
+from Hoffman and Gelman [12]. For this problem, the ESS per gradient values were
+similar between LHNN-NUTS and traditional NUTS. The poorer performance of L-
+HNNs in this case is a result of many strong correlations in the target distribution
+and large integration errors while simulating the Hamiltonian trajectories. Despite
+the large integration errors for L-HNNs, the online error monitoring scheme ensures
+that the correct distribution is inferred and the correlations between the variables are
+adequately captured (as seen from Figure 13) at the expense of calling the leapfrog
+scheme with gradients of the target density many times during the sampling. However,
+similar to the 100-D rough well example from Section 6.1.4, while L-HNNs in NUTS
+with online error monitoring takes in the order of hours to simulate 10, 000 samples,
+traditional NUTS takes in the order of days due to the complexity of this problem
+(provided that the Hamiltonian gradients are computed numerically and not using a
+closed-form solution).
+     Mattheakis et al. [17] propose neural networks that use time as inputs and pre-
+dict the {qq , p } coordinates. Their loss function minimizes the mean squared error
+between the time derivatives of the actual {qq , p } coordinates and those predicted by
+the neural networks using the right-hand side of Equation (2.2). This form for the loss
+function seems to result in more rapid and substantial loss reduction. Jin et al. [13]
+propose symplectic networks, which lead to better conservation of the Hamiltonian
+than HNNs. Future work will investigate whether architectures such as these would
+lead to an improvement in ESS per gradient, while satisfactorily sampling from the
+target density.
+     While this paper uses an Eucledian formulation for generating momenta that
+are independent of the current position [Equation (2.6)], training L-HNNs under a
+Riemannian formulation for the momenta [9] is also possible. For some densities
+with high local curvatures (e.g., the Neal’s funnel or the multivariate Gaussian with
+Wishart inverse covariance), L-HNNs trained in a Riemannian space may generate
+more computational gains in terms of ESS per gradient. Finally, although the error
+monitoring scheme introduced in this paper calls the standard leapfrog with gradients
+of the target density when the L-HNN integration errors are large, it does not retrain
+the L-HNNs. Such retraining, when performed on-the-fly within the error-monitoring
+scheme, is similar in concept to active or online learning. Owing to the computa-
+tional expense involved in training neural networks for high-dimensional problems,
+quantifying the optimal schedule for retraining that is agnostic to the complexity and
+properties of the target density will be an interesting avenue of exploration.
+24                           S. L. N. DHULIPALA ET AL.
+
+
+
+
+Fig. 13: Scatter plot comparison between NUTS and LHNN-NUTS with online error
+monitoring, considering a 100-D Gaussian distribution with Wishart inverse covari-
+ance. As an illustration, 10 of the 100 dimensions are shown. Whereas L-HNNs in
+NUTS with online error monitoring takes in the order of hours to simulate 10, 000
+samples, traditional NUTS takes in the order of days; provided that the Hamiltonian
+gradients are computed numerically and not using a closed-form solution. (Blue dots:
+traditional NUTS; Red dots: LHNN-NUTS with online error monitoring)
+
+
+    8. Summary and conclusions. Neural networks that learn Hamiltonian sys-
+tems (e.g., HNNs) have received a great deal of interest. We proposed using HNNs
+to solve Bayesian inference problems through the HMC framework. HNNs have im-
+portant properties (e.g., time reversibility and Hamiltonian conservation) that make
+them amenable for usage in HMC sampling. Moreover, once trained, HNNs do not
+require numerical gradients of the target density—which can be computationally ex-
+pensive—during sampling. To increase the expressivity of HNNs, we proposed HNNs
+with latent outputs (L-HNNs) and demonstrated that L-HNNs enable integration er-
+ror reductions in predicting the Hamiltonian dynamics when compared to HNNs for
+a 3-D Rosenbrock density function. Although HMC is a state-of-the-art sampler for
+Bayesian inference, it requires the specification of an end time of the trajectory for
+each sample, and this can considerably influence the inference quality. NUTS auto-
+matically decides this end time, while also ensuring stationarity and that the next
+proposed sample is farther away from the previous one (i.e., lesser correlations be-
+tween samples). We further proposed to use L-HNNs in NUTS with an online error
+monitoring scheme that reverts to the standard leapfrog integration for a few samples
+whenever the L-HNNs integration errors are high. L-HNNs integration errors can be
+high in regions of the uncertainty space that feature fewer training data (e.g., the
+                          BAYESIAN INFERENCE WITH L-HNNS                                      25
+
+tails). This proposed online error monitoring scheme ensures that L-HNNs rapidly
+move to regions of high probability density after visiting a region of low probability
+density, and it prevents degeneracy of the sampling scheme.
+     L-HNNs in NUTS with online error monitoring was demonstrated for several
+example cases involving complex, heavy-tailed, and high-local-curvature probability
+densities with dimensions ranging from 5 to 100. The performance of L-HNNs in
+NUTS was compared to that of traditional NUTS, which relies on numerical gradi-
+ents of the target density. L-HNNs in NUTS satisfactorily inferred the distributions
+of these example cases, as evidenced by scatter plots and eCDFs, when compared to
+traditional NUTS. More interestingly, L-HNNs in NUTS required 1–2 orders of mag-
+nitude fewer evaluations of the target density gradients, and produced an ESS per
+gradient that was an order of magnitude better than that generated via traditional
+NUTS.
+     Several future opportunities exist for improving the performance of neural net-
+works that identify Hamiltonian systems for Bayesian inference problems: (1) newer
+architectures (e.g., symplectic networks) better conserve the Hamiltonian than L-
+HNNs, and result in an efficient inference, as quantified by the ESS per gradient;
+(2) training and evaluating L-HNNs in a Riemannian space rather than an Eucle-
+dian space may lead to significant computational efficiencies for densities with high
+local curvatures; and (3) active learning for training L-HNNs; in particular, optimal
+schedules for retraining L-HNNs in light of the high neural network training costs for
+high-dimensional problems could improve efficiency.
+
+    Software. The codes used for simulating the results in this paper are available
+at https://github.com/IdahoLabResearch/BIhNNs.
+
+    Acknowledgments. We thank Denny Thaler from RWTH Aachen University
+for his comments on our code. This research is supported through INL’s Laboratory
+Directed Research and Development (LDRD) Program under U.S. Department of
+Energy (DOE) Idaho Operations Office contract no. DE-AC07-05ID14517. This
+research made use of the resources of the High Performance Computing Center at
+INL, which is supported by the DOE Office of Nuclear Energy and the Nuclear Science
+User Facilities under contract no. DE-AC07-05ID14517.
+
+                                        REFERENCES
+
+ [1] M. Abadi, A. Agarwal, P. Barham, E. Brevdo, Z. Chen, C. Citro, G. S. Corrado,
+         A. Davis, J. Dean, M. Devin, S. Ghemawat, I. Goodfellow, A. Harp, G. Irving,
+         M. Isard, Y. Jia, R. Jozefowicz, L. Kaiser, M. Kudlur, J. Levenberg, D. Mané,
+         R. Monga, S. Moore, D. Murray, C. Olah, M. Schuster, J. Shlens, B. Steiner,
+         I. Sutskever, K. Talwar, P. Tucker, V. Vanhoucke, V. Vasudevan, F. Viégas,
+         O. Vinyals, P. Warden, M. Wattenberg, M. Wicke, Y. Yu, and X. Zheng, Ten-
+         sorFlow: Large-scale machine learning on heterogeneous systems, 2015, https://www.
+         tensorflow.org/. Software available from tensorflow.org.
+ [2] Autograd Development Team, Autograd package, 2015, https://github.com/HIPS/autograd
+         (accessed 2022/04/24). Version 1.0.
+ [3] M. Betancourt, A conceptual introduction to Hamiltonian Monte Carlo, Jan. 2017, https:
+         //arxiv.org/abs/1701.02434.
+ [4] S. Blanes, F. Casas, and J. M. Sanz-Serna, Numerical integrators for the Hybrid Monte
+         Carlo method, SIAM Journal on Scientific Computing, 36 (2014), pp. A1556–A1580, https:
+         //doi.org/10.1137/130932740.
+ [5] M. P. Calvo and J. M. Sanz-Serna, High-order symplectic Runge–Kutta–Nyström methods,
+         SIAM Journal on Scientific Computing, 14 (1993), pp. 1237–1252, https://doi.org/10.1137/
+         0914073.
+26                                S. L. N. DHULIPALA ET AL.
+
+
+ [6] Y. Che, X. Wu, G. Pastore, W. Li, and K. Shirvan, Application of Kriging and Variational
+         Bayesian Monte Carlo method for improved prediction of doped UO2 fission gas release,
+         Annals of Nuclear Energy, 153 (2021), p. 108046, https://doi.org/10.1016/j.anucene.2020.
+         108046.
+ [7] S. L. N. Dhulipala, M. D. Shields, B. W. Spencer, C. Bolisetti, A. E. Slaughter,
+         V. M. Laboure, and P. Chakroborty, Active learning with multifidelity modeling for
+         efficient rare event simulation, Journal of Computational Physics, 468 (2022), p. 111506,
+         https://doi.org/10.1016/j.jcp.2022.111506.
+ [8] D. Dua and C. Graff, UCI Machine Learning Repository, 2017, http://archive.ics.uci.edu/ml.
+ [9] M. Girolami and B. Calderhead, Riemann manifold Langevin and Hamiltonian Monte Carlo
+         methods, Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73
+         (2011), pp. 123–214, https://doi.org/10.1111/j.1467-9868.2010.00765.x.
+[10] S. Greydanus, M. Dzamba, and J. Yosinski, Hamiltonian neural networks, Sept. 2019, https:
+         //arxiv.org/abs/1906.01563.
+[11] M. Gu and S. Sun, Neural Langevin dynamical sampling, IEEE Access, 8 (2020), pp. 31595–
+         31605, https://doi.org/10.1109/ACCESS.2020.2972611.
+[12] M. D. Hoffman and A. Gelman, The No-U-Turn sampler: adaptively setting path lengths in
+         Hamiltonian Monte Carlo, Journal of Machine Learning Research, 15 (2014), pp. 1593–
+         1623, https://doi.org/10.5555/2627435.2638586.
+[13] P. Jin, Z. Zhang, A. Zhu, Y. Tang, and G. E. Karniadakis, SympNets: Intrinsic structure-
+         preserving symplectic networks for identifying Hamiltonian systems, Neural Networks, 132
+         (2020), pp. 166–179, https://doi.org/10.1016/j.neunet.2020.08.017.
+[14] D. Levy, M. D. Hoffman, and J. Sohl-Dickstein, Generalizing Hamiltonian Monte Carlo
+         with neural networks, Mar. 2017, https://arxiv.org/abs/1711.09268.
+[15] L. Li, A. Holbrook, B. Shahbaba, and P. Baldi, Neural network gradient Hamiltonian
+         Monte Carlo, Computational statistics, 34 (2019), pp. 281–299, https://doi.org/10.1007/
+         s00180-018-00861-z.
+[16] P. Mann, Lagrangian and Hamiltonian dynamics, Oxford University Press, United Kingdom,
+         1st ed., 2018.
+[17] M. Mattheakis, D. Sondak, A. S. Dogra, and P. Protopapas, Hamiltonian neural networks
+         for solving equations of motion, Physical Review E, 105 (2022), p. 065305, https://doi.org/
+         10.1103/PhysRevE.105.065305.
+[18] R. M. Neal, MCMC using Hamiltonian dynamics, June 2012, https://arxiv.org/abs/1206.
+         1901.
+[19] M. Nishio and A. Arakawa, Performance of Hamiltonian Monte Carlo and No-U-Turn Sam-
+         pler for estimating genetic parameters and breeding values, Genetics Selection Evolution,
+         51 (2019), pp. 1–12, https://doi.org/10.1186/s12711-019-0515-1.
+[20] F. Pagani, M. Wiegand, and S. Nadarajah, An n-dimensional Rosenbrock distribution for
+         MCMC testing, May 2019, https://arxiv.org/abs/1903.09556.
+[21] G. O. Roberts and J. S. Rosenthal, General state space Markov chains and
+         MCMC algorithms, Probability surveys, 1 (2004), pp. 20–71, https://doi.org/10.1214/
+         154957804100000024.
+[22] Y. Tong, S. Xiong, X. He, G. Pan, and B. Zhu, Symplectic neural networks in Taylor series
+         form for Hamiltonian systems, Journal of Computational Physics, 437 (2021), p. 110325,
+         https://doi.org/10.1016/j.jcp.2021.110325.
+[23] A. Vehtari, A. Gelman, D. Simpson, B. Carpenter, and P.-C. Bürkner, Rank-
+         normalization, folding, and localization: An improved R-hat for assessing convergence of
+         MCMC, Bayesian analysis, 16 (2021), pp. 667–718, https://doi.org/10.1214/20-BA1221.
+[24] N. K. Vishnoi, An introduction to Hamiltonian Monte Carlo method for sampling, Aug. 2021,
+         https://arxiv.org/abs/2108.12107.
+[25] Y. D. Zhong, B. Dey, and A. Chakraborty, Symplectic ode-net: Learning Hamiltonian
+         dynamics with control, Apr. 2019, https://arxiv.org/abs/1909.12077.
+                          BAYESIAN INFERENCE WITH L-HNNS                                    27
+
+    SUPPLEMENTARY MATERIAL.
+    Synchronized leap frog integration. Algorithm 8.1 presents the synchronized
+leap frog integration scheme.
+
+Algorithm 8.1 Synchronized Leap Frog integration for simulating Hamiltonian dy-
+namics
+ 1: Hamiltonian: H, Initial conditions: z (0) = {q         q (0), p (0)}, Dimensions: d, Steps:
+    N , End time: T
+ 2: Numerical gradients of H with respect to q (t) using packages like autograd [2]
+           T
+ 3: ∆t = N
+ 4: for j = 0 : N − 1 do
+ 5:   t = j ∆t
+ 6:   Compute ∂q∂H q (t)
+ 7:   for i = 1 : d do
+                                ∆t             ∆t2    ∂H
+ 8:      qi (t + ∆t) = qi (t) + m i
+                                    pi (t) − 2m  i ∂qi (t)
+ 9:   end for
+                      ∂H
+10:   Compute ∂qq (t+∆t)
+11:   for i = 1 : d do                                      
+12:      pi (t + ∆t) = pi (t) − ∆t
+                                 2
+                                        ∂H
+                                       ∂qi (t) +     ∂H
+                                                 ∂qi (t+∆t)
+13:   end for
+14: end for
+
+
+
+    Hamiltonian Monte Carlo. Algorithm 8.2 presents the HMC algorithm.
+
+Algorithm 8.2 Hamiltonian Monte Carlo
+ 1: Hamiltonian:    H = U (qq ) + K(pp), Samples: M, Starting sample: {qq 0 , p 0 }, End
+    time for trajectory: T
+ 2: for i = 1 : M do
+ 3:   p (0) ∼ MVN (00, M )
+ 4:   q (0) = q i−1
+ 5:   Compute {qq ∗ , p ∗ } = {qq (T ), p (T )} with Algorithm 8.1
+ 6:   α = exp H({qq i−1 , p i−1 }) − H({qq ∗ , p ∗ })
+ 7:   With probability min{1, α}, set {qq i , p i } ← {qq ∗ , p ∗ }
+ 8: end for
+
+
+
+     Effective sample size. The effective sample size (ESS) is a metric for measuring
+the quality of MCMC samples [23]. Since MCMC samples are correlated, the effective
+number of samples will typically be less than the total samples drawn. ESS is defined
+in terms of the autocorrelations within the chain as [23]:
+
+
+                                                  M
+(8.1)                             Mef f =         P∞         t
+                                            1+2      t=1 ρ
+
+where, M is the total samples drawn and ρt is the autocorrelation at lag t ≥ 0. ρt for
+dimension i is defined as:
+28                                S. L. N. DHULIPALA ET AL.
+
+
+
+                                             Z
+                                        1
+(8.2)                            ρt =             qic qic+t f (qi ) dqi
+                                        σ2   Qi
+
+where, σ is the standard deviation, qic and qic+t are the samples with lag t, and f (.) is
+the required distribution. In practice, quantities in the above equation are estimated
+from the MCMC samples itself and Equation (8.1) is numerically computed using fast
+Fourier transforms in Tensorflow [1]. In this study, we use ESS as a metric to evaluate
+the performance of HNNs for Bayesian inference relative to HMC-based sampling.
+    Details of L-HNNs. Table 4 presents the architecture and training data details
+of L-HNNs.
+            Table 4: Details of L-HNNs architecture and training data.
+
+     # Neurons      # HMC samples Error threshold (∆lhnn
+                                                     max ) Leap frog samples (Nlf )
+                              3D degenerate Rosenbrock
+          100           40                    10                      20
+                             5-D ill-conditioned Gaussian
+          100           40                    10                      20
+                             10-D degenerate Rosenbrock
+          100           40                    10                      20
+                           24-D Bayesian logistic regression
+          100           40                    10                      20
+                                    100D rough well
+          500           40                    20                       5
+                                   2-D Neal’s funnel
+          100           40                    10                      20
+     - All example cases use 3 hidden layers.
+     - All example cases use a sine nonlinear activation function.
+     - All example cases use 250 units as the end time for HMC samples with ∆t = 0.025.
+
+
+
+        500                                              500
+
+        400                                              400
+
+        300                                              300
+Count
+
+
+
+
+                                                 Count
+
+
+
+
+        200                                              200
+
+        100                                              100
+
+          0                                                0
+                2    1       0   1       2                     2    1       0     1   2
+                         Value                                            Value
+                     (a)                                                (b)
+Fig. 14: Histogram of samples from a 1D Gaussian mixture density using: (a) tradi-
+tional NUTS; and (b) HNN-NUTS.
+        Additional results.
+                       BAYESIAN INFERENCE WITH L-HNNS                            29
+
+
+
+
+Fig. 15: Scatter plot comparison between NUTS and LHNN-NUTS with online er-
+ror monitoring, considering a 5-D ill-conditioned Gaussian distribution. (Blue dots:
+traditional NUTS; Red dots: LHNN-NUTS with online error monitoring)
+30                                                         S. L. N. DHULIPALA ET AL.
+
+
+
+
+              1.0          NUTS                                          1.0                                                          1.0
+                           LHNN-NUTS
+              0.8                                                        0.8                                                          0.8
+Probability
+
+
+
+
+                                                           Probability
+
+
+
+
+                                                                                                                        Probability
+              0.6                                                        0.6                                                          0.6
+
+              0.4                                                        0.4                                                          0.4
+
+              0.2                                                        0.2                                                          0.2
+
+              0.0                                                        0.0                                                          0.0
+                    0.4        0.2   0.0   0.2    0.4                               1.0    0.5 0.0 0.5     1.0    1.5                       4   2     0    2   4
+                                     q1                                                          q2                                                   q3
+
+              1.0                (a)                                  1.0                      (b)                                                  (c)
+
+              0.8                                                     0.8
+Probability
+
+
+
+
+                                                        Probability
+
+
+
+
+              0.6                                                     0.6
+
+              0.4                                                     0.4
+
+              0.2                                                     0.2
+
+              0.0                                                     0.0
+                          10     5    0    5     10                            40         20     0    20         40
+                                     q4                                                          q5
+
+                                 (d)                                                           (e)
+Fig. 16: 5D ill-conditioned Gaussian density empirical cumulative distribution func-
+tions comparison.
+                       BAYESIAN INFERENCE WITH L-HNNS                          31
+
+
+
+
+Fig. 17: Scatter plot comparison between NUTS and LHNN-NUTS with online er-
+ror monitoring, considering a 10-D degenerate Rosenbrock distribution. (Blue dots:
+traditional NUTS; Red dots: LHNN-NUTS with online error monitoring)
+32                                            S. L. N. DHULIPALA ET AL.
+
+
+
+
+              1.0      NUTS                                 1.0                                                            1.0
+                       LHNN-NUTS
+              0.8                                           0.8                                                            0.8
+Probability
+
+
+
+
+                                              Probability
+
+
+
+
+                                                                                                             Probability
+              0.6                                           0.6                                                            0.6
+
+              0.4                                           0.4                                                            0.4
+
+              0.2                                           0.2                                                            0.2
+
+              0.0                                           0.0                                                            0.0
+                      1       0         1                         1.0     0.5 0.0 0.5          1.0     1.5                           1.0 0.5 0.0 0.5 1.0 1.5
+                              q1                                                 q2                                                            q3
+
+              1.0         (a)                               1.0                (b)                                         1.0               (c)
+
+              0.8                                           0.8                                                            0.8
+Probability
+
+
+
+
+                                              Probability
+
+
+
+
+                                                                                                             Probability
+              0.6                                           0.6                                                            0.6
+
+              0.4                                           0.4                                                            0.4
+
+              0.2                                           0.2                                                            0.2
+
+              0.0                                           0.0                                                            0.0
+                    1.0 0.5 0.0 0.5 1.0 1.5                       1.0 0.5 0.0 0.5 1.0 1.5                                            1         0            1
+                               q4                                            q5                                                                    q6
+
+              1.0         (d)                               1.0                (e)                                         1.0               (f)
+
+              0.8                                           0.8                                                            0.8
+Probability
+
+
+
+
+                                              Probability
+
+
+
+
+                                                                                                             Probability
+
+
+
+
+              0.6                                           0.6                                                            0.6
+
+              0.4                                           0.4                                                            0.4
+
+              0.2                                           0.2                                                            0.2
+
+              0.0                                           0.0                                                            0.0
+                      1      0      1                                 1     0             1        2                             2       0     2        4       6
+                              q7                                                     q8                                                        q9
+
+                          (g)                               1.0                (h)                                                           (i)
+
+                                                            0.8
+                                              Probability
+
+
+
+
+                                                            0.6
+
+                                                            0.4
+
+                                                            0.2
+
+                                                            0.0
+                                                                  0       10      20          30       40
+                                                                                 q10
+
+                                                                               (j)
+Fig. 18: 10D degenerate Rosenbrock density empirical cumulative distribution func-
+tions comparison.
+                      BAYESIAN INFERENCE WITH L-HNNS                         33
+
+
+
+
+Fig. 19: Comparison of scatter plots between NUTS and HNN-NUTS considering a
+24D Bayesian logistic regression problem. Dimensions 1 to 12 are presented here.
+(blue dots: traditional NUTS; red dots: HNN-NUTS)
+34                          S. L. N. DHULIPALA ET AL.
+
+
+
+
+Fig. 20: Comparison of scatter plots between NUTS and HNN-NUTS considering a
+24D Bayesian logistic regression problem. Dimensions 13 to 24 are presented here.
+(blue dots: traditional NUTS; red dots: HNN-NUTS)
+                                                                BAYESIAN INFERENCE WITH L-HNNS                                                                                                               35
+
+
+
+
+              1.0          NUTS                                                       1.0                                                                           1.0
+                           LHNN-NUTS
+              0.8                                                                     0.8                                                                           0.8
+Probability
+
+
+
+
+                                                                        Probability
+
+
+
+
+                                                                                                                                                      Probability
+              0.6                                                                     0.6                                                                           0.6
+
+              0.4                                                                     0.4                                                                           0.4
+
+              0.2                                                                     0.2                                                                           0.2
+
+              0.0                                                                     0.0                                                                           0.0
+                      0.1 0.0           0.1 0.2          0.3                                  0.3     0.2    0.1 0.0          0.1     0.2                                       0.1 0.0      0.1    0.2    0.3
+                                          q1                                                                   q2                                                                          q3
+
+              1.0                  (a)                                                1.0                   (b)                                                     1.0              (c)
+
+              0.8                                                                     0.8                                                                           0.8
+Probability
+
+
+
+
+                                                                        Probability
+
+
+
+
+                                                                                                                                                     Probability
+              0.6                                                                     0.6                                                                           0.6
+
+              0.4                                                                     0.4                                                                           0.4
+
+              0.2                                                                     0.2                                                                           0.2
+
+              0.0                                                                     0.0                                                                           0.0
+                           0.2               0.0         0.2                                0.2      0.1    0.0        0.1     0.2                                        0.2     0.1 0.0 0.1        0.2   0.3
+                                             q4                                                                   q5                                                                     q6
+
+              1.0                  (d)                                                1.0                   (e)                                                     1.0              (f)
+
+              0.8                                                                     0.8                                                                           0.8
+Probability
+
+
+
+
+                                                                        Probability
+
+
+
+
+                                                                                                                                                      Probability
+
+
+
+
+              0.6                                                                     0.6                                                                           0.6
+
+              0.4                                                                     0.4                                                                           0.4
+
+              0.2                                                                     0.2                                                                           0.2
+
+              0.0                                                                     0.0                                                                           0.0
+                    0.2     0.1        0.0 0.1           0.2                                0.3      0.2    0.1 0.0          0.1     0.2                                  0.3 0.2 0.1 0.0 0.1 0.2
+                                          q7                                                                   q8                                                                    q9
+
+              1.0                  (g)                                           1.0                        (h)                                           1.0                        (i)
+
+              0.8                                                                0.8                                                                      0.8
+Probability
+
+
+
+
+                                                                   Probability
+
+
+
+
+                                                                                                                                            Probability
+
+
+
+
+              0.6                                                                0.6                                                                      0.6
+
+              0.4                                                                0.4                                                                      0.4
+
+              0.2                                                                0.2                                                                      0.2
+
+              0.0                                                                0.0                                                                      0.0
+                     0.2         0.1     0.0       0.1    0.2                          0.2          0.1     0.0 0.1            0.2                                        0.2    0.1 0.0      0.1    0.2
+                                          q10                                                                  q11                                                                   q12
+
+                                       (j)                                                                 (k)                                                                    (l)
+Fig. 21: 24D Bayesian logistic regression empirical cumulative distribution functions
+comparison for dimensions 1 to 12.
+36                                                                         S. L. N. DHULIPALA ET AL.
+
+
+
+
+              1.0                                                                          1.0                                                                1.0
+
+              0.8                                                                          0.8                                                                0.8
+Probability
+
+
+
+
+                                                                             Probability
+
+
+
+
+                                                                                                                                                Probability
+              0.6                                                                          0.6                                                                0.6
+
+              0.4                                                                          0.4                                                                0.4
+
+              0.2                                                                          0.2                                                                0.2
+
+              0.0                                                                          0.0                                                                0.0
+                       0.2      0.1        0.0        0.1         0.2                                  0.2           0.0        0.2                                   0.2             0.0             0.2
+                                          q13                                                                          q14                                                              q15
+
+              1.0                   (a)                                                    1.0                      (b)                                       1.0                 (c)
+
+              0.8                                                                          0.8                                                                0.8
+Probability
+
+
+
+
+                                                                             Probability
+
+
+
+
+                                                                                                                                                Probability
+              0.6                                                                          0.6                                                                0.6
+
+              0.4                                                                          0.4                                                                0.4
+
+              0.2                                                                          0.2                                                                0.2
+
+              0.0                                                                          0.0                                                                0.0
+                        0.2         0.1         0.0         0.1                                        0.2 0.1 0.0 0.1 0.2 0.3                                      0.4         0.2           0.0           0.2
+                                          q16                                                                    q17                                                                    q18
+
+              1.0                   (d)                                                    1.0                      (e)                                       1.0                 (f)
+
+              0.8                                                                          0.8                                                                0.8
+Probability
+
+
+
+
+                                                                             Probability
+
+
+
+
+                                                                                                                                                Probability
+
+
+
+
+              0.6                                                                          0.6                                                                0.6
+
+              0.4                                                                          0.4                                                                0.4
+
+              0.2                                                                          0.2                                                                0.2
+
+              0.0                                                                          0.0                                                                0.0
+                              0.2            0.0                  0.2                            0.4          0.2       0.0     0.2                                   0.4       0.2     0.0         0.2      0.4
+                                          q19                                                                          q20                                                              q21
+
+              1.0                   (g)                                               1.0                           (h)                             1.0                           (i)
+
+              0.8                                                                     0.8                                                           0.8
+Probability
+
+
+
+
+                                                                        Probability
+
+
+
+
+                                                                                                                                      Probability
+
+
+
+
+              0.6                                                                     0.6                                                           0.6
+
+              0.4                                                                     0.4                                                           0.4
+
+              0.2                                                                     0.2                                                           0.2
+
+              0.0                                                                     0.0                                                           0.0
+                    0.3 0.2 0.1 0.0 0.1 0.2                                                             0.2         0.0       0.2                                         0.2     0.0           0.2
+                                q22                                                                                  q23                                                          q24
+
+                                    (j)                                                                        (k)                                                              (l)
+Fig. 22: 24D Bayesian logistic regression empirical cumulative distribution functions
+comparison for dimensions 13 to 24.
+                        BAYESIAN INFERENCE WITH L-HNNS                             37
+
+
+
+
+Fig. 23: Scatter plot comparison between NUTS and LHNN-NUTS with online error
+monitoring, considering a 100-D rough well distribution. As an illustration, 10 of the
+100 dimensions are shown. (Blue dots: traditional NUTS; Red dots: LHNN-NUTS
+with online error monitoring)
+38                           S. L. N. DHULIPALA ET AL.
+
+
+
+
+Fig. 24: Scatter plot comparison between NUTS and LHNN-NUTS with online error
+monitoring, considering a 100-D Gaussian distribution with Wishart inverse covari-
+ance. As an illustration, 10 of the 100 dimensions are shown. (Blue dots: traditional
+NUTS; Red dots: LHNN-NUTS with online error monitoring)
+

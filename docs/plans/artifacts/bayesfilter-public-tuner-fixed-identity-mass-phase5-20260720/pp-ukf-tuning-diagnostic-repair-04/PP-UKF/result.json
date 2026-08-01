@@ -1,0 +1,653 @@
+{
+  "cell_id": "PP-UKF",
+  "decision": "TUNING_FAILED",
+  "elapsed_seconds": 1.2334789260057732,
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/campaign-01/PP-UKF/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "b7a558db1e9a48fcd79333e65771d933342a1933e93869a8d5193ce166019221",
+    "target_signature": "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5",
+    "training_state_hash": "sha256:70e6e49bef68672e43c2e44b4847ef105ec3b7c8ef5e22f2eead292d50ff561c"
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "preserved-transport public-tuner validation only",
+    "no convergence, truth recovery, or NeuTra validity claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/pp-ukf-tuning-diagnostic-repair-04/PP-UKF",
+  "parameter_names": [
+    "r",
+    "K",
+    "a",
+    "s",
+    "u",
+    "v"
+  ],
+  "passed": false,
+  "schema": "bayesfilter.neutra.all_models.cell_result.v1",
+  "target_signature": "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5",
+  "tuning": {
+    "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+    "artifact_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-phase5-20260720/pp-ukf-tuning-diagnostic-repair-04/PP-UKF/tuning/hmc_kernel_tuning_result.json",
+    "bootstrap": {
+      "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "bootstrap_scoped_reusable_runner",
+        "bootstrap_round_count": 1,
+        "distinct_static_runner_contract_count": 1,
+        "distinct_static_runner_contracts": [
+          {
+            "static_contract_hash": "249c95b636ba70d2481b934f9963e451a4c622c3645aed10cccbb9120b988c5b",
+            "static_contract_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "dynamic_inputs": [
+                "current_state",
+                "seed",
+                "step_size"
+              ],
+              "excluded_dynamic_fields": [
+                "seed",
+                "step_size"
+              ],
+              "hmc_adapter_signature": "85ede0d7bf35e5360f106a0b1445bd2e76883bb2ed9795fd5a1848cb12966226",
+              "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+              "num_burnin_steps": 8,
+              "num_leapfrog_steps": 5,
+              "num_results": 32,
+              "runner": "build_reusable_full_chain_tfp_hmc_runner",
+              "semantic_source": "run_hmc_bootstrap_screen",
+              "target_dimension": 6,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "per_chain_step",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            }
+          }
+        ],
+        "dynamic_inputs_preserve_round_semantics": true,
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "fallback_status": "none",
+        "fallback_to_single_use_runner": false,
+        "injected_runner_call_count": 0,
+        "reusable_runner_build_count": 1,
+        "round_route_events": [
+          {
+            "failed_before_route_completion": true,
+            "round_index": 0,
+            "route": "bootstrap_scoped_reusable_runner",
+            "runner_reused": false,
+            "static_contract_hash": null,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "num_leapfrog_steps": null,
+          "payload_hash": null,
+          "preserved": false,
+          "screen_config_payload": null,
+          "seed": null,
+          "selected_round_index": null,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "step_size": null
+        },
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0
+      },
+      "config": {
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "chain_execution_mode": "tf_function",
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "screen_num_burnin_steps": 8,
+        "screen_num_results": 32,
+        "seed": [
+          20263648,
+          9184
+        ],
+        "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.bootstrap",
+        "target_accept_prob": 0.7,
+        "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+        "target_status_trace_policy": "per_chain_step",
+        "use_xla": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "adapter_signature_match": "hard_veto",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repair_band": "bootstrap_repair_trigger",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic",
+        "target_log_prob_finite": "hard_veto"
+      },
+      "final_status": "hard_veto",
+      "geometry_artifact_hash": "7f1c5638cbeb699dd0fc3a26af80be083f2c38b9079e489215e8b58e8f8c37bd",
+      "hmc_adapter_signature": "85ede0d7bf35e5360f106a0b1445bd2e76883bb2ed9795fd5a1848cb12966226",
+      "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "passed": false,
+      "reports_gpu_or_xla_readiness": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_trajectory_tuning": false,
+      "rounds": [
+        {
+          "clamp_direction": null,
+          "classification": "hard_veto",
+          "diagnostic_role": "hard_veto",
+          "diagnostics": {
+            "acceptance_rate": null,
+            "error_message": "in user code:\n\n    File \"/home/chakwong/BayesFilter/bayesfilter/inference/hmc.py\", line 2755, in run_chain  *\n        seed=seed,\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/sample.py\", line 330, in sample_chain  **\n        previous_kernel_results = kernel.bootstrap_results(current_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/hmc.py\", line 533, in bootstrap_results\n        return self._impl.bootstrap_results(init_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/metropolis_hastings.py\", line 273, in bootstrap_results\n        pkr = self.inner_kernel.bootstrap_results(init_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/hmc.py\", line 741, in bootstrap_results\n        ] = mcmc_util.maybe_call_fn_and_grads(self.target_log_prob_fn, init_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/util.py\", line 297, in maybe_call_fn_and_grads\n        result, grads = _value_and_gradients(fn, fn_arg_list, result, grads)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/util.py\", line 265, in _value_and_gradients\n        return tfp_math_value_and_gradients(fn, fn_arg_list)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/math/gradient.py\", line 108, in value_and_gradient\n        return _value_and_grad_impl(\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/math/gradient.py\", line 378, in _value_and_grad_impl\n        y, dydx, aux = grad_fn(lambda: f(*args, **kwargs) if _has_args(f) else f(),\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/sit...",
+            "error_type": "ValueError",
+            "failure_diagnostics_role": "diagnostic_exception_provenance_not_scientific_evidence",
+            "log_accept_ratio_finite": false,
+            "runtime_finite": false,
+            "runtime_s": null,
+            "samples_all_finite": false,
+            "screen_diagnostic": {
+              "checks": {
+                "hmc_error_absent": false,
+                "sample_chain_returned": false
+              },
+              "diagnostic_roles": {
+                "screen": "bootstrap runtime hard veto"
+              },
+              "nonclaims": [
+                "bootstrap fixed-kernel HMC screen only",
+                "acceptance is a bootstrap repair diagnostic only",
+                "no mass adaptation validity claim",
+                "no trajectory tuning claim",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default-readiness claim",
+                "no GPU or XLA readiness claim"
+              ],
+              "passed": false,
+              "unavailable_diagnostics": []
+            },
+            "target_log_prob_finite": false
+          },
+          "hard_vetoes": [
+            "screen_hmc_error",
+            "screen_acceptance_missing_or_nonfinite",
+            "screen_runtime_missing_or_nonfinite",
+            "screen_log_accept_nonfinite_or_missing",
+            "screen_samples_nonfinite_or_missing",
+            "screen_target_log_prob_nonfinite_or_missing"
+          ],
+          "leapfrog_clamped": false,
+          "num_leapfrog_steps": 5,
+          "repair_action": null,
+          "repair_triggers": [],
+          "round_index": 0,
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 8,
+            "num_leapfrog_steps": 5,
+            "num_results": 32,
+            "seed": [
+              20263648,
+              9184
+            ],
+            "step_size": 0.3194715521231362,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "per_chain_step",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "seed": [
+            20263648,
+            9184
+          ],
+          "step_size": 0.3194715521231362,
+          "target_trajectory_length": 1.5707963267948966,
+          "unclamped_num_leapfrog_steps": 5
+        }
+      ],
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "seed_report": {
+        "bootstrap_root_seed": [
+          20263648,
+          9184
+        ],
+        "bootstrap_stage_seed": [
+          20263648,
+          18360
+        ],
+        "geometry_root_seed": [
+          20262639,
+          9184
+        ],
+        "geometry_seed": [
+          20262639,
+          18360
+        ],
+        "geometry_seed_distinct_from_bootstrap_seed": true,
+        "screen_round_seeds": [
+          [
+            20263648,
+            9184
+          ]
+        ],
+        "seed_owner": "BayesFilter"
+      },
+      "selected_kernel_hash": null,
+      "selected_kernel_payload": null,
+      "selected_round_index": null,
+      "target_dimension": 6
+    },
+    "bootstrap_artifact_hash": "b3e942c0018239a67e7e5594b14f607e98f9294b569c4f3037192c43ec896e26",
+    "config": {
+      "acceptance_band": [
+        0.65,
+        0.75
+      ],
+      "allow_geometry_fallback": false,
+      "bootstrap_diagnostic_screen_num_burnin_steps": null,
+      "bootstrap_diagnostic_screen_num_results": null,
+      "bootstrap_diagnostic_sizing_claim": "public observability diagnostic only; not sampler promotion",
+      "bootstrap_max_repairs": 5,
+      "chain_execution_mode": "tf_function",
+      "covariance_jitter": 1e-09,
+      "eigenvalue_floor": 1e-09,
+      "forbidden_public_fields": [
+        "step_size",
+        "initial_step_size",
+        "num_leapfrog_steps",
+        "leapfrog_count",
+        "min_leapfrog",
+        "max_leapfrog",
+        "candidate_l_grid",
+        "trajectory_grid",
+        "mass_window_schedule",
+        "warmup_budget_schedule",
+        "tuning_budget_schedule",
+        "tune_num_results",
+        "screen_num_results",
+        "verification_num_results",
+        "verification_num_burnin_steps"
+      ],
+      "geometry_position_role": "initial_position",
+      "geometry_scaled_budget_timing_policy": {
+        "bootstrap_formula_parameters": {
+          "burnin_fraction": 0.25,
+          "max_results": 1024,
+          "min_results": 32,
+          "sqrt_dimension_factor": 4.0
+        },
+        "budget_formula_parameters": {
+          "anisotropy_sqrt_weight": 0.5,
+          "condition_log10_weight": 0.25,
+          "diagonal_fallback_multiplier": 1.5,
+          "dimension_factor": 20.0,
+          "max_geometry_multiplier": 4.0,
+          "max_initial_budget": 5000,
+          "max_tune_budget": 10000,
+          "min_geometry_multiplier": 1.0,
+          "min_initial_budget": 1000,
+          "regularization_clip_weight": 0.05,
+          "regularization_nonpositive_weight": 0.25
+        },
+        "emergency_timing_policy": {
+          "global_cap_s": 86400.0,
+          "max_stage_s": 21600.0,
+          "min_stage_s": 3600.0,
+          "progress_monitor_is_separate": true,
+          "reserve_s": 600.0,
+          "role": "machine_protection_only_not_scientific_stop_rule",
+          "stage_time_budget_multiplier": {
+            "fixed_mass_step": 1.0,
+            "fresh_fixed_kernel_verification": 1.0,
+            "frozen_step_trajectory": 1.0,
+            "geometry_and_bootstrap": 1.0,
+            "phase7_pre_windowed": 1.0,
+            "windowed_mass": 1.0
+          }
+        },
+        "hmc_mechanics_exposed": false,
+        "mass_arrays_exposed": false,
+        "policy_id": "bayesfilter_hmc_geometry_scaled_budget_timing_v1",
+        "public_safe": true,
+        "raw_eigenvalues_exposed": false,
+        "reports_posterior_convergence": false,
+        "reports_sampler_superiority": false,
+        "schema": "bayesfilter.hmc_geometry_scaled_budget_timing_policy.v1",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.geometry_scaled_budget_timing_policy"
+      },
+      "geometry_scaling_c": 0.5,
+      "handoff_screen_policy": "phase22_heuristic_viability_gate",
+      "hmc_mechanics_owned_by_bayesfilter": true,
+      "incall_progress_heartbeat_s": null,
+      "mass_policy": "fixed_identity",
+      "max_attempts": 5,
+      "max_condition_number": null,
+      "max_leapfrog_steps": 25,
+      "negative_hessian_source": "negative_hessian",
+      "preset": "serious",
+      "preset_role": "dimension_scaled_tuning_policy_only",
+      "public_timeout_budget_s": null,
+      "repair_band": [
+        0.55,
+        0.85
+      ],
+      "repair_nonfinite_proposal_screen": true,
+      "reports_default_readiness": false,
+      "reports_gpu_or_xla_readiness": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "schema": "bayesfilter.hmc_kernel_tuning_config.v1",
+      "seed": [
+        20260621,
+        8
+      ],
+      "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner",
+      "stability_guard": 0.8,
+      "staged_timeout_enlargement_rounds": null,
+      "staged_timeout_global_started_perf_counter_s": null,
+      "staged_timeout_policy": null,
+      "staged_timeout_stage_started_perf_counter_s": null,
+      "step_repair_factor": 2.0,
+      "step_repair_high_acceptance_directional_factor": 2.0,
+      "step_repair_high_acceptance_ladder_max_factor": 2.0,
+      "step_repair_min_directional_factor": 1.25,
+      "target_accept_prob": 0.7,
+      "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+      "target_status_trace_policy": "per_chain_step",
+      "terminal_phase6_repair_extra_attempts": 0,
+      "trajectory_window_lower_multiplier": 0.3,
+      "trajectory_window_upper_multiplier": 3.0,
+      "use_xla": true,
+      "verification_chunk_max_results": null,
+      "verification_compile_sizing_claim": "XLA compile-shape policy only; not a reduced verification evidence gate",
+      "verification_min_retained_results_for_pass": null
+    },
+    "diagnostic_role": "bootstrap_screen_hard_veto",
+    "diagnostic_roles": {
+      "bootstrap_screen": "promotion_or_repair_or_hard_veto",
+      "fresh_fixed_kernel_verification": "kernel_handoff_screen_only",
+      "geometry_initialization": "hard_veto_when_invalid",
+      "output_artifact": "audit_evidence_only_not_public_reconstruction_api",
+      "tune_verify_repair_loop": "promotion_or_repair_or_hard_veto"
+    },
+    "failure_diagnostics": {
+      "diagnostic_stage": "hard_veto",
+      "exception_message": "in user code:\n\n    File \"/home/chakwong/BayesFilter/bayesfilter/inference/hmc.py\", line 2755, in run_chain  *\n        seed=seed,\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/sample.py\", line 330, in sample_chain  **\n        previous_kernel_results = kernel.bootstrap_results(current_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/hmc.py\", line 533, in bootstrap_results\n        return self._impl.bootstrap_results(init_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/metropolis_hastings.py\", line 273, in bootstrap_results\n        pkr = self.inner_kernel.bootstrap_results(init_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/hmc.py\", line 741, in bootstrap_results\n        ] = mcmc_util.maybe_call_fn_and_grads(self.target_log_prob_fn, init_state)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/util.py\", line 297, in maybe_call_fn_and_grads\n        result, grads = _value_and_gradients(fn, fn_arg_list, result, grads)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/util.py\", line 265, in _value_and_gradients\n        return tfp_math_value_and_gradients(fn, fn_arg_list)\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/math/gradient.py\", line 108, in value_and_gradient\n        return _value_and_grad_impl(\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/math/gradient.py\", line 378, in _value_and_grad_impl\n        y, dydx, aux = grad_fn(lambda: f(*args, **kwargs) if _has_args(f) else f(),\n    File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/sit...",
+      "exception_type": "ValueError",
+      "hard_vetoes": [
+        "screen_hmc_error",
+        "screen_acceptance_missing_or_nonfinite",
+        "screen_runtime_missing_or_nonfinite",
+        "screen_log_accept_nonfinite_or_missing",
+        "screen_samples_nonfinite_or_missing",
+        "screen_target_log_prob_nonfinite_or_missing"
+      ],
+      "hmc_mechanics_exposed": false,
+      "repair_triggers": [],
+      "reports_default_readiness": false,
+      "reports_gpu_or_xla_readiness": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "role": "diagnostic_exception_provenance_not_scientific_evidence",
+      "round_index": 0,
+      "schema": "bayesfilter.hmc_tuning_failure_diagnostics.v1",
+      "stage": "bootstrap"
+    },
+    "final_kernel_hash": null,
+    "final_kernel_payload": null,
+    "final_kernel_requires_phase7_pass": true,
+    "final_status": "hard_veto",
+    "geometry": {
+      "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+      "artifact_type": "bayesfilter_hmc_geometry_initialization_result",
+      "config": {
+        "allow_geometry_fallback": false,
+        "covariance_jitter": 1e-09,
+        "eigenvalue_floor": 1e-09,
+        "geometry_scaling_c": 0.5,
+        "mass_policy": "fixed_identity",
+        "max_condition_number": null,
+        "max_leapfrog_steps": 25,
+        "negative_hessian_source": "negative_hessian",
+        "position_role": "initial_position",
+        "seed": [
+          20262639,
+          9184
+        ],
+        "source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.geometry",
+        "stability_guard": 0.8
+      },
+      "curvature_report": {
+        "finite": true,
+        "omega_count": 6,
+        "omega_max": 1.0,
+        "omega_median": 1.0,
+        "omega_min": 1.0,
+        "omega_rms": 1.0,
+        "positive": true
+      },
+      "formula_report": {
+        "default_max_leapfrog_steps": 25,
+        "formula": "epsilon=min(c*d^(-1/4)/rms(omega), rho*2/max(omega)); L=ceil(tau/epsilon)",
+        "geometry_scaling_c": 0.5,
+        "internal_max_leapfrog": 25,
+        "internal_min_leapfrog": 3,
+        "leapfrog_clamped": false,
+        "stability_guard": 0.8,
+        "target_trajectory_length": 1.5707963267948966
+      },
+      "hint_report": {
+        "fallback_failures": [
+          {
+            "kind": "fixed_identity",
+            "reason": "caller geometry hints ignored by explicit mass policy"
+          }
+        ],
+        "fallback_used": true,
+        "hint_precedence": [
+          "negative_hessian",
+          "initial_covariance",
+          "parameter_scales",
+          "identity"
+        ],
+        "parameterization": "same as initial_position",
+        "regularization_report": {
+          "method": "identity_fallback"
+        },
+        "selected_hint": "identity",
+        "supplied_hints": {
+          "initial_covariance": false,
+          "negative_hessian": false,
+          "parameter_scales": false
+        }
+      },
+      "initial_num_leapfrog_steps": 5,
+      "initial_step_size": 0.3194715521231362,
+      "mass_artifact_payload": {
+        "adapter_signature": "c73bb33c6565dfb47150886d4c42c4df1b710f0273949864e5e90abc4cbefa9f",
+        "artifact_type": "bayesfilter_precomputed_mass_artifact",
+        "covariance_source": "identity",
+        "dimension": 6,
+        "eigen_summary": {
+          "condition_number": 1.0,
+          "eigenvalues": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 1.0,
+          "positive": true
+        },
+        "factor_orientation": "row_right_transpose",
+        "include_arrays": false,
+        "log_jacobian_convention": "constant_omitted",
+        "matrix_used_for_square_root": "geometry_initialization_covariance",
+        "nonclaims": [
+          "geometry initialization only",
+          "no HMC runtime claim",
+          "no tuning success claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim"
+        ],
+        "position_role": "initial_position",
+        "precision_eigen_summary": null,
+        "reconstruction_atol": 1e-10,
+        "reconstruction_rtol": 1e-10,
+        "regularization_report": {
+          "geometry_initializer_source": "bayesfilter.neutra_all_models_end_to_end.public_tuner.geometry",
+          "method": "identity_fallback"
+        },
+        "schema_version": 1,
+        "source": "geometry_initialization_identity"
+      },
+      "mass_artifact_signature": "dd25a15ac9860534f8c0934aee176d39b59d3af44f49790bf17b953d3a07dbb7",
+      "nonclaims": [
+        "geometry initialization only",
+        "no HMC runtime claim",
+        "no tuning success claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim"
+      ],
+      "reports_hmc_runtime_readiness": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_tuning_success": false,
+      "schema_version": 1,
+      "seed_report": {
+        "fresh_verification_seed_reserved": [
+          20267684,
+          18360
+        ],
+        "geometry_seed": [
+          20262639,
+          18360
+        ],
+        "nonclaim": "geometry seed provenance only; no HMC run executed",
+        "root_seed": [
+          20262639,
+          9184
+        ],
+        "seed_owner": "BayesFilter"
+      },
+      "target_dimension": 6,
+      "target_trajectory_length": 1.5707963267948966,
+      "unclamped_num_leapfrog_steps": 5
+    },
+    "geometry_artifact_hash": "7f1c5638cbeb699dd0fc3a26af80be083f2c38b9079e489215e8b58e8f8c37bd",
+    "hard_vetoes": [
+      "screen_hmc_error",
+      "screen_acceptance_missing_or_nonfinite",
+      "screen_runtime_missing_or_nonfinite",
+      "screen_log_accept_nonfinite_or_missing",
+      "screen_samples_nonfinite_or_missing",
+      "screen_target_log_prob_nonfinite_or_missing"
+    ],
+    "loop_artifact_hash": null,
+    "nonclaims": [
+      "BayesFilter one-call HMC kernel tuning only",
+      "final frozen kernel is a handoff artifact only",
+      "tuning screens do not establish posterior convergence",
+      "no posterior convergence claim",
+      "no sampler superiority claim",
+      "no default-readiness claim",
+      "no external-client scientific claim",
+      "no GPU readiness claim",
+      "XLA execution, when requested, is runtime selection only"
+    ],
+    "passed": false,
+    "phase7_early_closeout_public_summary": null,
+    "repair_triggers": [],
+    "reports_default_readiness": false,
+    "reports_external_client_scientific_claim": false,
+    "reports_gpu_or_xla_readiness": false,
+    "reports_posterior_convergence": false,
+    "reports_sampler_superiority": false,
+    "schema": "bayesfilter.hmc_kernel_tuning_result.v1",
+    "smoke_result_is_contract_only": false,
+    "target_dimension": 6,
+    "tune_verify_repair_loop": null
+  }
+}

@@ -181,6 +181,10 @@ def _copy_baseline_row(row: dict[str, Any], *, baseline_path: Path) -> dict[str,
         "not rerun under the LEDH GPU/XLA harness",
         "not runtime-rankable against fresh LEDH rows",
     ]
+    if copied.get("algorithm_id") == "zhao_cui_scalar_or_multistate":
+        copied["nonclaims"] += [
+            "frozen Zhao-Cui admission retains the route-specific analytical-score status of its source artifact",
+        ]
     return copied
 
 

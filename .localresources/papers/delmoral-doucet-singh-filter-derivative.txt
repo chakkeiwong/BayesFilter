@@ -1,0 +1,1970 @@
+                                          Uniform Stability of a Particle Approximation of the Optimal
+                                                                 Filter Derivative∗
+                                                             Pierre Del Moral†, Arnaud Doucet‡, Sumeetpal S. Singh§
+arXiv:1106.2525v1 [math.ST] 13 Jun 2011
+
+
+
+
+                                                                                       October 23, 2018
+
+
+                                                                                             Abstract
+                                                    Sequential Monte Carlo methods, also known as particle methods, are a widely used set
+                                                of computational tools for inference in non-linear non-Gaussian state-space models. In many
+                                                applications it may be necessary to compute the sensitivity, or derivative, of the optimal filter
+                                                with respect to the static parameters of the state-space model; for instance, in order to obtain
+                                                maximum likelihood model parameters of interest, or to compute the optimal controller in an
+                                                optimal control problem. In Poyiadjis et al. [2011] an original particle algorithm to compute
+                                                the filter derivative was proposed and it was shown using numerical examples that the particle
+                                                estimate was numerically stable in the sense that it did not deteriorate over time. In this paper
+                                                we substantiate this claim with a detailed theoretical study. Lp bounds and a central limit
+                                                theorem for this particle approximation of the filter derivative are presented. It is further shown
+                                                that under mixing conditions these Lp bounds and the asymptotic variance characterized by
+                                                the central limit theorem are uniformly bounded with respect to the time index. We demon-
+                                                strate the performance predicted by theory with several numerical examples. We also use the
+                                                particle approximation of the filter derivative to perform online maximum likelihood parameter
+                                                estimation for a stochastic volatility model.
+                                                    Some key words: Hidden Markov Models, State-Space Models, Sequential Monte Carlo,
+                                                Smoothing, Filter derivative, Recursive Maximum Likelihood.
+
+
+                                          1     Introduction
+                                          State-space models are a very popular class of non-linear and non-Gaussian time series models in
+                                          statistics, econometrics and information engineering; see for example Cappé et al. [2005], Doucet et al.
+                                          [2001], Durbin and Koopman [2001]. A state-space model is comprised of a pair of discrete-time
+                                          stochastic processes, {Xn }n≥0 and {Yn }n≥0 , where the former is an X -valued unobserved process
+                                          and the latter is a Y-valued process which is observed. The hidden process {Xn }n≥0 is a Markov
+                                          process with initial law dxπθ (x) and time homogeneous transition law dx′ fθ ( x′ | x), i.e.
+
+                                                        X0 ∼ dx0 πθ (x0 ) and Xn | (Xn−1 = xn−1 ) ∼ dxn fθ ( xn | xn−1 ) ,           n ≥ 1.           (1.1)
+                                             ∗ First version: January 2011. Cambridge University Engineering Department Technical report number CUED/F-
+
+                                          INFENG/TR.668
+                                             † Centre INRIA Bordeaux et Sud-Ouest & Institut de Mathématiques de Bordeaux , Université de Bordeaux I, 351
+
+                                          cours de la Libération 33405 Talence cedex, France (Pierre.Del-Moral@inria.fr)
+                                             ‡ Department of Statistics, University of British Columbia, V6T 1Z4 Vancouver, BC, Canada (arnaud@stat.ubc.ca)
+                                             § Department of Engineering, University of Cambridge, Trumpington Street, CB2 1PZ, United Kingdom
+
+                                          (sss40@cam.ac.uk)
+
+
+
+
+                                                                                                 1
+It is assumed that the observations {Yn }n≥0 conditioned upon {Xn }n≥0 are statistically independent
+and have marginal laws
+                                                     
+                            Yn | {Xk }k≥0 = {xk }k≥0 ∼ dyn gθ ( yn | xn ) .                     (1.2)
+
+Here πθ (x), fθ ( x| x′ ) and gθ ( y| x) are densities with respect to (w.r.t.) suitable dominating measures
+denoted generically as dx and dy. For example, if X ⊆ Rp and Y ⊆ Rq then the dominating measures
+could be the Lebesgue measures. The variable θ in the densities are the particular parameters of
+the model. The set of possible values for θ, denoted Θ, is assumed to be an open subset of Rd . The
+model (1.1)-(1.2) is also often referred to as a hidden Markov model in the literature Cappé et al.
+[2005].
+    For a sequence {zn }n≥0 and integers i, j, let zi:j denote the set {zi , zi+1 , ..., zj }, which is empty
+if j < i. Equations (1.1) and (1.2) define the law of (X0:n , Y0:n−1 ) which is given by the measure
+                                            n
+                                            Y                            n−1
+                                                                         Y
+                             dx0 πθ (x0 )         dxk fθ ( xk | xk−1 )         dyk gθ ( yk | xk ) ,             (1.3)
+                                            k=1                          k=0
+
+from which the probability density of the observed process, or likelihood, is obtained
+                                      Z                  n
+                                                         Y                             n−1
+                                                                                       Y
+                     pθ (y0:n−1 ) =       dx0 πθ (x0 )         dxk fθ ( xk | xk−1 )          gθ ( yk | xk ) .   (1.4)
+                                                         k=1                           k=0
+
+For a realization of observations Y0:n−1 = y0:n−1 , let Qθ,n denote the law of X0:n conditioned on this
+sequence of observed variables, i.e.
+                                                         n−1
+                                                                                                !
+                     1                                   Y
+Qθ,n (dx0:n ) =              dx0 πθ (x0 ) gθ ( y0 | x0 )     dxk fθ ( xk | xk−1 ) gθ ( yk | xk ) dxn fθ ( xn | xn−1 )
+                pθ (y0:n−1 )
+                                                               k=1
+
+Let ηθ,n denote the time n marginal of Qθ,n . This marginal, which we call the filter, may be computed
+recursively using Bayes’ formula:
+                                                  R
+                                           dxn+1 ηθ,n (dxn ) gθ ( yn | xn ) fθ ( xn+1 | xn )
+       ηθ,n+1 (dxn+1 ) = Qθ,n+1 (dxn+1 ) =           R                                       , n≥0
+                                                       ηθ,n (dx′n ) gθ ( yn | x′n )
+and ηθ,0 = πθ by convention. Except for simple models such the linear Gaussian state-space model
+or when X is a finite set, it is impossible to compute pθ (y0:n ), Qθ,n or ηθ,n exactly. Particle methods
+have been applied extensively to approximate these quantities for general state-space models of the
+form (1.1)–(1.2); see Cappé et al. [2005], Doucet et al. [2001].
+   The particle approximation of Qθ,n is the empirical measure corresponding to a set of N ≥ 1
+random samples termed particles, that is
+                                                                   N
+                                                            1 X
+                                      Qp,N
+                                       θ,n (dx0:n ) =            δ (i) (dx0:n )                                 (1.5)
+                                                            N i=1 X0:n
+
+where δz (dz) denotes the Dirac delta mass located at z. This approximation is referred to as the
+path space approximation Del Moral [2004] and it is denoted by the superscript ‘p’. The particle
+approximation of ηθ,n is obtained from Qp,N
+                                        θ,n by marginalization
+
+                                                                   N
+                                           N               1 X
+                                          ηθ,n (dxn ) =         δ (i) (dxn ) .
+                                                           N i=1 Xn
+
+
+                                                               2
+These particles are propagated in time using importance sampling and resampling steps; see Doucet et al.
+[2001] and Cappé et al. [2005] for a review of the literature. Specifically, Qp,N
+                                                                               θ,n+1 is the empirical mea-
+sure constructed from N independent samples from
+
+                              Qp,N
+                               θ,n (dx0:n ) dxn+1 fθ ( xn+1 | xn ) gθ ( yn | xn )
+                                      R p,N                                       .                    (1.6)
+                                        Qθ,n (dx0:n ) gθ ( yn | xn )
+
+It is a well known fact that the particle approximation of Qθ,n becomes progressively impoverished
+as n increases because of the successive resampling steps [Del Moral and Doucet, 2003, Olsson et al.,
+2008]. That is, the number of distinct particles representing the marginal Qp,N θ,n (dx0:k ) for any fixed
+k < n diminishes as n increases until it collapses to a single particle – this is known as the particle
+path degeneracy problem.
+     The focus of this paper is on the convergence properties of particle methods which have been re-
+cently proposed to approximate the derivative of the measures {ηθ,n (dxn )}n≥0 w.r.t. θ = [θ1 , . . . θd ]T ∈
+Rd :                                                               T
+                                                  ∂ηθ,n       ∂ηθ,n
+                                 ζθ,n = ∇ηθ,n =         ,...,          .
+                                                   ∂θ1         ∂θd
+(See Section 2 for a definition.) References Cérou et al. [2001] and Doucet and Tadić [2003] present
+particle methods which have a computational complexity that scales linearly with the number N
+of particles. It was shown in Poyiadjis et al. [2011] (see also Poyiadjis et al. [2009] for a more de-
+tailed numerical study) that the performance of these O(N ) methods, which inherently rely on the
+particle approximations of {Qθ,n}n≥0 constructed as in (1.6) above, degraded over time and it was
+conjectured that this may be attributed to the particle path degeneracy problem. In contrast, the
+alternative method of Poyiadjis et al. [2005] was shown in numerical examples to be stable. The
+method of Poyiadjis et al. [2005] is a non-standard particle implementation that avoids the parti-
+cle path degeneracy problem at the expense of a computational complexity per time step which is
+quadratic in the number of particles, i.e. O(N 2 ); see Section 2 for more details. Supported by
+numerical examples, it was conjectured in Poyiadjis et al. [2011] that even under strong mixing as-
+sumptions, the variance of the estimate of the filter derivative computed with the O(N ) methods
+increases at least linearly in time while that of the O(N 2 ) is uniformly bounded w.r.t. the time index.
+This conjecture is confirmed in this paper. Specifically, we analyze the O(N 2 ) implementation of
+Poyiadjis et al. [2005] in Section 3 and obtain results on the errors of the approximation, in partic-
+ular, Lp bounds and a Central Limit Theorem (CLT) are presented. We show that these Lp bounds
+and asymptotic variances appearing in the CLT are uniformly bounded w.r.t. the time index when
+the state-space model satisfies certain mixing assumptions. In contrast, the asymptotic variance of
+the O(N ) implementations, which is also captured through the CLT, is shown to increase linearly.
+To the best of our knowledge, these are the first results of this kind.
+    An important application of our results, which is discussed in detail in Section 4, is to the
+problem of estimating the parameters of the model (1.1)–(1.2) from observed data. The estimates
+of the model parameters are found by maximizing the likelihood function pθ (y0:n ) with respect to θ
+using a gradient ascent algorithm which relies on the particle approximation of the filter derivative.
+The results we present in Section 3 have bearing on the performance of the parameter estimation
+algorithm, which we illustrate with numerical examples in Section 4. The Appendix contains the
+proofs of the main results as well as that of some supporting auxiliary results. As a final remark,
+although the algorithms and theoretical results are presented for a state-space model, they may be
+reinterpreted for Feynman-Kac models as well.
+
+
+
+
+                                                       3
+1.1       Notation and definitions
+We give some basic definitions from probability and operator semigroup theory. For a measurable
+space (E, E) let M(E) denote the set of all finite signed measures and P(E) the set of all probability
+measures on E. The n-fold product space E × · · ·× E is denoted by E n . Let B(E) denote the Banach
+space of all bounded real-valued and measurable functions ϕ : E →RR equipped with the uniform
+norm kϕk = supx∈E |ϕ(x)|. For ν ∈ M(E) and ϕ ∈ B(E), let ν(ϕ) = ν(dx) ϕ(x) be the Lebesgue          R
+integral of ϕ w.r.t. ν. If ν is a density w.r.t. some dominating measure dx on E then, ν(ϕ) = dx
+ν(x) ϕ(x). We recall that a bounded integral kernel M (x, dx′ ) from a measurable space (E, E) into
+an auxiliary measurable space (E ′ , E ′ ) is an operator ϕ 7→ M (ϕ) from B(E ′ ) into B(E) such that the
+functions                                             Z
+                                  x 7→ M (ϕ)(x) :=        M (x, dx′ )ϕ(x′ )
+                                                          E′
+                                                         ′
+are E-measurable and bounded for any ϕ ∈ B(E ). The kernel M also generates a dual operator
+ν 7→ νM from M(E) into M(E ′ ) defined by
+
+                                            (νM )(ϕ) := ν(M (ϕ)).
+
+Given a pair of bounded integral operators (M1 , M2 ), we let (M1 M2 ) the composition operator
+defined by (M1 M2 )(ϕ) = M1 (M2 (ϕ)).
+    A Markov kernel is a positive and bounded integral operator M such that M (1) (x) = 1 for any
+x ∈ E. For ϕ ∈ B(E), let
+                                   osc(ϕ) = sup |ϕ(x) − ϕ(x′ )|
+                                                   x,x′ ∈E
+
+and let
+                                    Osc1 (E) = {ϕ ∈ B(E) : osc(ϕ) ≤ 1}.
+Let β(M ) ∈ [0, 1] denote the Dobrushin coefficient of the Markov kernel M which is defined by the
+formula [Del Moral, 2004, Prop. 4.2.1]:
+
+                               β(M ) := sup {osc(M (ϕ)) ; ϕ ∈ Osc1 (E ′ )}.
+
+If there exists a positive constant ρ such that the Markov kernel M satisfies
+
+                      M (x, dz) ≥ ρM (x′ , dz) for all x, x′ ∈ E then β (M ) ≤ 1 − ρ.
+
+For two Markov kernels M1 , M2 , β(M1 M2 ) ≤ β(M1 )β(M2 ).
+    Given a positive function G on E, let ΨG : ν ∈ P(E) 7→ ΨG (ν) ∈ P(E) be the probability
+distribution defined by
+                                                  ν(dx)G(x)
+                                    ΨG (ν)(dx) :=
+                                                     ν(G)
+provided ∞ > ν(G) > 0. The definitions above also apply if ν is a density and M is a transition den-
+sity. In this case all instances of ν(dx) should be replaced with dxν(x) and M (x, dx′ ) by dx′ M (x, x′ )
+where dx and dx′ is generic notation for the dominating measures.
+    It is convenient to introduce the following transition kernels:
+
+             Qθ,n(xn−1 , dxn ) = gθ (yn−1 |xn−1 )dxn fθ (xn |xn−1 ) = dxn qθ (xn |xn−1 ),   n > 0,
+             Qθ,k,n (xk , dxn ) = (Qθ,k+1 Qθ,k+2 · · · Qθ,n ) (xk , dxn ),   0 ≤ k ≤ n,
+
+with the convention that Qθ,n,n = Id, the identity operator. Note that Qθ,k,n (1) (xk ) is the density
+of the law of Yk:n−1 given Xk = xk . For 0 ≤ p ≤ n, define the potential function Gθ,p,n on X to be
+
+                                 Gθ,p,n (xp ) = Qθ,p,n (1)(xp )/ηθ,p Qθ,p,n (1).                     (1.7)
+
+                                                         4
+Let the mapping Φθ,k,n : P(X ) → P(X ), 0 ≤ k ≤ n, be defined as follows
+
+                                                                 νQθ,k,n (dxn )
+                                            Φθ,k,n (ν)(dxn ) =                  .
+                                                                  νQθ,k,n (1)
+
+It follows that ηθ,n = Φθ,k,n (ηθ,k ). For conciseness, we also write Φθ,n−1,n as Φθ,n .
+    A key quantity that facilitates the recursive computation of the derivative of ηθ,n is the following
+collection of backward Markov transition kernels:
+                                                    ηθ,n−1 (dxn−1 )qθ (xn |xn−1 )
+                       Mθ,n (xn , dxn−1 ) =                                       ,      n > 0.                (1.8)
+                                                         ηθ,n−1 (qθ (xn |·))
+
+Their particle approximations are
+                                                          N
+                               N
+                                                         ηθ,n−1 (dxn−1 )qθ (xn |xn−1 )
+                              Mθ,n (xn , dxn−1 ) =                N
+                                                                                          .                    (1.9)
+                                                                 ηθ,n−1 (qθ (xn |·))
+
+These backward Markov kernels are convenient for computing certain conditional expectations and
+probability measures. In particular, for ϕ ∈ B(X 2 ), we have
+                                                     Z
+                 Eθ [ ϕ (Xn−1 , Xn )| y0:n−1 , xn ] = Mθ,n (xn , dxn−1 )ϕ (xn−1 , xn ) ,
+
+and the law of X0:n−1 given Xn = xn and Y0:n−1 = y0:n−1 is Mθ,n (xn , dxn−1 ) · · · Mθ,1 (x1 , dx0 ).
+   Finally, the following two definitions are needed for the CLT of the particle approximation of
+the derivative of ηθ,n . The bounded integral operator Dθ,k,n from X into X n+1 is defined for any
+Fn ∈ B(X n+1 ) by
+                                                                         
+                        Z   Y1                      n−1
+                                                     Y
+   Dθ,k,n (Fn )(xk ) :=       Mθ,j (xj , dxj−1 )     Qθ,j+1 (xj , dxj+1 ) Fn (x0:n ), 0 ≤ k ≤ n,
+                              j=k                            j=k
+
+                              Q                                                                               (1.10)
+                                                                      N
+with the convention that          ∅ = 1. The particle approximation, Dθ,k,n , is defined to be
+                                                                                           
+                              Z       1
+                                      Y                             n−1
+                                                                    Y
+        N
+       Dθ,k,n (Fn )(xk ) :=                 N
+                                            Mθ,j (xj , dxj−1 )          Qθ,j+1 (xj , dxj+1 ) Fn (x0:n ).   (1.11)
+                                      j=k                           j=k
+
+
+To be concise we write
+
+                    ηθ,k (dxk )Dθ,k,n (xk , dx0:k−1 , dxk+1:n ) as             ηθ,k Dθ,k,n (dx0:n ).
+
+(And similarly for the particle versions.) Although convention dictates that ηθ,k Dθ,k,n should be
+understood as the measure (ηθ,k Dθ,k,n )(dx0:k−1 , dxk+1:n ), when we mean otherwise it should be
+clear from the infinitesimal neighborhood.
+
+
+
+
+                                                            5
+2     Computing the filter derivative
+For any Fn ∈ B(X n+1 ), we have
+
+    ∇Qθ,n (Fn )
+                       Z                        n                         n−1
+                                                                                             !
+               1                                Y                         Y
+    =                       dx0:n ∇ πθ (x0 )           fθ ( xk | xk−1 )         gθ ( yk | xk ) Fn (x0:n )
+        pθ (y0:n−1 )
+                                                k=1                       k=0
+                                                        Z                        n                       n−1
+                                                                                                                                !
+                   1                                                             Y                       Y
+        −                  Eθ { Fn (X0:n )| y0:n−1 }        dx0:n ∇ πθ (x0 )          fθ ( xk | xk−1 )         gθ ( yk | xk )
+            pθ (y0:n−1 )
+                                                                                k=1                      k=0
+    = Eθ { Fn (X0:n )Tθ,n (X0:n )| y0:n−1 } − Eθ { Fn (X0:n )| y0:n−1 } Eθ { Tθ,n (X0:n )| y0:n−1 }                             (2.1)
+
+where
+                                               n
+                                               X
+                              Tθ,n (x0:n ) =         tθ,k (xk−1 , xk )                                                          (2.2)
+                                               k=0
+                       tθ,k (xk−1 , xk ) = ∇ log (gθ ( yk−1 | xk−1 ) fθ ( xk | xk−1 )) ,          k > 0,                        (2.3)
+                        tθ,0 (x−1 , x0 ) = tθ,0 (x0 ) = ∇ log πθ (x0 ) .                                                        (2.4)
+
+The first equality in (2.1) follows from the definition of Qθ,n and interchanging the order of differ-
+entiation and integration. The interchange is permissible under certain regularity conditions [Pflug,
+1996]; e.g. a sufficient condition would be the main assumption in Section 3 under which the uni-
+form stability results are proved. The second equality follows from a change of measure, which
+then permits an importance sampling based estimator for the derivative of Qθ,n ; this is the well
+known score method, e.g. see Pflug [1996, Section 4.2.1]. For any ϕn ∈ B(X ), it follows by setting
+Fn (x0:n ) = ϕn (xn ) in (2.1) that
+             Z
+           ∇ ηθ,n (dxn )ϕn (xn )
+
+             = Eθ { ϕn (Xn )Tθ,n (X0:n )| y0:n−1 } − Eθ { ϕn (Xn )| y0:n−1 } Eθ { Tθ,n (X0:n )| y0:n−1 }
+               Z
+             = ζθ,n (dxn )ϕn (xn )
+
+where
+               ζθ,n (dxn ) = ηθ,n (dxn ) (Eθ [ Tθ,n (X0:n )| y0:n−1 , xn ] − Eθ [ Tθ,n (X0:n )| y0:n−1 ]) .                     (2.5)
+We call ζθ,n the derivative of ηθ,n .
+   Given the particle approximation (1.5) of Qθ,n , it is straightforward to construct a particle ap-
+proximation of ζθ,n :
+                                                                         
+                               XN                          N
+                  p,N                 1        (i)     1 X          (j) 
+                 ζθ,n (dxn ) =           Tθ,n (X0:n ) −       Tθ,n (X0:n ) δX (i) (dxn ) .      (2.6)
+                               i=1
+                                    N                   N j=1                n
+
+
+
+
+This approximation is also referred to as the path space method. Such approximations were implicitly
+proposed in Cérou et al. [2001] and Doucet and Tadić [2003] and there are several reasons why this
+estimate appears attractive. Firstly, even with the resampling steps in the construction of Qp,Nθ,n ,
+ p,N
+ζθ,n  can be computed recursively. Secondly, there is no need to store the entire ancestry of each
+               n     o
+                 (i)                                                          p,N
+particle, i.e. X0:n      , and thus the memory requirement to construct ζθ,n      is constant over
+                            1≤i≤N
+
+
+                                                                 6
+time. Thirdly, the computational cost per time is O(N ). However, as Qp,N
+                                                                      θ,n suffers from the particle
+                                                           p,N
+path degeneracy problem, we expect the approximation ζθ,n      to worsen over time. This was indeed
+observed in numerical examples in Poyiadjis et al. [2011] and it was conjectured that the asymptotic
+                              p,N
+variance (i.e. as N → ∞) of ζθ,n  for bounded integrands would increase linearly with n even under
+strong mixing assumptions. This is now proven in this article.
+    An alternative particle method to approximate {ζθ,n }n≥0 has been proposed in Poyiadjis et al.
+[2005, 2011]. We now reinterpret this method using the representation in (2.5) and a different particle
+approximation of Qθ,n that avoids the path degeneracy problem.
+    The measure Qθ,n admits the following backward representation
+                                                               1
+                                                               Y
+                                Qθ,n (dx0:n ) = ηθ,n (dxn )          Mθ,k (xk , dxk−1 )
+                                                               k=n
+
+and the corresponding particle approximation of Qθ,n is given by
+                                                               1
+                                                               Y
+                                QN               N
+                                 θ,n (dx0:n ) = ηθ,n (dxn )
+                                                                      N
+                                                                     Mθ,k (xk , dxk−1 )
+                                                               k=n
+       N
+where Mθ,k was defined in (1.9). This now gives rise to the following particle approximation of ζθ,n
+[Poyiadjis et al., 2005, 2011]:
+                                        Z
+                          N
+                                                                                           
+                         ζθ,n (ϕn ) =       QN                                    N
+                                             θ,n (dx0:n )Tθ,n (x0:n ) ϕn (xn ) − ηθ,n (ϕn )
+
+             N
+                        R
+and indeed ηθ,n (ϕn ) = QN                                               N
+                           θ,n (dx0:n )ϕn (xn ). It is apparent that Qθ,n constructed using this backward
+                                                                                    N
+method avoids the degeneracy in paths. It is even possible to compute ζθ,n              recursively as detailed
+in Algorithm 1; since a recursion for ηθ,n is already available, it is apparent from (2.5) that what
+remains is to specify a recursion for Eθ [ Tθ,n (X0:n )| y0:n−1 , xn ]. Let T θ,n (xn ) denote this term, then
+for n ≥ 1,
+         T θ,n (xn ) = Eθ [ Tθ,n (X0:n )| y0:n−1 , xn ]
+                    = Eθ [ Tθ,n−1 (X0:n−1 )| y0:n−1 , xn ] + Eθ [ tθ,n (Xn−1 , Xn )| y0:n−1 , xn ]
+                      Z
+                    = Mθ,n (xn , dxn−1 ) (Eθ [ Tθ,n−1 (X0:n−1 )| y0:n−2 , xn−1 ] + tθ,n (xn−1 , xn ))
+                      Z
+                                                                                
+                    = Mθ,n (xn , dxn−1 ) T θ,n−1 (xn−1 ) + tθ,n (xn−1 , xn )
+
+                                                       N
+                                                                                                             
+where T θ,0 (x0 ) = tθ,0 (x0 ). Algorithm 1 computes ζθ,n recursively in time by computing T θ,n , ηθ,n
+                            (i)
+                                                             n       o
+                                        (i)                      (i)
+and is initialized with T θ,0 = tθ,0 (X0 ) (see (2.2)) where X0             are samples from πθ (x0 ).
+                                                                              1≤i≤N
+
+
+           Algorithm 1: A Particle Method to Compute the Filter Derivative
+                                                      n       o
+                                                          (i)
+   • Assume at time n − 1 that approximate samples Xn−1               from ηθ,n−1 and approximations
+n (i) o            n               o                          1≤i≤N
+                                (i)
+ T θ,n−1         of T θ,n−1 Xn−1             are available.
+          1≤i≤N        n      o       1≤i≤N
+                          (i)
+   • At time n, sample Xn             independently from the mixture
+                                    1≤i≤N
+                                    PN                               
+                                                     (j)            (j)
+                                        j=1 fθ xn |Xn−1 gθ yn−1 | Xn−1
+                                              PN                                                       (2.7)
+                                                              (j)
+                                               j=1 gθ yn−1 | Xn−1
+
+
+
+                                                           7
+                n (i) o
+                                           N
+and then compute T θ,n                and ζθ,n as follows:
+                              1≤i≤N
+
+                     PN        (j)
+                                               
+                                                   (j)       (i)
+                                                                  
+                                                                          (i)    (j)
+                                                                                       
+                                                                                                      (j)
+                                                                                                          
+              (i)        j=1  T θ,n−1 +  t θ,n   X n−1  , X n       f θ X n   |X n−1    g θ y n−1 | X n−1
+            T θ,n =                   PN                                                                ,   (2.8)
+                                                       (i)     (j)                  (j)
+                                          j=1 fθ Xn |Xn−1 gθ yn−1 | Xn−1
+                                                             
+                              XN                  XN
+                            1         (i)
+                                   T θ,n −    1          (j)
+             N
+            ζθ,n  (dxn ) =                             T  δX (i) (dxn ).                                       (2.9)
+                           N i=1               N j=1 θ,n            n
+
+
+
+
+    Algorithm 1 uses the bootstrap particle filter of Gordon et al. [1993]. Note that any SMC imple-
+mentation of {ηθ,n }n≥0 may be used, e.g. the auxiliary SMC method of Pitt and Shephard [1999] or
+sequential importance resampling with a tailored proposal distribution [Doucet et al., 2001]. It was
+                                                                        N
+conjectured in Poyiadjis et al. [2011] that the asymptotic variance of ζθ,n (ϕ) for bounded integrands
+ϕ is uniformly bounded w.r.t. n under mixing assumptions. This is established in this article.
+
+
+3     Stability of the particle estimates
+                             N         p,N
+The convergence analysis of ζθ,n (and ζθ,n for performance comparison) will largely focus on the
+                                                                                 p,N
+convergence analysis of the N -particle measures QN  θ,n (and correspondingly Qθ,n ) towards their
+                  n , asoN → ∞, which is in turn intimately related to the convergence of the flow of
+limiting values Qθ,n
+                   N
+particle measures ηθ,n            towards their limiting measures {ηθ,n }n≥0 . The Lr error bounds and the
+                            n≥0
+central limit theorem presented here have been derived using the techniques developed in Del Moral
+                                                                          N
+[2004] for the convergence analysis of the particle occupation measures ηθ,n  . One of the central
+objects in this analysis is the local sampling errors defined as
+                                      N
+                                          √      N            N
+                                                                     
+                                    Vθ,n = N ηθ,n    − Φθ,n (ηθ,n−1 )                         (3.1)
+The fluctuation and the deviations of these centered random measures can be estimated using non-
+asymptotic Kintchine’s type Lr -inequalities, as well as Hoeffding’s or Bernstein’s type exponential de-
+viations [Del Moral, 2004, Del Moral and Rio, 2009]. In Del Moral and Miclo [2000] it is proved that
+these random perturbations behave asymptotically as Gaussian random perturbations; see Lemma
+7.10 in the Appendix for more details. In the proof of Theorem 7.11 (a supporting theorem) in
+the Appendix we provide some key decompositions expressing the deviation of the particle measures
+QN                                                                                  N          N
+  θ,n around its limiting value Qθ,n in terms of the local sampling errors (Vθ,0 , . . . , Vθ,n ). These de-
+compositions are key to deriving the Lr -mean error bounds and central limit theorems for the filter
+derivative.
+    The following regularity conditions are assumed.
+    (A) The dominating measures dx on X and dy on Y are finite, and there exist constants 0 <
+ρ, δ, c < ∞ such that for all (x, x′ , y, θ) ∈ X 2 × Y × Θ, the derivatives of πθ (x), fθ (x′ |x) and gθ (y|x)
+with respect to θ exists and
+                           ρ−1 ≤ fθ (x′ |x) ≤ ρ, δ −1 ≤ gθ (y|x) ≤ δ,                                           (3.2)
+                           |∇ log πθ (x)| ∨ |∇ log fθ (x′ |x)| ∨ |∇ log gθ (y|x)| ≤ c.                          (3.3)
+
+Admittedly, these conditions are restrictive and fail to hold for many models in practice. (Exceptions
+would include applications with a compact state-space.) However, they are typically made to estab-
+lish the time uniform stability of particle approximations of the filter [Del Moral, 2004, Cappé et al.,
+2005] as they lead to simpler and more transparent proofs. Also, we observe that the behaviors pre-
+dicted by the Theorems below seem to hold in practice even in cases where the state-space models
+
+                                                           8
+do not satisfy these assumptions; see Section 4. Thus the results in this paper can be seen to provide
+a qualitative guide to the behavior of the particle approximation even in the more general setting.
+    For each parameter vector θ ∈ Θ, realization of observations y = {yn }n≥0 and particle number
+                                                                                        (1)     (N )
+N , let (Ω, F , Pyθ ) be the underlying probability space of the random process {(Xn , . . . , Xn )}n≥0
+                                                   y
+comprised of the particle system only. Let Eθ the corresponding expectation operator computed
+with respect to Pyθ . The first of the two main results in this section is a time uniform non-asymptotic
+error bound.
+Theorem 3.1 Assume (A). For any r ≥ 1, there exists a constant Cr such that for all θ ∈ Θ,
+y = {yn }n≥0 , n ≥ 0, N ≥ 1, and ϕn ∈ Osc1 (X ),
+                              √      n                         o1
+                                                              r r
+                                N Eyθ ζθ,n
+                                       N
+                                           (ϕn ) − ζθ,n (ϕn )     ≤ Cr
+
+   Let {Vθ,n }n≥0 be a sequence of independent centered Gaussian random fields defined as follows.
+For any sequence {ϕn }n≥0 in B(X ) and any p ≥ 0, {Vθ,n (ϕn )}pn=0 is a collection of independent
+zero-mean Gaussian random variables with variances given by
+                                           ηθ,n (ϕ2n ) − ηθ,n (ϕn )2 .                                  (3.4)
+Theorem 3.2 Assume (A). There    exists a constant  C < ∞ such that for any θ ∈ Θ, y = {yn }n≥0 ,
+                          √  N            
+n ≥ 0 and ϕn ∈ Osc1 (X ), N ζθ,n − ζθ,n (ϕn ) converges in law, as N → ∞, to the centered
+Gaussian random variable
+                         Xn                                            
+                                           Dθ,p,n (Fθ,n − Qθ,n (Fθ,n ))
+                             Vθ,p Gθ,p,n                                                    (3.5)
+                         p=0
+                                                    Dθ,p,n (1)
+
+whose variance is uniformly bounded above by C where
+                              Fθ,n = (ϕn − Qθ,n (ϕn )) (Tθ,n − Qθ,n (Tθ,n )) .
+    The proofs of both these results are in the Appendix.
+    As a comparison, we quantify the variance of the particle estimate of the filter derivative computed
+using the path-based method (see (2.6).) Consider the following simplified example that serves to
+illustrate the point. Let gθ ( y| x) = g ( y| x) (that is θ-independent), fθ ( xn | xn−1 ) = πθ (xn ), where
+πθ is the initial distribution. (Note that fθ in this case satisfies a rephrased version of (3.2) under
+which the conclusion of Theorem 3.2 also holds.) Also, consider the sequence of repeated observations
+y0 = y1 = · · · where y0 is√arbitrary. Applying Lemma 7.12 (in the Appendix)     √ that     characterizes the
+limiting distribution of N (Qp,N  θ,n − Q  θ,n ) to this special case results in    N (ζ p,N
+                                                                                        θ,n − ζθ,n )(ϕ) (see
+(2.6)) having an asymptotic distribution which is Gaussian with mean zero and variance
+                                                                      
+                      n × πθ (ϕ2 )πθ′ (∇ log πθ )2 + πθ ϕ2 (∇ log πθ )2 − ∇πθ (ϕ)2
+where ϕ = ϕ− πθ (ϕ), πθ′ (x) = πθ (x)g ( y0 | x) /πθ (g ( y0 | ·)). This variance increases linearly with time
+in contrast to the time bounded variance of Theorem 3.2.
+
+
+4     Application to recursive parameter estimation
+Being able to compute {ζθ,n }n≥0 is particularly useful when performing online static parameter esti-
+mation for state-space models using Recursive Maximum Likelihood (RML) techniques [Le Gland and Mevel,
+1997, Poyiadjis et al., 2005, 2011]; see also Kantas et al. [2009] for a general review of available
+particle methods based solutions, including Bayesian ones, for this problem. The computed filter
+derivative may also be useful in other areas; e.g. see Coquelin et al. [2008] for an application in
+control.
+
+                                                       9
+4.1     Recursive Maximum Likelihood
+Let θ∗ be the true static parameter generating the observed data {yn }n≥0 . Given a finite record of
+observations y0:T , the log-likelihood may be maximized with the following steepest ascent algorithm:
+
+                              θk = θk−1 + γk ∇ log pθ (y0:T )|θ=θk−1 ,         k ≥ 1,                       (4.1)
+
+where θ0 is some arbitrary initial guess of θ∗ , ∇ log pθ (y0:T )|θ=θk−1 denotes the gradient of the
+log-likelihood evaluated at the current parameter estimate and {γk }k≥1 is a decreasing positive
+real-valued step-size sequence, which should satisfy the following constraints:
+                                        ∞
+                                        X                     ∞
+                                                              X
+                                              γk = ∞,               γk2 < ∞.
+                                        k=1                   k=1
+
+Although ∇ log pθ (y0:T ) can be computed using (4.3), the computation cost can be prohibitive for
+a long data record since each iteration of (4.1) would require a complete browse through the T + 1
+data points. A more attractive alternative would be a recursive procedure in which the data is run
+through once only sequentially. For example, consider the following update scheme:
+
+                                 θn = θn−1 + γn ∇ log pθ (yn |y0:n−1 )|θ=θn−1                               (4.2)
+
+where ∇ log pθ (yn |y0:n−1 )|θ=θn−1 denotes the gradient of log pθ (yn |y0:n−1 ) evaluated at the current
+parameter estimate; that is upon receiving yn , θn−1 is updated in the direction of ascent of the
+conditional density of this new observation. Since we have
+                                 R                                           R
+                                   dxn ηθn−1 ,n (xn ) ∇gθ ( yn | xn )|θn−1 + dxn ( yn | xn ) ζθn−1 ,n (xn )gθn−1
+ ∇ log pθ (yn |y0:n−1 )|θ=θn−1 =                       R                                                         ,
+                                                         dxn ηθn−1 ,n (xn )gθn−1 ( yn | xn )
+                                                                                                             (4.3)
+this clearly requires the filter derivative ζθ,n . The algorithm in the present form is not suitable
+for online implementation as it requires re-computing the filter and its derivative at the value θ =
+θn−1 from time zero. The RML procedure uses an approximation of (4.3) which is obtained by
+updating the filter and its derivative using the parameter value θn−1 at time n; we refer the reader
+to Le Gland and Mevel [1997] for details. The asymptotic properties of the RML algorithm, i.e.
+the behavior of θn in the limit as n goes to infinity, has been studied in the case of an i.i.d. hidden
+process by Titterington [1984] and Le Gland and Mevel [1997] for a finite state-space hidden Markov
+model. It is shown in Le Gland and Mevel [1997] that under regularity conditions this algorithm
+converges towards a local maximum of the average log-likelihood and that this average log-likelihood
+is maximized at θ∗ . A particle version of the RML algorithm of Le Gland and Mevel [1997] that uses
+Algorithm 1’s estimate of ηθ,n is presented as Algorithm 2.
+
+
+                    Algorithm 2: Particle Recursive Maximum Likelihood
+
+                                                                        ∗                  (i)N   (i)
+   • At time n − 1 we are given y0:n−1 , the previous
+                                              n     o estimate θn−1 of θ and {(Xn−1 , T n−1 )}i=1 .
+                                                        (i)
+   • At time n, upon receiving yn , sample          Xn                independently from (2.7) using parameter
+                                                              1≤i≤N
+θ = θn−1 to obtain
+                                                              N
+                                                        1 X
+                                        ηnN (dxn ) =         δ (i) (dxn )
+                                                        N i=1 Xn
+
+
+
+                                                         10
+and then compute
+              PN  (j)                 
+                                           (j)      (i)
+                                                                
+                                                                     (i)    (j)
+                                                                                        
+                                                                                                     (j)
+                                                                                                         
+        (i)      j=1 T n−1 + t θn−1 ,n   X n−1  , X n      f θn−1  X n   |X n−1   g θn−1   y n−1 | X n−1
+      Tn =                    PN                                                                       ,   (4.4)
+                                                  (i)    (j)                     (j)
+                                 j=1 fθn−1 Xn |Xn−1 gθn−1 yn−1 | Xn−1
+                                                 
+                     XN                XN
+                   1     T (i)     1         (j)
+      ζnN (dxn ) =          n −             T  δX (i) (dxn ),                                                 (4.5)
+                   N i=1           N j=1 n              n
+
+
+
+
+and                                     R                                    R
+                                            ηnN (dxn ) ∇gθ ( yn | xn )|θn−1 + ζnN (dxn )gθn−1 ( yn | xn )
+            b log p ( yn | y0:n−1 ) =
+            ∇                                              R                                              .
+                                                              ηnN (dxn )gθn−1 ( yn | xn )
+Finally update the parameter:
+                                                       b log p ( yn | y0:n−1 ) .
+                                        θn = θn−1 + γn ∇                                                       (4.6)
+
+
+    Under Assumption A, the particle approximation of the filter is stable [Del Moral, 2004]; see also
+Lemma 7.4 in the Appendix. This combined with the proven stability of the particle approximation
+of the filter derivative implies that the particle estimate of the derivative of log p ( yn | y0:n−1 ) is also
+stable.
+
+4.2     Simulations
+The RML algorithm is applied to the following stochastic volatility model [Pitt and Shephard, 1999]:
+                                             
+                                         σ2
+                         X0 ∼ N 0,              , Xn+1 = φXn + σVn+1 ,
+                                       1 − φ2
+                                Yn = β exp (Xn /2) Wn ,
+
+                                                                                            i.i.d.
+where N (m, s) denotes a Gaussian random variable with mean m and variance s, Vn ∼ N (0, 1)
+          i.i.d.
+and Wn ∼ N (0, 1) are two mutually independent sequences, both independent of the initial state
+X0 . The model parameters, θ = (φ, σ, β), are to be estimated.
+    Our first example demonstrates the   √ theoretical results in Section 3. The estimate of ∂/∂σ
+log p ( yn:n+L−1 | y0:n−1 ) at θ∗ = (0.8, 0.1, 1) was computed using Algorithm 1 with 500 parti-
+cles and using the path-space method (see (2.6)) with 2.5 × 105 particles for the stochastic volatility
+model. The block size L was 500. Shown in Figure 1 is the variance of these particle estimates
+for various values of n derived from many independent random replications of the simulation. The
+linear increase of the variance of the path-space method as predicted by theory is evident although
+Assumption A is not satisfied.
+    For the path-space method, because the variance of the estimate of the filter derivative grows
+linearly in time, the eventual high variance in the gradient estimate can result in the divergence of the
+parameter estimates. To illustrate this point, (4.6) was implemented with the path-space estimate of
+the filter derivative (2.6) computed with 10000 particles and constant step-size sequence, γn = 10−4
+for all n. θ0 was initialized√at the true parameter value. A sequence of two million observations was
+simulated with θ∗ = (0.8, 0.1, 1). The results are shown in Figure 3.
+    For the same value of θ∗ and sequence of observations used in the previous example, Algorithm
+2 was executed with 500 particles and γn = 0.01, n ≤ 105 , γn = (n − 5 × 104 )−0.6 , n > 105 . As it
+
+                                                            11
+                                  140
+
+
+                                  120
+
+
+                                  100
+
+
+                                   80
+
+
+                                   60
+
+
+                                   40
+
+
+                                   20
+
+
+                                       0
+                                           1   5000   10000   15000     20000
+
+
+
+
+Figure 1: Variance of the particle estimates of ∂/∂σ log p ( yn:n+500−1 | y0:n−1 ) for various values of n
+for the stochastic volatility model. Circles are variance of Algorithm 1’s estimate with 500 particles.
+Stars indicate the variance of the estimate of the path-space method with 2.5 × 105 particles. Dotted
+line is best fitting straight line to path-space method’s variance to indicate trend.
+
+
+
+
+                                1.5
+
+
+
+
+                                                                      1.006
+                              β*= 1
+
+                                                                      0.802
+                            φ*= 0.8
+
+
+
+
+                                                                      0.097
+                          (σ2)*= 0.1
+
+                                   0           500    1000    1500        2000
+                                                      × 103
+
+
+
+Figure 2: Sequence of recursive parameter estimates, θn = (σn , φn , βn ), computed using (4.6) with
+N = 500. From top to bottom: βn , φn and σn and marked on the right are the “converged values”
+which were taken to be the empirical average of the last 1000 values.
+
+
+
+
+                                                      12
+                                1.1
+
+                                 1
+
+                                0.9
+
+                                0.8
+
+                                0.7
+
+                                0.6
+
+                                0.5
+
+                                0.4
+
+                                0.3
+
+                                0.2
+
+                                0.1
+                                      0   500       1000      1500      2000
+                                                    x103
+
+
+
+
+Figure 3: RML for stochastic volatility with path-space gradient estimate with 10,000 particles,
+constant step-size and initialized at the true parameter values which are indicated by the dashed
+lines. From top to bottom, φ, β and σ.
+
+
+
+can be seen from the results in Figure 2 the estimate converges to a value in the neighborhood of
+the true parameter.
+
+
+5    Conclusion
+We have presented theoretical results establishing the uniform stability of the particle approximation
+of the optimal filter derivative proposed in Poyiadjis et al. [2005, 2009]. While these results have
+been presented in the context of state-space models, they can also be applied to Feynman-Kac
+models [Del Moral, 2004] which could potentially enlarge the range of applications. For example, if
+dx′ fθ ( x′ | x) is reversible w.r.t. to some probability measure µθ and if we replace gθ ( yn | xn ) with
+a time-homogeneous potential function gθ (xn ) then ηθ,n converges, as n → ∞, to the probability
+measure µθ,h defined as
+                                                                               Z
+                                           1
+                µθ,h (dx) :=         R                          µθ (dx) hθ (x)   dx′ fθ ( x′ | x) hθ (x′ )
+                              µθ (hθ dx′ fθ ( x′ | ·) hθ (x′ ))
+
+where hθ is a positive eigenmeasure associated with the top eigenvalue of the integral operator
+Qθ (x, dx′ ) = gθ (x)dx′ fθ ( x′ | x) (see section 12.4 of Del Moral [2004]). The measure µθ,h is the
+invariant measure of the h-process defined as the Markov chain with transition kernel Mθ (x, dx′ ) ∝
+dx′ fθ ( x′ | x) hθ (x′ ). The particle algorithm described here can be directly used to approximate the
+derivative of this invariant measure w.r.t to θ. It would also be of interest to weaken Assumption A
+and there are several ways this might be approached. For example for non-ergodic signals using ideas
+in Oudjane and Rubenthaler [2005], Heine and Crisan [2008] or via Foster-Lyapunov conditions as
+in Beskos et al. [2011], Whiteley [2011].
+
+
+6    Acknowledgement
+We are grateful to Sinan Yildirim for carefully reading this report.
+
+
+
+                                                   13
+7     Appendix
+The statement of the results in this section hold for any θ and any sequence of observations y =
+{yn }n≥0 . All mathematical expectations are taken with respect to the law of the particle system only
+for the specific θ and y under consideration. While θ is retained in the statement of the results, it is
+omitted in the proofs. The superscript y of the expectation operator is also omitted in the proofs.
+    This section commences with some essential definitions in addition to those in Section 1.1. Let
+                                                             Qθ,k,n (xk , dxn )
+                                      Pθ,k,n (xk , dxn ) =                      ,
+                                                              Qθ,k,n (1)(xk )
+and
+                                                     1
+                                                     Y
+                            Mθ,p (xp , dx0:p−1 ) =         Mθ,k (xk , dxk−1 ),      p > 0,
+                                                     k=p
+
+and its corresponding particle approximation is
+                                                             1
+                                                             Y
+                                  MN
+                                   θ,p (xp , dx0:p−1 ) =
+                                                                    N
+                                                                   Mθ,k (xk , dxk−1 )
+                                                             k=p
+
+To make the subsequent expressions more terse, let
+                                           N            N
+                                         ηeθ,n = Φθ,n (ηθ,n−1 ),       n ≥ 0,                                 (7.1)
+        N            N
+where ηeθ,0 = Φθ,0 (η−1 ) = ηθ,0 = πθ by convention. (Recall Φθ,n = Φθ,n−1,n .) Let
+                                   n                           o
+                                        (i)
+                           FnN = σ Xk ; 0 ≤ k ≤ n, 1 ≤ i ≤ N       , n ≥ 0,
+
+                                                                                                           N
+be the natural filtration associated with the N -particle approximation model and let F−1                    be the
+trivial sigma field.
+    The following estimates are a straightforward consequence of Assumption (A). For all θ and time
+indices 0 ≤ k < q ≤ n,
+                                                                                      
+                   Qθ,k,n (1)(xk )     2 2           Qθ,k,q (xk , dxq )Qθ,q,n (1)(xq )              (q−k)
+  bθ,k,n = sup                 ′   ≤ ρ  δ  ,   β                                         ≤ 1 − ρ−4         = ρq−k ,
+           xk ,x′k Qθ,k,n (1)(xk )                      Qθ,k,q (Qθ,q,n (1))(xk )
+                                                                                                               (7.2)
+and for θ, 0 < k ≤ q,
+                                                                                            q−k+1
+                    N
+                   Mθ,k (x, dz) ≤ ρ4 Mθ,kN
+                                             (x′ , dz) =⇒ β Mθ,q   N         N
+                                                                      · · · Mθ,k   ≤ 1 − ρ−4        .          (7.3)
+Note that setting q = n in (7.2) yields an estimate for β(Pθ,k,n )
+   Several auxiliary results are now presented, all of which hinge on the following Kintchine type
+moment bound proved in Del Moral [2004, Lem. 7.3.3].
+Lemma 7.1 Del Moral [2004, Lemma 7.3.3]Let µ be a probability measure on the measurable space
+(E, E). Let G and h be E-measurable functions satisfying G(x) ≥ cG(x′ ) > 0 for all x, x′ ∈ E where c
+is some finite positive constant. Let {X (i) }1≤i≤N be a collection of independent random samples from
+µ. If h has finite oscillation then for any integer r ≥ 1 there exists a finite constant ar , independent
+of N , G and h, such that
+                             ( P                                  r       ) 1r
+                      √            N        (i)       (i)
+                                   i=1 G(X )h(X )           µ(Gh)
+                       NE           PN                    −                      ≤ c−1 osc(h)ar .
+                                       i=1 G(X
+                                                (i) )       µ(G)
+
+
+                                                        14
+Proof:
+The result for G = 1 and c = 1 is proved in Del Moral [2004]. The case stated here can be established
+using the representation
+                                                                             
+                   µN (Gh) µ(Gh)           µ(G)    N
+                                                              G        µ(Gh)
+                            −          =         µ   −  µ           h −
+                    µN (G)      µ(G)      µN (G)              µ(G)       µ(G)
+                       PN
+where µN (dx) = N −1     i=1 δX (i) (dx).
+
+Remark 7.2 For k ≥ 0, let hN           N                                  N
+                            k−1 be a Fk−1 measurable function satisfying hk−1 ∈ Osc1 (X ) almost
+surely. Then Lemma 7.1 can be invoked to establish
+                             (                                                 r ) r1
+                    √             N
+                                 ηθ,k (GhN
+                                         k−1 )
+                                                            N
+                                                     Φθ,k (ηθ,k−1 )(GhN
+                                                                      k−1 )
+                     N Eyθ          N (G)
+                                                 −            N
+                                                                                        ≤ c−1 ar
+                                   ηθ,k                Φθ,k (ηθ,k−1 )(G)
+
+where G is defined as in Lemma 7.1.
+
+   Lemma 7.3 to Lemma 7.6 are a consequence of Lemma 7.1 and the estimates in (7.2).
+
+Lemma 7.3 For any r ≥ 1 there exist a finite constant ar such that the following inequality holds
+                             N
+for all θ, y, 0 ≤ k ≤ n and Fk−1 measurable function ϕN             N
+                                                      n satisfying ϕn ∈ Osc1 (X )
+almost surely,
+          √                                                    1r
+                                                           N r
+           N Eyθ Φθ,k,n (ηθ,k
+                          N
+                              )(ϕN                N
+                                 n ) − Φθ,k−1,n (ηθ,k−1 )(ϕn )      ≤ ar bθ,k,n β (Pθ,k,n ) ,
+
+                               N
+where, by convention Φθ,−1,n (ηθ,−1 ) = ηθ,n , and the constants bθ,k,n and β (Pθ,k,n ) were defined in
+(7.2).
+
+
+Proof:
+
+
+             Φk,n (ηkN )(ϕN               N      N
+                           n ) − Φk−1,n (ηk−1 )(ϕn )
+                Z                                                             !
+                                                     N
+                      ηkN (dxk )Qk,n (1)(xk ) Φk (ηk−1   )(dxk )Qk,n (1)(xk )
+             =                               −                                  Pk,n (ϕN
+                                                                                       n )(xk )
+                            ηkN Qk,n (1)                   N )Q
+                                                     Φk (ηk−1    k,n (1)
+
+           N
+where Φ0 (η−1 ) = η0 by convention. Applying Lemma 7.1 with the estimates in (7.2) we have
+
+            √                                                                 r1
+                                                    N r
+             N E Φk,n (ηkN )(ϕN              N
+                              n ) − Φk−1,n (ηk−1 )(ϕn )
+                                                                        N
+                                                                       Fk−1          ≤ ar bk,n β (Pk,n )
+
+almost surely.
+   Lemma 7.3 may be used to derive the following error estimate [Del Moral, 2004, Theorem 7.4.4].
+
+Lemma 7.4 For any r ≥ 1, there exists a constant cr such that the following inequality holds for
+all θ, y, n ≥ 0 and ϕ ∈ Osc1 (X ),
+
+                       √                        1
+                                                r r
+                                                         n
+                                                         X
+                        N Eyθ [ηθ,n
+                                N
+                                    − ηθ,n ](ϕ)     ≤ cr   bθ,k,n β (Pθ,k,n ) .                            (7.4)
+                                                                 k=0
+
+
+
+
+                                                        15
+Assume (A). For any r ≥ 1, there exists a constant c′r such that for all θ, y, n ≥ 0, ϕ ∈ Osc1 (X ),
+G ∈ B(X ) such that G is positive and satisfies G(x) ≥ cG G(x′ ) for all x, x′ ∈ X for some positive
+constant cG ,
+                               "                                           #     r ! r1
+                    √               N
+                                   ηθ,n (dxn )G(xn )     ηθ,n (dxn )G(xn )
+                     N Eyθ              N (G)
+                                                       −                     (ϕ)        ≤ c′r (1 + c−1
+                                                                                                    G ).                  (7.5)
+                                       ηθ,n                   ηθ,n (G)
+
+Proof:
+The first part follows from applying Lemma 7.3 to the telescopic sum [Del Moral, 2004, Theorem
+7.4.4]:
+                                        n
+                                        X
+                                 
+                         ηnN − ηn (ϕ) =   Φk,n (ηkN )(ϕ) − Φk−1,n (ηk−1
+                                                                    N
+                                                                        )(ϕ)
+                                                   k=0
+                                 N
+with the convention that Φ−1,n (η−1 ) = ηn . For the second part, use the same telescopic sum but
+with the k-th term being
+                                              N
+                  Φk,n (ηkN )(ϕG) Φk−1,n (ηk−1   )(ϕG)
+                           N
+                                   −           N
+                  Φk,n (ηk )(G)       Φk−1,n (ηk−1 )(G)
+                    Z                                                           !
+                             N                          N
+                           ηk (dxk )Qk,n (G)(xk ) Φk (ηk−1  )(dxk )Qk,n (G)(xk ) Qk,n (Gϕ)(xk )
+                  =                              −                                              .
+                                ηkN Qk,n (G)                  N )Q
+                                                        Φk (ηk−1    k,n (G)       Qk,n (G)(xk )
+
+Apply Lemma 7.1 using the same estimates in (7.2), i.e. the same estimates hold with G replacing
+1 in the definition of bk,n and with G replacing Qq,n (1) in the argument of β.
+    The following result is a consequence of Lemma 7.4.
+
+Lemma 7.5 Assume (A). For any r ≥ 1, there exists a constant cr such that the following inequality
+holds for all θ, y, 0 ≤ k ≤ n, N > 0 and ϕn ∈ Osc1 (X ),
+                             √                                             1
+                                                                             r r
+                              N Eyθ             N
+                                       Φθ,k,n (ηθ,k ) − Φθ,k,n (ηθ,k ) (ϕn )     ≤ cr ρn−k
+
+Proof:
+The result is established by expressing Φk,n (ηkN ) as
+                                                   Z
+                                                        ηkN (dxk )Qk,n (1)(xk )
+                             Φk,n (ηkN )(dxn ) =                                Pk,n (xk , dxn ),
+                                                              ηkN Qk,n (1)
+
+expressing Φk,n (ηk ) similarly, setting G in (7.5) to Qk,n (1), ϕ = Pk,n (ϕn ) and using the estimates in
+(7.2).
+
+Lemma 7.6 For each r ≥ 1, there exists a finite constant cr such that for all θ, y, 0 ≤ k ≤ q ≤ n,
+     N
+and Fk−1 measurable functions ϕN
+                               q satisfying ϕq ∈ Osc1 (X ) almost surely,
+
+
+
+
+              Z                                                                                        !              r   ! r1
+√                             N
+                     Φθ,k,q (ηθ,k )(dxq )Qθ,q,n (1)(xq )                N
+                                                             Φθ,k−1,q (ηθ,k−1 )(dxq )Qθ,q,n (1)(xq )
+    N Eyθ                        N )Q
+                                                       −                  N
+                                                                                                           ϕN
+                                                                                                            q (xq )
+                        Φθ,k,q (ηθ,k    θ,q,n (1)              Φθ,k−1,q (ηθ,k−1 )Qθ,q,n (1)
+                                                             
+                            Qθ,k,q (xk , dxq )Qθ,q,n (1)(xq )
+            ≤ cr bθ,k,n β
+                                Qθ,k,q (Qθ,q,n (1))(xk )
+
+
+                                                              16
+Proof:
+This results is established by noting that
+                                                N
+        Φk,q (ηkN )(dxq )Qq,n (1)(xq ) Φk−1,q (ηk−1 )(dxq )Qq,n (1)(xq )
+                                      −
+              Φk,q (ηkN )Qq,n (1)                    N )Q
+                                            Φk−1,q (ηk−1    q,n (1)
+          Z                                                           !
+                                              N
+                 ηkN (dxk )Qk,n (1)(xk ) Φk (ηk−1 )(dxk )Qk,n (1)(xk ) Qk,q (xk , dxq )Qq,n (1)(xq )
+        =                               −                                                            .
+                       ηkN Qk,n (1)                 N )Q
+                                              Φk (ηk−1    k,n (1)             Qk,n (1)(xk )
+
+Now Lemma 7.1 is applied using the estimates in (7.2).
+
+Lemma 7.7 Assume (A). There exists a collection of a pair of finite positive constants, ai , ci , i ≥ 1,
+                                                                                                   p+1
+such that the following bounds hold for all r ≥ 1, θ, y, 0 ≤ p ≤ n, N ≥ 1, xp ∈ X , Fp ∈ B(X           ),
+          n+1
+Fn ∈ B(X      ),
+
+              √                                                           r
+                                                                              1r
+               N Eyθ MN
+                      θ,p (Fp (., xp )) (xp ) − M  θ,p (Fp (., xp )) (xp )        ≤ kFp k ar p,
+                      √                                                   r
+                                                                             r 1
+
+                       N Eyθ Dθ,p,n N
+                                         (Fn )(xp ) − Dθ,p,n (Fn )(xp )           ≤ ar cn kFn k .
+
+Proof:
+For each xp , let x0:p−1 → Gp−1,xp (x0:p−1 ) = Fp (x0:p )q(xp |xp−1 ). Adopting the convention ηe0N = η0 ,
+
+   MNp (Fp (., xp )) (xp ) − Mp (Fp (., xp )) (xp )
+      p Z
+                                                                                             !
+     X           N
+                ηp−k    N
+                      Dp−k,p−1                           N
+                               (dx0:p−1 )q(xp |xp−1 ) ηep−k    N
+                                                            Dp−k,p−1  (dx0:p−1 )q(xp |xp−1 )
+   =                    N DN
+                                                     −         N DN
+                                                                                               Fp (x0:p )
+     k=1
+                       ηp−k   p−k,p−1 (q(xp |.))             ηep−k   p−k,p−1 (q(xp |.))
+      p Z
+                                                                                                   !
+     X           N
+                ηp−k                                       N
+                      (dxp−k )Qp−k,p−1 (q(xp |.))(xp−k ) ηep−k  (dxp−k )Qp−k,p−1 (q(xp |.))(xp−k )
+   =                       N Q
+                                                        −           N Q
+     k=1
+                         ηp−k  p−k,p−1 (q(xp |.))                 ηep−k  p−k,p−1 (q(xp |.))
+
+                     GN
+                      p−k,p−1,xp (xp−k )
+              ×
+                  Qp−k,p−1 (q(xp |.))(xp−k )
+
+where GN                     N                                      N
+       p−k,p−1,xp (xp−k ) = Dp−k,p−1 (Gp−1,xp )(xp−k ), which is a Fp−k−1 -measurable function with
+norm
+                                      GN
+                                       p−k,p−1,xp (xp−k )
+                             sup                              ≤ kFp k .
+                             xp−k Qp−k,p−1 (q(xp |.))(xp−k )
+
+The result is established upon applying Lemma 7.1 (see Remark 7.2) to each term in the sum
+separately and using the estimates in (7.2). To establish the second result, let
+                                  Z
+                    Fp,n (x0:p ) = Qp+1 (xp , dxp+1 ) · · · Qn (xn−1 , dxn )Fn (x0:n ).
+
+Then,
+             N
+            Dp,n (Fn )(xp ) − Dp,n (Fn )(xp ) = MN
+                                                 p (Fp,n (., xp )) (xp ) − Mp (Fp,n (., xp )) (xp ).
+
+The result follows by setting cn = p supθ kQθ,p,n (1)k and it follows from Assumption (A) that cn is
+finite.
+    Lemma 7.8 and Lemma 7.9 both build on the previous results and are needed for the proof of
+Theorem 3.1.
+
+                                                      17
+Lemma 7.8 Assume (A). For any r ≥ 1 there exists a constant Cr such that for all θ, y, 0 ≤ k < n,
+N ≥ 1, ϕn ∈ Osc1 (X ),
+                 Z
+         √                                                                 
+           N Eyθ       QN                                         N
+                        θ,n (dx0:n )tθ,k (xk−1 , xk ) ϕn (xn ) − ηθ,n (ϕn )
+
+                          Z                                                                             ! r ) 1r
+                               N    N                                                N    N
+                              ηθ,k Dθ,k,n (dx0:n )                                  ηθ,k Dθ,k,n (ϕn )
+                      −          N DN
+                                                     tθ,k (xk−1 , xk ) ϕn (xn ) −    N DN
+                                ηθ,k θ,k,n (1)                                      ηθ,k θ,k,n (1)
+
+                   ≤ 2(n − k)Cr ρn−k                                                                               (7.6)
+
+Proof:
+The term (7.6) can be further expanded as
+     Z                                                                       !
+          ηkN Dk,n
+               N
+                   (dx0:n )                                 ηkN Dk,n
+                                                                 N
+                                                                     (ϕn )
+                          tk (xk−1 , xk ) ϕn (xn ) − N N
+           ηkN Dk,n
+                 N (1)                                 ηk Dk,n (1)
+           Z
+                                                             
+          − QN                                        N
+                n (dx0:n )tk (xk−1 , xk ) ϕn (xn ) − ηn (ϕn )
+                                                                                    !
+          XZ
+          n−1
+                  ηpN Dp,n
+                        N
+                           (dx0:n )                             ηpN Dp,n
+                                                                     N
+                                                                         (ϕn )
+      =               N   N
+                                    t k (xk−1 , xk ) ϕn (xn ) −    N  N
+                     ηp Dp,n (1)                                 ηp Dp,n (1)
+          p=k
+                                                                                        !
+            XZ
+            n−1  N
+               ηp+1     N
+                     Dp+1,n  (dx0:n )                                 N
+                                                                    ηp+1    N
+                                                                          Dp+1,n  (ϕn )
+        −           N DN
+                                      tk (xk−1 , xk ) ϕn (xn ) − N           N
+          p=k
+                  ηp+1    p+1,n (1)                                  ηp+1 Dp+1,n   (1)
+                                                            !                                             !
+        XZ
+        n−1
+               ηpN Dp,n
+                      N
+                         (dx0:n ) ηp+1N     N
+                                          Dp+1,n   (dx0:n )                                ηpN Dp,n
+                                                                                                 N
+                                                                                                    (ϕn )
+      =                           −      N DN
+                                                              tk (xk−1 , xk ) ϕn (xn ) − N N
+                  ηpN Dp,n
+                        N (1)          ηp+1   p+1,n (1)                                      ηp Dp,n (1)
+        p=k
+          n−1
+                                                     !                                         !
+          X ηpN Dp,n N
+                        (ϕn ) ηp+1N      N
+                                      Dp+1,n  (ϕn )         N
+                                                          ηp+1    N
+                                                               Dp+1,n   (tk ) ηpN Dp,n N
+                                                                                         (tk )
+        −                     − N         N                 N DN
+                                                                              − N N
+               ηpN Dp,n
+                      N (1)       ηp+1 Dp+1,n  (1)        ηp+1    p+1,n (1)     ηp Dp,n (1)
+          p=k
+          n−1
+                                                     !
+          X ηpN Dp,n N
+                        (ϕn ) ηp+1N      N
+                                      Dp+1,n  (ϕn ) ηpN Dp,n  N
+                                                                 (tk )
+        −        N    N
+                              −     N     N              N    N
+               ηp Dp,n (1)        ηp+1 Dp+1,n (1)       ηp Dp,n (1)
+          p=k
+                                                            !
+        XZ
+        n−1
+               ηpN Dp,n
+                      N
+                         (dx0:n ) ηp+1N     N
+                                          Dp+1,n   (dx0:n )
+      =                           −      N DN
+                  ηpN Dp,n
+                        N (1)          ηp+1   p+1,n (1)
+        p=k
+                                                   !                               !                        (7.7)
+                                    ηpN Dp,n
+                                          N
+                                             (tk )                 ηpN Dp,n
+                                                                          N
+                                                                             (ϕn )
+              × tk (xk−1 , xk ) − N N                  ϕn (xn ) − N N
+                                     ηp Dp,n (1)                     ηp Dp,n (1)
+          n−1
+                                                     !                                         !
+          X ηpN Dp,n N
+                        (ϕn ) ηp+1N      N
+                                      Dp+1,n  (ϕn )         N
+                                                          ηp+1    N
+                                                               Dp+1,n   (tk ) ηpN Dp,n N
+                                                                                         (tk )
+        −                     − N         N                 N DN
+                                                                              − N N                         (7.8)
+               ηpN Dp,n
+                      N (1)       ηp+1 Dp+1,n  (1)        ηp+1    p+1,n (1)     ηp Dp,n (1)
+            p=k
+
+
+For the first equality, note that ηnN Dn,n
+                                       N
+                                           (dx0:n ) = QN
+                                                       n (dx0:n ). It is straightforward to establish that
+
+
+                              ηpN Dp,n
+                                   N
+                                       (dx0:n )/ηpN (g( yp | ·)) = ηep+1
+                                                                     N    N
+                                                                         Dp+1,n (dx0:n ),                          (7.9)
+
+
+
+
+                                                            18
+which is due to
+
+            ηpN (dxp ) n−1Y
+           N
+                              Qj+1 (xj , dxj+1 )
+          ηp (g( yp | ·)) j=p
+
+              ηpN (dxp )g( yp | xp )f ( xp+1 | xp ) dxp+1 ηpN (g( yp | ·)f ( xp+1 | ·)) n−1
+                                                                                        Y
+          =         N                                         N
+                                                                                             Qj+1 (xj , dxj+1 )
+                  ηp (g( yp | ·)f ( xp+1 | ·))               ηp (g( yp | ·))           j=p+1
+                                                   n−1
+                                                   Y
+             N                 N
+          = Mp+1 (xp+1 , dxp )e
+                              ηp+1 (dxp+1 )              Qj+1 (xj , dxj+1 ).
+                                                 j=p+1
+
+Thus
+               ηpN Dp,n
+                    N                     N
+                        (dx0:p+1 , dxn ) ηp+1   N
+                                              Dp+1,n (dx0:p+1 , dxn )
+                      N    N
+                                        −       N     N
+                     ηp Dp,n (1)               ηp+1 Dp+1,n (1)
+                       N     N                      N    N
+                     ηep+1 Dp+1,n (dx0:p+1 , dxn ) ηp+1 Dp+1,n (dx0:p+1 , dxn )
+                 =           N     N
+                                                  −      N      N
+                           ηep+1 Dp+1,n (1)             ηp+1 Dp+1,n  (1)
+                        N
+                                                                                                                      (7.10)
+                      ηep+1 (dxp+1 )Qp+1,n (1)(xp+1 )
+                =               N Q
+                              ηep+1  p+1,n (1)
+                                                                  !
+                           N
+                          ηp+1 (dxp+1 )Qp+1,n (1)(xp+1 )                                     Qp+1,n (xp+1 , dxn )
+                        −         N Q
+                                                                      MN
+                                                                       p+1 (xp+1 , dx0:p )                        .
+                                 ηp+1   p+1,n (1)                                             Qp+1,n (1)(xp+1 )
+
+                                                               N                       N
+In the first line, variables xp+2:n−1 of the measures ηp Dp,n     (dx0:n ) and ηp+1 Dp+1,n   (dx0:n ) are inte-
+grated out while the second line follows from (7.9). Using (7.10), the term (7.7) can be expressed
+as
+                                                                                        !
+           XZ
+           n−1         N
+                     ηep+1 (dxp+1 )Qp+1,n (1)(xp+1 ) ηp+1  N
+                                                             (dxp+1 )Qp+1,n (1)(xp+1 )
+                               N Q
+                                                      −          N Q
+           p=k
+                             ηep+1   p+1,n (1)                 ηp+1   p+1,n (1)
+                                                  !                                        !
+                                   ηpN Dp,n
+                                         N
+                                            (ϕn )            N
+                                                                           N
+                                                                        ηep+1   N
+                                                                              Dp+1,n (tk )
+                × Pp+1,n ϕn − N N                   (xp+1 )Mp+1 tk − N          N
+                                                                                             (xp+1 )
+                                    ηp Dp,n (1)                          ηep+1 Dp+1,n (1)
+
+Note that by (3.3), (7.2) and (7.3),
+                                                      !                                               
+                                    ηpN Dp,n
+                                         N
+                                             (ϕn )                              Qp+1,n (xp+1 , dxn )
+                      Pp+1,n    ϕn − N N                  (xp+1 ) ≤ β                                      ,
+                                     ηp Dp,n (1)                                Qp+1,n (1)(xp+1 )
+                                                            !
+                                          N    N                                             
+                                       ηep+1 Dp+1,n (tk )
+                      MN
+                       p+1         tk − N      N
+                                                                              N
+                                                                (xp+1 ) ≤ Cβ Mp+1        N
+                                                                                  . . . Mk+1   .
+                                        ηep+1 Dp+1,n (1)
+Thus by (7.2) and Lemma 7.6, we conclude that there exists a finite constant Cr (depending only
+on r)
+
+  n−1
+               (Z                                        !                                   !
+  X      √                              ηpN Dp,n
+                                             N
+                                                 (tk )                    ηpN Dp,n
+                                                                               N
+                                                                                   (ϕn )
+          NE           tk (xk−1 , xk ) − N N                    ϕn (xn ) − N N
+                                        ηp Dp,n (1)                        ηp Dp,n (1)
+   p=k
+                                                                                      ! r ) r1
+                                      ηpN Dp,n
+                                            N            N
+                                               (dx0:n ) ηp+1   N
+                                                             Dp+1,n (dx0:n )
+                               ×          N   N
+                                                       −   N     N
+                                                                                                 ≤ (n − k)Cr ρn−k     (7.11)
+                                         ηp Dp,n (1)      ηp+1 Dp+1,n (1)
+
+
+                                                             19
+For the term (7.8), it follows from (7.10)
+        N     N
+       ηp+1 Dp+1,n (tk ) ηpN Dp,n
+                               N
+                                   (tk )
+         N    N
+                        −   N   N
+       ηp+1 Dp+1,n (1)     ηp Dp,n (1)
+          Z N                                                             N
+                                                                                                    !
+             ηp+1 (dxp+1 )Qp+1,n (1)(xp+1 )                             ηep+1 Qp+1,n (1)MN p+1 (tk )
+       =              N Q
+                                                 MN
+                                                  p+1 (tk ) (xp+1 ) −           N Q
+                                                                                                       .
+                     ηp+1  p+1,n (1)                                          ηep+1 p+1,n (1)
+
+Thus, using (3.3) and (7.3), there exists some non-random constant C such that the following bound
+holds almost surely for all integers k ≤ p < n, N :
+                                 N    N
+                                ηp+1 Dp+1,n (tk ) ηpN Dp,n
+                                                       N
+                                                           (tk )
+                                  N   N
+                                                 −  N  N
+                                                                 ≤ Cρp−k+1 .
+                                ηp+1 Dp+1,n (1)    ηp Dp,n (1)
+
+Combine this bound with Lemma 7.3 to conclude that there exists a finite (non-random) constant
+Cr (depending only on r) such that for all integers k ≤ p < n, N :
+        (                                    !                                    ! r ) r1
+  √         ηpN Dp,n
+                  N         N
+                     (ϕn ) ηp+1   N
+                                Dp+1,n (ϕn )       N
+                                                 ηp+1   N
+                                                      Dp+1,n (tk ) ηpN Dp,n
+                                                                        N
+                                                                            (tk )
+    NE                    − N      N               N DN
+                                                                  − N N                    ≤ Cr ρn−k
+             ηpN Dp,n
+                   N (1)    ηp+1 Dp+1,n (1)       ηp+1  p+1,n (1)  η p D p,n (1)
+                                                                                                           (7.12)
+The result now follows from (7.11) and (7.12).
+Lemma 7.9 Assume (A). For any r ≥ 1 there exists a constant Cr such that for all θ, y, 0 ≤ k < n,
+N ≥ 1, ϕn ∈ Osc1 (X ),
+         (Z                                                                     !
+  √    y
+              N
+             ηθ,k   N
+                  Dθ,k,n (dx0:n )                              N
+                                                              ηθ,k   N
+                                                                   Dθ,k,n (ϕn )
+   N Eθ          N DN
+                                  tθ,k (xk−1 , xk ) ϕn (xn ) − N N
+               ηθ,k   θ,k,n (1)                                ηθ,k Dθ,k,n (1)
+                             Z                                                     r  r1
+                          − Qθ,n (dx0:n )tθ,k (xk−1 , xk ) (ϕn (xn ) − ηθ,n (ϕn ))        ≤ Cr ρn−k (7.13)
+
+Proof:
+
+             Z                                                                 !
+                 ηkN Dk,n
+                      N
+                          (dx0:n )                            ηkN Dk,n
+                                                                   N
+                                                                       (ϕn )
+                                  tk (xk−1 , xk ) ϕn (xn ) − N N
+                   ηkN Dk,n
+                         N (1)                                  ηk Dk,n (1)
+                     Z
+                 =      Qn (dx0:n )tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+                       Z                                      !
+                            ηkN Dk,n
+                                   N
+                                      (dx0:n )
+                     +                          − Qn (dx0:n ) tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))        (7.14)
+                               ηkN Dk,n
+                                     N (1)
+                                                    !
+                                     ηkN Dk,n
+                                          N
+                                               (ϕn ) ηkN Dk,nN
+                                                                (tk )
+                     + ηn (ϕn ) − N N                                                                      (7.15)
+                                      ηk Dk,n (1)      ηkN Dk,n
+                                                             N (1)
+
+
+To study the errors, term (7.14) may be decomposed as
+         Z                                    !
+              ηkN Dk,n
+                     N
+                       (dx0:n )
+                                 − Qn (dx0:n ) tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+                 ηkN Dk,n
+                       N (1)
+
+                k Z
+                                                              !
+              X         ηpN Dp,n
+                               N
+                                 (dx0:n ) ηepN Dp,nN
+                                                     (dx0:n )
+            =                            −                      tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+              p=0
+                           ηpN Dp,n
+                                 N (1)        ηepN Dp,n
+                                                     N (1)
+
+
+
+
+                                                       20
+                                       
+                                    N
+with the convention that ηe0N = Φ0 η−1   = η0 . The term corresponding to p = k can be expressed as
+Z  N                                              
+   ηk (dxk )Qk,n (1)(xk ) ηekN (dxk )Qk,n (1)(xk )
+                         −                           MkN (xk , dxk−1 )tk (xk−1 , xk ) Pk,n (ϕn −ηn (ϕn ))(xk )
+        ηkN Qk,n (1)             ηekN Qk,n (1)
+
+Using Lemma 7.1 and Remark 7.2,
+   Z  N                                                                                        r  r1
+√      ηk (dxk )Qk,n (1)(xk ) ηekN (dxk )Qk,n (1)(xk )    N
+ NE                          −                           Mk (tk ) (xk ) Pk,n (ϕn − ηn (ϕn ))(xk )
+            ηkN Qk,n (1)             ηekN Qk,n (1)
+≤ Cr ρn−k
+
+Similarly, the pth term when p < k can be expressed as
+       Z                                           !
+            ηpN Dp,n
+                   N
+                     (dx0:n ) ηepN Dp,n N
+                                          (dx0:n )
+                               −                     tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+               ηpN Dp,n
+                     N (1)         ηepN Dp,n
+                                          N (1)
+
+            Z                                                                                           !
+                   Φp,k−1 (ηpN )(dxk−1 )Qk−1,n (1)(xk−1 ) Φp,k−1 (e      ηpN )(dxk−1 )Qk−1,n (1)(xk−1 )
+          =                                                 −
+                           Φp,k−1 (ηpN )Qk−1,n (1)                      Φp,k−1 (eηpN )Qk−1,n (1)
+              Z
+                  Qk (xk−1 , dxk )Qk,n (1)(xk )
+            ×                                   tk (xk−1 , xk ) Pk,n (ϕn − ηn (ϕn )) (xk )
+                       Qk−1,n (1)(xk−1 )
+
+                                                       ηpN ) = Φp−1,k−1 (ηp−1
+Using Lemma 7.6 for the outer integral (recall Φp,k−1 (e                  N
+                                                                              )),
+       (Z                                     N            !                                       r ) r1
+    √              ηpN Dp,n
+                          N              N
+                            (dx0:n ) Φp ηp−1  Dp,n (dx0:n )
+     NE                             −                        tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+                      ηpN Dp,n
+                            N (1)          N
+                                      Φp ηp−1     N (1)
+                                                Dp,n
+       ≤ Cr ρn−k ρk−1−p
+
+Combining both cases for p yields
+
+              (Z                                                !                                           r ) r1
+           √              ηkN Dk,n
+                               N
+                                   (dx0:n )
+            NE                                 − Qn (dx0:n ) tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+                            ηkN Dk,n
+                                 N (1)
+
+                          k−1
+                          X                                                                                          (7.16)
+              ≤ Cr ρn−k         ρk−1−p + Cr ρn−k
+                          p=0
+                                      
+                                  1
+             ≤ Cr ρn−k 1 +                 .
+                                 1−ρ
+
+For (7.15), Lemma 7.5 yields the following estimate
+                           (                                    !                    r ) 1r
+                    √                          ηkN Dk,n
+                                                    N
+                                                        (ϕn )       ηkN Dk,n
+                                                                         N
+                                                                             (tk )
+                     NE          ηn (ϕn ) −                                                   ≤ Cr ρn−k .            (7.17)
+                                               ηkN Dk,n
+                                                    N (1)           ηkN Dk,n
+                                                                         N (1)
+
+
+The proof is completed by summing the bounds in (7.16), (7.17) and inflating constant Cr appro-
+priately.
+
+
+
+
+                                                          21
+7.1     Proof of Theorem 3.1
+
+                                          n Z
+                                          X                                                      
+                 ζnN (ϕn ) − ζn (ϕn ) =            QN                                     N
+                                                    n (dx0:n )tk (xk−1 , xk ) ϕn (xn ) − ηn (ϕn )
+                                          k=0
+                                              Z
+                                          −       Qn (dx0:n )tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn )) .
+
+To prove the theorem, it will be shown that the error due to the k-th term in this expression is
+       Z
+  √                                                         
+    NE       QN                                      N
+               n (dx0:n )tk (xk−1 , xk ) ϕn (xn ) − ηn (ϕn )
+
+                               Z                                                      r  r1
+                           −       Qn (dx0:n )tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))            ≤ (n − k + 1)Cr ρn−k
+
+where constant Cr depends only on r and the bounds in Assumption (A) (through the estimates ρ
+and ρ2 δ 2 in (7.2) as well as the bounds on the score).
+     Z                                                        Z
+            N                                      N
+                                                         
+          Qn (dx0:n )tk (xk−1 , xk ) ϕn (xn ) − ηn (ϕn ) − Qn (dx0:n )tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+          Z
+                                                            
+      = QN                                           N
+               n (dx0:n )tk (xk−1 , xk ) ϕn (xn ) − ηn (ϕn )
+               Z N N                                                           !                      (7.18)
+                   ηk Dk,n (dx0:n )                             ηkN Dk,n
+                                                                      N
+                                                                         (ϕn )
+             −                      tk (xk−1 , xk ) ϕn (xn ) − N N
+                     ηkN Dk,n
+                           N (1)                                 ηk Dk,n (1)
+             Z N N                                                           !
+                 ηk Dk,n (dx0:n )                             ηkN Dk,n
+                                                                    N
+                                                                       (ϕn )
+          +                       tk (xk−1 , xk ) ϕn (xn ) − N N
+                   ηkN Dk,n
+                         N (1)                                 ηk Dk,n (1)
+                Z                                                                                     (7.19)
+             −    Qn (dx0:n )tk (xk−1 , xk ) (ϕn (xn ) − ηn (ϕn ))
+
+The proof is completed by summing the bounds in Lemma 7.8 for (7.18) and Lemma 7.9 for (7.19)
+and inflating constant Cr appropriately.
+
+7.2     Proof of Theorem 3.2
+The following result which characterizes the asymptotic behavior of the local sampling errors defined
+in (3.1) is proved in Del Moral [2004, Theorem 9.3.1]
+                                                                                       N                  N
+Lemma 7.10 Let {ϕn }n≥0 ⊂ B(X ). For any θ, y, n ≥ 0, the random vector (Vθ,0            (ϕ0 ), . . . , Vθ,n (ϕn ))
+converges in law, as N → ∞, to (Vθ,0 (ϕ0 ), . . . , Vθ,n (ϕn )) where Vθ,i is defined in (3.4).
+    The following multivariate fluctuation theorem first proved under slightly different assumptions
+in Del Moral et al. [2010] is needed. See also Douc et al. [2009] for a related study.
+                                                                    √                 
+Theorem 7.11 Assume (A). For any θ, y, n ≥ 0, Fn ∈ B(X n+1 ), N QN          θ,n − Q θ,n (Fn ) converges
+in law, as N → ∞, to the centered Gaussian random variable
+                              Xn                                       
+                                               Dθ,p,n (Fn − Qθ,n (Fn ))
+                                  Vθ,p Gθ,p,n                             .
+                              p=0
+                                                       Dθ,p,n (1)
+
+where Vθ,p is defined in (3.4).
+
+                                                           22
+Proof:
+Let
+                                                    n−1
+                                                    Y
+                                           γn =           ηk (g( yk | .))
+                                                    k=0
+and define the unnormalized measure
+                                                   Γ n = γn Q n .
+                                                                                        Qn−1 N
+The corresponding particle approximation
+                                  √      is ΓN
+                                             n = γ N QN where γnN =                      k=0 ηk (g( yk | .)). The result
+                                        N
+                                                n n
+is proven by studying the limit of N Γn − Γn since
+                                                    1  N    
+                            [QN
+                              n − Qn ](Fn ) =          Γ − Γn (Fn − Qn (Fn )) .
+                                                   γnN n
+
+Note that Lemma
+√              7.4 implies γnN converges almost surely to γn . The key to studying the limit of
+      N
+ N Γn − Γn is the decomposition
+
+                      √  N              n
+                                         X
+                                
+                       N Γn − Γn (Fn ) =   γpN VpN (Dp,n (Fn )) + RnN (Fn )
+                                                    p=0
+
+where the remainder term is
+                          n
+                          X                    
+           RnN (Fn ) :=                  N
+                                γpN VpN Fp,n                         N
+                                                   and the function Fp,n      N
+                                                                         := [Dp,n − Dp,n ](Fn )
+                          p=0
+
+By Slutsky’s lemma and by the continuous mapping theorem (see van der Vaart [1998]) it suffices to
+show that RnN (Fn) converges to 0, in probability, as N → ∞. To prove this, it will be established
+that E RnN (Fn )2 is O(N −1 ). Since
+
+                                               n
+                                                X  n             2 o
+                                 E RnN (Fn )2 =              N
+                                                  E γpN VpN Fp,n       ,
+                                                    p=0
+
+and γpN ≤ cp almost surely, where cp is some non-random constant which can be derived using (A),
+                                     
+                                 N 2
+it suffices to prove that E VpN Fp,n     is O(N −1 ). By expanding the square one arrives at
+                                                                                   2 
+                                   N 2
+                            E VpN Fp,n              N
+                                                   Fp−1             N
+                                                              ≤ Φp ηp−1           N
+                                                                                 Fp,n          .
+
+By Assumption (A), for any xp−1 ∈ X ,
+                                            Z
+                               N 2 
+                         N
+                    Φp ηp−1     Fp,n    ≤ ρ2 dxp f ( xp | xp−1 ) Fp,n
+                                                                  N
+                                                                      (xp )2 .
+                               
+                             N 2
+By Lemma 7.7, E VpN Fp,n            is O(N −1 ).
+   The next lemma is needed to quantify the variance of the particle estimate of the filter gradient
+computed using the path-based method. Note that this lemma does not require the hidden chain to
+be mixing. We refer the reader to Del Moral and Miclo [2001] for a propagation of chaos analysis.
+   For any θ, y = {yn }n≥0 , let {Vθ,n }n≥0 be a sequence of independent centered Gaussian ran-
+dom fields defined as follows. For any sequence of functions {Fn ∈ B(X n+1 )}n≥0 and any p ≥ 0,
+{Vθ,n (Fn )}pn=0 is a collection of independent zero-mean Gaussian random variables with variances
+given by
+                              Eθ (Fn (X0:n )2 |y0:n−1 ) − Eθ (Fn (X0:n )|y0:n−1 )2 .          (7.20)
+
+
+                                                          23
+Lemma 7.12 Let {δθ }θ∈Θ ⊂ [1,√∞) and assume δθ−1 ≤ gθ (y|x) ≤ δθ for all (x, y, θ) ∈ X ×Y ×Θ. For
+                                                              
+any θ, y, n ≥ 0, Fn ∈ B(X n+1 ), N pNθ (dx0:n |y0:n−1 ) − Qθ,n (Fn ) converges in law, as N → ∞, to
+the centered Gaussian random variable
+                                        n
+                                        X
+                                              Vθ,p (Gθ,p,n Fθ,p,n ) .
+                                        p=0
+
+where Gθ,p,n was defined in (1.7) and
+
+                           Fθ,p,n = Eθ (F (X0:n )|x0:p , yp+1:n−1 ) − Qθ,n (Fn )
+
+7.2.1   Proof of Theorem 3.2
+It follows from Algorithm 1 that
+                            
+                    ζnN − ζn (ϕn )
+                   = QN                                              N       N
+                      n (ϕn Tn ) − Qn (ϕn Tn ) + Qn (ϕn )Qn (Tn ) − Qn (ϕn )Qn (Tn )             (7.21)
+
+The second term on the right hand side of the equality can be expressed as
+
+                   Qn (ϕn )Qn (Tn ) − QN       N
+                                       n (ϕn )Qn (Tn )
+
+                    = Qn (ϕn Qn (Tn ) + Qn (ϕn )Tn ) − QN
+                                                        n (ϕn Qn (Tn ) + Qn (ϕn )Tn )
+                                                                  
+                      + Qn (ϕn ) − Qn (ϕn ) Qn (Tn ) − QN
+                           N
+                                                            n (Tn ) .                            (7.22)
+
+Combining the two expressions in (7.21) and (7.22) gives
+                                    
+                           ζnN − ζn (ϕn )
+                             = QN
+                                n ((ϕn − Qn (ϕn )) (Tn − Qn (Tn )))
+                             − Qn ((ϕn − Qn (ϕn )) (Tn − Qn (Tn )))
+                                                                        
+                             + QNn (ϕn ) − Qn (ϕn )  Qn (Tn ) − QNn (Tn )
+                                                                                         
+Using Lemma 7.4 with r = 2 and Chebyshev’s inequality, we see that QN  n (ϕn ) − Qn (ϕn ) converges
+in probability to 0. Theorem 7.11 can now be invoked with Slutsky’s theorem to arrive at the stated
+result in (3.5).
+    Moving on to the uniform bound on the variance, let
+                                                        n
+                                                        X
+                                     Tn − Qn (Tn ) =          e
+                                                              tk ,
+                                                        k=0
+                                                 etk = tk − Qn (tk ),
+                                                 en = ϕn − Qn (ϕn ).
+                                                 ϕ
+
+Also, the argument of Vp can be expressed as
+                                                 n                          
+                                 Qp,n (1)(xp ) X Dp,n ϕ
+                                                      en e
+                                                         tk − Q n ϕen etk        (xp )
+                      φp (xp ) =                                                         .
+                                  ηp Qp,n (1)            Dp,n (1)(xp )
+                                                k=0
+
+It is straightforward to see that ηp (φp ) = 0. Therefore the variance (see (3.4)) now simplifies to
+                             Xn                                  X n
+                                            Dp,n (Fn − Qn (Fn ))
+                         var     Vp Gp,n                          =     ηp (φ2p ).                (7.23)
+                             p=0
+                                                  D p,n (1)         p=0
+
+
+                                                      24
+Consider the function φp . For p ≤ k − 1,
+                                     Z
+    Dp,n ϕ en e
+              tk − Q n ϕen etk (xp )      ηp (dx′p )Qp,n (1)(x′p )
+                                     =
+              Dp,n (1)(xp )                    ηp Qp,n (1)
+                                         Z 
+                                               Qp,k−1 (xp , dxk−1 )Qk−1,n (1)(xk−1 )
+                                       ×
+                                                            Qp,n (1)(xp )
+                                                                                                             
+                                                                     Qp,k−1 (x′p , dxk−1 )Qk−1,n (1)(xk−1 )
+                                                                   −
+                                                                                   Qp,n (1)(x′p )
+                                         Z
+                                             Qk (xk−1 , dxk )Qk,n (1)(xk ) e
+                                       ×                                   tk (xk−1 , xk )Pk,n (ϕ en )(xk ).
+                                                   Qk−1,n (1)(xk−1 )
+
+Using the estimates in (3.3) and (7.2), this function is bounded by
+                                                             
+                                       en e
+                                  Dp,n ϕ  tk − Q n ϕen etk        (xp )
+                              sup                                          ≤ Cρn−1−p                      (7.24)
+                               xp         Dp,n (1)(xp )
+
+for some constant C. When p ≥ k,
+                                    
+         Dp,n ϕ en e
+                   tk − Q n ϕ  en e
+                                  tk (xp )
+                   Dp,n (1)(xp )
+            Z
+               ηp (dx′p )Qp,n (1)(x′p )                                                              
+          =                             Mp (e              en )(xp ) − Mp (e
+                                            tk )(xp )Pp,n (ϕ               tk )(x′p )Pp,n (ϕ
+                                                                                           en )(x′p ) .
+                     ηp Qp,n (1)
+
+Again using the estimates in (3.3), (7.2) and (7.3),
+                                                              
+                                        en e
+                                   Dp,n ϕ  tk − Q n ϕen etk        (xp )
+                               sup                                         ≤ Cρn−k .                      (7.25)
+                                xp         Dp,n (1)(xp )
+
+Combining (7.24) and (7.25),
+
+                                                    Cρn−p
+                                 sup |φp (xp )| ≤         + Cρn−p−1 (n − p),
+                                  xp                1−ρ
+
+0 ≤ p ≤ n. Combining this bound with (7.23) will establish the result.
+
+
+References
+A. Beskos, D. Crisan, and A. Jasra. On the stability of sequential monte carlo methods in high
+  dimensions. 2011. URL http://arxiv.org/abs/1103.3965v1.
+O. Cappé, E. Moulines, and T. Rydén. Inference in Hidden Markov Models. New York: Springer-
+  Verlag, 2005.
+F. Cérou, F. Le Gland, and N. J. Newton. Stochastic particle methods for linear tangent filtering
+  equations. In Optimal Control and PDE’s - Innovations and Applications, pages 231–240. IOS
+  Press, Amsterdam, 2001.
+P. Coquelin, R. Deguest, and R. Munos. Particle filter based policy gradient in pomdps. In NIPS,
+  pages 337–344, 2008.
+
+
+                                                        25
+P. Del Moral. Feynman-Kac Formulae: Genealogical and Interacting Particle Systems with Applica-
+  tions. New York: Springer-Verlag, 2004.
+P. Del Moral and A. Doucet. On a class of genealogical and interacting Metropolis models. In Lecture
+  Notes in Mathematics 1832, pages 415–46. Berlin: Springer-Verlag, 2003.
+P. Del Moral and L. Miclo. Branching and interacting particle systems approximations of feynman-
+  kac formulae with applications to non-linear filtering. In J. Azma, M. Ledoux, M. Émery, and
+  M. Yor, editors, Séminaire de Probabilités XXXIV, volume 1729 of Lecture Notes in Mathematics,
+  pages 1–145. Springer Berlin / Heidelberg, 2000. URL http://dx.doi.org/10.1007/BFb0103798.
+P. Del Moral and L. Miclo. Genealogies and increasing propagations of chaos for feynman-kac and
+  genetic models. Annals of Applied Probability, 11:1166–1198, 2001.
+P. Del Moral and E. Rio. Concentration inequalities for mean field particle models. Technical Report
+  HAL-INRIA RR-6901, INRIA, 2009. URL http://hal.inria.fr/inria-00375134/fr/.
+P. Del Moral, A. Doucet, and S. S. Singh. A backward particle interpretation of Feynman-Kac
+  formulae. Ann. Inst. Stat. Math.ESAIM - Mathematical Modelling and Numerical Analysis, 44:
+  947–975, 2010.
+R. Douc, A. Garivier, E. Moulines, and J. Olsson. On the forward filtering backward smoothing
+  particle approximations of the smoothing distribution in general state spaces models. Ann. Appl.
+  Probab. (to appear), 2009. URL http://adsabs.harvard.edu/abs/2009arXiv0904.0316D.
+
+A. Doucet and V. B. Tadić. Parameter estimation in general state-space models using particle
+  methods. Ann. Inst. Stat. Math., 55:409–422, 2003.
+A. Doucet, N. de Freitas, and N. Gordon, editors. Sequential Monte Carlo Methods in Practice. New
+  York: Springer-Verlag, 2001.
+J. Durbin and S. J. Koopman. Time Series Analysis by State-Space Methods. Cambridge University
+   Press, 2001.
+N. J. Gordon, D. Salmond, and A. F. M. Smith. Novel approach to nonlinear/non-Gaussian Bayesian
+  state estimation. IEE Proc. Radar Sig. Proces., 140:107–113, 1993.
+K. Heine and D. Crisan. Uniform approximations of discrete-time filters. Adv. in Appl. Probab., 40
+  (4):979–1001, 2008.
+N. Kantas, A. Doucet, S. S. Singh, and J. M. Maciejowski. An overview of sequential Monte Carlo
+  methods for parameter estimation on general state space models. In 15th IFAC Symposium on
+  System Identification, volume 15, 2009. doi: 10.3182/20090706-3-FR-2004.0297.
+F. Le Gland and M. Mevel. Recursive estimation in hidden Markov models. In 36th IEEE Conf. on
+  Decision and Control, pages 3468–3473, 1997. doi: 10.1109/CDC.1997.652384.
+J. Olsson, R. Douc, O. Cappé, and É. Moulines. Sequential Monte Carlo smoothing with application
+   to parameter estimation in nonlinear state space models. Bernoulli, 14:155–79, 2008.
+
+N. Oudjane and S. Rubenthaler. Stability and uniform particle approximation of nonlinear filters in
+  case of non ergodic signals. Stochastic Analysis and Applications, 23:421–448, 2005.
+G. Pflug. Optimization of stochastic models: the interface between simulation and optimization.
+  Boston: Kluwer Academic Publishers, 1996.
+
+
+                                                26
+M. K. Pitt and N. Shephard. Filtering via simulation: auxiliary particle filter. J. Am. Statist. Ass.,
+ 94:590–9, 1999.
+G. Poyiadjis, A. Doucet, and S.S. Singh. Particle methods for optimal filter derivative: application to
+  parameter estimation. In Acoustics, Speech, and Signal Processing, 2005. Proceedings. (ICASSP
+  ’05). IEEE International Conference on, volume 5, pages v/925 – v/928 Vol. 5, March 2005. doi:
+  10.1109/ICASSP.2005.1416456.
+G. Poyiadjis, A. Doucet, and S.S. Singh. Particle approximations of the score and observed in-
+  formation matrix in state-space models with application to parameter estimation. Technical
+  Report CUED/F-INFENG/TR628, Cambridge University Engineering Department, 2009. URL
+  http://publications.eng.cam.ac.uk/16157/.
+G. Poyiadjis, A. Doucet, and S.S. Singh. Particle approximations of the score and observed infor-
+  mation matrix in state-space models with application to parameter estimation. Biometrika., 98:
+  65–80, 2011.
+D. M. Titterington. Recursive parameter estimation using incomplete data. J. Royal Statist. Soc.
+  B, 46:257–267, 1984.
+A. W. van der Vaart. Asymptotic Statistics. New York: Cambridge University Press, 1998.
+N. Whiteley. Sequential monte carlo samplers: error bounds and insensitivity to initial conditions.
+  2011. URL http://arxiv.org/abs/1103.3970.
+
+
+
+
+                                                  27
+

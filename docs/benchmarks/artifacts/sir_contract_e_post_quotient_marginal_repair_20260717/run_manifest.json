@@ -1,0 +1,70 @@
+{
+  "schema": "bayesfilter.sir_contract_e_post_quotient_marginal_repair_manifest.v1",
+  "status": "COMPLETE",
+  "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "git_dirty": true,
+  "environment": "tf-gpu",
+  "python": "3.11.14",
+  "tensorflow": "2.19.1",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+    "gpu_memory_limit_mib": 8192,
+    "memory_growth": false,
+    "xla": true,
+    "dtype": "float64"
+  },
+  "plan_file": "docs/plans/bayesfilter-sir-contract-e-post-quotient-marginal-repair-plan-2026-07-16.md",
+  "result_file": "docs/benchmarks/artifacts/sir_contract_e_post_quotient_marginal_repair_20260717/result.json",
+  "started_at": "2026-07-17T00:28:22+08:00",
+  "finished_at": "2026-07-17T01:35:02+08:00",
+  "wall_time_seconds_approximate": 4000,
+  "random_seeds": {
+    "independent_design": [88100, 88101, 88102, 88103, 88104, 88105, 88106, 88107, 88108, 88109, 88110, 88111, 88112, 88113, 88114, 88115],
+    "final_audit": [87200, 87201, 87202, 87203, 87204, 87205, 87206, 87207, 87208, 87209, 87210, 87211, 87212, 87213, 87214, 87215]
+  },
+  "commands": [
+    {
+      "purpose": "CPU-only focused tests and derivative references",
+      "environment_prefix": "CUDA_VISIBLE_DEVICES=-1 MPLCONFIGDIR=/tmp/matplotlib-cache",
+      "runner": "/home/chakwong/anaconda3/bin/conda run -n tf-gpu",
+      "tests": [
+        "tests/highdim/test_ledh_contract_e_streaming_phase4.py",
+        "tests/highdim/test_ledh_contract_e_latent_sir_tf.py",
+        "tests/highdim/test_ledh_contract_e_latent_sir_identity.py",
+        "tests/test_ledh_compact_transport_jvp.py",
+        "tests/test_ledh_no_tape_total_sinkhorn_vjp_phase1.py",
+        "tests/test_ledh_no_tape_total_sinkhorn_vjp_phase2.py",
+        "tests/test_audit_ledh_clean_xla.py",
+        "tests/highdim/test_sir_ledh_teacher_comparison_gpu.py",
+        "tests/test_tensorflow_gpu_memory_policy.py"
+      ]
+    },
+    {
+      "purpose": "trusted two-node T2 N8 GPU/XLA canary",
+      "environment_prefix": "BAYESFILTER_TF_GPU_MEMORY_LIMIT_MIB=8192 MPLCONFIGDIR=/tmp/matplotlib-cache",
+      "runner": "/home/chakwong/anaconda3/bin/conda run -n tf-gpu python -c",
+      "route": "latent_sir_two_node_contract_e_value_and_score_tf"
+    },
+    {
+      "purpose": "independent Austria T2 N256 D18 GPU/XLA design canary",
+      "environment_prefix": "BAYESFILTER_TF_GPU_MEMORY_LIMIT_MIB=8192 MPLCONFIGDIR=/tmp/matplotlib-cache",
+      "runner": "/home/chakwong/anaconda3/bin/conda run -n tf-gpu python -c",
+      "route": "latent_sir_contract_e_canonical_value_and_score_tf",
+      "seeds": "88100--88115"
+    },
+    {
+      "purpose": "final-only Austria T2 N256 D18 marginal audit",
+      "environment_prefix": "BAYESFILTER_TF_GPU_MEMORY_LIMIT_MIB=8192 MPLCONFIGDIR=/tmp/matplotlib-cache",
+      "runner": "/home/chakwong/anaconda3/bin/conda run -n tf-gpu python -c",
+      "route": "latent_sir_contract_e_canonical_value_and_score_tf",
+      "seeds": "87200--87215"
+    }
+  ],
+  "output_artifacts": [
+    "docs/benchmarks/artifacts/sir_contract_e_post_quotient_marginal_repair_20260717/run_manifest.json",
+    "docs/benchmarks/artifacts/sir_contract_e_post_quotient_marginal_repair_20260717/result.json",
+    "docs/plans/bayesfilter-sir-contract-e-post-quotient-marginal-repair-result-2026-07-17.md"
+  ],
+  "data_version": "deterministic repository SIR fixtures and stateless generated observations",
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+}

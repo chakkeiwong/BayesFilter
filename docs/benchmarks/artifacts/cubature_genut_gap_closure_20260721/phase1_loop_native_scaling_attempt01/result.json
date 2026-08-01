@@ -1,0 +1,145 @@
+{
+  "adapter": "exact_transformed_sv_candidate_v1",
+  "campaign_id": "cubature-genut-gpu-xla-scaling-sv-20260721",
+  "dtype": "float32",
+  "hard_valid": true,
+  "host": "DESKTOP-RF1Q5IJ",
+  "jit_compile": true,
+  "logical_devices": [
+    "/device:GPU:0"
+  ],
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "n_values": [
+    12
+  ],
+  "nonclaims": [
+    "scalar adapter feasibility diagnostic only",
+    "no high-dimensional accuracy or full-horizon filtering claim",
+    "no default or leaderboard admission"
+  ],
+  "physical_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "rows": [
+    {
+      "N": 12,
+      "T": 2,
+      "compile_seconds": 2.7358739390037954,
+      "diagnostics_finite": true,
+      "first_result_finite": true,
+      "gpu_allocator": {
+        "current": 7936,
+        "peak": 134223872
+      },
+      "hard_valid": true,
+      "max_col_residual": 2.086162567138672e-07,
+      "max_mean_residual": 6.705522537231445e-08,
+      "max_row_residual": 1.1175870895385742e-07,
+      "output_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "output_is_gpu": true,
+      "score": [
+        -0.4367252588272095,
+        0.7679805755615234
+      ],
+      "score_finite": true,
+      "seed": 9100,
+      "value": -3.772381067276001,
+      "value_finite": true,
+      "warmed_seconds": 0.0030380999960470945
+    },
+    {
+      "N": 12,
+      "T": 10,
+      "compile_seconds": 1.8867907089879736,
+      "diagnostics_finite": true,
+      "first_result_finite": true,
+      "gpu_allocator": {
+        "current": 8192,
+        "peak": 18944
+      },
+      "hard_valid": true,
+      "max_col_residual": 4.76837158203125e-07,
+      "max_mean_residual": 2.384185791015625e-07,
+      "max_row_residual": 1.564621925354004e-07,
+      "output_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "output_is_gpu": true,
+      "score": [
+        -0.6099903583526611,
+        2.313513994216919
+      ],
+      "score_finite": true,
+      "seed": 9117,
+      "value": -18.934337615966797,
+      "value_finite": true,
+      "warmed_seconds": 0.0065768650092650205
+    },
+    {
+      "N": 12,
+      "T": 50,
+      "compile_seconds": 1.6551833960111253,
+      "diagnostics_finite": true,
+      "first_result_finite": true,
+      "gpu_allocator": {
+        "current": 10752,
+        "peak": 21504
+      },
+      "hard_valid": true,
+      "max_col_residual": 1.2218952178955078e-06,
+      "max_mean_residual": 2.384185791015625e-07,
+      "max_row_residual": 9.834766387939453e-07,
+      "output_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "output_is_gpu": true,
+      "score": [
+        -0.10702843219041824,
+        10.046757698059082
+      ],
+      "score_finite": true,
+      "seed": 9134,
+      "value": -91.69276428222656,
+      "value_finite": true,
+      "warmed_seconds": 0.0647465220245067
+    }
+  ],
+  "run_manifest": {
+    "command": [
+      "docs/benchmarks/run_cubature_genut_gpu_xla_scaling.py",
+      "--output-root",
+      "docs/benchmarks/artifacts/cubature_genut_gap_closure_20260721/phase1_loop_native_scaling_attempt01",
+      "--n-values",
+      "12",
+      "--t-values",
+      "2",
+      "10",
+      "50"
+    ],
+    "cuda_visible_devices": "unset",
+    "git_commit": "0fff464ab456b72a010007e552c1e2d761624afe",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "started_utc": "2026-07-21T07:58:12.068607+00:00",
+    "tensorflow": "2.19.1",
+    "wall_seconds": 7.18167664197972
+  },
+  "schema_version": "bayesfilter.cubature_genut_gpu_xla_scaling.v1",
+  "t_values": [
+    2,
+    10,
+    50
+  ],
+  "tf32_enabled": true,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+}

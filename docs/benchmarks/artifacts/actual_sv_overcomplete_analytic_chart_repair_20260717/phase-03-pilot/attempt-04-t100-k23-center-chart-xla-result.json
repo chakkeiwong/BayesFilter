@@ -1,0 +1,66 @@
+{
+  "schema": "bayesfilter.contract_e_tp.actual_sv_overcomplete_result.v1",
+  "status": "PASS_FINITE_PROGRAM",
+  "route_id": "actual_sv_overcomplete_pearson_fixed_reference_v1",
+  "plan": "docs/plans/bayesfilter-actual-sv-overcomplete-analytic-chart-repair-plan-2026-07-17.md",
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-03-pilot/attempt-03-t100-k23-preparation.json",
+    "sha256": "476e4c117b4855358c9b2179d5e5c45623408be5f583f1df04a491ff5e8ace03"
+  },
+  "point_set": "center",
+  "evaluation_mode": "chart",
+  "time_steps": 100,
+  "capacity": 23,
+  "rows": [
+    {
+      "name": "center",
+      "theta": [
+        0.2533471031357997,
+        -0.916290731874155
+      ],
+      "valid": true,
+      "objective": {
+        "shape": [],
+        "values": -226.47356806462201,
+        "serialized_tensor_sha256": "b3b2369a1fefbd4253bcaa7cc21f01d17e35a8490fa4bdc482f32b954ce86127"
+      },
+      "minimum_weight": 5.398287539441243e-165,
+      "weakest_time_zero_based": 0,
+      "maximum_gram_condition_number": 1112610656.511632,
+      "maximum_scaled_relative_residual": 2.3652756417987626e-16,
+      "maximum_feature_residual_abs": 8.881784197001252e-16,
+      "evaluation_seconds": 2.669609628035687
+    }
+  ],
+  "summary": {
+    "all_valid": true,
+    "minimum_weight": 5.398287539441243e-165,
+    "weakest_point": "center"
+  },
+  "timing": {
+    "trace_seconds": 2.9899437519488856,
+    "first_compile_and_evaluation_seconds": 2.669609628035687,
+    "subsequent_warm_evaluation_seconds_total": 0.0,
+    "total_seconds": 5.68240595201496
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "git_dirty": true,
+    "command": "docs/benchmarks/run_actual_sv_overcomplete_analytic_chart.py --device cpu --preparation docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-03-pilot/attempt-03-t100-k23-preparation.json --point-set center --evaluation-mode chart --output docs/benchmarks/artifacts/actual_sv_overcomplete_analytic_chart_repair_20260717/phase-03-pilot/attempt-04-t100-k23-center-chart-xla-result.json",
+    "tensorflow_version": "2.19.1",
+    "device": "cpu",
+    "physical_gpus": [],
+    "logical_gpus": [],
+    "logical_device_memory_limit_mib": null,
+    "memory_growth": false,
+    "jit_compile": true,
+    "dtype": "float64"
+  },
+  "derivative_status": "not_evaluated_chart_screen_only",
+  "nonclaims": [
+    "not manual score certification",
+    "not finite-difference certification",
+    "not scientific score equivalence",
+    "not HMC or canonical Contract E readiness"
+  ]
+}

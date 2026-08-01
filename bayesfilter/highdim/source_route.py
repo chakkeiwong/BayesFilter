@@ -49,6 +49,90 @@ class P70FixedFitDiagnosticError(RuntimeError):
 
 SOURCE_FAITHFUL_ROUTE_LABEL = "source_faithful_filtering"
 GRADIENT_ADAPTATION_ROUTE_LABEL = "gradient_bearing_adaptation"
+
+# HMC evaluates the same value program at changing parameter values.  Any
+# route that rebuilds/adapts its approximation as theta changes is therefore
+# not an admissible HMC route, even when it remains useful for diagnostics.
+ZHAO_CUI_FIXED_VARIANT_ROUTE_ID = "fixed_variant_zhao_cui_source_route"
+ZHAO_CUI_HMC_DEFAULT_ROUTE_ID = ZHAO_CUI_FIXED_VARIANT_ROUTE_ID
+ZHAO_CUI_HMC_ROUTE_POLICY_ID = "zhao_cui_fixed_variant_hmc_default_v1"
+ZHAO_CUI_FIXED_VARIANT_ROUTE_IDS = (
+    ZHAO_CUI_FIXED_VARIANT_ROUTE_ID,
+    "zhao_cui_exact_transformed_sv_fixed_branch_tt",
+    "zhao_cui_ksc_mixture_fixed_branch_tt",
+    "zhao_cui_generalized_sv_prior_mean_scalar_fixed_design_tt",
+    "zhao_cui_sir_d18_local_complete_data_manual_component",
+)
+ZHAO_CUI_HISTORICAL_ROUTE_IDS = (
+    "adaptive_author_full_sol",
+    "adaptive_author_pre_sol",
+    "diagnostic_historical_retained_grid",
+    "multistate_nonlinear_fixed_design_tt_value_path",
+    "multistate_nonlinear_fixed_design_tt_score_path",
+    "scalar_nonlinear_fixed_design_tt_value_path",
+    "scalar_nonlinear_fixed_design_tt_score_path",
+    "zhao_cui_predator_prey_t20_multistate_fixed_design_tt",
+    "zhao_cui_lgssm_exact_oracle_affine_adapter",
+    "zhao_cui_sir_d18_local_complete_data_manual_component",
+    "zhao_cui_fixed_adjacent_state_squared_tt_v1",
+)
+ZHAO_CUI_HISTORICAL_ROUTE_STATUS = "historical_diagnostic_only"
+ZHAO_CUI_HMC_ROUTE_STATUS = "default_hmc_fixed_variant"
+ZHAO_CUI_HMC_ROUTE_BLOCK_STATUS = "blocked_hmc_route_not_fixed_variant"
+
+
+def zhao_cui_hmc_route_policy(route_id: str | None = None) -> Mapping[str, object]:
+    """Return the sole HMC/default Zhao--Cui route decision.
+
+    ``route_id=None`` selects the repository default.  An explicit legacy or
+    adaptive route is never silently substituted: it is classified as
+    historical and blocked for HMC-facing use.  Historical artifacts remain
+    readable through their own diagnostic readers.
+    """
+
+    requested = ZHAO_CUI_HMC_DEFAULT_ROUTE_ID if route_id is None else str(route_id)
+    if requested in ZHAO_CUI_FIXED_VARIANT_ROUTE_IDS:
+        return {
+            "policy_id": ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+            "requested_route_id": requested,
+            "selected_route_id": requested,
+            "default_route_id": ZHAO_CUI_HMC_DEFAULT_ROUTE_ID,
+            "status": ZHAO_CUI_HMC_ROUTE_STATUS,
+            "hmc_eligible": True,
+            "historical_diagnostic_only": False,
+            "fail_closed": True,
+        }
+    if requested in ZHAO_CUI_HISTORICAL_ROUTE_IDS:
+        status = ZHAO_CUI_HMC_ROUTE_BLOCK_STATUS
+        historical = True
+    else:
+        status = ZHAO_CUI_HMC_ROUTE_BLOCK_STATUS
+        historical = False
+    return {
+        "policy_id": ZHAO_CUI_HMC_ROUTE_POLICY_ID,
+        "requested_route_id": requested,
+        "selected_route_id": None,
+        "default_route_id": ZHAO_CUI_HMC_DEFAULT_ROUTE_ID,
+        "status": status,
+        "hmc_eligible": False,
+        "historical_diagnostic_only": historical,
+        "fail_closed": True,
+    }
+
+
+def require_zhao_cui_hmc_route(route_id: str | None = None) -> str:
+    """Resolve the fixed-variant route or fail closed for HMC use."""
+
+    decision = zhao_cui_hmc_route_policy(route_id)
+    if decision["hmc_eligible"] is not True:
+        raise ValueError(
+            "HMC-facing Zhao-Cui evaluation requires the fixed-variant source "
+            f"route {ZHAO_CUI_HMC_DEFAULT_ROUTE_ID!r}; requested "
+            f"{decision['requested_route_id']!r} is historical/diagnostic only"
+        )
+    return str(decision["selected_route_id"])
+
+
 SOURCE_ROUTE_REQUIRED_OPERATION_IDS = (
     "initialize_samples",
     "push_samples",
@@ -1945,7 +2029,7 @@ def p83_minimal_transport_slice_readiness(
         blockers.append("missing_numerical_grid_cdf_backend")
     if (
         str(transport.get("conditional_cdf_route_class", ""))
-        != "fixed_hmc_adaptation_diagnostic_approximation"
+        != "extension_or_invention_diagnostic_approximation"
     ):
         blockers.append("missing_diagnostic_cdf_route_class")
     if transport.get("production_kr_closure") is not False:

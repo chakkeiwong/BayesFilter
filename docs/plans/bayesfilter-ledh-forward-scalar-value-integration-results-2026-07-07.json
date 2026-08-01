@@ -1,0 +1,663 @@
+{
+  "algorithm_id": "ledh_pfpf_ot",
+  "all_algorithm_comparison_allowed": false,
+  "diagnostic_rows": [
+    {
+      "reason": "legacy scoped parameterized SIR diagnostic row; no separate Phase 8 main-row admission artifact",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20_parameterized_logscale",
+      "status": "excluded_from_main_value_leaderboard"
+    }
+  ],
+  "integration_scope": "ledh_value_only_admitted_forward_scalar_rows",
+  "main_row_count": 6,
+  "main_row_ids": [
+    "benchmark_lgssm_exact_oracle_m3_T50",
+    "zhao_cui_spatial_sir_austria_j9_T20",
+    "zhao_cui_predator_prey_T20",
+    "zhao_cui_sv_actual_nongaussian_T1000",
+    "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000"
+  ],
+  "metadata_date": "2026-07-07",
+  "nonclaims": [
+    "value-only integration from admitted forward-scalar artifacts",
+    "not score admission",
+    "not score correctness",
+    "not all-algorithm comparison evidence",
+    "not runtime ranking evidence",
+    "not HMC readiness evidence",
+    "not posterior correctness evidence",
+    "not scientific superiority evidence",
+    "KSC row is finite-mixture surrogate target evidence, not exact native actual-SV likelihood"
+  ],
+  "phase": 8,
+  "program": "bayesfilter-ledh-forward-scalar-per-model",
+  "rows": [
+    {
+      "admission_status": "n10000_same_target_value_admitted",
+      "algorithm_id": "ledh_pfpf_ot",
+      "average_log_likelihood_by_seed": [
+        -2.719130859375,
+        -2.7188070678710936,
+        -2.7193002319335937,
+        -2.71923583984375,
+        -2.7195333862304687
+      ],
+      "average_log_likelihood_summary": {
+        "mcse": 0.00011866812738375645,
+        "mean": -2.719201477050781,
+        "sample_sd": 0.0002653499995926837
+      },
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "flow_observation_policy": "identity_lgssm_observation_flow",
+      "log_likelihood_by_seed": [
+        -135.95654296875,
+        -135.9403533935547,
+        -135.9650115966797,
+        -135.9617919921875,
+        -135.97666931152344
+      ],
+      "log_likelihood_summary": {
+        "mcse": 0.005933406369186942,
+        "mean": -135.96007385253907,
+        "sample_sd": 0.013267499979632216
+      },
+      "nonclaims": [
+        "not nonlinear-row evidence",
+        "not score admission",
+        "not score correctness",
+        "not HMC readiness evidence",
+        "not posterior correctness evidence",
+        "not runtime ranking evidence",
+        "phase8 value-only integration row",
+        "not score admission",
+        "not score correctness",
+        "not runtime-rankable against frozen non-LEDH rows",
+        "not all-algorithm comparison evidence"
+      ],
+      "num_particles": 10000,
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+      "row_scope": "main_observed_data_filtering_row",
+      "row_semantics": {
+        "target_family": "lgssm_gaussian_observation_density",
+        "target_policy_label_preserved": true
+      },
+      "runtime_cross_ranking_allowed": false,
+      "runtime_diagnostics": {
+        "compile_and_first_call_seconds": null,
+        "device": null,
+        "device_scope": null,
+        "diagnostic_only": true,
+        "output_devices": [],
+        "runtime_cross_ranking_allowed": false,
+        "runtime_rankable": false,
+        "runtime_rankable_with_non_ledh": false,
+        "warm_call_timing_summary_seconds": null
+      },
+      "runtime_rankable": false,
+      "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+      "source_artifact": "docs/plans/ledh-phase2-lgssm-forward-scalar-artifact-2026-07-07.json",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_density_used_for_correction": true,
+      "target_observation_policy": "lgssm_gaussian_observation_density",
+      "target_output_tensor_field": "log_likelihood",
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_coordinate_system": "physical_benchmark_exact_oracle",
+      "theta_values": [
+        0.72,
+        0.55,
+        0.35,
+        0.35,
+        0.45
+      ],
+      "time_steps": 50,
+      "value_status": "admitted_forward_scalar_value_only"
+    },
+    {
+      "admission_status": "n10000_same_target_value_admitted",
+      "algorithm_id": "ledh_pfpf_ot",
+      "average_log_likelihood_by_seed": [
+        -45.12174987792969,
+        -45.13401794433594,
+        -45.17232971191406,
+        -45.15927734375,
+        -45.12016296386719
+      ],
+      "average_log_likelihood_summary": {
+        "mcse": 0.010411105586810961,
+        "mean": -45.14150756835937,
+        "sample_sd": 0.023279939813037148
+      },
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "flow_observation_policy": "sir_infectious_components_gaussian_flow_observation",
+      "log_likelihood_by_seed": [
+        -902.4349975585938,
+        -902.6803588867188,
+        -903.4465942382812,
+        -903.185546875,
+        -902.4032592773438
+      ],
+      "log_likelihood_summary": {
+        "mcse": 0.20822211173623006,
+        "mean": -902.8301513671875,
+        "sample_sd": 0.4655987962607672
+      },
+      "nonclaims": [
+        "not old no_free_theta admission",
+        "not exact nonlinear likelihood correctness evidence",
+        "not Zhao-Cui TT/SIRT source-faithfulness evidence",
+        "not score admission",
+        "not score correctness",
+        "not HMC readiness evidence",
+        "not posterior correctness evidence",
+        "not runtime ranking evidence",
+        "phase8 value-only integration row",
+        "not score admission",
+        "not score correctness",
+        "not runtime-rankable against frozen non-LEDH rows",
+        "not all-algorithm comparison evidence"
+      ],
+      "num_particles": 10000,
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "row_scope": "main_observed_data_filtering_row",
+      "row_semantics": {
+        "observation_dimension": 9,
+        "state_dimension": 18,
+        "target_family": "fixed_sir_infectious_components_gaussian",
+        "target_policy_label_preserved": true
+      },
+      "runtime_cross_ranking_allowed": false,
+      "runtime_diagnostics": {
+        "compile_and_first_call_seconds": null,
+        "device": null,
+        "device_scope": null,
+        "diagnostic_only": true,
+        "output_devices": [],
+        "runtime_cross_ranking_allowed": false,
+        "runtime_rankable": false,
+        "runtime_rankable_with_non_ledh": false,
+        "warm_call_timing_summary_seconds": null
+      },
+      "runtime_rankable": false,
+      "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+      "source_artifact": "docs/plans/ledh-phase3-fixed-sir-forward-scalar-artifact-2026-07-07.json",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_density_used_for_correction": true,
+      "target_observation_policy": "fixed_sir_infectious_components_gaussian_observation_density",
+      "target_output_tensor_field": "log_likelihood",
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_coordinate_system": "sir_log_scale_theta",
+      "theta_values": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "time_steps": 20,
+      "value_status": "admitted_forward_scalar_value_only"
+    },
+    {
+      "admission_status": "n10000_same_target_value_admitted",
+      "algorithm_id": "ledh_pfpf_ot",
+      "average_log_likelihood_by_seed": [
+        -8.484564208984375,
+        -8.48184814453125,
+        -8.473249053955078,
+        -8.574980926513671,
+        -8.45223388671875
+      ],
+      "average_log_likelihood_summary": {
+        "mcse": 0.021175068575330427,
+        "mean": -8.493375244140626,
+        "sample_sd": 0.04734889276265847
+      },
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "flow_observation_policy": "predator_prey_identity_state_gaussian_flow_observation",
+      "log_likelihood_by_seed": [
+        -169.6912841796875,
+        -169.636962890625,
+        -169.46498107910156,
+        -171.49961853027344,
+        -169.044677734375
+      ],
+      "log_likelihood_summary": {
+        "mcse": 0.4235013715066106,
+        "mean": -169.8675048828125,
+        "sample_sd": 0.9469778552531739
+      },
+      "nonclaims": [
+        "not score admission",
+        "not score correctness",
+        "not exact nonlinear likelihood correctness evidence",
+        "not Zhao-Cui TT/SIRT source-faithfulness evidence",
+        "not HMC readiness evidence",
+        "not posterior correctness evidence",
+        "not scientific superiority evidence",
+        "not runtime ranking evidence",
+        "phase8 value-only integration row",
+        "not score admission",
+        "not score correctness",
+        "not runtime-rankable against frozen non-LEDH rows",
+        "not all-algorithm comparison evidence"
+      ],
+      "num_particles": 10000,
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "zhao_cui_predator_prey_T20",
+      "row_scope": "main_observed_data_filtering_row",
+      "row_semantics": {
+        "flow_observation_contract": "identity_state_gaussian_flow_observation",
+        "target_family": "additive_gaussian_predator_prey",
+        "target_policy_label_preserved": true
+      },
+      "runtime_cross_ranking_allowed": false,
+      "runtime_diagnostics": {
+        "compile_and_first_call_seconds": 34.134711731923744,
+        "device": "/GPU:0",
+        "device_scope": "visible",
+        "diagnostic_only": true,
+        "output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "runtime_cross_ranking_allowed": false,
+        "runtime_rankable": false,
+        "runtime_rankable_with_non_ledh": false,
+        "warm_call_timing_summary_seconds": {
+          "max": 19.095908388961107,
+          "mean": 19.095908388961107,
+          "median": 19.095908388961107,
+          "min": 19.095908388961107
+        }
+      },
+      "runtime_rankable": false,
+      "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+      "source_artifact": "docs/plans/ledh-phase4-predator-prey-forward-scalar-artifact-2026-07-07.json",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_density_used_for_correction": true,
+      "target_observation_policy": "additive_gaussian_predator_prey",
+      "target_output_tensor_field": "log_likelihood",
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_coordinate_system": "physical",
+      "theta_values": [
+        0.6,
+        114.0,
+        25.0,
+        0.3,
+        0.5,
+        0.5
+      ],
+      "time_steps": 20,
+      "value_status": "admitted_forward_scalar_value_only"
+    },
+    {
+      "admission_status": "n10000_same_target_value_admitted",
+      "algorithm_id": "ledh_pfpf_ot",
+      "average_log_likelihood_by_seed": [
+        -2.29010205078125,
+        -2.289888916015625,
+        -2.28983154296875,
+        -2.289517333984375,
+        -2.290427490234375
+      ],
+      "average_log_likelihood_summary": {
+        "mcse": 0.00015099991276091548,
+        "mean": -2.289953466796875,
+        "sample_sd": 0.000337646069529945
+      },
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "flow_observation_policy": "gaussianized_exact_log_square_actual_sv_flow_observation",
+      "log_likelihood_by_seed": [
+        -2290.10205078125,
+        -2289.888916015625,
+        -2289.83154296875,
+        -2289.517333984375,
+        -2290.427490234375
+      ],
+      "log_likelihood_summary": {
+        "mcse": 0.15099991276087987,
+        "mean": -2289.953466796875,
+        "sample_sd": 0.33764606952986537
+      },
+      "nonclaims": [
+        "not score admission",
+        "not score correctness",
+        "not KSC surrogate likelihood evidence",
+        "not raw Gaussian observation likelihood evidence",
+        "not augmented-noise Gaussian-closure evidence",
+        "not generalized-SV admission",
+        "not HMC readiness evidence",
+        "not posterior correctness evidence",
+        "not scientific superiority evidence",
+        "not runtime ranking evidence",
+        "phase8 value-only integration row",
+        "not score admission",
+        "not score correctness",
+        "not runtime-rankable against frozen non-LEDH rows",
+        "not all-algorithm comparison evidence"
+      ],
+      "num_particles": 10000,
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+      "row_scope": "main_observed_data_filtering_row",
+      "row_semantics": {
+        "target_family": "exact_transformed_actual_sv_log_chi_square",
+        "target_observation_density": "exact_log_chi_square_log_density",
+        "target_policy_label_preserved": true,
+        "transform_offset": 0.0
+      },
+      "runtime_cross_ranking_allowed": false,
+      "runtime_diagnostics": {
+        "compile_and_first_call_seconds": 1105.1444279109128,
+        "device": "/GPU:0",
+        "device_scope": "visible",
+        "diagnostic_only": true,
+        "output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "runtime_cross_ranking_allowed": false,
+        "runtime_rankable": false,
+        "runtime_rankable_with_non_ledh": false,
+        "warm_call_timing_summary_seconds": {
+          "max": 1066.3097243178636,
+          "mean": 1066.3097243178636,
+          "median": 1066.3097243178636,
+          "min": 1066.3097243178636
+        }
+      },
+      "runtime_rankable": false,
+      "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+      "source_artifact": "docs/plans/ledh-phase5-actual-sv-forward-scalar-artifact-2026-07-07.json",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_density_used_for_correction": true,
+      "target_observation_policy": "transformed_actual_sv_log_y_square",
+      "target_output_tensor_field": "log_likelihood",
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_coordinate_system": "synthetic_unconstrained",
+      "theta_values": [
+        0.2533471031357997,
+        -0.916290731874155
+      ],
+      "time_steps": 1000,
+      "value_status": "admitted_forward_scalar_value_only"
+    },
+    {
+      "admission_status": "n10000_same_target_value_admitted",
+      "algorithm_id": "ledh_pfpf_ot",
+      "average_log_likelihood_by_seed": [
+        -1.427489749968998,
+        -1.427416725764199,
+        -1.427489023359995,
+        -1.427599831232949,
+        -1.4275254749116444
+      ],
+      "average_log_likelihood_summary": {
+        "mcse": 2.973955507495421e-05,
+        "mean": -1.427504161047557,
+        "sample_sd": 6.649966676819647e-05
+      },
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "flow_observation_policy": "log_square_gaussian_surrogate_for_ledh_flow_only",
+      "log_likelihood_by_seed": [
+        -1438.90966796875,
+        -1438.8360595703125,
+        -1438.908935546875,
+        -1439.0206298828125,
+        -1438.9456787109375
+      ],
+      "log_likelihood_summary": {
+        "mcse": 0.02997747151555195,
+        "mean": -1438.9241943359375,
+        "sample_sd": 0.06703166410233781
+      },
+      "nonclaims": [
+        "not score admission",
+        "not score correctness",
+        "not actual-SV admission",
+        "not KSC admission",
+        "not KSC surrogate likelihood evidence",
+        "not native generalized-SV dense fixture evidence",
+        "not SP500 benchmark-observation evidence",
+        "not author-default truth evidence",
+        "not HMC readiness evidence",
+        "not posterior correctness evidence",
+        "not scientific superiority evidence",
+        "not runtime ranking evidence",
+        "phase8 value-only integration row",
+        "not score admission",
+        "not score correctness",
+        "not runtime-rankable against frozen non-LEDH rows",
+        "not all-algorithm comparison evidence"
+      ],
+      "num_particles": 10000,
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "row_scope": "main_observed_data_filtering_row",
+      "row_semantics": {
+        "target_family": "source_route_prior_mean_generalized_sv",
+        "target_observation_density": "raw_zero_mean_generalized_sv_prior_mean_normal_log_density",
+        "target_policy_label_preserved": true
+      },
+      "runtime_cross_ranking_allowed": false,
+      "runtime_diagnostics": {
+        "compile_and_first_call_seconds": 1187.9543538549915,
+        "device": "/GPU:0",
+        "device_scope": "visible",
+        "diagnostic_only": true,
+        "output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "runtime_cross_ranking_allowed": false,
+        "runtime_rankable": false,
+        "runtime_rankable_with_non_ledh": false,
+        "warm_call_timing_summary_seconds": {
+          "max": 1048.247488206951,
+          "mean": 1048.247488206951,
+          "median": 1048.247488206951,
+          "min": 1048.247488206951
+        }
+      },
+      "runtime_rankable": false,
+      "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+      "source_artifact": "docs/plans/ledh-phase6-generalized-sv-forward-scalar-artifact-2026-07-07.json",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_density_used_for_correction": true,
+      "target_observation_policy": "source_route_prior_mean_generalized_sv",
+      "target_output_tensor_field": "log_likelihood",
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_coordinate_system": "source_route_active_transformed_prior_mean",
+      "theta_values": [
+        1.0824113944610982,
+        -2.076793740349318,
+        0.0
+      ],
+      "time_steps": 1008,
+      "value_status": "admitted_forward_scalar_value_only"
+    },
+    {
+      "admission_status": "n10000_same_target_value_admitted",
+      "algorithm_id": "ledh_pfpf_ot",
+      "average_log_likelihood_by_seed": [
+        -2.288165771484375,
+        -2.287877685546875,
+        -2.287852294921875,
+        -2.287529296875,
+        -2.28834375
+      ],
+      "average_log_likelihood_summary": {
+        "mcse": 0.00014023061338179802,
+        "mean": -2.287953759765625,
+        "sample_sd": 0.0003135651840481921
+      },
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "flow_observation_policy": "gaussianized_ksc_log_square_surrogate_flow_observation",
+      "log_likelihood_by_seed": [
+        -2288.165771484375,
+        -2287.877685546875,
+        -2287.852294921875,
+        -2287.529296875,
+        -2288.34375
+      ],
+      "log_likelihood_summary": {
+        "mcse": 0.1402306133817723,
+        "mean": -2287.953759765625,
+        "sample_sd": 0.31356518404813455
+      },
+      "nonclaims": [
+        "not score admission",
+        "not score correctness",
+        "not exact native actual-SV likelihood evidence",
+        "not actual-SV admission",
+        "not raw Gaussian observation likelihood evidence",
+        "not augmented-noise Gaussian-closure evidence",
+        "not generalized-SV admission",
+        "not HMC readiness evidence",
+        "not posterior correctness evidence",
+        "not scientific superiority evidence",
+        "not runtime ranking evidence",
+        "phase8 value-only integration row",
+        "not score admission",
+        "not score correctness",
+        "not runtime-rankable against frozen non-LEDH rows",
+        "not all-algorithm comparison evidence"
+      ],
+      "num_particles": 10000,
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "row_scope": "main_observed_data_filtering_row",
+      "row_semantics": {
+        "actual_sv_exact_log_chi_square_target_used": false,
+        "generalized_sv_target_used": false,
+        "ksc_mixture_is_target_likelihood": true,
+        "legacy_raw_gaussian_callback_used": false,
+        "target_family": "ksc_finite_gaussian_mixture_surrogate",
+        "target_observation_density": "finite_ksc_log_chi_square_gaussian_mixture_log_density",
+        "target_policy_label_preserved": true,
+        "target_transform": "log_y_square_plus_offset",
+        "transform_offset": 1e-08
+      },
+      "runtime_cross_ranking_allowed": false,
+      "runtime_diagnostics": {
+        "compile_and_first_call_seconds": 1054.9561004990246,
+        "device": "/GPU:0",
+        "device_scope": "visible",
+        "diagnostic_only": true,
+        "output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "runtime_cross_ranking_allowed": false,
+        "runtime_rankable": false,
+        "runtime_rankable_with_non_ledh": false,
+        "warm_call_timing_summary_seconds": {
+          "max": 1054.2882441349793,
+          "mean": 1054.2882441349793,
+          "median": 1054.2882441349793,
+          "min": 1054.2882441349793
+        }
+      },
+      "runtime_rankable": false,
+      "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+      "source_artifact": "docs/plans/ledh-phase7-ksc-sv-forward-scalar-artifact-2026-07-07.json",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_density_used_for_correction": true,
+      "target_observation_policy": "ksc_log_chi_square_gaussian_mixture_surrogate",
+      "target_output_tensor_field": "log_likelihood",
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_coordinate_system": "synthetic_unconstrained",
+      "theta_values": [
+        0.2533471031357997,
+        -0.916290731874155
+      ],
+      "time_steps": 1000,
+      "value_status": "admitted_forward_scalar_value_only"
+    }
+  ],
+  "runtime_cross_ranking_allowed": false,
+  "schema_version": "bayesfilter.highdim.ledh_forward_scalar_value_integration.v1",
+  "score_integration_status": "blocked_out_of_scope_forward_scalar_only",
+  "target_output_tensor_field": "log_likelihood",
+  "target_scalar": "observed_data_log_likelihood_estimator"
+}

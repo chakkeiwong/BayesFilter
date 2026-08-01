@@ -18,22 +18,23 @@ def _load_module():
     return module
 
 
-def test_phase6_fixed_sgqf_generalized_sv_remains_exact_source_row_blocker() -> None:
+def test_phase6_fixed_sgqf_generalized_sv_uses_raw_y_manual_score_route() -> None:
     module = _load_module()
     row = module._apply_score_status(module._cell_for_fixed_sgqf(ROW_ID))
 
-    assert row["comparison_status"] == "blocked"
+    assert row["comparison_status"] == "executed_value_score"
     assert row["numeric_execution_status"] == (
-        "blocked_generalized_sv_fixed_sgqf_source_row_evaluator_missing"
+        "executed_generalized_sv_raw_y_sgqf_value_score"
     )
-    assert row["target_contract_status"] == "blocked_exact_source_row_evaluator_missing"
-    assert row["score_status"] == "blocked_exact_source_row_evaluator_missing"
-    assert row["log_likelihood"] is None
-    assert row["score"] is None
-    assert "GENERALIZED_SV_EXACT_SOURCE_ROW_FIXED_SGQF_EVALUATOR_REQUIRED" in row["reason_codes"]
-    assert "PRECURSOR_NATIVE_ORACLE_AUXILIARY_ACTUAL_SV_KSC_NOT_ADMISSION_EVIDENCE" in row["reason_codes"]
-    assert "blocked_source_row_evaluator_missing" in row["reason"]
-    assert any("do not admit this fixed-SGQF source-row cell" in item for item in row["nonclaims"])
+    assert row["target_contract_status"] == (
+        "target_compatible_generalized_sv_prior_mean_raw_y_gaussian_projection"
+    )
+    assert row["score_status"] == "analytical_score_emitted"
+    assert isinstance(row["log_likelihood"], float)
+    assert len(row["score"]) == 3
+    assert row["cloud_level"] == 3
+    assert "GENERALIZED_SV_RAW_Y_SGQF_MANUAL_VALUE_SCORE_ROUTE" in row["reason_codes"]
+    assert any("not exact nonlinear likelihood" in item for item in row["nonclaims"])
 
 
 def test_phase6_zhao_cui_generalized_sv_remains_exact_source_row_blocker() -> None:

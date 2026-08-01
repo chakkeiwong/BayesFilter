@@ -1,0 +1,138 @@
+{
+  "cpu_diagnostics": null,
+  "engineering_decision": "full_T1008_level3_value_score_XLA_pass",
+  "gpu_allocator_bytes": {
+    "current": 16128,
+    "peak": 21504
+  },
+  "hard_vetoes": [],
+  "logical_gpus": [
+    "/device:GPU:0"
+  ],
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "mode": "gpu",
+  "nonclaims": [
+    "no exact nonlinear likelihood or posterior claim",
+    "no NativeGeneralizedSVSSM or KSC target substitution",
+    "no statistically supported ranking or SGQF superiority claim",
+    "GPU execution is engineering evidence only"
+  ],
+  "numerical_decision": "manual_score_and_level3_dense_refinement_gates_pass",
+  "parity": {
+    "cpu_reference": "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt03/generalized-sv/cpu/result.json",
+    "score_max_absolute_gap": 2.6645352591003757e-15,
+    "score_tolerance": 2.8304730705911515e-08,
+    "value_absolute_gap": 0.0,
+    "value_tolerance": 1.437992371837648e-06
+  },
+  "physical_gpus": [
+    "/physical_device:GPU:0"
+  ],
+  "result": {
+    "jit_compile": true,
+    "same_scalar_absolute_gap": 0.0,
+    "score": [
+      2.830473070591149,
+      1.114889354520848,
+      -0.06866268525147959
+    ],
+    "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "status": {
+      "final_filtered_mean": 0.6329004523148218,
+      "final_filtered_variance": 3.3025445055720812,
+      "min_filtered_variance": 2.7397874044168358,
+      "min_predictive_variance": 3.028539186937073,
+      "status_code": 0,
+      "transition_count": 1008,
+      "valid_value_score": true
+    },
+    "value": -1437.9923718376479,
+    "value_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "value_only": -1437.9923718376479,
+    "value_status": {
+      "final_filtered_mean": 0.6329004523148218,
+      "final_filtered_variance": 3.3025445055720812,
+      "min_filtered_variance": 2.7397874044168358,
+      "min_predictive_variance": 3.028539186937073,
+      "status_code": 0,
+      "transition_count": 1008,
+      "valid_value": true
+    }
+  },
+  "route_identity": "648b817c259506101c0ec6e9eefd9afe14c676db1ee08e7163b8f74edfc527f7",
+  "route_manifest": {
+    "approximation": "sequential_gaussian_projection_after_direct_likelihood_quadrature",
+    "cloud_level": 3,
+    "cloud_point_count": 5,
+    "cloud_sha256": "96e8bec74c2c3289c85f8bffdc8efecaad8dbd37890387a35e8ca969e09ff4b0",
+    "dtype": "float64",
+    "horizon": 1008,
+    "level_selection": "level3 selected after level2/3/5 full-horizon ladder; level3-level5 value gap 6.0507077e-5 versus level2-level5 gap 4.7830381e-3",
+    "model_family": "GeneralizedSVPriorMeanSSM",
+    "nonclaims": [
+      "not exact nonlinear likelihood or exact posterior",
+      "not NativeGeneralizedSVSSM and not a two-state target",
+      "not actual-SV or KSC transformed-observation evidence",
+      "not adaptive MATLAB TT-cross/SIRT reproduction",
+      "not SGQF superiority or default-readiness evidence"
+    ],
+    "observation_sha256": "c990947b16d5ef108870fcb716836166a41b1fe31503b9cb5e0cd0459d4a53f2",
+    "observation_target": "raw_y_zero_mean_normal_variance_exp_tau_x",
+    "parameter_coordinate": "theta=(z_gamma,log_tau,mu_over_tau)",
+    "result_kind": "value_score",
+    "route_id": "fixed_sgqf_generalized_sv_prior_mean_raw_y_level3_gaussian_projection_manual_score_v1",
+    "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "schema": "bayesfilter.generalized_sv_source_sgqf_route.v1",
+    "score": "manual_forward_sensitivity_of_the_same_fixed_sgqf_scalar",
+    "seed": 81105,
+    "source_anchor": "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/ssmodel.m:34",
+    "state_sha256": "2a976493f58cc839667f8f4c892e92853dc232f5fe02fc617dad202b300ee358",
+    "target_id": "zhao_cui_svmodels_prior_mean_tf_seed81105_transition_then_observe_raw_y_v1",
+    "time_order": "stationary_x0_then_1008_transition_then_observe_steps"
+  },
+  "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+  "run_manifest": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+      "docs/benchmarks/run_generalized_sv_sgqf_validation.py",
+      "--mode",
+      "gpu",
+      "--cpu-reference",
+      "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt03/generalized-sv/cpu/result.json",
+      "--output-root",
+      "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt03/generalized-sv/gpu-attempt02"
+    ],
+    "cuda_visible_devices": "unset",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "71f659aa2620adfaa9fdb34d66c0816543365c82",
+    "git_diff_sha256": "51bf5c15f227db36cc6c64ffbefa3c6272cf8d21eea2fae76e070299048d352b",
+    "host": "DESKTOP-RF1Q5IJ",
+    "plan": "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-active-campaign-note-2026-07-22.md",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "result": "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt03/generalized-sv/gpu-attempt02/result.json",
+    "started_utc": "2026-07-22T11:36:01.478486+00:00",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 1.1730487929889932
+  },
+  "schema_version": "bayesfilter.generalized_sv_sgqf_validation.v1",
+  "scientific_decision": "raw_y_gaussian_projection_candidate_viable_not_exact_or_superior",
+  "status": "PASS"
+}

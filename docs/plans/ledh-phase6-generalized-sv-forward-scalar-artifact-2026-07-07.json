@@ -1,0 +1,411 @@
+{
+  "admission_status": "n10000_same_target_value_admitted",
+  "average_log_likelihood_by_seed": [
+    -1.427489749968998,
+    -1.427416725764199,
+    -1.427489023359995,
+    -1.427599831232949,
+    -1.4275254749116444
+  ],
+  "batch_seeds": [
+    81120,
+    81121,
+    81122,
+    81123,
+    81124
+  ],
+  "compile_and_first_call_seconds": 1187.9543538549915,
+  "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+  "cuda_visible_devices": null,
+  "device": "/GPU:0",
+  "device_scope": "visible",
+  "expect_device_kind": "gpu",
+  "finite_output": true,
+  "flow_observation_policy": "log_square_gaussian_surrogate_for_ledh_flow_only",
+  "flow_observation_variance": 2.0,
+  "forward_contract": {
+    "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+    "estimator_kind": "finite_N_fixed_randomness_ledh_log_likelihood_estimator",
+    "full_leaderboard_row": true,
+    "metadata": {
+      "batch_seeds": [
+        81120,
+        81121,
+        81122,
+        81123,
+        81124
+      ],
+      "num_particles": 10000,
+      "target_observation_policy": "source_route_prior_mean_generalized_sv",
+      "time_steps": 1008
+    },
+    "nonclaims": [
+      "metadata alone is not generalized-SV value admission",
+      "metadata alone is not generalized-SV score evidence"
+    ],
+    "output_tensor_field": "log_likelihood",
+    "proposal_flow_fields": [
+      "pre_flow_log_density",
+      "forward_log_det",
+      "proposal_observation_surface"
+    ],
+    "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "row_scope": "main_observed_data_filtering_row",
+    "schema_version": "bayesfilter.highdim.ledh_forward_contract.v1",
+    "score_status": "blocked_score_until_same_target_no_tape_gate",
+    "target_density_fields": [
+      "transition_log_density",
+      "observation_log_density"
+    ],
+    "target_scalar": "observed_data_log_likelihood_estimator",
+    "theta_contract": {
+      "nonclaims": [
+        "not actual-SV row",
+        "not KSC row",
+        "not native generalized-SV fixture substitution"
+      ],
+      "parameter_order": [
+        "gamma_unconstrained",
+        "log_tau",
+        "mu"
+      ],
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "source_classification": "phase1_generalized_sv_source_row_contract",
+      "theta_coordinate_system": "source_route_active_transformed_prior_mean",
+      "theta_dimension": 3,
+      "theta_status": "phase1_frozen",
+      "truth_theta": [
+        1.0824113944610982,
+        -2.076793740349318,
+        0.0
+      ]
+    },
+    "value_status": "generalized_sv_same_target_value_metadata_present"
+  },
+  "full_batched_evaluation_per_warm_call": true,
+  "generalized_sv_semantics": {
+    "actual_sv_evidence_used": false,
+    "author_defaults_used_as_truth": false,
+    "dataset_seed": 81105,
+    "flow_is_proposal_surface_only": true,
+    "flow_observation_offset": 1e-06,
+    "flow_observation_policy": "log_square_gaussian_surrogate_for_ledh_flow_only",
+    "flow_observation_transform": "log(y_t^2 + 1e-6)",
+    "flow_observation_variance": 2.0,
+    "ksc_mixture_used": false,
+    "native_generalized_sv_dense_fixture_used": false,
+    "positive_time_density": "source_route_ar1_transition_density",
+    "raw_observation_zero_count": 0,
+    "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "source_route": "zhao_cui_svmodels_prior_mean_synthetic",
+    "sp500_returns_used_as_benchmark_observations": false,
+    "state_timing_convention": "initial particles are stationary previous states; every recorded observation, including t=0, first applies the AR(1) transition before target weighting",
+    "target_density_used_for_correction": true,
+    "target_observation_density": "raw_zero_mean_generalized_sv_prior_mean_normal_log_density",
+    "target_observation_policy": "source_route_prior_mean_generalized_sv",
+    "time_zero_density": "transition_from_stationary_previous_state",
+    "truth_physical": {
+      "a": 0.0,
+      "delta": 0.0,
+      "gamma": 0.8604651162790697,
+      "mu_or_log_beta_center_coordinate": 0.0,
+      "nu1": "inf",
+      "nu2": "inf",
+      "phi": 0.0,
+      "tau_or_sigma": 0.12533141373155005
+    },
+    "truth_theta": [
+      1.0824113944610982,
+      -2.076793740349318,
+      0.0
+    ],
+    "truth_theta_coordinate": "source_route_active_transformed_prior_mean"
+  },
+  "git_commit": "9cab7483956a3835a8a484fb04e485b5e9e2ddff",
+  "gpu_memory_info_after": {
+    "current": 486400,
+    "peak": 2800128
+  },
+  "gpu_memory_info_before": {
+    "current": 285696,
+    "peak": 546048
+  },
+  "history_mode": "value-only",
+  "history_shapes": {
+    "ess_by_time": [
+      0,
+      5
+    ],
+    "filtered_means": [
+      0,
+      5,
+      1
+    ],
+    "filtered_variances": [
+      0,
+      5,
+      1
+    ],
+    "final_particles": [
+      5,
+      10000,
+      1
+    ]
+  },
+  "host": "DESKTOP-RF1Q5IJ",
+  "log_likelihood_by_seed": [
+    -1438.90966796875,
+    -1438.8360595703125,
+    -1438.908935546875,
+    -1439.0206298828125,
+    -1438.9456787109375
+  ],
+  "logical_gpus": [
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+  ],
+  "nonclaims": [
+    "not score admission",
+    "not score correctness",
+    "not actual-SV admission",
+    "not KSC admission",
+    "not KSC surrogate likelihood evidence",
+    "not native generalized-SV dense fixture evidence",
+    "not SP500 benchmark-observation evidence",
+    "not author-default truth evidence",
+    "not HMC readiness evidence",
+    "not posterior correctness evidence",
+    "not scientific superiority evidence",
+    "not runtime ranking evidence"
+  ],
+  "normalization_checks": {
+    "actual_sv_evidence_used": false,
+    "author_defaults_used_as_truth": false,
+    "exact_full_row_requested": true,
+    "finite_log_likelihood": true,
+    "flow_offset_matches_contract": true,
+    "flow_surface_is_proposal_only": true,
+    "full_row_admission_scope": true,
+    "ksc_mixture_used": false,
+    "native_generalized_sv_dense_fixture_used": false,
+    "not_full_row_requested": false,
+    "num_particles_tiny": false,
+    "row_id": true,
+    "seed_count_matches_values": true,
+    "source_route_target_policy": true,
+    "sp500_returns_used_as_benchmark_observations": false,
+    "target_density_used_for_correction": true,
+    "time_steps_tiny": false
+  },
+  "num_particles": 10000,
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "output_shape": [
+    5
+  ],
+  "physical_gpus": [
+    "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+  ],
+  "precision": {
+    "active_dtype": "float32",
+    "default_algorithm_target": "ledh_pfpf_ot_tf32",
+    "default_dtype": "float32",
+    "default_execution_target": "gpu",
+    "default_route_acceptance": "accepted_default_use_whenever_possible",
+    "default_route_guidance": "use for BayesFilter DPF LEDH-PFPF-OT work whenever GPU execution and the streaming fixed-branch contract are applicable",
+    "default_route_rationale": "streaming GPU TF32 LEDH-PFPF-OT avoids dense transport/history storage for large-particle DPF transport while preserving explicit reference and fallback arms",
+    "default_target_status": "production_default_by_owner_directive",
+    "default_tf32_mode": "enabled",
+    "dtype": "float32",
+    "fp64_reference_requires_explicit_dtype": true,
+    "historical_module_path": "experiments/dpf_implementation",
+    "precision_default_policy": "production_ledh_pfpf_ot_gpu_tf32",
+    "public_api_exposure": "separately_gated",
+    "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
+    "tf32_execution_enabled": true,
+    "tf32_mode": "enabled",
+    "tf_dtype": "float32"
+  },
+  "proposal_flow_fields": [
+    "pre_flow_log_density",
+    "forward_log_det",
+    "proposal_observation_surface"
+  ],
+  "python_version": "3.11.14",
+  "repeats": 1,
+  "return_history": false,
+  "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+  "run_scope": "full-row-admission",
+  "schema_version": "bayesfilter.highdim.ledh_forward_scalar_artifact.v1",
+  "shape": {
+    "batch_seed_count": 5,
+    "batch_size": 5,
+    "num_particles": 10000,
+    "obs_dim": 1,
+    "state_dim": 1,
+    "time_steps": 1008
+  },
+  "target_density_fields": [
+    "transition_log_density",
+    "observation_log_density"
+  ],
+  "target_density_used_for_correction": true,
+  "target_observation_policy": "source_route_prior_mean_generalized_sv",
+  "target_output_tensor_field": "log_likelihood",
+  "target_scalar": "observed_data_log_likelihood_estimator",
+  "tensorflow_version": "2.19.1",
+  "theta_coordinate_system": "source_route_active_transformed_prior_mean",
+  "theta_values": [
+    1.0824113944610982,
+    -2.076793740349318,
+    0.0
+  ],
+  "time_steps": 1008,
+  "timestamp_utc": "2026-07-07T11:27:23.714083+00:00",
+  "transport": {
+    "annealed_convergence_threshold": 0.001,
+    "annealed_scaling": 0.9,
+    "col_chunk_size": 512,
+    "dense_transport_matrix_materialized": false,
+    "gradient_mode": "raw",
+    "particle_chunk_size": 512,
+    "plan_mode": "streaming",
+    "row_chunk_size": 512,
+    "sinkhorn_epsilon": 1.0,
+    "sinkhorn_iterations": 10
+  },
+  "transport_policy": "active-all",
+  "validator_normalized_core": {
+    "admission_status": "n10000_same_target_value_admitted",
+    "average_log_likelihood_by_seed": [
+      -1.427489749968998,
+      -1.427416725764199,
+      -1.427489023359995,
+      -1.427599831232949,
+      -1.4275254749116444
+    ],
+    "batch_seeds": [
+      81120,
+      81121,
+      81122,
+      81123,
+      81124
+    ],
+    "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+    "finite_output": true,
+    "flow_observation_policy": "log_square_gaussian_surrogate_for_ledh_flow_only",
+    "forward_contract": {
+      "correction_formula": "transition_log_density + observation_log_density - pre_flow_log_density + forward_log_det",
+      "estimator_kind": "finite_N_fixed_randomness_ledh_log_likelihood_estimator",
+      "full_leaderboard_row": true,
+      "metadata": {
+        "batch_seeds": [
+          81120,
+          81121,
+          81122,
+          81123,
+          81124
+        ],
+        "num_particles": 10000,
+        "target_observation_policy": "source_route_prior_mean_generalized_sv",
+        "time_steps": 1008
+      },
+      "nonclaims": [
+        "metadata alone is not generalized-SV value admission",
+        "metadata alone is not generalized-SV score evidence"
+      ],
+      "output_tensor_field": "log_likelihood",
+      "proposal_flow_fields": [
+        "pre_flow_log_density",
+        "forward_log_det",
+        "proposal_observation_surface"
+      ],
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "row_scope": "main_observed_data_filtering_row",
+      "schema_version": "bayesfilter.highdim.ledh_forward_contract.v1",
+      "score_status": "blocked_score_until_same_target_no_tape_gate",
+      "target_density_fields": [
+        "transition_log_density",
+        "observation_log_density"
+      ],
+      "target_scalar": "observed_data_log_likelihood_estimator",
+      "theta_contract": {
+        "nonclaims": [
+          "not actual-SV row",
+          "not KSC row",
+          "not native generalized-SV fixture substitution"
+        ],
+        "parameter_order": [
+          "gamma_unconstrained",
+          "log_tau",
+          "mu"
+        ],
+        "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+        "source_classification": "phase1_generalized_sv_source_row_contract",
+        "theta_coordinate_system": "source_route_active_transformed_prior_mean",
+        "theta_dimension": 3,
+        "theta_status": "phase1_frozen",
+        "truth_theta": [
+          1.0824113944610982,
+          -2.076793740349318,
+          0.0
+        ]
+      },
+      "value_status": "generalized_sv_same_target_value_metadata_present"
+    },
+    "log_likelihood_by_seed": [
+      -1438.90966796875,
+      -1438.8360595703125,
+      -1438.908935546875,
+      -1439.0206298828125,
+      -1438.9456787109375
+    ],
+    "nonclaims": [
+      "not score admission",
+      "not score correctness",
+      "not actual-SV admission",
+      "not KSC admission",
+      "not KSC surrogate likelihood evidence",
+      "not native generalized-SV dense fixture evidence",
+      "not SP500 benchmark-observation evidence",
+      "not author-default truth evidence",
+      "not HMC readiness evidence",
+      "not posterior correctness evidence",
+      "not scientific superiority evidence",
+      "not runtime ranking evidence"
+    ],
+    "num_particles": 10000,
+    "proposal_flow_fields": [
+      "pre_flow_log_density",
+      "forward_log_det",
+      "proposal_observation_surface"
+    ],
+    "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "schema_version": "bayesfilter.highdim.ledh_forward_scalar_artifact.v1",
+    "target_density_fields": [
+      "transition_log_density",
+      "observation_log_density"
+    ],
+    "target_density_used_for_correction": true,
+    "target_observation_policy": "source_route_prior_mean_generalized_sv",
+    "target_output_tensor_field": "log_likelihood",
+    "target_scalar": "observed_data_log_likelihood_estimator",
+    "theta_coordinate_system": "source_route_active_transformed_prior_mean",
+    "theta_values": [
+      1.0824113944610982,
+      -2.076793740349318,
+      0.0
+    ],
+    "time_steps": 1008
+  },
+  "warm_call_timing_summary_seconds": {
+    "max": 1048.247488206951,
+    "mean": 1048.247488206951,
+    "median": 1048.247488206951,
+    "min": 1048.247488206951
+  },
+  "warm_call_timings_seconds": [
+    1048.247488206951
+  ],
+  "warmups": 0
+}

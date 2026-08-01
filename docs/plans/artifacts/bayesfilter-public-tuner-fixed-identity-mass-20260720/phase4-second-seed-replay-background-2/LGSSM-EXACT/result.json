@@ -1,0 +1,771 @@
+{
+  "admitted_kernel_replay": {
+    "mechanics_sha256": "477f9b321817fd292f569913ac6d5233fedf0133df85a8fb0c7bd8c570be28cb",
+    "path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720-replay-migration/admitted_kernel_mechanics.json",
+    "source": "persisted_artifact",
+    "tuning_provenance": {
+      "bootstrap_artifact_hash": "a8a82abd0442f504f92ef64241e6928d9a46705954d716fdaab4582c2767012e",
+      "geometry_artifact_hash": "8433a7a9a83a0d9bb0b8b06c604c155ccfe975eecc0f92cd2b7d912990adb1e7",
+      "loop_artifact_hash": "806b90ff229e60f08641804295ba2fb151ec9c4431a28a7f47dbffd5a19b2863",
+      "passed_attempt_index": 1,
+      "public_final_kernel_hash": "e1d61cd46e9e65cd510bad14669619c7c9854348bee6a3a659e065a26a4ce0b6",
+      "role": "explanatory_provenance_only_not_replay_admission",
+      "selected_step_hash": "c39e59a4ec867b98594e40b2a1551fbe92eabf4f05b4826e0a0e8bdd1631a9ec",
+      "source_artifact_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260719/phase4-lgssm-attempt03-reboot-replacement/LGSSM-EXACT/result.json",
+      "source_artifact_sha256": "c846d283fe345af26117951ea17d5576dd6711309e9186715b4dac43fcde1daa",
+      "verification_acceptance_rate": 0.7109046801795739
+    }
+  },
+  "cell_id": "LGSSM-EXACT",
+  "decision": "PASS_ONE_SEED_TRUTH_TAIL",
+  "elapsed_seconds": 2216.5974542990007,
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-neutra-all-executable-models-e2e-20260718/serious-attempt-02/LGSSM-EXACT/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "b0b89656b2503146556f50b4e5e3e0e6b9b63daf0673380043ccb046dd14877e",
+    "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+    "training_state_hash": "sha256:333d3138f121316463ad15d5e81f5165eb856ef59e142ca9d9848cea074a2c5e"
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "one-seed truth-tail diagnostic only",
+    "no distributional equivalence or filter exactness claim",
+    "no sampler superiority or default-readiness claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT",
+  "parameter_names": [
+    "a11",
+    "a22",
+    "a33",
+    "a44",
+    "a21",
+    "a31",
+    "a32",
+    "a41",
+    "a42",
+    "a43",
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "r1",
+    "r2",
+    "r3",
+    "r4"
+  ],
+  "passed": true,
+  "primary_criterion": "all parameters p_truth >= 0.05 after valid converged NeuTra HMC",
+  "schema": "bayesfilter.neutra.all_models.cell_result.v1",
+  "sequential": {
+    "config": {
+      "chain_count": 4,
+      "dtype": "float64",
+      "energy_error_log_accept_threshold": -1000.0,
+      "jit_compile": true,
+      "minimum_chain_count": 4,
+      "num_leapfrog_steps": 6,
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "retained_chunk_results": 1000,
+      "retained_max_results": 10000,
+      "retained_min_results": 1000,
+      "retained_rhat_max": 1.01,
+      "retained_seed": [
+        20260718,
+        2902
+      ],
+      "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+      "step_size": 0.7779889586003162,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 1000,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000,
+      "warmup_rhat_max": 1.05,
+      "warmup_seed": [
+        20260718,
+        2901
+      ]
+    },
+    "cumulative_archives": {
+      "retained": {
+        "chunk_index": null,
+        "cumulative": true,
+        "latent_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/retained/cumulative/latent.tensor",
+        "model_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/retained/cumulative/model.tensor",
+        "sample_shape": [
+          1000,
+          4,
+          18
+        ],
+        "schema": "bayesfilter.neutra.all_models.tensor_archive.v1",
+        "seed": null,
+        "stage": "retained",
+        "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+        "warmup_excluded_from_posterior": true
+      },
+      "warmup": {
+        "chunk_index": null,
+        "cumulative": true,
+        "latent_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/warmup/cumulative/latent.tensor",
+        "model_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/warmup/cumulative/model.tensor",
+        "sample_shape": [
+          2000,
+          4,
+          18
+        ],
+        "schema": "bayesfilter.neutra.all_models.tensor_archive.v1",
+        "seed": null,
+        "stage": "warmup",
+        "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+        "warmup_excluded_from_posterior": true
+      }
+    },
+    "decision": "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL",
+    "elapsed_seconds": 2216.20990030501,
+    "hard_vetoes": [],
+    "passed": true,
+    "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "retained_archives": [
+      {
+        "chunk_index": 0,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/retained/chunk-0000/latent.tensor",
+        "model_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/retained/chunk-0000/model.tensor",
+        "sample_shape": [
+          1000,
+          4,
+          18
+        ],
+        "schema": "bayesfilter.neutra.all_models.tensor_archive.v1",
+        "seed": [
+          20260718,
+          3911
+        ],
+        "stage": "retained",
+        "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+        "warmup_excluded_from_posterior": true
+      }
+    ],
+    "retained_cap_hit": false,
+    "retained_check_count": 1,
+    "retained_checks": [
+      {
+        "chunk_index": 0,
+        "completed_results_per_chain": 1000,
+        "diagnostic_role": "full_convergence",
+        "full_convergence": {
+          "chain_count": 4,
+          "definitions": {
+            "autocorrelation_truncation": "TFP initial positive pairs",
+            "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+            "quantile_interpolation": "linear",
+            "rank_transform": "Blom average-rank normal score",
+            "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+          },
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_rhat": 1.0061456686150607,
+          "min_bulk_ess": 1407.432934432691,
+          "min_tail_ess": 1677.897985601051,
+          "nonclaims": [
+            "all-parameter HMC convergence screen only",
+            "no posterior recovery claim",
+            "no sampler superiority claim",
+            "no production or default readiness claim"
+          ],
+          "parameter_count": 18,
+          "parameter_diagnostics": [
+            {
+              "bulk_ess": 2260.2370278133135,
+              "folded_rank_normalized_split_rhat": 1.001858699750277,
+              "lower_tail_ess": 2270.1407983071804,
+              "parameter": "a11",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0009299842698802,
+              "rhat": 1.001858699750277,
+              "tail_ess": 2096.500820967524,
+              "upper_tail_ess": 2096.500820967524
+            },
+            {
+              "bulk_ess": 2392.198539767147,
+              "folded_rank_normalized_split_rhat": 1.0053438104292565,
+              "lower_tail_ess": 2369.8823459001683,
+              "parameter": "a22",
+              "passed": true,
+              "rank_normalized_split_rhat": 0.9991697549118798,
+              "rhat": 1.0053438104292565,
+              "tail_ess": 2217.2288777563826,
+              "upper_tail_ess": 2217.2288777563826
+            },
+            {
+              "bulk_ess": 1979.0246896417093,
+              "folded_rank_normalized_split_rhat": 1.005322187977991,
+              "lower_tail_ess": 2569.003663635655,
+              "parameter": "a33",
+              "passed": true,
+              "rank_normalized_split_rhat": 0.9997458983940283,
+              "rhat": 1.005322187977991,
+              "tail_ess": 2556.964592722546,
+              "upper_tail_ess": 2556.964592722546
+            },
+            {
+              "bulk_ess": 1991.883125902787,
+              "folded_rank_normalized_split_rhat": 1.0010886942062958,
+              "lower_tail_ess": 2724.196496507846,
+              "parameter": "a44",
+              "passed": true,
+              "rank_normalized_split_rhat": 0.9997614552350221,
+              "rhat": 1.0010886942062958,
+              "tail_ess": 2157.913009362906,
+              "upper_tail_ess": 2157.913009362906
+            },
+            {
+              "bulk_ess": 1670.2917367881792,
+              "folded_rank_normalized_split_rhat": 1.0030147713467823,
+              "lower_tail_ess": 1783.748085510158,
+              "parameter": "a21",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0025775740280398,
+              "rhat": 1.0030147713467823,
+              "tail_ess": 1783.748085510158,
+              "upper_tail_ess": 1931.8666280997315
+            },
+            {
+              "bulk_ess": 2596.0365640407344,
+              "folded_rank_normalized_split_rhat": 1.0000988345064519,
+              "lower_tail_ess": 2765.047588396619,
+              "parameter": "a31",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0002266336533396,
+              "rhat": 1.0002266336533396,
+              "tail_ess": 2765.047588396619,
+              "upper_tail_ess": 2843.2266301026466
+            },
+            {
+              "bulk_ess": 1915.067553957796,
+              "folded_rank_normalized_split_rhat": 1.0061456686150607,
+              "lower_tail_ess": 2599.685881056753,
+              "parameter": "a32",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0035401322657143,
+              "rhat": 1.0061456686150607,
+              "tail_ess": 2458.0027008973334,
+              "upper_tail_ess": 2458.0027008973334
+            },
+            {
+              "bulk_ess": 1472.3398742011848,
+              "folded_rank_normalized_split_rhat": 1.0047128755330248,
+              "lower_tail_ess": 1710.7028929395349,
+              "parameter": "a41",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0046054725032485,
+              "rhat": 1.0047128755330248,
+              "tail_ess": 1710.7028929395349,
+              "upper_tail_ess": 2469.8217637087378
+            },
+            {
+              "bulk_ess": 1830.0582912743182,
+              "folded_rank_normalized_split_rhat": 1.0024118200592984,
+              "lower_tail_ess": 2446.9986082133446,
+              "parameter": "a42",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0049452546336828,
+              "rhat": 1.0049452546336828,
+              "tail_ess": 2397.072940940711,
+              "upper_tail_ess": 2397.072940940711
+            },
+            {
+              "bulk_ess": 2799.176095718172,
+              "folded_rank_normalized_split_rhat": 1.0006425676146804,
+              "lower_tail_ess": 2418.4413827880853,
+              "parameter": "a43",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0012643752991204,
+              "rhat": 1.0012643752991204,
+              "tail_ess": 1677.897985601051,
+              "upper_tail_ess": 1677.897985601051
+            },
+            {
+              "bulk_ess": 1594.006738011178,
+              "folded_rank_normalized_split_rhat": 1.0059450051379288,
+              "lower_tail_ess": 1720.3076073212978,
+              "parameter": "q1",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.004093700597115,
+              "rhat": 1.0059450051379288,
+              "tail_ess": 1720.3076073212978,
+              "upper_tail_ess": 2339.1732317356627
+            },
+            {
+              "bulk_ess": 1595.3634351722512,
+              "folded_rank_normalized_split_rhat": 1.0022883203601443,
+              "lower_tail_ess": 2136.350929663677,
+              "parameter": "q2",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0039046144031853,
+              "rhat": 1.0039046144031853,
+              "tail_ess": 2124.6303486904144,
+              "upper_tail_ess": 2124.6303486904144
+            },
+            {
+              "bulk_ess": 2582.729994823195,
+              "folded_rank_normalized_split_rhat": 1.0017338924506682,
+              "lower_tail_ess": 2530.441920214772,
+              "parameter": "q3",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0035479433888845,
+              "rhat": 1.0035479433888845,
+              "tail_ess": 2431.953267141808,
+              "upper_tail_ess": 2431.953267141808
+            },
+            {
+              "bulk_ess": 2369.3449807107013,
+              "folded_rank_normalized_split_rhat": 1.0002166593802555,
+              "lower_tail_ess": 2183.189681778009,
+              "parameter": "q4",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0004526375610068,
+              "rhat": 1.0004526375610068,
+              "tail_ess": 2183.189681778009,
+              "upper_tail_ess": 2307.07281188719
+            },
+            {
+              "bulk_ess": 2022.5706571149258,
+              "folded_rank_normalized_split_rhat": 0.9996430599520275,
+              "lower_tail_ess": 2283.002863190027,
+              "parameter": "r1",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0026452237462302,
+              "rhat": 1.0026452237462302,
+              "tail_ess": 1818.970835302147,
+              "upper_tail_ess": 1818.970835302147
+            },
+            {
+              "bulk_ess": 2368.5327660652756,
+              "folded_rank_normalized_split_rhat": 1.0014536046150098,
+              "lower_tail_ess": 2208.678742693054,
+              "parameter": "r2",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0028352158600633,
+              "rhat": 1.0028352158600633,
+              "tail_ess": 2208.678742693054,
+              "upper_tail_ess": 2538.0892649271946
+            },
+            {
+              "bulk_ess": 1407.432934432691,
+              "folded_rank_normalized_split_rhat": 1.0002350052045836,
+              "lower_tail_ess": 2227.1623794578277,
+              "parameter": "r3",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0000966112260892,
+              "rhat": 1.0002350052045836,
+              "tail_ess": 1902.6594554255876,
+              "upper_tail_ess": 1902.6594554255876
+            },
+            {
+              "bulk_ess": 1657.6536512459556,
+              "folded_rank_normalized_split_rhat": 0.9992032730145738,
+              "lower_tail_ess": 1814.5872564247059,
+              "parameter": "r4",
+              "passed": true,
+              "rank_normalized_split_rhat": 1.0029994689219799,
+              "rhat": 1.0029994689219799,
+              "tail_ess": 1814.5872564247059,
+              "upper_tail_ess": 2173.425888117599
+            }
+          ],
+          "passed": true,
+          "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500,
+          "thresholds": {
+            "bulk_ess_min": 1000.0,
+            "rhat_max": 1.01,
+            "tail_ess_min": 400.0
+          }
+        },
+        "health": {
+          "acceptance_rate": 0.70725,
+          "acceptance_rate_by_chain": [
+            0.729,
+            0.69,
+            0.707,
+            0.703
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 553.8624491520022,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "passed": true,
+        "seed": [
+          20260718,
+          3911
+        ]
+      }
+    ],
+    "retained_passed": true,
+    "retained_results_per_chain": 1000,
+    "warmup_archives": [
+      {
+        "chunk_index": 0,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/warmup/chunk-0000/latent.tensor",
+        "model_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/warmup/chunk-0000/model.tensor",
+        "sample_shape": [
+          1000,
+          4,
+          18
+        ],
+        "schema": "bayesfilter.neutra.all_models.tensor_archive.v1",
+        "seed": [
+          20260718,
+          3910
+        ],
+        "stage": "warmup",
+        "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+        "warmup_excluded_from_posterior": true
+      },
+      {
+        "chunk_index": 1,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/warmup/chunk-0001/latent.tensor",
+        "model_path": "docs/plans/artifacts/bayesfilter-public-tuner-fixed-identity-mass-20260720/phase4-second-seed-replay-background-2/LGSSM-EXACT/samples/warmup/chunk-0001/model.tensor",
+        "sample_shape": [
+          1000,
+          4,
+          18
+        ],
+        "schema": "bayesfilter.neutra.all_models.tensor_archive.v1",
+        "seed": [
+          20260718,
+          4919
+        ],
+        "stage": "warmup",
+        "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+        "warmup_excluded_from_posterior": true
+      }
+    ],
+    "warmup_cap_hit": false,
+    "warmup_check_count": 2,
+    "warmup_checks": [
+      {
+        "check_window_results_per_chain": 0,
+        "chunk_index": 0,
+        "completed_results_per_chain": 1000,
+        "health": {
+          "acceptance_rate": 0.71025,
+          "acceptance_rate_by_chain": [
+            0.707,
+            0.689,
+            0.729,
+            0.716
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 1052.0917821629992,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": null,
+        "passed": false,
+        "seed": [
+          20260718,
+          3910
+        ]
+      },
+      {
+        "check_window_results_per_chain": 1000,
+        "chunk_index": 1,
+        "completed_results_per_chain": 2000,
+        "health": {
+          "acceptance_rate": 0.70425,
+          "acceptance_rate_by_chain": [
+            0.708,
+            0.704,
+            0.705,
+            0.7
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 607.5206105020043,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            18
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 18,
+          "folded_rank_normalized_split_rhat": [
+            1.000993107105626,
+            1.0028239865898494,
+            1.0005086663265292,
+            1.0010681218882964,
+            0.999867945451249,
+            1.0026177348293062,
+            1.0002199168932346,
+            1.0059307395627202,
+            1.0059827751680368,
+            1.0057210393265752,
+            1.0102316981990203,
+            1.0033612105440937,
+            1.0021350174037362,
+            1.004753721711182,
+            1.0065061456617839,
+            1.0021787783830072,
+            1.0044618033006387,
+            0.9999535022087739
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0102316981990203,
+          "max_folded_rank_normalized_split_rhat": 1.0102316981990203,
+          "max_rank_normalized_split_rhat": 1.0048102854885583,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 18,
+          "passed": true,
+          "rank_normalized_split_rhat": [
+            0.9996107688537353,
+            1.0038471499195387,
+            1.0002350261230641,
+            1.0000588401832329,
+            0.9988678848866742,
+            0.9996077202781032,
+            1.0003762688284357,
+            1.0045419847271948,
+            1.0048102854885583,
+            1.0011678951392173,
+            1.0040568894673736,
+            1.0000407570409462,
+            1.0032379571843069,
+            1.0001857664305298,
+            1.000661968686743,
+            0.9995987791485116,
+            1.0023081780410812,
+            1.0014568865002749
+          ],
+          "rhat": [
+            1.000993107105626,
+            1.0038471499195387,
+            1.0005086663265292,
+            1.0010681218882964,
+            0.999867945451249,
+            1.0026177348293062,
+            1.0003762688284357,
+            1.0059307395627202,
+            1.0059827751680368,
+            1.0057210393265752,
+            1.0102316981990203,
+            1.0033612105440937,
+            1.0032379571843069,
+            1.004753721711182,
+            1.0065061456617839,
+            1.0021787783830072,
+            1.0044618033006387,
+            1.0014568865002749
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.05,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "passed": true,
+        "seed": [
+          20260718,
+          4919
+        ]
+      }
+    ],
+    "warmup_excluded_from_posterior": true,
+    "warmup_passed": true,
+    "warmup_results_per_chain": 2000,
+    "warmup_samples_retained": true
+  },
+  "target_signature": "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d",
+  "truth_tail": {
+    "minimum_p_truth": 0.05273681579605105,
+    "parameter_rows": [
+      {
+        "p_truth": 0.3666583354161459,
+        "parameter": "a11",
+        "status": "PASS",
+        "truth": 0.62
+      },
+      {
+        "p_truth": 0.5361159710072482,
+        "parameter": "a22",
+        "status": "PASS",
+        "truth": 0.48
+      },
+      {
+        "p_truth": 0.3976505873531617,
+        "parameter": "a33",
+        "status": "PASS",
+        "truth": 0.3
+      },
+      {
+        "p_truth": 0.5101224693826544,
+        "parameter": "a44",
+        "status": "PASS",
+        "truth": 0.16
+      },
+      {
+        "p_truth": 0.4256435891027244,
+        "parameter": "a21",
+        "status": "PASS",
+        "truth": 0.18
+      },
+      {
+        "p_truth": 0.07873031742064485,
+        "parameter": "a31",
+        "status": "PASS",
+        "truth": -0.1
+      },
+      {
+        "p_truth": 0.29267683079230195,
+        "parameter": "a32",
+        "status": "PASS",
+        "truth": 0.14
+      },
+      {
+        "p_truth": 0.20119970007498122,
+        "parameter": "a41",
+        "status": "PASS",
+        "truth": 0.06
+      },
+      {
+        "p_truth": 0.7690577355661085,
+        "parameter": "a42",
+        "status": "PASS",
+        "truth": -0.08
+      },
+      {
+        "p_truth": 0.14371407148212947,
+        "parameter": "a43",
+        "status": "PASS",
+        "truth": 0.11
+      },
+      {
+        "p_truth": 0.16370907273181712,
+        "parameter": "q1",
+        "status": "PASS",
+        "truth": 0.3
+      },
+      {
+        "p_truth": 0.05273681579605105,
+        "parameter": "q2",
+        "status": "PASS",
+        "truth": 0.26
+      },
+      {
+        "p_truth": 0.40264933766558353,
+        "parameter": "q3",
+        "status": "PASS",
+        "truth": 0.22
+      },
+      {
+        "p_truth": 0.9905023744063983,
+        "parameter": "q4",
+        "status": "PASS",
+        "truth": 0.18
+      },
+      {
+        "p_truth": 0.5536115971007248,
+        "parameter": "r1",
+        "status": "PASS",
+        "truth": 0.12
+      },
+      {
+        "p_truth": 0.9410147463134217,
+        "parameter": "r2",
+        "status": "PASS",
+        "truth": 0.11
+      },
+      {
+        "p_truth": 0.7910522369407648,
+        "parameter": "r3",
+        "status": "PASS",
+        "truth": 0.1
+      },
+      {
+        "p_truth": 0.9955011247188204,
+        "parameter": "r4",
+        "status": "PASS",
+        "truth": 0.09
+      }
+    ],
+    "status": "PASS"
+  },
+  "tuning": null
+}

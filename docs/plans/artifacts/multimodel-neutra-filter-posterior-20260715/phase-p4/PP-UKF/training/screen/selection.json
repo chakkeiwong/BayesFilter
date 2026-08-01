@@ -1,0 +1,111 @@
+{
+  "cell_id": "PP-UKF",
+  "comparison_rows": [
+    {
+      "artifact_hashes": {
+        "byte_count": 914,
+        "file_sha256": "5c900c37f2366769870c28cebee88c98d04c5ef60f2cd4fcf619decf3d2a9321",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/source_width_lr1e3/attempt-01/artifact_hashes.json"
+      },
+      "mean_reverse_kl": 116.88637279358215,
+      "paired_difference_mcse": 0.007740739493461017,
+      "paired_mean_difference_from_nominal": 0.05477430875971301,
+      "recipe_id": "source_width_lr1e3",
+      "result": {
+        "byte_count": 53167,
+        "file_sha256": "b2c01cc55b5c15bbc7174a186621d6357e3915b7c818af72f018d6b08bfb4a68",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/source_width_lr1e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": false
+    },
+    {
+      "artifact_hashes": {
+        "byte_count": 914,
+        "file_sha256": "c9271554514f5da39b057980337d26b313f4872fb814a73c1f12df67b0cf3e7d",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/source_width_lr5e3/attempt-01/artifact_hashes.json"
+      },
+      "mean_reverse_kl": 116.86806547971825,
+      "paired_difference_mcse": 0.008219028846901304,
+      "paired_mean_difference_from_nominal": 0.036466994895802074,
+      "recipe_id": "source_width_lr5e3",
+      "result": {
+        "byte_count": 53073,
+        "file_sha256": "363edebb439cdcc653737526b0a4235e2461a99ec63fa57110c262bebd15d88f",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/source_width_lr5e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": false
+    },
+    {
+      "artifact_hashes": {
+        "byte_count": 914,
+        "file_sha256": "62029d1b663450523bb3c5f9929355e9a5788efa0e02bba2dc8a0243df97cad4",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/wide_lr1e3/attempt-01/artifact_hashes.json"
+      },
+      "mean_reverse_kl": 116.88680515528618,
+      "paired_difference_mcse": 0.005044036851306341,
+      "paired_mean_difference_from_nominal": 0.0552066704637344,
+      "recipe_id": "wide_lr1e3",
+      "result": {
+        "byte_count": 53151,
+        "file_sha256": "fec00e1fd3f18eceda0f4f7c86e423c8a1119be9d62403c0c431e000ae527900",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/wide_lr1e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": false
+    },
+    {
+      "artifact_hashes": {
+        "byte_count": 914,
+        "file_sha256": "fa91e0446e696616c2dbc0bf546ad15fc8df0df3c4bc8bf75f6398fe8bc52a26",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/wide_lr5e3/attempt-01/artifact_hashes.json"
+      },
+      "mean_reverse_kl": 116.83159848482245,
+      "paired_difference_mcse": 0.0,
+      "paired_mean_difference_from_nominal": 0.0,
+      "recipe_id": "wide_lr5e3",
+      "result": {
+        "byte_count": 53090,
+        "file_sha256": "fe1079765624ff3425cd0200eab5514098d5775e6a025b2d9df5a690451e4328",
+        "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-UKF/training/screen/candidates/wide_lr5e3/attempt-01/result.json"
+      },
+      "within_two_paired_mcse": true
+    }
+  ],
+  "decision": "NOMINATE_P4_RECIPE_FOR_FRESH_5000_STEP_TRAINING",
+  "evidence_role": "proxy_nomination_only_not_transport_promotion",
+  "nominal_lowest_mean_recipe": "wide_lr5e3",
+  "nonclaims": [
+    "training and common-heldout reverse KL are nomination-only",
+    "screen weights are never reused by final training",
+    "no transported HMC convergence or plain-HMC agreement claim",
+    "no filter exactness, superiority, calibration, robustness, or readiness claim"
+  ],
+  "passed": true,
+  "program_id": "multimodel-neutra-filter-posterior-20260715",
+  "recipe_order": [
+    "source_width_lr1e3",
+    "source_width_lr5e3",
+    "wide_lr1e3",
+    "wide_lr5e3"
+  ],
+  "schema": "bayesfilter.multimodel_neutra_p4_training_selection.v1",
+  "screen_weights_reused_by_final": false,
+  "selected_recipe": {
+    "activation": "elu",
+    "batch_size": 128,
+    "clip_norm": 10.0,
+    "final_learning_rate_fraction": 1.0,
+    "hidden_layers": [
+      36,
+      36
+    ],
+    "init_scale": 0.02,
+    "learning_rate": 0.005,
+    "optimizer": "manual_adam_constant_learning_rate",
+    "recipe_id": "wide_lr5e3",
+    "s_max": 1.0,
+    "stage_count": 3
+  },
+  "selected_recipe_id": "wide_lr5e3",
+  "selection_rule": "within_two_paired_mcse_of_lowest_mean_then_parameter_count_then_learning_rate_then_declared_order",
+  "statistically_supported_ranking": false
+}

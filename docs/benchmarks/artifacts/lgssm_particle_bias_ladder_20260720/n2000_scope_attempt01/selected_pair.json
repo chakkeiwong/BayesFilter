@@ -1,0 +1,44 @@
+{
+  "attempt_id": "n2000-scope-attempt01",
+  "balance_steps": 5,
+  "campaign_id": "lgssm-particle-bias-ladder-20260720",
+  "candidate_artifact": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/n2000_scope_attempt01/candidate_s20_b5.json",
+  "candidate_artifact_sha256": "ae52fce13c819b7d8e13b693eddd9dc04f9623de67062f3ede4a72c4fc626ac0",
+  "kalman_used": false,
+  "schema_version": "bayesfilter.ledh_offline_ot_selection.v1",
+  "seed_microbatch_size": 4,
+  "selection_metrics": [
+    "TV_col",
+    "E_row"
+  ],
+  "selection_rule": "first validation pass after exhausting cheaper balance controls at each sinkhorn rung",
+  "sinkhorn_steps": 20,
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py": "d81d5b918c4e38c7fb5818dd6726049f000fb7552ecb3f15e8cb97e18663d9ef",
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py": "91cbba35ec3c6294ab7bae599ebc120ac353c3116a2aab76fbea2418c52331bf",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+  },
+  "tuning_scope": {
+    "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "col_blocks": 1,
+    "col_chunk_size": 2000,
+    "control_family_id": "streaming_ot_sinkhorn_balance_v1",
+    "dtype": "float32",
+    "horizon": 50,
+    "jit_compile": true,
+    "model_id": "canonical_lgssm_m3",
+    "parameter_count": 5,
+    "particle_count": 2000,
+    "prepared_data_id": "lgssm_dataset_seed_81100_observation_prefix_t50",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route_id": "contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1",
+    "row_blocks": 1,
+    "row_chunk_size": 2000,
+    "state_dimension": 3,
+    "target_id": "canonical_lgssm_dataset_seed_81100_theta_0p72_0p55_0p35_0p35_0p45",
+    "tf32_enabled": true
+  },
+  "tuning_scope_sha256": "cd5b7d9dfe1099888766b5b88c5496ae6594ec9d0a769d6d6bfe111604370058"
+}

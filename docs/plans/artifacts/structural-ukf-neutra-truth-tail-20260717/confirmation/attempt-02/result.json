@@ -1,0 +1,573 @@
+{
+  "campaign_id": "structural-ukf-neutra-truth-tail-20260717",
+  "cell_id": "STR-UKF",
+  "claim_scope": "one_noncentral_truth_frozen_structural_ukf_fixture",
+  "compiled_canary": {
+    "jit_compile": true,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "passed": true,
+    "target_status_all_valid": true
+  },
+  "completed": true,
+  "decision": "SAMPLER_BLOCKED_NO_TUNING_ADMISSION",
+  "decision_table": {
+    "main_uncertainty": "single_noncentral_synthetic_fixture",
+    "next_justified_action": "repair_or_diagnose_sampler_without_interpreting_truth_tails",
+    "not_concluded": [
+      "one frozen noncentral-truth synthetic fixture only",
+      "the truth-tail quantity is a posterior-tail diagnostic, not a frequentist p-value",
+      "acceptance, short probes, runtime, posterior means, and intervals are descriptive",
+      "no UKF exactness, calibration theorem, universal reliability, plain-HMC superiority, or readiness claim"
+    ],
+    "primary_criterion": "health_valid_converged_hmc_and_all_five_p_truth_at_least_0.05",
+    "primary_status": false,
+    "veto_status": "SAMPLER_BLOCKED_NO_TUNING_ADMISSION"
+  },
+  "elapsed_seconds": 2054.22369436,
+  "identity_reference": {
+    "artifact_hashes_sha256": "4574ce490bdd0a6aa8fd8d69882bcbfd214f8356a973c0bbb64b45e91284e09f",
+    "result_sha256": "73fd7a10fd89999993b2b88b636774df489e984e1c589cb3efff57ce2d3ea83d",
+    "root": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p5/STR-UKF/r1b-identity/cpu-attempt-02"
+  },
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": "acceptance, runtime, posterior moments, intervals, and per-parameter tail magnitudes",
+    "hard_veto_screen": "SAMPLER_BLOCKED_NO_TUNING_ADMISSION",
+    "next_evidence_needed": "valid_converged_retained_hmc_and_nonextreme_truth_tails",
+    "statistically_supported_ranking": false
+  },
+  "kernel_grid": {
+    "num_leapfrog_steps": 8,
+    "probe_burnin": 64,
+    "probe_results": 128,
+    "profile": {
+      "num_leapfrog_steps": 8,
+      "parent_result_path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/confirmation/attempt-01/result.json",
+      "parent_result_sha256": "622ab339ceffdeb4850b53d9930a372dd9ea9e4ab13a7c59b4401bde10c8ffbe",
+      "probe_seed": [
+        20260717,
+        43000
+      ],
+      "profile_id": "stable_step_005_l8_tuning_rhat_105_repair_v1",
+      "repair_basis": "attempt_01_found_step_005_energy_stable_but_rhat_104044; tuning_admission_uses_warmup_rhat_105_while_retained_gate_stays_101",
+      "retained_seed": [
+        20260717,
+        43301
+      ],
+      "step_sizes": [
+        0.05
+      ],
+      "tuning_rhat_max": 1.05,
+      "tuning_verification_seed": [
+        20260717,
+        43100
+      ],
+      "warmup_seed": [
+        20260717,
+        43201
+      ]
+    },
+    "step_sizes": [
+      0.05
+    ],
+    "tuning_burnin": 1000,
+    "tuning_results": 1000,
+    "tuning_rhat_max": 1.05
+  },
+  "nonclaims": [
+    "one frozen noncentral-truth synthetic fixture only",
+    "the truth-tail quantity is a posterior-tail diagnostic, not a frequentist p-value",
+    "acceptance, short probes, runtime, posterior means, and intervals are descriptive",
+    "no UKF exactness, calibration theorem, universal reliability, plain-HMC superiority, or readiness claim"
+  ],
+  "passed": false,
+  "probe_rows": [
+    {
+      "acceptance_rate": 1.0,
+      "eligible": true,
+      "grid_index": 0,
+      "health": {
+        "acceptance_rate": 1.0,
+        "acceptance_rate_by_chain": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 191.31220306101022,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          128,
+          4,
+          5
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 1.9082952500281403,
+      "minimum_bulk_ess": 17.588895794556045,
+      "minimum_tail_ess": 27.335004849581086,
+      "num_leapfrog_steps": 8,
+      "scientific_role": "candidate_ordering_only",
+      "seed": [
+        20260717,
+        43000
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 128,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 1.9082952500281403,
+        "min_bulk_ess": 17.588895794556045,
+        "min_tail_ess": 27.335004849581086,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 5,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 34.5614693406108,
+            "folded_rank_normalized_split_rhat": 1.1631837994455991,
+            "lower_tail_ess": 65.27448177575089,
+            "parameter": "rho",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.1735794958683645,
+            "rhat": 1.1735794958683645,
+            "tail_ess": 48.172867022195604,
+            "upper_tail_ess": 48.172867022195604
+          },
+          {
+            "bulk_ess": 40.168826487908305,
+            "folded_rank_normalized_split_rhat": 1.1789184644238249,
+            "lower_tail_ess": 77.96827689828406,
+            "parameter": "sigma",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.1601694322917089,
+            "rhat": 1.1789184644238249,
+            "tail_ess": 77.96827689828406,
+            "upper_tail_ess": 91.00682435592527
+          },
+          {
+            "bulk_ess": 17.588895794556045,
+            "folded_rank_normalized_split_rhat": 1.425982886785615,
+            "lower_tail_ess": 36.41202239235123,
+            "parameter": "phi",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.9082952500281403,
+            "rhat": 1.9082952500281403,
+            "tail_ess": 33.88439862031642,
+            "upper_tail_ess": 33.88439862031642
+          },
+          {
+            "bulk_ess": 18.32785536174913,
+            "folded_rank_normalized_split_rhat": 1.1082198873963371,
+            "lower_tail_ess": 27.335004849581086,
+            "parameter": "gamma",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.8421886205133273,
+            "rhat": 1.8421886205133273,
+            "tail_ess": 27.335004849581086,
+            "upper_tail_ess": 44.9853506465157
+          },
+          {
+            "bulk_ess": 33.205281522998135,
+            "folded_rank_normalized_split_rhat": 1.1226397749095003,
+            "lower_tail_ess": 81.88529789725868,
+            "parameter": "R",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.4291145523896038,
+            "rhat": 1.4291145523896038,
+            "tail_ess": 81.88529789725868,
+            "upper_tail_ess": 119.03562222219331
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 64,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.05,
+      "trajectory_length": 0.4
+    }
+  ],
+  "schema": "bayesfilter.structural_ukf_neutra_confirmation.v1",
+  "selected_probe": null,
+  "sequential_run": null,
+  "target_identity": {
+    "adapter_signature": "5d371809752815d5baf7969543268ee3d4527a93a7eecea4f07ed221ce26fa81",
+    "batch_execution_surface": {
+      "adapter_signature": "5d371809752815d5baf7969543268ee3d4527a93a7eecea4f07ed221ce26fa81",
+      "backend_id": "tensorflow_batched_principal_sqrt_ukf_structural",
+      "callable_module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+      "callable_qualname": "StructuralUKFNeuTraAdapter.neutra_batch_log_prob_and_grad_status",
+      "callable_source_sha256": "78e3ec409ef46a2fc4acef2dba4a8477abb295c5ea7ed1b6ca30b376016d2d5d",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_structural_posterior_value_score_status",
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "qualname": "_structural_posterior_value_score_status",
+          "source_sha256": "dfc902264b42d91d65fff6fa19cc2675956a8050fd78461889ef9752660590c9"
+        }
+      ],
+      "dependency_closure_sha256": "bdaa4691dc986ec72e602902ea7711001a76b418f209b8d626f89b6fa2463f40",
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "source_sha256": "c174821a32b39871c0bfa251ba000acc6582630ba1cb80e5878147cd8cbbb286"
+        }
+      ],
+      "evidence_path": "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+      "jit_compile_required": true,
+      "method_name": "neutra_batch_log_prob_and_grad_status",
+      "minimum_batch_size": 2,
+      "row_mapped_scalar_target_used": false,
+      "sample_axis_python_loop_used": false,
+      "scalar_fallback_used": false,
+      "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+      "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+      "status_telemetry_required": true,
+      "target_scope": "STR-UKF-five-probit-T100-structural-innovation-v1"
+    },
+    "dtype": "float64",
+    "mathematical_target_signature": "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06",
+    "nonclaims": [
+      "typed target identity and execution binding only",
+      "no HMC convergence or posterior recovery claim",
+      "no NeuTra training quality or production readiness claim"
+    ],
+    "parameter_dim": 5,
+    "posterior_execution_surface": {
+      "callable_module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+      "callable_qualname": "StructuralUKFNeuTraAdapter.log_prob_and_grad",
+      "callable_source_sha256": "384f49c51d7f88ba74d855ea4b6646dfd55820ecedf9c7c3ccfd070b50d2f840",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_structural_posterior_value_score_status",
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "qualname": "_structural_posterior_value_score_status",
+          "source_sha256": "dfc902264b42d91d65fff6fa19cc2675956a8050fd78461889ef9752660590c9"
+        }
+      ],
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "source_sha256": "c174821a32b39871c0bfa251ba000acc6582630ba1cb80e5878147cd8cbbb286"
+        }
+      ],
+      "method_name": "log_prob_and_grad"
+    },
+    "program_id": "multimodel-neutra-filter-posterior-20260715",
+    "recomposition_signature": "f0b811fd0736cb802efe87d0967b698ebf2c0af510c6512b11d1853bb02f8509",
+    "registry_artifact_sha256": "b5d7e9e9800e30267059eacd8bec4bdbfb79ea397a95cafced7fe08cb1712ab2",
+    "schema": "bayesfilter.neutra.typed_target_identity.v1",
+    "scope_id": "STR-UKF",
+    "scope_kind": "model_cell",
+    "status_execution_surface": {
+      "callable_module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+      "callable_qualname": "StructuralUKFNeuTraAdapter.target_status_telemetry",
+      "callable_source_sha256": "269130ed8ea9092aa18191abdf8d8247342277268cf6ec6a64b47aaa9c5a1422",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_structural_posterior_value_score_status",
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "qualname": "_structural_posterior_value_score_status",
+          "source_sha256": "dfc902264b42d91d65fff6fa19cc2675956a8050fd78461889ef9752660590c9"
+        }
+      ],
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.structural_ukf_neutra_target_design_tf",
+          "source_sha256": "c174821a32b39871c0bfa251ba000acc6582630ba1cb80e5878147cd8cbbb286"
+        }
+      ],
+      "method_name": "target_status_telemetry"
+    },
+    "target_signature": "e8d78a8ee12245fee2e6c4c739d9dc03d672e8dd9a96bfbd492b426a72e1c665"
+  },
+  "training_reference": {
+    "artifact_hashes_sha256": "f4fd5a9513dd7872c36dd50ff8797d834828d14514cfaeebde17c65d2f1b944d",
+    "result_sha256": "fe2ff521b65a43e62ab23f32691e579ed8c8202cbc5ec91872a000995f860777",
+    "root": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/final/dim6_lr5e3/attempt-02/segment-5000",
+    "selection": {
+      "campaign_id": "structural-ukf-neutra-truth-tail-20260717",
+      "cell_id": "STR-UKF",
+      "comparison_rows": [
+        {
+          "mean_reverse_kl": 138.3472116863041,
+          "paired_difference_mcse": 0.021842413435494354,
+          "paired_mean_difference_from_nominal": 0.49660597744259505,
+          "recipe_id": "dim3_lr1e3",
+          "within_two_paired_mcse": false
+        },
+        {
+          "mean_reverse_kl": 137.91735932657943,
+          "paired_difference_mcse": 0.017773878808042074,
+          "paired_mean_difference_from_nominal": 0.0667536177179322,
+          "recipe_id": "dim3_lr5e3",
+          "within_two_paired_mcse": false
+        },
+        {
+          "mean_reverse_kl": 138.10083738163658,
+          "paired_difference_mcse": 0.030434526599371722,
+          "paired_mean_difference_from_nominal": 0.2502316727750937,
+          "recipe_id": "dim6_lr1e3",
+          "within_two_paired_mcse": false
+        },
+        {
+          "mean_reverse_kl": 137.85060570886148,
+          "paired_difference_mcse": 0.0,
+          "paired_mean_difference_from_nominal": 0.0,
+          "recipe_id": "dim6_lr5e3",
+          "within_two_paired_mcse": true
+        }
+      ],
+      "decision": "NOMINATE_STRUCTURAL_UKF_RECIPE_FOR_FRESH_5000_STEP_TRAINING",
+      "evidence_role": "proxy_nomination_not_transport_promotion",
+      "nominal_lowest_mean_recipe": "dim6_lr5e3",
+      "nonclaims": [
+        "training and heldout reverse KL are nomination evidence only",
+        "the zero-identity affine start is source-prior geometry, not posterior geometry",
+        "screen weights are never reused by final training",
+        "no HMC convergence, truth recovery, filter exactness, calibration, superiority, or readiness claim"
+      ],
+      "passed": true,
+      "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/selection.json",
+      "recipe_order": [
+        "dim3_lr1e3",
+        "dim3_lr5e3",
+        "dim6_lr1e3",
+        "dim6_lr5e3"
+      ],
+      "schema": "bayesfilter.structural_ukf_neutra_training_selection.v1",
+      "screen_references": [
+        {
+          "artifact_hashes": {
+            "byte_count": 915,
+            "file_sha256": "2d041044298b593e4bcd18fffcf747ea86901a9f283ba0b37267413ab1e35365",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim3_lr1e3/attempt-01/artifact_hashes.json"
+          },
+          "recipe_id": "dim3_lr1e3",
+          "result": {
+            "byte_count": 55566,
+            "file_sha256": "533e22a9ac8111f575f206e7374aab2dfbed8cd7e7090194546cc43b87953c6a",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim3_lr1e3/attempt-01/result.json"
+          }
+        },
+        {
+          "artifact_hashes": {
+            "byte_count": 915,
+            "file_sha256": "20e2753b1c175478d6cd6f5d989804f77878263ae35b2507d3714c873f74841f",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim3_lr5e3/attempt-01/artifact_hashes.json"
+          },
+          "recipe_id": "dim3_lr5e3",
+          "result": {
+            "byte_count": 55603,
+            "file_sha256": "3ce35a40f2cf01f20ad5273de991849dfa39a79da5edb647d4876e6de88a0afc",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim3_lr5e3/attempt-01/result.json"
+          }
+        },
+        {
+          "artifact_hashes": {
+            "byte_count": 915,
+            "file_sha256": "6839cf26dc20ff8eb42b5a8e5b25a2a85bb2dff0fb7d2037c5108718b6a133d8",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim6_lr1e3/attempt-01/artifact_hashes.json"
+          },
+          "recipe_id": "dim6_lr1e3",
+          "result": {
+            "byte_count": 55586,
+            "file_sha256": "9e3fc160b7b4ac3eeefaaba14777eb32bd4d2ec274d548fa6a4ac12338a28e61",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim6_lr1e3/attempt-01/result.json"
+          }
+        },
+        {
+          "artifact_hashes": {
+            "byte_count": 915,
+            "file_sha256": "efbf5b482c691dff644a6a19c7b9d6d9f1cb12ee5d2b703ef25a876e4580a670",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim6_lr5e3/attempt-01/artifact_hashes.json"
+          },
+          "recipe_id": "dim6_lr5e3",
+          "result": {
+            "byte_count": 55558,
+            "file_sha256": "56babdd4bb94e24d25ec949c74a30053362741b965816253a04ebd7bcbbcc51f",
+            "path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/training/screen/candidates/dim6_lr5e3/attempt-01/result.json"
+          }
+        }
+      ],
+      "screen_weights_reused_by_final": false,
+      "selected_recipe": {
+        "activation": "elu",
+        "batch_size": 128,
+        "clip_norm": 10.0,
+        "final_learning_rate_fraction": 0.1,
+        "hidden_layers": [
+          30,
+          30
+        ],
+        "init_scale": 0.02,
+        "learning_rate": 0.005,
+        "optimizer": "manual_adam_linear_decay",
+        "recipe_id": "dim6_lr5e3",
+        "s_max": 1.0,
+        "stage_count": 3
+      },
+      "selected_recipe_id": "dim6_lr5e3",
+      "selection_rule": "within_two_paired_mcse_of_nominal_lowest_common_heldout_loss_then_parameter_count_learning_rate_declared_order",
+      "sha256": "980776ec5e3d53159cf57d618f02adf0afd39b64c68d9962edac404fc404f4f5",
+      "statistically_supported_ranking": false
+    }
+  },
+  "training_result_binding": {
+    "artifact_signature": "67421aea7e05cd0e549c1a40f0f394787002240c2ef06ef130f2015dd58a3174",
+    "recipe_id": "dim6_lr5e3",
+    "steps": 5000,
+    "training_state_hash": "42e2934d645f0dec9c554befbf92f4cd0f5716b897ff8977a34b8966d13e4513",
+    "transport_hash": "32a19a8d8d02f6a94851ed489d3b64f961f3bc92ba7ac36506f8078a6649c1e0"
+  },
+  "truth_tail": null,
+  "tuning_verification_rows": [
+    {
+      "acceptance_role": "explanatory_only",
+      "admitted": false,
+      "archive": {
+        "chunk_index": null,
+        "cumulative": false,
+        "excluded_from_posterior": true,
+        "latent_path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/confirmation/attempt-02/tuning-verification/candidate-0000/latent.tensor",
+        "latent_sha256": "e796c3131ba948daee975c9fa02151116dda046c8f3463c87e688a64f528b980",
+        "physical_path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/confirmation/attempt-02/tuning-verification/candidate-0000/physical.tensor",
+        "physical_sha256": "671af3de04204d800630a769e1aed11512cd7613d935a57f0084293d4d8c14b5",
+        "sample_shape": [
+          1000,
+          4,
+          5
+        ],
+        "schema": "bayesfilter.structural_ukf_neutra_triplet_archive.v1",
+        "seed": [
+          20260717,
+          43100
+        ],
+        "source_path": "docs/plans/artifacts/structural-ukf-neutra-truth-tail-20260717/confirmation/attempt-02/tuning-verification/candidate-0000/source.tensor",
+        "source_sha256": "3ce26ee90b7486aaca40a3fcd6a6c6053f80dcecca2f72ddfc52ded1584a1bae",
+        "stage": "tuning_verification",
+        "target_signature": "e8d78a8ee12245fee2e6c4c739d9dc03d672e8dd9a96bfbd492b426a72e1c665",
+        "warmup_excluded_from_posterior": true
+      },
+      "grid_index": 0,
+      "health": {
+        "acceptance_rate": 0.99925,
+        "acceptance_rate_by_chain": [
+          1.0,
+          0.999,
+          1.0,
+          0.998
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 1826.5422857470112,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          1000,
+          4,
+          5
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "modern_rhat": {
+        "chain_count": 4,
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 1000,
+        "finite_rhat_count": 5,
+        "folded_rank_normalized_split_rhat": [
+          1.0068995983945808,
+          1.02324478200014,
+          1.0203915719454726,
+          1.0304811391135882,
+          1.0206673894984006
+        ],
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_finite_rhat": 1.0789464372219177,
+        "max_folded_rank_normalized_split_rhat": 1.0304811391135882,
+        "max_rank_normalized_split_rhat": 1.0789464372219177,
+        "nonfinite_rhat_count": 0,
+        "parameter_count": 5,
+        "passed": false,
+        "rank_normalized_split_rhat": [
+          1.0281147419589225,
+          1.0789464372219177,
+          1.058296821433106,
+          1.0656626237103064,
+          1.0483030641492805
+        ],
+        "rhat": [
+          1.0281147419589225,
+          1.0789464372219177,
+          1.058296821433106,
+          1.0656626237103064,
+          1.0483030641492805
+        ],
+        "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+        "rhat_threshold": 1.05,
+        "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 500
+      },
+      "probe_nomination_rank": 0,
+      "scientific_role": "fixed_kernel_tuning_admission_only",
+      "seed": [
+        20260717,
+        43100
+      ],
+      "step_size": 0.05
+    }
+  ]
+}

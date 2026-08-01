@@ -1,0 +1,619 @@
+{
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "backward_snowball": [
+    {
+      "action": "inspect before changing fixed-TTSIRT transport mathematics",
+      "candidate": "Cui and Dolgov 2022 squared TT and KR rearrangements",
+      "classification": "FOUNDATIONAL",
+      "source": "Zhao-Cui 2024"
+    },
+    {
+      "action": "not used as a practical rank guarantee",
+      "candidate": "Griebel and Harbrecht 2023 TT approximation bounds",
+      "classification": "BACKGROUND",
+      "source": "Zhao-Cui 2024"
+    }
+  ],
+  "citation_venue_metadata": {
+    "zhao_cui_2024": {
+      "access_date": "2026-07-15",
+      "citation_count": "not_available_no_live_metadata_query",
+      "venue": "Journal of Machine Learning Research",
+      "venue_metric": "not_collected_not_truth_evidence"
+    }
+  },
+  "claim_support": [
+    {
+      "anchors": "Equations 9-14, Algorithms 1-2, Proposition 2",
+      "claim": "Zhao-Cui recursively approximates joint posterior densities with TT/squared-TT and marginalizes them",
+      "support": "PRIMARY_TECHNICAL_SUPPORT"
+    },
+    {
+      "anchors": "ch32c2 selected-feature tangent proposition",
+      "claim": "Contract E-TP preserves selected finite-teacher feature tangents under a fixed chart",
+      "support": "PROJECT_DERIVATION"
+    },
+    {
+      "anchors": "P90 derivative manifest and P91 final decision",
+      "claim": "SIR d18 fixed variant exists but full filtering total score is incomplete",
+      "support": "IMPLEMENTATION_EVIDENCE"
+    }
+  ],
+  "comparison_protocol": {
+    "cross_method_primary": "componentwise_total_score_difference",
+    "equivalence_rule": "row-specific margin must be derived before labels are revealed; rows without a justified margin remain descriptive_only_margin_unavailable",
+    "forbidden": [
+      "0.05*sqrt(p) as cross-method margin",
+      "cosine or sign agreement as equivalence",
+      "one-seed ranking",
+      "retained-grid predator-prey production comparison",
+      "P91 SIR component score as full filtering score"
+    ],
+    "maximum_replicates_without_plan_revision": 64,
+    "pilot_replicates": 16,
+    "precision_rule": "continue 16->32->64 only while interval width can change classification; otherwise classify unresolved_precision",
+    "same_scalar_derivative": "AD_manual_JVP_VJP_vs_common_random_number_FD; existing FD policy only",
+    "uncertainty": "paired Student intervals with Bonferroni simultaneous 95 percent component coverage; paired bootstrap sensitivity when replicate count permits"
+  },
+  "default_assumption_audit": [
+    {
+      "choice": "mass_mean_second_moment_next_predictive_features",
+      "early_diagnostic": "LGSSM per-time feature/tangent ablation",
+      "status": "starting_hypothesis_not_cross_model_default"
+    },
+    {
+      "choice": "fixed_square_chart",
+      "early_diagnostic": "rank_positivity_and_region_margin",
+      "status": "primary_hypothesis"
+    },
+    {
+      "choice": "nonlinear_parameter_regions",
+      "early_diagnostic": "phase5_model_specific_region_design",
+      "status": "open_except_reviewed_SIR_box"
+    },
+    {
+      "choice": "16_replicate_pilot",
+      "early_diagnostic": "interval_width_and_precision_stopping",
+      "status": "owner_precedent_and_convenience_pilot_not_final_power_claim"
+    }
+  ],
+  "device_policy": "cpu_only_registry_build_CUDA_VISIBLE_DEVICES=-1",
+  "forward_snowball": {
+    "blocker": "no approved or necessary live citation-index query",
+    "status": "not_run_no_live_metadata_needed_for_phase0_implementation"
+  },
+  "generated_at_git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "master_plan": "docs/plans/bayesfilter-contract-e-tp-all-model-gradient-comparison-master-plan-2026-07-15.md",
+  "nonclaims": [
+    "not implementation correctness",
+    "not a cross-method equivalence result",
+    "not canonical Contract E status",
+    "not leaderboard or HMC readiness"
+  ],
+  "omitted_paper_risks": [
+    {
+      "risk": "later fixed-TTSIRT derivative implementation may require Cui-Dolgov primary equations",
+      "status": "phase6_source_check_required"
+    },
+    {
+      "risk": "no forward-citation/retraction metadata check for Zhao-Cui",
+      "status": "does_not_block_local_implementation_plan_but_blocks_complete_literature_claim"
+    }
+  ],
+  "primary_row_ids": [
+    "benchmark_lgssm_exact_oracle_m3_T50",
+    "zhao_cui_sv_actual_nongaussian_T1000",
+    "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+    "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+    "zhao_cui_predator_prey_T20",
+    "zhao_cui_spatial_sir_austria_j9_T20"
+  ],
+  "program_id": "contract-e-tp-all-model-gradient-comparison",
+  "role_seeds": {
+    "audit": [
+      82300,
+      82301,
+      82302,
+      82303,
+      82304,
+      82305,
+      82306,
+      82307,
+      82308,
+      82309,
+      82310,
+      82311,
+      82312,
+      82313,
+      82314,
+      82315
+    ],
+    "preparation": [
+      82100,
+      82101,
+      82102,
+      82103,
+      82104,
+      82105,
+      82106,
+      82107,
+      82108,
+      82109,
+      82110,
+      82111,
+      82112,
+      82113,
+      82114,
+      82115
+    ],
+    "status": "frozen_disjoint_convenience_design_not_scientific_default",
+    "use": "preparation may select; validation may nominate or veto; audit is final-only",
+    "validation": [
+      82200,
+      82201,
+      82202,
+      82203,
+      82204,
+      82205,
+      82206,
+      82207,
+      82208,
+      82209,
+      82210,
+      82211,
+      82212,
+      82213,
+      82214,
+      82215
+    ]
+  },
+  "rows": [
+    {
+      "comparison_scope": "primary_observed_data_filtering",
+      "dataset": {
+        "generator": "scripts.filtering_value_gradient_benchmark_generate_p8_datasets:_lgssm_dataset",
+        "raw_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "8aa2e8102ef25d6accf5d30b9c341621af26fce151ac85133c5a0a6a44671e17",
+          "shape": [
+            50,
+            3
+          ]
+        },
+        "seed": 81100,
+        "target_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "8aa2e8102ef25d6accf5d30b9c341621af26fce151ac85133c5a0a6a44671e17",
+          "shape": [
+            50,
+            3
+          ]
+        },
+        "transform": "identity"
+      },
+      "equivalence_margin_status": "descriptive_only_margin_unavailable",
+      "horizon": 50,
+      "initial_law_policy": "bind_existing_row_generator_and_manifest",
+      "observation_dim": 3,
+      "parameter_dim": 5,
+      "parameter_order": [
+        "phi1",
+        "phi2",
+        "phi3",
+        "q_scale",
+        "r_scale"
+      ],
+      "parameter_region": {
+        "center": "truth_theta",
+        "reason": "no reviewed Contract E-TP chart region exists for this row",
+        "status": "region_design_required_before_chart_preparation"
+      },
+      "reference": "exact_differentiated_kalman_filter",
+      "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+      "score_target": "total_derivative_of_target_scalar",
+      "state_dim": 3,
+      "target_observation_policy": "linear_gaussian_observation",
+      "target_scalar": "finite_fixed_program_observed_data_log_likelihood",
+      "theta_coordinate_system": "physical_benchmark_exact_oracle",
+      "truth_theta": [
+        0.72,
+        0.55,
+        0.35,
+        0.35,
+        0.45
+      ],
+      "zhao_cui": {
+        "classification": "fixed_hmc_adaptation",
+        "route": "not_implemented_for_exact_leaderboard_target",
+        "same_scalar_fd_required": true,
+        "source_anchors": [
+          "Zhao-Cui 2024 Section 6.1",
+          "third_party/audit/zhao_cui_tensor_ssm_p10/source/eg1_kalman/main_script.m"
+        ],
+        "status": "missing_real_fixed_tt_route_oracle_adapter_is_not_zhao_cui"
+      }
+    },
+    {
+      "comparison_scope": "primary_observed_data_filtering",
+      "dataset": {
+        "generator": "scripts.filtering_value_gradient_benchmark_generate_p8_datasets:_sv_dataset",
+        "raw_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "5e2423149e4f59eb588ccc7f16ec6d9ee984ccc4710a3ae07a3dbcf5c37db748",
+          "shape": [
+            1000,
+            1
+          ]
+        },
+        "seed": 81101,
+        "target_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "5445ad7afb9aabccb2bd37352d592205be2afd172234293a64cd18ee27c2010f",
+          "shape": [
+            1000,
+            1
+          ]
+        },
+        "transform": "bayesfilter.highdim.sv_mixture_cut4:exact_transformed_sv_observations"
+      },
+      "equivalence_margin_status": "descriptive_only_margin_unavailable",
+      "horizon": 1000,
+      "initial_law_policy": "bind_existing_row_generator_and_manifest",
+      "observation_dim": 1,
+      "parameter_dim": 2,
+      "parameter_order": [
+        "gamma_unconstrained",
+        "log_beta"
+      ],
+      "parameter_region": {
+        "center": "truth_theta",
+        "reason": "no reviewed Contract E-TP chart region exists for this row",
+        "status": "region_design_required_before_chart_preparation"
+      },
+      "reference": "refined_fixed_sgqf_and_high_accuracy_teacher_not_exact",
+      "row_id": "zhao_cui_sv_actual_nongaussian_T1000",
+      "score_target": "total_derivative_of_target_scalar",
+      "state_dim": 1,
+      "target_observation_policy": "transformed_actual_sv_log_y_square",
+      "target_scalar": "finite_fixed_program_observed_data_log_likelihood",
+      "theta_coordinate_system": "synthetic_unconstrained",
+      "truth_theta": [
+        0.2533471031357997,
+        -0.916290731874155
+      ],
+      "zhao_cui": {
+        "classification": "fixed_hmc_adaptation",
+        "route": "exact_transformed_sv_independent_panel_zhaocui_tt_score",
+        "same_scalar_fd_required": true,
+        "source_anchors": [
+          "Zhao-Cui 2024 Example 1 and Section 6.2",
+          "third_party/audit/zhao_cui_tensor_ssm_p10/source/eg2_sv/mainscript.m"
+        ],
+        "status": "implemented_scalar_adapter_requires_recertification"
+      }
+    },
+    {
+      "comparison_scope": "primary_observed_data_filtering",
+      "dataset": {
+        "generator": "scripts.filtering_value_gradient_benchmark_generate_p8_datasets:_sv_dataset",
+        "raw_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "5e2423149e4f59eb588ccc7f16ec6d9ee984ccc4710a3ae07a3dbcf5c37db748",
+          "shape": [
+            1000,
+            1
+          ]
+        },
+        "seed": 81101,
+        "target_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "891bbf642b948e793a70ee2c8b37002d1b784a1802d359e5304c7fdb57d75cf4",
+          "shape": [
+            1000,
+            1
+          ]
+        },
+        "transform": "bayesfilter.highdim.sv_mixture_cut4:transformed_sv_observations(offset=1e-8)"
+      },
+      "equivalence_margin_status": "descriptive_only_margin_unavailable",
+      "horizon": 1000,
+      "initial_law_policy": "bind_existing_row_generator_and_manifest",
+      "observation_dim": 1,
+      "parameter_dim": 2,
+      "parameter_order": [
+        "gamma_unconstrained",
+        "log_beta"
+      ],
+      "parameter_region": {
+        "center": "truth_theta",
+        "reason": "no reviewed Contract E-TP chart region exists for this row",
+        "status": "region_design_required_before_chart_preparation"
+      },
+      "reference": "refined_mixture_sgqf_and_high_accuracy_teacher_not_exact",
+      "row_id": "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000",
+      "score_target": "total_derivative_of_target_scalar",
+      "state_dim": 1,
+      "target_observation_policy": "ksc_log_chi_square_gaussian_mixture_surrogate",
+      "target_scalar": "finite_fixed_program_observed_data_log_likelihood",
+      "theta_coordinate_system": "synthetic_unconstrained",
+      "truth_theta": [
+        0.2533471031357997,
+        -0.916290731874155
+      ],
+      "zhao_cui": {
+        "classification": "extension_or_invention",
+        "route": "independent_panel_sv_mixture_zhaocui_tt_score",
+        "same_scalar_fd_required": true,
+        "source_anchors": [
+          "Zhao-Cui 2024 Example 1 and Section 6.2 for the parent SV model",
+          "KSC mixture is a BayesFilter comparator adaptation"
+        ],
+        "status": "implemented_fixed_tt_adapter_requires_recertification"
+      }
+    },
+    {
+      "comparison_scope": "primary_observed_data_filtering",
+      "dataset": {
+        "generator": "scripts.filtering_value_gradient_benchmark_generate_p8_datasets:_generalized_sv_prior_mean_dataset",
+        "proposal_flow_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "5adc179ce86252d70abd1f615dbdc30dd81aad05888a823a51c9dcac23b92602",
+          "shape": [
+            1008,
+            1
+          ]
+        },
+        "proposal_flow_transform": "docs.benchmarks.benchmark_ledh_same_target_generalized_sv_value:_log_square_flow_observations",
+        "raw_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "c990947b16d5ef108870fcb716836166a41b1fe31503b9cb5e0cd0459d4a53f2",
+          "shape": [
+            1008,
+            1
+          ]
+        },
+        "seed": 81105,
+        "target_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "c990947b16d5ef108870fcb716836166a41b1fe31503b9cb5e0cd0459d4a53f2",
+          "shape": [
+            1008,
+            1
+          ]
+        },
+        "transform": "identity"
+      },
+      "equivalence_margin_status": "descriptive_only_margin_unavailable",
+      "horizon": 1008,
+      "initial_law_policy": "bind_existing_row_generator_and_manifest",
+      "observation_dim": 1,
+      "parameter_dim": 3,
+      "parameter_order": [
+        "gamma_unconstrained",
+        "log_tau",
+        "mu"
+      ],
+      "parameter_region": {
+        "center": "truth_theta",
+        "reason": "no reviewed Contract E-TP chart region exists for this row",
+        "status": "region_design_required_before_chart_preparation"
+      },
+      "reference": "native_generalized_sv_reference_and_high_accuracy_teacher",
+      "row_id": "zhao_cui_generalized_sv_synthetic_from_estimated_values",
+      "score_target": "total_derivative_of_target_scalar",
+      "state_dim": 1,
+      "target_observation_policy": "source_route_prior_mean_generalized_sv",
+      "target_scalar": "finite_fixed_program_observed_data_log_likelihood",
+      "theta_coordinate_system": "source_route_active_transformed_prior_mean",
+      "truth_theta": [
+        1.0824113944610982,
+        -2.076793740349318,
+        0.0
+      ],
+      "zhao_cui": {
+        "classification": "extension_or_invention",
+        "route": "scalar_fixed_design_tt_generalized_sv_extension",
+        "same_scalar_fd_required": true,
+        "source_anchors": [
+          "Zhao-Cui 2024 Example 1 only as parent-model context",
+          "generalized-SV operations are not author-source operations"
+        ],
+        "status": "implemented_fixed_design_extension_requires_recertification"
+      }
+    },
+    {
+      "comparison_scope": "primary_observed_data_filtering",
+      "dataset": {
+        "generator": "scripts.filtering_value_gradient_benchmark_generate_p8_datasets:_predator_prey_dataset",
+        "raw_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "dc63294b6e77913aef0c92796dd2d3c7a1721a766f976fcc392cd02a70754387",
+          "shape": [
+            20,
+            2
+          ]
+        },
+        "seed": 81104,
+        "target_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "dc63294b6e77913aef0c92796dd2d3c7a1721a766f976fcc392cd02a70754387",
+          "shape": [
+            20,
+            2
+          ]
+        },
+        "transform": "identity"
+      },
+      "equivalence_margin_status": "descriptive_only_margin_unavailable",
+      "horizon": 20,
+      "initial_law_policy": "bind_existing_row_generator_and_manifest",
+      "observation_dim": 2,
+      "parameter_dim": 6,
+      "parameter_order": [
+        "r",
+        "K",
+        "a",
+        "s",
+        "u",
+        "v"
+      ],
+      "parameter_region": {
+        "center": "truth_theta",
+        "reason": "no reviewed Contract E-TP chart region exists for this row",
+        "status": "region_design_required_before_chart_preparation"
+      },
+      "reference": "dense_and_sgqf_lower_rungs_plus_high_accuracy_teacher",
+      "row_id": "zhao_cui_predator_prey_T20",
+      "score_target": "total_derivative_of_target_scalar",
+      "state_dim": 2,
+      "target_observation_policy": "additive_gaussian_predator_prey",
+      "target_scalar": "finite_fixed_program_observed_data_log_likelihood",
+      "theta_coordinate_system": "physical",
+      "truth_theta": [
+        0.6,
+        114.0,
+        25.0,
+        0.3,
+        0.5,
+        0.5
+      ],
+      "zhao_cui": {
+        "classification": "fixed_hmc_adaptation",
+        "route": "forbidden_retained_grid_route_must_not_be_used",
+        "same_scalar_fd_required": true,
+        "source_anchors": [
+          "Zhao-Cui 2024 Section 6.4",
+          "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/pp/odefun.mlx",
+          "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/pp/predator_step.mlx"
+        ],
+        "status": "source_model_present_primary_comparator_route_missing"
+      }
+    },
+    {
+      "comparison_scope": "primary_observed_data_filtering",
+      "dataset": {
+        "generator": "scripts.filtering_value_gradient_benchmark_generate_p8_datasets:_sir_dataset",
+        "raw_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "cb72b8ebb705c0f791e6f5edace8b296b7da46e5236a9824a1d5a30a261572e5",
+          "shape": [
+            20,
+            9
+          ]
+        },
+        "seed": 81103,
+        "target_observations": {
+          "all_finite": true,
+          "dtype": "float64",
+          "serialized_tensor_sha256": "cb72b8ebb705c0f791e6f5edace8b296b7da46e5236a9824a1d5a30a261572e5",
+          "shape": [
+            20,
+            9
+          ]
+        },
+        "transform": "identity"
+      },
+      "equivalence_margin_status": "descriptive_only_margin_unavailable",
+      "horizon": 20,
+      "initial_law_policy": "bind_existing_row_generator_and_manifest",
+      "observation_dim": 9,
+      "parameter_dim": 3,
+      "parameter_order": [
+        "log_kappa_scale",
+        "log_nu_scale",
+        "log_obs_noise_scale"
+      ],
+      "parameter_region": {
+        "box": [
+          [
+            -0.5,
+            0.5
+          ],
+          [
+            -0.5,
+            0.5
+          ],
+          [
+            -0.5,
+            0.5
+          ]
+        ],
+        "source": "docs/plans/bayesfilter-parameterized-sir-target-contract-2026-07-02.md",
+        "status": "reviewed_existing_region"
+      },
+      "reference": "structural_invariants_lower_dimensional_closures_and_high_accuracy_teacher",
+      "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+      "score_target": "total_derivative_of_target_scalar",
+      "state_dim": 18,
+      "target_observation_policy": "additive_gaussian_spatial_sir",
+      "target_scalar": "finite_fixed_program_observed_data_log_likelihood",
+      "theta_coordinate_system": "sir_log_scale_theta",
+      "truth_theta": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "zhao_cui": {
+        "classification": "fixed_hmc_adaptation_with_logscale_extension",
+        "route": "fixed_ttsirt_source_route",
+        "same_scalar_fd_required": true,
+        "source_anchors": [
+          "Zhao-Cui 2024 Section 6.3",
+          "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/sir_austria/odefun.mlx",
+          "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/sir_austria/sir_step.mlx",
+          "docs/plans/bayesfilter-highdim-zhao-cui-p90-derivative-carry-manifest-2026-06-28.md",
+          "docs/plans/bayesfilter-highdim-zhao-cui-p91-phase9-final-decision-result-2026-06-29.md"
+        ],
+        "status": "implemented_component_score_full_observed_data_total_score_blocked"
+      }
+    }
+  ],
+  "schema_version": "contract_e_tp.phase0_registry.v1",
+  "source_support": {
+    "author_code": {
+      "allowed_claim": "source operation and example wiring anchors",
+      "classification": "IMPLEMENTATION_OR_SOFTWARE",
+      "forbidden_claim": "local derivative correctness or mathematical oracle",
+      "path": "third_party/audit/zhao_cui_tensor_ssm_p10/MANIFEST.yml",
+      "sha256": "59ccbf9e368292a76ee0a3264ce07a6579a5d4d0ad47a5257a49ae25ac5cafc4",
+      "upstream_commit": "80034dccb99eb1d86284a1839b4a12067d13b9da"
+    },
+    "contract_e_tp_derivation": {
+      "classification": "PROJECT_DERIVATION",
+      "inspected_section": "A proposed score-aware teacher-projection extension",
+      "path": "docs/chapters/ch32c2_ledh_pfpf_ot_custom_gradient.tex",
+      "sha256": "1825b3e7f879fd7b9ce8e30945e05fcf62c3711099eeaa617a0b5768b1d411e8"
+    },
+    "zhao_cui_paper": {
+      "allowed_claim": "paper algorithm and example mathematics",
+      "classification": "DIRECT_METHOD",
+      "forbidden_claim": "BayesFilter fixed-branch score correctness",
+      "inspected_anchors": [
+        "Equations 9-14",
+        "Algorithms 1-2",
+        "Algorithms 3-5 and Equations 23, 30-35",
+        "Theorems 7-8",
+        "Sections 6.1-6.4"
+      ],
+      "path": ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.pdf",
+      "publication_status": "JMLR_2024_local_full_text",
+      "retraction_erratum_status": "not_checked_against_live_metadata",
+      "sha256": "c547b9af2e407c7a0d28bf49ca594fed65d9794d4f37ca605edebd91f9755e35",
+      "text_path": ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt",
+      "text_sha256": "1ccfc4873ef4b8fed5d9a7c076ee1efad8b30acb4d67d4a69f11b6b172a7f1ec"
+    }
+  },
+  "status": "phase0_target_source_statistical_freeze"
+}

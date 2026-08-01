@@ -1089,6 +1089,44 @@ def test_phase3_non_promoting_preflight_calls_phase7(
     assert result.final_kernel_hash is not None
 
 
+def test_serious_tuner_fails_closed_without_acceptance_promoted_bootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    geometry = _geometry()
+    bootstrap = run_hmc_bootstrap_screen(
+        adapter=_ToyGaussianAdapter(),
+        geometry=geometry,
+        config=_bootstrap_config(
+            max_repairs=0,
+            target_scope="kernel_fixed_mass_step_toy_gaussian",
+        ),
+        run_full_chain=lambda _adapter, _initial_state, _config: _bootstrap_fake_result(
+            acceptance=0.95
+        ),
+    )
+    assert bootstrap.passed is False
+    module = __import__("bayesfilter.inference.hmc_kernel_tuning", fromlist=[""])
+    monkeypatch.setattr(module, "initialize_hmc_kernel_geometry", lambda **_kwargs: geometry)
+    monkeypatch.setattr(module, "run_hmc_bootstrap_screen", lambda **_kwargs: bootstrap)
+
+    def forbidden_loop(**_kwargs: Any):
+        raise AssertionError("serious tuning must not run after non-promoting bootstrap")
+
+    monkeypatch.setattr(module, "run_hmc_tune_verify_repair_loop", forbidden_loop)
+    result = tune_hmc_kernel(
+        adapter=_ToyGaussianAdapter(),
+        initial_position=[0.0, 0.0],
+        config=HMCKernelTuningConfig.serious(
+            target_scope="kernel_fixed_mass_step_toy_gaussian"
+        ),
+    )
+
+    assert result.final_status == "hard_veto"
+    assert result.diagnostic_role == "bootstrap_acceptance_promotion_required"
+    assert result.hard_vetoes == ("bootstrap_acceptance_promoted_kernel_missing",)
+    assert result.final_kernel_payload is None
+
+
 def test_phase3_hard_veto_does_not_call_phase7(monkeypatch: pytest.MonkeyPatch) -> None:
     geometry = _geometry()
     bootstrap = run_hmc_bootstrap_screen(

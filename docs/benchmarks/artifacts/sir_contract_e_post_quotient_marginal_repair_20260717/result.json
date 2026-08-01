@@ -1,0 +1,95 @@
+{
+  "schema": "bayesfilter.sir_contract_e_post_quotient_marginal_repair.v1",
+  "status": "PASS_ENGINEERING_REPAIR",
+  "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+  "git_dirty": true,
+  "environment": "tf-gpu",
+  "python": "3.11.14",
+  "tensorflow": "2.19.1",
+  "cpu_reference_mode": "CUDA_VISIBLE_DEVICES=-1",
+  "gpu": {
+    "device": "NVIDIA GeForce RTX 4080 SUPER",
+    "xla": true,
+    "dtype": "float64",
+    "memory_limit_mib": 8192,
+    "memory_growth": false,
+    "hard_allocator_cap": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "plan": "docs/plans/bayesfilter-sir-contract-e-post-quotient-marginal-repair-plan-2026-07-16.md",
+  "question": "Does a fixed differentiable terminal IPFP refinement repair both marginals of the actual row-quotient plan consumed by Contract E?",
+  "baseline": {
+    "annealing_steps": 2,
+    "terminal_balance_steps": 0,
+    "classification": "buggy_truncated_plan"
+  },
+  "repaired_program": {
+    "annealing_steps": 20,
+    "terminal_balance_steps": 100,
+    "selection_ladder": [20, 40, 60, 100],
+    "selection_domain": "independent_two_node_and_austria_T2_fixtures_not_audit_seeds",
+    "marginal_gate": "gamma_16N_roundoff_envelope",
+    "parameter_dependent_early_stopping": false
+  },
+  "derivative_evidence": {
+    "terminal_balance_vjp_autodiff_max_abs": 2.949029909160572e-15,
+    "terminal_balance_jvp_vjp_duality_max_abs": 2.220446049250313e-16,
+    "compiled_100_step_vjp_eager_max_abs": 3.3306690738754696e-16,
+    "full_sir_manual_autodiff_max_abs": 4.440892098500626e-16,
+    "full_sir_manual_same_scalar_fd_max_abs": 2.3334445486966615e-11
+  },
+  "gpu_canaries": {
+    "two_node_T2_N8": {
+      "valid": true,
+      "maximum_row_residual": 3.774758283725532e-15,
+      "maximum_post_quotient_column_residual": 3.9968028886505635e-15,
+      "minimum_gap_eigenvalue": 0.17168485969203306,
+      "score_finite": true,
+      "first_call_seconds": 22.31693892000476,
+      "peak_tensorflow_bytes": 140544
+    },
+    "austria_T2_N256_D18_independent_design": {
+      "seeds": [88100, 88101, 88102, 88103, 88104, 88105, 88106, 88107, 88108, 88109, 88110, 88111, 88112, 88113, 88114, 88115],
+      "valid_count": 16,
+      "maximum_row_residual": 5.10702591327572e-15,
+      "maximum_post_quotient_column_residual": 3.552713678800501e-14,
+      "minimum_gap_eigenvalue": 0.48388246939880547,
+      "score_finite": true,
+      "first_call_seconds": 69.10754109098343,
+      "peak_tensorflow_bytes": 31356672
+    }
+  },
+  "final_audit": {
+    "seeds": [87200, 87201, 87202, 87203, 87204, 87205, 87206, 87207, 87208, 87209, 87210, 87211, 87212, 87213, 87214, 87215],
+    "valid_count": 16,
+    "maximum_row_residual": 4.9960036108132044e-15,
+    "maximum_post_quotient_column_residual": 6.661338147750939e-15,
+    "minimum_gap_eigenvalue": 0.4923029222977166,
+    "maximum_gap_minimum_eigenvalue": 0.5766768090919879,
+    "finite_score_count": 16,
+    "first_call_seconds": 69.49368232797133,
+    "peak_tensorflow_bytes": 31356672
+  },
+  "tests": {
+    "focused_final": "4 passed plus compiled 100-step VJP parity",
+    "registered_xla_identity": "8 passed",
+    "affected_suite": "63 passed, 1 unrelated frozen-baseline failure",
+    "unrelated_failure": "tests/test_audit_ledh_clean_xla.py::test_phase4_manual_scan_loop_matches_preedit_baseline_fixture: old unrelated scalar -71.36871084836682 versus frozen -71.40062611753442"
+  },
+  "decision": {
+    "engineering_correctness": "PASS",
+    "numerical_validity_for_T2_marginal_repair": "PASS",
+    "scientific_filtering_accuracy": "NOT_EVALUATED",
+    "teacher_agreement": "NOT_EVALUATED",
+    "hmc_readiness": "NOT_ESTABLISHED",
+    "all_model_correctness": "NOT_ESTABLISHED"
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "312cac561822633961f2987efc104260e76508a466f13b3638be89a621e7c38f",
+    "bayesfilter/highdim/ledh_contract_e_latent_sir_tf.py": "16d72774c87fed354eaccf67548cc06e1cf681c18b8c2f7440abcbbc30d0b10a",
+    "bayesfilter/highdim/ledh_contract_e_identity.py": "f7d39d5a4e11c53e6e22805c1c3035beb49c214d94a52a0de0a559dfef04a8d5",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "e5bd812a03035554fcbb707a79f8a87fc491208834a11d9e47a1d587dd923ebb",
+    "tests/highdim/test_ledh_contract_e_streaming_phase4.py": "5ec799de99d4953b968315c50e227c6f29b032eefcbe7a0e3c557f762121ad2f",
+    "tests/highdim/test_ledh_contract_e_latent_sir_tf.py": "c97b087433e1ce5d882ab120e1d56996c98da0fa5f3a3169f464e5661e076701"
+  }
+}

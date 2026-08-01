@@ -1,0 +1,4072 @@
+{
+  "attempt_id": "harness-smoke-t2-n128-attempt01",
+  "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+  "claim": {
+    "balance_steps": 50,
+    "label": "t2_fresh_claim_s16",
+    "microbatches": [
+      {
+        "result": {
+          "aggregate_physical_score": [
+            3.783217430114746,
+            -0.3545585572719574,
+            -0.12797310948371887,
+            4.400763034820557,
+            11.39655590057373
+          ],
+          "aggregate_value": -8.886930465698242,
+          "arm": "all_active_contract_e",
+          "balance_steps": 50,
+          "bitwise_replay": true,
+          "cache_same_cloud_geometry": false,
+          "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+          "chart_valid": true,
+          "chart_valid_by_seed": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "device": {
+            "dtype": "float32",
+            "jit_compile": true,
+            "logical_devices": [
+              "/device:GPU:0"
+            ],
+            "memory_growth": false,
+            "memory_limit_mib": 8192,
+            "memory_policy": {
+              "aggregate_visible_gpu_limit_mib": 8192,
+              "configured_before_logical_device_initialization": true,
+              "hard_allocator_cap": true,
+              "memory_growth": false,
+              "memory_limit_mib_per_physical_device": 8192,
+              "mode": "fixed_logical_device_limit",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "memory_limit_mib": 8192
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "unset"
+            },
+            "physical_devices": [
+              "/physical_device:GPU:0"
+            ],
+            "tf32_enabled": true,
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+          },
+          "estimator_seeds": [
+            82120,
+            82121,
+            82122,
+            82123
+          ],
+          "finite": true,
+          "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+          "gpu_allocator_bytes": {
+            "current": 193792,
+            "peak": 67167744
+          },
+          "graph": {
+            "operation_count": 473,
+            "python_horizon_unroll": false,
+            "serialized_bytes": 1384972,
+            "while_operation_types": [
+              "StatelessWhile"
+            ]
+          },
+          "hard_valid": true,
+          "kalman_physical_score": [
+            3.8280144459793797,
+            -0.3841810832497856,
+            -0.08308720127298079,
+            4.417212506225628,
+            11.138135721879838
+          ],
+          "kalman_value": -8.86215086932728,
+          "marginal_valid": true,
+          "marginal_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "maximum_row_error": 4.76837158203125e-07,
+          "maximum_row_error_by_seed_time": [
+            [
+              4.76837158203125e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              2.384185791015625e-07,
+              4.172325134277344e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              4.172325134277344e-07
+            ]
+          ],
+          "maximum_tv_column_error": 1.3168755685910583e-07,
+          "num_particles": 128,
+          "per_seed_physical_score": [
+            [
+              3.503199577331543,
+              -0.3517508804798126,
+              -0.2671317756175995,
+              3.9403507709503174,
+              11.227996826171875
+            ],
+            [
+              3.625298500061035,
+              -0.37767672538757324,
+              -0.07478347420692444,
+              4.912065505981445,
+              12.060746192932129
+            ],
+            [
+              4.107024192810059,
+              -0.48009881377220154,
+              -0.07442429661750793,
+              4.153069019317627,
+              10.922233581542969
+            ],
+            [
+              3.8973472118377686,
+              -0.2087077796459198,
+              -0.09555287659168243,
+              4.5975661277771,
+              11.375248908996582
+            ]
+          ],
+          "per_seed_value": [
+            -8.95330810546875,
+            -9.029607772827148,
+            -8.739317893981934,
+            -8.825485229492188
+          ],
+          "physical_score_difference_to_kalman": [
+            -0.04479701586463358,
+            0.029622525977828218,
+            -0.04488590821073808,
+            -0.016449471405071137,
+            0.25842017869389267
+          ],
+          "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+          "preparation_identity": {
+            "axis_convention": {
+              "initial_noise": "[batch, particle, state]",
+              "residual_design": "[batch, time, particle, state]",
+              "transition_noise": "[batch, time, particle, state]"
+            },
+            "balance_steps": 50,
+            "col_chunk_size": 128,
+            "domain_tags": {
+              "initial": 101,
+              "residual": "2000 + zero_based_time",
+              "transition": "1000 + zero_based_time"
+            },
+            "final_dtype": "float32",
+            "key_dtype": "int32",
+            "key_encoding": "[root_seed, domain_tag]",
+            "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+            "maximum_row_error_tolerance": 0.01,
+            "num_particles": 128,
+            "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+            "raw_draw_dtype": "float64",
+            "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+            "rng_algorithm": "philox",
+            "root_seeds_in_order": [
+              82120,
+              82121,
+              82122,
+              82123
+            ],
+            "row_chunk_size": 128,
+            "sinkhorn_steps": 20,
+            "tensor_sha256": {
+              "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+              "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+              "initial_noise": "b3e16ff6e9ad7aa2ff50679de7675e71f28af0ecb44b83c6dd233bd613916557",
+              "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+              "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+              "residual_design": "2053c51dc86bcf80a6cd80508275a572c7f2ca2da1e3c67175f2816800783f94",
+              "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+              "transition_noise": "3e6d39b7717b4dd43868bf92b2a99f4addcef33e610a00426f92d208739b6cea"
+            },
+            "tensorflow_version": "2.19.1",
+            "time_steps": 2,
+            "transport_block_grid": [
+              1,
+              1
+            ],
+            "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "tv_column_tolerance": 0.0001
+          },
+          "replay_checked": true,
+          "reset_valid": true,
+          "reset_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "sinkhorn_steps": 20,
+          "source_sha256": {
+            "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+            "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+            "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+            "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+          },
+          "theta": [
+            0.72,
+            0.55,
+            0.35,
+            0.35,
+            0.45
+          ],
+          "time_steps": 2,
+          "timing_seconds": {
+            "compile_plus_first_execution": 11.147330390999741,
+            "trace": 2.221630899000047,
+            "warm_execution": 0.32433891600067,
+            "warm_execution_repetitions": [
+              0.32433891600067
+            ]
+          },
+          "tv_column_error_by_seed_time": [
+            [
+              1.3168755685910583e-07,
+              8.638016879558563e-08
+            ],
+            [
+              9.428458724869415e-08,
+              1.069856807589531e-07
+            ],
+            [
+              8.2185124483658e-08,
+              1.0931398719549179e-07
+            ],
+            [
+              9.180530469166115e-08,
+              1.0081566870212555e-07
+            ]
+          ],
+          "value_difference_to_kalman": -0.024779596370962054,
+          "warm_repetitions": 1,
+          "work": {
+            "active_reset_rows": 8,
+            "diagnostic_solver_reconstructions": 0,
+            "marginal_tile_sweeps": 0,
+            "sinkhorn_state_constructions": 2,
+            "terminal_balance_state_constructions": 2,
+            "transport_tile_sweeps": 2
+          },
+          "work_valid": true
+        },
+        "seeds": [
+          82120,
+          82121,
+          82122,
+          82123
+        ]
+      },
+      {
+        "result": {
+          "aggregate_physical_score": [
+            3.8307113647460938,
+            -0.42771005630493164,
+            -0.021373175084590912,
+            4.545185565948486,
+            11.036219596862793
+          ],
+          "aggregate_value": -8.815458297729492,
+          "arm": "all_active_contract_e",
+          "balance_steps": 50,
+          "bitwise_replay": true,
+          "cache_same_cloud_geometry": false,
+          "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+          "chart_valid": true,
+          "chart_valid_by_seed": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "device": {
+            "dtype": "float32",
+            "jit_compile": true,
+            "logical_devices": [
+              "/device:GPU:0"
+            ],
+            "memory_growth": false,
+            "memory_limit_mib": 8192,
+            "memory_policy": {
+              "aggregate_visible_gpu_limit_mib": 8192,
+              "configured_before_logical_device_initialization": true,
+              "hard_allocator_cap": true,
+              "memory_growth": false,
+              "memory_limit_mib_per_physical_device": 8192,
+              "mode": "fixed_logical_device_limit",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "memory_limit_mib": 8192
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "unset"
+            },
+            "physical_devices": [
+              "/physical_device:GPU:0"
+            ],
+            "tf32_enabled": true,
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+          },
+          "estimator_seeds": [
+            82124,
+            82125,
+            82126,
+            82127
+          ],
+          "finite": true,
+          "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+          "gpu_allocator_bytes": {
+            "current": 182784,
+            "peak": 67167744
+          },
+          "graph": {
+            "operation_count": 473,
+            "python_horizon_unroll": false,
+            "serialized_bytes": 1384972,
+            "while_operation_types": [
+              "StatelessWhile"
+            ]
+          },
+          "hard_valid": true,
+          "kalman_physical_score": [
+            3.8280144459793797,
+            -0.3841810832497856,
+            -0.08308720127298079,
+            4.417212506225628,
+            11.138135721879838
+          ],
+          "kalman_value": -8.86215086932728,
+          "marginal_valid": true,
+          "marginal_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "maximum_row_error": 4.76837158203125e-07,
+          "maximum_row_error_by_seed_time": [
+            [
+              4.76837158203125e-07,
+              4.172325134277344e-07
+            ],
+            [
+              2.384185791015625e-07,
+              4.76837158203125e-07
+            ],
+            [
+              4.76837158203125e-07,
+              2.384185791015625e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              2.384185791015625e-07
+            ]
+          ],
+          "maximum_tv_column_error": 1.511070877313614e-07,
+          "num_particles": 128,
+          "per_seed_physical_score": [
+            [
+              3.6189708709716797,
+              -0.5690615773200989,
+              -0.0709584504365921,
+              4.281700134277344,
+              11.206257820129395
+            ],
+            [
+              3.5618443489074707,
+              -0.3231986165046692,
+              -0.11439229547977448,
+              4.207493305206299,
+              10.877117156982422
+            ],
+            [
+              3.7085280418395996,
+              -0.4677799940109253,
+              -0.15863637626171112,
+              4.865868091583252,
+              11.832246780395508
+            ],
+            [
+              4.433502197265625,
+              -0.3508000373840332,
+              0.25849440693855286,
+              4.825682163238525,
+              10.22925853729248
+            ]
+          ],
+          "per_seed_value": [
+            -8.842243194580078,
+            -8.773683547973633,
+            -9.0645170211792,
+            -8.58138656616211
+          ],
+          "physical_score_difference_to_kalman": [
+            0.0026969187667140737,
+            -0.043528973055146025,
+            0.06171402618838988,
+            0.12797305972285855,
+            -0.10191612501704483
+          ],
+          "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+          "preparation_identity": {
+            "axis_convention": {
+              "initial_noise": "[batch, particle, state]",
+              "residual_design": "[batch, time, particle, state]",
+              "transition_noise": "[batch, time, particle, state]"
+            },
+            "balance_steps": 50,
+            "col_chunk_size": 128,
+            "domain_tags": {
+              "initial": 101,
+              "residual": "2000 + zero_based_time",
+              "transition": "1000 + zero_based_time"
+            },
+            "final_dtype": "float32",
+            "key_dtype": "int32",
+            "key_encoding": "[root_seed, domain_tag]",
+            "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+            "maximum_row_error_tolerance": 0.01,
+            "num_particles": 128,
+            "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+            "raw_draw_dtype": "float64",
+            "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+            "rng_algorithm": "philox",
+            "root_seeds_in_order": [
+              82124,
+              82125,
+              82126,
+              82127
+            ],
+            "row_chunk_size": 128,
+            "sinkhorn_steps": 20,
+            "tensor_sha256": {
+              "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+              "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+              "initial_noise": "84e387e8bbefd1001b9f9a38d53a0479601eeee0e35a1136071e1b0fc31bc7e3",
+              "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+              "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+              "residual_design": "c1c8367be26261f8a976c8222dcf8dcadb403003f5bab6ecacdee034ea15707e",
+              "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+              "transition_noise": "677fa17b602122752fbaf8557d94bfbbb5de07c1fd50cc3c87e01df0e9d67df2"
+            },
+            "tensorflow_version": "2.19.1",
+            "time_steps": 2,
+            "transport_block_grid": [
+              1,
+              1
+            ],
+            "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "tv_column_tolerance": 0.0001
+          },
+          "replay_checked": true,
+          "reset_valid": true,
+          "reset_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "sinkhorn_steps": 20,
+          "source_sha256": {
+            "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+            "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+            "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+            "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+          },
+          "theta": [
+            0.72,
+            0.55,
+            0.35,
+            0.35,
+            0.45
+          ],
+          "time_steps": 2,
+          "timing_seconds": {
+            "compile_plus_first_execution": 0.44647982100013905,
+            "trace": 0.00033166199955303455,
+            "warm_execution": 0.3013242209999589,
+            "warm_execution_repetitions": [
+              0.3013242209999589
+            ]
+          },
+          "tv_column_error_by_seed_time": [
+            [
+              1.1559495760593563e-07,
+              9.39471647143364e-08
+            ],
+            [
+              8.568281373300124e-08,
+              1.511070877313614e-07
+            ],
+            [
+              1.27132807392627e-07,
+              7.194466888904572e-08
+            ],
+            [
+              1.0046369425253943e-07,
+              7.485505193471909e-08
+            ]
+          ],
+          "value_difference_to_kalman": 0.046692571597787946,
+          "warm_repetitions": 1,
+          "work": {
+            "active_reset_rows": 8,
+            "diagnostic_solver_reconstructions": 0,
+            "marginal_tile_sweeps": 0,
+            "sinkhorn_state_constructions": 2,
+            "terminal_balance_state_constructions": 2,
+            "transport_tile_sweeps": 2
+          },
+          "work_valid": true
+        },
+        "seeds": [
+          82124,
+          82125,
+          82126,
+          82127
+        ]
+      },
+      {
+        "result": {
+          "aggregate_physical_score": [
+            3.6754822731018066,
+            -0.5800267457962036,
+            -0.2154388427734375,
+            4.374118328094482,
+            11.375569343566895
+          ],
+          "aggregate_value": -8.958395957946777,
+          "arm": "all_active_contract_e",
+          "balance_steps": 50,
+          "bitwise_replay": true,
+          "cache_same_cloud_geometry": false,
+          "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+          "chart_valid": true,
+          "chart_valid_by_seed": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "device": {
+            "dtype": "float32",
+            "jit_compile": true,
+            "logical_devices": [
+              "/device:GPU:0"
+            ],
+            "memory_growth": false,
+            "memory_limit_mib": 8192,
+            "memory_policy": {
+              "aggregate_visible_gpu_limit_mib": 8192,
+              "configured_before_logical_device_initialization": true,
+              "hard_allocator_cap": true,
+              "memory_growth": false,
+              "memory_limit_mib_per_physical_device": 8192,
+              "mode": "fixed_logical_device_limit",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "memory_limit_mib": 8192
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "unset"
+            },
+            "physical_devices": [
+              "/physical_device:GPU:0"
+            ],
+            "tf32_enabled": true,
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+          },
+          "estimator_seeds": [
+            82128,
+            82129,
+            82130,
+            82131
+          ],
+          "finite": true,
+          "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+          "gpu_allocator_bytes": {
+            "current": 182784,
+            "peak": 67167744
+          },
+          "graph": {
+            "operation_count": 473,
+            "python_horizon_unroll": false,
+            "serialized_bytes": 1384972,
+            "while_operation_types": [
+              "StatelessWhile"
+            ]
+          },
+          "hard_valid": true,
+          "kalman_physical_score": [
+            3.8280144459793797,
+            -0.3841810832497856,
+            -0.08308720127298079,
+            4.417212506225628,
+            11.138135721879838
+          ],
+          "kalman_value": -8.86215086932728,
+          "marginal_valid": true,
+          "marginal_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "maximum_row_error": 5.960464477539062e-07,
+          "maximum_row_error_by_seed_time": [
+            [
+              3.5762786865234375e-07,
+              4.172325134277344e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              5.960464477539062e-07,
+              2.384185791015625e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              3.5762786865234375e-07
+            ]
+          ],
+          "maximum_tv_column_error": 1.7477668734500185e-07,
+          "num_particles": 128,
+          "per_seed_physical_score": [
+            [
+              4.015748977661133,
+              -0.5329089164733887,
+              -0.3652510344982147,
+              4.421358108520508,
+              11.39412784576416
+            ],
+            [
+              3.5742666721343994,
+              -0.2919725179672241,
+              -0.4031091332435608,
+              4.51790189743042,
+              11.700953483581543
+            ],
+            [
+              3.60274338722229,
+              -0.6468439698219299,
+              -0.10711786150932312,
+              4.498222351074219,
+              11.332788467407227
+            ],
+            [
+              3.5091702938079834,
+              -0.8483816385269165,
+              0.013722628355026245,
+              4.058990955352783,
+              11.074406623840332
+            ]
+          ],
+          "per_seed_value": [
+            -8.935174942016602,
+            -8.966599464416504,
+            -9.096076011657715,
+            -8.835735321044922
+          ],
+          "physical_score_difference_to_kalman": [
+            -0.15253217287757304,
+            -0.195845662546418,
+            -0.1323516415004567,
+            -0.043094178131145355,
+            0.23743362168705673
+          ],
+          "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+          "preparation_identity": {
+            "axis_convention": {
+              "initial_noise": "[batch, particle, state]",
+              "residual_design": "[batch, time, particle, state]",
+              "transition_noise": "[batch, time, particle, state]"
+            },
+            "balance_steps": 50,
+            "col_chunk_size": 128,
+            "domain_tags": {
+              "initial": 101,
+              "residual": "2000 + zero_based_time",
+              "transition": "1000 + zero_based_time"
+            },
+            "final_dtype": "float32",
+            "key_dtype": "int32",
+            "key_encoding": "[root_seed, domain_tag]",
+            "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+            "maximum_row_error_tolerance": 0.01,
+            "num_particles": 128,
+            "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+            "raw_draw_dtype": "float64",
+            "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+            "rng_algorithm": "philox",
+            "root_seeds_in_order": [
+              82128,
+              82129,
+              82130,
+              82131
+            ],
+            "row_chunk_size": 128,
+            "sinkhorn_steps": 20,
+            "tensor_sha256": {
+              "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+              "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+              "initial_noise": "0b45c0fa4ba752e8b62b0ca84a9144c874a286f460b59856dbfd32b50f2ccf38",
+              "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+              "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+              "residual_design": "00da49d7f2b901283250925d192ed66969ebf9e34abff3f99dfef1ec44972ff7",
+              "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+              "transition_noise": "2673e841f21f021b2df573f74c249a37f56daff0dbb15b77f1c1b19fb82c3afc"
+            },
+            "tensorflow_version": "2.19.1",
+            "time_steps": 2,
+            "transport_block_grid": [
+              1,
+              1
+            ],
+            "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "tv_column_tolerance": 0.0001
+          },
+          "replay_checked": true,
+          "reset_valid": true,
+          "reset_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "sinkhorn_steps": 20,
+          "source_sha256": {
+            "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+            "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+            "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+            "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+          },
+          "theta": [
+            0.72,
+            0.55,
+            0.35,
+            0.35,
+            0.45
+          ],
+          "time_steps": 2,
+          "timing_seconds": {
+            "compile_plus_first_execution": 0.3274038469999141,
+            "trace": 0.00027642599980026716,
+            "warm_execution": 0.38127122200057784,
+            "warm_execution_repetitions": [
+              0.38127122200057784
+            ]
+          },
+          "tv_column_error_by_seed_time": [
+            [
+              1.0460553312441334e-07,
+              1.1897645890712738e-07
+            ],
+            [
+              7.433163773384877e-08,
+              8.509960025548935e-08
+            ],
+            [
+              1.7477668734500185e-07,
+              7.235212251543999e-08
+            ],
+            [
+              9.17550551093882e-08,
+              9.435461834073067e-08
+            ]
+          ],
+          "value_difference_to_kalman": -0.09624508861949721,
+          "warm_repetitions": 1,
+          "work": {
+            "active_reset_rows": 8,
+            "diagnostic_solver_reconstructions": 0,
+            "marginal_tile_sweeps": 0,
+            "sinkhorn_state_constructions": 2,
+            "terminal_balance_state_constructions": 2,
+            "transport_tile_sweeps": 2
+          },
+          "work_valid": true
+        },
+        "seeds": [
+          82128,
+          82129,
+          82130,
+          82131
+        ]
+      },
+      {
+        "result": {
+          "aggregate_physical_score": [
+            3.765612840652466,
+            -0.4108012020587921,
+            -0.09638243913650513,
+            4.463303089141846,
+            11.352764129638672
+          ],
+          "aggregate_value": -8.947278022766113,
+          "arm": "all_active_contract_e",
+          "balance_steps": 50,
+          "bitwise_replay": true,
+          "cache_same_cloud_geometry": false,
+          "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+          "chart_valid": true,
+          "chart_valid_by_seed": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "device": {
+            "dtype": "float32",
+            "jit_compile": true,
+            "logical_devices": [
+              "/device:GPU:0"
+            ],
+            "memory_growth": false,
+            "memory_limit_mib": 8192,
+            "memory_policy": {
+              "aggregate_visible_gpu_limit_mib": 8192,
+              "configured_before_logical_device_initialization": true,
+              "hard_allocator_cap": true,
+              "memory_growth": false,
+              "memory_limit_mib_per_physical_device": 8192,
+              "mode": "fixed_logical_device_limit",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "memory_limit_mib": 8192
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "unset"
+            },
+            "physical_devices": [
+              "/physical_device:GPU:0"
+            ],
+            "tf32_enabled": true,
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+          },
+          "estimator_seeds": [
+            82132,
+            82133,
+            82134,
+            82135
+          ],
+          "finite": true,
+          "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+          "gpu_allocator_bytes": {
+            "current": 182784,
+            "peak": 67167744
+          },
+          "graph": {
+            "operation_count": 473,
+            "python_horizon_unroll": false,
+            "serialized_bytes": 1384972,
+            "while_operation_types": [
+              "StatelessWhile"
+            ]
+          },
+          "hard_valid": true,
+          "kalman_physical_score": [
+            3.8280144459793797,
+            -0.3841810832497856,
+            -0.08308720127298079,
+            4.417212506225628,
+            11.138135721879838
+          ],
+          "kalman_value": -8.86215086932728,
+          "marginal_valid": true,
+          "marginal_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "maximum_row_error": 5.960464477539062e-07,
+          "maximum_row_error_by_seed_time": [
+            [
+              2.980232238769531e-07,
+              5.960464477539062e-07
+            ],
+            [
+              2.384185791015625e-07,
+              2.384185791015625e-07
+            ],
+            [
+              2.384185791015625e-07,
+              4.172325134277344e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              2.980232238769531e-07
+            ]
+          ],
+          "maximum_tv_column_error": 1.6845297068357468e-07,
+          "num_particles": 128,
+          "per_seed_physical_score": [
+            [
+              3.6940784454345703,
+              -0.26574772596359253,
+              0.024481922388076782,
+              4.968458652496338,
+              11.399106979370117
+            ],
+            [
+              3.8908042907714844,
+              -0.46569523215293884,
+              -0.10664305090904236,
+              4.346064567565918,
+              11.300490379333496
+            ],
+            [
+              3.521493434906006,
+              -0.5821492671966553,
+              -0.2656653821468353,
+              4.128710746765137,
+              11.504602432250977
+            ],
+            [
+              3.9560747146606445,
+              -0.3296126127243042,
+              -0.0377032607793808,
+              4.40997838973999,
+              11.206856727600098
+            ]
+          ],
+          "per_seed_value": [
+            -9.001640319824219,
+            -8.914960861206055,
+            -9.094015121459961,
+            -8.778495788574219
+          ],
+          "physical_score_difference_to_kalman": [
+            -0.062401605326913856,
+            -0.0266201188090065,
+            -0.013295237863524337,
+            0.046090582916217926,
+            0.21462840775883407
+          ],
+          "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+          "preparation_identity": {
+            "axis_convention": {
+              "initial_noise": "[batch, particle, state]",
+              "residual_design": "[batch, time, particle, state]",
+              "transition_noise": "[batch, time, particle, state]"
+            },
+            "balance_steps": 50,
+            "col_chunk_size": 128,
+            "domain_tags": {
+              "initial": 101,
+              "residual": "2000 + zero_based_time",
+              "transition": "1000 + zero_based_time"
+            },
+            "final_dtype": "float32",
+            "key_dtype": "int32",
+            "key_encoding": "[root_seed, domain_tag]",
+            "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+            "maximum_row_error_tolerance": 0.01,
+            "num_particles": 128,
+            "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+            "raw_draw_dtype": "float64",
+            "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+            "rng_algorithm": "philox",
+            "root_seeds_in_order": [
+              82132,
+              82133,
+              82134,
+              82135
+            ],
+            "row_chunk_size": 128,
+            "sinkhorn_steps": 20,
+            "tensor_sha256": {
+              "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+              "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+              "initial_noise": "36d05dcbbaa67b6a7a65331dd06ef089c8da69dedf5e13eae68e3c11b3a94009",
+              "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+              "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+              "residual_design": "a0a78564de6921f27d84871dc726489057f6aad5bc5f6bdf7077444449626ca5",
+              "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+              "transition_noise": "83bd3608ca15a8ede0c3c6f5e63795cb7ce4e856bf0cdc7d1b3c92b179c94dd2"
+            },
+            "tensorflow_version": "2.19.1",
+            "time_steps": 2,
+            "transport_block_grid": [
+              1,
+              1
+            ],
+            "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "tv_column_tolerance": 0.0001
+          },
+          "replay_checked": true,
+          "reset_valid": true,
+          "reset_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "sinkhorn_steps": 20,
+          "source_sha256": {
+            "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+            "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+            "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+            "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+          },
+          "theta": [
+            0.72,
+            0.55,
+            0.35,
+            0.35,
+            0.45
+          ],
+          "time_steps": 2,
+          "timing_seconds": {
+            "compile_plus_first_execution": 0.5466023010003482,
+            "trace": 0.00032726100016589044,
+            "warm_execution": 0.41254768699946,
+            "warm_execution_repetitions": [
+              0.41254768699946
+            ]
+          },
+          "tv_column_error_by_seed_time": [
+            [
+              7.799735612934455e-08,
+              1.6845297068357468e-07
+            ],
+            [
+              8.516917660017498e-08,
+              7.241033017635345e-08
+            ],
+            [
+              8.49904608912766e-08,
+              9.103678166866302e-08
+            ],
+            [
+              8.142751539708115e-08,
+              9.022187441587448e-08
+            ]
+          ],
+          "value_difference_to_kalman": -0.08512715343883315,
+          "warm_repetitions": 1,
+          "work": {
+            "active_reset_rows": 8,
+            "diagnostic_solver_reconstructions": 0,
+            "marginal_tile_sweeps": 0,
+            "sinkhorn_state_constructions": 2,
+            "terminal_balance_state_constructions": 2,
+            "transport_tile_sweeps": 2
+          },
+          "work_valid": true
+        },
+        "seeds": [
+          82132,
+          82133,
+          82134,
+          82135
+        ]
+      }
+    ],
+    "result": {
+      "aggregate_physical_score": [
+        3.7637559473514557,
+        -0.4432741440832615,
+        -0.11529189441353083,
+        4.445842549204826,
+        11.290277421474457
+      ],
+      "aggregate_value": -8.902015447616577,
+      "arm": "all_active_contract_e",
+      "balance_steps": 50,
+      "bitwise_replay": true,
+      "cache_same_cloud_geometry": false,
+      "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+      "chart_valid": true,
+      "chart_valid_by_seed": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "device": {
+        "dtype": "float32",
+        "jit_compile": true,
+        "logical_devices": [
+          "/device:GPU:0"
+        ],
+        "memory_growth": false,
+        "memory_limit_mib": 8192,
+        "memory_policy": {
+          "aggregate_visible_gpu_limit_mib": 8192,
+          "configured_before_logical_device_initialization": true,
+          "hard_allocator_cap": true,
+          "memory_growth": false,
+          "memory_limit_mib_per_physical_device": 8192,
+          "mode": "fixed_logical_device_limit",
+          "physical_devices": [
+            {
+              "device": "/physical_device:GPU:0",
+              "memory_limit_mib": 8192
+            }
+          ],
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "tf_force_gpu_allow_growth": "unset"
+        },
+        "physical_devices": [
+          "/physical_device:GPU:0"
+        ],
+        "tf32_enabled": true,
+        "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+      },
+      "estimator_seeds": [
+        82120,
+        82121,
+        82122,
+        82123,
+        82124,
+        82125,
+        82126,
+        82127,
+        82128,
+        82129,
+        82130,
+        82131,
+        82132,
+        82133,
+        82134,
+        82135
+      ],
+      "finite": true,
+      "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+      "gpu_allocator_bytes": {
+        "current": 193792,
+        "peak": 67167744
+      },
+      "graph": {
+        "operation_count": 473,
+        "python_horizon_unroll": false,
+        "serialized_bytes": 1384972,
+        "while_operation_types": [
+          "StatelessWhile"
+        ]
+      },
+      "hard_valid": true,
+      "kalman_physical_score": [
+        3.8280144459793797,
+        -0.3841810832497856,
+        -0.08308720127298079,
+        4.417212506225628,
+        11.138135721879838
+      ],
+      "kalman_value": -8.86215086932728,
+      "marginal_valid": true,
+      "marginal_valid_by_seed_time": [
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ]
+      ],
+      "maximum_row_error": 5.960464477539062e-07,
+      "maximum_row_error_by_seed_time": [
+        [
+          4.76837158203125e-07,
+          3.5762786865234375e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          3.5762786865234375e-07
+        ],
+        [
+          2.384185791015625e-07,
+          4.172325134277344e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          4.172325134277344e-07
+        ],
+        [
+          4.76837158203125e-07,
+          4.172325134277344e-07
+        ],
+        [
+          2.384185791015625e-07,
+          4.76837158203125e-07
+        ],
+        [
+          4.76837158203125e-07,
+          2.384185791015625e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          2.384185791015625e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          4.172325134277344e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          3.5762786865234375e-07
+        ],
+        [
+          5.960464477539062e-07,
+          2.384185791015625e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          3.5762786865234375e-07
+        ],
+        [
+          2.980232238769531e-07,
+          5.960464477539062e-07
+        ],
+        [
+          2.384185791015625e-07,
+          2.384185791015625e-07
+        ],
+        [
+          2.384185791015625e-07,
+          4.172325134277344e-07
+        ],
+        [
+          3.5762786865234375e-07,
+          2.980232238769531e-07
+        ]
+      ],
+      "maximum_tv_column_error": 1.7477668734500185e-07,
+      "microbatching": {
+        "combination_rule": "ordered per-seed concatenation and exact arithmetic mean",
+        "compiled_unit": "canonical_prepared_seed_microbatch_value_and_total_score",
+        "enabled": true,
+        "microbatch_count": 4,
+        "seed_groups": [
+          [
+            82120,
+            82121,
+            82122,
+            82123
+          ],
+          [
+            82124,
+            82125,
+            82126,
+            82127
+          ],
+          [
+            82128,
+            82129,
+            82130,
+            82131
+          ],
+          [
+            82132,
+            82133,
+            82134,
+            82135
+          ]
+        ],
+        "seed_microbatch_size": 4
+      },
+      "num_particles": 128,
+      "per_seed_physical_score": [
+        [
+          3.503199577331543,
+          -0.3517508804798126,
+          -0.2671317756175995,
+          3.9403507709503174,
+          11.227996826171875
+        ],
+        [
+          3.625298500061035,
+          -0.37767672538757324,
+          -0.07478347420692444,
+          4.912065505981445,
+          12.060746192932129
+        ],
+        [
+          4.107024192810059,
+          -0.48009881377220154,
+          -0.07442429661750793,
+          4.153069019317627,
+          10.922233581542969
+        ],
+        [
+          3.8973472118377686,
+          -0.2087077796459198,
+          -0.09555287659168243,
+          4.5975661277771,
+          11.375248908996582
+        ],
+        [
+          3.6189708709716797,
+          -0.5690615773200989,
+          -0.0709584504365921,
+          4.281700134277344,
+          11.206257820129395
+        ],
+        [
+          3.5618443489074707,
+          -0.3231986165046692,
+          -0.11439229547977448,
+          4.207493305206299,
+          10.877117156982422
+        ],
+        [
+          3.7085280418395996,
+          -0.4677799940109253,
+          -0.15863637626171112,
+          4.865868091583252,
+          11.832246780395508
+        ],
+        [
+          4.433502197265625,
+          -0.3508000373840332,
+          0.25849440693855286,
+          4.825682163238525,
+          10.22925853729248
+        ],
+        [
+          4.015748977661133,
+          -0.5329089164733887,
+          -0.3652510344982147,
+          4.421358108520508,
+          11.39412784576416
+        ],
+        [
+          3.5742666721343994,
+          -0.2919725179672241,
+          -0.4031091332435608,
+          4.51790189743042,
+          11.700953483581543
+        ],
+        [
+          3.60274338722229,
+          -0.6468439698219299,
+          -0.10711786150932312,
+          4.498222351074219,
+          11.332788467407227
+        ],
+        [
+          3.5091702938079834,
+          -0.8483816385269165,
+          0.013722628355026245,
+          4.058990955352783,
+          11.074406623840332
+        ],
+        [
+          3.6940784454345703,
+          -0.26574772596359253,
+          0.024481922388076782,
+          4.968458652496338,
+          11.399106979370117
+        ],
+        [
+          3.8908042907714844,
+          -0.46569523215293884,
+          -0.10664305090904236,
+          4.346064567565918,
+          11.300490379333496
+        ],
+        [
+          3.521493434906006,
+          -0.5821492671966553,
+          -0.2656653821468353,
+          4.128710746765137,
+          11.504602432250977
+        ],
+        [
+          3.9560747146606445,
+          -0.3296126127243042,
+          -0.0377032607793808,
+          4.40997838973999,
+          11.206856727600098
+        ]
+      ],
+      "per_seed_value": [
+        -8.95330810546875,
+        -9.029607772827148,
+        -8.739317893981934,
+        -8.825485229492188,
+        -8.842243194580078,
+        -8.773683547973633,
+        -9.0645170211792,
+        -8.58138656616211,
+        -8.935174942016602,
+        -8.966599464416504,
+        -9.096076011657715,
+        -8.835735321044922,
+        -9.001640319824219,
+        -8.914960861206055,
+        -9.094015121459961,
+        -8.778495788574219
+      ],
+      "physical_score_difference_to_kalman": [
+        -0.06425849862792399,
+        -0.059093060833475874,
+        -0.032204693140550036,
+        0.028630042979198578,
+        0.15214169959461898
+      ],
+      "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+      "preparation_identity": {
+        "axis_convention": {
+          "initial_noise": "[batch, particle, state]",
+          "residual_design": "[batch, time, particle, state]",
+          "transition_noise": "[batch, time, particle, state]"
+        },
+        "balance_steps": 50,
+        "col_chunk_size": 128,
+        "domain_tags": {
+          "initial": 101,
+          "residual": "2000 + zero_based_time",
+          "transition": "1000 + zero_based_time"
+        },
+        "final_dtype": "float32",
+        "key_dtype": "int32",
+        "key_encoding": "[root_seed, domain_tag]",
+        "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+        "maximum_row_error_tolerance": 0.01,
+        "num_particles": 128,
+        "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+        "raw_draw_dtype": "float64",
+        "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+        "rng_algorithm": "philox",
+        "root_seeds_in_order": [
+          82120,
+          82121,
+          82122,
+          82123,
+          82124,
+          82125,
+          82126,
+          82127,
+          82128,
+          82129,
+          82130,
+          82131,
+          82132,
+          82133,
+          82134,
+          82135
+        ],
+        "row_chunk_size": 128,
+        "sinkhorn_steps": 20,
+        "tensor_sha256_by_microbatch": [
+          {
+            "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+            "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+            "initial_noise": "b3e16ff6e9ad7aa2ff50679de7675e71f28af0ecb44b83c6dd233bd613916557",
+            "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+            "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+            "residual_design": "2053c51dc86bcf80a6cd80508275a572c7f2ca2da1e3c67175f2816800783f94",
+            "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+            "transition_noise": "3e6d39b7717b4dd43868bf92b2a99f4addcef33e610a00426f92d208739b6cea"
+          },
+          {
+            "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+            "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+            "initial_noise": "84e387e8bbefd1001b9f9a38d53a0479601eeee0e35a1136071e1b0fc31bc7e3",
+            "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+            "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+            "residual_design": "c1c8367be26261f8a976c8222dcf8dcadb403003f5bab6ecacdee034ea15707e",
+            "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+            "transition_noise": "677fa17b602122752fbaf8557d94bfbbb5de07c1fd50cc3c87e01df0e9d67df2"
+          },
+          {
+            "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+            "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+            "initial_noise": "0b45c0fa4ba752e8b62b0ca84a9144c874a286f460b59856dbfd32b50f2ccf38",
+            "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+            "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+            "residual_design": "00da49d7f2b901283250925d192ed66969ebf9e34abff3f99dfef1ec44972ff7",
+            "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+            "transition_noise": "2673e841f21f021b2df573f74c249a37f56daff0dbb15b77f1c1b19fb82c3afc"
+          },
+          {
+            "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+            "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+            "initial_noise": "36d05dcbbaa67b6a7a65331dd06ef089c8da69dedf5e13eae68e3c11b3a94009",
+            "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+            "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+            "residual_design": "a0a78564de6921f27d84871dc726489057f6aad5bc5f6bdf7077444449626ca5",
+            "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+            "transition_noise": "83bd3608ca15a8ede0c3c6f5e63795cb7ce4e856bf0cdc7d1b3c92b179c94dd2"
+          }
+        ],
+        "tensorflow_version": "2.19.1",
+        "time_steps": 2,
+        "transport_block_grid": [
+          1,
+          1
+        ],
+        "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "tv_column_tolerance": 0.0001
+      },
+      "replay_checked": true,
+      "reset_valid": true,
+      "reset_valid_by_seed_time": [
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ]
+      ],
+      "sinkhorn_steps": 20,
+      "source_sha256": {
+        "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+        "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+        "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+        "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+        "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+      },
+      "theta": [
+        0.72,
+        0.55,
+        0.35,
+        0.35,
+        0.45
+      ],
+      "time_steps": 2,
+      "timing_seconds": {
+        "by_microbatch": [
+          {
+            "compile_plus_first_execution": 11.147330390999741,
+            "trace": 2.221630899000047,
+            "warm_execution": 0.32433891600067,
+            "warm_execution_repetitions": [
+              0.32433891600067
+            ]
+          },
+          {
+            "compile_plus_first_execution": 0.44647982100013905,
+            "trace": 0.00033166199955303455,
+            "warm_execution": 0.3013242209999589,
+            "warm_execution_repetitions": [
+              0.3013242209999589
+            ]
+          },
+          {
+            "compile_plus_first_execution": 0.3274038469999141,
+            "trace": 0.00027642599980026716,
+            "warm_execution": 0.38127122200057784,
+            "warm_execution_repetitions": [
+              0.38127122200057784
+            ]
+          },
+          {
+            "compile_plus_first_execution": 0.5466023010003482,
+            "trace": 0.00032726100016589044,
+            "warm_execution": 0.41254768699946,
+            "warm_execution_repetitions": [
+              0.41254768699946
+            ]
+          }
+        ],
+        "compile_plus_first_execution": 12.467816360000143,
+        "trace": 2.2225662479995663,
+        "warm_execution": 1.4194820460006667
+      },
+      "tv_column_error_by_seed_time": [
+        [
+          1.3168755685910583e-07,
+          8.638016879558563e-08
+        ],
+        [
+          9.428458724869415e-08,
+          1.069856807589531e-07
+        ],
+        [
+          8.2185124483658e-08,
+          1.0931398719549179e-07
+        ],
+        [
+          9.180530469166115e-08,
+          1.0081566870212555e-07
+        ],
+        [
+          1.1559495760593563e-07,
+          9.39471647143364e-08
+        ],
+        [
+          8.568281373300124e-08,
+          1.511070877313614e-07
+        ],
+        [
+          1.27132807392627e-07,
+          7.194466888904572e-08
+        ],
+        [
+          1.0046369425253943e-07,
+          7.485505193471909e-08
+        ],
+        [
+          1.0460553312441334e-07,
+          1.1897645890712738e-07
+        ],
+        [
+          7.433163773384877e-08,
+          8.509960025548935e-08
+        ],
+        [
+          1.7477668734500185e-07,
+          7.235212251543999e-08
+        ],
+        [
+          9.17550551093882e-08,
+          9.435461834073067e-08
+        ],
+        [
+          7.799735612934455e-08,
+          1.6845297068357468e-07
+        ],
+        [
+          8.516917660017498e-08,
+          7.241033017635345e-08
+        ],
+        [
+          8.49904608912766e-08,
+          9.103678166866302e-08
+        ],
+        [
+          8.142751539708115e-08,
+          9.022187441587448e-08
+        ]
+      ],
+      "value_difference_to_kalman": -0.039864578289297015,
+      "warm_repetitions": 1,
+      "work": {
+        "active_reset_rows": 32,
+        "diagnostic_solver_reconstructions": 0,
+        "marginal_tile_sweeps": 0,
+        "sinkhorn_state_constructions": 8,
+        "terminal_balance_state_constructions": 8,
+        "transport_tile_sweeps": 8
+      },
+      "work_by_microbatch": [
+        {
+          "active_reset_rows": 8,
+          "diagnostic_solver_reconstructions": 0,
+          "marginal_tile_sweeps": 0,
+          "sinkhorn_state_constructions": 2,
+          "terminal_balance_state_constructions": 2,
+          "transport_tile_sweeps": 2
+        },
+        {
+          "active_reset_rows": 8,
+          "diagnostic_solver_reconstructions": 0,
+          "marginal_tile_sweeps": 0,
+          "sinkhorn_state_constructions": 2,
+          "terminal_balance_state_constructions": 2,
+          "transport_tile_sweeps": 2
+        },
+        {
+          "active_reset_rows": 8,
+          "diagnostic_solver_reconstructions": 0,
+          "marginal_tile_sweeps": 0,
+          "sinkhorn_state_constructions": 2,
+          "terminal_balance_state_constructions": 2,
+          "transport_tile_sweeps": 2
+        },
+        {
+          "active_reset_rows": 8,
+          "diagnostic_solver_reconstructions": 0,
+          "marginal_tile_sweeps": 0,
+          "sinkhorn_state_constructions": 2,
+          "terminal_balance_state_constructions": 2,
+          "transport_tile_sweeps": 2
+        }
+      ],
+      "work_valid": true
+    },
+    "seed_microbatch_size": 4,
+    "seeds": [
+      82120,
+      82121,
+      82122,
+      82123,
+      82124,
+      82125,
+      82126,
+      82127,
+      82128,
+      82129,
+      82130,
+      82131,
+      82132,
+      82133,
+      82134,
+      82135
+    ],
+    "sinkhorn_steps": 20,
+    "status": "PASS",
+    "tuning_scope": {
+      "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "col_blocks": 1,
+      "col_chunk_size": 128,
+      "control_family_id": "streaming_ot_sinkhorn_balance_v1",
+      "dtype": "float32",
+      "horizon": 2,
+      "jit_compile": true,
+      "model_id": "canonical_lgssm_m3",
+      "parameter_count": 5,
+      "particle_count": 128,
+      "prepared_data_id": "lgssm_dataset_seed_81100_observation_prefix_t2",
+      "reset_contract_id": "contract_e_chol_v1",
+      "route_id": "contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1",
+      "row_blocks": 1,
+      "row_chunk_size": 128,
+      "state_dimension": 3,
+      "target_id": "canonical_lgssm_dataset_seed_81100_theta_0p72_0p55_0p35_0p35_0p45",
+      "tf32_enabled": true
+    },
+    "tuning_scope_sha256": "d4984a9aa3b0970a23eba81234813824980c6bc890acdc492f6898fc6d668f6a",
+    "wall_time_seconds": 20.616205477999756,
+    "within_node_cap": true
+  },
+  "command": [
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py",
+    "--output-root",
+    "docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/harness_smoke_t2_n128_attempt01",
+    "--attempt-id",
+    "harness-smoke-t2-n128-attempt01",
+    "--time-steps",
+    "2",
+    "--num-particles",
+    "128",
+    "--seed-microbatch-size",
+    "4",
+    "--tuning-seed-start",
+    "82100",
+    "--claim-seed-start",
+    "82120",
+    "--sinkhorn-candidates",
+    "20",
+    "--balance-candidates",
+    "50",
+    "--campaign-id",
+    "lgssm-particle-bias-ladder-harness-smoke-20260720",
+    "--plan-path",
+    "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md"
+  ],
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": false,
+    "memory_limit_mib": 8192,
+    "memory_policy": {
+      "aggregate_visible_gpu_limit_mib": 8192,
+      "configured_before_logical_device_initialization": true,
+      "hard_allocator_cap": true,
+      "memory_growth": false,
+      "memory_limit_mib_per_physical_device": 8192,
+      "mode": "fixed_logical_device_limit",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_limit_mib": 8192
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "unset"
+    },
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "dtype": "float32",
+    "gpu_memory_limit_mib": 8192,
+    "gpu_required": true,
+    "jit_compile": true,
+    "python": "3.11.14",
+    "tensorflow": "2.19.1",
+    "tf32_enabled": true
+  },
+  "finished_at_utc": "2026-07-19T17:21:39.125589+00:00",
+  "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+  "num_particles": 128,
+  "partitions": {
+    "calibration": [
+      82100,
+      82101,
+      82102,
+      82103,
+      82104,
+      82105,
+      82106,
+      82107
+    ],
+    "claim": [
+      82120,
+      82121,
+      82122,
+      82123,
+      82124,
+      82125,
+      82126,
+      82127,
+      82128,
+      82129,
+      82130,
+      82131,
+      82132,
+      82133,
+      82134,
+      82135
+    ],
+    "validation": [
+      82108,
+      82109,
+      82110,
+      82111,
+      82112,
+      82113,
+      82114,
+      82115
+    ]
+  },
+  "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+  "schema_version": "bayesfilter.ledh_offline_ot_tuning.v1",
+  "search_order": {
+    "balance_steps": [
+      50
+    ],
+    "rule": "exhaust_balance_ladder_before_next_sinkhorn",
+    "sinkhorn_steps": [
+      20
+    ]
+  },
+  "seed_microbatch_size": 4,
+  "selected_pair": {
+    "balance_steps": 50,
+    "sinkhorn_steps": 20
+  },
+  "selected_pair_artifact": {
+    "path": "/home/chakwong/BayesFilter/docs/benchmarks/artifacts/lgssm_particle_bias_ladder_20260720/harness_smoke_t2_n128_attempt01/selected_pair.json",
+    "sha256": "f3ce6a8d9b9e0ec8952de226d525474e3efb8670b7fe81b543aab31f27779f18"
+  },
+  "selection_metric": {
+    "kalman_used": false,
+    "maximum_row_error_tolerance": 0.01,
+    "tv_column_tolerance": 0.0001
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+    "docs/benchmarks/run_canonical_lgssm_fused_ot_loop_repair.py": "d81d5b918c4e38c7fb5818dd6726049f000fb7552ecb3f15e8cb97e18663d9ef",
+    "docs/benchmarks/run_ledh_offline_ot_tuning_campaign.py": "91cbba35ec3c6294ab7bae599ebc120ac353c3116a2aab76fbea2418c52331bf",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+  },
+  "status": "SCOPE_CLAIM_PASS",
+  "tuning": [
+    {
+      "balance_steps": 50,
+      "calibration": {
+        "all_charts_valid": true,
+        "all_resets_valid": true,
+        "finite": true,
+        "maximum_row_error": 5.364418029785156e-07,
+        "maximum_tv_column_error": 1.6973626770777628e-07,
+        "pass": true,
+        "seed_start_index": 0,
+        "seed_stop_index": 8,
+        "status": "PASS"
+      },
+      "pair_pass": true,
+      "sinkhorn_steps": 20,
+      "tuning_node": {
+        "balance_steps": 50,
+        "label": "t2_s20_b50_tuning_s16",
+        "microbatches": [
+          {
+            "result": {
+              "aggregate_physical_score": [
+                3.5555806159973145,
+                -0.4065670967102051,
+                -0.0723709687590599,
+                4.348028659820557,
+                11.504446029663086
+              ],
+              "aggregate_value": -8.917438507080078,
+              "arm": "all_active_contract_e",
+              "balance_steps": 50,
+              "bitwise_replay": null,
+              "cache_same_cloud_geometry": false,
+              "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+              "chart_valid": true,
+              "chart_valid_by_seed": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "device": {
+                "dtype": "float32",
+                "jit_compile": true,
+                "logical_devices": [
+                  "/device:GPU:0"
+                ],
+                "memory_growth": false,
+                "memory_limit_mib": 8192,
+                "memory_policy": {
+                  "aggregate_visible_gpu_limit_mib": 8192,
+                  "configured_before_logical_device_initialization": true,
+                  "hard_allocator_cap": true,
+                  "memory_growth": false,
+                  "memory_limit_mib_per_physical_device": 8192,
+                  "mode": "fixed_logical_device_limit",
+                  "physical_devices": [
+                    {
+                      "device": "/physical_device:GPU:0",
+                      "memory_limit_mib": 8192
+                    }
+                  ],
+                  "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+                  "tf_force_gpu_allow_growth": "unset"
+                },
+                "physical_devices": [
+                  "/physical_device:GPU:0"
+                ],
+                "tf32_enabled": true,
+                "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+              },
+              "estimator_seeds": [
+                82100,
+                82101,
+                82102,
+                82103
+              ],
+              "finite": true,
+              "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+              "gpu_allocator_bytes": {
+                "current": 116480,
+                "peak": 67167744
+              },
+              "graph": {
+                "operation_count": 473,
+                "python_horizon_unroll": false,
+                "serialized_bytes": 1384805,
+                "while_operation_types": [
+                  "StatelessWhile"
+                ]
+              },
+              "hard_valid": true,
+              "kalman_physical_score": null,
+              "kalman_value": null,
+              "marginal_valid": true,
+              "marginal_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "maximum_row_error": 5.364418029785156e-07,
+              "maximum_row_error_by_seed_time": [
+                [
+                  2.980232238769531e-07,
+                  2.980232238769531e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  4.76837158203125e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  5.364418029785156e-07
+                ],
+                [
+                  2.384185791015625e-07,
+                  3.5762786865234375e-07
+                ]
+              ],
+              "maximum_tv_column_error": 1.4613033272325993e-07,
+              "num_particles": 128,
+              "per_seed_physical_score": [
+                [
+                  3.261246681213379,
+                  -0.3217372000217438,
+                  -0.2153024673461914,
+                  3.5903472900390625,
+                  11.417860984802246
+                ],
+                [
+                  3.5899159908294678,
+                  -0.43777996301651,
+                  -0.15656441450119019,
+                  4.576737403869629,
+                  11.886707305908203
+                ],
+                [
+                  3.7608695030212402,
+                  -0.5578588843345642,
+                  0.05651897192001343,
+                  4.66441535949707,
+                  11.263290405273438
+                ],
+                [
+                  3.61029052734375,
+                  -0.30889227986335754,
+                  0.02586403489112854,
+                  4.560614585876465,
+                  11.44992446899414
+                ]
+              ],
+              "per_seed_value": [
+                -8.880824089050293,
+                -9.025140762329102,
+                -8.799844741821289,
+                -8.963943481445312
+              ],
+              "physical_score_difference_to_kalman": null,
+              "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+              "preparation_identity": {
+                "axis_convention": {
+                  "initial_noise": "[batch, particle, state]",
+                  "residual_design": "[batch, time, particle, state]",
+                  "transition_noise": "[batch, time, particle, state]"
+                },
+                "balance_steps": 50,
+                "col_chunk_size": 128,
+                "domain_tags": {
+                  "initial": 101,
+                  "residual": "2000 + zero_based_time",
+                  "transition": "1000 + zero_based_time"
+                },
+                "final_dtype": "float32",
+                "key_dtype": "int32",
+                "key_encoding": "[root_seed, domain_tag]",
+                "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+                "maximum_row_error_tolerance": 0.01,
+                "num_particles": 128,
+                "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+                "raw_draw_dtype": "float64",
+                "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+                "rng_algorithm": "philox",
+                "root_seeds_in_order": [
+                  82100,
+                  82101,
+                  82102,
+                  82103
+                ],
+                "row_chunk_size": 128,
+                "sinkhorn_steps": 20,
+                "tensor_sha256": {
+                  "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                  "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                  "initial_noise": "2b52910c4a13d7707913fc85d48bd14f68778bc899e4c6a1cab78f15bbc9be49",
+                  "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                  "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                  "residual_design": "3ce8e8a78558392be4b22fa17098f7d6f256579983a3ff150ade2fd0101bf7cf",
+                  "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                  "transition_noise": "9e19a965a151e462df99b1edc333681357edefaec0997e7bfe606c232407f9b6"
+                },
+                "tensorflow_version": "2.19.1",
+                "time_steps": 2,
+                "transport_block_grid": [
+                  1,
+                  1
+                ],
+                "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+                "tv_column_tolerance": 0.0001
+              },
+              "replay_checked": false,
+              "reset_valid": true,
+              "reset_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "sinkhorn_steps": 20,
+              "source_sha256": {
+                "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+                "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+                "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+                "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+                "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+              },
+              "theta": [
+                0.72,
+                0.55,
+                0.35,
+                0.35,
+                0.45
+              ],
+              "time_steps": 2,
+              "timing_seconds": {
+                "compile_plus_first_execution": 9.132774763999805,
+                "trace": 5.0861906199997975,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              "tv_column_error_by_seed_time": [
+                [
+                  8.586903277318925e-08,
+                  1.0099029168486595e-07
+                ],
+                [
+                  1.2196687748655677e-07,
+                  1.317821443080902e-07
+                ],
+                [
+                  1.245862222276628e-07,
+                  1.4613033272325993e-07
+                ],
+                [
+                  9.196082828566432e-08,
+                  8.183997124433517e-08
+                ]
+              ],
+              "value_difference_to_kalman": null,
+              "warm_repetitions": 1,
+              "work": {
+                "active_reset_rows": 8,
+                "diagnostic_solver_reconstructions": 0,
+                "marginal_tile_sweeps": 0,
+                "sinkhorn_state_constructions": 2,
+                "terminal_balance_state_constructions": 2,
+                "transport_tile_sweeps": 2
+              },
+              "work_valid": true
+            },
+            "seeds": [
+              82100,
+              82101,
+              82102,
+              82103
+            ]
+          },
+          {
+            "result": {
+              "aggregate_physical_score": [
+                4.056941986083984,
+                -0.2742103934288025,
+                -0.05789251625537872,
+                4.472747325897217,
+                10.807703018188477
+              ],
+              "aggregate_value": -8.771801948547363,
+              "arm": "all_active_contract_e",
+              "balance_steps": 50,
+              "bitwise_replay": null,
+              "cache_same_cloud_geometry": false,
+              "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+              "chart_valid": true,
+              "chart_valid_by_seed": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "device": {
+                "dtype": "float32",
+                "jit_compile": true,
+                "logical_devices": [
+                  "/device:GPU:0"
+                ],
+                "memory_growth": false,
+                "memory_limit_mib": 8192,
+                "memory_policy": {
+                  "aggregate_visible_gpu_limit_mib": 8192,
+                  "configured_before_logical_device_initialization": true,
+                  "hard_allocator_cap": true,
+                  "memory_growth": false,
+                  "memory_limit_mib_per_physical_device": 8192,
+                  "mode": "fixed_logical_device_limit",
+                  "physical_devices": [
+                    {
+                      "device": "/physical_device:GPU:0",
+                      "memory_limit_mib": 8192
+                    }
+                  ],
+                  "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+                  "tf_force_gpu_allow_growth": "unset"
+                },
+                "physical_devices": [
+                  "/physical_device:GPU:0"
+                ],
+                "tf32_enabled": true,
+                "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+              },
+              "estimator_seeds": [
+                82104,
+                82105,
+                82106,
+                82107
+              ],
+              "finite": true,
+              "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+              "gpu_allocator_bytes": {
+                "current": 116480,
+                "peak": 67167744
+              },
+              "graph": {
+                "operation_count": 473,
+                "python_horizon_unroll": false,
+                "serialized_bytes": 1384805,
+                "while_operation_types": [
+                  "StatelessWhile"
+                ]
+              },
+              "hard_valid": true,
+              "kalman_physical_score": null,
+              "kalman_value": null,
+              "marginal_valid": true,
+              "marginal_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "maximum_row_error": 4.76837158203125e-07,
+              "maximum_row_error_by_seed_time": [
+                [
+                  4.172325134277344e-07,
+                  3.5762786865234375e-07
+                ],
+                [
+                  2.384185791015625e-07,
+                  3.5762786865234375e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  4.76837158203125e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  3.5762786865234375e-07
+                ]
+              ],
+              "maximum_tv_column_error": 1.6973626770777628e-07,
+              "num_particles": 128,
+              "per_seed_physical_score": [
+                [
+                  4.426462650299072,
+                  -0.3155989348888397,
+                  -0.008985400199890137,
+                  4.334054946899414,
+                  10.181807518005371
+                ],
+                [
+                  3.8529510498046875,
+                  -0.33174750208854675,
+                  -0.18542355298995972,
+                  4.348680019378662,
+                  11.671062469482422
+                ],
+                [
+                  4.0822014808654785,
+                  -0.2334461808204651,
+                  0.14376583695411682,
+                  5.039317607879639,
+                  10.529572486877441
+                ],
+                [
+                  3.8661537170410156,
+                  -0.2160489410161972,
+                  -0.18092694878578186,
+                  4.168935298919678,
+                  10.848371505737305
+                ]
+              ],
+              "per_seed_value": [
+                -8.489992141723633,
+                -8.88776969909668,
+                -8.919066429138184,
+                -8.790380477905273
+              ],
+              "physical_score_difference_to_kalman": null,
+              "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+              "preparation_identity": {
+                "axis_convention": {
+                  "initial_noise": "[batch, particle, state]",
+                  "residual_design": "[batch, time, particle, state]",
+                  "transition_noise": "[batch, time, particle, state]"
+                },
+                "balance_steps": 50,
+                "col_chunk_size": 128,
+                "domain_tags": {
+                  "initial": 101,
+                  "residual": "2000 + zero_based_time",
+                  "transition": "1000 + zero_based_time"
+                },
+                "final_dtype": "float32",
+                "key_dtype": "int32",
+                "key_encoding": "[root_seed, domain_tag]",
+                "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+                "maximum_row_error_tolerance": 0.01,
+                "num_particles": 128,
+                "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+                "raw_draw_dtype": "float64",
+                "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+                "rng_algorithm": "philox",
+                "root_seeds_in_order": [
+                  82104,
+                  82105,
+                  82106,
+                  82107
+                ],
+                "row_chunk_size": 128,
+                "sinkhorn_steps": 20,
+                "tensor_sha256": {
+                  "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                  "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                  "initial_noise": "580dbfc6496d301f36c0df7823a1010df33be10ea2a82becfc5dc4dcaf693ce3",
+                  "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                  "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                  "residual_design": "a4f8b27849f3b169efeb27d6192ef66a2b060afd6c00f245fe5bffc5d9524e09",
+                  "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                  "transition_noise": "d16d796d34843674534cb84c08f9fc484d1062c8e8d954a1165a5e839d4257c0"
+                },
+                "tensorflow_version": "2.19.1",
+                "time_steps": 2,
+                "transport_block_grid": [
+                  1,
+                  1
+                ],
+                "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+                "tv_column_tolerance": 0.0001
+              },
+              "replay_checked": false,
+              "reset_valid": true,
+              "reset_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "sinkhorn_steps": 20,
+              "source_sha256": {
+                "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+                "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+                "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+                "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+                "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+              },
+              "theta": [
+                0.72,
+                0.55,
+                0.35,
+                0.35,
+                0.45
+              ],
+              "time_steps": 2,
+              "timing_seconds": {
+                "compile_plus_first_execution": 0.35877987499952724,
+                "trace": 0.00033091600016632583,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              "tv_column_error_by_seed_time": [
+                [
+                  9.62450030783657e-08,
+                  1.1152587831020355e-07
+                ],
+                [
+                  8.057759259827435e-08,
+                  8.85920599102974e-08
+                ],
+                [
+                  1.6973626770777628e-07,
+                  1.050066202878952e-07
+                ],
+                [
+                  1.590892679814715e-07,
+                  1.126900315284729e-07
+                ]
+              ],
+              "value_difference_to_kalman": null,
+              "warm_repetitions": 1,
+              "work": {
+                "active_reset_rows": 8,
+                "diagnostic_solver_reconstructions": 0,
+                "marginal_tile_sweeps": 0,
+                "sinkhorn_state_constructions": 2,
+                "terminal_balance_state_constructions": 2,
+                "transport_tile_sweeps": 2
+              },
+              "work_valid": true
+            },
+            "seeds": [
+              82104,
+              82105,
+              82106,
+              82107
+            ]
+          },
+          {
+            "result": {
+              "aggregate_physical_score": [
+                3.8495333194732666,
+                -0.33515065908432007,
+                -0.1734987497329712,
+                4.228516578674316,
+                10.950166702270508
+              ],
+              "aggregate_value": -8.784152030944824,
+              "arm": "all_active_contract_e",
+              "balance_steps": 50,
+              "bitwise_replay": null,
+              "cache_same_cloud_geometry": false,
+              "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+              "chart_valid": true,
+              "chart_valid_by_seed": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "device": {
+                "dtype": "float32",
+                "jit_compile": true,
+                "logical_devices": [
+                  "/device:GPU:0"
+                ],
+                "memory_growth": false,
+                "memory_limit_mib": 8192,
+                "memory_policy": {
+                  "aggregate_visible_gpu_limit_mib": 8192,
+                  "configured_before_logical_device_initialization": true,
+                  "hard_allocator_cap": true,
+                  "memory_growth": false,
+                  "memory_limit_mib_per_physical_device": 8192,
+                  "mode": "fixed_logical_device_limit",
+                  "physical_devices": [
+                    {
+                      "device": "/physical_device:GPU:0",
+                      "memory_limit_mib": 8192
+                    }
+                  ],
+                  "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+                  "tf_force_gpu_allow_growth": "unset"
+                },
+                "physical_devices": [
+                  "/physical_device:GPU:0"
+                ],
+                "tf32_enabled": true,
+                "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+              },
+              "estimator_seeds": [
+                82108,
+                82109,
+                82110,
+                82111
+              ],
+              "finite": true,
+              "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+              "gpu_allocator_bytes": {
+                "current": 116480,
+                "peak": 67167744
+              },
+              "graph": {
+                "operation_count": 473,
+                "python_horizon_unroll": false,
+                "serialized_bytes": 1384805,
+                "while_operation_types": [
+                  "StatelessWhile"
+                ]
+              },
+              "hard_valid": true,
+              "kalman_physical_score": null,
+              "kalman_value": null,
+              "marginal_valid": true,
+              "marginal_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "maximum_row_error": 7.152557373046875e-07,
+              "maximum_row_error_by_seed_time": [
+                [
+                  7.152557373046875e-07,
+                  3.5762786865234375e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  2.384185791015625e-07
+                ],
+                [
+                  2.384185791015625e-07,
+                  2.980232238769531e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  3.5762786865234375e-07
+                ]
+              ],
+              "maximum_tv_column_error": 1.9726303435163572e-07,
+              "num_particles": 128,
+              "per_seed_physical_score": [
+                [
+                  4.339648246765137,
+                  -0.2878308892250061,
+                  -0.008193403482437134,
+                  4.38387393951416,
+                  10.172416687011719
+                ],
+                [
+                  3.259345293045044,
+                  -0.4251963794231415,
+                  -0.2747547924518585,
+                  3.6945931911468506,
+                  11.70378589630127
+                ],
+                [
+                  4.126009941101074,
+                  -0.18727539479732513,
+                  -0.17669975757598877,
+                  4.5745110511779785,
+                  10.378753662109375
+                ],
+                [
+                  3.6731297969818115,
+                  -0.4403000473976135,
+                  -0.23434703052043915,
+                  4.2610883712768555,
+                  11.545709609985352
+                ]
+              ],
+              "per_seed_value": [
+                -8.574798583984375,
+                -8.93005084991455,
+                -8.69418716430664,
+                -8.937572479248047
+              ],
+              "physical_score_difference_to_kalman": null,
+              "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+              "preparation_identity": {
+                "axis_convention": {
+                  "initial_noise": "[batch, particle, state]",
+                  "residual_design": "[batch, time, particle, state]",
+                  "transition_noise": "[batch, time, particle, state]"
+                },
+                "balance_steps": 50,
+                "col_chunk_size": 128,
+                "domain_tags": {
+                  "initial": 101,
+                  "residual": "2000 + zero_based_time",
+                  "transition": "1000 + zero_based_time"
+                },
+                "final_dtype": "float32",
+                "key_dtype": "int32",
+                "key_encoding": "[root_seed, domain_tag]",
+                "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+                "maximum_row_error_tolerance": 0.01,
+                "num_particles": 128,
+                "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+                "raw_draw_dtype": "float64",
+                "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+                "rng_algorithm": "philox",
+                "root_seeds_in_order": [
+                  82108,
+                  82109,
+                  82110,
+                  82111
+                ],
+                "row_chunk_size": 128,
+                "sinkhorn_steps": 20,
+                "tensor_sha256": {
+                  "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                  "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                  "initial_noise": "8091bbd7338a656a453d0ccc36778f77a72e29d399dfe50903dba8aa8d9ac1b7",
+                  "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                  "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                  "residual_design": "b29624ed65c5023d79f2779d5695bb0d7fb93826912ebb42a15f7cd3bcb47d8d",
+                  "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                  "transition_noise": "8540c5f7929bbe9cd2d57e511fe42b6a9b223f3d0a0db043e17cd3d494f24efb"
+                },
+                "tensorflow_version": "2.19.1",
+                "time_steps": 2,
+                "transport_block_grid": [
+                  1,
+                  1
+                ],
+                "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+                "tv_column_tolerance": 0.0001
+              },
+              "replay_checked": false,
+              "reset_valid": true,
+              "reset_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "sinkhorn_steps": 20,
+              "source_sha256": {
+                "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+                "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+                "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+                "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+                "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+              },
+              "theta": [
+                0.72,
+                0.55,
+                0.35,
+                0.35,
+                0.45
+              ],
+              "time_steps": 2,
+              "timing_seconds": {
+                "compile_plus_first_execution": 0.4520555310000418,
+                "trace": 0.00031201899946609046,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              "tv_column_error_by_seed_time": [
+                [
+                  1.9726303435163572e-07,
+                  9.190989658236504e-08
+                ],
+                [
+                  1.5383892559839296e-07,
+                  8.469214662909508e-08
+                ],
+                [
+                  7.288394954230171e-08,
+                  8.440110832452774e-08
+                ],
+                [
+                  1.6954584225459257e-07,
+                  1.0558869689702988e-07
+                ]
+              ],
+              "value_difference_to_kalman": null,
+              "warm_repetitions": 1,
+              "work": {
+                "active_reset_rows": 8,
+                "diagnostic_solver_reconstructions": 0,
+                "marginal_tile_sweeps": 0,
+                "sinkhorn_state_constructions": 2,
+                "terminal_balance_state_constructions": 2,
+                "transport_tile_sweeps": 2
+              },
+              "work_valid": true
+            },
+            "seeds": [
+              82108,
+              82109,
+              82110,
+              82111
+            ]
+          },
+          {
+            "result": {
+              "aggregate_physical_score": [
+                3.9508371353149414,
+                -0.30550646781921387,
+                -0.08544035255908966,
+                4.398318290710449,
+                11.037696838378906
+              ],
+              "aggregate_value": -8.866355895996094,
+              "arm": "all_active_contract_e",
+              "balance_steps": 50,
+              "bitwise_replay": null,
+              "cache_same_cloud_geometry": false,
+              "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+              "chart_valid": true,
+              "chart_valid_by_seed": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "device": {
+                "dtype": "float32",
+                "jit_compile": true,
+                "logical_devices": [
+                  "/device:GPU:0"
+                ],
+                "memory_growth": false,
+                "memory_limit_mib": 8192,
+                "memory_policy": {
+                  "aggregate_visible_gpu_limit_mib": 8192,
+                  "configured_before_logical_device_initialization": true,
+                  "hard_allocator_cap": true,
+                  "memory_growth": false,
+                  "memory_limit_mib_per_physical_device": 8192,
+                  "mode": "fixed_logical_device_limit",
+                  "physical_devices": [
+                    {
+                      "device": "/physical_device:GPU:0",
+                      "memory_limit_mib": 8192
+                    }
+                  ],
+                  "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+                  "tf_force_gpu_allow_growth": "unset"
+                },
+                "physical_devices": [
+                  "/physical_device:GPU:0"
+                ],
+                "tf32_enabled": true,
+                "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+              },
+              "estimator_seeds": [
+                82112,
+                82113,
+                82114,
+                82115
+              ],
+              "finite": true,
+              "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+              "gpu_allocator_bytes": {
+                "current": 116480,
+                "peak": 67167744
+              },
+              "graph": {
+                "operation_count": 473,
+                "python_horizon_unroll": false,
+                "serialized_bytes": 1384805,
+                "while_operation_types": [
+                  "StatelessWhile"
+                ]
+              },
+              "hard_valid": true,
+              "kalman_physical_score": null,
+              "kalman_value": null,
+              "marginal_valid": true,
+              "marginal_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "maximum_row_error": 5.364418029785156e-07,
+              "maximum_row_error_by_seed_time": [
+                [
+                  3.5762786865234375e-07,
+                  2.384185791015625e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  2.384185791015625e-07
+                ],
+                [
+                  5.364418029785156e-07,
+                  3.5762786865234375e-07
+                ],
+                [
+                  4.76837158203125e-07,
+                  2.384185791015625e-07
+                ]
+              ],
+              "maximum_tv_column_error": 1.5531531971646473e-07,
+              "num_particles": 128,
+              "per_seed_physical_score": [
+                [
+                  3.5215582847595215,
+                  -0.28326863050460815,
+                  -0.10359057784080505,
+                  3.7745141983032227,
+                  11.481388092041016
+                ],
+                [
+                  4.323929786682129,
+                  -0.32551607489585876,
+                  -0.14255991578102112,
+                  4.990250110626221,
+                  10.775410652160645
+                ],
+                [
+                  3.7271435260772705,
+                  -0.34219515323638916,
+                  0.10087230801582336,
+                  4.27431058883667,
+                  11.071640014648438
+                ],
+                [
+                  4.230716705322266,
+                  -0.27104607224464417,
+                  -0.19648320972919464,
+                  4.554197311401367,
+                  10.82235050201416
+                ]
+              ],
+              "per_seed_value": [
+                -8.836722373962402,
+                -8.813016891479492,
+                -8.912178039550781,
+                -8.903507232666016
+              ],
+              "physical_score_difference_to_kalman": null,
+              "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+              "preparation_identity": {
+                "axis_convention": {
+                  "initial_noise": "[batch, particle, state]",
+                  "residual_design": "[batch, time, particle, state]",
+                  "transition_noise": "[batch, time, particle, state]"
+                },
+                "balance_steps": 50,
+                "col_chunk_size": 128,
+                "domain_tags": {
+                  "initial": 101,
+                  "residual": "2000 + zero_based_time",
+                  "transition": "1000 + zero_based_time"
+                },
+                "final_dtype": "float32",
+                "key_dtype": "int32",
+                "key_encoding": "[root_seed, domain_tag]",
+                "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+                "maximum_row_error_tolerance": 0.01,
+                "num_particles": 128,
+                "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+                "raw_draw_dtype": "float64",
+                "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+                "rng_algorithm": "philox",
+                "root_seeds_in_order": [
+                  82112,
+                  82113,
+                  82114,
+                  82115
+                ],
+                "row_chunk_size": 128,
+                "sinkhorn_steps": 20,
+                "tensor_sha256": {
+                  "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                  "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                  "initial_noise": "19d830fae3aaa2abb587c84df1d6d7dea1189c597f2e6febd11080283755ba9f",
+                  "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                  "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                  "residual_design": "0aca2b6bff0af950ff72c0704bf0b3b4fa4ba0cbdd48193e6d2ce561177f1a06",
+                  "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                  "transition_noise": "2518e78676cc548c8c0508477835a92a193897f1173eeaeafe3e6c8dddc5d326"
+                },
+                "tensorflow_version": "2.19.1",
+                "time_steps": 2,
+                "transport_block_grid": [
+                  1,
+                  1
+                ],
+                "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+                "tv_column_tolerance": 0.0001
+              },
+              "replay_checked": false,
+              "reset_valid": true,
+              "reset_valid_by_seed_time": [
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ],
+                [
+                  true,
+                  true
+                ]
+              ],
+              "sinkhorn_steps": 20,
+              "source_sha256": {
+                "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+                "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+                "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+                "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+                "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+              },
+              "theta": [
+                0.72,
+                0.55,
+                0.35,
+                0.35,
+                0.45
+              ],
+              "time_steps": 2,
+              "timing_seconds": {
+                "compile_plus_first_execution": 0.592509099000381,
+                "trace": 0.0003389290004633949,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              "tv_column_error_by_seed_time": [
+                [
+                  8.780534699326381e-08,
+                  7.450580596923828e-08
+                ],
+                [
+                  1.359749148832634e-07,
+                  7.415656000375748e-08
+                ],
+                [
+                  1.230662292073248e-07,
+                  8.370261639356613e-08
+                ],
+                [
+                  1.5531531971646473e-07,
+                  7.275957614183426e-08
+                ]
+              ],
+              "value_difference_to_kalman": null,
+              "warm_repetitions": 1,
+              "work": {
+                "active_reset_rows": 8,
+                "diagnostic_solver_reconstructions": 0,
+                "marginal_tile_sweeps": 0,
+                "sinkhorn_state_constructions": 2,
+                "terminal_balance_state_constructions": 2,
+                "transport_tile_sweeps": 2
+              },
+              "work_valid": true
+            },
+            "seeds": [
+              82112,
+              82113,
+              82114,
+              82115
+            ]
+          }
+        ],
+        "result": {
+          "aggregate_physical_score": [
+            3.8532233238220215,
+            -0.3303586579859257,
+            -0.09730064496397972,
+            4.361902579665184,
+            11.075003266334534
+          ],
+          "aggregate_value": -8.83493721485138,
+          "arm": "all_active_contract_e",
+          "balance_steps": 50,
+          "bitwise_replay": null,
+          "cache_same_cloud_geometry": false,
+          "campaign_id": "lgssm-particle-bias-ladder-harness-smoke-20260720",
+          "chart_valid": true,
+          "chart_valid_by_seed": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "device": {
+            "dtype": "float32",
+            "jit_compile": true,
+            "logical_devices": [
+              "/device:GPU:0"
+            ],
+            "memory_growth": false,
+            "memory_limit_mib": 8192,
+            "memory_policy": {
+              "aggregate_visible_gpu_limit_mib": 8192,
+              "configured_before_logical_device_initialization": true,
+              "hard_allocator_cap": true,
+              "memory_growth": false,
+              "memory_limit_mib_per_physical_device": 8192,
+              "mode": "fixed_logical_device_limit",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "memory_limit_mib": 8192
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "unset"
+            },
+            "physical_devices": [
+              "/physical_device:GPU:0"
+            ],
+            "tf32_enabled": true,
+            "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+          },
+          "estimator_seeds": [
+            82100,
+            82101,
+            82102,
+            82103,
+            82104,
+            82105,
+            82106,
+            82107,
+            82108,
+            82109,
+            82110,
+            82111,
+            82112,
+            82113,
+            82114,
+            82115
+          ],
+          "finite": true,
+          "git_commit": "9fd0b97fccd8ba216407eb8ff0a727bdc5a2709b",
+          "gpu_allocator_bytes": {
+            "current": 116480,
+            "peak": 67167744
+          },
+          "graph": {
+            "operation_count": 473,
+            "python_horizon_unroll": false,
+            "serialized_bytes": 1384805,
+            "while_operation_types": [
+              "StatelessWhile"
+            ]
+          },
+          "hard_valid": true,
+          "kalman_physical_score": null,
+          "kalman_value": null,
+          "marginal_valid": true,
+          "marginal_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "maximum_row_error": 7.152557373046875e-07,
+          "maximum_row_error_by_seed_time": [
+            [
+              2.980232238769531e-07,
+              2.980232238769531e-07
+            ],
+            [
+              4.76837158203125e-07,
+              4.76837158203125e-07
+            ],
+            [
+              4.76837158203125e-07,
+              5.364418029785156e-07
+            ],
+            [
+              2.384185791015625e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              4.172325134277344e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              2.384185791015625e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              4.76837158203125e-07,
+              4.76837158203125e-07
+            ],
+            [
+              4.76837158203125e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              7.152557373046875e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              4.76837158203125e-07,
+              2.384185791015625e-07
+            ],
+            [
+              2.384185791015625e-07,
+              2.980232238769531e-07
+            ],
+            [
+              4.76837158203125e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              3.5762786865234375e-07,
+              2.384185791015625e-07
+            ],
+            [
+              4.76837158203125e-07,
+              2.384185791015625e-07
+            ],
+            [
+              5.364418029785156e-07,
+              3.5762786865234375e-07
+            ],
+            [
+              4.76837158203125e-07,
+              2.384185791015625e-07
+            ]
+          ],
+          "maximum_tv_column_error": 1.9726303435163572e-07,
+          "microbatching": {
+            "combination_rule": "ordered per-seed concatenation and exact arithmetic mean",
+            "compiled_unit": "canonical_prepared_seed_microbatch_value_and_total_score",
+            "enabled": true,
+            "microbatch_count": 4,
+            "seed_groups": [
+              [
+                82100,
+                82101,
+                82102,
+                82103
+              ],
+              [
+                82104,
+                82105,
+                82106,
+                82107
+              ],
+              [
+                82108,
+                82109,
+                82110,
+                82111
+              ],
+              [
+                82112,
+                82113,
+                82114,
+                82115
+              ]
+            ],
+            "seed_microbatch_size": 4
+          },
+          "num_particles": 128,
+          "per_seed_physical_score": [
+            [
+              3.261246681213379,
+              -0.3217372000217438,
+              -0.2153024673461914,
+              3.5903472900390625,
+              11.417860984802246
+            ],
+            [
+              3.5899159908294678,
+              -0.43777996301651,
+              -0.15656441450119019,
+              4.576737403869629,
+              11.886707305908203
+            ],
+            [
+              3.7608695030212402,
+              -0.5578588843345642,
+              0.05651897192001343,
+              4.66441535949707,
+              11.263290405273438
+            ],
+            [
+              3.61029052734375,
+              -0.30889227986335754,
+              0.02586403489112854,
+              4.560614585876465,
+              11.44992446899414
+            ],
+            [
+              4.426462650299072,
+              -0.3155989348888397,
+              -0.008985400199890137,
+              4.334054946899414,
+              10.181807518005371
+            ],
+            [
+              3.8529510498046875,
+              -0.33174750208854675,
+              -0.18542355298995972,
+              4.348680019378662,
+              11.671062469482422
+            ],
+            [
+              4.0822014808654785,
+              -0.2334461808204651,
+              0.14376583695411682,
+              5.039317607879639,
+              10.529572486877441
+            ],
+            [
+              3.8661537170410156,
+              -0.2160489410161972,
+              -0.18092694878578186,
+              4.168935298919678,
+              10.848371505737305
+            ],
+            [
+              4.339648246765137,
+              -0.2878308892250061,
+              -0.008193403482437134,
+              4.38387393951416,
+              10.172416687011719
+            ],
+            [
+              3.259345293045044,
+              -0.4251963794231415,
+              -0.2747547924518585,
+              3.6945931911468506,
+              11.70378589630127
+            ],
+            [
+              4.126009941101074,
+              -0.18727539479732513,
+              -0.17669975757598877,
+              4.5745110511779785,
+              10.378753662109375
+            ],
+            [
+              3.6731297969818115,
+              -0.4403000473976135,
+              -0.23434703052043915,
+              4.2610883712768555,
+              11.545709609985352
+            ],
+            [
+              3.5215582847595215,
+              -0.28326863050460815,
+              -0.10359057784080505,
+              3.7745141983032227,
+              11.481388092041016
+            ],
+            [
+              4.323929786682129,
+              -0.32551607489585876,
+              -0.14255991578102112,
+              4.990250110626221,
+              10.775410652160645
+            ],
+            [
+              3.7271435260772705,
+              -0.34219515323638916,
+              0.10087230801582336,
+              4.27431058883667,
+              11.071640014648438
+            ],
+            [
+              4.230716705322266,
+              -0.27104607224464417,
+              -0.19648320972919464,
+              4.554197311401367,
+              10.82235050201416
+            ]
+          ],
+          "per_seed_value": [
+            -8.880824089050293,
+            -9.025140762329102,
+            -8.799844741821289,
+            -8.963943481445312,
+            -8.489992141723633,
+            -8.88776969909668,
+            -8.919066429138184,
+            -8.790380477905273,
+            -8.574798583984375,
+            -8.93005084991455,
+            -8.69418716430664,
+            -8.937572479248047,
+            -8.836722373962402,
+            -8.813016891479492,
+            -8.912178039550781,
+            -8.903507232666016
+          ],
+          "physical_score_difference_to_kalman": null,
+          "plan_path": "docs/plans/bayesfilter-lgssm-particle2000-particle5000-kalman-bias-ladder-plan-2026-07-20.md",
+          "preparation_identity": {
+            "axis_convention": {
+              "initial_noise": "[batch, particle, state]",
+              "residual_design": "[batch, time, particle, state]",
+              "transition_noise": "[batch, time, particle, state]"
+            },
+            "balance_steps": 50,
+            "col_chunk_size": 128,
+            "domain_tags": {
+              "initial": 101,
+              "residual": "2000 + zero_based_time",
+              "transition": "1000 + zero_based_time"
+            },
+            "final_dtype": "float32",
+            "key_dtype": "int32",
+            "key_encoding": "[root_seed, domain_tag]",
+            "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+            "maximum_row_error_tolerance": 0.01,
+            "num_particles": 128,
+            "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+            "raw_draw_dtype": "float64",
+            "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+            "rng_algorithm": "philox",
+            "root_seeds_in_order": [
+              82100,
+              82101,
+              82102,
+              82103,
+              82104,
+              82105,
+              82106,
+              82107,
+              82108,
+              82109,
+              82110,
+              82111,
+              82112,
+              82113,
+              82114,
+              82115
+            ],
+            "row_chunk_size": 128,
+            "sinkhorn_steps": 20,
+            "tensor_sha256_by_microbatch": [
+              {
+                "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                "initial_noise": "2b52910c4a13d7707913fc85d48bd14f68778bc899e4c6a1cab78f15bbc9be49",
+                "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                "residual_design": "3ce8e8a78558392be4b22fa17098f7d6f256579983a3ff150ade2fd0101bf7cf",
+                "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                "transition_noise": "9e19a965a151e462df99b1edc333681357edefaec0997e7bfe606c232407f9b6"
+              },
+              {
+                "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                "initial_noise": "580dbfc6496d301f36c0df7823a1010df33be10ea2a82becfc5dc4dcaf693ce3",
+                "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                "residual_design": "a4f8b27849f3b169efeb27d6192ef66a2b060afd6c00f245fe5bffc5d9524e09",
+                "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                "transition_noise": "d16d796d34843674534cb84c08f9fc484d1062c8e8d954a1165a5e839d4257c0"
+              },
+              {
+                "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                "initial_noise": "8091bbd7338a656a453d0ccc36778f77a72e29d399dfe50903dba8aa8d9ac1b7",
+                "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                "residual_design": "b29624ed65c5023d79f2779d5695bb0d7fb93826912ebb42a15f7cd3bcb47d8d",
+                "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                "transition_noise": "8540c5f7929bbe9cd2d57e511fe42b6a9b223f3d0a0db043e17cd3d494f24efb"
+              },
+              {
+                "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+                "fixed_reset_mask": "26bceb9a8af256d83494354d138a78dfe3163b92005f13f94c9dd74aaaab899b",
+                "initial_noise": "19d830fae3aaa2abb587c84df1d6d7dea1189c597f2e6febd11080283755ba9f",
+                "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+                "prepared_ridge": "770b5be1527fe9068a7a74c8750da04e60c764dfe47649e65e08bbe4141b149c",
+                "residual_design": "0aca2b6bff0af950ff72c0704bf0b3b4fa4ba0cbdd48193e6d2ce561177f1a06",
+                "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+                "transition_noise": "2518e78676cc548c8c0508477835a92a193897f1173eeaeafe3e6c8dddc5d326"
+              }
+            ],
+            "tensorflow_version": "2.19.1",
+            "time_steps": 2,
+            "transport_block_grid": [
+              1,
+              1
+            ],
+            "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "tv_column_tolerance": 0.0001
+          },
+          "replay_checked": false,
+          "reset_valid": true,
+          "reset_valid_by_seed_time": [
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ],
+            [
+              true,
+              true
+            ]
+          ],
+          "sinkhorn_steps": 20,
+          "source_sha256": {
+            "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "3519366b5c908cf6883fd2f489a9a94e05cf08e13e52f264223f05b86330dacc",
+            "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "e0d98895ccf23b22b4848e393af034bee0425a6b401cb39ebf89cc2294111bdf",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+            "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "bea228542b549bf2d909874cc94c1e1c15cfc2b42b377566020ef8c048eb56ff",
+            "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168"
+          },
+          "theta": [
+            0.72,
+            0.55,
+            0.35,
+            0.35,
+            0.45
+          ],
+          "time_steps": 2,
+          "timing_seconds": {
+            "by_microbatch": [
+              {
+                "compile_plus_first_execution": 9.132774763999805,
+                "trace": 5.0861906199997975,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              {
+                "compile_plus_first_execution": 0.35877987499952724,
+                "trace": 0.00033091600016632583,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              {
+                "compile_plus_first_execution": 0.4520555310000418,
+                "trace": 0.00031201899946609046,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              },
+              {
+                "compile_plus_first_execution": 0.592509099000381,
+                "trace": 0.0003389290004633949,
+                "warm_execution": null,
+                "warm_execution_repetitions": []
+              }
+            ],
+            "compile_plus_first_execution": 10.536119268999755,
+            "trace": 5.087172483999893,
+            "warm_execution": null
+          },
+          "tv_column_error_by_seed_time": [
+            [
+              8.586903277318925e-08,
+              1.0099029168486595e-07
+            ],
+            [
+              1.2196687748655677e-07,
+              1.317821443080902e-07
+            ],
+            [
+              1.245862222276628e-07,
+              1.4613033272325993e-07
+            ],
+            [
+              9.196082828566432e-08,
+              8.183997124433517e-08
+            ],
+            [
+              9.62450030783657e-08,
+              1.1152587831020355e-07
+            ],
+            [
+              8.057759259827435e-08,
+              8.85920599102974e-08
+            ],
+            [
+              1.6973626770777628e-07,
+              1.050066202878952e-07
+            ],
+            [
+              1.590892679814715e-07,
+              1.126900315284729e-07
+            ],
+            [
+              1.9726303435163572e-07,
+              9.190989658236504e-08
+            ],
+            [
+              1.5383892559839296e-07,
+              8.469214662909508e-08
+            ],
+            [
+              7.288394954230171e-08,
+              8.440110832452774e-08
+            ],
+            [
+              1.6954584225459257e-07,
+              1.0558869689702988e-07
+            ],
+            [
+              8.780534699326381e-08,
+              7.450580596923828e-08
+            ],
+            [
+              1.359749148832634e-07,
+              7.415656000375748e-08
+            ],
+            [
+              1.230662292073248e-07,
+              8.370261639356613e-08
+            ],
+            [
+              1.5531531971646473e-07,
+              7.275957614183426e-08
+            ]
+          ],
+          "value_difference_to_kalman": null,
+          "warm_repetitions": 1,
+          "work": {
+            "active_reset_rows": 32,
+            "diagnostic_solver_reconstructions": 0,
+            "marginal_tile_sweeps": 0,
+            "sinkhorn_state_constructions": 8,
+            "terminal_balance_state_constructions": 8,
+            "transport_tile_sweeps": 8
+          },
+          "work_by_microbatch": [
+            {
+              "active_reset_rows": 8,
+              "diagnostic_solver_reconstructions": 0,
+              "marginal_tile_sweeps": 0,
+              "sinkhorn_state_constructions": 2,
+              "terminal_balance_state_constructions": 2,
+              "transport_tile_sweeps": 2
+            },
+            {
+              "active_reset_rows": 8,
+              "diagnostic_solver_reconstructions": 0,
+              "marginal_tile_sweeps": 0,
+              "sinkhorn_state_constructions": 2,
+              "terminal_balance_state_constructions": 2,
+              "transport_tile_sweeps": 2
+            },
+            {
+              "active_reset_rows": 8,
+              "diagnostic_solver_reconstructions": 0,
+              "marginal_tile_sweeps": 0,
+              "sinkhorn_state_constructions": 2,
+              "terminal_balance_state_constructions": 2,
+              "transport_tile_sweeps": 2
+            },
+            {
+              "active_reset_rows": 8,
+              "diagnostic_solver_reconstructions": 0,
+              "marginal_tile_sweeps": 0,
+              "sinkhorn_state_constructions": 2,
+              "terminal_balance_state_constructions": 2,
+              "transport_tile_sweeps": 2
+            }
+          ],
+          "work_valid": true
+        },
+        "seed_microbatch_size": 4,
+        "seeds": [
+          82100,
+          82101,
+          82102,
+          82103,
+          82104,
+          82105,
+          82106,
+          82107,
+          82108,
+          82109,
+          82110,
+          82111,
+          82112,
+          82113,
+          82114,
+          82115
+        ],
+        "sinkhorn_steps": 20,
+        "status": "PASS",
+        "tuning_scope": {
+          "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+          "col_blocks": 1,
+          "col_chunk_size": 128,
+          "control_family_id": "streaming_ot_sinkhorn_balance_v1",
+          "dtype": "float32",
+          "horizon": 2,
+          "jit_compile": true,
+          "model_id": "canonical_lgssm_m3",
+          "parameter_count": 5,
+          "particle_count": 128,
+          "prepared_data_id": "lgssm_dataset_seed_81100_observation_prefix_t2",
+          "reset_contract_id": "contract_e_chol_v1",
+          "route_id": "contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1",
+          "row_blocks": 1,
+          "row_chunk_size": 128,
+          "state_dimension": 3,
+          "target_id": "canonical_lgssm_dataset_seed_81100_theta_0p72_0p55_0p35_0p35_0p45",
+          "tf32_enabled": true
+        },
+        "tuning_scope_sha256": "d4984a9aa3b0970a23eba81234813824980c6bc890acdc492f6898fc6d668f6a",
+        "wall_time_seconds": 17.97549864800021,
+        "within_node_cap": true
+      },
+      "validation": {
+        "all_charts_valid": true,
+        "all_resets_valid": true,
+        "finite": true,
+        "maximum_row_error": 7.152557373046875e-07,
+        "maximum_tv_column_error": 1.9726303435163572e-07,
+        "pass": true,
+        "seed_start_index": 8,
+        "seed_stop_index": 16,
+        "status": "PASS"
+      }
+    }
+  ],
+  "tuning_scope": {
+    "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "col_blocks": 1,
+    "col_chunk_size": 128,
+    "control_family_id": "streaming_ot_sinkhorn_balance_v1",
+    "dtype": "float32",
+    "horizon": 2,
+    "jit_compile": true,
+    "model_id": "canonical_lgssm_m3",
+    "parameter_count": 5,
+    "particle_count": 128,
+    "prepared_data_id": "lgssm_dataset_seed_81100_observation_prefix_t2",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route_id": "contract_e_chol_total_direct_moments_weights_plus_streaming_transport_v1",
+    "row_blocks": 1,
+    "row_chunk_size": 128,
+    "state_dimension": 3,
+    "target_id": "canonical_lgssm_dataset_seed_81100_theta_0p72_0p55_0p35_0p35_0p45",
+    "tf32_enabled": true
+  },
+  "tuning_scope_sha256": "d4984a9aa3b0970a23eba81234813824980c6bc890acdc492f6898fc6d668f6a",
+  "wall_time_seconds": 39.37872952900034
+}

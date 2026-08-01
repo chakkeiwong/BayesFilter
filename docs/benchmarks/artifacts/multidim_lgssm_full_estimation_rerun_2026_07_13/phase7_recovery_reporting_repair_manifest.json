@@ -1,0 +1,69 @@
+{
+  "schema": "bayesfilter.hmc_full_estimation_phase7_recovery_reporting_repair_manifest.v1",
+  "artifact_hash": "sha256:ba42c964de9e9c196a6594c9d71008ce5e55fb019297b97364fc5801a27c8aab",
+  "created_at": "2026-07-13T20:34:00+08:00",
+  "classification": "localized_post_numerical_recovery_result_path_serialization_repair",
+  "failed_attempt": {
+    "command_stage": "final_recovery",
+    "exception_type": "ValueError",
+    "exception_detail": "relative config path was compared with the absolute repository root",
+    "exception_expression": "config.path.relative_to(ROOT)",
+    "output_artifact_written": false,
+    "serious_campaign_rerun": false
+  },
+  "failure_boundary": {
+    "private_archive_verified_before_exception": true,
+    "diagnostics_recomputed_before_exception": true,
+    "terminal_diagnostics_agreement_checked_before_exception": true,
+    "parameter_recovery_rows_computed_before_exception": true,
+    "scientific_decision_serialized_before_exception": false,
+    "sample_generation_affected": false,
+    "diagnostic_math_affected": false,
+    "recovery_math_affected": false
+  },
+  "repair": {
+    "file": "docs/benchmarks/run_multidim_lgssm_serious_hmc_tuning_2026_07_09.py",
+    "old_driver_file_sha256": "fdfb069840d1e80e7fd8c959dae3c84a3647968747eab4894c383bcc66e49bfb",
+    "new_driver_file_sha256": "2678c7b788b6b5f11a7cedbfb92462c4fa82f2326a607f7647ef822921e747c3",
+    "change": "resolve config.path before recording its repository-relative representation",
+    "regression_test": "tests/test_hmc_full_estimation_campaign.py::test_final_recovery_verifies_archive_and_recomputed_diagnostics",
+    "regression_variants": [
+      "absolute_config_path",
+      "relative_cli_config_path"
+    ],
+    "regression_test_file_sha256": "a21ef119a78934451ae98d1bd12ec7c6fd8c77f898310c4e94907b58464bc89f"
+  },
+  "immutable_serious_evidence": {
+    "controller_result_path": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/phase7_campaign/result.json",
+    "controller_result_file_sha256": "ee8ed0e1cb18f99e36e25873d545a80d00c088a7a368ab94eda9bec6f0b4e2fd",
+    "controller_result_artifact_hash": "sha256:7c852c35fb6850f33cc7316df2de26e7d1b168d614cd63e369a4fabb7bfe3552",
+    "private_archive_path": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/phase7_campaign/private/retained_samples.npz",
+    "private_archive_file_sha256": "1b0c05d4ea2981b1be179040d3a52039f05efe6c5b163f9bf7bba64ce2068920",
+    "shape": [
+      4000,
+      4,
+      18
+    ],
+    "all_finite": true,
+    "config_hash": "sha256:00d576460d7ca40d965de7b1ff9dd88a6cad029a1ae94feff2628433640945c6",
+    "private_replay_artifact_hash": "sha256:eab345c411a1279676588efc24993499c90e18c227b6a46391b98d03b067f318"
+  },
+  "checks": {
+    "python_compilation": "passed",
+    "focused_path_regression": "2 passed, 2 warnings",
+    "focused_integration_suite": "77 passed, 2 warnings",
+    "git_diff_check": "passed",
+    "final_recovery_output_fresh": true
+  },
+  "next_action": "rerun_final_recovery_only",
+  "forbidden_actions": [
+    "do not rerun tuning",
+    "do not rerun serious sampling",
+    "do not change convergence or recovery thresholds",
+    "do not alter or overwrite the serious campaign artifacts"
+  ],
+  "nonclaims": [
+    "reporting repair is not new convergence or recovery evidence",
+    "no calibration, generality, superiority, GPU, production, or default-readiness claim"
+  ]
+}

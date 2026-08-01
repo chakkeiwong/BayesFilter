@@ -1,0 +1,158 @@
+{
+  "schema": "bayesfilter.contract_e_tp.phase3_lgssm_center.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "scope": "center_only_not_parameter_region_certificate",
+  "target": {
+    "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+    "dataset_seed": 81100,
+    "time_steps": 5,
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "parameter_names": [
+      "phi1",
+      "phi2",
+      "phi3",
+      "q_scale",
+      "r_scale"
+    ],
+    "route": "corrected_ledh_parent_by_innovation_teacher"
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase3_lgssm_order5_t5_center_preparation_20260715/charts.json",
+    "sha256": "0472316b1d665419347232092dc694b3eb90532af8ad6a2dcc8f113763248e73",
+    "scope": "center_only_not_parameter_region_certificate",
+    "quadrature_order": 5,
+    "feature_names": [
+      "mass",
+      "x1",
+      "x2",
+      "x3",
+      "x1_sq",
+      "x1_x2",
+      "x1_x3",
+      "x2_sq",
+      "x2_x3",
+      "x3_sq",
+      "next_corrected_ledh_predictive_contribution"
+    ]
+  },
+  "value": {
+    "contract_e_tp": -18.675378564974732,
+    "kalman": -18.729967664268,
+    "difference": 0.05458909929326694,
+    "center_boundary": 0.001,
+    "center_screen_pass": false,
+    "increment_history": [
+      -6.990315120314722,
+      -1.871630745138611,
+      -4.005525038395101,
+      -3.0060983760542888,
+      -2.80180928507201
+    ]
+  },
+  "score": {
+    "contract_e_tp": [
+      14.510924579880717,
+      -0.4230202753800554,
+      0.5421159933550824,
+      15.729595991037394,
+      9.512029734434769
+    ],
+    "kalman": [
+      14.65493418819998,
+      -0.1915687682205774,
+      0.14913412545861252,
+      15.834237181668978,
+      10.035096940905525
+    ],
+    "difference": [
+      -0.1440096083192639,
+      -0.231451507159478,
+      0.39298186789646994,
+      -0.10464119063158428,
+      -0.5230672064707562
+    ],
+    "componentwise_relative_error": [
+      0.009826697716269454,
+      1.208190193575701,
+      2.635090169255257,
+      0.006608540053494056,
+      0.05212378211700233
+    ],
+    "sign_reversal": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "center_delta_grad": 0.05,
+    "center_screen_pass": false,
+    "same_scalar_finite_difference": [
+      14.510924575716897,
+      -0.42302027551954774,
+      0.5421159924523522,
+      15.729596012903356,
+      9.512029747682504
+    ],
+    "same_scalar_fd_relative_error": [
+      2.869437773233111e-10,
+      3.2975337159506e-10,
+      1.665197549917896e-09,
+      1.3901158979520858e-09,
+      1.3927348530831622e-09
+    ],
+    "same_scalar_fd_threshold": 0.1118033988749895,
+    "same_scalar_fd_pass": true
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.0011785923906277452,
+      0.001215651441640256,
+      0.006600097804170343,
+      0.0008347332617167705
+    ],
+    "condition_number_history": [
+      421.1569731344072,
+      312.1199319351576,
+      585.8207184593011,
+      305.1767639863764
+    ],
+    "feature_residual_max_abs": 8.326672684688674e-16,
+    "chart_pass": true
+  },
+  "decision": {
+    "engineering_pass": true,
+    "center_value_screen_pass": false,
+    "center_gradient_screen_pass": false,
+    "next_action": "refine_quadrature_before_interpreting_recursive_accuracy",
+    "ranking_supported": false,
+    "differences_are_descriptive": true
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow float64 CPU-hidden reference/diagnostic",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 5.036164884993923,
+    "command": "docs/benchmarks/run_contract_e_tp_phase3_lgssm_center.py --time-steps 5 --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase3_lgssm_order5_t5_center_preparation_20260715/charts.json --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase3_lgssm_order5_t5_center_20260715/result.json"
+  },
+  "nonclaims": [
+    "no off-center or HMC trajectory validity",
+    "no stochastic ranking or cross-method equivalence",
+    "no canonical, leaderboard, default, or HMC admission"
+  ]
+}

@@ -1,5 +1,15 @@
 """Optional adapters for external state-space projects."""
 
+from bayesfilter.adapters.bgs import (
+    BGSBatchPosteriorAdapter,
+    BGSConstrainedLikelihoodResult,
+    BGSPosteriorAdapter,
+    BGSPosteriorComponents,
+    constrained_log_prior_and_score,
+    log_abs_det_jacobian as bgs_log_abs_det_jacobian,
+    theta_from_unconstrained as bgs_theta_from_unconstrained,
+    unconstrained_from_theta as bgs_unconstrained_from_theta,
+)
 from bayesfilter.adapters.dsge import (
     DSGEStructuralAdapterGateResult,
     dsge_structural_adapter_gate,
@@ -41,6 +51,10 @@ from bayesfilter.adapters.macrofinance import (
 )
 
 __all__ = [
+    "BGSBatchPosteriorAdapter",
+    "BGSConstrainedLikelihoodResult",
+    "BGSPosteriorAdapter",
+    "BGSPosteriorComponents",
     "DerivativeCoverageMetadata",
     "DSGEStructuralAdapterGateResult",
     "FiniteDifferenceOracleMetadata",
@@ -76,4 +90,8 @@ __all__ = [
     "extract_readiness_blocker_metadata",
     "extract_sparse_backend_policy_metadata",
     "macrofinance_lgssm_to_bayesfilter",
+    "constrained_log_prior_and_score",
+    "bgs_log_abs_det_jacobian",
+    "bgs_theta_from_unconstrained",
+    "bgs_unconstrained_from_theta",
 ]

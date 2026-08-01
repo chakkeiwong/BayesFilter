@@ -1,0 +1,3031 @@
+{
+  "artifact_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/hnn-neutra-native-tuning-correction-20260718/pp-ukf-canary-attempt-02/native-tuning/learned_residual/native_tuning_result.json",
+  "base_adapter_signature": "999dde39d6f994a7f72d386c4cefe431a66904fce07baa5d8cf33c0ca19c7209",
+  "candidates": [
+    {
+      "candidate_index": 0,
+      "diagnostic_role": "hard_veto",
+      "final_status": "hard_veto",
+      "fixed_kernel_step_size": null,
+      "handoff_source": "fixed_mass_dual_averaging_ladder",
+      "hard_vetoes": [
+        "verification_modern_rank_folded_rhat_failed"
+      ],
+      "ladder": {
+        "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+        "artifact_hash_components": {
+          "hash_function": "bayesfilter.runtime.stable_config_hash",
+          "json_normalization": "sort_keys_compact_json"
+        },
+        "config": {
+          "acceptance_band": [
+            0.65,
+            0.75
+          ],
+          "budget_schedule": [
+            16,
+            32,
+            64,
+            128,
+            256
+          ],
+          "chain_execution_mode": "tf_function",
+          "extra_repair_screen_count": 2,
+          "incall_progress_heartbeat_s": null,
+          "initial_fixed_mass_bracket_state": null,
+          "initial_fixed_mass_bracket_state_available": false,
+          "initial_step_size": 0.2,
+          "num_leapfrog_steps": 6,
+          "public_timeout_budget_s": null,
+          "public_timeout_closeout_reserve_s": 60.0,
+          "public_timeout_started_perf_counter_s": null,
+          "repair_band": [
+            0.55,
+            0.85
+          ],
+          "repair_nonfinite_proposal_screen": false,
+          "screen_num_burnin_steps": 16,
+          "screen_num_results": 32,
+          "screen_seed_base": [
+            20260718,
+            81001
+          ],
+          "screen_trace_policy": "standard",
+          "source": "bayesfilter.hnn_neutra_native_tuning_correction",
+          "stale_bracket_bound_ratio": 1.25,
+          "step_repair_factor": 2.0,
+          "step_repair_high_acceptance_directional_factor": 2.0,
+          "step_repair_high_acceptance_ladder_max_factor": 2.0,
+          "step_repair_max_step_size": null,
+          "step_repair_min_directional_factor": 1.25,
+          "step_stability_is_hard_veto": false,
+          "step_stability_rtol": null,
+          "target_accept_prob": 0.7,
+          "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+          "target_status_trace_policy": "none",
+          "tune_num_results": 16,
+          "tune_seed_base": [
+            20260718,
+            81000
+          ],
+          "tuning_trace_policy": "standard",
+          "use_xla": true
+        },
+        "diagnostic_roles": {
+          "acceptance_band": "tuning_screen_promotion_only",
+          "callback_continuation_vetoes": "continuation_veto",
+          "callback_hard_vetoes": "hard_veto",
+          "callback_promotion_vetoes": "promotion_veto_repair_trigger",
+          "callback_repair_triggers": "promotion_veto_repair_trigger",
+          "finite_samples": "hard_veto",
+          "log_accept_ratio_finite": "hard_veto",
+          "repair_band": "acceptance_repair_trigger",
+          "runtime": "explanatory_diagnostic",
+          "step_stability": "explanatory_or_hard_veto_when_configured",
+          "target_status_telemetry": "hard_veto_when_enabled"
+        },
+        "final_status": "passed",
+        "hmc_adapter_signature": "62819b6770a44b2ae2e2e5c88b05657d808f9d4690a270fa584758ee8d983992",
+        "mass_artifact_payload": {
+          "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+          "artifact_type": "bayesfilter_precomputed_mass_artifact",
+          "covariance": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "covariance_source": "fixed_identity_z",
+          "dimension": 6,
+          "eigen_summary": {
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "finite": true,
+            "max": 1.0,
+            "min": 1.0,
+            "positive": true
+          },
+          "factor": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "factor_orientation": "row_right_transpose",
+          "include_arrays": true,
+          "log_jacobian_convention": "constant_omitted",
+          "matrix_used_for_square_root": "identity_z",
+          "nonclaims": [
+            "fixed identity mass in trained-transport z coordinates",
+            "no residual mass adaptation claim",
+            "no MAP quality claim",
+            "no posterior convergence claim"
+          ],
+          "position": [
+            0.7953225489753536,
+            0.7598477316963865,
+            -0.2848903769776855,
+            -0.4607388676918712,
+            0.07523236380232563,
+            1.8621927109933565
+          ],
+          "position_role": "fixed_neutra_initial_z",
+          "precision_eigen_summary": null,
+          "reconstruction_atol": 1e-10,
+          "reconstruction_rtol": 1e-10,
+          "regularization_report": {
+            "regularization_applied": false
+          },
+          "schema_version": 1,
+          "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+        },
+        "mass_artifact_signature": "9e32548127ea9972a1fbf8e19de22791ed1972be1cc414431db8ca1b63cd0a38",
+        "nonclaims": [
+          "fixed-mass HMC tuning-budget ladder only",
+          "acceptance is a tuning-screen diagnostic only",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default sampler readiness claim",
+          "no empirical validity claim",
+          "no GPU or XLA readiness claim"
+        ],
+        "passed": true,
+        "repair_config_available": false,
+        "repair_config_hash": null,
+        "repair_config_payload_exposed": false,
+        "reports_posterior_convergence": false,
+        "rounds": [
+          {
+            "budget": 16,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "acceptance_repair",
+            "continuation_vetoes": [],
+            "diagnostic_role": "acceptance_repair_trigger",
+            "hard_vetoes": [],
+            "initial_step_size": 0.2,
+            "promotion_vetoes": [],
+            "repair_triggers": [
+              "acceptance_outside_pass_band_inside_repair_band"
+            ],
+            "round_index": 0,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 6,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81001
+              ],
+              "step_size": 0.7304989249127588,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.8289318443997584,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.8289318443997584,
+              "directional_step_repair": {
+                "acceptance_band": [
+                  0.65,
+                  0.75
+                ],
+                "acceptance_rate": 0.8289318443997584,
+                "acceptance_relation": "above_acceptance_band",
+                "bracket_reset": null,
+                "bracketed": false,
+                "high_acceptance_step_lower_bound": 0.7304989249127588,
+                "low_acceptance_step_upper_bound": null,
+                "next_step_size": 1.4609978498255176,
+                "previous_initial_step_size": 0.2,
+                "private_handoff_only": true,
+                "public_progress_exposes_step": false,
+                "repair_action": "increase_step_fixed_screen",
+                "repair_band": [
+                  0.55,
+                  0.85
+                ],
+                "reports_posterior_convergence": false,
+                "schema": "bayesfilter.fixed_mass_directional_step_repair.v1",
+                "screened_step_size": 0.7304989249127588,
+                "step_ceiling_applied": false,
+                "step_repair_max_step_size": null,
+                "unclamped_next_step_size": 1.4609978498255176
+              },
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 2.9183092764016845,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 2.9183092764016845,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.46966258539211,
+                "min_finite": -127.58062095388448,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.8289318443997584,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.8203125,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 2.9183092764016845,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 2.9183092764016845,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.46966258539211,
+                "target_log_prob_min_finite": -121.63319514896034,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 7.087390808970667,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81001
+            ],
+            "tune_config_payload": {
+              "adaptation_policy": "dual_averaging_step_size",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 6,
+              "num_results": 16,
+              "seed": [
+                20260718,
+                81000
+              ],
+              "step_size": 0.2,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "dual_averaging_step_size",
+                "diagnostic_role": "fixed-mass dual-averaging diagnostic only",
+                "enabled": true,
+                "implemented": true,
+                "label": "fixed_mass_dual_averaging",
+                "nonclaims": [
+                  "fixed-mass dual-averaging diagnostic only",
+                  "mass matrix is supplied/fixed; no windowed mass adaptation claim",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 16,
+                "source": "bayesfilter.hnn_neutra_native_tuning_correction",
+                "target_accept_prob": 0.7
+              },
+              "use_xla": true
+            },
+            "tune_diagnostics": {
+              "acceptance_rate": 0.8467250433889152,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.8467250433889152,
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": 0.7304989249127588,
+              "final_step_size_finite": true,
+              "finite_sample_count": 64,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 64,
+                "max_abs_finite": 2.1692874878492203,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 64
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 2.1692874878492203,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": 16,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 64,
+                "max_finite": -114.4721299502294,
+                "min_finite": -128.98663102255668,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 64
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.8467250433889152,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.828125,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "final_step_size": 0.7304989249127588,
+                "final_step_size_finite": true,
+                "finite_sample_count": 64,
+                "log_accept_ratio_finite_count": 64,
+                "log_accept_ratio_max_abs_finite": 2.1692874878492203,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 2.1692874878492203,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "num_adaptation_steps": 16,
+                "sample_shape": [
+                  16,
+                  4,
+                  6
+                ],
+                "target_accept_prob": 0.7,
+                "target_log_prob_finite_count": 64,
+                "target_log_prob_max_finite": -114.4721299502294,
+                "target_log_prob_min_finite": -121.84578371473599,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 6.5432971509872,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "step_stability": {
+                "previous_step": 0.2,
+                "relative_change": 2.6524946245637935,
+                "rtol": null,
+                "tuned_step": 0.7304989249127588,
+                "within_rtol": null
+              },
+              "target_accept_prob": 0.7,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 64,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 64
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "num_adaptation_steps",
+                  "proposed_target_log_prob",
+                  "step_size",
+                  "target_accept_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "tune_seed": [
+              20260718,
+              81000
+            ],
+            "tuned_step_size": 0.7304989249127588
+          },
+          {
+            "budget": 32,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "acceptance_repair",
+            "continuation_vetoes": [],
+            "diagnostic_role": "acceptance_repair_trigger",
+            "hard_vetoes": [],
+            "initial_step_size": 1.4609978498255176,
+            "promotion_vetoes": [],
+            "repair_triggers": [
+              "screen_acceptance_below_repair_band"
+            ],
+            "round_index": 1,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 6,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81002
+              ],
+              "step_size": 1.4609978498255176,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.22177602158220433,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.22177602158220433,
+              "directional_step_repair": {
+                "acceptance_band": [
+                  0.65,
+                  0.75
+                ],
+                "acceptance_rate": 0.22177602158220433,
+                "acceptance_relation": "below_acceptance_band",
+                "bracket_reset": null,
+                "bracketed": true,
+                "high_acceptance_step_lower_bound": 0.7304989249127588,
+                "low_acceptance_step_upper_bound": 1.4609978498255176,
+                "next_step_size": 1.0330814869105887,
+                "previous_initial_step_size": 1.4609978498255176,
+                "private_handoff_only": true,
+                "public_progress_exposes_step": false,
+                "repair_action": "bracketed_log_step_midpoint_fixed_screen",
+                "repair_band": [
+                  0.55,
+                  0.85
+                ],
+                "reports_posterior_convergence": false,
+                "schema": "bayesfilter.fixed_mass_directional_step_repair.v1",
+                "screened_step_size": 1.4609978498255176,
+                "step_ceiling_applied": false,
+                "step_repair_max_step_size": null,
+                "unclamped_next_step_size": 1.0330814869105887
+              },
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 1382.5176969960883,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 1382.5176969960883,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.35136125039772,
+                "min_finite": -1493.2982509592537,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.22177602158220433,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.21875,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 1382.5176969960883,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 1382.5176969960883,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.35136125039772,
+                "target_log_prob_min_finite": -121.13875682022098,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 6.532703604025301,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81002
+            ],
+            "tune_config_payload": null,
+            "tune_diagnostics": {
+              "acceptance_rate": null,
+              "adaptation_skipped_for_directional_repair_screen": true,
+              "final_step_size": 1.4609978498255176,
+              "final_step_size_finite": true,
+              "log_accept_ratio_finite": null,
+              "num_adaptation_steps": 0,
+              "reports_posterior_convergence": false,
+              "samples_all_finite": null,
+              "target_log_prob_finite": null
+            },
+            "tune_seed": [
+              20260718,
+              81001
+            ],
+            "tuned_step_size": 1.4609978498255176
+          },
+          {
+            "budget": 64,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "passed",
+            "continuation_vetoes": [],
+            "diagnostic_role": "tuning_screen_promotion_only",
+            "hard_vetoes": [],
+            "initial_step_size": 1.0330814869105887,
+            "promotion_vetoes": [],
+            "repair_triggers": [],
+            "round_index": 2,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 6,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81003
+              ],
+              "step_size": 1.0330814869105887,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.7461237038350523,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.7461237038350523,
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 12.4581826472395,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 12.4581826472395,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.39479470803693,
+                "min_finite": -131.3242844307965,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.7461237038350523,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.7265625,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 12.4581826472395,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 12.4581826472395,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.39479470803693,
+                "target_log_prob_min_finite": -123.50333824469877,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 6.931286021019332,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81003
+            ],
+            "tune_config_payload": null,
+            "tune_diagnostics": {
+              "acceptance_rate": null,
+              "adaptation_skipped_for_directional_repair_screen": true,
+              "final_step_size": 1.0330814869105887,
+              "final_step_size_finite": true,
+              "log_accept_ratio_finite": null,
+              "num_adaptation_steps": 0,
+              "reports_posterior_convergence": false,
+              "samples_all_finite": null,
+              "target_log_prob_finite": null
+            },
+            "tune_seed": [
+              20260718,
+              81002
+            ],
+            "tuned_step_size": 1.0330814869105887
+          }
+        ],
+        "runner_route_summary": {
+          "active_route": "single_use_or_injected_runner",
+          "distinct_static_runner_contract_count": 0,
+          "distinct_static_runner_contracts": [],
+          "fallback_status": "inactive_reusable_route",
+          "fallback_to_single_use_runner": false,
+          "injected_runner_call_count": 4,
+          "reusable_runner_build_count": 0,
+          "round_route_events": [
+            {
+              "budget": 16,
+              "call_config_hash": "ffc13aa5c48664a2576f6bc7a7fe04927ead20b90a3138b7b0c51148c44c222b",
+              "role": "tune",
+              "round_index": 0,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 16,
+              "call_config_hash": "322b2d105032835d674c660f78f4a47f9a4265f90006efefc102379ac96ffda6",
+              "role": "screen",
+              "round_index": 0,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 32,
+              "call_config_hash": "f6fbdaecdbafbb032dd8f3a5dc7abdeb42c4f22049beac703c22b1213c69d49c",
+              "role": "repair_screen",
+              "round_index": 1,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 64,
+              "call_config_hash": "c0644407bd83cb0c1604f5884ad78128809cd9a409c3754b97b56f1c38560a4b",
+              "role": "repair_screen",
+              "round_index": 2,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            }
+          ],
+          "route_nonclaims": [
+            "route telemetry is engineering evidence only",
+            "does not change selected step or HMC kernel semantics",
+            "does not establish posterior convergence or sampler superiority"
+          ],
+          "semantic_source": "run_fixed_mass_hmc_tuning_budget_ladder",
+          "single_use_build_count": 0
+        },
+        "schema": "bayesfilter.fixed_mass_hmc_tuning_budget_ladder.v1",
+        "selected_config_hash": "d5208859cf6de63b0173de7edb5c1841f0ae3d6ef6f25fe5aa2db081b031d57d",
+        "selected_config_payload": {
+          "acceptance_band": [
+            0.65,
+            0.75
+          ],
+          "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+          "hmc_adapter_signature": "62819b6770a44b2ae2e2e5c88b05657d808f9d4690a270fa584758ee8d983992",
+          "mass_artifact_signature": "9e32548127ea9972a1fbf8e19de22791ed1972be1cc414431db8ca1b63cd0a38",
+          "nonclaims": [
+            "fixed-mass HMC tuning-budget ladder only",
+            "acceptance is a tuning-screen diagnostic only",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no default sampler readiness claim",
+            "no empirical validity claim",
+            "no GPU or XLA readiness claim"
+          ],
+          "num_leapfrog_steps": 6,
+          "repair_band": [
+            0.55,
+            0.85
+          ],
+          "runtime": "bayesfilter.inference.run_fixed_mass_hmc_tuning_budget_ladder",
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 16,
+            "num_leapfrog_steps": 6,
+            "num_results": 32,
+            "seed": [
+              20260718,
+              81003
+            ],
+            "step_size": 1.0330814869105887,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "none",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "screen_seed": [
+            20260718,
+            81003
+          ],
+          "selected_budget": 64,
+          "step_size": 1.0330814869105887,
+          "target_accept_prob": 0.7,
+          "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+          "target_status_trace_policy": "none",
+          "tune_config_payload": null,
+          "tune_seed": [
+            20260718,
+            81002
+          ]
+        },
+        "selected_round_index": 2,
+        "target_dimension": 6
+      },
+      "ladder_artifact_hash": "a8b13a511ecb610e8ad97d0a0f2b8770bb2ada04c27897e1674f8b9edd3cb0a2",
+      "num_leapfrog_steps": 6,
+      "passed": false,
+      "repair_triggers": [],
+      "reports_posterior_convergence": false,
+      "selected_step_size": 1.0330814869105887,
+      "verification_config_payload": {
+        "adaptation_policy": "fixed_kernel_no_adaptation",
+        "chain_execution_mode": "tf_function",
+        "num_burnin_steps": 100,
+        "num_leapfrog_steps": 6,
+        "num_results": 1000,
+        "seed": [
+          20260718,
+          81002
+        ],
+        "step_size": 1.0330814869105887,
+        "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+        "target_status_trace_policy": "none",
+        "trace_policy": "standard",
+        "tuning_policy": {
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "diagnostic_role": "fixed-kernel bounded HMC screen",
+          "enabled": false,
+          "implemented": true,
+          "label": "fixed_kernel_screen",
+          "nonclaims": [
+            "fixed-kernel screen only",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no default adaptation readiness claim"
+          ],
+          "num_adaptation_steps": 0,
+          "source": "reviewed_stage_7_phase_3",
+          "target_accept_prob": null
+        },
+        "use_xla": true
+      },
+      "verification_diagnostics": {
+        "acceptance_rate": 0.7237703662378613,
+        "binary_acceptance_rate": 0.72925,
+        "diagnostic_context": "fixed_transport_fresh_verification",
+        "divergence_count": null,
+        "divergence_status": "not_exposed_by_neural_force_kernel",
+        "final_step_size": null,
+        "final_step_size_finite": null,
+        "finite_sample_count": 4000,
+        "initial_state_shape": [
+          4,
+          6
+        ],
+        "log_accept_ratio_finite": true,
+        "max_abs_log_accept_ratio": 53.80317527301386,
+        "modern_rank_normalized_verification": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 6,
+          "folded_rank_normalized_split_rhat": [
+            1.0912826846911106,
+            1.092857709961985,
+            1.0708019363778236,
+            1.0181611646668705,
+            1.003052853173778,
+            1.0027679086414703
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.3590212678392466,
+          "max_folded_rank_normalized_split_rhat": 1.092857709961985,
+          "max_rank_normalized_split_rhat": 1.3590212678392466,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 6,
+          "passed": false,
+          "rank_normalized_split_rhat": [
+            1.1303658632206743,
+            1.1245731991694115,
+            1.3590212678392466,
+            1.0645633209196421,
+            1.0074259030350399,
+            1.0052638086565737
+          ],
+          "rhat": [
+            1.1303658632206743,
+            1.1245731991694115,
+            1.3590212678392466,
+            1.0645633209196421,
+            1.0074259030350399,
+            1.0052638086565737
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "modern_verification_coordinate_system": "raw_target_coordinates",
+        "modern_verification_parameter_names": [
+          "r_source_probit",
+          "K_source_probit",
+          "a_source_probit",
+          "s_source_probit",
+          "u_source_probit",
+          "v_source_probit"
+        ],
+        "nonclaims": [
+          "fixed trained transport HMC tuning only",
+          "transport is not trained or adapted by this tuner",
+          "identity z-mass policy only",
+          "no windowed mass adaptation claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no external-client scientific claim"
+        ],
+        "nonfinite_sample_count": 0,
+        "probe_only": false,
+        "rank2_chain_batched_initial_state": true,
+        "raw_diagnostics": {
+          "acceptance_rate": 0.7237703662378613,
+          "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+          "binary_acceptance_rate": 0.72925,
+          "divergence_count": null,
+          "divergence_status": "not_exposed_by_neural_force_kernel",
+          "finite_sample_count": 4000,
+          "log_accept_ratio_finite_count": 4000,
+          "log_accept_ratio_max_abs_finite": 53.80317527301386,
+          "log_accept_ratio_nonfinite_count": 0,
+          "maximum_absolute_delta_h": 53.80317527301386,
+          "native_divergence_status": "not_exposed_by_neural_force_kernel",
+          "nonfinite_sample_count": 0,
+          "sample_shape": [
+            1000,
+            4,
+            6
+          ],
+          "target_log_prob_finite_count": 4000,
+          "target_log_prob_max_finite": -113.89828024123463,
+          "target_log_prob_min_finite": -124.43694580064957,
+          "target_log_prob_nonfinite_count": 0,
+          "trace_policy": "standard"
+        },
+        "runtime_metadata": {
+          "chain_execution_mode": "tf_function",
+          "coordinate_route": "direct_fixed_transport_z",
+          "endpoint_only_exact_value": true,
+          "exact_filter_gradient_inside_leapfrog": false,
+          "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+          "jit_compile": true,
+          "mass_coordinate_center_shape": [
+            6
+          ],
+          "mass_coordinate_factor_shape": [
+            6,
+            6
+          ],
+          "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+          "sample_chain_call_s": 37.70524452597601,
+          "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+          "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+          "trace_unavailability": {}
+        },
+        "sample_shape": [
+          1000,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "target_accept_prob": null,
+        "target_log_prob_finite": true,
+        "target_status_telemetry": null,
+        "trace_policy": "standard"
+      }
+    },
+    {
+      "candidate_index": 1,
+      "diagnostic_role": "hard_veto",
+      "final_status": "hard_veto",
+      "fixed_kernel_step_size": null,
+      "handoff_source": "fixed_mass_dual_averaging_ladder",
+      "hard_vetoes": [
+        "verification_modern_rank_folded_rhat_failed"
+      ],
+      "ladder": {
+        "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+        "artifact_hash_components": {
+          "hash_function": "bayesfilter.runtime.stable_config_hash",
+          "json_normalization": "sort_keys_compact_json"
+        },
+        "config": {
+          "acceptance_band": [
+            0.65,
+            0.75
+          ],
+          "budget_schedule": [
+            16,
+            32,
+            64,
+            128,
+            256
+          ],
+          "chain_execution_mode": "tf_function",
+          "extra_repair_screen_count": 2,
+          "incall_progress_heartbeat_s": null,
+          "initial_fixed_mass_bracket_state": null,
+          "initial_fixed_mass_bracket_state_available": false,
+          "initial_step_size": 0.2,
+          "num_leapfrog_steps": 10,
+          "public_timeout_budget_s": null,
+          "public_timeout_closeout_reserve_s": 60.0,
+          "public_timeout_started_perf_counter_s": null,
+          "repair_band": [
+            0.55,
+            0.85
+          ],
+          "repair_nonfinite_proposal_screen": false,
+          "screen_num_burnin_steps": 16,
+          "screen_num_results": 32,
+          "screen_seed_base": [
+            20260718,
+            81002
+          ],
+          "screen_trace_policy": "standard",
+          "source": "bayesfilter.hnn_neutra_native_tuning_correction",
+          "stale_bracket_bound_ratio": 1.25,
+          "step_repair_factor": 2.0,
+          "step_repair_high_acceptance_directional_factor": 2.0,
+          "step_repair_high_acceptance_ladder_max_factor": 2.0,
+          "step_repair_max_step_size": null,
+          "step_repair_min_directional_factor": 1.25,
+          "step_stability_is_hard_veto": false,
+          "step_stability_rtol": null,
+          "target_accept_prob": 0.7,
+          "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+          "target_status_trace_policy": "none",
+          "tune_num_results": 16,
+          "tune_seed_base": [
+            20260718,
+            81001
+          ],
+          "tuning_trace_policy": "standard",
+          "use_xla": true
+        },
+        "diagnostic_roles": {
+          "acceptance_band": "tuning_screen_promotion_only",
+          "callback_continuation_vetoes": "continuation_veto",
+          "callback_hard_vetoes": "hard_veto",
+          "callback_promotion_vetoes": "promotion_veto_repair_trigger",
+          "callback_repair_triggers": "promotion_veto_repair_trigger",
+          "finite_samples": "hard_veto",
+          "log_accept_ratio_finite": "hard_veto",
+          "repair_band": "acceptance_repair_trigger",
+          "runtime": "explanatory_diagnostic",
+          "step_stability": "explanatory_or_hard_veto_when_configured",
+          "target_status_telemetry": "hard_veto_when_enabled"
+        },
+        "final_status": "passed",
+        "hmc_adapter_signature": "62819b6770a44b2ae2e2e5c88b05657d808f9d4690a270fa584758ee8d983992",
+        "mass_artifact_payload": {
+          "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+          "artifact_type": "bayesfilter_precomputed_mass_artifact",
+          "covariance": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "covariance_source": "fixed_identity_z",
+          "dimension": 6,
+          "eigen_summary": {
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "finite": true,
+            "max": 1.0,
+            "min": 1.0,
+            "positive": true
+          },
+          "factor": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "factor_orientation": "row_right_transpose",
+          "include_arrays": true,
+          "log_jacobian_convention": "constant_omitted",
+          "matrix_used_for_square_root": "identity_z",
+          "nonclaims": [
+            "fixed identity mass in trained-transport z coordinates",
+            "no residual mass adaptation claim",
+            "no MAP quality claim",
+            "no posterior convergence claim"
+          ],
+          "position": [
+            0.7953225489753536,
+            0.7598477316963865,
+            -0.2848903769776855,
+            -0.4607388676918712,
+            0.07523236380232563,
+            1.8621927109933565
+          ],
+          "position_role": "fixed_neutra_initial_z",
+          "precision_eigen_summary": null,
+          "reconstruction_atol": 1e-10,
+          "reconstruction_rtol": 1e-10,
+          "regularization_report": {
+            "regularization_applied": false
+          },
+          "schema_version": 1,
+          "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+        },
+        "mass_artifact_signature": "9e32548127ea9972a1fbf8e19de22791ed1972be1cc414431db8ca1b63cd0a38",
+        "nonclaims": [
+          "fixed-mass HMC tuning-budget ladder only",
+          "acceptance is a tuning-screen diagnostic only",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default sampler readiness claim",
+          "no empirical validity claim",
+          "no GPU or XLA readiness claim"
+        ],
+        "passed": true,
+        "repair_config_available": false,
+        "repair_config_hash": null,
+        "repair_config_payload_exposed": false,
+        "reports_posterior_convergence": false,
+        "rounds": [
+          {
+            "budget": 16,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "acceptance_repair",
+            "continuation_vetoes": [],
+            "diagnostic_role": "acceptance_repair_trigger",
+            "hard_vetoes": [],
+            "initial_step_size": 0.2,
+            "promotion_vetoes": [],
+            "repair_triggers": [
+              "acceptance_outside_pass_band_inside_repair_band"
+            ],
+            "round_index": 0,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 10,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81002
+              ],
+              "step_size": 0.7855437551328843,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.7963845791229793,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.7963845791229793,
+              "directional_step_repair": {
+                "acceptance_band": [
+                  0.65,
+                  0.75
+                ],
+                "acceptance_rate": 0.7963845791229793,
+                "acceptance_relation": "above_acceptance_band",
+                "bracket_reset": null,
+                "bracketed": false,
+                "high_acceptance_step_lower_bound": 0.7855437551328843,
+                "low_acceptance_step_upper_bound": null,
+                "next_step_size": 1.5710875102657686,
+                "previous_initial_step_size": 0.2,
+                "private_handoff_only": true,
+                "public_progress_exposes_step": false,
+                "repair_action": "increase_step_fixed_screen",
+                "repair_band": [
+                  0.55,
+                  0.85
+                ],
+                "reports_posterior_convergence": false,
+                "schema": "bayesfilter.fixed_mass_directional_step_repair.v1",
+                "screened_step_size": 0.7855437551328843,
+                "step_ceiling_applied": false,
+                "step_repair_max_step_size": null,
+                "unclamped_next_step_size": 1.5710875102657686
+              },
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 3.9879623105829625,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 3.9879623105829625,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.31426241284244,
+                "min_finite": -126.2130806954214,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.7963845791229793,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.8046875,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 3.9879623105829625,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 3.9879623105829625,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.31426241284244,
+                "target_log_prob_min_finite": -122.54086503899855,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 7.041034477995709,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81002
+            ],
+            "tune_config_payload": {
+              "adaptation_policy": "dual_averaging_step_size",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 10,
+              "num_results": 16,
+              "seed": [
+                20260718,
+                81001
+              ],
+              "step_size": 0.2,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "dual_averaging_step_size",
+                "diagnostic_role": "fixed-mass dual-averaging diagnostic only",
+                "enabled": true,
+                "implemented": true,
+                "label": "fixed_mass_dual_averaging",
+                "nonclaims": [
+                  "fixed-mass dual-averaging diagnostic only",
+                  "mass matrix is supplied/fixed; no windowed mass adaptation claim",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 16,
+                "source": "bayesfilter.hnn_neutra_native_tuning_correction",
+                "target_accept_prob": 0.7
+              },
+              "use_xla": true
+            },
+            "tune_diagnostics": {
+              "acceptance_rate": 0.8234831774387965,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.8234831774387965,
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": 0.7855437551328843,
+              "final_step_size_finite": true,
+              "finite_sample_count": 64,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 64,
+                "max_abs_finite": 3.383080982922719,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 64
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 3.383080982922719,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": 16,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 64,
+                "max_finite": -114.35062328678684,
+                "min_finite": -120.70007379144549,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 64
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.8234831774387965,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.78125,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "final_step_size": 0.7855437551328843,
+                "final_step_size_finite": true,
+                "finite_sample_count": 64,
+                "log_accept_ratio_finite_count": 64,
+                "log_accept_ratio_max_abs_finite": 3.383080982922719,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 3.383080982922719,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "num_adaptation_steps": 16,
+                "sample_shape": [
+                  16,
+                  4,
+                  6
+                ],
+                "target_accept_prob": 0.7,
+                "target_log_prob_finite_count": 64,
+                "target_log_prob_max_finite": -114.35062328678684,
+                "target_log_prob_min_finite": -120.00210720736791,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 7.581904627033509,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "step_stability": {
+                "previous_step": 0.2,
+                "relative_change": 2.9277187756644216,
+                "rtol": null,
+                "tuned_step": 0.7855437551328843,
+                "within_rtol": null
+              },
+              "target_accept_prob": 0.7,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 64,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 64
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "num_adaptation_steps",
+                  "proposed_target_log_prob",
+                  "step_size",
+                  "target_accept_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "tune_seed": [
+              20260718,
+              81001
+            ],
+            "tuned_step_size": 0.7855437551328843
+          },
+          {
+            "budget": 32,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "acceptance_repair",
+            "continuation_vetoes": [],
+            "diagnostic_role": "acceptance_repair_trigger",
+            "hard_vetoes": [],
+            "initial_step_size": 1.5710875102657686,
+            "promotion_vetoes": [],
+            "repair_triggers": [
+              "screen_acceptance_below_repair_band"
+            ],
+            "round_index": 1,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 10,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81003
+              ],
+              "step_size": 1.5710875102657686,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.144385072640186,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.14438507264018596,
+              "directional_step_repair": {
+                "acceptance_band": [
+                  0.65,
+                  0.75
+                ],
+                "acceptance_rate": 0.144385072640186,
+                "acceptance_relation": "below_acceptance_band",
+                "bracket_reset": null,
+                "bracketed": true,
+                "high_acceptance_step_lower_bound": 0.7855437551328843,
+                "low_acceptance_step_upper_bound": 1.5710875102657686,
+                "next_step_size": 1.1109266323464146,
+                "previous_initial_step_size": 1.5710875102657686,
+                "private_handoff_only": true,
+                "public_progress_exposes_step": false,
+                "repair_action": "bracketed_log_step_midpoint_fixed_screen",
+                "repair_band": [
+                  0.55,
+                  0.85
+                ],
+                "reports_posterior_convergence": false,
+                "schema": "bayesfilter.fixed_mass_directional_step_repair.v1",
+                "screened_step_size": 1.5710875102657686,
+                "step_ceiling_applied": false,
+                "step_repair_max_step_size": null,
+                "unclamped_next_step_size": 1.1109266323464146
+              },
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 1121.0229098462385,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 1121.0229098462385,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.33417735911546,
+                "min_finite": -1190.0143038027818,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.14438507264018596,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.1953125,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 1121.0229098462385,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 1121.0229098462385,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.33417735911546,
+                "target_log_prob_min_finite": -123.50269043832799,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 7.07801187003497,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81003
+            ],
+            "tune_config_payload": null,
+            "tune_diagnostics": {
+              "acceptance_rate": null,
+              "adaptation_skipped_for_directional_repair_screen": true,
+              "final_step_size": 1.5710875102657686,
+              "final_step_size_finite": true,
+              "log_accept_ratio_finite": null,
+              "num_adaptation_steps": 0,
+              "reports_posterior_convergence": false,
+              "samples_all_finite": null,
+              "target_log_prob_finite": null
+            },
+            "tune_seed": [
+              20260718,
+              81002
+            ],
+            "tuned_step_size": 1.5710875102657686
+          },
+          {
+            "budget": 64,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "acceptance_repair",
+            "continuation_vetoes": [],
+            "diagnostic_role": "acceptance_repair_trigger",
+            "hard_vetoes": [],
+            "initial_step_size": 1.1109266323464146,
+            "promotion_vetoes": [],
+            "repair_triggers": [
+              "acceptance_outside_pass_band_inside_repair_band"
+            ],
+            "round_index": 2,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 10,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81004
+              ],
+              "step_size": 1.1109266323464146,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.5620296664902512,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.5620296664902513,
+              "directional_step_repair": {
+                "acceptance_band": [
+                  0.65,
+                  0.75
+                ],
+                "acceptance_rate": 0.5620296664902512,
+                "acceptance_relation": "below_acceptance_band",
+                "bracket_reset": null,
+                "bracketed": true,
+                "high_acceptance_step_lower_bound": 0.7855437551328843,
+                "low_acceptance_step_upper_bound": 1.1109266323464146,
+                "next_step_size": 0.9341742227499813,
+                "previous_initial_step_size": 1.1109266323464146,
+                "private_handoff_only": true,
+                "public_progress_exposes_step": false,
+                "repair_action": "bracketed_log_step_midpoint_fixed_screen",
+                "repair_band": [
+                  0.55,
+                  0.85
+                ],
+                "reports_posterior_convergence": false,
+                "schema": "bayesfilter.fixed_mass_directional_step_repair.v1",
+                "screened_step_size": 1.1109266323464146,
+                "step_ceiling_applied": false,
+                "step_repair_max_step_size": null,
+                "unclamped_next_step_size": 0.9341742227499813
+              },
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 25.92317629517903,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 25.92317629517903,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.33689347275397,
+                "min_finite": -131.7356770831609,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.5620296664902513,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.5859375,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 25.92317629517903,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 25.92317629517903,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.33689347275397,
+                "target_log_prob_min_finite": -123.59874415242727,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 6.842593697016127,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81004
+            ],
+            "tune_config_payload": null,
+            "tune_diagnostics": {
+              "acceptance_rate": null,
+              "adaptation_skipped_for_directional_repair_screen": true,
+              "final_step_size": 1.1109266323464146,
+              "final_step_size_finite": true,
+              "log_accept_ratio_finite": null,
+              "num_adaptation_steps": 0,
+              "reports_posterior_convergence": false,
+              "samples_all_finite": null,
+              "target_log_prob_finite": null
+            },
+            "tune_seed": [
+              20260718,
+              81003
+            ],
+            "tuned_step_size": 1.1109266323464146
+          },
+          {
+            "budget": 128,
+            "callback_result": {
+              "continuation_vetoes": [],
+              "diagnostics": {},
+              "hard_vetoes": [],
+              "promotion_vetoes": [],
+              "repair_triggers": []
+            },
+            "classification": "passed",
+            "continuation_vetoes": [],
+            "diagnostic_role": "tuning_screen_promotion_only",
+            "hard_vetoes": [],
+            "initial_step_size": 0.9341742227499813,
+            "promotion_vetoes": [],
+            "repair_triggers": [],
+            "round_index": 3,
+            "screen_config_payload": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "chain_execution_mode": "tf_function",
+              "num_burnin_steps": 16,
+              "num_leapfrog_steps": 10,
+              "num_results": 32,
+              "seed": [
+                20260718,
+                81005
+              ],
+              "step_size": 0.9341742227499813,
+              "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+              "target_status_trace_policy": "none",
+              "trace_policy": "standard",
+              "tuning_policy": {
+                "adaptation_policy": "fixed_kernel_no_adaptation",
+                "diagnostic_role": "fixed-kernel bounded HMC screen",
+                "enabled": false,
+                "implemented": true,
+                "label": "fixed_kernel_screen",
+                "nonclaims": [
+                  "fixed-kernel screen only",
+                  "no posterior convergence claim",
+                  "no sampler superiority claim",
+                  "no default adaptation readiness claim"
+                ],
+                "num_adaptation_steps": 0,
+                "source": "reviewed_stage_7_phase_3",
+                "target_accept_prob": null
+              },
+              "use_xla": true
+            },
+            "screen_diagnostics": {
+              "acceptance_rate": 0.7494786564824646,
+              "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+              "binary_acceptance_rate": 0.7494786564824647,
+              "divergence_count": null,
+              "divergence_status": "not_exposed_by_neural_force_kernel",
+              "final_step_size": null,
+              "final_step_size_finite": null,
+              "finite_sample_count": 128,
+              "log_accept_ratio_diagnostic_source": "trace",
+              "log_accept_ratio_finite": true,
+              "log_accept_ratio_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_abs_finite": 10.8405540769839,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "log_acceptance_correction_diagnostic_source": "missing",
+              "log_acceptance_correction_finite": null,
+              "log_acceptance_correction_summary": null,
+              "max_abs_log_accept_ratio": 10.8405540769839,
+              "nonfinite_sample_count": 0,
+              "num_adaptation_steps": null,
+              "proposed_target_log_prob_diagnostic_source": "trace",
+              "proposed_target_log_prob_finite": true,
+              "proposed_target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "max_finite": -114.06538452798699,
+                "min_finite": -129.59399682169467,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "raw_diagnostics": {
+                "acceptance_rate": 0.7494786564824647,
+                "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+                "binary_acceptance_rate": 0.734375,
+                "divergence_count": null,
+                "divergence_status": "not_exposed_by_neural_force_kernel",
+                "finite_sample_count": 128,
+                "log_accept_ratio_finite_count": 128,
+                "log_accept_ratio_max_abs_finite": 10.8405540769839,
+                "log_accept_ratio_nonfinite_count": 0,
+                "maximum_absolute_delta_h": 10.8405540769839,
+                "native_divergence_status": "not_exposed_by_neural_force_kernel",
+                "nonfinite_sample_count": 0,
+                "sample_shape": [
+                  32,
+                  4,
+                  6
+                ],
+                "target_log_prob_finite_count": 128,
+                "target_log_prob_max_finite": -114.06538452798699,
+                "target_log_prob_min_finite": -120.20451555373539,
+                "target_log_prob_nonfinite_count": 0,
+                "trace_policy": "standard"
+              },
+              "runtime_metadata": {
+                "chain_execution_mode": "tf_function",
+                "coordinate_route": "native_fixed_mass_affine",
+                "endpoint_only_exact_value": true,
+                "exact_filter_gradient_inside_leapfrog": false,
+                "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+                "jit_compile": true,
+                "mass_coordinate_center_shape": [
+                  6
+                ],
+                "mass_coordinate_factor_shape": [
+                  6,
+                  6
+                ],
+                "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+                "sample_chain_call_s": 6.809082603023853,
+                "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+                "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+                "trace_unavailability": {}
+              },
+              "samples_all_finite": true,
+              "target_accept_prob": null,
+              "target_log_prob_diagnostic_source": "trace",
+              "target_log_prob_finite": true,
+              "target_log_prob_summary": {
+                "available": true,
+                "finite_count": 128,
+                "nonfinite_count": 0,
+                "source": "trace",
+                "total_count": 128
+              },
+              "target_status_telemetry": null,
+              "trace_policy": "standard",
+              "trace_summary": {
+                "trace_keys": [
+                  "delta_h",
+                  "finite_status",
+                  "is_accepted",
+                  "log_accept_ratio",
+                  "proposed_target_log_prob",
+                  "target_log_prob"
+                ],
+                "trace_unavailability": {}
+              }
+            },
+            "screen_seed": [
+              20260718,
+              81005
+            ],
+            "tune_config_payload": null,
+            "tune_diagnostics": {
+              "acceptance_rate": null,
+              "adaptation_skipped_for_directional_repair_screen": true,
+              "final_step_size": 0.9341742227499813,
+              "final_step_size_finite": true,
+              "log_accept_ratio_finite": null,
+              "num_adaptation_steps": 0,
+              "reports_posterior_convergence": false,
+              "samples_all_finite": null,
+              "target_log_prob_finite": null
+            },
+            "tune_seed": [
+              20260718,
+              81004
+            ],
+            "tuned_step_size": 0.9341742227499813
+          }
+        ],
+        "runner_route_summary": {
+          "active_route": "single_use_or_injected_runner",
+          "distinct_static_runner_contract_count": 0,
+          "distinct_static_runner_contracts": [],
+          "fallback_status": "inactive_reusable_route",
+          "fallback_to_single_use_runner": false,
+          "injected_runner_call_count": 5,
+          "reusable_runner_build_count": 0,
+          "round_route_events": [
+            {
+              "budget": 16,
+              "call_config_hash": "184e85ec73e8e7e41234b2a846389fe01a4a2f0ec5d8c2ded0d1d062e0e1f23a",
+              "role": "tune",
+              "round_index": 0,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 16,
+              "call_config_hash": "b24f9864847c52f02f2293f7eef64f77d797d8b71d1c10489b2f3203ccad024d",
+              "role": "screen",
+              "round_index": 0,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 32,
+              "call_config_hash": "75e75fc274e29f9ad8cf245e15100629a156c232b1ea522cec1ea1c3a8b2b480",
+              "role": "repair_screen",
+              "round_index": 1,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 64,
+              "call_config_hash": "2f9c8f601963e1205e3d7ecdfd0a2fa8e9663a5e8a8a12453371594b1b740488",
+              "role": "repair_screen",
+              "round_index": 2,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            },
+            {
+              "budget": 128,
+              "call_config_hash": "77341611e272e68da20b7810a984347f0b79a155d38a7ce31c09f6220045734b",
+              "role": "repair_screen",
+              "round_index": 3,
+              "route": "single_use_or_injected_runner",
+              "runner_reused": false,
+              "static_contract_hash": null,
+              "used_single_use_runner": false
+            }
+          ],
+          "route_nonclaims": [
+            "route telemetry is engineering evidence only",
+            "does not change selected step or HMC kernel semantics",
+            "does not establish posterior convergence or sampler superiority"
+          ],
+          "semantic_source": "run_fixed_mass_hmc_tuning_budget_ladder",
+          "single_use_build_count": 0
+        },
+        "schema": "bayesfilter.fixed_mass_hmc_tuning_budget_ladder.v1",
+        "selected_config_hash": "c9960953f4fba2d4b74b8ddab3ebdfa26024f788242ae1bfa074d63652f63f13",
+        "selected_config_payload": {
+          "acceptance_band": [
+            0.65,
+            0.75
+          ],
+          "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+          "hmc_adapter_signature": "62819b6770a44b2ae2e2e5c88b05657d808f9d4690a270fa584758ee8d983992",
+          "mass_artifact_signature": "9e32548127ea9972a1fbf8e19de22791ed1972be1cc414431db8ca1b63cd0a38",
+          "nonclaims": [
+            "fixed-mass HMC tuning-budget ladder only",
+            "acceptance is a tuning-screen diagnostic only",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no default sampler readiness claim",
+            "no empirical validity claim",
+            "no GPU or XLA readiness claim"
+          ],
+          "num_leapfrog_steps": 10,
+          "repair_band": [
+            0.55,
+            0.85
+          ],
+          "runtime": "bayesfilter.inference.run_fixed_mass_hmc_tuning_budget_ladder",
+          "screen_config_payload": {
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "chain_execution_mode": "tf_function",
+            "num_burnin_steps": 16,
+            "num_leapfrog_steps": 10,
+            "num_results": 32,
+            "seed": [
+              20260718,
+              81005
+            ],
+            "step_size": 0.9341742227499813,
+            "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+            "target_status_trace_policy": "none",
+            "trace_policy": "standard",
+            "tuning_policy": {
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "enabled": false,
+              "implemented": true,
+              "label": "fixed_kernel_screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ],
+              "num_adaptation_steps": 0,
+              "source": "reviewed_stage_7_phase_3",
+              "target_accept_prob": null
+            },
+            "use_xla": true
+          },
+          "screen_seed": [
+            20260718,
+            81005
+          ],
+          "selected_budget": 128,
+          "step_size": 0.9341742227499813,
+          "target_accept_prob": 0.7,
+          "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+          "target_status_trace_policy": "none",
+          "tune_config_payload": null,
+          "tune_seed": [
+            20260718,
+            81004
+          ]
+        },
+        "selected_round_index": 3,
+        "target_dimension": 6
+      },
+      "ladder_artifact_hash": "9b8597bb565eb48c915f6d8f950cdabbbab6af86d022cd934cfbc9ba55ce7b9f",
+      "num_leapfrog_steps": 10,
+      "passed": false,
+      "repair_triggers": [],
+      "reports_posterior_convergence": false,
+      "selected_step_size": 0.9341742227499813,
+      "verification_config_payload": {
+        "adaptation_policy": "fixed_kernel_no_adaptation",
+        "chain_execution_mode": "tf_function",
+        "num_burnin_steps": 100,
+        "num_leapfrog_steps": 10,
+        "num_results": 1000,
+        "seed": [
+          20260718,
+          81003
+        ],
+        "step_size": 0.9341742227499813,
+        "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+        "target_status_trace_policy": "none",
+        "trace_policy": "standard",
+        "tuning_policy": {
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "diagnostic_role": "fixed-kernel bounded HMC screen",
+          "enabled": false,
+          "implemented": true,
+          "label": "fixed_kernel_screen",
+          "nonclaims": [
+            "fixed-kernel screen only",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no default adaptation readiness claim"
+          ],
+          "num_adaptation_steps": 0,
+          "source": "reviewed_stage_7_phase_3",
+          "target_accept_prob": null
+        },
+        "use_xla": true
+      },
+      "verification_diagnostics": {
+        "acceptance_rate": 0.7422276547653094,
+        "binary_acceptance_rate": 0.74275,
+        "diagnostic_context": "fixed_transport_fresh_verification",
+        "divergence_count": null,
+        "divergence_status": "not_exposed_by_neural_force_kernel",
+        "final_step_size": null,
+        "final_step_size_finite": null,
+        "finite_sample_count": 4000,
+        "initial_state_shape": [
+          4,
+          6
+        ],
+        "log_accept_ratio_finite": true,
+        "max_abs_log_accept_ratio": 34.43982215979894,
+        "modern_rank_normalized_verification": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 6,
+          "folded_rank_normalized_split_rhat": [
+            1.018073002715118,
+            1.0221835971483948,
+            1.0103263769587136,
+            1.0237235120155357,
+            1.0050080430358155,
+            1.0021596193126898
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0237235120155357,
+          "max_folded_rank_normalized_split_rhat": 1.0237235120155357,
+          "max_rank_normalized_split_rhat": 1.0028616710642917,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 6,
+          "passed": false,
+          "rank_normalized_split_rhat": [
+            0.9992554909170158,
+            0.9998847617182652,
+            0.998602583054138,
+            0.9983127555027999,
+            1.0018712432270889,
+            1.0028616710642917
+          ],
+          "rhat": [
+            1.018073002715118,
+            1.0221835971483948,
+            1.0103263769587136,
+            1.0237235120155357,
+            1.0050080430358155,
+            1.0028616710642917
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.01,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "modern_verification_coordinate_system": "raw_target_coordinates",
+        "modern_verification_parameter_names": [
+          "r_source_probit",
+          "K_source_probit",
+          "a_source_probit",
+          "s_source_probit",
+          "u_source_probit",
+          "v_source_probit"
+        ],
+        "nonclaims": [
+          "fixed trained transport HMC tuning only",
+          "transport is not trained or adapted by this tuner",
+          "identity z-mass policy only",
+          "no windowed mass adaptation claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no external-client scientific claim"
+        ],
+        "nonfinite_sample_count": 0,
+        "probe_only": false,
+        "rank2_chain_batched_initial_state": true,
+        "raw_diagnostics": {
+          "acceptance_rate": 0.7422276547653094,
+          "acceptance_rate_semantics": "mean_metropolis_acceptance_probability",
+          "binary_acceptance_rate": 0.74275,
+          "divergence_count": null,
+          "divergence_status": "not_exposed_by_neural_force_kernel",
+          "finite_sample_count": 4000,
+          "log_accept_ratio_finite_count": 4000,
+          "log_accept_ratio_max_abs_finite": 34.43982215979894,
+          "log_accept_ratio_nonfinite_count": 0,
+          "maximum_absolute_delta_h": 34.43982215979894,
+          "native_divergence_status": "not_exposed_by_neural_force_kernel",
+          "nonfinite_sample_count": 0,
+          "sample_shape": [
+            1000,
+            4,
+            6
+          ],
+          "target_log_prob_finite_count": 4000,
+          "target_log_prob_max_finite": -113.90600389171078,
+          "target_log_prob_min_finite": -125.01293789999265,
+          "target_log_prob_nonfinite_count": 0,
+          "trace_policy": "standard"
+        },
+        "runtime_metadata": {
+          "chain_execution_mode": "tf_function",
+          "coordinate_route": "direct_fixed_transport_z",
+          "endpoint_only_exact_value": true,
+          "exact_filter_gradient_inside_leapfrog": false,
+          "force_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+          "jit_compile": true,
+          "mass_coordinate_center_shape": [
+            6
+          ],
+          "mass_coordinate_factor_shape": [
+            6,
+            6
+          ],
+          "runtime": "bayesfilter.neural_force_tfp_transition_kernel",
+          "sample_chain_call_s": 38.81397893896792,
+          "target_identity": "53ee1e39d61405bbb82ae8219186ef2c4908e8e1f7b261c0a1b22050c45505bd",
+          "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+          "trace_unavailability": {}
+        },
+        "sample_shape": [
+          1000,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "target_accept_prob": null,
+        "target_log_prob_finite": true,
+        "target_status_telemetry": null,
+        "trace_policy": "standard"
+      }
+    }
+  ],
+  "config": {
+    "acceptance_band": [
+      0.65,
+      0.75
+    ],
+    "budget_schedule": [
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
+    "chain_count": 4,
+    "chain_execution_mode": "tf_function",
+    "fixed_grid_base_step_size_candidates": [],
+    "fixed_grid_fallback_acceptance_max": 0.85,
+    "fixed_grid_max_attempts": 5,
+    "fixed_grid_num_leapfrog_steps": null,
+    "fixed_grid_scale_candidates": [],
+    "initial_step_size": 0.2,
+    "leapfrog_grid": [
+      6,
+      10
+    ],
+    "maximum_absolute_energy_error": 1000.0,
+    "output_filename": "native_tuning_result.json",
+    "proposal_dynamics_identity": "3c5df7a8b72f7f603804a3a22c64010c3e6cf7cabf75d4902c7095f52a6a9208",
+    "repair_band": [
+      0.55,
+      0.85
+    ],
+    "require_modern_rank_normalized_verification": true,
+    "screen_num_burnin_steps": 16,
+    "screen_num_results": 32,
+    "screen_seed_base": [
+      20260718,
+      81001
+    ],
+    "source": "bayesfilter.hnn_neutra_native_tuning_correction",
+    "step_repair_factor": 2.0,
+    "step_repair_min_directional_factor": 1.25,
+    "target_accept_prob": 0.7,
+    "target_scope": "PP-UKF:fixed_neutra_native_tuning",
+    "target_status_trace_policy": "none",
+    "tune_num_results": 16,
+    "tune_seed_base": [
+      20260718,
+      81000
+    ],
+    "use_xla": true,
+    "verification_min_retained_results_per_chain": 1000,
+    "verification_num_burnin_steps": 100,
+    "verification_num_results": 1000,
+    "verification_rhat_max": 1.01,
+    "verification_seed_base": [
+      20260718,
+      81002
+    ]
+  },
+  "diagnostic_roles": {
+    "acceptance": "promotion_screen_and_repair_trigger",
+    "base_value_score_authority": "hard_veto_if_gradient_tape_fallback",
+    "candidate_ladder": "step_tuning_screen",
+    "fixed_transport_manifest_hash": "artifact_identity",
+    "fresh_verification": "handoff_promotion_screen",
+    "identity_z_mass_policy": "hard_boundary",
+    "modern_rank_folded_rhat": "required_when_configured_handoff_promotion_screen",
+    "runtime": "explanatory_diagnostic"
+  },
+  "final_kernel_hash": null,
+  "final_kernel_payload": null,
+  "final_status": "no_viable_candidate",
+  "fixed_grid_scale_selection": null,
+  "fixed_transport_manifest_hash": "c6c907b5559c584b5d8b614e49a146c2e7ef907826fe0ebf601a474f1cf3914f",
+  "hard_vetoes": [
+    "verification_modern_rank_folded_rhat_failed"
+  ],
+  "identity_z_mass_artifact_payload": {
+    "adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d",
+    "artifact_type": "bayesfilter_precomputed_mass_artifact",
+    "covariance": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "covariance_source": "fixed_identity_z",
+    "dimension": 6,
+    "eigen_summary": {
+      "condition_number": 1.0,
+      "eigenvalues": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "finite": true,
+      "max": 1.0,
+      "min": 1.0,
+      "positive": true
+    },
+    "factor": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "factor_orientation": "row_right_transpose",
+    "include_arrays": true,
+    "log_jacobian_convention": "constant_omitted",
+    "matrix_used_for_square_root": "identity_z",
+    "nonclaims": [
+      "fixed identity mass in trained-transport z coordinates",
+      "no residual mass adaptation claim",
+      "no MAP quality claim",
+      "no posterior convergence claim"
+    ],
+    "position": [
+      0.7953225489753536,
+      0.7598477316963865,
+      -0.2848903769776855,
+      -0.4607388676918712,
+      0.07523236380232563,
+      1.8621927109933565
+    ],
+    "position_role": "fixed_neutra_initial_z",
+    "precision_eigen_summary": null,
+    "reconstruction_atol": 1e-10,
+    "reconstruction_rtol": 1e-10,
+    "regularization_report": {
+      "regularization_applied": false
+    },
+    "schema_version": 1,
+    "source": "bayesfilter.fixed_transport_hmc_tuning.identity_z_mass"
+  },
+  "identity_z_mass_artifact_signature": "9e32548127ea9972a1fbf8e19de22791ed1972be1cc414431db8ca1b63cd0a38",
+  "nonclaims": [
+    "fixed trained transport HMC tuning only",
+    "transport is not trained or adapted by this tuner",
+    "identity z-mass policy only",
+    "no windowed mass adaptation claim",
+    "no posterior convergence claim",
+    "no sampler superiority claim",
+    "no default-readiness claim",
+    "no external-client scientific claim"
+  ],
+  "passed": false,
+  "repair_triggers": [],
+  "reports_default_readiness": false,
+  "reports_external_client_scientific_claim": false,
+  "reports_posterior_convergence": false,
+  "reports_sampler_superiority": false,
+  "schema": "bayesfilter.fixed_transport_hmc_kernel_tuning_result.v1",
+  "selected_candidate_index": null,
+  "target_dimension": 6,
+  "transformed_adapter_signature": "64384763915ceeca2d0e1b21267d6dbeb24bb3d69c6ab8282fea08a0f771867d"
+}

@@ -1,0 +1,3150 @@
+{
+  "cell_id": "PP-SGQF",
+  "claim_scope": "six_physical_posterior_means_only",
+  "comparator_decision": "ADMIT_PP_SGQF_PLAIN_HMC_COMPARATOR",
+  "comparator_reference": {
+    "artifact_hashes_sha256": "9b47c80c7574551ce01ed5a9f5e2f739f9cc9dad8723a4ad71ab4a769d7a41ca",
+    "result_sha256": "015348e162d35cb062be274eb4b420ee881eb364473b5b7ce5acfdca7c0192ec",
+    "retained_metadata": {
+      "byte_count": 706,
+      "file_sha256": "2c8cfa9a346c9341af72ffbda57a3a5621ba6d164bd526f73b5d99aa90d8c618",
+      "path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/plain-hmc-laplace/attempt-01-20260715T170000Z/samples/retained/cumulative/metadata.json"
+    },
+    "root": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/plain-hmc-laplace/attempt-01-20260715T170000Z"
+  },
+  "compiled_canary": {
+    "jit_compile": true,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0",
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "passed": true,
+    "target_status_all_valid": true
+  },
+  "completed": true,
+  "decision": "NEUTRA_CONFIRMED",
+  "decision_table": {
+    "main_uncertainty": "single_fixture_mean_level_comparison",
+    "next_justified_action": "close_cell_or_investigate_terminal_classification",
+    "not_concluded": [
+      "same-target physical-posterior-mean agreement only",
+      "no full-distribution, covariance, tail, or mode equivalence claim",
+      "acceptance and short-probe diagnostics are nomination or explanatory only",
+      "no filter exactness, superiority, calibration, robustness, or readiness claim"
+    ],
+    "primary_criterion": "sampler_convergence_and_simultaneous_physical_mean_equivalence",
+    "primary_status": true,
+    "veto_status": "NEUTRA_CONFIRMED"
+  },
+  "elapsed_seconds": 2510.3347743049962,
+  "final_joint_diagnostic": {
+    "convergence": {
+      "chain_count": 4,
+      "definitions": {
+        "autocorrelation_truncation": "TFP initial positive pairs",
+        "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+        "quantile_interpolation": "linear",
+        "rank_transform": "Blom average-rank normal score",
+        "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+        "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+      },
+      "diagnostics_all_finite": true,
+      "draw_count_per_chain": 4000,
+      "hard_vetoes": [],
+      "input_all_finite": true,
+      "max_rhat": 1.000102781504111,
+      "min_bulk_ess": 28349.203994882984,
+      "min_tail_ess": 14706.40656919484,
+      "nonclaims": [
+        "all-parameter HMC convergence screen only",
+        "no posterior recovery claim",
+        "no sampler superiority claim",
+        "no production or default readiness claim"
+      ],
+      "parameter_count": 6,
+      "parameter_diagnostics": [
+        {
+          "bulk_ess": 30278.023677642945,
+          "folded_rank_normalized_split_rhat": 1.000102781504111,
+          "lower_tail_ess": 15897.924608375057,
+          "parameter": "r_source_probit",
+          "passed": true,
+          "rank_normalized_split_rhat": 0.9998151007875987,
+          "rhat": 1.000102781504111,
+          "tail_ess": 15856.846792816501,
+          "upper_tail_ess": 15856.846792816501
+        },
+        {
+          "bulk_ess": 32969.25157842197,
+          "folded_rank_normalized_split_rhat": 0.9998549679347394,
+          "lower_tail_ess": 15460.913194050474,
+          "parameter": "K_source_probit",
+          "passed": true,
+          "rank_normalized_split_rhat": 0.9999728364127246,
+          "rhat": 0.9999728364127246,
+          "tail_ess": 15460.913194050474,
+          "upper_tail_ess": 16695.575680886024
+        },
+        {
+          "bulk_ess": 28349.203994882984,
+          "folded_rank_normalized_split_rhat": 0.9995674586957312,
+          "lower_tail_ess": 15559.381223541799,
+          "parameter": "a_source_probit",
+          "passed": true,
+          "rank_normalized_split_rhat": 0.9998998866844596,
+          "rhat": 0.9998998866844596,
+          "tail_ess": 15559.381223541799,
+          "upper_tail_ess": 16042.518914104045
+        },
+        {
+          "bulk_ess": 30277.167571592683,
+          "folded_rank_normalized_split_rhat": 1.0000571439858825,
+          "lower_tail_ess": 15354.580350223581,
+          "parameter": "s_source_probit",
+          "passed": true,
+          "rank_normalized_split_rhat": 0.9997366900033436,
+          "rhat": 1.0000571439858825,
+          "tail_ess": 14718.553057257503,
+          "upper_tail_ess": 14718.553057257503
+        },
+        {
+          "bulk_ess": 32623.420688884507,
+          "folded_rank_normalized_split_rhat": 0.9999544687329537,
+          "lower_tail_ess": 16597.638858627903,
+          "parameter": "u_source_probit",
+          "passed": true,
+          "rank_normalized_split_rhat": 0.9999285491054078,
+          "rhat": 0.9999544687329537,
+          "tail_ess": 15737.623959861126,
+          "upper_tail_ess": 15737.623959861126
+        },
+        {
+          "bulk_ess": 29937.196942916682,
+          "folded_rank_normalized_split_rhat": 1.0000398378437694,
+          "lower_tail_ess": 14706.40656919484,
+          "parameter": "v_source_probit",
+          "passed": true,
+          "rank_normalized_split_rhat": 0.9999616076289165,
+          "rhat": 1.0000398378437694,
+          "tail_ess": 14706.40656919484,
+          "upper_tail_ess": 15010.533976579864
+        }
+      ],
+      "passed": true,
+      "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+      "split_chain_count": 8,
+      "split_draw_count_per_chain": 2000,
+      "thresholds": {
+        "bulk_ess_min": 1000.0,
+        "rhat_max": 1.01,
+        "tail_ess_min": 400.0
+      }
+    },
+    "passed": true,
+    "physical_mean_agreement": {
+      "candidate_correlation": [
+        [
+          1.0,
+          -0.1614212297572308,
+          -0.022946550381585017,
+          0.4901640041471567,
+          -0.01266581155397248,
+          -0.02073042074871118
+        ],
+        [
+          -0.1614212297572308,
+          1.0,
+          -0.007312009868287801,
+          0.21058245849508944,
+          0.01628313988206021,
+          0.00786814734872584
+        ],
+        [
+          -0.022946550381585017,
+          -0.007312009868287801,
+          0.9999999999999998,
+          0.02787110082345712,
+          0.0038409576573382484,
+          -0.02509825289449302
+        ],
+        [
+          0.4901640041471567,
+          0.21058245849508944,
+          0.02787110082345712,
+          0.9999999999999999,
+          -0.004572155629950481,
+          0.06959357332771311
+        ],
+        [
+          -0.01266581155397248,
+          0.01628313988206021,
+          0.0038409576573382484,
+          -0.004572155629950481,
+          1.0000000000000002,
+          0.911299042522296
+        ],
+        [
+          -0.02073042074871118,
+          0.00786814734872584,
+          -0.02509825289449302,
+          0.06959357332771311,
+          0.911299042522296,
+          1.0
+        ]
+      ],
+      "candidate_quantiles": [
+        [
+          0.45396718278734177,
+          113.6132894817633,
+          20.50587621573462,
+          0.1116754293674678,
+          0.04046334468932207,
+          0.12931354915756618
+        ],
+        [
+          0.5317745594101321,
+          115.20924238271255,
+          25.097622520942007,
+          0.23810777024753027,
+          0.43618052210853625,
+          0.49008432868060625
+        ],
+        [
+          0.6261284376628716,
+          116.84709750963168,
+          29.552705808971623,
+          0.6208954042040626,
+          0.9265884566608983,
+          0.8941488169672515
+        ]
+      ],
+      "claim_scope": "six_physical_posterior_means_only",
+      "comparator_correlation": [
+        [
+          1.0,
+          -0.1971179225471505,
+          -0.010693538669214986,
+          0.4847022867227485,
+          0.006092425551339497,
+          0.005227366807716922
+        ],
+        [
+          -0.1971179225471505,
+          1.0000000000000002,
+          -0.012888664751072863,
+          0.18048249840009192,
+          -0.015504977613431002,
+          -0.01854349739998412
+        ],
+        [
+          -0.010693538669214986,
+          -0.012888664751072863,
+          1.0,
+          0.02409262166255417,
+          -0.00505417961333903,
+          -0.044092206336688325
+        ],
+        [
+          0.4847022867227485,
+          0.18048249840009192,
+          0.02409262166255417,
+          1.0,
+          -0.02168702896556827,
+          0.06136937415114757
+        ],
+        [
+          0.006092425551339497,
+          -0.015504977613431002,
+          -0.00505417961333903,
+          -0.02168702896556827,
+          1.0,
+          0.915005205937729
+        ],
+        [
+          0.005227366807716922,
+          -0.01854349739998412,
+          -0.044092206336688325,
+          0.06136937415114757,
+          0.915005205937729,
+          1.0000000000000002
+        ]
+      ],
+      "comparator_quantiles": [
+        [
+          0.4538342532513063,
+          113.62255532248366,
+          20.522931589992307,
+          0.11114156294777695,
+          0.041956977452639405,
+          0.1331488349703291
+        ],
+        [
+          0.5319440496685908,
+          115.20040659371324,
+          25.10108706302023,
+          0.2396730534907811,
+          0.4371179593193377,
+          0.4877310005319941
+        ],
+        [
+          0.6257902356034991,
+          116.86590215149111,
+          29.490896212166273,
+          0.626225046467333,
+          0.9256151282444891,
+          0.892057191125928
+        ]
+      ],
+      "critical_value": 2.638257273476751,
+      "distributional_diagnostics_role": "explanatory_only_not_equivalence_gate",
+      "familywise_alpha": 0.05,
+      "margin_definition": "0.10_times_same_estimand_plain_hmc_posterior_sd",
+      "margin_sd_fraction": 0.1,
+      "mean_mcse_definition": "posterior_sample_sd_divided_by_sqrt_split_chain_cross_chain_ess",
+      "multiplicity_control": "bonferroni_six_two_sided_normal_mcse_intervals",
+      "nonclaims": [
+        "same-target physical-posterior-mean agreement only",
+        "no full-distribution, covariance, tail, or mode equivalence claim",
+        "acceptance and short-probe diagnostics are nomination or explanatory only",
+        "no filter exactness, superiority, calibration, robustness, or readiness claim"
+      ],
+      "parameter_rows": [
+        {
+          "absolute_mean_difference": 0.0003072537581192414,
+          "neutra_mean": 0.5350791315837929,
+          "neutra_mean_ess": 28967.71778449507,
+          "neutra_mean_mcse": 0.0003082013863127189,
+          "neutra_sd": 0.05245558421264137,
+          "parameter": "r",
+          "passed": true,
+          "plain_hmc_mean": 0.5347718778256737,
+          "plain_hmc_mean_ess": 47039.863917421586,
+          "plain_hmc_mean_mcse": 0.0002440861311328905,
+          "plain_hmc_sd": 0.052939048597232086,
+          "practical_margin": 0.005293904859723209,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.0013444819593313147,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.004681182995696531,
+          "neutra_mean": 115.21234310792902,
+          "neutra_mean_ess": 32856.59078052931,
+          "neutra_mean_mcse": 0.0054252135359677605,
+          "neutra_sd": 0.983395204295718,
+          "parameter": "K",
+          "passed": true,
+          "plain_hmc_mean": 115.21702429092471,
+          "plain_hmc_mean_ess": 65011.80764846885,
+          "plain_hmc_mean_mcse": 0.003884954553498099,
+          "plain_hmc_sd": 0.9905629125421775,
+          "practical_margin": 0.09905629125421776,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.022285657952166672,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.030098470782135678,
+          "neutra_mean": 25.057432449924168,
+          "neutra_mean_ess": 26284.28870520859,
+          "neutra_mean_mcse": 0.01784052125256502,
+          "neutra_sd": 2.892382022717905,
+          "parameter": "a",
+          "passed": true,
+          "plain_hmc_mean": 25.087530920706303,
+          "plain_hmc_mean_ess": 49214.808109875936,
+          "plain_hmc_mean_mcse": 0.012948150316851564,
+          "plain_hmc_sd": 2.872470853076669,
+          "practical_margin": 0.2872470853076669,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.08825626553323535,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.00044304022858354664,
+          "neutra_mean": 0.2849141091242592,
+          "neutra_mean_ess": 26094.894884082816,
+          "neutra_mean_mcse": 0.0010236719894191585,
+          "neutra_sd": 0.1653630964000503,
+          "parameter": "s",
+          "passed": true,
+          "plain_hmc_mean": 0.28535714935284273,
+          "plain_hmc_mean_ess": 16703.78954136519,
+          "plain_hmc_mean_mcse": 0.0012867454017654579,
+          "plain_hmc_sd": 0.16630301761956337,
+          "practical_margin": 0.01663030176195634,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.004781042893019252,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.0001642656541170906,
+          "neutra_mean": 0.45568848665682415,
+          "neutra_mean_ess": 31420.34283370852,
+          "neutra_mean_mcse": 0.0015853808980121808,
+          "neutra_sd": 0.28102119799617276,
+          "parameter": "u",
+          "passed": true,
+          "plain_hmc_mean": 0.45585275231094124,
+          "plain_hmc_mean_ess": 33383.22945579923,
+          "plain_hmc_mean_mcse": 0.0015382963945285316,
+          "plain_hmc_sd": 0.28106333549453805,
+          "practical_margin": 0.028106333549453806,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.005992240099516705,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.0007665474954320906,
+          "neutra_mean": 0.4992315362278848,
+          "neutra_mean_ess": 31214.206592233943,
+          "neutra_mean_mcse": 0.001357891393153821,
+          "neutra_sd": 0.2399060420378774,
+          "parameter": "v",
+          "passed": true,
+          "plain_hmc_mean": 0.4984649887324527,
+          "plain_hmc_mean_ess": 32728.16804342124,
+          "plain_hmc_mean_mcse": 0.0013181183979552814,
+          "plain_hmc_sd": 0.23845985198024242,
+          "practical_margin": 0.023845985198024243,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.005759274355921245,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        }
+      ],
+      "passed": true,
+      "physical_parameter_names": [
+        "r",
+        "K",
+        "a",
+        "s",
+        "u",
+        "v"
+      ],
+      "schema": "bayesfilter.multimodel_neutra_p4_physical_mean_agreement.v1",
+      "supported_disagreement": false,
+      "unresolved_precision": false
+    },
+    "schema": "bayesfilter.multimodel_neutra_p4_r4_joint_diagnostic.v1",
+    "stop_rule": "convergence_and_simultaneous_physical_mean_equivalence"
+  },
+  "identity_reference": {
+    "artifact_hashes_sha256": "76a198e75b7e1eb97af5d26426c57e095fcd74b956579dad8a22ca1920cf5267",
+    "result_sha256": "6eea9ab2f4cf0e5a23262ed450d8b85add27289ab4aeef3a9661b95d46c358c4",
+    "root": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/target-admission/attempt-01-20260715T123720Z",
+    "target_identity_sha256": "9b9f31f773791e094a39be5cf821ebdd0f24c0197f5b32b114aaf249f4b3c4f4"
+  },
+  "inference_status": {
+    "default_readiness": false,
+    "descriptive_only_differences": "source summaries, acceptance, runtime, and cross-filter differences",
+    "hard_veto_screen": "NEUTRA_CONFIRMED",
+    "next_evidence_needed": "additional distributional estimands and repeated fixtures for broader claims",
+    "statistically_supported_ranking": false
+  },
+  "kernel_grid": {
+    "num_leapfrog_steps": 10,
+    "probe_burnin": 128,
+    "probe_results": 64,
+    "step_sizes": [
+      0.025,
+      0.05,
+      0.1,
+      0.2,
+      0.4,
+      0.8
+    ]
+  },
+  "nonclaims": [
+    "same-target physical-posterior-mean agreement only",
+    "no full-distribution, covariance, tail, or mode equivalence claim",
+    "acceptance and short-probe diagnostics are nomination or explanatory only",
+    "no filter exactness, superiority, calibration, robustness, or readiness claim"
+  ],
+  "passed": true,
+  "posterior_summary": {
+    "physical_mean_agreement": {
+      "candidate_correlation": [
+        [
+          1.0,
+          -0.1614212297572308,
+          -0.022946550381585017,
+          0.4901640041471567,
+          -0.01266581155397248,
+          -0.02073042074871118
+        ],
+        [
+          -0.1614212297572308,
+          1.0,
+          -0.007312009868287801,
+          0.21058245849508944,
+          0.01628313988206021,
+          0.00786814734872584
+        ],
+        [
+          -0.022946550381585017,
+          -0.007312009868287801,
+          0.9999999999999998,
+          0.02787110082345712,
+          0.0038409576573382484,
+          -0.02509825289449302
+        ],
+        [
+          0.4901640041471567,
+          0.21058245849508944,
+          0.02787110082345712,
+          0.9999999999999999,
+          -0.004572155629950481,
+          0.06959357332771311
+        ],
+        [
+          -0.01266581155397248,
+          0.01628313988206021,
+          0.0038409576573382484,
+          -0.004572155629950481,
+          1.0000000000000002,
+          0.911299042522296
+        ],
+        [
+          -0.02073042074871118,
+          0.00786814734872584,
+          -0.02509825289449302,
+          0.06959357332771311,
+          0.911299042522296,
+          1.0
+        ]
+      ],
+      "candidate_quantiles": [
+        [
+          0.45396718278734177,
+          113.6132894817633,
+          20.50587621573462,
+          0.1116754293674678,
+          0.04046334468932207,
+          0.12931354915756618
+        ],
+        [
+          0.5317745594101321,
+          115.20924238271255,
+          25.097622520942007,
+          0.23810777024753027,
+          0.43618052210853625,
+          0.49008432868060625
+        ],
+        [
+          0.6261284376628716,
+          116.84709750963168,
+          29.552705808971623,
+          0.6208954042040626,
+          0.9265884566608983,
+          0.8941488169672515
+        ]
+      ],
+      "claim_scope": "six_physical_posterior_means_only",
+      "comparator_correlation": [
+        [
+          1.0,
+          -0.1971179225471505,
+          -0.010693538669214986,
+          0.4847022867227485,
+          0.006092425551339497,
+          0.005227366807716922
+        ],
+        [
+          -0.1971179225471505,
+          1.0000000000000002,
+          -0.012888664751072863,
+          0.18048249840009192,
+          -0.015504977613431002,
+          -0.01854349739998412
+        ],
+        [
+          -0.010693538669214986,
+          -0.012888664751072863,
+          1.0,
+          0.02409262166255417,
+          -0.00505417961333903,
+          -0.044092206336688325
+        ],
+        [
+          0.4847022867227485,
+          0.18048249840009192,
+          0.02409262166255417,
+          1.0,
+          -0.02168702896556827,
+          0.06136937415114757
+        ],
+        [
+          0.006092425551339497,
+          -0.015504977613431002,
+          -0.00505417961333903,
+          -0.02168702896556827,
+          1.0,
+          0.915005205937729
+        ],
+        [
+          0.005227366807716922,
+          -0.01854349739998412,
+          -0.044092206336688325,
+          0.06136937415114757,
+          0.915005205937729,
+          1.0000000000000002
+        ]
+      ],
+      "comparator_quantiles": [
+        [
+          0.4538342532513063,
+          113.62255532248366,
+          20.522931589992307,
+          0.11114156294777695,
+          0.041956977452639405,
+          0.1331488349703291
+        ],
+        [
+          0.5319440496685908,
+          115.20040659371324,
+          25.10108706302023,
+          0.2396730534907811,
+          0.4371179593193377,
+          0.4877310005319941
+        ],
+        [
+          0.6257902356034991,
+          116.86590215149111,
+          29.490896212166273,
+          0.626225046467333,
+          0.9256151282444891,
+          0.892057191125928
+        ]
+      ],
+      "critical_value": 2.638257273476751,
+      "distributional_diagnostics_role": "explanatory_only_not_equivalence_gate",
+      "familywise_alpha": 0.05,
+      "margin_definition": "0.10_times_same_estimand_plain_hmc_posterior_sd",
+      "margin_sd_fraction": 0.1,
+      "mean_mcse_definition": "posterior_sample_sd_divided_by_sqrt_split_chain_cross_chain_ess",
+      "multiplicity_control": "bonferroni_six_two_sided_normal_mcse_intervals",
+      "nonclaims": [
+        "same-target physical-posterior-mean agreement only",
+        "no full-distribution, covariance, tail, or mode equivalence claim",
+        "acceptance and short-probe diagnostics are nomination or explanatory only",
+        "no filter exactness, superiority, calibration, robustness, or readiness claim"
+      ],
+      "parameter_rows": [
+        {
+          "absolute_mean_difference": 0.0003072537581192414,
+          "neutra_mean": 0.5350791315837929,
+          "neutra_mean_ess": 28967.71778449507,
+          "neutra_mean_mcse": 0.0003082013863127189,
+          "neutra_sd": 0.05245558421264137,
+          "parameter": "r",
+          "passed": true,
+          "plain_hmc_mean": 0.5347718778256737,
+          "plain_hmc_mean_ess": 47039.863917421586,
+          "plain_hmc_mean_mcse": 0.0002440861311328905,
+          "plain_hmc_sd": 0.052939048597232086,
+          "practical_margin": 0.005293904859723209,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.0013444819593313147,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.004681182995696531,
+          "neutra_mean": 115.21234310792902,
+          "neutra_mean_ess": 32856.59078052931,
+          "neutra_mean_mcse": 0.0054252135359677605,
+          "neutra_sd": 0.983395204295718,
+          "parameter": "K",
+          "passed": true,
+          "plain_hmc_mean": 115.21702429092471,
+          "plain_hmc_mean_ess": 65011.80764846885,
+          "plain_hmc_mean_mcse": 0.003884954553498099,
+          "plain_hmc_sd": 0.9905629125421775,
+          "practical_margin": 0.09905629125421776,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.022285657952166672,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.030098470782135678,
+          "neutra_mean": 25.057432449924168,
+          "neutra_mean_ess": 26284.28870520859,
+          "neutra_mean_mcse": 0.01784052125256502,
+          "neutra_sd": 2.892382022717905,
+          "parameter": "a",
+          "passed": true,
+          "plain_hmc_mean": 25.087530920706303,
+          "plain_hmc_mean_ess": 49214.808109875936,
+          "plain_hmc_mean_mcse": 0.012948150316851564,
+          "plain_hmc_sd": 2.872470853076669,
+          "practical_margin": 0.2872470853076669,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.08825626553323535,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.00044304022858354664,
+          "neutra_mean": 0.2849141091242592,
+          "neutra_mean_ess": 26094.894884082816,
+          "neutra_mean_mcse": 0.0010236719894191585,
+          "neutra_sd": 0.1653630964000503,
+          "parameter": "s",
+          "passed": true,
+          "plain_hmc_mean": 0.28535714935284273,
+          "plain_hmc_mean_ess": 16703.78954136519,
+          "plain_hmc_mean_mcse": 0.0012867454017654579,
+          "plain_hmc_sd": 0.16630301761956337,
+          "practical_margin": 0.01663030176195634,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.004781042893019252,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.0001642656541170906,
+          "neutra_mean": 0.45568848665682415,
+          "neutra_mean_ess": 31420.34283370852,
+          "neutra_mean_mcse": 0.0015853808980121808,
+          "neutra_sd": 0.28102119799617276,
+          "parameter": "u",
+          "passed": true,
+          "plain_hmc_mean": 0.45585275231094124,
+          "plain_hmc_mean_ess": 33383.22945579923,
+          "plain_hmc_mean_mcse": 0.0015382963945285316,
+          "plain_hmc_sd": 0.28106333549453805,
+          "practical_margin": 0.028106333549453806,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.005992240099516705,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        },
+        {
+          "absolute_mean_difference": 0.0007665474954320906,
+          "neutra_mean": 0.4992315362278848,
+          "neutra_mean_ess": 31214.206592233943,
+          "neutra_mean_mcse": 0.001357891393153821,
+          "neutra_sd": 0.2399060420378774,
+          "parameter": "v",
+          "passed": true,
+          "plain_hmc_mean": 0.4984649887324527,
+          "plain_hmc_mean_ess": 32728.16804342124,
+          "plain_hmc_mean_mcse": 0.0013181183979552814,
+          "plain_hmc_sd": 0.23845985198024242,
+          "practical_margin": 0.023845985198024243,
+          "simultaneous_lower_bound": 0.0,
+          "simultaneous_upper_bound": 0.005759274355921245,
+          "supported_disagreement": false,
+          "unresolved_precision": false
+        }
+      ],
+      "passed": true,
+      "physical_parameter_names": [
+        "r",
+        "K",
+        "a",
+        "s",
+        "u",
+        "v"
+      ],
+      "schema": "bayesfilter.multimodel_neutra_p4_physical_mean_agreement.v1",
+      "supported_disagreement": false,
+      "unresolved_precision": false
+    },
+    "source": {
+      "all_finite": true,
+      "chain_count": 4,
+      "draws_per_chain": 4000,
+      "mean": [
+        -0.16479164003952707,
+        -0.6491947049629605,
+        0.019750647285236525,
+        -1.0937371778880742,
+        -0.15197471645051905,
+        0.008071942163428537
+      ],
+      "parameter_names": [
+        "r_source_probit",
+        "K_source_probit",
+        "a_source_probit",
+        "s_source_probit",
+        "u_source_probit",
+        "v_source_probit"
+      ],
+      "q05": [
+        -0.3746317382625876,
+        -0.9128357223155852,
+        -1.639182688088486,
+        -2.2676449152334346,
+        -1.7453343577269382,
+        -1.1296420206317284
+      ],
+      "q50": [
+        -0.17185806049167182,
+        -0.6419213697290416,
+        0.024472780589597398,
+        -1.0888601985466,
+        -0.16066019203329537,
+        -0.024857461734612927
+      ],
+      "q95": [
+        0.0655411740141567,
+        -0.40604470814260224,
+        1.6982592735967315,
+        0.052400982330281086,
+        1.4508447890166694,
+        1.2488980480546783
+      ],
+      "role": "descriptive_same_target_comparator_summary_only",
+      "sd": [
+        0.1341113142766575,
+        0.15506821193948606,
+        1.005411645808631,
+        0.7144901485234025,
+        0.9656001210823871,
+        0.7423911849343089
+      ]
+    }
+  },
+  "probe_rows": [
+    {
+      "acceptance_rate": 1.0,
+      "eligible": true,
+      "grid_index": 0,
+      "health": {
+        "acceptance_rate": 1.0,
+        "acceptance_rate_by_chain": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 67.17267181599163,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          64,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 3.5407430014326895,
+      "minimum_bulk_ess": 11.389880919249531,
+      "minimum_tail_ess": 23.313824419778005,
+      "nomination_metric": "minimum_rank_normalized_bulk_ess",
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260716,
+        13100
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 64,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 3.5407430014326895,
+        "min_bulk_ess": 11.389880919249531,
+        "min_tail_ess": 23.313824419778005,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 6,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 13.613299701005042,
+            "folded_rank_normalized_split_rhat": 2.346512256255209,
+            "lower_tail_ess": 123.55863983344895,
+            "parameter": "r_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 2.5219808026309267,
+            "rhat": 2.5219808026309267,
+            "tail_ess": 23.313824419778005,
+            "upper_tail_ess": 23.313824419778005
+          },
+          {
+            "bulk_ess": 13.690424190675175,
+            "folded_rank_normalized_split_rhat": 1.35234390338334,
+            "lower_tail_ess": 59.45545603790447,
+            "parameter": "K_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 2.5000350944877052,
+            "rhat": 2.5000350944877052,
+            "tail_ess": 56.285072030336806,
+            "upper_tail_ess": 56.285072030336806
+          },
+          {
+            "bulk_ess": 21.026328169180044,
+            "folded_rank_normalized_split_rhat": 1.2833930535629656,
+            "lower_tail_ess": 32.70393076090877,
+            "parameter": "a_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.602206792763542,
+            "rhat": 1.602206792763542,
+            "tail_ess": 32.70393076090877,
+            "upper_tail_ess": 36.023685127133405
+          },
+          {
+            "bulk_ess": 11.389880919249531,
+            "folded_rank_normalized_split_rhat": 2.2274235077586146,
+            "lower_tail_ess": 51.30005329543436,
+            "parameter": "s_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 3.5407430014326895,
+            "rhat": 3.5407430014326895,
+            "tail_ess": 34.57924725718215,
+            "upper_tail_ess": 34.57924725718215
+          },
+          {
+            "bulk_ess": 14.080022532141639,
+            "folded_rank_normalized_split_rhat": 1.2707880411317274,
+            "lower_tail_ess": 69.40941290635615,
+            "parameter": "u_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 2.4027496198877385,
+            "rhat": 2.4027496198877385,
+            "tail_ess": 33.87989165966191,
+            "upper_tail_ess": 33.87989165966191
+          },
+          {
+            "bulk_ess": 12.091748010394758,
+            "folded_rank_normalized_split_rhat": 1.7299788517662853,
+            "lower_tail_ess": 61.38628699887599,
+            "parameter": "v_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 3.0995630358591755,
+            "rhat": 3.0995630358591755,
+            "tail_ess": 28.824485588550136,
+            "upper_tail_ess": 28.824485588550136
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 32,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.025,
+      "trajectory_length": 0.25
+    },
+    {
+      "acceptance_rate": 1.0,
+      "eligible": true,
+      "grid_index": 1,
+      "health": {
+        "acceptance_rate": 1.0,
+        "acceptance_rate_by_chain": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 67.56279893600731,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          64,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 1.902029029736053,
+      "minimum_bulk_ess": 17.34206140093581,
+      "minimum_tail_ess": 19.692307692307693,
+      "nomination_metric": "minimum_rank_normalized_bulk_ess",
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260716,
+        13101
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 64,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 1.902029029736053,
+        "min_bulk_ess": 17.34206140093581,
+        "min_tail_ess": 19.692307692307693,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 6,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 22.11793736234805,
+            "folded_rank_normalized_split_rhat": 1.0747159888071884,
+            "lower_tail_ess": 82.67361541008624,
+            "parameter": "r_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.5863154258994336,
+            "rhat": 1.5863154258994336,
+            "tail_ess": 74.85505277458462,
+            "upper_tail_ess": 74.85505277458462
+          },
+          {
+            "bulk_ess": 17.34206140093581,
+            "folded_rank_normalized_split_rhat": 1.416434663993982,
+            "lower_tail_ess": 40.33127334746553,
+            "parameter": "K_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.902029029736053,
+            "rhat": 1.902029029736053,
+            "tail_ess": 40.33127334746553,
+            "upper_tail_ess": 67.982397198694
+          },
+          {
+            "bulk_ess": 19.21694330746335,
+            "folded_rank_normalized_split_rhat": 1.466382419439161,
+            "lower_tail_ess": 97.7696383558825,
+            "parameter": "a_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.7460339499152018,
+            "rhat": 1.7460339499152018,
+            "tail_ess": 19.692307692307693,
+            "upper_tail_ess": 19.692307692307693
+          },
+          {
+            "bulk_ess": 22.744471365453236,
+            "folded_rank_normalized_split_rhat": 1.0509841225605125,
+            "lower_tail_ess": 65.21759290828503,
+            "parameter": "s_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.5600733363135897,
+            "rhat": 1.5600733363135897,
+            "tail_ess": 55.909862633122415,
+            "upper_tail_ess": 55.909862633122415
+          },
+          {
+            "bulk_ess": 20.52981247916521,
+            "folded_rank_normalized_split_rhat": 1.239635327797029,
+            "lower_tail_ess": 53.41683671576447,
+            "parameter": "u_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.6645904217539322,
+            "rhat": 1.6645904217539322,
+            "tail_ess": 53.04763130319688,
+            "upper_tail_ess": 53.04763130319688
+          },
+          {
+            "bulk_ess": 22.102880896577034,
+            "folded_rank_normalized_split_rhat": 1.2217142587512453,
+            "lower_tail_ess": 57.60282266148109,
+            "parameter": "v_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.5869747488253385,
+            "rhat": 1.5869747488253385,
+            "tail_ess": 38.94696156323814,
+            "upper_tail_ess": 38.94696156323814
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 32,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.05,
+      "trajectory_length": 0.5
+    },
+    {
+      "acceptance_rate": 0.9921875,
+      "eligible": true,
+      "grid_index": 2,
+      "health": {
+        "acceptance_rate": 0.9921875,
+        "acceptance_rate_by_chain": [
+          0.984375,
+          1.0,
+          0.984375,
+          1.0
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 68.03544775702176,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          64,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 1.2004703744636542,
+      "minimum_bulk_ess": 45.53009237432958,
+      "minimum_tail_ess": 70.86837750389014,
+      "nomination_metric": "minimum_rank_normalized_bulk_ess",
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260716,
+        13102
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 64,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 1.2004703744636542,
+        "min_bulk_ess": 45.53009237432958,
+        "min_tail_ess": 70.86837750389014,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 6,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 60.72694536883105,
+            "folded_rank_normalized_split_rhat": 1.0371861750863756,
+            "lower_tail_ess": 210.276583940526,
+            "parameter": "r_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.141093781540973,
+            "rhat": 1.141093781540973,
+            "tail_ess": 93.20598568640206,
+            "upper_tail_ess": 93.20598568640206
+          },
+          {
+            "bulk_ess": 62.26427164617916,
+            "folded_rank_normalized_split_rhat": 1.0313054340611634,
+            "lower_tail_ess": 106.02125532308831,
+            "parameter": "K_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.1025059660945167,
+            "rhat": 1.1025059660945167,
+            "tail_ess": 98.35028248587572,
+            "upper_tail_ess": 98.35028248587572
+          },
+          {
+            "bulk_ess": 49.679514527265894,
+            "folded_rank_normalized_split_rhat": 1.0258993113066253,
+            "lower_tail_ess": 70.86837750389014,
+            "parameter": "a_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.1266252028366437,
+            "rhat": 1.1266252028366437,
+            "tail_ess": 70.86837750389014,
+            "upper_tail_ess": 90.89914094813874
+          },
+          {
+            "bulk_ess": 45.53009237432958,
+            "folded_rank_normalized_split_rhat": 1.071281961615499,
+            "lower_tail_ess": 79.28180987456037,
+            "parameter": "s_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.2004703744636542,
+            "rhat": 1.2004703744636542,
+            "tail_ess": 79.28180987456037,
+            "upper_tail_ess": 100.83150984682717
+          },
+          {
+            "bulk_ess": 84.40941377587323,
+            "folded_rank_normalized_split_rhat": 1.0117532494477999,
+            "lower_tail_ess": 150.1966869364647,
+            "parameter": "u_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0892196230412308,
+            "rhat": 1.0892196230412308,
+            "tail_ess": 125.71005552128317,
+            "upper_tail_ess": 125.71005552128317
+          },
+          {
+            "bulk_ess": 97.441320147533,
+            "folded_rank_normalized_split_rhat": 1.0174321314594665,
+            "lower_tail_ess": 137.2746492408226,
+            "parameter": "v_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0834207448427,
+            "rhat": 1.0834207448427,
+            "tail_ess": 137.2746492408226,
+            "upper_tail_ess": 159.13783678250684
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 32,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.1,
+      "trajectory_length": 1.0
+    },
+    {
+      "acceptance_rate": 0.9921875,
+      "eligible": true,
+      "grid_index": 3,
+      "health": {
+        "acceptance_rate": 0.9921875,
+        "acceptance_rate_by_chain": [
+          0.984375,
+          0.984375,
+          1.0,
+          1.0
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 68.10698630500701,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          64,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 1.0454615202532462,
+      "minimum_bulk_ess": 295.3449102290534,
+      "minimum_tail_ess": 158.74466130244727,
+      "nomination_metric": "minimum_rank_normalized_bulk_ess",
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260716,
+        13103
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 64,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 1.0454615202532462,
+        "min_bulk_ess": 295.3449102290534,
+        "min_tail_ess": 158.74466130244727,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 6,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 317.9073562926852,
+            "folded_rank_normalized_split_rhat": 0.98397799383524,
+            "lower_tail_ess": 249.91013215859022,
+            "parameter": "r_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9923008014951591,
+            "rhat": 0.9923008014951591,
+            "tail_ess": 243.07979932249899,
+            "upper_tail_ess": 243.07979932249899
+          },
+          {
+            "bulk_ess": 358.0461843924426,
+            "folded_rank_normalized_split_rhat": 0.9802340347122476,
+            "lower_tail_ess": 246.26497655843016,
+            "parameter": "K_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9922549367739866,
+            "rhat": 0.9922549367739866,
+            "tail_ess": 173.7304204953448,
+            "upper_tail_ess": 173.7304204953448
+          },
+          {
+            "bulk_ess": 295.3449102290534,
+            "folded_rank_normalized_split_rhat": 1.0212193577654143,
+            "lower_tail_ess": 158.74466130244727,
+            "parameter": "a_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9749038062086068,
+            "rhat": 1.0212193577654143,
+            "tail_ess": 158.74466130244727,
+            "upper_tail_ess": 275.8571289537711
+          },
+          {
+            "bulk_ess": 440.3555863548039,
+            "folded_rank_normalized_split_rhat": 0.9923372323951025,
+            "lower_tail_ess": 255.01033893733702,
+            "parameter": "s_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9827008018553978,
+            "rhat": 0.9923372323951025,
+            "tail_ess": 255.01033893733702,
+            "upper_tail_ess": 283.73311993598077
+          },
+          {
+            "bulk_ess": 828.3881944495981,
+            "folded_rank_normalized_split_rhat": 1.0454615202532462,
+            "lower_tail_ess": 212.00356188780054,
+            "parameter": "u_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9757659242687924,
+            "rhat": 1.0454615202532462,
+            "tail_ess": 212.00356188780054,
+            "upper_tail_ess": 287.2201449055075
+          },
+          {
+            "bulk_ess": 526.1816646201818,
+            "folded_rank_normalized_split_rhat": 1.0280639470934796,
+            "lower_tail_ess": 243.7300865986454,
+            "parameter": "v_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9796963051287397,
+            "rhat": 1.0280639470934796,
+            "tail_ess": 167.89866224695155,
+            "upper_tail_ess": 167.89866224695155
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 32,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.2,
+      "trajectory_length": 2.0
+    },
+    {
+      "acceptance_rate": 0.96484375,
+      "eligible": true,
+      "grid_index": 4,
+      "health": {
+        "acceptance_rate": 0.96484375,
+        "acceptance_rate_by_chain": [
+          0.984375,
+          0.96875,
+          0.953125,
+          0.953125
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 69.48612607401446,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          64,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 1.1516537237450988,
+      "minimum_bulk_ess": -6064.914566593556,
+      "minimum_tail_ess": 114.31498079385406,
+      "nomination_metric": "minimum_rank_normalized_bulk_ess",
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260716,
+        13104
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 64,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 1.1516537237450988,
+        "min_bulk_ess": -6064.914566593556,
+        "min_tail_ess": 114.31498079385406,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 6,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 3127.6992246812642,
+            "folded_rank_normalized_split_rhat": 1.0950660699438204,
+            "lower_tail_ess": 120.24242424242425,
+            "parameter": "r_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9745334507477568,
+            "rhat": 1.0950660699438204,
+            "tail_ess": 120.24242424242425,
+            "upper_tail_ess": 123.14482758620692
+          },
+          {
+            "bulk_ess": 10460.646116566055,
+            "folded_rank_normalized_split_rhat": 1.0995591821964796,
+            "lower_tail_ess": 221.3451520099524,
+            "parameter": "K_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9759038606037542,
+            "rhat": 1.0995591821964796,
+            "tail_ess": 139.3319668130796,
+            "upper_tail_ess": 139.3319668130796
+          },
+          {
+            "bulk_ess": -6064.914566593556,
+            "folded_rank_normalized_split_rhat": 1.1516537237450988,
+            "lower_tail_ess": 114.31498079385406,
+            "parameter": "a_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9721069918641414,
+            "rhat": 1.1516537237450988,
+            "tail_ess": 114.31498079385406,
+            "upper_tail_ess": 134.8909293662657
+          },
+          {
+            "bulk_ess": 801.9496279363938,
+            "folded_rank_normalized_split_rhat": 1.0275326207672975,
+            "lower_tail_ess": 286.13659469525396,
+            "parameter": "s_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9788415767857928,
+            "rhat": 1.0275326207672975,
+            "tail_ess": 165.93197910621026,
+            "upper_tail_ess": 165.93197910621026
+          },
+          {
+            "bulk_ess": 829.3935440836648,
+            "folded_rank_normalized_split_rhat": 1.049134955211833,
+            "lower_tail_ess": 286.9479008598887,
+            "parameter": "u_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9835488986510128,
+            "rhat": 1.049134955211833,
+            "tail_ess": 119.56437795143965,
+            "upper_tail_ess": 119.56437795143965
+          },
+          {
+            "bulk_ess": 719.1788816355103,
+            "folded_rank_normalized_split_rhat": 0.9915206522807767,
+            "lower_tail_ess": 285.331455587969,
+            "parameter": "v_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 0.9808947629963711,
+            "rhat": 0.9915206522807767,
+            "tail_ess": 280.58957364724506,
+            "upper_tail_ess": 280.58957364724506
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 32,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.4,
+      "trajectory_length": 4.0
+    },
+    {
+      "acceptance_rate": 0.75390625,
+      "eligible": true,
+      "grid_index": 5,
+      "health": {
+        "acceptance_rate": 0.75390625,
+        "acceptance_rate_by_chain": [
+          0.75,
+          0.71875,
+          0.734375,
+          0.8125
+        ],
+        "all_states_moved": true,
+        "elapsed_seconds": 71.99716043300577,
+        "energy_error_divergence_count": 0,
+        "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+        "health_passed": true,
+        "jit_compile": true,
+        "log_accept_ratio_all_finite": true,
+        "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+        "sample_shape": [
+          64,
+          4,
+          6
+        ],
+        "samples_all_finite": true,
+        "single_batched_sample_chain_invocation": true,
+        "target_log_prob_all_finite": true,
+        "target_status_telemetry": {
+          "all_status_valid": true,
+          "available": true,
+          "status_nonvalid_count": 0,
+          "trace_scope": "sampled_transition_states"
+        }
+      },
+      "maximum_modern_rhat": 1.1328240369953826,
+      "minimum_bulk_ess": 107.45756462667418,
+      "minimum_tail_ess": 101.94313111806619,
+      "nomination_metric": "minimum_rank_normalized_bulk_ess",
+      "num_leapfrog_steps": 10,
+      "seed": [
+        20260716,
+        13105
+      ],
+      "short_chain_diagnostics": {
+        "chain_count": 4,
+        "definitions": {
+          "autocorrelation_truncation": "TFP initial positive pairs",
+          "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+          "quantile_interpolation": "linear",
+          "rank_transform": "Blom average-rank normal score",
+          "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+        },
+        "diagnostics_all_finite": true,
+        "draw_count_per_chain": 64,
+        "hard_vetoes": [],
+        "input_all_finite": true,
+        "max_rhat": 1.1328240369953826,
+        "min_bulk_ess": 107.45756462667418,
+        "min_tail_ess": 101.94313111806619,
+        "nonclaims": [
+          "all-parameter HMC convergence screen only",
+          "no posterior recovery claim",
+          "no sampler superiority claim",
+          "no production or default readiness claim"
+        ],
+        "parameter_count": 6,
+        "parameter_diagnostics": [
+          {
+            "bulk_ess": 189.55004887734455,
+            "folded_rank_normalized_split_rhat": 1.0174723890906257,
+            "lower_tail_ess": 182.8008213552361,
+            "parameter": "r_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0690873053169145,
+            "rhat": 1.0690873053169145,
+            "tail_ess": 162.1748888418378,
+            "upper_tail_ess": 162.1748888418378
+          },
+          {
+            "bulk_ess": 107.45756462667418,
+            "folded_rank_normalized_split_rhat": 1.0102957376907304,
+            "lower_tail_ess": 103.7226376614548,
+            "parameter": "K_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.045355562035442,
+            "rhat": 1.045355562035442,
+            "tail_ess": 103.7226376614548,
+            "upper_tail_ess": 182.74763444723922
+          },
+          {
+            "bulk_ess": 134.26506840314835,
+            "folded_rank_normalized_split_rhat": 1.1328240369953826,
+            "lower_tail_ess": 182.39219211506358,
+            "parameter": "a_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0216408129856573,
+            "rhat": 1.1328240369953826,
+            "tail_ess": 164.02421726344923,
+            "upper_tail_ess": 164.02421726344923
+          },
+          {
+            "bulk_ess": 212.60502809155068,
+            "folded_rank_normalized_split_rhat": 1.0381088844929764,
+            "lower_tail_ess": 151.77628920786822,
+            "parameter": "s_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0014667185008037,
+            "rhat": 1.0381088844929764,
+            "tail_ess": 133.65269461077852,
+            "upper_tail_ess": 133.65269461077852
+          },
+          {
+            "bulk_ess": 119.12599715520139,
+            "folded_rank_normalized_split_rhat": 1.0349871636288752,
+            "lower_tail_ess": 108.86145404663924,
+            "parameter": "u_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0757873553266133,
+            "rhat": 1.0757873553266133,
+            "tail_ess": 108.86145404663924,
+            "upper_tail_ess": 185.59874730867094
+          },
+          {
+            "bulk_ess": 172.39855618502867,
+            "folded_rank_normalized_split_rhat": 1.0029609817744036,
+            "lower_tail_ess": 142.6243692861068,
+            "parameter": "v_source_probit",
+            "passed": false,
+            "rank_normalized_split_rhat": 1.0573016417384322,
+            "rhat": 1.0573016417384322,
+            "tail_ess": 101.94313111806619,
+            "upper_tail_ess": 101.94313111806619
+          }
+        ],
+        "passed": false,
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "split_chain_count": 8,
+        "split_draw_count_per_chain": 32,
+        "thresholds": {
+          "bulk_ess_min": 1000.0,
+          "rhat_max": 1.01,
+          "tail_ess_min": 400.0
+        }
+      },
+      "step_size": 0.8,
+      "trajectory_length": 8.0
+    }
+  ],
+  "program_id": "multimodel-neutra-filter-posterior-20260715",
+  "schema": "bayesfilter.multimodel_neutra_p4_r4_confirmation.v1",
+  "selected_probe": {
+    "acceptance_rate": 0.9921875,
+    "eligible": true,
+    "grid_index": 3,
+    "health": {
+      "acceptance_rate": 0.9921875,
+      "acceptance_rate_by_chain": [
+        0.984375,
+        0.984375,
+        1.0,
+        1.0
+      ],
+      "all_states_moved": true,
+      "elapsed_seconds": 68.10698630500701,
+      "energy_error_divergence_count": 0,
+      "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+      "health_passed": true,
+      "jit_compile": true,
+      "log_accept_ratio_all_finite": true,
+      "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+      "sample_shape": [
+        64,
+        4,
+        6
+      ],
+      "samples_all_finite": true,
+      "single_batched_sample_chain_invocation": true,
+      "target_log_prob_all_finite": true,
+      "target_status_telemetry": {
+        "all_status_valid": true,
+        "available": true,
+        "status_nonvalid_count": 0,
+        "trace_scope": "sampled_transition_states"
+      }
+    },
+    "maximum_modern_rhat": 1.0454615202532462,
+    "minimum_bulk_ess": 295.3449102290534,
+    "minimum_tail_ess": 158.74466130244727,
+    "nomination_metric": "minimum_rank_normalized_bulk_ess",
+    "num_leapfrog_steps": 10,
+    "seed": [
+      20260716,
+      13103
+    ],
+    "short_chain_diagnostics": {
+      "chain_count": 4,
+      "definitions": {
+        "autocorrelation_truncation": "TFP initial positive pairs",
+        "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+        "quantile_interpolation": "linear",
+        "rank_transform": "Blom average-rank normal score",
+        "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+        "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+      },
+      "diagnostics_all_finite": true,
+      "draw_count_per_chain": 64,
+      "hard_vetoes": [],
+      "input_all_finite": true,
+      "max_rhat": 1.0454615202532462,
+      "min_bulk_ess": 295.3449102290534,
+      "min_tail_ess": 158.74466130244727,
+      "nonclaims": [
+        "all-parameter HMC convergence screen only",
+        "no posterior recovery claim",
+        "no sampler superiority claim",
+        "no production or default readiness claim"
+      ],
+      "parameter_count": 6,
+      "parameter_diagnostics": [
+        {
+          "bulk_ess": 317.9073562926852,
+          "folded_rank_normalized_split_rhat": 0.98397799383524,
+          "lower_tail_ess": 249.91013215859022,
+          "parameter": "r_source_probit",
+          "passed": false,
+          "rank_normalized_split_rhat": 0.9923008014951591,
+          "rhat": 0.9923008014951591,
+          "tail_ess": 243.07979932249899,
+          "upper_tail_ess": 243.07979932249899
+        },
+        {
+          "bulk_ess": 358.0461843924426,
+          "folded_rank_normalized_split_rhat": 0.9802340347122476,
+          "lower_tail_ess": 246.26497655843016,
+          "parameter": "K_source_probit",
+          "passed": false,
+          "rank_normalized_split_rhat": 0.9922549367739866,
+          "rhat": 0.9922549367739866,
+          "tail_ess": 173.7304204953448,
+          "upper_tail_ess": 173.7304204953448
+        },
+        {
+          "bulk_ess": 295.3449102290534,
+          "folded_rank_normalized_split_rhat": 1.0212193577654143,
+          "lower_tail_ess": 158.74466130244727,
+          "parameter": "a_source_probit",
+          "passed": false,
+          "rank_normalized_split_rhat": 0.9749038062086068,
+          "rhat": 1.0212193577654143,
+          "tail_ess": 158.74466130244727,
+          "upper_tail_ess": 275.8571289537711
+        },
+        {
+          "bulk_ess": 440.3555863548039,
+          "folded_rank_normalized_split_rhat": 0.9923372323951025,
+          "lower_tail_ess": 255.01033893733702,
+          "parameter": "s_source_probit",
+          "passed": false,
+          "rank_normalized_split_rhat": 0.9827008018553978,
+          "rhat": 0.9923372323951025,
+          "tail_ess": 255.01033893733702,
+          "upper_tail_ess": 283.73311993598077
+        },
+        {
+          "bulk_ess": 828.3881944495981,
+          "folded_rank_normalized_split_rhat": 1.0454615202532462,
+          "lower_tail_ess": 212.00356188780054,
+          "parameter": "u_source_probit",
+          "passed": false,
+          "rank_normalized_split_rhat": 0.9757659242687924,
+          "rhat": 1.0454615202532462,
+          "tail_ess": 212.00356188780054,
+          "upper_tail_ess": 287.2201449055075
+        },
+        {
+          "bulk_ess": 526.1816646201818,
+          "folded_rank_normalized_split_rhat": 1.0280639470934796,
+          "lower_tail_ess": 243.7300865986454,
+          "parameter": "v_source_probit",
+          "passed": false,
+          "rank_normalized_split_rhat": 0.9796963051287397,
+          "rhat": 1.0280639470934796,
+          "tail_ess": 167.89866224695155,
+          "upper_tail_ess": 167.89866224695155
+        }
+      ],
+      "passed": false,
+      "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+      "split_chain_count": 8,
+      "split_draw_count_per_chain": 32,
+      "thresholds": {
+        "bulk_ess_min": 1000.0,
+        "rhat_max": 1.01,
+        "tail_ess_min": 400.0
+      }
+    },
+    "step_size": 0.2,
+    "trajectory_length": 2.0
+  },
+  "sequential_run": {
+    "config": {
+      "chain_count": 4,
+      "dtype": "float64",
+      "energy_error_log_accept_threshold": -1000.0,
+      "jit_compile": true,
+      "minimum_chain_count": 4,
+      "num_leapfrog_steps": 10,
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "retained_chunk_results": 2000,
+      "retained_max_results": 10000,
+      "retained_min_results": 4000,
+      "retained_rhat_max": 1.01,
+      "retained_seed": [
+        20260716,
+        13301
+      ],
+      "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+      "step_size": 0.2,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 1000,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000,
+      "warmup_rhat_max": 1.05,
+      "warmup_seed": [
+        20260716,
+        13201
+      ]
+    },
+    "cumulative_archives": {
+      "retained": {
+        "chunk_index": null,
+        "cumulative": true,
+        "latent_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/retained/cumulative/latent.tensor",
+        "model_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/retained/cumulative/model.tensor",
+        "sample_shape": [
+          4000,
+          4,
+          6
+        ],
+        "schema": "bayesfilter.neutra.separate_sample_archive.v1",
+        "seed": null,
+        "stage": "retained",
+        "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+        "warmup_excluded_from_posterior": true
+      },
+      "warmup": {
+        "chunk_index": null,
+        "cumulative": true,
+        "latent_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/warmup/cumulative/latent.tensor",
+        "model_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/warmup/cumulative/model.tensor",
+        "sample_shape": [
+          2000,
+          4,
+          6
+        ],
+        "schema": "bayesfilter.neutra.separate_sample_archive.v1",
+        "seed": null,
+        "stage": "warmup",
+        "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+        "warmup_excluded_from_posterior": true
+      }
+    },
+    "decision": "ADMIT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL",
+    "elapsed_seconds": 2073.271739384014,
+    "hard_vetoes": [],
+    "passed": true,
+    "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+    "retained_archives": [
+      {
+        "chunk_index": 0,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/retained/chunk-0000/latent.tensor",
+        "model_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/retained/chunk-0000/model.tensor",
+        "sample_shape": [
+          2000,
+          4,
+          6
+        ],
+        "schema": "bayesfilter.neutra.separate_sample_archive.v1",
+        "seed": [
+          20260716,
+          14310
+        ],
+        "stage": "retained",
+        "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+        "warmup_excluded_from_posterior": true
+      },
+      {
+        "chunk_index": 1,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/retained/chunk-0001/latent.tensor",
+        "model_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/retained/chunk-0001/model.tensor",
+        "sample_shape": [
+          2000,
+          4,
+          6
+        ],
+        "schema": "bayesfilter.neutra.separate_sample_archive.v1",
+        "seed": [
+          20260716,
+          15319
+        ],
+        "stage": "retained",
+        "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+        "warmup_excluded_from_posterior": true
+      }
+    ],
+    "retained_cap_hit": false,
+    "retained_check_count": 2,
+    "retained_checks": [
+      {
+        "chunk_index": 0,
+        "completed_results_per_chain": 2000,
+        "diagnostic_role": "full_convergence",
+        "full_convergence": {
+          "convergence": {
+            "chain_count": 4,
+            "definitions": {
+              "autocorrelation_truncation": "TFP initial positive pairs",
+              "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+              "quantile_interpolation": "linear",
+              "rank_transform": "Blom average-rank normal score",
+              "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+            },
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 2000,
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_rhat": 1.0014997386110396,
+            "min_bulk_ess": 12155.037695902358,
+            "min_tail_ess": 6920.783026442646,
+            "nonclaims": [
+              "all-parameter HMC convergence screen only",
+              "no posterior recovery claim",
+              "no sampler superiority claim",
+              "no production or default readiness claim"
+            ],
+            "parameter_count": 6,
+            "parameter_diagnostics": [
+              {
+                "bulk_ess": 12804.421633523129,
+                "folded_rank_normalized_split_rhat": 1.0013288498520947,
+                "lower_tail_ess": 7335.591544372171,
+                "parameter": "r_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0014997386110396,
+                "rhat": 1.0014997386110396,
+                "tail_ess": 7335.591544372171,
+                "upper_tail_ess": 8256.229489764153
+              },
+              {
+                "bulk_ess": 14532.93816386154,
+                "folded_rank_normalized_split_rhat": 0.9995590411835414,
+                "lower_tail_ess": 7444.249746372413,
+                "parameter": "K_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 1.0006125890464064,
+                "rhat": 1.0006125890464064,
+                "tail_ess": 7444.249746372413,
+                "upper_tail_ess": 8259.013982147582
+              },
+              {
+                "bulk_ess": 14372.45169284898,
+                "folded_rank_normalized_split_rhat": 0.9997302969640712,
+                "lower_tail_ess": 8390.289779220404,
+                "parameter": "a_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9992403661410213,
+                "rhat": 0.9997302969640712,
+                "tail_ess": 8331.831332395639,
+                "upper_tail_ess": 8331.831332395639
+              },
+              {
+                "bulk_ess": 12155.037695902358,
+                "folded_rank_normalized_split_rhat": 1.0011447768879518,
+                "lower_tail_ess": 7526.496339587729,
+                "parameter": "s_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9995164045749588,
+                "rhat": 1.0011447768879518,
+                "tail_ess": 6920.783026442646,
+                "upper_tail_ess": 6920.783026442646
+              },
+              {
+                "bulk_ess": 15518.125416805016,
+                "folded_rank_normalized_split_rhat": 1.000054491517414,
+                "lower_tail_ess": 8385.35911282224,
+                "parameter": "u_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9997880985504607,
+                "rhat": 1.000054491517414,
+                "tail_ess": 8385.35911282224,
+                "upper_tail_ess": 8733.307629163573
+              },
+              {
+                "bulk_ess": 14168.05980821719,
+                "folded_rank_normalized_split_rhat": 0.9999439377544989,
+                "lower_tail_ess": 7512.985851115452,
+                "parameter": "v_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9996519492202344,
+                "rhat": 0.9999439377544989,
+                "tail_ess": 7112.235712026466,
+                "upper_tail_ess": 7112.235712026466
+              }
+            ],
+            "passed": true,
+            "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 1000,
+            "thresholds": {
+              "bulk_ess_min": 1000.0,
+              "rhat_max": 1.01,
+              "tail_ess_min": 400.0
+            }
+          },
+          "passed": true,
+          "physical_mean_agreement": {
+            "candidate_correlation": [
+              [
+                1.0,
+                -0.15756016230415187,
+                -0.011162305508995503,
+                0.4909017649873901,
+                -0.019349811384210405,
+                -0.02740046007380603
+              ],
+              [
+                -0.15756016230415187,
+                1.0000000000000002,
+                -0.0030098419653167615,
+                0.2033045452055911,
+                0.006760729363309647,
+                -0.003543300659166939
+              ],
+              [
+                -0.011162305508995503,
+                -0.0030098419653167615,
+                1.0,
+                0.039036749223935074,
+                0.0029086252059191704,
+                -0.02912653373580421
+              ],
+              [
+                0.4909017649873901,
+                0.2033045452055911,
+                0.039036749223935074,
+                1.0,
+                0.005612613270549667,
+                0.07627896268874157
+              ],
+              [
+                -0.019349811384210405,
+                0.006760729363309647,
+                0.0029086252059191704,
+                0.005612613270549667,
+                0.9999999999999998,
+                0.9101161000596487
+              ],
+              [
+                -0.02740046007380603,
+                -0.003543300659166939,
+                -0.02912653373580421,
+                0.07627896268874157,
+                0.9101161000596487,
+                1.0
+              ]
+            ],
+            "candidate_quantiles": [
+              [
+                0.4527999974326572,
+                113.61161640016871,
+                20.50010966437485,
+                0.11201963892929202,
+                0.03961916266670433,
+                0.1290280161573508
+              ],
+              [
+                0.5317346299269116,
+                115.21036270011953,
+                25.106647533188898,
+                0.2381783639108474,
+                0.44023373664411924,
+                0.494977922073059
+              ],
+              [
+                0.6268563894360669,
+                116.8207256129038,
+                29.546343455746836,
+                0.6211758229553458,
+                0.9268157634980398,
+                0.8964342588985486
+              ]
+            ],
+            "claim_scope": "six_physical_posterior_means_only",
+            "comparator_correlation": [
+              [
+                1.0,
+                -0.1971179225471505,
+                -0.010693538669214986,
+                0.4847022867227485,
+                0.006092425551339497,
+                0.005227366807716922
+              ],
+              [
+                -0.1971179225471505,
+                1.0000000000000002,
+                -0.012888664751072863,
+                0.18048249840009192,
+                -0.015504977613431002,
+                -0.01854349739998412
+              ],
+              [
+                -0.010693538669214986,
+                -0.012888664751072863,
+                1.0,
+                0.02409262166255417,
+                -0.00505417961333903,
+                -0.044092206336688325
+              ],
+              [
+                0.4847022867227485,
+                0.18048249840009192,
+                0.02409262166255417,
+                1.0,
+                -0.02168702896556827,
+                0.06136937415114757
+              ],
+              [
+                0.006092425551339497,
+                -0.015504977613431002,
+                -0.00505417961333903,
+                -0.02168702896556827,
+                1.0,
+                0.915005205937729
+              ],
+              [
+                0.005227366807716922,
+                -0.01854349739998412,
+                -0.044092206336688325,
+                0.06136937415114757,
+                0.915005205937729,
+                1.0000000000000002
+              ]
+            ],
+            "comparator_quantiles": [
+              [
+                0.4538342532513063,
+                113.62255532248366,
+                20.522931589992307,
+                0.11114156294777695,
+                0.041956977452639405,
+                0.1331488349703291
+              ],
+              [
+                0.5319440496685908,
+                115.20040659371324,
+                25.10108706302023,
+                0.2396730534907811,
+                0.4371179593193377,
+                0.4877310005319941
+              ],
+              [
+                0.6257902356034991,
+                116.86590215149111,
+                29.490896212166273,
+                0.626225046467333,
+                0.9256151282444891,
+                0.892057191125928
+              ]
+            ],
+            "critical_value": 2.638257273476751,
+            "distributional_diagnostics_role": "explanatory_only_not_equivalence_gate",
+            "familywise_alpha": 0.05,
+            "margin_definition": "0.10_times_same_estimand_plain_hmc_posterior_sd",
+            "margin_sd_fraction": 0.1,
+            "mean_mcse_definition": "posterior_sample_sd_divided_by_sqrt_split_chain_cross_chain_ess",
+            "multiplicity_control": "bonferroni_six_two_sided_normal_mcse_intervals",
+            "nonclaims": [
+              "same-target physical-posterior-mean agreement only",
+              "no full-distribution, covariance, tail, or mode equivalence claim",
+              "acceptance and short-probe diagnostics are nomination or explanatory only",
+              "no filter exactness, superiority, calibration, robustness, or readiness claim"
+            ],
+            "parameter_rows": [
+              {
+                "absolute_mean_difference": 0.0003239384375961496,
+                "neutra_mean": 0.5350958162632699,
+                "neutra_mean_ess": 12514.416120642461,
+                "neutra_mean_mcse": 0.00046911108923621307,
+                "neutra_sd": 0.05247844950291216,
+                "parameter": "r",
+                "passed": true,
+                "plain_hmc_mean": 0.5347718778256737,
+                "plain_hmc_mean_ess": 47039.863917421586,
+                "plain_hmc_mean_mcse": 0.0002440861311328905,
+                "plain_hmc_sd": 0.052939048597232086,
+                "practical_margin": 0.005293904859723209,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.0017190833420181082,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.011996018372414596,
+                "neutra_mean": 115.2050282725523,
+                "neutra_mean_ess": 14457.727031758723,
+                "neutra_mean_mcse": 0.00809184106911628,
+                "neutra_sd": 0.972965306436645,
+                "parameter": "K",
+                "passed": true,
+                "plain_hmc_mean": 115.21702429092471,
+                "plain_hmc_mean_ess": 65011.80764846885,
+                "plain_hmc_mean_mcse": 0.003884954553498099,
+                "plain_hmc_sd": 0.9905629125421775,
+                "practical_margin": 0.09905629125421776,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.03567733717554508,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.012879448527627346,
+                "neutra_mean": 25.074651472178676,
+                "neutra_mean_ess": 13476.391468532353,
+                "neutra_mean_mcse": 0.02486346839330452,
+                "neutra_sd": 2.8863468624961017,
+                "parameter": "a",
+                "passed": true,
+                "plain_hmc_mean": 25.087530920706303,
+                "plain_hmc_mean_ess": 49214.808109875936,
+                "plain_hmc_mean_mcse": 0.012948150316851564,
+                "plain_hmc_sd": 2.872470853076669,
+                "practical_margin": 0.2872470853076669,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.08683760024216848,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.00017292715905342648,
+                "neutra_mean": 0.28553007651189616,
+                "neutra_mean_ess": 12560.594118150166,
+                "neutra_mean_mcse": 0.0014749849173536333,
+                "neutra_sd": 0.1653075428179551,
+                "parameter": "s",
+                "passed": true,
+                "plain_hmc_mean": 0.28535714935284273,
+                "plain_hmc_mean_ess": 16703.78954136519,
+                "plain_hmc_mean_mcse": 0.0012867454017654579,
+                "plain_hmc_sd": 0.16630301761956337,
+                "practical_margin": 0.01663030176195634,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.005336970721715684,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.00043998455961058447,
+                "neutra_mean": 0.45629273687055183,
+                "neutra_mean_ess": 14723.701704198937,
+                "neutra_mean_mcse": 0.00231087828340491,
+                "neutra_sd": 0.28040488571743866,
+                "parameter": "u",
+                "passed": true,
+                "plain_hmc_mean": 0.45585275231094124,
+                "plain_hmc_mean_ess": 33383.22945579923,
+                "plain_hmc_mean_mcse": 0.0015382963945285316,
+                "plain_hmc_sd": 0.28106333549453805,
+                "practical_margin": 0.028106333549453806,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.007763947476542142,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.001938925459214258,
+                "neutra_mean": 0.500403914191667,
+                "neutra_mean_ess": 14703.249650620286,
+                "neutra_mean_mcse": 0.0019788859044940215,
+                "neutra_sd": 0.23995368327165303,
+                "parameter": "v",
+                "passed": true,
+                "plain_hmc_mean": 0.4984649887324527,
+                "plain_hmc_mean_ess": 32728.16804342124,
+                "plain_hmc_mean_mcse": 0.0013181183979552814,
+                "plain_hmc_sd": 0.23845985198024242,
+                "practical_margin": 0.023845985198024243,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.00821189216038295,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              }
+            ],
+            "passed": true,
+            "physical_parameter_names": [
+              "r",
+              "K",
+              "a",
+              "s",
+              "u",
+              "v"
+            ],
+            "schema": "bayesfilter.multimodel_neutra_p4_physical_mean_agreement.v1",
+            "supported_disagreement": false,
+            "unresolved_precision": false
+          },
+          "schema": "bayesfilter.multimodel_neutra_p4_r4_joint_diagnostic.v1",
+          "stop_rule": "convergence_and_simultaneous_physical_mean_equivalence"
+        },
+        "health": {
+          "acceptance_rate": 0.9915,
+          "acceptance_rate_by_chain": [
+            0.991,
+            0.992,
+            0.991,
+            0.992
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 714.6747628700105,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            2000,
+            4,
+            6
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "passed": false,
+        "seed": [
+          20260716,
+          14310
+        ]
+      },
+      {
+        "chunk_index": 1,
+        "completed_results_per_chain": 4000,
+        "diagnostic_role": "full_convergence",
+        "full_convergence": {
+          "convergence": {
+            "chain_count": 4,
+            "definitions": {
+              "autocorrelation_truncation": "TFP initial positive pairs",
+              "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
+              "quantile_interpolation": "linear",
+              "rank_transform": "Blom average-rank normal score",
+              "rhat": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators"
+            },
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 4000,
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_rhat": 1.000102781504111,
+            "min_bulk_ess": 28349.203994882984,
+            "min_tail_ess": 14706.40656919484,
+            "nonclaims": [
+              "all-parameter HMC convergence screen only",
+              "no posterior recovery claim",
+              "no sampler superiority claim",
+              "no production or default readiness claim"
+            ],
+            "parameter_count": 6,
+            "parameter_diagnostics": [
+              {
+                "bulk_ess": 30278.023677642945,
+                "folded_rank_normalized_split_rhat": 1.000102781504111,
+                "lower_tail_ess": 15897.924608375057,
+                "parameter": "r_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9998151007875987,
+                "rhat": 1.000102781504111,
+                "tail_ess": 15856.846792816501,
+                "upper_tail_ess": 15856.846792816501
+              },
+              {
+                "bulk_ess": 32969.25157842197,
+                "folded_rank_normalized_split_rhat": 0.9998549679347394,
+                "lower_tail_ess": 15460.913194050474,
+                "parameter": "K_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9999728364127246,
+                "rhat": 0.9999728364127246,
+                "tail_ess": 15460.913194050474,
+                "upper_tail_ess": 16695.575680886024
+              },
+              {
+                "bulk_ess": 28349.203994882984,
+                "folded_rank_normalized_split_rhat": 0.9995674586957312,
+                "lower_tail_ess": 15559.381223541799,
+                "parameter": "a_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9998998866844596,
+                "rhat": 0.9998998866844596,
+                "tail_ess": 15559.381223541799,
+                "upper_tail_ess": 16042.518914104045
+              },
+              {
+                "bulk_ess": 30277.167571592683,
+                "folded_rank_normalized_split_rhat": 1.0000571439858825,
+                "lower_tail_ess": 15354.580350223581,
+                "parameter": "s_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9997366900033436,
+                "rhat": 1.0000571439858825,
+                "tail_ess": 14718.553057257503,
+                "upper_tail_ess": 14718.553057257503
+              },
+              {
+                "bulk_ess": 32623.420688884507,
+                "folded_rank_normalized_split_rhat": 0.9999544687329537,
+                "lower_tail_ess": 16597.638858627903,
+                "parameter": "u_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9999285491054078,
+                "rhat": 0.9999544687329537,
+                "tail_ess": 15737.623959861126,
+                "upper_tail_ess": 15737.623959861126
+              },
+              {
+                "bulk_ess": 29937.196942916682,
+                "folded_rank_normalized_split_rhat": 1.0000398378437694,
+                "lower_tail_ess": 14706.40656919484,
+                "parameter": "v_source_probit",
+                "passed": true,
+                "rank_normalized_split_rhat": 0.9999616076289165,
+                "rhat": 1.0000398378437694,
+                "tail_ess": 14706.40656919484,
+                "upper_tail_ess": 15010.533976579864
+              }
+            ],
+            "passed": true,
+            "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 2000,
+            "thresholds": {
+              "bulk_ess_min": 1000.0,
+              "rhat_max": 1.01,
+              "tail_ess_min": 400.0
+            }
+          },
+          "passed": true,
+          "physical_mean_agreement": {
+            "candidate_correlation": [
+              [
+                1.0,
+                -0.1614212297572308,
+                -0.022946550381585017,
+                0.4901640041471567,
+                -0.01266581155397248,
+                -0.02073042074871118
+              ],
+              [
+                -0.1614212297572308,
+                1.0,
+                -0.007312009868287801,
+                0.21058245849508944,
+                0.01628313988206021,
+                0.00786814734872584
+              ],
+              [
+                -0.022946550381585017,
+                -0.007312009868287801,
+                0.9999999999999998,
+                0.02787110082345712,
+                0.0038409576573382484,
+                -0.02509825289449302
+              ],
+              [
+                0.4901640041471567,
+                0.21058245849508944,
+                0.02787110082345712,
+                0.9999999999999999,
+                -0.004572155629950481,
+                0.06959357332771311
+              ],
+              [
+                -0.01266581155397248,
+                0.01628313988206021,
+                0.0038409576573382484,
+                -0.004572155629950481,
+                1.0000000000000002,
+                0.911299042522296
+              ],
+              [
+                -0.02073042074871118,
+                0.00786814734872584,
+                -0.02509825289449302,
+                0.06959357332771311,
+                0.911299042522296,
+                1.0
+              ]
+            ],
+            "candidate_quantiles": [
+              [
+                0.45396718278734177,
+                113.6132894817633,
+                20.50587621573462,
+                0.1116754293674678,
+                0.04046334468932207,
+                0.12931354915756618
+              ],
+              [
+                0.5317745594101321,
+                115.20924238271255,
+                25.097622520942007,
+                0.23810777024753027,
+                0.43618052210853625,
+                0.49008432868060625
+              ],
+              [
+                0.6261284376628716,
+                116.84709750963168,
+                29.552705808971623,
+                0.6208954042040626,
+                0.9265884566608983,
+                0.8941488169672515
+              ]
+            ],
+            "claim_scope": "six_physical_posterior_means_only",
+            "comparator_correlation": [
+              [
+                1.0,
+                -0.1971179225471505,
+                -0.010693538669214986,
+                0.4847022867227485,
+                0.006092425551339497,
+                0.005227366807716922
+              ],
+              [
+                -0.1971179225471505,
+                1.0000000000000002,
+                -0.012888664751072863,
+                0.18048249840009192,
+                -0.015504977613431002,
+                -0.01854349739998412
+              ],
+              [
+                -0.010693538669214986,
+                -0.012888664751072863,
+                1.0,
+                0.02409262166255417,
+                -0.00505417961333903,
+                -0.044092206336688325
+              ],
+              [
+                0.4847022867227485,
+                0.18048249840009192,
+                0.02409262166255417,
+                1.0,
+                -0.02168702896556827,
+                0.06136937415114757
+              ],
+              [
+                0.006092425551339497,
+                -0.015504977613431002,
+                -0.00505417961333903,
+                -0.02168702896556827,
+                1.0,
+                0.915005205937729
+              ],
+              [
+                0.005227366807716922,
+                -0.01854349739998412,
+                -0.044092206336688325,
+                0.06136937415114757,
+                0.915005205937729,
+                1.0000000000000002
+              ]
+            ],
+            "comparator_quantiles": [
+              [
+                0.4538342532513063,
+                113.62255532248366,
+                20.522931589992307,
+                0.11114156294777695,
+                0.041956977452639405,
+                0.1331488349703291
+              ],
+              [
+                0.5319440496685908,
+                115.20040659371324,
+                25.10108706302023,
+                0.2396730534907811,
+                0.4371179593193377,
+                0.4877310005319941
+              ],
+              [
+                0.6257902356034991,
+                116.86590215149111,
+                29.490896212166273,
+                0.626225046467333,
+                0.9256151282444891,
+                0.892057191125928
+              ]
+            ],
+            "critical_value": 2.638257273476751,
+            "distributional_diagnostics_role": "explanatory_only_not_equivalence_gate",
+            "familywise_alpha": 0.05,
+            "margin_definition": "0.10_times_same_estimand_plain_hmc_posterior_sd",
+            "margin_sd_fraction": 0.1,
+            "mean_mcse_definition": "posterior_sample_sd_divided_by_sqrt_split_chain_cross_chain_ess",
+            "multiplicity_control": "bonferroni_six_two_sided_normal_mcse_intervals",
+            "nonclaims": [
+              "same-target physical-posterior-mean agreement only",
+              "no full-distribution, covariance, tail, or mode equivalence claim",
+              "acceptance and short-probe diagnostics are nomination or explanatory only",
+              "no filter exactness, superiority, calibration, robustness, or readiness claim"
+            ],
+            "parameter_rows": [
+              {
+                "absolute_mean_difference": 0.0003072537581192414,
+                "neutra_mean": 0.5350791315837929,
+                "neutra_mean_ess": 28967.71778449507,
+                "neutra_mean_mcse": 0.0003082013863127189,
+                "neutra_sd": 0.05245558421264137,
+                "parameter": "r",
+                "passed": true,
+                "plain_hmc_mean": 0.5347718778256737,
+                "plain_hmc_mean_ess": 47039.863917421586,
+                "plain_hmc_mean_mcse": 0.0002440861311328905,
+                "plain_hmc_sd": 0.052939048597232086,
+                "practical_margin": 0.005293904859723209,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.0013444819593313147,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.004681182995696531,
+                "neutra_mean": 115.21234310792902,
+                "neutra_mean_ess": 32856.59078052931,
+                "neutra_mean_mcse": 0.0054252135359677605,
+                "neutra_sd": 0.983395204295718,
+                "parameter": "K",
+                "passed": true,
+                "plain_hmc_mean": 115.21702429092471,
+                "plain_hmc_mean_ess": 65011.80764846885,
+                "plain_hmc_mean_mcse": 0.003884954553498099,
+                "plain_hmc_sd": 0.9905629125421775,
+                "practical_margin": 0.09905629125421776,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.022285657952166672,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.030098470782135678,
+                "neutra_mean": 25.057432449924168,
+                "neutra_mean_ess": 26284.28870520859,
+                "neutra_mean_mcse": 0.01784052125256502,
+                "neutra_sd": 2.892382022717905,
+                "parameter": "a",
+                "passed": true,
+                "plain_hmc_mean": 25.087530920706303,
+                "plain_hmc_mean_ess": 49214.808109875936,
+                "plain_hmc_mean_mcse": 0.012948150316851564,
+                "plain_hmc_sd": 2.872470853076669,
+                "practical_margin": 0.2872470853076669,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.08825626553323535,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.00044304022858354664,
+                "neutra_mean": 0.2849141091242592,
+                "neutra_mean_ess": 26094.894884082816,
+                "neutra_mean_mcse": 0.0010236719894191585,
+                "neutra_sd": 0.1653630964000503,
+                "parameter": "s",
+                "passed": true,
+                "plain_hmc_mean": 0.28535714935284273,
+                "plain_hmc_mean_ess": 16703.78954136519,
+                "plain_hmc_mean_mcse": 0.0012867454017654579,
+                "plain_hmc_sd": 0.16630301761956337,
+                "practical_margin": 0.01663030176195634,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.004781042893019252,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.0001642656541170906,
+                "neutra_mean": 0.45568848665682415,
+                "neutra_mean_ess": 31420.34283370852,
+                "neutra_mean_mcse": 0.0015853808980121808,
+                "neutra_sd": 0.28102119799617276,
+                "parameter": "u",
+                "passed": true,
+                "plain_hmc_mean": 0.45585275231094124,
+                "plain_hmc_mean_ess": 33383.22945579923,
+                "plain_hmc_mean_mcse": 0.0015382963945285316,
+                "plain_hmc_sd": 0.28106333549453805,
+                "practical_margin": 0.028106333549453806,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.005992240099516705,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              },
+              {
+                "absolute_mean_difference": 0.0007665474954320906,
+                "neutra_mean": 0.4992315362278848,
+                "neutra_mean_ess": 31214.206592233943,
+                "neutra_mean_mcse": 0.001357891393153821,
+                "neutra_sd": 0.2399060420378774,
+                "parameter": "v",
+                "passed": true,
+                "plain_hmc_mean": 0.4984649887324527,
+                "plain_hmc_mean_ess": 32728.16804342124,
+                "plain_hmc_mean_mcse": 0.0013181183979552814,
+                "plain_hmc_sd": 0.23845985198024242,
+                "practical_margin": 0.023845985198024243,
+                "simultaneous_lower_bound": 0.0,
+                "simultaneous_upper_bound": 0.005759274355921245,
+                "supported_disagreement": false,
+                "unresolved_precision": false
+              }
+            ],
+            "passed": true,
+            "physical_parameter_names": [
+              "r",
+              "K",
+              "a",
+              "s",
+              "u",
+              "v"
+            ],
+            "schema": "bayesfilter.multimodel_neutra_p4_physical_mean_agreement.v1",
+            "supported_disagreement": false,
+            "unresolved_precision": false
+          },
+          "schema": "bayesfilter.multimodel_neutra_p4_r4_joint_diagnostic.v1",
+          "stop_rule": "convergence_and_simultaneous_physical_mean_equivalence"
+        },
+        "health": {
+          "acceptance_rate": 0.9895,
+          "acceptance_rate_by_chain": [
+            0.9905,
+            0.9875,
+            0.9895,
+            0.9905
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 655.0165846739837,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            2000,
+            4,
+            6
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "passed": true,
+        "seed": [
+          20260716,
+          15319
+        ]
+      }
+    ],
+    "retained_passed": true,
+    "retained_results_per_chain": 4000,
+    "warmup_archives": [
+      {
+        "chunk_index": 0,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/warmup/chunk-0000/latent.tensor",
+        "model_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/warmup/chunk-0000/model.tensor",
+        "sample_shape": [
+          1000,
+          4,
+          6
+        ],
+        "schema": "bayesfilter.neutra.separate_sample_archive.v1",
+        "seed": [
+          20260716,
+          14210
+        ],
+        "stage": "warmup",
+        "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+        "warmup_excluded_from_posterior": true
+      },
+      {
+        "chunk_index": 1,
+        "cumulative": false,
+        "latent_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/warmup/chunk-0001/latent.tensor",
+        "model_path": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/neutra-confirmation/attempt-01/samples/warmup/chunk-0001/model.tensor",
+        "sample_shape": [
+          1000,
+          4,
+          6
+        ],
+        "schema": "bayesfilter.neutra.separate_sample_archive.v1",
+        "seed": [
+          20260716,
+          15219
+        ],
+        "stage": "warmup",
+        "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad",
+        "warmup_excluded_from_posterior": true
+      }
+    ],
+    "warmup_cap_hit": false,
+    "warmup_check_count": 2,
+    "warmup_checks": [
+      {
+        "check_window_results_per_chain": 0,
+        "chunk_index": 0,
+        "completed_results_per_chain": 1000,
+        "health": {
+          "acceptance_rate": 0.992,
+          "acceptance_rate_by_chain": [
+            0.994,
+            0.992,
+            0.991,
+            0.991
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 357.18437165700016,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            6
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": null,
+        "passed": false,
+        "seed": [
+          20260716,
+          14210
+        ]
+      },
+      {
+        "check_window_results_per_chain": 1000,
+        "chunk_index": 1,
+        "completed_results_per_chain": 2000,
+        "health": {
+          "acceptance_rate": 0.991,
+          "acceptance_rate_by_chain": [
+            0.99,
+            0.994,
+            0.989,
+            0.991
+          ],
+          "all_states_moved": true,
+          "elapsed_seconds": 345.72093066500383,
+          "energy_error_divergence_count": 0,
+          "energy_error_divergence_definition": "nonfinite log_accept_ratio or log_accept_ratio < -1000",
+          "health_passed": true,
+          "jit_compile": true,
+          "log_accept_ratio_all_finite": true,
+          "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+          "sample_shape": [
+            1000,
+            4,
+            6
+          ],
+          "samples_all_finite": true,
+          "single_batched_sample_chain_invocation": true,
+          "target_log_prob_all_finite": true,
+          "target_status_telemetry": {
+            "all_status_valid": true,
+            "available": true,
+            "status_nonvalid_count": 0,
+            "trace_scope": "sampled_transition_states"
+          }
+        },
+        "modern_rhat": {
+          "chain_count": 4,
+          "diagnostics_all_finite": true,
+          "draw_count_per_chain": 1000,
+          "finite_rhat_count": 6,
+          "folded_rank_normalized_split_rhat": [
+            0.9988945447406895,
+            1.0018760866543412,
+            1.0009049747884573,
+            0.9997690316451421,
+            0.9987560316753489,
+            0.9994212612222096
+          ],
+          "hard_vetoes": [],
+          "input_all_finite": true,
+          "max_finite_rhat": 1.0018760866543412,
+          "max_folded_rank_normalized_split_rhat": 1.0018760866543412,
+          "max_rank_normalized_split_rhat": 0.9998134612798765,
+          "nonfinite_rhat_count": 0,
+          "parameter_count": 6,
+          "passed": true,
+          "rank_normalized_split_rhat": [
+            0.9983092021073533,
+            0.9982788720415655,
+            0.9990177601630338,
+            0.9986942102024202,
+            0.9998134612798765,
+            0.9993529925174972
+          ],
+          "rhat": [
+            0.9988945447406895,
+            1.0018760866543412,
+            1.0009049747884573,
+            0.9997690316451421,
+            0.9998134612798765,
+            0.9994212612222096
+          ],
+          "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+          "rhat_threshold": 1.05,
+          "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+          "split_chain_count": 8,
+          "split_draw_count_per_chain": 500
+        },
+        "passed": true,
+        "seed": [
+          20260716,
+          15219
+        ]
+      }
+    ],
+    "warmup_excluded_from_posterior": true,
+    "warmup_passed": true,
+    "warmup_results_per_chain": 2000,
+    "warmup_samples_retained": true
+  },
+  "target_identity": {
+    "adapter_signature": "b5049e2f718e12865ccb8c9206d52c6016139ddec44d074815fa57d5703fdb28",
+    "batch_execution_surface": {
+      "adapter_signature": "b5049e2f718e12865ccb8c9206d52c6016139ddec44d074815fa57d5703fdb28",
+      "backend_id": "tensorflow_fixed_sgqf_predator_prey",
+      "callable_module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+      "callable_qualname": "PredatorPreySGQFNeuTraAdapter.neutra_batch_log_prob_and_grad_status",
+      "callable_source_sha256": "c77992c0d5da9e1c2839b5676aa173608e4020965ed34a51d8244fe585181c53",
+      "dependency_callable_sources": [
+        {
+          "global_name": "pp_sgqf_likelihood_value_score_status",
+          "module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+          "qualname": "pp_sgqf_likelihood_value_score_status",
+          "source_sha256": "92f4c3a38f23160196e92ecb6b6a13ae52d5a600cc5cdeac4fbc3a587c97da49"
+        },
+        {
+          "global_name": "source_six_probit_jacobian_value_score",
+          "module": "bayesfilter.testing.predator_prey_ukf_neutra_target_tf",
+          "qualname": "source_six_probit_jacobian_value_score",
+          "source_sha256": "4fb6e8dfe0327e718f7260af727af3b92023123e22f0aecd7e509d80eaba3258"
+        },
+        {
+          "global_name": "source_uniform_prior_value_score",
+          "module": "bayesfilter.testing.predator_prey_ukf_neutra_target_tf",
+          "qualname": "source_uniform_prior_value_score",
+          "source_sha256": "6ea366dd544c081b9bcaaeb5160c408bb23826275f6d65377979695dd0cbcc37"
+        }
+      ],
+      "dependency_closure_sha256": "95cdc6c6e5d1a260dd7f9fd90461ec79f2885df6c5c506a7f0c6ac28fedd8432",
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+          "source_sha256": "4d1217ea6180d1c3de1ff27f6f952f1986c86993f2f15b1f91745ee3a96b3b36"
+        },
+        {
+          "module": "bayesfilter.testing.predator_prey_ukf_neutra_target_tf",
+          "source_sha256": "4813b475cc0f64a97b5b41413d1c600902b0fc20005f4d97b0791ed76ffca570"
+        }
+      ],
+      "evidence_path": "bayesfilter/testing/predator_prey_sgqf_neutra_target_tf.py",
+      "jit_compile_required": true,
+      "method_name": "neutra_batch_log_prob_and_grad_status",
+      "minimum_batch_size": 2,
+      "row_mapped_scalar_target_used": false,
+      "sample_axis_python_loop_used": false,
+      "scalar_fallback_used": false,
+      "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+      "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+      "status_telemetry_required": true,
+      "target_scope": "PP-SGQF-six-probit-initial-observation-first-level-2"
+    },
+    "dtype": "float64",
+    "mathematical_target_signature": "90286845d284d9af29b729e72055d21dacc6f56136ddfc00e595375f4a7cdef5",
+    "nonclaims": [
+      "typed target identity and execution binding only",
+      "no HMC convergence or posterior recovery claim",
+      "no NeuTra training quality or production readiness claim"
+    ],
+    "parameter_dim": 6,
+    "posterior_execution_surface": {
+      "callable_module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+      "callable_qualname": "PredatorPreySGQFNeuTraAdapter.log_prob_and_grad",
+      "callable_source_sha256": "2f501573eabbf1b3368c352bcaea7f5267d98fec494472fffabd0f8bf458a816",
+      "dependency_callable_sources": [
+        {
+          "global_name": "_posterior_value_score",
+          "module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+          "qualname": "_posterior_value_score",
+          "source_sha256": "d70c2e7c0267902ddfc0dd0841bdc0eeddc29fb709617f4f65f847dee9209df2"
+        }
+      ],
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+          "source_sha256": "4d1217ea6180d1c3de1ff27f6f952f1986c86993f2f15b1f91745ee3a96b3b36"
+        }
+      ],
+      "method_name": "log_prob_and_grad"
+    },
+    "program_id": "multimodel-neutra-filter-posterior-20260715",
+    "recomposition_signature": "eb70057e58d561f48ea1733f6d353c8cf13b576035fd7fa2818347a36613ce40",
+    "registry_artifact_sha256": "d6b64360cf1c59606d6a6faf9ca4737fb991ba8a7b1a1ceb0b2900ebb2b7c595",
+    "schema": "bayesfilter.neutra.typed_target_identity.v1",
+    "scope_id": "PP-SGQF",
+    "scope_kind": "model_cell",
+    "status_execution_surface": {
+      "callable_module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+      "callable_qualname": "PredatorPreySGQFNeuTraAdapter.target_status_telemetry",
+      "callable_source_sha256": "a6b285895eb19b40e380275f9fef2a215fd3f0f8ed8e9183410f1f7e8ab8d55b",
+      "dependency_callable_sources": [
+        {
+          "global_name": "pp_sgqf_likelihood_value_score_status",
+          "module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+          "qualname": "pp_sgqf_likelihood_value_score_status",
+          "source_sha256": "92f4c3a38f23160196e92ecb6b6a13ae52d5a600cc5cdeac4fbc3a587c97da49"
+        }
+      ],
+      "dependency_module_sources": [
+        {
+          "module": "bayesfilter.testing.predator_prey_sgqf_neutra_target_tf",
+          "source_sha256": "4d1217ea6180d1c3de1ff27f6f952f1986c86993f2f15b1f91745ee3a96b3b36"
+        }
+      ],
+      "method_name": "target_status_telemetry"
+    },
+    "target_signature": "8e0a9582fd30643b2e77e7615a21c0d44cc6c1827865ea52c841cc6dbfdde1ad"
+  },
+  "terminal_state": "NEUTRA_CONFIRMED",
+  "training_reference": {
+    "artifact_hashes_sha256": "5e3f1fe4c3ab4a8cc94bc419294bc27d38f715ca5a6a363d04cd8867992eee3a",
+    "result_sha256": "de5f7cc35f606fe6d07177d1059d24acc1187e80b4bda42963f9e2823bf64bd4",
+    "root": "docs/plans/artifacts/multimodel-neutra-filter-posterior-20260715/phase-p4/PP-SGQF/training/final/wide_lr5e3/attempt-01"
+  },
+  "training_result_binding": {
+    "artifact_signature": "2bb8afff180a0c5af81c6c54614aa7b7496f1f700e49fd7269b8348376023b48",
+    "recipe_id": "wide_lr5e3",
+    "steps": 5000,
+    "training_state_hash": "daf84dc9d487320e07b92dc289591f8ade8ee2327071371cfc8b4f70ff254ebc",
+    "transport_hash": "603a07c420579788e3981aa44dd67892902dc8c32da6ddf7c171918300da6811"
+  }
+}

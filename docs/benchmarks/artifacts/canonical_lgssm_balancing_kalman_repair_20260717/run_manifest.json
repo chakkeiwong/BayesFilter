@@ -1,0 +1,118 @@
+{
+  "campaign_id": "canonical-lgssm-balancing-kalman-repair-20260717",
+  "status": "campaign_closed_mechanical_subdefect_pass_canonical_and_scientific_incomplete",
+  "date": "2026-07-17",
+  "git": {
+    "commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+    "worktree_state": "scoped_uncommitted_campaign_changes_present"
+  },
+  "environment": {
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "python_version": "3.11.14",
+    "tensorflow_version": "2.19.1",
+    "tensorflow_probability_version": "0.25.0",
+    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+    "gpu_total_memory_mib_reported_by_nvidia_smi": 16376,
+    "tensorflow_logical_device_memory_limit_mib": 8192,
+    "memory_growth": false,
+    "jit_compile": true,
+    "serious_run_dtype": "float64",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "cpu_only_aggregation_and_tests": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "TF_ENABLE_ONEDNN_OPTS": "0",
+      "MPLCONFIGDIR": "/tmp"
+    }
+  },
+  "data": {
+    "dataset_seed": 81100,
+    "version": "repository_generated_lgssm_dataset_at_git_commit",
+    "theta_physical": [0.72, 0.55, 0.35, 0.35, 0.45],
+    "parameter_names": ["phi1", "phi2", "phi3", "q_scale", "r_scale"]
+  },
+  "fixed_numerical_settings": {
+    "sinkhorn_steps": 20,
+    "selected_balance_steps": 50,
+    "row_chunk_size": 16,
+    "col_chunk_size": 16,
+    "epsilon": 0.5,
+    "scaling": 0.9,
+    "ridge": 7.301568984985351e-09
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_contract_e_canonical_lgssm_tf.py": "79deb73f54268d73a7db9bf88613567e1a6a8c776fd5941016d69a6f7531ea36",
+    "bayesfilter/highdim/ledh_contract_e_lgssm_preparation_tf.py": "7d7307740b88aed75cc8ab596e339e0d12d276c30399ad5c0c1aad14a7867d44",
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": "312cac561822633961f2987efc104260e76508a466f13b3638be89a621e7c38f",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "5a226b53f4a881a1b66cee00902dcd007c82de3c01e3440101c111c5095ee023",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "e5bd812a03035554fcbb707a79f8a87fc491208834a11d9e47a1d587dd923ebb",
+    "bayesfilter/ledh_fd_policy.py": "32c20ab5467c464a32bd2f098b0a1f1c0e67765890007126349abc6434edd2b5"
+  },
+  "harness_sha256": {
+    "docs/benchmarks/run_canonical_lgssm_balance_schedule_selection.py": "6aae47cf1db58627a71bb26c93a1495e83fbcc587b36899f0db471b4fff9bce2",
+    "docs/benchmarks/run_canonical_lgssm_particle_diagnostic_arm.py": "80e9b860335be6a79ea953b000247feae81eebdaaa739cb1153c288e1a8f67b9",
+    "docs/benchmarks/aggregate_canonical_lgssm_particle_diagnostic.py": "38796e7ebbb13431a3cbac264e75a9bec021f049b23905c245e623fc05ca68fc",
+    "docs/benchmarks/run_canonical_lgssm_same_scalar_fd.py": "9e8666f71e9b0ac43e57f00c850f4651e3bf47d739146ab22a0d02c556c8e7a1",
+    "docs/benchmarks/run_canonical_lgssm_kalman_certification_arm.py": "35babda5fa87959a303c42073749d616b895027418e45f40ebde8048a0222328",
+    "docs/benchmarks/aggregate_canonical_lgssm_kalman_certification.py": "19cf6b201b4b0b39aeeb58e8069509a4685b17550d027b0882146043184baa4d"
+  },
+  "executed_commands": {
+    "phase1_attempts": [
+      "python docs/benchmarks/run_canonical_lgssm_balance_schedule_selection.py --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase1/attempt01/result.json",
+      "python docs/benchmarks/run_canonical_lgssm_balance_schedule_selection.py --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase1/attempt02/result.json"
+    ],
+    "phase2_arm_template": "python docs/benchmarks/run_canonical_lgssm_particle_diagnostic_arm.py --num-particles <128|256|512|1024> --arm <all_active_contract_e|no_reset_weighted> --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase2/n<N>/<arm>_attempt01.json",
+    "phase2_aggregate_template": "CUDA_VISIBLE_DEVICES=-1 TF_ENABLE_ONEDNN_OPTS=0 MPLCONFIGDIR=/tmp python docs/benchmarks/aggregate_canonical_lgssm_particle_diagnostic.py --contract-e <contract_e_artifact> --no-reset <no_reset_artifact> --output <aggregate_artifact>",
+    "phase3_same_scalar_fd": "python docs/benchmarks/run_canonical_lgssm_same_scalar_fd.py --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase3/same_scalar_fd/attempt01.json",
+    "phase3_contract_e": "python docs/benchmarks/run_canonical_lgssm_kalman_certification_arm.py --time-steps 2 --arm all_active_contract_e --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase3/t2/contract_e_attempt01.json",
+    "phase3_no_reset": "python docs/benchmarks/run_canonical_lgssm_kalman_certification_arm.py --time-steps 2 --arm no_reset_weighted --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase3/t2/no_reset_attempt01.json",
+    "phase3_aggregate": "CUDA_VISIBLE_DEVICES=-1 TF_ENABLE_ONEDNN_OPTS=0 MPLCONFIGDIR=/tmp python docs/benchmarks/aggregate_canonical_lgssm_kalman_certification.py --contract-e docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase3/t2/contract_e_attempt01.json --no-reset docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase3/t2/no_reset_attempt01.json --output docs/benchmarks/artifacts/canonical_lgssm_balancing_kalman_repair_20260717/phase3/t2/aggregate_attempt01.json"
+  },
+  "seed_blocks": {
+    "phase1_design": [81300, 81301, 81302, 81303, 81304, 81305, 81306, 81307],
+    "phase1_audit": [81320, 81321, 81322, 81323, 81324, 81325, 81326, 81327],
+    "phase2_all_particle_counts": [81400, 81401, 81402, 81403, 81404, 81405, 81406, 81407, 81408, 81409, 81410, 81411, 81412, 81413, 81414, 81415],
+    "phase3_t2": [81500, 81501, 81502, 81503, 81504, 81505, 81506, 81507, 81508, 81509, 81510, 81511, 81512, 81513, 81514, 81515],
+    "phase3_t10_reserved_unexecuted": [81520, 81521, 81522, 81523, 81524, 81525, 81526, 81527, 81528, 81529, 81530, 81531, 81532, 81533, 81534, 81535],
+    "phase3_t50_reserved_unexecuted": [81540, 81541, 81542, 81543, 81544, 81545, 81546, 81547, 81548, 81549, 81550, 81551, 81552, 81553, 81554, 81555]
+  },
+  "attempts_and_wall_time_seconds": {
+    "phase1_attempt01": {
+      "status": "failed_before_candidate_execution",
+      "failure": "TensorFlow device initialized before logical memory cap",
+      "wall_time": 0.000054639007430523634
+    },
+    "phase1_attempt02": {
+      "status": "selected_schedule_audit_passed",
+      "wall_time": 161.81983950803988
+    },
+    "phase2_eight_arms_total": 3337.6545371699613,
+    "phase3_same_scalar_fd": 139.85838116903324,
+    "phase3_t2_contract_e": 885.0188603900024,
+    "phase3_t2_no_reset": 951.1074981710408,
+    "serious_gpu_artifact_total_including_valid_phase1": 5475.459116408078,
+    "campaign_gpu_budget_seconds": 14400
+  },
+  "artifacts": {
+    "phase1_attempt01": "phase1/attempt01/result.json",
+    "phase1_attempt02": "phase1/attempt02/result.json",
+    "phase2": "phase2/n{128,256,512,1024}/{contract_e_attempt01,no_reset_attempt01,aggregate_attempt01}.json",
+    "phase3_same_scalar_fd": "phase3/same_scalar_fd/attempt01.json",
+    "phase3_t2_contract_e": "phase3/t2/contract_e_attempt01.json",
+    "phase3_t2_no_reset": "phase3/t2/no_reset_attempt01.json",
+    "phase3_t2_aggregate": "phase3/t2/aggregate_attempt01.json"
+  },
+  "unexecuted_nodes": {
+    "T10": "resource_blocked_under_30_minute_node_cap_after_measured_T2_runtime",
+    "T50": "not_reached_and_resource_blocked_under_unchanged_campaign_design"
+  },
+  "plan": "docs/plans/bayesfilter-canonical-lgssm-balancing-kalman-repair-plan-2026-07-17.md",
+  "result": "docs/plans/bayesfilter-canonical-lgssm-balancing-kalman-repair-result-2026-07-17.md",
+  "nonclaims": [
+    "not Kalman equivalence",
+    "not canonical factory admission",
+    "not HMC readiness",
+    "not production XLA-loop readiness",
+    "not leaderboard admission",
+    "not method superiority"
+  ]
+}

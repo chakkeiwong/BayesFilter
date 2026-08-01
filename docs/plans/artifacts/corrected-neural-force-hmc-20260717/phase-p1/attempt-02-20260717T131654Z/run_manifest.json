@@ -1,0 +1,30 @@
+{
+  "schema": "bayesfilter.corrected_neural_force_hmc.p1_manifest.v1",
+  "program_id": "bayesfilter-corrected-neural-force-hmc-20260717",
+  "phase": "P1",
+  "attempt": "attempt-02-20260717T131654Z",
+  "started_at_utc": "2026-07-17T12:55:32Z",
+  "finished_at_utc": "2026-07-17T13:16:54Z",
+  "git_commit": "15170e1573d19b235d96f3ed3525fa2071f58320",
+  "dirty_worktree_disclosure": "shared heavily dirty worktree; P1 used only new standalone kernel and test paths",
+  "environment": "tf-gpu; TensorFlow 2.19.1; TensorFlow Probability 0.25.0",
+  "cpu_gpu_status": "CPU tests explicitly hid GPU; trusted GPU tests used RTX 4080 SUPER with BAYESFILTER_TEST_DEVICE_SCOPE=visible, XLA, TF32, and memory growth",
+  "data_version": "analytic deterministic fixtures only",
+  "seeds": [[19, 23], [7, 11], [2026, 717], [4, 9], [88, 99], [33, 44]],
+  "wall_time_seconds": 1282.0,
+  "measured_test_seconds": {"cpu": 7.69, "gpu": 6.67},
+  "output_root": "docs/plans/artifacts/corrected-neural-force-hmc-20260717/phase-p1/attempt-02-20260717T131654Z",
+  "plan_file": "docs/plans/bayesfilter-hnn-surrogate-hmc-p1-kernel-subplan-2026-07-17.md",
+  "result_file": "docs/plans/bayesfilter-hnn-surrogate-hmc-p1-kernel-result-2026-07-17.md",
+  "commands": {
+    "cpu": "CUDA_VISIBLE_DEVICES=-1 /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/test_neural_force_hmc.py --durations=10",
+    "gpu": "BAYESFILTER_TEST_DEVICE_SCOPE=visible /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/test_neural_force_hmc_gpu.py -s --durations=10"
+  },
+  "repair_history": [
+    "CPU attempt 1: two localized test/API issues; repaired",
+    "GPU attempts 1 and 2: pytest default CPU isolation hid GPU; no kernel executed",
+    "GPU attempt 3: existing visible-device opt-in; passed"
+  ],
+  "passed": true,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+}

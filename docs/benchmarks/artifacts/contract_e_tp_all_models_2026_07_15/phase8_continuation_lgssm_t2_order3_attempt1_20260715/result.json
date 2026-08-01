@@ -1,0 +1,206 @@
+{
+  "schema": "bayesfilter.contract_e_tp.phase8_lgssm_score_informed.v1",
+  "status": "PASS_ENGINEERING",
+  "algorithm_id": "contract_e_tp_experimental_v1",
+  "feature_mode": "exact_continuation",
+  "feature_role": "exact_lgssm_future_continuation_oracle_diagnostic",
+  "scope": "center_only_not_parameter_region_certificate",
+  "target": {
+    "row_id": "benchmark_lgssm_exact_oracle_m3_T50",
+    "dataset_seed": 81100,
+    "time_steps": 2,
+    "theta": [
+      0.72,
+      0.55,
+      0.35,
+      0.35,
+      0.45
+    ],
+    "parameter_names": [
+      "phi1",
+      "phi2",
+      "phi3",
+      "q_scale",
+      "r_scale"
+    ],
+    "route": "corrected_ledh_parent_by_innovation_teacher"
+  },
+  "preparation": {
+    "path": "docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_continuation_lgssm_t2_order3_attempt1_20260715/charts.json",
+    "sha256": "40ec9527d7bdec799e3fa5510395a7619d609ea69ce99bf51559d90736480ad6",
+    "quadrature_order": 3,
+    "feature_names": [
+      "mass",
+      "x1",
+      "x2",
+      "x3",
+      "x1_sq",
+      "x1_x2",
+      "x1_x3",
+      "x2_sq",
+      "x2_x3",
+      "x3_sq",
+      "stabilized_exact_lgssm_remaining_horizon_likelihood"
+    ]
+  },
+  "value": {
+    "contract_e_tp": -8.843122277884945,
+    "kalman": -8.862150494354598,
+    "difference": 0.01902821646965336,
+    "center_boundary": 0.001,
+    "center_screen_pass": false,
+    "increment_history": [
+      -6.97719017559256,
+      -1.8659321022923834
+    ],
+    "cumulative_history": [
+      -6.97719017559256,
+      -8.843122277884945
+    ],
+    "kalman_prefix_history": [
+      -6.990431703843756,
+      -8.862150494354598
+    ]
+  },
+  "score": {
+    "contract_e_tp": [
+      4.0234356099551025,
+      -0.3824162252761265,
+      -0.08086069797435183,
+      4.429129218269637,
+      10.955136317189371
+    ],
+    "kalman": [
+      3.8280136999547354,
+      -0.3841810550659297,
+      -0.08308722315713792,
+      4.417211557338931,
+      11.13813400253651
+    ],
+    "difference": [
+      0.19542191000036713,
+      0.0017648297898031906,
+      0.002226525182786085,
+      0.01191766093070612,
+      -0.18299768534713934
+    ],
+    "componentwise_relative_error": [
+      0.05105047299143101,
+      0.004593744971365978,
+      0.026797443676450594,
+      0.0026980054670249255,
+      0.016429833337026193
+    ],
+    "sign_reversal": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "center_delta_grad": 0.05,
+    "center_screen_pass": false,
+    "increment_history": [
+      [
+        3.2339638946957576,
+        -0.37870146602427035,
+        0.2150841598814906,
+        6.084963847475632,
+        13.489033603978351
+      ],
+      [
+        0.7894717152593439,
+        -0.0037147592518562782,
+        -0.29594485785584246,
+        -1.6558346292060209,
+        -2.5338972867890024
+      ]
+    ],
+    "cumulative_history": [
+      [
+        3.2339638946957576,
+        -0.37870146602427035,
+        0.2150841598814906,
+        6.084963847475632,
+        13.489033603978351
+      ],
+      [
+        4.023435609955102,
+        -0.3824162252761266,
+        -0.08086069797435186,
+        4.429129218269611,
+        10.955136317189348
+      ]
+    ],
+    "kalman_prefix_history": [
+      [
+        3.091150217885438,
+        -0.3858525302251644,
+        0.21341994107239293,
+        6.03822614894438,
+        13.651714745073173
+      ],
+      [
+        3.8280136999547354,
+        -0.3841810550659297,
+        -0.08308722315713792,
+        4.417211557338931,
+        11.13813400253651
+      ]
+    ],
+    "same_scalar_finite_difference": [
+      4.023435609923354,
+      -0.38241622526413716,
+      -0.08086069795965045,
+      4.4291292226716905,
+      10.955136327517321
+    ],
+    "same_scalar_fd_relative_error": [
+      7.890974000440126e-12,
+      3.135158280855184e-11,
+      1.8181118109715225e-10,
+      9.938869721910305e-10,
+      9.42749568966568e-10
+    ],
+    "same_scalar_fd_threshold": 0.1118033988749895,
+    "same_scalar_fd_pass": true
+  },
+  "chart": {
+    "valid_history": [
+      true,
+      true
+    ],
+    "minimum_weight_history": [
+      0.002459871433018389
+    ],
+    "condition_number_history": [
+      324.0308544480667
+    ],
+    "feature_residual_max_abs": 8.881784197001252e-16,
+    "score_mark_mean_history": [],
+    "score_mark_center_residual_max_abs": null,
+    "chart_pass": true
+  },
+  "decision": {
+    "engineering_pass": true,
+    "center_value_screen_pass": false,
+    "center_gradient_screen_pass": false,
+    "lgssm_candidate_pass": false,
+    "ranking_supported": false,
+    "differences_are_descriptive": true
+  },
+  "execution": {
+    "git_commit": "d269f5bbd8531b878d4f25897a357fbc8f172488",
+    "backend": "TensorFlow float64 CPU-hidden reference/diagnostic",
+    "cuda_visible_devices": "-1",
+    "jit_compile": false,
+    "wall_time_seconds": 2.7896758540009614,
+    "command": "docs/benchmarks/run_contract_e_tp_phase8_lgssm_score_informed.py --preparation docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_continuation_lgssm_t2_order3_attempt1_20260715/charts.json --output docs/benchmarks/artifacts/contract_e_tp_all_models_2026_07_15/phase8_continuation_lgssm_t2_order3_attempt1_20260715/result.json"
+  },
+  "nonclaims": [
+    "no off-center or HMC parameter-region chart certificate",
+    "no finite-LEDH tangent identity from target-model score marks",
+    "no online or nonlinear transfer from the continuation oracle",
+    "no canonical, leaderboard, default, or HMC admission"
+  ]
+}

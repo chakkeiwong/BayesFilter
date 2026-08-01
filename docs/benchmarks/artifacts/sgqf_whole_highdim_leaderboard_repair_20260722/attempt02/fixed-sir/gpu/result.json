@@ -1,0 +1,153 @@
+{
+  "comparators": null,
+  "cpu_xla": {
+    "jit_compile": true,
+    "reference_artifact": "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt02/fixed-sir/cpu-xla-reference.json",
+    "result_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "status": {
+      "min_filtered_eigenvalue": 1.521285057912097,
+      "min_innovation_eigenvalue": 101.98486459068408,
+      "min_predictive_eigenvalue": 1.5314088895139968,
+      "status_code": 0,
+      "valid_value": true
+    },
+    "value": -691.3692068263654
+  },
+  "engineering_decision": "route_executes_full_T20_under_requested_XLA_device",
+  "gpu_xla": {
+    "absolute_difference_from_cpu": 0.0,
+    "allocator_bytes": {
+      "current": 25344,
+      "peak": 89088
+    },
+    "jit_compile": true,
+    "parity_tolerance": 6.913692068263654e-07,
+    "result_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "status": {
+      "min_filtered_eigenvalue": 1.5212850579120918,
+      "min_innovation_eigenvalue": 101.98486459068408,
+      "min_predictive_eigenvalue": 1.531408889513991,
+      "status_code": 0,
+      "valid_value": true
+    },
+    "value": -691.3692068263654
+  },
+  "hard_vetoes": [],
+  "logical_gpus": [
+    "/device:GPU:0"
+  ],
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "mode": "gpu",
+  "nonclaims": [
+    "no exact-likelihood claim",
+    "no statistically supported method ranking",
+    "no SGQF superiority claim",
+    "no score because the fixed source row has no free theta",
+    "PF and UKF differences are descriptive only"
+  ],
+  "numerical_decision": "finite_covariance_valid_level2_candidate",
+  "physical_gpus": [
+    "/physical_device:GPU:0"
+  ],
+  "route_identity": "a2371527017b1882e066059e1d146aaa79bed632ac8a1a028a25de67c55062df",
+  "route_manifest": {
+    "backend": "tensorflow_fixed_level2_sgqf_value_only",
+    "cloud_level": 2,
+    "cloud_negative_weight_count": 1,
+    "cloud_point_count": 37,
+    "cloud_sha256": "a303685144ad6abeaa0a88f49bd0e5df0bc3af2c9193df33e9ee7d09054fc2c8",
+    "delta": 0.02,
+    "dtype": "float64",
+    "horizon": 20,
+    "initial_covariance": "I18",
+    "kappa": [
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "nonclaims": [
+      "not exact nonlinear likelihood",
+      "not an inferred-parameter or score route",
+      "not MATLAB random-stream replay",
+      "not SGQF superiority or default-readiness evidence"
+    ],
+    "nu": [
+      18.0,
+      18.0,
+      18.0,
+      18.0,
+      18.0,
+      18.0,
+      18.0,
+      18.0,
+      18.0
+    ],
+    "observation_covariance": "100I9",
+    "observation_dim": 9,
+    "observation_sha256": "311975f378572d577a4efff005156bf736eeb36ab08824323a7d36231beffbda",
+    "parameter_dim": 0,
+    "process_covariance": "I18",
+    "result_kind": "value_only_no_free_theta",
+    "rk4_internal_step": 0.005,
+    "route_id": "fixed_sgqf_zhao_cui_sir_austria_j9_t20_transition_then_observe_value_only_v1",
+    "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+    "schema": "bayesfilter.fixed_sir_sgqf_route.v1",
+    "seed": 81103,
+    "source_anchor": "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/ssmodel.m:34",
+    "state_dim": 18,
+    "state_sha256": "67de785712b3af3a464b7b318c2f0a517062d2ae65db73f62ba97c6e6bc63793",
+    "target_id": "zhao_cui_sir_austria_fixed_kappa_nu_tf_seed81103_y1_y20_v1",
+    "time_order": "x0_then_20_transition_then_observe_steps_y1_y20"
+  },
+  "row_id": "zhao_cui_spatial_sir_austria_j9_T20",
+  "run_manifest": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+      "docs/benchmarks/run_fixed_sir_sgqf_validation.py",
+      "--mode",
+      "gpu",
+      "--cpu-reference",
+      "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt02/fixed-sir/cpu-xla-reference.json",
+      "--output-root",
+      "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt02/fixed-sir/gpu"
+    ],
+    "cuda_visible_devices": "unset",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "71f659aa2620adfaa9fdb34d66c0816543365c82",
+    "git_diff_sha256": "3687921d11d864ff3259b56b818c5270112be100a0782577202738a6f0cddd10",
+    "host": "DESKTOP-RF1Q5IJ",
+    "plan": "docs/plans/bayesfilter-sgqf-whole-highdim-leaderboard-repair-master-program-2026-07-22.md",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "result": "docs/benchmarks/artifacts/sgqf_whole_highdim_leaderboard_repair_20260722/attempt02/fixed-sir/gpu/result.json",
+    "started_utc": "2026-07-22T10:03:49.478576+00:00",
+    "tensorflow": "2.19.1",
+    "tensorflow_probability": "0.25.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 3.3657579899881966
+  },
+  "schema_version": "bayesfilter.fixed_sir_sgqf_validation.v1",
+  "scientific_decision": "value_only_viable_candidate_not_accuracy_or_superiority_evidence",
+  "status": "PASS"
+}

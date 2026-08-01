@@ -1,0 +1,72 @@
+{
+  "schema": "bayesfilter.hmc_full_estimation_phase5_smoke_repair_manifest.v1",
+  "artifact_hash": "sha256:7350ce08490f92d16b11f7b153f304a3bb06d3c0c392ffd442165be0d66f898d",
+  "created_at": "2026-07-13T20:22:06+08:00",
+  "classification": "localized_pre_serious_retained_archive_provenance_serialization_repair",
+  "original_preflight": {
+    "path": "docs/benchmarks/artifacts/multidim_lgssm_full_estimation_rerun_2026_07_13/preflight_manifest.json",
+    "artifact_hash": "sha256:590d87c85313a89cbae151926eda9d670caf3503c5803f7e9681117659034ac3",
+    "file_sha256": "e77401afd1a32aa14a7d64a80bfd81b8e5ebec7dd6d5e946a834f59883dfa192",
+    "preserved_unchanged": true
+  },
+  "failed_smoke": {
+    "root": "/tmp/bayesfilter-full-estimation-smoke-20260713",
+    "result_path": "/tmp/bayesfilter-full-estimation-smoke-20260713/burnin_sampling.json",
+    "result_file_sha256": "d151d38bc01d2c2d27bc852d993db7aa9de4e70301b0cf2c2de34ed3bb940c84",
+    "progress_path": "/tmp/bayesfilter-full-estimation-smoke-20260713/burnin_sampling_progress.json",
+    "progress_file_sha256": "de76cb017367d0f9ee5fa33c92d500ac423f98d234a9fa89571347970c287579",
+    "burnin_results_per_chain": 4,
+    "retained_results_per_chain": 8,
+    "burnin_hard_vetoes": [],
+    "retained_hard_vetoes": [],
+    "failure_stage": "retained_check",
+    "failure_reason": "runtime_error:KeyError",
+    "private_archive_written": false,
+    "preserved_unchanged": true
+  },
+  "root_cause": {
+    "file": "bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py",
+    "function": "validate_phase7_v3_inputs",
+    "missing_report_field": "private_replay_artifact_hash",
+    "consumer": "run_phase7 retained archive writer and verifier",
+    "scientific_transition_affected": false,
+    "tuning_affected": false,
+    "typed_identity_affected": false
+  },
+  "repair": {
+    "old_controller_file_sha256": "a318f017147fdf740a709d0fd92e1aac84a022b4b8aff2b05d36429548ccf491",
+    "new_controller_file_sha256": "9f067499f90f2f74b54b6c67f863cb091073382f0f32aa7317722f2e1eb6cdd4",
+    "field_source": "validated private replay artifact_hash",
+    "regression_test": "tests/test_hmc_full_estimation_campaign.py::test_v3_preflight_exposes_private_replay_hash_for_retained_archive",
+    "regression_test_file_sha256": "8d74ac34c7692f7a586cf2e5a50bfd7e13993c7a79cbe046841ec5345c05aded"
+  },
+  "checks": {
+    "python_compilation": "passed",
+    "focused_regression": "1 passed, 2 warnings",
+    "focused_integration_suite": "76 passed, 2 warnings",
+    "git_diff_check": "passed",
+    "forbidden_nonjit_and_runtime_gradient_tape_scan": "passed",
+    "serious_campaign_root_fresh": true,
+    "final_recovery_output_fresh": true
+  },
+  "unchanged_scientific_identity": {
+    "phase7_config_hash": "sha256:00d576460d7ca40d965de7b1ff9dd88a6cad029a1ae94feff2628433640945c6",
+    "phase7_config_file_sha256": "202adf0264f4a1faa91e49b13761d40ee7acc32042af4d77cc3dfc118057f015",
+    "private_replay_artifact_hash": "sha256:eab345c411a1279676588efc24993499c90e18c227b6a46391b98d03b067f318",
+    "private_replay_file_sha256": "9ea3221a519ef0930be6029a35c0e266799e5055efc3f43ea4b188fa89cfd0d9",
+    "transition_identity_hash": "sha256:119a77708dc8c8255fa6d79cab4ed8e3b715d47b123bd648be530efb707d3df0",
+    "serious_execution_contract_hash": "sha256:8dfeeb3aa161029480a413753ed3f892304e2c1da58481da94e9d779032e5a5d",
+    "smoke_execution_contract_hash": "sha256:b2e972a276ede3f2eb055e3eab3d817aae61e12f18150a13220e69d1e1b87ade"
+  },
+  "next_action": {
+    "action": "rerun_two_worker_cpu_xla_smoke",
+    "fresh_output_root": "/tmp/bayesfilter-full-estimation-smoke-20260713-repair1",
+    "tuning_rerun_allowed": false,
+    "serious_sampling_allowed_only_after_smoke_pass": true
+  },
+  "nonclaims": [
+    "repair verification is not HMC convergence evidence",
+    "smoke diagnostics are explanatory engineering evidence only",
+    "no posterior recovery, calibration, generality, superiority, GPU, production, or default-readiness claim"
+  ]
+}

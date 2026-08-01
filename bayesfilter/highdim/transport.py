@@ -286,9 +286,29 @@ def _interp_1d(x: tf.Tensor, grid: tf.Tensor, values: tf.Tensor) -> tf.Tensor:
     return y0 + weight * (y1 - y0)
 
 
+def _interp_rows(x: tf.Tensor, grid: tf.Tensor, values: tf.Tensor) -> tf.Tensor:
+    """Interpolate one value in every row of a shared-grid table."""
+
+    points = tf.reshape(tf.convert_to_tensor(x, dtype=tf.float64), [-1])
+    table = tf.convert_to_tensor(values, dtype=tf.float64)
+    if table.shape.rank != 2 or table.shape[0] != points.shape[0]:
+        raise ValueError(f"values: {HighDimStatus.INVALID_SHAPE.value}")
+    clipped = tf.clip_by_value(points, grid[0], grid[-1])
+    right = tf.searchsorted(grid, clipped, side="right")
+    right = tf.clip_by_value(right, 1, tf.shape(grid)[0] - 1)
+    left = right - 1
+    rows = tf.range(tf.shape(points)[0], dtype=tf.int32)
+    y0 = tf.gather_nd(table, tf.stack([rows, left], axis=1))
+    y1 = tf.gather_nd(table, tf.stack([rows, right], axis=1))
+    x0 = tf.gather(grid, left)
+    x1 = tf.gather(grid, right)
+    weight = (clipped - x0) / (x1 - x0)
+    return y0 + weight * (y1 - y0)
+
+
 @dataclass(frozen=True)
 class FixedTTSIRTTransport:
-    """Fixed source-style TTSIRT transport over a squared TT density.
+    """Fixed TTSIRT transport with source-grounded and local diagnostic pieces.
 
     This class implements the reference-coordinate map surface used by the
     source-route protocol.  The one-dimensional CDFs are numerical CDF
@@ -317,16 +337,25 @@ class FixedTTSIRTTransport:
         tau = float(self.density.tau.numpy())
         return {
             "family": "FixedTTSIRTTransport",
+            "route_classification": "extension_or_invention",
             "source_contract_level": "fixed_ttsirt",
+            "source_contract_level_role": "api_capability_not_source_faithfulness",
             "tt_cores_declared": True,
             "defensive_density_declared": True,
             "defensive_mass_positive": tau > 0.0,
             "defensive_tau": tau,
-            "defensive_tau_source": "author_executable_ttsirt_default",
+            "defensive_mass_operation_classification": "source_faithful",
+            "defensive_tau_value_classification": "extension_or_invention",
+            "defensive_tau_source": "caller_supplied_scope_specific_hypothesis",
             "source_map_semantics": "ttsirt_eval_irt_rt_cirt_reference_style",
             "proposition2_marginal_backend": "paired_core_mass_contraction_prefix_suffix",
+            "proposition2_marginal_classification": "source_faithful",
             "conditional_cdf_backend": "numerical_grid_trapezoid_bisection",
-            "conditional_cdf_route_class": "fixed_hmc_adaptation_diagnostic_approximation",
+            "conditional_cdf_route_class": "extension_or_invention_diagnostic_approximation",
+            "batched_inverse_grid_reuse": True,
+            "batched_inverse_semantics": "same_grid_cdf_and_bisection_as_scalar_route",
+            "batched_inverse_grid_reuse_classification": "extension_or_invention",
+            "fixed_settings_classification": "fixed_hmc_adaptation",
             "production_kr_closure": False,
             "proposal_density_backend": "eval_pdf_on_local_samples",
             "p83_nonclaims": (
@@ -347,14 +376,16 @@ class FixedTTSIRTTransport:
                 "denominator_floor": self.cdf_config.denominator_floor,
                 "max_floor_count": self.cdf_config.max_floor_count,
             },
-            "source_anchors": (
-                "@TTSIRT/eval_irt_reference.m:15-42",
-                "@TTSIRT/eval_rt_reference.m:13-33",
-                "@TTSIRT/eval_rt_jac_reference.m:1-190",
-                "@TTSIRT/eval_cirt_reference.m:43-100",
-                "@TTSIRT/eval_potential_reference.m:10-22",
-                "@TTSIRT/TTSIRT.m:185-188",
-                "@TTSIRT/marginalise.m:85",
+            "paper_anchors": (
+                ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:539-573",
+                ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:592-670",
+                ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.txt:807-924",
+            ),
+            "author_source_anchors": (
+                "third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/eval_irt_reference.m:15-42",
+                "third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/eval_rt_reference.m:13-33",
+                "third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/eval_cirt_reference.m:43-100",
+                "third_party/audit/zhao_cui_tensor_ssm_p10/source/deep-tensor.dev/src/@TTSIRT/marginalise.m:19-85",
             ),
         }
 
@@ -364,21 +395,18 @@ class FixedTTSIRTTransport:
             tf.reduce_all((values >= 0.0) & (values <= 1.0)).numpy()
         ):
             raise ValueError(f"reference_points: {HighDimStatus.INVERSE_BRACKET_FAILURE.value}")
-        rows = []
-        for sample_index in range(int(values.shape[1])):
-            current = []
-            for axis in range(self.dimension):
-                prefix = _prefix_from_current(current)
-                result, _ = self._inverse_axis(
-                    axis,
-                    prefix,
-                    tf.reshape(values[axis, sample_index], []),
-                )
-                if result.status is not HighDimStatus.OK:
-                    raise ValueError(result.status.value)
-                current.append(tf.reshape(result.z_value, []))
-            rows.append(tf.stack(current))
-        return tf.transpose(tf.stack(rows, axis=0))
+        sample_count = int(values.shape[1])
+        current = []
+        for axis in range(self.dimension):
+            prefix = (
+                tf.stack(current, axis=1)
+                if current
+                else tf.zeros([sample_count, 0], dtype=tf.float64)
+            )
+            current.append(
+                self._inverse_axis_batch(axis, prefix, values[axis])
+            )
+        return tf.stack(current, axis=0)
 
     def forward_transport(self, local_points: tf.Tensor) -> tf.Tensor:
         values = _validate_map_points("local_points", local_points, self.dimension)
@@ -444,29 +472,23 @@ class FixedTTSIRTTransport:
             )
         dx = int(condition.shape[0])
         dr = int(reference.shape[0])
-        outputs = []
-        for sample_index in range(int(reference.shape[1])):
-            cond_index = sample_index if int(condition.shape[1]) > 1 else 0
-            current = [
-                tf.reshape(value, [])
-                for value in tf.unstack(condition[:, cond_index], axis=0)
-            ]
-            generated = []
-            for local_axis in range(dr):
-                axis = dx + local_axis
-                prefix = _prefix_from_current(current)
-                result, _ = self._inverse_axis(
-                    axis,
-                    prefix,
-                    tf.reshape(reference[local_axis, sample_index], []),
-                )
-                if result.status is not HighDimStatus.OK:
-                    raise ValueError(result.status.value)
-                value = tf.reshape(result.z_value, [])
-                current.append(value)
-                generated.append(value)
-            outputs.append(tf.stack(generated))
-        return tf.transpose(tf.stack(outputs, axis=0))
+        sample_count = int(reference.shape[1])
+        prefixes = (
+            tf.transpose(condition)
+            if int(condition.shape[1]) > 1
+            else tf.tile(tf.transpose(condition), [sample_count, 1])
+        )
+        generated = []
+        for local_axis in range(dr):
+            axis = dx + local_axis
+            value = self._inverse_axis_batch(
+                axis,
+                prefixes,
+                reference[local_axis],
+            )
+            generated.append(value)
+            prefixes = tf.concat([prefixes, value[:, tf.newaxis]], axis=1)
+        return tf.stack(generated, axis=0)
 
     def eval_pdf(self, local_points: tf.Tensor) -> tf.Tensor:
         values = _validate_map_points("local_points", local_points, self.dimension)
@@ -484,6 +506,66 @@ class FixedTTSIRTTransport:
     ) -> tf.Tensor:
         del reference_points
         return tf.math.log(self.eval_pdf(local_points))
+
+    def conditional_proposal_log_density(
+        self,
+        *,
+        conditioning_points: tf.Tensor,
+        generated_points: tf.Tensor,
+    ) -> tf.Tensor:
+        """Evaluate the suffix density using the Proposition-2 prefix marginal."""
+
+        condition = tf.convert_to_tensor(conditioning_points, dtype=tf.float64)
+        generated = tf.convert_to_tensor(generated_points, dtype=tf.float64)
+        if condition.shape.rank != 2 or generated.shape.rank != 2:
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        conditioning_dimension = int(condition.shape[0])
+        if conditioning_dimension < 1 or conditioning_dimension >= self.dimension:
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        if conditioning_dimension + int(generated.shape[0]) != self.dimension:
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        if int(condition.shape[1]) != int(generated.shape[1]):
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.INVALID_SHAPE.value}"
+            )
+        if not bool(
+            tf.reduce_all(tf.math.is_finite(condition)).numpy()
+            and tf.reduce_all(tf.math.is_finite(generated)).numpy()
+        ):
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.NONFINITE_VALUE.value}"
+            )
+
+        joint_points = tf.concat([condition, generated], axis=0)
+        joint_log_density = tf.math.log(self.eval_pdf(joint_points))
+        prefix_axes = tuple(range(conditioning_dimension))
+        prefix_relative_density = self.density.normalized_marginal_density_values(
+            prefix_axes,
+            tf.transpose(condition),
+        )
+        prefix_reference_density = tf.ones(
+            [tf.shape(condition)[1]], dtype=tf.float64
+        )
+        for axis in prefix_axes:
+            prefix_reference_density = (
+                prefix_reference_density
+                * self._axis_reference_measure_density(axis)
+            )
+        prefix_log_density = tf.math.log(
+            prefix_relative_density * prefix_reference_density
+        )
+        result = joint_log_density - prefix_log_density
+        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
+            raise ValueError(
+                f"conditional_proposal_log_density: {HighDimStatus.NONFINITE_VALUE.value}"
+            )
+        return result
 
     def marginalize(self, keep_axes: tuple[int, ...]):
         return self.density.marginal_density(tuple(int(axis) for axis in keep_axes))
@@ -569,6 +651,116 @@ class FixedTTSIRTTransport:
             ),
             density_mid,
         )
+
+    def _inverse_axis_batch(
+        self,
+        axis: int,
+        prefixes: tf.Tensor,
+        target_u: tf.Tensor,
+    ) -> tf.Tensor:
+        """Reuse each row's numerical conditional grid across bisection steps."""
+
+        prefix_values = tf.convert_to_tensor(prefixes, dtype=tf.float64)
+        targets = tf.reshape(tf.convert_to_tensor(target_u, dtype=tf.float64), [-1])
+        if (
+            prefix_values.shape.rank != 2
+            or prefix_values.shape[1] != axis
+            or prefix_values.shape[0] != targets.shape[0]
+        ):
+            raise ValueError(f"prefixes: {HighDimStatus.INVALID_SHAPE.value}")
+        if not bool(
+            tf.reduce_all(tf.math.is_finite(prefix_values)).numpy()
+            and tf.reduce_all(tf.math.is_finite(targets)).numpy()
+        ):
+            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        tolerance = tf.cast(self.cdf_config.bracket_tolerance, tf.float64)
+        if not bool(
+            tf.reduce_all((targets >= -tolerance) & (targets <= 1.0 + tolerance)).numpy()
+        ):
+            raise ValueError(HighDimStatus.INVERSE_BRACKET_FAILURE.value)
+
+        grid, cdf_grid = self._conditional_cdf_grid_batch(axis, prefix_values)
+        lo = tf.fill(tf.shape(targets), grid[0])
+        hi = tf.fill(tf.shape(targets), grid[-1])
+        mid = 0.5 * (lo + hi)
+        for _ in range(self.cdf_config.bisection_steps):
+            mid = 0.5 * (lo + hi)
+            cdf_mid = _interp_rows(mid, grid, cdf_grid)
+            choose_right = cdf_mid < targets
+            lo = tf.where(choose_right, mid, lo)
+            hi = tf.where(choose_right, hi, mid)
+        return mid
+
+    def _conditional_cdf_grid_batch(
+        self,
+        axis: int,
+        prefixes: tf.Tensor,
+    ) -> tuple[tf.Tensor, tf.Tensor]:
+        prefix_values = tf.convert_to_tensor(prefixes, dtype=tf.float64)
+        sample_count = int(prefix_values.shape[0])
+        grid = self._axis_grid(axis)
+        grid_size = self.cdf_config.grid_size
+        tiled_prefix = tf.repeat(
+            prefix_values[:, tf.newaxis, :], repeats=grid_size, axis=1
+        )
+        tiled_grid = tf.broadcast_to(
+            grid[tf.newaxis, :, tf.newaxis], [sample_count, grid_size, 1]
+        )
+        points = tf.reshape(
+            tf.concat([tiled_prefix, tiled_grid], axis=2),
+            [sample_count * grid_size, axis + 1],
+        )
+        numerator = tf.reshape(
+            self.density.normalized_marginal_density_values(
+                tuple(range(axis + 1)), points
+            ),
+            [sample_count, grid_size],
+        )
+        if axis == 0:
+            denominator = tf.ones([sample_count], dtype=tf.float64)
+        else:
+            denominator = self.density.normalized_marginal_density_values(
+                tuple(range(axis)), prefix_values
+            )
+        if not bool(
+            tf.reduce_all(tf.math.is_finite(denominator)).numpy()
+            and tf.reduce_all(denominator > self.density.denominator_floor).numpy()
+        ):
+            raise ValueError(
+                HighDimStatus.CONDITIONAL_DENOMINATOR_FLOOR_EXCEEDED.value
+            )
+        conditional = (
+            numerator
+            / denominator[:, tf.newaxis]
+            * self._axis_reference_measure_density(axis)
+        )
+        increments = 0.5 * (conditional[:, 1:] + conditional[:, :-1]) * (
+            grid[1:] - grid[:-1]
+        )[tf.newaxis, :]
+        cdf_grid = tf.concat(
+            [
+                tf.zeros([sample_count, 1], dtype=tf.float64),
+                tf.cumsum(increments, axis=1),
+            ],
+            axis=1,
+        )
+        totals = cdf_grid[:, -1]
+        if not bool(
+            tf.reduce_all(tf.math.is_finite(cdf_grid)).numpy()
+            and tf.reduce_all(totals > self.cdf_config.denominator_floor).numpy()
+        ):
+            raise ValueError(
+                HighDimStatus.CONDITIONAL_DENOMINATOR_FLOOR_EXCEEDED.value
+            )
+        cdf_grid = cdf_grid / totals[:, tf.newaxis]
+        minimum_increment = tf.reduce_min(cdf_grid[:, 1:] - cdf_grid[:, :-1])
+        if not bool(tf.math.is_finite(minimum_increment).numpy()):
+            raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
+        if bool(
+            (minimum_increment < -self.cdf_config.monotonicity_tolerance).numpy()
+        ):
+            raise ValueError(HighDimStatus.CDF_MONOTONICITY_FAILURE.value)
+        return grid, cdf_grid
 
     def _source_conditional_density(
         self,

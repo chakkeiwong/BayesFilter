@@ -187,7 +187,7 @@ def test_p83_manifest_honestly_marks_grid_cdf_as_nonproduction() -> None:
     assert payload["conditional_cdf_backend"] == "numerical_grid_trapezoid_bisection"
     assert (
         payload["conditional_cdf_route_class"]
-        == "fixed_hmc_adaptation_diagnostic_approximation"
+        == "extension_or_invention_diagnostic_approximation"
     )
     assert payload["production_kr_closure"] is False
     assert payload["proposal_density_backend"] == "eval_pdf_on_local_samples"

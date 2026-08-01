@@ -1,0 +1,871 @@
+"""BayesFilter-owned TensorFlow/TFP posterior adapter for the BGS target."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from collections.abc import Callable
+from typing import Any, NamedTuple
+
+import tensorflow as tf
+import tensorflow_probability as tfp
+
+from bayesfilter.inference.posterior_adapter import ValueScoreCapability
+
+
+DTYPE = tf.float64
+PARAMETER_DIMENSION = 46
+PARAMETER_NAMES = (
+    "e_z", "e_u", "e_g", "e_i", "e_r", "e_p", "e_w", "e_lk",
+    "e_qe_b", "e_qe_k", "e_cbl", "sig_c", "sig_l", "tpr_beta", "h",
+    "phiss", "i_p", "i_w", "alpha", "zeta_p", "Phi_p", "psi",
+    "phi_pi", "phi_y", "phi_dy", "phi_sprd", "rho", "rho_r", "rho_p",
+    "rho_u", "rho_lk", "rho_cbl", "rootb1", "rootb2", "rootk1",
+    "rootk2", "mu_p", "mu_w", "kap_tau", "pac", "theta", "LEV",
+    "lamb_cbl", "trend", "mean_Pi", "mean_l",
+)
+PRIOR_FAMILIES = (
+    "INV_GAMMA_PDF", "INV_GAMMA_PDF", "INV_GAMMA_PDF", "INV_GAMMA_PDF",
+    "INV_GAMMA_PDF", "INV_GAMMA_PDF", "INV_GAMMA_PDF", "INV_GAMMA_PDF",
+    "INV_GAMMA_PDF", "INV_GAMMA_PDF", "INV_GAMMA_PDF", "NORMAL_PDF",
+    "NORMAL_PDF", "GAMMA_PDF", "BETA_PDF", "NORMAL_PDF", "BETA_PDF",
+    "BETA_PDF", "NORMAL_PDF", "BETA_PDF", "NORMAL_PDF", "BETA_PDF",
+    "NORMAL_PDF", "NORMAL_PDF", "NORMAL_PDF", "NORMAL_PDF", "BETA_PDF",
+    "BETA_PDF", "BETA_PDF", "BETA_PDF", "BETA_PDF", "BETA_PDF",
+    "BETA_PDF", "BETA_PDF", "BETA_PDF", "BETA_PDF", "BETA_PDF",
+    "BETA_PDF", "GAMMA_PDF", "GAMMA_PDF", "BETA_PDF", "NORMAL_PDF",
+    "GAMMA_PDF", "NORMAL_PDF", "GAMMA_PDF", "NORMAL_PDF",
+)
+PRIOR_LOWER = tf.constant((
+    0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+    0.0001, 0.0001, 0.0001, 0.25, 0.25, 0.01, 0.001, 0.5, 0.01, 0.01,
+    0.01, 0.01, 1.0, 0.01, 1.0, 0.001, 0.001, 0.001, 0.01, 0.01,
+    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.001, 0.001,
+    0.001, 0.000001, 0.5, 0.5, 0.1, 0.01, 0.001, -10.0,
+), DTYPE)
+PRIOR_UPPER = tf.constant((
+    100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+    100.0, 100.0, 5.0, 10.0, 2.0, 0.99, 15.0, 0.99, 0.99, 0.99, 0.99,
+    3.0, 0.99, 3.0, 0.5, 0.5, 0.5, 0.999, 0.999, 0.999, 0.999,
+    0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 2.0, 20.0,
+    0.98, 10.0, 20.0, 2.0, 2.0, 10.0,
+), DTYPE)
+PRIOR_MEAN = tf.constant((
+    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.5, 2.0,
+    0.25, 0.7, 4.0, 0.5, 0.5, 0.3, 0.5, 1.25, 0.5, 1.5, 0.125,
+    0.125, 0.125, 0.75, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+    0.5, 0.5, 0.3, 2.0, 0.95, 3.0, 3.0, 0.44, 0.625, 0.0,
+), DTYPE)
+PRIOR_SD = tf.constant((
+    0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+    0.375, 0.75, 0.1, 0.1, 1.5, 0.15, 0.15, 0.05, 0.1, 0.125, 0.15,
+    0.25, 0.05, 0.05, 0.05, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+    0.2, 0.2, 0.2, 0.2, 0.1, 4.0, 0.05, 1.0, 3.0, 0.05, 0.1, 2.0,
+), DTYPE)
+SOURCE_HASHES = {
+    "driver": "7ed8d84cb87bd5d6a2b2c4b3e612df5bea40d346cdea4cf79f387ab9e7b28a97",
+    "mod": "e433ad5c8d7f1769f839996718ae608cb911bc3f781988de30bb231a6497c16d",
+    "order": "333c36c9bcc6727bfd6f6e3ecfba5e670096f719eb77106c72909f2811e2ae8b",
+}
+PRIOR_KERNEL_ID = "dynare_5_0_type1_ig_finite_chart_v1"
+_NORMAL = tf.constant([family == "NORMAL_PDF" for family in PRIOR_FAMILIES])
+_BETA = tf.constant([family == "BETA_PDF" for family in PRIOR_FAMILIES])
+_GAMMA = tf.constant([family == "GAMMA_PDF" for family in PRIOR_FAMILIES])
+_INV_GAMMA = tf.constant(
+    [family == "INV_GAMMA_PDF" for family in PRIOR_FAMILIES]
+)
+_DYNARE_INV_GAMMA_TYPE1_S = tf.constant(0.0072579728170932, DTYPE)
+_DYNARE_INV_GAMMA_TYPE1_NU = tf.constant(2.1001099698909407, DTYPE)
+_TFD = tfp.distributions
+
+BGS_POSTERIOR_DEBUG_NONCLAIMS = (
+    "CPU graph parity adapter only",
+    "no end-to-end XLA authority",
+    "no HMC tuning or sampling claim",
+    "no posterior convergence claim",
+    "no GPU readiness claim",
+    "no default-readiness claim",
+)
+BGS_POSTERIOR_XLA_NONCLAIMS = (
+    "D296 synthetic-data target only",
+    "no HMC tuning claim",
+    "no posterior convergence claim",
+    "no efficiency or superiority claim",
+    "no production or default-readiness claim",
+)
+BGS_POSTERIOR_NONCLAIMS = BGS_POSTERIOR_DEBUG_NONCLAIMS
+_CAPABILITY_MODES = {
+    "debug_graph",
+    "target_graph_chain",
+    "target_xla_graph_chain",
+}
+_SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+
+BGS_STATUS_NONFINITE_UNCONSTRAINED = 1
+BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT = 2
+BGS_STATUS_PRIOR_OR_JACOBIAN_NONFINITE = 4
+BGS_STATUS_DESCRIPTOR_FAILURE = 8
+BGS_STATUS_STATE_SPACE_FAILURE = 16
+BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE = 32
+BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE = 64
+BGS_STATUS_POSTERIOR_NONFINITE = 128
+
+
+class BGSConstrainedLikelihoodResult(NamedTuple):
+    signed_log_likelihood: tf.Tensor
+    signed_score: tf.Tensor
+    descriptor_success: Any = True
+    numerical_state_space_success: Any = True
+    likelihood_value_finite: Any = True
+    likelihood_score_finite: Any = True
+    floor_count_value: Any = 0
+    min_innovation_eigenvalue: Any = float("nan")
+    innovation_condition_estimate: Any = float("nan")
+
+
+class BGSPosteriorComponents(NamedTuple):
+    theta: tf.Tensor
+    signed_log_likelihood: tf.Tensor
+    constrained_log_prior: tf.Tensor
+    log_abs_det_jacobian: tf.Tensor
+    posterior_value: tf.Tensor
+    posterior_score: tf.Tensor
+    finite_unconstrained: tf.Tensor
+    transform_in_open_support: tf.Tensor
+    prior_and_jacobian_finite: tf.Tensor
+    descriptor_success: tf.Tensor
+    numerical_state_space_success: tf.Tensor
+    likelihood_value_finite: tf.Tensor
+    likelihood_score_finite: tf.Tensor
+    composed_posterior_finite: tf.Tensor
+    status_code: tf.Tensor
+    valid: tf.Tensor
+
+
+def theta_from_unconstrained(u: Any) -> tf.Tensor:
+    values = tf.ensure_shape(
+        tf.cast(tf.convert_to_tensor(u), DTYPE), (PARAMETER_DIMENSION,)
+    )
+    return PRIOR_LOWER + (PRIOR_UPPER - PRIOR_LOWER) * tf.math.sigmoid(values)
+
+
+def unconstrained_from_theta(theta: Any) -> tf.Tensor:
+    values = tf.ensure_shape(
+        tf.cast(tf.convert_to_tensor(theta), DTYPE), (PARAMETER_DIMENSION,)
+    )
+    proportions = (values - PRIOR_LOWER) / (PRIOR_UPPER - PRIOR_LOWER)
+    support = tf.reduce_all(
+        tf.logical_and(proportions > 0.0, proportions < 1.0)
+    )
+    check = tf.debugging.assert_equal(
+        support, True, message="theta is outside the open BGS support"
+    )
+    with tf.control_dependencies((check,)):
+        return tf.math.log(proportions) - tf.math.log1p(-proportions)
+
+
+def log_abs_det_jacobian(u: Any) -> tf.Tensor:
+    values = tf.ensure_shape(
+        tf.cast(tf.convert_to_tensor(u), DTYPE), (PARAMETER_DIMENSION,)
+    )
+    return tf.reduce_sum(
+        tf.math.log(PRIOR_UPPER - PRIOR_LOWER)
+        + tf.math.log_sigmoid(values)
+        + tf.math.log_sigmoid(-values)
+    )
+
+
+def _constrained_log_prior_terms(
+    theta: Any,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    values = tf.cast(tf.convert_to_tensor(theta), DTYPE)
+    if values.shape.rank not in (1, 2):
+        raise ValueError("BGS prior terms require rank-1 or rank-2 theta")
+    if values.shape[-1] is not None and int(values.shape[-1]) != PARAMETER_DIMENSION:
+        raise ValueError("BGS prior terms require trailing dimension 46")
+    # Dynare's omitted generalized-prior bounds mean beta support is [0, 1].
+    beta_variance = tf.where(
+        _BETA,
+        tf.square(PRIOR_SD),
+        tf.fill((PARAMETER_DIMENSION,), tf.constant(0.05, DTYPE)),
+    )
+    beta_mean = tf.where(
+        _BETA,
+        PRIOR_MEAN,
+        tf.fill((PARAMETER_DIMENSION,), tf.constant(0.5, DTYPE)),
+    )
+    beta_concentration = beta_mean * (1.0 - beta_mean) / beta_variance - 1.0
+    beta_a = beta_mean * beta_concentration
+    beta_b = (1.0 - beta_mean) * beta_concentration
+    gamma_mean = tf.where(_GAMMA, PRIOR_MEAN, tf.ones_like(PRIOR_MEAN))
+    gamma_sd = tf.where(_GAMMA, PRIOR_SD, tf.ones_like(PRIOR_SD))
+    gamma_shape = tf.square(gamma_mean / gamma_sd)
+    gamma_scale = tf.square(gamma_sd) / gamma_mean
+
+    beta_z = tf.where(
+        _BETA,
+        values,
+        tf.fill((PARAMETER_DIMENSION,), tf.constant(0.5, DTYPE)),
+    )
+    gamma_values = tf.where(_GAMMA, values, tf.ones_like(values))
+    inv_gamma_values = tf.where(_INV_GAMMA, values, tf.ones_like(values))
+
+    normal_log = _TFD.Normal(PRIOR_MEAN, PRIOR_SD).log_prob(values)
+    beta_log = _TFD.Beta(beta_a, beta_b).log_prob(beta_z)
+    gamma_log = _TFD.Gamma(
+        gamma_shape, rate=1.0 / gamma_scale
+    ).log_prob(gamma_values)
+    half_nu = 0.5 * _DYNARE_INV_GAMMA_TYPE1_NU
+    inv_gamma_log = (
+        tf.math.log(tf.constant(2.0, DTYPE))
+        - tf.math.lgamma(half_nu)
+        - half_nu * (
+            tf.math.log(tf.constant(2.0, DTYPE))
+            - tf.math.log(_DYNARE_INV_GAMMA_TYPE1_S)
+        )
+        - (_DYNARE_INV_GAMMA_TYPE1_NU + 1.0) * tf.math.log(inv_gamma_values)
+        - 0.5 * _DYNARE_INV_GAMMA_TYPE1_S / tf.square(inv_gamma_values)
+    )
+    contributions = tf.where(
+        _NORMAL,
+        normal_log,
+        tf.where(_BETA, beta_log, tf.where(_GAMMA, gamma_log, inv_gamma_log)),
+    )
+    normal_score = -(values - PRIOR_MEAN) / tf.square(PRIOR_SD)
+    beta_score = (
+        (beta_a - 1.0) / beta_z - (beta_b - 1.0) / (1.0 - beta_z)
+    )
+    gamma_score = (gamma_shape - 1.0) / gamma_values - 1.0 / gamma_scale
+    inv_gamma_score = (
+        -(_DYNARE_INV_GAMMA_TYPE1_NU + 1.0) / inv_gamma_values
+        + _DYNARE_INV_GAMMA_TYPE1_S / tf.pow(inv_gamma_values, 3)
+    )
+    scores = tf.where(
+        _NORMAL,
+        normal_score,
+        tf.where(_BETA, beta_score, tf.where(_GAMMA, gamma_score, inv_gamma_score)),
+    )
+    return contributions, scores
+
+
+@tf.function(
+    input_signature=(tf.TensorSpec((PARAMETER_DIMENSION,), DTYPE),),
+    autograph=False,
+)
+def constrained_log_prior_contributions(theta: Any) -> tf.Tensor:
+    contributions, _scores = _constrained_log_prior_terms(theta)
+    return contributions
+
+
+@tf.function(
+    input_signature=(tf.TensorSpec((PARAMETER_DIMENSION,), DTYPE),),
+    autograph=False,
+)
+def constrained_log_prior_and_score(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
+    values = tf.ensure_shape(
+        tf.cast(tf.convert_to_tensor(theta), DTYPE), (PARAMETER_DIMENSION,)
+    )
+    contributions, score = _constrained_log_prior_terms(values)
+    support = tf.reduce_all(
+        tf.logical_and(values > PRIOR_LOWER, values < PRIOR_UPPER)
+    )
+    value = tf.where(
+        support,
+        tf.reduce_sum(contributions),
+        tf.constant(float("-inf"), DTYPE),
+    )
+    score = tf.where(
+        support,
+        score,
+        tf.fill((PARAMETER_DIMENSION,), tf.constant(float("nan"), DTYPE)),
+    )
+    return value, score
+
+
+class BGSPosteriorAdapter:
+    """Scalar transformed posterior adapter with conservative capability."""
+
+    def __init__(
+        self,
+        constrained_likelihood_value_score: Callable[[tf.Tensor], Any],
+        *,
+        evidence_path: str,
+        capability_mode: str = "debug_graph",
+        likelihood_signature: str | None = None,
+    ) -> None:
+        if not callable(constrained_likelihood_value_score):
+            raise TypeError("constrained_likelihood_value_score must be callable")
+        self._likelihood = constrained_likelihood_value_score
+        self._evidence_path = str(evidence_path)
+        mode = str(capability_mode)
+        if mode not in _CAPABILITY_MODES:
+            raise ValueError(
+                "capability_mode must be 'debug_graph', 'target_graph_chain', "
+                "or 'target_xla_graph_chain'"
+            )
+        signature = None if likelihood_signature is None else str(likelihood_signature)
+        if mode in {"target_graph_chain", "target_xla_graph_chain"} and (
+            signature is None or _SHA256_PATTERN.fullmatch(signature) is None
+        ):
+            raise ValueError(
+                f"{mode} mode requires a lowercase SHA-256 likelihood_signature"
+            )
+        self._capability_mode = mode
+        self._likelihood_signature = signature
+        self.supports_retained_value_score_status = True
+        runtime_backend = {
+            "debug_graph": "tensorflow_tfp_bayesfilter_qr_graph_debug",
+            "target_graph_chain": "tensorflow_tfp_bayesfilter_qr_target_graph_chain",
+            "target_xla_graph_chain": (
+                "tensorflow_tfp_bayesfilter_qr_target_xla_graph_chain"
+            ),
+        }[mode]
+        payload = {
+            "schema": "bayesfilter.bgs.posterior_adapter.v3",
+            "parameter_names": PARAMETER_NAMES,
+            "source_hashes": SOURCE_HASHES,
+            "target_scope": "bgs_d296_synthetic_transformed_target",
+            "prior_kernel_id": PRIOR_KERNEL_ID,
+            "runtime_backend": runtime_backend,
+            "capability_mode": mode,
+            "likelihood_signature": signature,
+            "retained_target_status_policy": (
+                "finite_returned_target_exact_validity_v1"
+            ),
+        }
+        self._signature = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("ascii")
+        ).hexdigest()
+
+    @property
+    def parameter_dim(self) -> int:
+        return PARAMETER_DIMENSION
+
+    @property
+    def parameter_names(self) -> tuple[str, ...]:
+        return PARAMETER_NAMES
+
+    def adapter_signature(self) -> str:
+        return self._signature
+
+    @property
+    def capability_mode(self) -> str:
+        return self._capability_mode
+
+    def value_score_capability(self) -> ValueScoreCapability:
+        if self._capability_mode == "target_graph_chain":
+            return ValueScoreCapability(
+                value_score_authority="graph_native",
+                xla_hmc_ready=False,
+                full_chain_xla_diagnostic_ready=False,
+                runtime_backend="tensorflow_tfp_bayesfilter_qr_target_graph_chain",
+                evidence_path=self._evidence_path,
+                target_scope="bgs_d296_synthetic_transformed_target",
+                nonclaims=BGS_POSTERIOR_XLA_NONCLAIMS,
+            )
+        if self._capability_mode == "target_xla_graph_chain":
+            return ValueScoreCapability(
+                value_score_authority="reviewed_gradient_tape_xla_exception",
+                xla_hmc_ready=False,
+                full_chain_xla_diagnostic_ready=False,
+                runtime_backend="tensorflow_tfp_bayesfilter_qr_target_xla_graph_chain",
+                evidence_path=self._evidence_path,
+                target_scope="bgs_d296_synthetic_transformed_target",
+                nonclaims=BGS_POSTERIOR_XLA_NONCLAIMS,
+            )
+        return ValueScoreCapability(
+            value_score_authority="debug_only",
+            xla_hmc_ready=False,
+            full_chain_xla_diagnostic_ready=False,
+            runtime_backend="tensorflow_tfp_bayesfilter_qr_graph_debug",
+            evidence_path=self._evidence_path,
+            target_scope="bgs_d296_synthetic_transformed_target",
+            nonclaims=BGS_POSTERIOR_DEBUG_NONCLAIMS,
+        )
+
+    def components(self, u: Any) -> BGSPosteriorComponents:
+        values = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(u), DTYPE), (PARAMETER_DIMENSION,)
+        )
+        theta = theta_from_unconstrained(values)
+        prior_value, prior_score = constrained_log_prior_and_score(theta)
+        jacobian = log_abs_det_jacobian(values)
+        finite_unconstrained = tf.reduce_all(tf.math.is_finite(values))
+        transform_in_open_support = tf.reduce_all(tf.logical_and(
+            tf.math.is_finite(theta),
+            tf.logical_and(theta > PRIOR_LOWER, theta < PRIOR_UPPER),
+        ))
+        prior_and_jacobian_finite = tf.reduce_all(tf.stack((
+            tf.math.is_finite(prior_value),
+            tf.reduce_all(tf.math.is_finite(prior_score)),
+            tf.math.is_finite(jacobian),
+        )))
+        evaluate_likelihood = tf.reduce_all(tf.stack((
+            finite_unconstrained,
+            transform_in_open_support,
+            prior_and_jacobian_finite,
+        )))
+
+        def target_branch():
+            likelihood = self._likelihood(theta)
+            return (
+                tf.convert_to_tensor(likelihood.signed_log_likelihood, DTYPE),
+                tf.ensure_shape(
+                    tf.convert_to_tensor(likelihood.signed_score, DTYPE),
+                    (PARAMETER_DIMENSION,),
+                ),
+                tf.convert_to_tensor(likelihood.descriptor_success, tf.bool),
+                tf.convert_to_tensor(
+                    likelihood.numerical_state_space_success, tf.bool
+                ),
+                tf.convert_to_tensor(likelihood.likelihood_value_finite, tf.bool),
+                tf.convert_to_tensor(likelihood.likelihood_score_finite, tf.bool),
+            )
+
+        def skipped_target_branch():
+            return (
+                tf.constant(0.0, DTYPE),
+                tf.zeros((PARAMETER_DIMENSION,), DTYPE),
+                tf.constant(True),
+                tf.constant(True),
+                tf.constant(True),
+                tf.constant(True),
+            )
+
+        (
+            likelihood_value,
+            likelihood_score,
+            descriptor_success,
+            numerical_state_space_success,
+            reported_likelihood_value_finite,
+            reported_likelihood_score_finite,
+        ) = tf.cond(evaluate_likelihood, target_branch, skipped_target_branch)
+        likelihood_value_finite = tf.logical_and(
+            reported_likelihood_value_finite,
+            tf.math.is_finite(likelihood_value),
+        )
+        likelihood_score_finite = tf.logical_and(
+            reported_likelihood_score_finite,
+            tf.reduce_all(tf.math.is_finite(likelihood_score)),
+        )
+        sigmoid = tf.math.sigmoid(values)
+        dtheta_du = (PRIOR_UPPER - PRIOR_LOWER) * sigmoid * (1.0 - sigmoid)
+        raw_score = (
+            (likelihood_score + prior_score) * dtheta_du + 1.0 - 2.0 * sigmoid
+        )
+        raw_value = likelihood_value + prior_value + jacobian
+        composed_posterior_finite = tf.logical_and(
+            tf.math.is_finite(raw_value),
+            tf.reduce_all(tf.math.is_finite(raw_score)),
+        )
+        status_code = tf.constant(0, tf.int32)
+        status_code += tf.where(
+            finite_unconstrained,
+            0,
+            BGS_STATUS_NONFINITE_UNCONSTRAINED,
+        )
+        status_code += tf.where(
+            transform_in_open_support,
+            0,
+            BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT,
+        )
+        status_code += tf.where(
+            prior_and_jacobian_finite,
+            0,
+            BGS_STATUS_PRIOR_OR_JACOBIAN_NONFINITE,
+        )
+        status_code += tf.where(
+            descriptor_success,
+            0,
+            BGS_STATUS_DESCRIPTOR_FAILURE,
+        )
+        status_code += tf.where(
+            numerical_state_space_success,
+            0,
+            BGS_STATUS_STATE_SPACE_FAILURE,
+        )
+        status_code += tf.where(
+            likelihood_value_finite,
+            0,
+            BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE,
+        )
+        status_code += tf.where(
+            likelihood_score_finite,
+            0,
+            BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE,
+        )
+        status_code += tf.where(
+            composed_posterior_finite,
+            0,
+            BGS_STATUS_POSTERIOR_NONFINITE,
+        )
+        valid = status_code == tf.constant(0, tf.int32)
+        value = tf.where(valid, raw_value, tf.constant(float("-inf"), DTYPE))
+        # A zero invalid-point score is a rejection convention, not a derivative.
+        score = tf.where(valid, raw_score, tf.zeros_like(raw_score))
+        return BGSPosteriorComponents(
+            theta,
+            likelihood_value,
+            prior_value,
+            jacobian,
+            value,
+            score,
+            finite_unconstrained,
+            transform_in_open_support,
+            prior_and_jacobian_finite,
+            descriptor_success,
+            numerical_state_space_success,
+            likelihood_value_finite,
+            likelihood_score_finite,
+            composed_posterior_finite,
+            status_code,
+            valid,
+        )
+
+    def log_prob(self, u: Any) -> tf.Tensor:
+        return self.components(u).posterior_value
+
+    def log_prob_and_grad(self, u: Any) -> tuple[tf.Tensor, tf.Tensor]:
+        components = self.components(u)
+        return components.posterior_value, components.posterior_score
+
+    def log_prob_and_grad_status(
+        self, u: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
+        components = self.components(u)
+        return (
+            components.posterior_value,
+            components.posterior_score,
+            self._status_telemetry(components),
+        )
+
+    def target_status_telemetry(self, u: Any) -> dict[str, tf.Tensor]:
+        return self._status_telemetry(self.components(u))
+
+    def retained_target_status_telemetry(
+        self, target_log_prob: Any
+    ) -> dict[str, tf.Tensor]:
+        """Recover the exact BGS validity veto from a retained target value."""
+
+        value = tf.cast(tf.convert_to_tensor(target_log_prob), DTYPE)
+        valid = tf.math.is_finite(value)
+        zero = tf.zeros_like(value)
+        unavailable = tf.fill(tf.shape(value), tf.constant(float("nan"), DTYPE))
+        innovation_sentinel = tf.where(valid, zero, unavailable)
+        return {
+            "status_code": tf.where(
+                valid,
+                tf.zeros(tf.shape(value), tf.int32),
+                tf.fill(
+                    tf.shape(value),
+                    tf.constant(BGS_STATUS_POSTERIOR_NONFINITE, tf.int32),
+                ),
+            ),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": tf.zeros(tf.shape(value), tf.int32),
+            "min_innovation_eigenvalue": innovation_sentinel,
+            "innovation_condition_estimate": innovation_sentinel,
+            "innovation_metrics_available": tf.zeros(tf.shape(value), tf.bool),
+        }
+
+    @staticmethod
+    def _status_telemetry(
+        components: BGSPosteriorComponents,
+    ) -> dict[str, tf.Tensor]:
+        zero = tf.constant(0.0, DTYPE)
+        unavailable = tf.constant(float("nan"), DTYPE)
+        innovation_sentinel = tf.where(components.valid, zero, unavailable)
+        return {
+            "status_code": components.status_code,
+            "valid_pre_regularized_score": components.valid,
+            "floor_count_value": tf.constant(0, tf.int32),
+            "min_innovation_eigenvalue": innovation_sentinel,
+            "innovation_condition_estimate": innovation_sentinel,
+            "innovation_metrics_available": tf.constant(False),
+            "finite_unconstrained": components.finite_unconstrained,
+            "transform_in_open_support": components.transform_in_open_support,
+            "prior_and_jacobian_finite": components.prior_and_jacobian_finite,
+            "descriptor_success": components.descriptor_success,
+            "numerical_state_space_success": (
+                components.numerical_state_space_success
+            ),
+            "likelihood_value_finite": components.likelihood_value_finite,
+            "likelihood_score_finite": components.likelihood_score_finite,
+            "composed_posterior_finite": components.composed_posterior_finite,
+        }
+
+
+class BGSBatchPosteriorAdapter:
+    """Rank-2 BGS posterior adapter for reviewed analytical likelihood batches."""
+
+    def __init__(
+        self,
+        constrained_likelihood_value_score: Callable[[tf.Tensor], Any],
+        *,
+        evidence_path: str,
+        likelihood_signature: str,
+        safe_theta: Any,
+    ) -> None:
+        if not callable(constrained_likelihood_value_score):
+            raise TypeError("constrained_likelihood_value_score must be callable")
+        signature = str(likelihood_signature)
+        if _SHA256_PATTERN.fullmatch(signature) is None:
+            raise ValueError("batch BGS likelihood_signature must be lowercase SHA-256")
+        self._likelihood = constrained_likelihood_value_score
+        self._evidence_path = str(evidence_path)
+        self._likelihood_signature = signature
+        anchor = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(safe_theta), DTYPE),
+            (PARAMETER_DIMENSION,),
+        )
+        if not bool(
+            tf.reduce_all(
+                tf.logical_and(anchor > PRIOR_LOWER, anchor < PRIOR_UPPER)
+            ).numpy()
+        ):
+            raise ValueError("safe_theta must lie inside the open BGS support")
+        self._safe_theta = anchor
+        self.batch_rank_policy = "rank2_required"
+        self.supports_retained_value_score_status = True
+        payload = {
+            "schema": "bayesfilter.bgs.batch_posterior_adapter.v1",
+            "parameter_names": PARAMETER_NAMES,
+            "source_hashes": SOURCE_HASHES,
+            "target_scope": "bgs_d296_synthetic_transformed_target",
+            "prior_kernel_id": PRIOR_KERNEL_ID,
+            "runtime_backend": "tensorflow_tfp_bayesfilter_svd_analytic_batch_xla",
+            "likelihood_signature": signature,
+        }
+        self._signature = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("ascii")
+        ).hexdigest()
+
+    @property
+    def parameter_dim(self) -> int:
+        return PARAMETER_DIMENSION
+
+    @property
+    def parameter_names(self) -> tuple[str, ...]:
+        return PARAMETER_NAMES
+
+    def adapter_signature(self) -> str:
+        return self._signature
+
+    def value_score_capability(self) -> ValueScoreCapability:
+        return ValueScoreCapability(
+            value_score_authority="graph_native",
+            xla_hmc_ready=True,
+            full_chain_xla_diagnostic_ready=True,
+            runtime_backend="tensorflow_tfp_bayesfilter_svd_analytic_batch_xla",
+            evidence_path=self._evidence_path,
+            target_scope="bgs_d296_synthetic_transformed_target",
+            nonclaims=BGS_POSTERIOR_XLA_NONCLAIMS,
+        )
+
+    def log_prob_and_grad(self, u: Any) -> tuple[tf.Tensor, tf.Tensor]:
+        value, score, _status = self.log_prob_and_grad_status(u)
+        return value, score
+
+    def log_prob_and_grad_status(
+        self, u: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
+        values = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(u), DTYPE), (None, PARAMETER_DIMENSION)
+        )
+        sigmoid = tf.math.sigmoid(values)
+        theta = PRIOR_LOWER[tf.newaxis, :] + (
+            PRIOR_UPPER - PRIOR_LOWER
+        )[tf.newaxis, :] * sigmoid
+        contributions, prior_score = _constrained_log_prior_terms(theta)
+        prior_value = tf.reduce_sum(contributions, axis=1)
+        jacobian = tf.reduce_sum(
+            tf.math.log(PRIOR_UPPER - PRIOR_LOWER)[tf.newaxis, :]
+            + tf.math.log_sigmoid(values)
+            + tf.math.log_sigmoid(-values),
+            axis=1,
+        )
+        finite_unconstrained = tf.reduce_all(tf.math.is_finite(values), axis=1)
+        transform_in_open_support = tf.reduce_all(
+            tf.logical_and(
+                tf.math.is_finite(theta),
+                tf.logical_and(
+                    theta > PRIOR_LOWER[tf.newaxis, :],
+                    theta < PRIOR_UPPER[tf.newaxis, :],
+                ),
+            ),
+            axis=1,
+        )
+        prior_and_jacobian_finite = tf.logical_and(
+            tf.math.is_finite(prior_value),
+            tf.logical_and(
+                tf.reduce_all(tf.math.is_finite(prior_score), axis=1),
+                tf.math.is_finite(jacobian),
+            ),
+        )
+        safe_for_likelihood = tf.logical_and(
+            finite_unconstrained,
+            tf.logical_and(transform_in_open_support, prior_and_jacobian_finite),
+        )
+        evaluated_theta = tf.where(
+            safe_for_likelihood[:, tf.newaxis],
+            theta,
+            self._safe_theta[tf.newaxis, :],
+        )
+        likelihood = self._likelihood(evaluated_theta)
+        likelihood_value = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.signed_log_likelihood, DTYPE), (None,)
+        )
+        likelihood_score = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.signed_score, DTYPE),
+            (None, PARAMETER_DIMENSION),
+        )
+        descriptor_success = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.descriptor_success, tf.bool), (None,)
+        )
+        state_space_success = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.numerical_state_space_success, tf.bool),
+            (None,),
+        )
+        likelihood_value_finite = tf.logical_and(
+            tf.ensure_shape(
+                tf.convert_to_tensor(likelihood.likelihood_value_finite, tf.bool),
+                (None,),
+            ),
+            tf.math.is_finite(likelihood_value),
+        )
+        likelihood_score_finite = tf.logical_and(
+            tf.ensure_shape(
+                tf.convert_to_tensor(likelihood.likelihood_score_finite, tf.bool),
+                (None,),
+            ),
+            tf.reduce_all(tf.math.is_finite(likelihood_score), axis=1),
+        )
+        dtheta_du = (
+            (PRIOR_UPPER - PRIOR_LOWER)[tf.newaxis, :]
+            * sigmoid
+            * (1.0 - sigmoid)
+        )
+        raw_score = (
+            (likelihood_score + prior_score) * dtheta_du + 1.0 - 2.0 * sigmoid
+        )
+        raw_value = likelihood_value + prior_value + jacobian
+        composed_finite = tf.logical_and(
+            tf.math.is_finite(raw_value),
+            tf.reduce_all(tf.math.is_finite(raw_score), axis=1),
+        )
+        status_code = (
+            tf.where(finite_unconstrained, 0, BGS_STATUS_NONFINITE_UNCONSTRAINED)
+            + tf.where(
+                transform_in_open_support,
+                0,
+                BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT,
+            )
+            + tf.where(
+                prior_and_jacobian_finite,
+                0,
+                BGS_STATUS_PRIOR_OR_JACOBIAN_NONFINITE,
+            )
+            + tf.where(descriptor_success, 0, BGS_STATUS_DESCRIPTOR_FAILURE)
+            + tf.where(state_space_success, 0, BGS_STATUS_STATE_SPACE_FAILURE)
+            + tf.where(
+                likelihood_value_finite, 0, BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE
+            )
+            + tf.where(
+                likelihood_score_finite, 0, BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE
+            )
+            + tf.where(composed_finite, 0, BGS_STATUS_POSTERIOR_NONFINITE)
+        )
+        valid = status_code == 0
+        value = tf.where(valid, raw_value, tf.constant(float("-inf"), DTYPE))
+        score = tf.where(valid[:, tf.newaxis], raw_score, tf.zeros_like(raw_score))
+        floor_count = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.floor_count_value, tf.int32), (None,)
+        )
+        minimum_eigenvalue = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.min_innovation_eigenvalue, DTYPE),
+            (None,),
+        )
+        condition_estimate = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.innovation_condition_estimate, DTYPE),
+            (None,),
+        )
+        return value, score, {
+            "status_code": status_code,
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": floor_count,
+            "min_innovation_eigenvalue": minimum_eigenvalue,
+            "innovation_condition_estimate": condition_estimate,
+            "innovation_metrics_available": tf.ones(tf.shape(valid), tf.bool),
+            "finite_unconstrained": finite_unconstrained,
+            "transform_in_open_support": transform_in_open_support,
+            "prior_and_jacobian_finite": prior_and_jacobian_finite,
+            "descriptor_success": descriptor_success,
+            "numerical_state_space_success": state_space_success,
+            "likelihood_value_finite": likelihood_value_finite,
+            "likelihood_score_finite": likelihood_score_finite,
+            "composed_posterior_finite": composed_finite,
+        }
+
+    def target_status_telemetry(self, u: Any) -> dict[str, tf.Tensor]:
+        _value, _score, status = self.log_prob_and_grad_status(u)
+        return status
+
+    def retained_target_status_telemetry(
+        self, target_log_prob: Any
+    ) -> dict[str, tf.Tensor]:
+        """Recover the batch validity veto from finite retained target values."""
+
+        value = tf.cast(tf.convert_to_tensor(target_log_prob), DTYPE)
+        valid = tf.math.is_finite(value)
+        zero = tf.zeros_like(value)
+        unavailable = tf.fill(tf.shape(value), tf.constant(float("nan"), DTYPE))
+        innovation_sentinel = tf.where(valid, zero, unavailable)
+        return {
+            "status_code": tf.where(
+                valid,
+                tf.zeros(tf.shape(value), tf.int32),
+                tf.fill(
+                    tf.shape(value),
+                    tf.constant(BGS_STATUS_POSTERIOR_NONFINITE, tf.int32),
+                ),
+            ),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": tf.zeros(tf.shape(value), tf.int32),
+            "min_innovation_eigenvalue": innovation_sentinel,
+            "innovation_condition_estimate": innovation_sentinel,
+            "innovation_metrics_available": tf.zeros(tf.shape(value), tf.bool),
+        }
+
+
+__all__ = [
+    "BGSConstrainedLikelihoodResult",
+    "BGSPosteriorAdapter",
+    "BGSBatchPosteriorAdapter",
+    "BGSPosteriorComponents",
+    "BGS_POSTERIOR_NONCLAIMS",
+    "BGS_POSTERIOR_DEBUG_NONCLAIMS",
+    "BGS_POSTERIOR_XLA_NONCLAIMS",
+    "BGS_STATUS_DESCRIPTOR_FAILURE",
+    "BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE",
+    "BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE",
+    "BGS_STATUS_NONFINITE_UNCONSTRAINED",
+    "BGS_STATUS_POSTERIOR_NONFINITE",
+    "BGS_STATUS_PRIOR_OR_JACOBIAN_NONFINITE",
+    "BGS_STATUS_STATE_SPACE_FAILURE",
+    "BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT",
+    "PARAMETER_DIMENSION",
+    "PARAMETER_NAMES",
+    "PRIOR_FAMILIES",
+    "PRIOR_KERNEL_ID",
+    "PRIOR_LOWER",
+    "PRIOR_MEAN",
+    "PRIOR_SD",
+    "PRIOR_UPPER",
+    "SOURCE_HASHES",
+    "constrained_log_prior_and_score",
+    "constrained_log_prior_contributions",
+    "log_abs_det_jacobian",
+    "theta_from_unconstrained",
+    "unconstrained_from_theta",
+]

@@ -1,0 +1,2392 @@
+{
+  "continuation_veto": "two_node:T2:COMPUTATIONAL_INVALID_NONFINITE_OR_INVALID_CHART",
+  "decision_table": {
+    "decision": "stop ladder and diagnose computational invalidity",
+    "main_uncertainty": "J2 and d18 teacher have no external target oracle; intervals may be underpowered",
+    "next_justified_action": "diagnose the first invalid chart or nonfinite output before any later horizon",
+    "not_concluded": "which method is closer to truth, practical equivalence, HMC readiness, leaderboard readiness",
+    "primary_criterion_status": [
+      "two_node:T2:COMPUTATIONAL_INVALID_NONFINITE_OR_INVALID_CHART"
+    ],
+    "veto_diagnostic_status": [
+      "two_node:T2:COMPUTATIONAL_INVALID_NONFINITE_OR_INVALID_CHART"
+    ]
+  },
+  "evidence_contract": {
+    "equivalence_claim_available": false,
+    "method_comparison": "paired LEDH N256 minus teacher N256 Bonferroni Student intervals",
+    "refinement_shift_rule": "any interval excluding zero makes method comparison descriptive only",
+    "teacher_refinement": "paired N256 minus N128 Bonferroni Student intervals"
+  },
+  "hard_vetoes": [
+    "two_node:T2:COMPUTATIONAL_INVALID_NONFINITE_OR_INVALID_CHART"
+  ],
+  "inference_status": {
+    "default_readiness": "not established",
+    "descriptive_only_differences": "all rows with teacher refinement shift plus runtime/ESS trends",
+    "hard_veto_screen": [
+      "two_node:T2:COMPUTATIONAL_INVALID_NONFINITE_OR_INVALID_CHART"
+    ],
+    "next_evidence_needed": "localized repair diagnostics and Zhao-Cui source-route derivative closure",
+    "statistically_supported_ranking": "none"
+  },
+  "nonclaims": [
+    "not evidence that either method is closer to truth",
+    "not practical equivalence when intervals contain zero",
+    "not HMC or leaderboard readiness",
+    "not Zhao-Cui source-faithful comparator closure"
+  ],
+  "phase3_final_source_replay": {
+    "cpu_result": {
+      "path": "docs/benchmarks/artifacts/sir_remaining_gap_closure_20260716/phase3_cpu_xla_registered_final_source_attempt02/result.json",
+      "sha256": "2457df7a6e093739dad1b19ea677d72c4c8566a3409a7e103d323e5e3d917214"
+    },
+    "maximum_score_absolute_delta": 1.2523315717771766e-13,
+    "output_devices": [
+      "/job:localhost/replica:0/task:0/device:GPU:0"
+    ],
+    "prepared_identity": {
+      "epsilon": "e4407e1192399c3637f63af7aa574b2cb19bd11d81acb0994f62cf83a98f5ce4",
+      "fixed_reset_mask": "166d68193427ef749f3c781c1a80d47d37e4983c187def27181c314eb1e54d8f",
+      "initial_noise": "b29a2f37bc22433ad5eda367a02779a650160a14d01b657d50fe21a20201bca1",
+      "observations": "1d72ba3825825a86906bf54094c7dfa48c51527e2d704b8e01d22ab5f24afe67",
+      "prepared_ridge": "1227212d5ef60413fa3ddc4cedac100078612dcc7bf5e92a93aa8c8f455400aa",
+      "residual_design": "8cbdedc6df5f451ab6ef7b207565fc3798d41a6013edf3e5a70da707c1e89209",
+      "scaling": "cb930ec4c0b7a82a69f388f20232162c735b05f2d3c8dd01867282a66055007c",
+      "transition_noise": "4d510201e47fa5b308d59a7c96d1a467b139a8739deeffe17f5d337d27f95292"
+    },
+    "prepared_input": {
+      "path": "docs/benchmarks/artifacts/sir_latent_preclip_repair_20260716/prepared_t2_n32_attempt01/prepared.json",
+      "sha256": "5a5db3a1e9b2e3702f823452d3d1246a9b291ad03dc3abfd727a39cf207392b8"
+    },
+    "reset_valid_history": [
+      [
+        true,
+        true
+      ]
+    ],
+    "score_absolute_deltas": [
+      1.2523315717771766e-13,
+      5.10702591327572e-14,
+      3.1530333899354446e-14
+    ],
+    "status": "PASS_FINAL_SOURCE_CPU_GPU_REPLAY",
+    "valid_chart": [
+      true
+    ],
+    "value_absolute_delta": 0.0
+  },
+  "post_run_red_team": {
+    "result_that_would_overturn_conclusion": "a repaired stable teacher or external oracle reverses the interval classification",
+    "strongest_alternative_explanation": "teacher particle bias or low power can mimic or hide method disagreement",
+    "weakest_evidence": "no J2 or d18 external likelihood/score oracle"
+  },
+  "rows": [
+    {
+      "computational_valid": true,
+      "configuration": {
+        "dtype": "float64",
+        "jit_compile": true,
+        "ledh_particles": 256,
+        "replicates": 16,
+        "seeds": [
+          87100,
+          87101,
+          87102,
+          87103,
+          87104,
+          87105,
+          87106,
+          87107,
+          87108,
+          87109,
+          87110,
+          87111,
+          87112,
+          87113,
+          87114,
+          87115
+        ],
+        "teacher_particles": [
+          128,
+          256
+        ]
+      },
+      "continuation_valid": true,
+      "horizon_T": 1,
+      "identity": {
+        "admitted": false,
+        "identity_sha256": "92ef77bd43b77bc0c3b17f8f9b5b124ab1c258bc244f41625828023de08bdaa8",
+        "prepared_input_sha256": "2d55777fda42f8b26b479f4708376defc79ece93210a86e1ee6a97e05eb7812c",
+        "route_specification_id": "contract_e_chol_latent_preclip_sir_two_node_v1",
+        "source_dependency_closure_sha256": "2d3148036f0a04e0dc686d41bea1b355704c6b6dae7656b1b97916e008e8ec40"
+      },
+      "ledh": {
+        "clip_boundary_away_history": [
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "computational_valid": true,
+        "first_call_seconds": 17.03966002498055,
+        "minimum_mass_history": [
+          [
+            0.12309498770526596
+          ],
+          [
+            0.12767632701680343
+          ],
+          [
+            0.1258400361059305
+          ],
+          [
+            0.12030874132612764
+          ],
+          [
+            0.1473702166993738
+          ],
+          [
+            0.13044621514065463
+          ],
+          [
+            0.15684263459986192
+          ],
+          [
+            0.0801548598491364
+          ],
+          [
+            0.2772702493385031
+          ],
+          [
+            0.1456494749553822
+          ],
+          [
+            0.15934313428255473
+          ],
+          [
+            0.1257447740603539
+          ],
+          [
+            0.11827159692727
+          ],
+          [
+            0.12714017229247757
+          ],
+          [
+            0.13092485230541512
+          ],
+          [
+            0.12364241734048396
+          ]
+        ],
+        "output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "replay_exact": true,
+        "replay_seconds": 2.857426311005838,
+        "reset_valid_history": [
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ]
+        ],
+        "score_finite": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "score_samples": [
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ],
+          [
+            0.0,
+            0.0,
+            -0.636586677271189
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711894
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711892
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711892
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711892
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711892
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711894
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711894
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711894
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ],
+          [
+            0.0,
+            0.0,
+            -0.6365866772711893
+          ]
+        ],
+        "valid_chart": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_finite": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_samples": [
+          -7.1315213112286555,
+          -7.131521311228655,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555,
+          -7.1315213112286555
+        ]
+      },
+      "ledh_N256_minus_teacher_N256": {
+        "available": true,
+        "invalid_score_pair_count": 0,
+        "invalid_value_pair_count": 0,
+        "score": [
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.0,
+            "lower": 0.0,
+            "mean": 0.0,
+            "standard_deviation": 0.0,
+            "standard_error": 0.0,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.0
+          },
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.0,
+            "lower": 0.0,
+            "mean": 0.0,
+            "standard_deviation": 0.0,
+            "standard_error": 0.0,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.0
+          },
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.011613593533255067,
+            "lower": -0.01567857125576221,
+            "mean": -0.004064977722507142,
+            "standard_deviation": 0.016376621366223643,
+            "standard_error": 0.004094155341555911,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.007548615810747925
+          }
+        ],
+        "score_finite": [
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "score_samples": [
+          [
+            0.0,
+            0.0,
+            0.004782444970738209
+          ],
+          [
+            0.0,
+            0.0,
+            0.00031557571146834107
+          ],
+          [
+            0.0,
+            0.0,
+            0.010990830246449645
+          ],
+          [
+            0.0,
+            0.0,
+            -0.005800244911331132
+          ],
+          [
+            0.0,
+            0.0,
+            -0.013859741617591625
+          ],
+          [
+            0.0,
+            0.0,
+            -0.008469484633563118
+          ],
+          [
+            0.0,
+            0.0,
+            -0.0037517298560370005
+          ],
+          [
+            0.0,
+            0.0,
+            -0.0021240591789202234
+          ],
+          [
+            0.0,
+            0.0,
+            -0.043063020651114337
+          ],
+          [
+            0.0,
+            0.0,
+            -0.022002589703433717
+          ],
+          [
+            0.0,
+            0.0,
+            0.009289868177612237
+          ],
+          [
+            0.0,
+            0.0,
+            0.025867547247626077
+          ],
+          [
+            0.0,
+            0.0,
+            -0.008098174130189428
+          ],
+          [
+            0.0,
+            0.0,
+            -0.019224665646569994
+          ],
+          [
+            0.0,
+            0.0,
+            -0.006064664933964292
+          ],
+          [
+            0.0,
+            0.0,
+            0.01617246534870609
+          ]
+        ],
+        "unavailable_reason": null,
+        "value": {
+          "bonferroni_family_size": 4,
+          "contains_zero": true,
+          "count": 16,
+          "half_width": 0.005771328067127626,
+          "lower": -0.0036658631395463355,
+          "mean": 0.002105464927581291,
+          "standard_deviation": 0.008138295374723502,
+          "standard_error": 0.0020345738436808756,
+          "student_critical": 2.8366274760941357,
+          "upper": 0.007876792994708916
+        },
+        "value_finite": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_samples": [
+          -0.0019255191037146346,
+          -0.0009536546587902706,
+          -0.005974023999396394,
+          0.003306432884934374,
+          0.008082457351067163,
+          0.004147106688323632,
+          0.0019653988573020698,
+          0.002100785674930883,
+          0.02133342711736752,
+          0.01074613593492213,
+          -0.005137590045313445,
+          -0.012424977247247782,
+          0.0035682054726366985,
+          0.009498406800043213,
+          0.003027949847605349,
+          -0.007673102733369852
+        ]
+      },
+      "method_disagreement_detected": false,
+      "model_row": "two_node",
+      "status": "NO_LED_H_TEACHER_DISAGREEMENT_DETECTED_AT_CURRENT_PRECISION",
+      "target": {
+        "observations": [
+          [
+            7.830563492751551,
+            22.504223876569508
+          ]
+        ],
+        "target_hypothesis": "explicit_two_node_Austria_edge_not_exact_nine_node_marginal",
+        "theta": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "teacher": {
+        "128": {
+          "finite": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "first_call_seconds": 3.9609675090177916,
+          "maximum_backward_row_sum_error": 0.0,
+          "minimum_ess": [
+            125.9999798246244,
+            126.58746341846432,
+            126.39185528127365,
+            126.41548253458221,
+            126.11081313689209,
+            126.57217219949686,
+            126.32785879429319,
+            126.20556718167325,
+            126.0716239627464,
+            126.24070890739767,
+            126.32232939082341,
+            126.24328082966676,
+            126.43950418312536,
+            126.3606363881044,
+            126.07424234371274,
+            126.27451464829876
+          ],
+          "output_devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score_samples": [
+            [
+              0.0,
+              0.0,
+              -0.6438121413087021
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6463946414265324
+            ],
+            [
+              0.0,
+              0.0,
+              -0.662057088120813
+            ],
+            [
+              0.0,
+              0.0,
+              -0.5962806257594656
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6401090280129148
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6431472560227189
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6174419891269586
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6353573423899107
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6156641227123036
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6477609625671983
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6345635376719636
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6728489341058551
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6433983589992036
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6330431506084249
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6210477828564434
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6423150488076033
+            ]
+          ],
+          "value_samples": [
+            -7.129063804709037,
+            -7.125451746054847,
+            -7.118333692250441,
+            -7.151268930884933,
+            -7.1304867525984275,
+            -7.127101992882164,
+            -7.140966190572125,
+            -7.132538396163901,
+            -7.142972734153159,
+            -7.126153245813902,
+            -7.1324745559936735,
+            -7.113618142412791,
+            -7.127502331004653,
+            -7.133054080802006,
+            -7.14012747986002,
+            -7.128750656764824
+          ]
+        },
+        "256": {
+          "finite": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "first_call_seconds": 3.3538849460019264,
+          "maximum_backward_row_sum_error": 0.0,
+          "minimum_ess": [
+            252.36768528412102,
+            252.99863491485934,
+            252.81245418713644,
+            252.3989857723158,
+            252.03385279846975,
+            252.6396855679027,
+            252.55259133315167,
+            252.07061539542337,
+            252.70955603332246,
+            252.71083868019855,
+            252.8403633551895,
+            252.34086530092625,
+            252.7945806593431,
+            252.6709950507051,
+            252.5824401648941,
+            252.38950530628796
+          ],
+          "output_devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score_samples": [
+            [
+              0.0,
+              0.0,
+              -0.6413691222419275
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6369022529826573
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6475775075176391
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6307864323598582
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6227269356535976
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6281171926376261
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6328349474151522
+            ],
+            [
+              0.0,
+              0.0,
+              -0.634462618092269
+            ],
+            [
+              0.0,
+              0.0,
+              -0.593523656620075
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6145840875677556
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6458765454488016
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6624542245188155
+            ],
+            [
+              0.0,
+              0.0,
+              -0.628488503141
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6173620116246195
+            ],
+            [
+              0.0,
+              0.0,
+              -0.630522012337225
+            ],
+            [
+              0.0,
+              0.0,
+              -0.6527591426198954
+            ]
+          ],
+          "value_samples": [
+            -7.129595792124941,
+            -7.130567656569864,
+            -7.125547287229259,
+            -7.13482774411359,
+            -7.139603768579723,
+            -7.135668417916979,
+            -7.133486710085958,
+            -7.133622096903586,
+            -7.152854738346023,
+            -7.142267447163578,
+            -7.126383721183342,
+            -7.119096333981408,
+            -7.135089516701292,
+            -7.141019718028699,
+            -7.134549261076261,
+            -7.123848208495286
+          ]
+        }
+      },
+      "teacher_computational_valid": true,
+      "teacher_refinement_N256_minus_N128": {
+        "available": true,
+        "invalid_score_pair_count": 0,
+        "invalid_value_pair_count": 0,
+        "score": [
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.0,
+            "lower": 0.0,
+            "mean": 0.0,
+            "standard_deviation": 0.0,
+            "standard_error": 0.0,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.0
+          },
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.0,
+            "lower": 0.0,
+            "mean": 0.0,
+            "standard_deviation": 0.0,
+            "standard_error": 0.0,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.0
+          },
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.012153399442123366,
+            "lower": -0.007472473334742302,
+            "mean": 0.004680926107381064,
+            "standard_deviation": 0.017137815302921428,
+            "standard_error": 0.004284453825730357,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.016834325549504432
+          }
+        ],
+        "score_finite": [
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "score_samples": [
+          [
+            0.0,
+            0.0,
+            0.0024430190667745766
+          ],
+          [
+            0.0,
+            0.0,
+            0.00949238844387501
+          ],
+          [
+            0.0,
+            0.0,
+            0.014479580603173892
+          ],
+          [
+            0.0,
+            0.0,
+            -0.0345058066003926
+          ],
+          [
+            0.0,
+            0.0,
+            0.017382092359317203
+          ],
+          [
+            0.0,
+            0.0,
+            0.015030063385092829
+          ],
+          [
+            0.0,
+            0.0,
+            -0.015392958288193648
+          ],
+          [
+            0.0,
+            0.0,
+            0.0008947242976417025
+          ],
+          [
+            0.0,
+            0.0,
+            0.02214046609222864
+          ],
+          [
+            0.0,
+            0.0,
+            0.03317687499944266
+          ],
+          [
+            0.0,
+            0.0,
+            -0.011313007776837969
+          ],
+          [
+            0.0,
+            0.0,
+            0.010394709587039586
+          ],
+          [
+            0.0,
+            0.0,
+            0.014909855858203591
+          ],
+          [
+            0.0,
+            0.0,
+            0.01568113898380541
+          ],
+          [
+            0.0,
+            0.0,
+            -0.009474229480781693
+          ],
+          [
+            0.0,
+            0.0,
+            -0.010444093812292166
+          ]
+        ],
+        "unavailable_reason": null,
+        "value": {
+          "bonferroni_family_size": 4,
+          "contains_zero": true,
+          "count": 16,
+          "half_width": 0.005995048564827353,
+          "lower": -0.008380278913507675,
+          "mean": -0.002385230348680323,
+          "standard_deviation": 0.008453769295194407,
+          "standard_error": 0.0021134423237986017,
+          "student_critical": 2.8366274760941357,
+          "upper": 0.00360981821614703
+        },
+        "value_finite": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_samples": [
+          -0.0005319874159042115,
+          -0.005115910515017141,
+          -0.0072135949788183495,
+          0.016441186771342764,
+          -0.009117015981295218,
+          -0.008566425034815417,
+          0.007479480486167311,
+          -0.0010837007396853338,
+          -0.009882004192864002,
+          -0.01611420134967556,
+          0.006090834810331458,
+          -0.0054781915686170635,
+          -0.007587185696639409,
+          -0.007965637226692301,
+          0.00557821878375897,
+          0.00490244826953834
+        ]
+      },
+      "teacher_refinement_shift_detected": false
+    },
+    {
+      "computational_valid": false,
+      "configuration": {
+        "dtype": "float64",
+        "jit_compile": true,
+        "ledh_particles": 256,
+        "replicates": 16,
+        "seeds": [
+          87200,
+          87201,
+          87202,
+          87203,
+          87204,
+          87205,
+          87206,
+          87207,
+          87208,
+          87209,
+          87210,
+          87211,
+          87212,
+          87213,
+          87214,
+          87215
+        ],
+        "teacher_particles": [
+          128,
+          256
+        ]
+      },
+      "continuation_valid": false,
+      "horizon_T": 2,
+      "identity": {
+        "admitted": false,
+        "identity_sha256": "fad3d958c6aba82ba8d8360757ed4c5ff8935fd7a41fb2797b84dcdba838b6f1",
+        "prepared_input_sha256": "ea7de5534230d34bb333f3142aa54f7f396aa740c80654574d2c116eb7dfb3ed",
+        "route_specification_id": "contract_e_chol_latent_preclip_sir_two_node_v1",
+        "source_dependency_closure_sha256": "2d3148036f0a04e0dc686d41bea1b355704c6b6dae7656b1b97916e008e8ec40"
+      },
+      "ledh": {
+        "clip_boundary_away_history": [
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ],
+          [
+            true
+          ]
+        ],
+        "computational_valid": false,
+        "first_call_seconds": 22.737746499013156,
+        "minimum_mass_history": [
+          [
+            0.14110700202015652,
+            0.15744321484123744
+          ],
+          [
+            0.18166984647334283,
+            0.12617385102650439
+          ],
+          [
+            0.12214161345034291,
+            0.03354272568962097
+          ],
+          [
+            0.12222510127805256,
+            0.03645097669916848
+          ],
+          [
+            0.09077332196013942,
+            0.0489620923305357
+          ],
+          [
+            0.2413859390003848,
+            0.055780092631447016
+          ],
+          [
+            0.142142312614926,
+            0.05829468452430312
+          ],
+          [
+            0.1579723249105163,
+            0.07899771571621629
+          ],
+          [
+            0.11895089179601252,
+            0.06821721386020675
+          ],
+          [
+            0.11213793217676105,
+            0.04574290237957271
+          ],
+          [
+            0.13612220462940638,
+            0.04691251116385385
+          ],
+          [
+            0.2538197761955768,
+            0.0760623916991286
+          ],
+          [
+            0.215021984789005,
+            0.05353470304297829
+          ],
+          [
+            0.09712509180738964,
+            0.03892240746558635
+          ],
+          [
+            0.21875259403168232,
+            0.09114297337362484
+          ],
+          [
+            0.13550124617927573,
+            0.031435205256122783
+          ]
+        ],
+        "output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "replay_exact": true,
+        "replay_seconds": 7.1411404850077815,
+        "reset_valid_history": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            false
+          ],
+          [
+            true,
+            false
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            false
+          ]
+        ],
+        "score_finite": [
+          true,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "score_samples": [
+          [
+            0.48457156034688265,
+            -0.18365902721547517,
+            -3.1786217258280707
+          ],
+          [
+            0.4203749583824238,
+            -0.15933518700267862,
+            -3.188174249966717
+          ],
+          [
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null
+          ],
+          [
+            0.4984130094121245,
+            -0.1889532315995342,
+            -3.1758427248989087
+          ],
+          [
+            0.43004858705772,
+            -0.16284832478404837,
+            -3.1732064446743737
+          ],
+          [
+            0.41924592284181783,
+            -0.15882095091774556,
+            -3.1839732494778534
+          ],
+          [
+            0.4916116081317941,
+            -0.18627486123189646,
+            -3.1697160281129104
+          ],
+          [
+            0.4330898103130093,
+            -0.16412931736266895,
+            -3.186481529718405
+          ],
+          [
+            0.5171915271242853,
+            -0.19613486012347492,
+            -3.17525772373621
+          ],
+          [
+            0.4154947020474091,
+            -0.15744678676954643,
+            -3.1873990929224085
+          ],
+          [
+            0.43419494923727747,
+            -0.16442583973898175,
+            -3.177972369141236
+          ],
+          [
+            0.4556714616344754,
+            -0.17264805587538917,
+            -3.1774570971542433
+          ],
+          [
+            0.4401248165047149,
+            -0.16670793058697408,
+            -3.1750982178854485
+          ],
+          [
+            0.4456987350873777,
+            -0.16883954700569054,
+            -3.1799356319371697
+          ],
+          [
+            null,
+            null,
+            null
+          ]
+        ],
+        "valid_chart": [
+          true,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "value_finite": [
+          true,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "value_samples": [
+          -13.304265085850504,
+          -13.299076174572846,
+          null,
+          null,
+          -13.305741063942907,
+          -13.30712059499259,
+          -13.301217584634042,
+          -13.309232286752668,
+          -13.300060364201101,
+          -13.306500877512564,
+          -13.299349049215069,
+          -13.304570689843981,
+          -13.30495973669898,
+          -13.306128098471678,
+          -13.303687064378527,
+          null
+        ]
+      },
+      "ledh_N256_minus_teacher_N256": {
+        "available": false,
+        "invalid_score_pair_count": 9,
+        "invalid_value_pair_count": 3,
+        "score": [
+          null,
+          null,
+          null
+        ],
+        "score_finite": [
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "score_samples": [
+          [
+            0.3080399495441585,
+            -0.22429868640445744,
+            -0.023926863687860678
+          ],
+          [
+            0.8075920774977092,
+            0.022351778576832626,
+            -0.012727280507506933
+          ],
+          [
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null
+          ],
+          [
+            -1.0189332786705703,
+            0.018099293323499632,
+            0.01391519839973343
+          ],
+          [
+            1.0174786521693038,
+            -0.5858122537440567,
+            -0.00985464376334555
+          ],
+          [
+            -0.610759291993919,
+            0.3143796762118983,
+            -0.012791544676747701
+          ],
+          [
+            -0.6964753540860169,
+            0.4309680606649036,
+            0.02845572578463962
+          ],
+          [
+            1.3844702414944563,
+            0.08293604166714702,
+            -0.019746824850968903
+          ],
+          [
+            -0.0884665365284879,
+            0.23124742181226615,
+            0.013335506362577298
+          ],
+          [
+            -0.2549175363535574,
+            0.13259599585105386,
+            -0.04015352768127656
+          ],
+          [
+            -0.8757530991462499,
+            0.1649883571668925,
+            -0.039758978429011105
+          ],
+          [
+            -0.6367435327238913,
+            0.08388161572847491,
+            0.02431790346258378
+          ],
+          [
+            -1.8558042251515325,
+            0.2914036037944279,
+            0.00262177204244729
+          ],
+          [
+            0.0200991856582301,
+            0.017207013767089052,
+            0.014510828877353887
+          ],
+          [
+            null,
+            null,
+            null
+          ]
+        ],
+        "unavailable_reason": "NONFINITE_PAIRED_SAMPLES",
+        "value": null,
+        "value_finite": [
+          true,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "value_samples": [
+          0.011126453706831185,
+          0.005423737136482032,
+          null,
+          null,
+          -0.006197289303091935,
+          0.0005001272517830557,
+          0.007141492800554872,
+          -0.00811226906464313,
+          0.0111545110345741,
+          -0.00735080974566138,
+          0.02130380900569584,
+          0.014101787347389205,
+          -0.010013219965076203,
+          -0.0011771502611708229,
+          -0.004382365035930036,
+          null
+        ]
+      },
+      "method_disagreement_detected": false,
+      "model_row": "two_node",
+      "status": "COMPUTATIONAL_INVALID_NONFINITE_OR_INVALID_CHART",
+      "target": {
+        "observations": [
+          [
+            20.785369470425557,
+            15.253887815939645
+          ],
+          [
+            24.78482910432579,
+            23.18555408903509
+          ]
+        ],
+        "target_hypothesis": "explicit_two_node_Austria_edge_not_exact_nine_node_marginal",
+        "theta": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "teacher": {
+        "128": {
+          "finite": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "first_call_seconds": 3.8645088500052225,
+          "maximum_backward_row_sum_error": 1.1102230246251565e-15,
+          "minimum_ess": [
+            127.04352118966234,
+            127.2062388043801,
+            126.9410687336952,
+            127.12201082098359,
+            127.04466551723749,
+            127.08736516137381,
+            127.06238136788382,
+            127.11830728248457,
+            127.03102856599585,
+            127.18305855187926,
+            127.04047231341079,
+            127.270321197504,
+            127.20106789525249,
+            127.22496235787855,
+            127.06181696417958,
+            127.13222333633009
+          ],
+          "output_devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score_samples": [
+            [
+              1.6039195464408955,
+              -0.38501345161454714,
+              -3.1847351930847223
+            ],
+            [
+              0.40735474514144604,
+              -0.5498290935973075,
+              -3.2054718293438036
+            ],
+            [
+              0.573809137031931,
+              0.0073211812588789005,
+              -3.1892116457469526
+            ],
+            [
+              -1.7685721545269524,
+              0.28431726780073263,
+              -3.1696385770203257
+            ],
+            [
+              1.7827561820055875,
+              -0.19675403538737213,
+              -3.1941454552461273
+            ],
+            [
+              -1.0899534149103027,
+              0.1596317686651719,
+              -3.1975843283194987
+            ],
+            [
+              0.13205947459691703,
+              -0.09796081328452982,
+              -3.169383410338386
+            ],
+            [
+              -0.6419559411962059,
+              -0.10828465184088665,
+              -3.197865479874564
+            ],
+            [
+              4.431709657939351,
+              -1.8542985563312373,
+              -3.1821220897069042
+            ],
+            [
+              0.4518161174154006,
+              -0.7727343492948481,
+              -3.184567289213258
+            ],
+            [
+              1.0749002801370957,
+              -0.4012759553438724,
+              -3.1328527766567307
+            ],
+            [
+              0.5558696575054091,
+              -0.7018552732684962,
+              -3.1552235365369192
+            ],
+            [
+              -2.2045793439688586,
+              0.10496856667126807,
+              -3.2156890598372767
+            ],
+            [
+              1.5742512963378343,
+              -0.3594370023139101,
+              -3.1672548058772003
+            ],
+            [
+              0.48713425847591635,
+              0.31003957297954166,
+              -3.159779971549245
+            ],
+            [
+              2.954512013180058,
+              -0.061821350718370596,
+              -3.1976170302667875
+            ]
+          ],
+          "value_samples": [
+            -13.311376036031564,
+            -13.296708144424983,
+            -13.307986503976807,
+            -13.31001815937947,
+            -13.295502819495592,
+            -13.296740202237153,
+            -13.306366304885143,
+            -13.290295848166693,
+            -13.314661344877743,
+            -13.299277077788474,
+            -13.324728664007552,
+            -13.312850420694602,
+            -13.286134309234313,
+            -13.306662758043387,
+            -13.31516631717682,
+            -13.294570168555882
+          ]
+        },
+        "256": {
+          "finite": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "first_call_seconds": 4.461903140007053,
+          "maximum_backward_row_sum_error": 1.3322676295501878e-15,
+          "minimum_ess": [
+            253.97627974484615,
+            254.30681558052328,
+            254.08944756217923,
+            254.19728541726806,
+            254.1305992876533,
+            254.15605420244898,
+            254.26211249848993,
+            254.34797200655447,
+            254.03050375450093,
+            254.48240515964554,
+            253.94884492523857,
+            254.51253439072133,
+            254.4490594328994,
+            254.57363713038433,
+            254.36213044654923,
+            254.22677745217896
+          ],
+          "output_devices": [
+            "/job:localhost/replica:0/task:0/device:GPU:0"
+          ],
+          "score_samples": [
+            [
+              0.17653161080272417,
+              0.04063965918898227,
+              -3.15469486214021
+            ],
+            [
+              -0.38721711911528545,
+              -0.18168696557951125,
+              -3.1754469694592102
+            ],
+            [
+              0.23608677511253634,
+              -0.3889485714505327,
+              -3.197585046888331
+            ],
+            [
+              0.42716229074767675,
+              -0.0077973608294034935,
+              -3.1898467548031624
+            ],
+            [
+              1.517346288082695,
+              -0.20705252492303383,
+              -3.189757923298642
+            ],
+            [
+              -0.5874300651115838,
+              0.42296392896000823,
+              -3.163351800911028
+            ],
+            [
+              1.0300052148357368,
+              -0.47320062712964384,
+              -3.1711817048011057
+            ],
+            [
+              1.188086962217811,
+              -0.6172429218968001,
+              -3.19817175389755
+            ],
+            [
+              -0.9513804311814471,
+              -0.24706535902981597,
+              -3.166734704867436
+            ],
+            [
+              0.6056580636527732,
+              -0.42738228193574107,
+              -3.188593230098787
+            ],
+            [
+              0.6704122384009665,
+              -0.2900427826206003,
+              -3.147245565241132
+            ],
+            [
+              1.3099480483835273,
+              -0.32941419690587426,
+              -3.1382133907122247
+            ],
+            [
+              1.0924149943583668,
+              -0.2565296716038641,
+              -3.201775000616827
+            ],
+            [
+              2.2959290416562474,
+              -0.458111534381402,
+              -3.177719989927896
+            ],
+            [
+              0.4255995494291476,
+              -0.1860465607727796,
+              -3.1944464608145235
+            ],
+            [
+              1.4137986905884372,
+              -0.15426396520339614,
+              -3.179344628834261
+            ]
+          ],
+          "value_samples": [
+            -13.315391539557336,
+            -13.304499911709328,
+            -13.301632618671302,
+            -13.299290550699745,
+            -13.299543774639815,
+            -13.307620722244373,
+            -13.308359077434597,
+            -13.301120017688024,
+            -13.311214875235676,
+            -13.299150067766902,
+            -13.320652858220765,
+            -13.31867247719137,
+            -13.294946516733903,
+            -13.304950948210507,
+            -13.299304699342597,
+            -13.303906374480807
+          ]
+        }
+      },
+      "teacher_computational_valid": true,
+      "teacher_refinement_N256_minus_N128": {
+        "available": true,
+        "invalid_score_pair_count": 0,
+        "invalid_value_pair_count": 0,
+        "score": [
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 1.3651147456954735,
+            "lower": -1.356494705617048,
+            "mean": 0.008620040078425442,
+            "standard_deviation": 1.9249827581521615,
+            "standard_error": 0.48124568953804037,
+            "student_critical": 2.8366274760941357,
+            "upper": 1.373734785773899
+          },
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.3766132890692821,
+            "lower": -0.32275051160013357,
+            "mean": 0.05386277746914854,
+            "standard_deviation": 0.5310719045672586,
+            "standard_error": 0.13276797614181465,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.4304760665384306
+          },
+          {
+            "bonferroni_family_size": 4,
+            "contains_zero": true,
+            "count": 16,
+            "half_width": 0.013905313080507775,
+            "lower": -0.00959076987385935,
+            "mean": 0.004314543206648425,
+            "standard_deviation": 0.019608232942387695,
+            "standard_error": 0.004902058235596924,
+            "student_critical": 2.8366274760941357,
+            "upper": 0.0182198562871562
+          }
+        ],
+        "score_finite": [
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "score_samples": [
+          [
+            -1.4273879356381713,
+            0.4256531108035294,
+            0.030040330944512306
+          ],
+          [
+            -0.7945718642567314,
+            0.3681421280177962,
+            0.030024859884593358
+          ],
+          [
+            -0.3377223619193947,
+            -0.39626975270941156,
+            -0.008373401141378523
+          ],
+          [
+            2.195734445274629,
+            -0.29211462863013615,
+            -0.020208177782836678
+          ],
+          [
+            -0.2654098939228926,
+            -0.010298489535661703,
+            0.0043875319474850905
+          ],
+          [
+            0.5025233497987189,
+            0.2633321602948363,
+            0.03423252740847049
+          ],
+          [
+            0.8979457402388198,
+            -0.375239813845114,
+            -0.0017982944627195074
+          ],
+          [
+            1.8300429034140169,
+            -0.5089582700559134,
+            -0.0003062740229862193
+          ],
+          [
+            -5.383090089120798,
+            1.6072331973014213,
+            0.015387384839468332
+          ],
+          [
+            0.15384194623737257,
+            0.345352067359107,
+            -0.004025940885528989
+          ],
+          [
+            -0.4044880417361292,
+            0.1112331727232721,
+            -0.014392788584401295
+          ],
+          [
+            0.7540783908781182,
+            0.3724410763626219,
+            0.01701014582469451
+          ],
+          [
+            3.2969943383272255,
+            -0.36149823827513217,
+            0.013914059220449637
+          ],
+          [
+            0.7216777453184131,
+            -0.09867453206749188,
+            -0.01046518405069552
+          ],
+          [
+            -0.061534709046768776,
+            -0.49608613375232125,
+            -0.0346664892652786
+          ],
+          [
+            -1.540713322591621,
+            -0.09244261448502554,
+            0.018272401432526397
+          ]
+        ],
+        "unavailable_reason": null,
+        "value": {
+          "bonferroni_family_size": 4,
+          "contains_zero": true,
+          "count": 16,
+          "half_width": 0.005619101370581782,
+          "lower": -0.006944848298760999,
+          "mean": -0.0013257469281792167,
+          "standard_deviation": 0.007923636667750176,
+          "standard_error": 0.001980909166937544,
+          "student_critical": 2.8366274760941357,
+          "upper": 0.004293354442402565
+        },
+        "value_finite": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_samples": [
+          -0.00401550352577118,
+          -0.007791767284345497,
+          0.006353885305504292,
+          0.01072760867972633,
+          -0.004040955144223091,
+          -0.01088052000721973,
+          -0.001992772549453292,
+          -0.010824169521331584,
+          0.00344646964206774,
+          0.00012701002157200492,
+          0.004075805786786901,
+          -0.0058220564967683686,
+          -0.008812207499589775,
+          0.0017118098328801068,
+          0.01586161783422213,
+          -0.009336205924924457
+        ]
+      },
+      "teacher_refinement_shift_detected": false
+    }
+  ],
+  "schema": "bayesfilter.sir_ledh_teacher_paired_comparison.v1",
+  "status": "COMPARISON_STOPPED_COMPUTATIONAL_INVALID"
+}

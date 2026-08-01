@@ -1,0 +1,106 @@
+{
+  "campaign_id": "cubature-genut-exact-sv-n-scaling-20260721",
+  "comparator": {
+    "status": "BLOCKED_SAME_TARGET_COMPARATOR"
+  },
+  "controls": {
+    "epsilon": 2.0,
+    "ridge": 0.0001,
+    "sinkhorn_steps": 8
+  },
+  "dtype": "float32",
+  "engineering_valid": true,
+  "hard_valid": true,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "n_values": [
+    1000
+  ],
+  "nonclaims": [
+    "diagnostic only",
+    "no method ranking",
+    "no leaderboard/default admission"
+  ],
+  "physical_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "rows": [
+    {
+      "N": 1000,
+      "T": 50,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "elapsed_seconds": 3.6710980359930545,
+      "finite": true,
+      "gpu_allocator": {
+        "current": 217088,
+        "peak": 75340288
+      },
+      "gpu_placement": true,
+      "max_col_residual": 6.171874701976776e-06,
+      "max_row_residual": 1.575099304318428e-07,
+      "score": [
+        1.6154087781906128,
+        12.565332412719727
+      ],
+      "seed": 3400,
+      "value_error_to_dense": 0.22241973876953125
+    }
+  ],
+  "run_manifest": {
+    "command": [
+      "docs/benchmarks/run_cubature_genut_exact_sv_n_scaling.py",
+      "--output-root",
+      "docs/benchmarks/artifacts/cubature_genut_exact_sv_n1000_20260721/feasibility_attempt03",
+      "--n-values",
+      "1000",
+      "--t-values",
+      "50",
+      "--seeds",
+      "3400"
+    ],
+    "git_commit": "0fff464ab456b72a010007e552c1e2d761624afe",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "tensorflow": "2.19.1",
+    "wall_seconds": 6.331793441990158
+  },
+  "schema_version": "bayesfilter.cubature_genut_exact_sv_n_scaling.v1",
+  "seeds": [
+    3400
+  ],
+  "summary": [
+    {
+      "N": 1000,
+      "T": 50,
+      "engineering_valid": true,
+      "hard_valid": true,
+      "max_abs_value_error": 0.22241973876953125,
+      "mean_value_error": 0.22241973876953125,
+      "score_sd": [
+        0.0,
+        0.0
+      ],
+      "target_accuracy_valid": true
+    }
+  ],
+  "t_values": [
+    50
+  ],
+  "target_accuracy_valid": true,
+  "target_error_budget": 0.25,
+  "tf32_enabled": true
+}

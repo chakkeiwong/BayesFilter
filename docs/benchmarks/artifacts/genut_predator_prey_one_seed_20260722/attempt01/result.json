@@ -1,0 +1,120 @@
+{
+  "campaign_id": "genut-predator-prey-one-seed-20260722-attempt01",
+  "controls": {
+    "epsilon": 2.0,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8
+  },
+  "design": "gaussian_genut_dim2_replicated_positive_equal_mass",
+  "device": {
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_policy": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "tf32_enabled": true,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "dgp_model_manifest": {
+    "delta": 2.0,
+    "family": "PredatorPreySSM",
+    "initial_covariance": "I",
+    "observation_covariance": "4I",
+    "observation_dimension": 2,
+    "parameter_order": [
+      "r",
+      "K",
+      "a",
+      "s",
+      "u",
+      "v"
+    ],
+    "process_covariance": "4I",
+    "rk4_internal_step": 0.1,
+    "state_dimension": 2
+  },
+  "dtype": "float32",
+  "genut": {
+    "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "elapsed_seconds": 4.352628475986421,
+    "finite": true,
+    "max_col_residual": 4.291534423828125e-06,
+    "max_mean_residual": 8.678436279296875e-05,
+    "max_row_residual": 1.341104507446289e-07,
+    "route_id": "cubature_genut_nonfused_positive_ot_candidate_v1",
+    "score": [
+      -23.522520065307617,
+      1.3745516538619995,
+      0.009404966607689857,
+      -1.6701277494430542,
+      -3.9379382133483887,
+      4.381081581115723
+    ],
+    "score_sum_residual": 1.9073486328125e-06,
+    "value": -103.79159545898438
+  },
+  "git_commit": "9303ed7e88d0852eb6bb993d71d6fbcf815d19c8",
+  "horizon": 20,
+  "jit_compile": true,
+  "nonclaims": [
+    "exact likelihood",
+    "exact score",
+    "Zhao-Cui oracle",
+    "superiority",
+    "leaderboard admission",
+    "default promotion"
+  ],
+  "observation_sha256": "cb33ac0cdbbbd18f1e49724be9b80c047d2caa810453fa22ad01b551325194e5",
+  "parameter_order": [
+    "r",
+    "K",
+    "a",
+    "s",
+    "u",
+    "v"
+  ],
+  "particle_count": 96,
+  "row_id": "zhao_cui_predator_prey_T20",
+  "schema_version": "bayesfilter.genut_predator_prey_one_seed.v1",
+  "score_difference_genut_minus_zhao_cui": [
+    -160.13683596974352,
+    -5.16557610358292,
+    -0.1523046446871562,
+    57.8656726086145,
+    1.7803488798839435,
+    -2.291307893043549
+  ],
+  "seed": 81104,
+  "status": "diagnostic_only_feasible",
+  "tf32": true,
+  "theta": [
+    0.6,
+    114.0,
+    25.0,
+    0.3,
+    0.5,
+    0.5
+  ],
+  "value_difference_genut_minus_zhao_cui": 76.13182870321785,
+  "zhao_cui": {
+    "admission": "not_admitted_for_production_leaderboard_use_fixed_variant_zhao_cui",
+    "elapsed_seconds": 234.22200534999138,
+    "finite": true,
+    "route_id": "multistate_nonlinear_fixed_design_tt_score_path",
+    "route_role": "diagnostic_historical_retained_grid",
+    "score": [
+      136.6143159044359,
+      6.540127757444919,
+      0.16170961129484607,
+      -59.53580035805756,
+      -5.718287093232332,
+      6.672389474159272
+    ],
+    "value": -179.92342416220222
+  }
+}
