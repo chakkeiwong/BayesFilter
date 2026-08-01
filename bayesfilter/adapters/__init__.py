@@ -1,6 +1,7 @@
 """Optional adapters for external state-space projects."""
 
 from bayesfilter.adapters.bgs import (
+    BGSBatchPosteriorAdapter,
     BGSConstrainedLikelihoodResult,
     BGSPosteriorAdapter,
     BGSPosteriorComponents,
@@ -50,6 +51,7 @@ from bayesfilter.adapters.macrofinance import (
 )
 
 __all__ = [
+    "BGSBatchPosteriorAdapter",
     "BGSConstrainedLikelihoodResult",
     "BGSPosteriorAdapter",
     "BGSPosteriorComponents",

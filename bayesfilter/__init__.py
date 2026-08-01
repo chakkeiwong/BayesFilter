@@ -5,6 +5,7 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    "BGSBatchPosteriorAdapter",
     "BGSConstrainedLikelihoodResult",
     "BGSPosteriorAdapter",
     "BGSPosteriorComponents",
@@ -371,6 +372,7 @@ __all__ = [
 ]
 
 _EXPORT_MODULES = {
+    "BGSBatchPosteriorAdapter": "bayesfilter.adapters.bgs",
     "BGSConstrainedLikelihoodResult": "bayesfilter.adapters.bgs",
     "BGSPosteriorAdapter": "bayesfilter.adapters.bgs",
     "BGSPosteriorComponents": "bayesfilter.adapters.bgs",

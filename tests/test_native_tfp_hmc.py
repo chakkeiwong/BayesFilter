@@ -89,6 +89,29 @@ class DebugGaussianAdapter(ReviewedGaussianAdapter):
         )
 
 
+class BatchNativeGaussianAdapter(ReviewedGaussianAdapter):
+    batch_rank_policy = "rank2_required"
+
+    def log_prob_and_grad(self, theta):
+        values = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(theta), tf.float64), (4, 2)
+        )
+        return -0.5 * tf.reduce_sum(tf.square(values), axis=1), -values
+
+    def target_status_telemetry(self, theta):
+        values = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(theta), tf.float64), (4, 2)
+        )
+        valid = tf.reduce_all(tf.math.is_finite(values), axis=1)
+        return {
+            "status_code": tf.where(valid, 0, 1),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": tf.zeros((4,), tf.int32),
+            "min_innovation_eigenvalue": tf.zeros((4,), tf.float64),
+            "innovation_condition_estimate": tf.zeros((4,), tf.float64),
+        }
+
+
 def _config() -> NativeTFPFixedKernelHMCConfig:
     return NativeTFPFixedKernelHMCConfig(
         num_results=4,
@@ -109,6 +132,20 @@ def _independent_config() -> NativeTFPIndependentChainHMCConfig:
         seed=(20260725, 9),
         chain_count=4,
         target_scope=SCOPE,
+    )
+
+
+def _adaptive_independent_config() -> NativeTFPIndependentChainHMCConfig:
+    return NativeTFPIndependentChainHMCConfig(
+        num_results=8,
+        num_burnin_steps=8,
+        step_size=0.2,
+        num_leapfrog_steps=2,
+        seed=(20260729, 10),
+        chain_count=4,
+        target_scope=SCOPE,
+        num_adaptation_steps=8,
+        target_accept_prob=0.70,
     )
 
 
@@ -149,6 +186,8 @@ def test_native_runner_import_surface_is_tensorflow_tfp_only() -> None:
     assert "input_signature=()" in source
     assert "tfm.HamiltonianMonteCarlo" in source
     assert "tfm.sample_chain" in source
+    assert "jit_compile=True" in source
+    assert "prefer_visible_gpu_else_cpu" in source
 
 
 def test_native_runner_matches_historical_runner_for_identical_seed() -> None:
@@ -260,6 +299,80 @@ def test_independent_chain_target_matches_rows_and_has_no_cross_chain_gradient()
     np.testing.assert_array_equal(gradient[3].numpy(), np.zeros((2,)))
 
 
+def test_batch_native_independent_target_has_no_row_loop_or_mapping_ops() -> None:
+    adapter = BatchNativeGaussianAdapter()
+    positions = _independent_initial_state()
+    target = reviewed_independent_chain_target_fn(
+        adapter, chain_count=4, parameter_dim=2
+    )
+
+    @tf.function(
+        input_signature=(tf.TensorSpec((4, 2), tf.float64),),
+        autograph=False,
+    )
+    def compiled(values):
+        with tf.GradientTape() as tape:
+            tape.watch(values)
+            result = target(values)
+        return result, tape.gradient(result, values)
+
+    value, score = compiled(positions)
+    np.testing.assert_array_equal(
+        value.numpy(), -0.5 * tf.reduce_sum(tf.square(positions), axis=1).numpy()
+    )
+    np.testing.assert_array_equal(score.numpy(), -positions.numpy())
+    operations = {
+        operation.type for operation in compiled.get_concrete_function().graph.get_operations()
+    }
+    assert not any("While" in operation or "Map" in operation for operation in operations)
+    assert not operations.intersection({"PyFunc", "EagerPyFunc", "ParallelFor", "PFor"})
+
+
+def test_batch_native_independent_runner_reports_native_target_batching() -> None:
+    run = run_native_tfp_independent_chains(
+        BatchNativeGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+    )
+    assert run.metadata["target_batching"] == "native_rank2_single_adapter_call"
+    assert bool(run.diagnostics["all_chains_moved"].numpy()) is True
+
+
+def test_independent_config_requires_target_for_adaptation_and_records_band_contract() -> None:
+    with pytest.raises(ValueError, match="target_accept_prob is required"):
+        NativeTFPIndependentChainHMCConfig(
+            num_results=8,
+            num_burnin_steps=8,
+            step_size=0.2,
+            num_leapfrog_steps=2,
+            seed=(1, 2),
+            chain_count=4,
+            target_scope=SCOPE,
+            num_adaptation_steps=8,
+        )
+    payload = _adaptive_independent_config().signature_payload()
+    assert payload["adaptation_policy"] == "fixed_mass_dual_averaging"
+    assert payload["target_accept_prob"] == pytest.approx(0.70)
+    assert payload["num_adaptation_steps"] == 8
+
+
+def test_independent_runner_uses_xla_dual_averaging_and_records_final_step_size() -> None:
+    run = run_native_tfp_independent_chains(
+        BatchNativeGaussianAdapter(),
+        _independent_initial_state(),
+        _adaptive_independent_config(),
+    )
+    assert run.metadata["adaptation_policy"] == "fixed_mass_dual_averaging"
+    assert run.metadata["target_accept_prob"] == pytest.approx(0.70)
+    assert run.metadata["num_adaptation_steps"] == 8
+    assert run.metadata["use_xla"] is True
+    assert run.metadata["jit_compile"] is True
+    assert run.metadata["trace_count"] == 1
+    assert tuple(run.trace["adapted_step_size"].shape) == (8,)
+    assert bool(run.diagnostics["final_step_size_finite"].numpy()) is True
+    assert float(run.diagnostics["target_accept_prob"].numpy()) == pytest.approx(0.70)
+
+
 def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None:
     config = _independent_config()
     run = run_native_tfp_independent_chains(
@@ -281,12 +394,17 @@ def test_independent_chain_runner_is_finite_moving_and_status_complete() -> None
         "single_call_tfp_sample_chain_v3"
     )
     assert run.metadata["sample_chain_invocation_count"] == 1
+    assert run.metadata["use_xla"] is True
+    assert run.metadata["jit_compile"] is True
+    assert run.metadata["device_policy"] == "prefer_visible_gpu_else_cpu"
+    expected_device = "/GPU:0" if tf.config.list_logical_devices("GPU") else "/CPU:0"
+    assert run.metadata["selected_device"] == expected_device
     assert run.metadata["target_status_trace_source"] == (
         "adapter_state_re_evaluation"
     )
 
 
-def test_independent_chain_parallel_iterations_preserves_seeded_transition() -> None:
+def test_independent_chain_xla_preserves_seeded_transition() -> None:
     adapter = ReviewedGaussianAdapter()
     config = _independent_config()
     initial = _independent_initial_state()
@@ -309,17 +427,20 @@ def test_independent_chain_parallel_iterations_preserves_seeded_transition() -> 
             "proposed_target_log_prob": results.proposed_results.target_log_prob,
         }
 
-    @tf.function(input_signature=(), autograph=False)
+    selected_device = "/GPU:0" if tf.config.list_logical_devices("GPU") else "/CPU:0"
+
+    @tf.function(input_signature=(), autograph=False, jit_compile=True)
     def baseline():
-        return tfp.mcmc.sample_chain(
-            num_results=config.num_results,
-            num_burnin_steps=config.num_burnin_steps,
-            current_state=initial,
-            kernel=kernel,
-            trace_fn=trace_fn,
-            parallel_iterations=10,
-            seed=tf.constant(config.seed, tf.int32),
-        )
+        with tf.device(selected_device):
+            return tfp.mcmc.sample_chain(
+                num_results=config.num_results,
+                num_burnin_steps=config.num_burnin_steps,
+                current_state=initial,
+                kernel=kernel,
+                trace_fn=trace_fn,
+                parallel_iterations=1,
+                seed=tf.constant(config.seed, tf.int32),
+            )
 
     expected_samples, expected_trace = baseline()
     actual = run_native_tfp_independent_chains(adapter, initial, config)
@@ -328,7 +449,7 @@ def test_independent_chain_parallel_iterations_preserves_seeded_transition() -> 
         np.testing.assert_array_equal(actual.trace[name].numpy(), value.numpy())
 
 
-def test_single_call_independent_chain_matches_tfp_full_trace_bitwise() -> None:
+def test_single_call_independent_chain_matches_xla_tfp_full_trace_bitwise() -> None:
     adapter = ReviewedGaussianAdapter()
     config = _independent_config()
     initial = _independent_initial_state()
@@ -347,17 +468,20 @@ def test_single_call_independent_chain_matches_tfp_full_trace_bitwise() -> None:
         adapter, chain_count=config.chain_count
     )
 
-    @tf.function(input_signature=(), autograph=False)
+    selected_device = "/GPU:0" if tf.config.list_logical_devices("GPU") else "/CPU:0"
+
+    @tf.function(input_signature=(), autograph=False, jit_compile=True)
     def monolithic():
-        return tfp.mcmc.sample_chain(
-            num_results=config.num_results,
-            num_burnin_steps=config.num_burnin_steps,
-            current_state=initial,
-            kernel=kernel,
-            trace_fn=trace_fn,
-            parallel_iterations=1,
-            seed=tf.constant(config.seed, tf.int32),
-        )
+        with tf.device(selected_device):
+            return tfp.mcmc.sample_chain(
+                num_results=config.num_results,
+                num_burnin_steps=config.num_burnin_steps,
+                current_state=initial,
+                kernel=kernel,
+                trace_fn=trace_fn,
+                parallel_iterations=1,
+                seed=tf.constant(config.seed, tf.int32),
+            )
 
     expected_samples, expected_trace = monolithic()
     actual = run_native_tfp_independent_chains(adapter, initial, config)
@@ -373,7 +497,13 @@ def test_independent_chain_memory_diagnostic_preserves_exact_final_state() -> No
     adapter = ReviewedGaussianAdapter()
     config = _independent_config()
     initial = _independent_initial_state()
-    expected = run_native_tfp_independent_chains(adapter, initial, config)
+    expected = diagnose_native_tfp_independent_chain_memory(
+        adapter,
+        initial,
+        config,
+        num_transitions=config.num_burnin_steps + config.num_results,
+        retain_trace=False,
+    )
     diagnostic = diagnose_native_tfp_independent_chain_memory(
         adapter,
         initial,
@@ -382,7 +512,7 @@ def test_independent_chain_memory_diagnostic_preserves_exact_final_state() -> No
         retain_trace=False,
     )
     np.testing.assert_array_equal(
-        diagnostic["final_state"].numpy(), expected.samples[-1].numpy()
+        diagnostic["final_state"].numpy(), expected["final_state"].numpy()
     )
     assert diagnostic["trace_count"] == 1
     assert diagnostic["bootstrap_trace_count"] == 1
@@ -469,10 +599,23 @@ def test_independent_chain_segment_graph_probe_reports_exact_graph_telemetry() -
     assert bool(result["state_all_finite"].numpy()) is True
     assert result["trace_all_numeric_finite"] is True
     assert result["target_status_all_valid"] is True
+    assert result["target_batching"] == "scalar_rows_tf_while_loop"
+    assert int(result["target_status_telemetry"]["floor_count_total"].numpy()) == 0
     assert result["logical_state_bytes"] > 0
     assert result["logical_trace_bytes"] > 0
     assert result["logical_kernel_result_bytes"] > 0
     assert result["memory"]["after_execute"]["rss_bytes"] > 0
+
+
+def test_batch_native_segment_graph_probe_reports_native_dispatch() -> None:
+    result = probe_native_tfp_independent_chain_segment_graph(
+        BatchNativeGaussianAdapter(),
+        _independent_initial_state(),
+        _independent_config(),
+    )
+    assert result["target_batching"] == "native_rank2_single_adapter_call"
+    assert bool(result["target_status_telemetry"]["all_status_valid"].numpy()) is True
+    assert int(result["target_status_telemetry"]["floor_count_total"].numpy()) == 0
 
 
 def test_independent_chain_segment_graph_probe_debug_authority_is_opt_in() -> None:

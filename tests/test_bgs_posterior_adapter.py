@@ -10,6 +10,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.adapters.bgs import (
+    BGSBatchPosteriorAdapter,
     BGSConstrainedLikelihoodResult,
     BGSPosteriorAdapter,
     BGS_STATUS_DESCRIPTOR_FAILURE,
@@ -166,6 +167,7 @@ def test_adapter_identity_score_and_capability_are_conservative():
     assert bool(status["innovation_metrics_available"].numpy()) is False
     assert adapter.supports_retained_value_score_status is True
     assert adapter.capability_mode == "debug_graph"
+    assert getattr(adapter, "batch_rank_policy", None) is None
 
 
 def test_target_xla_graph_chain_mode_has_bound_identity_and_reviewed_capability():
@@ -369,6 +371,32 @@ def test_bgs_adapter_is_available_from_public_namespaces():
 
     assert bayesfilter.BGSPosteriorAdapter is BGSPosteriorAdapter
     assert adapters.BGSPosteriorAdapter is BGSPosteriorAdapter
+    assert bayesfilter.BGSBatchPosteriorAdapter is BGSBatchPosteriorAdapter
+    assert adapters.BGSBatchPosteriorAdapter is BGSBatchPosteriorAdapter
+
+
+def test_batch_adapter_admits_full_chain_xla_capability():
+    @tf.function(
+        input_signature=(tf.TensorSpec((None, PARAMETER_DIMENSION), tf.float64),),
+        autograph=False,
+    )
+    def batch_likelihood(theta):
+        return BGSConstrainedLikelihoodResult(
+            -0.5 * tf.reduce_sum(tf.square(theta), axis=1),
+            -theta,
+        )
+
+    adapter = BGSBatchPosteriorAdapter(
+        batch_likelihood,
+        evidence_path="docs/plans/bgs-full-chain-xla-cpu-gpu-comparison-plan-2026-07-28.md",
+        likelihood_signature="c" * 64,
+        safe_theta=MODE_THETA,
+    )
+    capability = value_score_capability(adapter)
+    assert capability.value_score_authority == "graph_native"
+    assert capability.xla_hmc_ready is True
+    assert capability.full_chain_xla_diagnostic_ready is True
+    assert adapter.batch_rank_policy == "rank2_required"
 
 
 def test_adapter_source_has_no_numpy_scipy_callbacks_or_sampler():
@@ -387,3 +415,14 @@ def test_adapter_source_has_no_numpy_scipy_callbacks_or_sampler():
         "sample_chain",
     ):
         assert forbidden not in source
+    batch_method = inspect.getsource(BGSBatchPosteriorAdapter.log_prob_and_grad_status)
+    assert "for " not in batch_method
+    for forbidden in (
+        "map_fn",
+        "vectorized_map",
+        "numpy_function",
+        "py_function",
+        ".jacobian(",
+        ".batch_jacobian(",
+    ):
+        assert forbidden not in batch_method

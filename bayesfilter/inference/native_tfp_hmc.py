@@ -103,7 +103,7 @@ class NativeTFPHMCRunResult:
 
 @dataclass(frozen=True)
 class NativeTFPIndependentChainHMCConfig:
-    """Static independent-chain fixed-kernel contract."""
+    """Static independent-chain HMC contract with optional step-size tuning."""
 
     num_results: int
     num_burnin_steps: int
@@ -112,6 +112,8 @@ class NativeTFPIndependentChainHMCConfig:
     seed: tuple[int, int]
     chain_count: int
     target_scope: str
+    num_adaptation_steps: int = 0
+    target_accept_prob: float | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -130,6 +132,29 @@ class NativeTFPIndependentChainHMCConfig:
             )
         if self.chain_count < 2:
             raise ValueError("independent-chain HMC requires at least two chains")
+        adaptation_steps = int(self.num_adaptation_steps)
+        if adaptation_steps < 0:
+            raise ValueError("num_adaptation_steps must be non-negative")
+        if adaptation_steps > self.num_burnin_steps:
+            raise ValueError("num_adaptation_steps must not exceed num_burnin_steps")
+        object.__setattr__(self, "num_adaptation_steps", adaptation_steps)
+        target_accept = (
+            None
+            if self.target_accept_prob is None
+            else float(self.target_accept_prob)
+        )
+        if adaptation_steps > 0:
+            if target_accept is None or not math.isfinite(target_accept):
+                raise ValueError(
+                    "target_accept_prob is required for step-size adaptation"
+                )
+            if not 0.0 < target_accept < 1.0:
+                raise ValueError("target_accept_prob must be in (0, 1)")
+        elif target_accept is not None and (
+            not math.isfinite(target_accept) or not 0.0 < target_accept < 1.0
+        ):
+            raise ValueError("target_accept_prob must be in (0, 1)")
+        object.__setattr__(self, "target_accept_prob", target_accept)
         step_size = float(self.step_size)
         if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
@@ -151,18 +176,25 @@ class NativeTFPIndependentChainHMCConfig:
             "num_leapfrog_steps": self.num_leapfrog_steps,
             "seed": self.seed,
             "chain_count": self.chain_count,
+            "num_adaptation_steps": self.num_adaptation_steps,
+            "target_accept_prob": self.target_accept_prob,
             "target_scope": self.target_scope,
             "target_status_trace_policy": "per_chain_step_required",
             "runtime": "tfp.mcmc.sample_chain",
             "kernel": "tfp.mcmc.HamiltonianMonteCarlo",
-            "target_batching": "scalar_rows_tf_while_loop",
-            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "target_batching": "adapter_declared_runtime_dispatch",
+            "adaptation_policy": (
+                "fixed_mass_dual_averaging"
+                if self.num_adaptation_steps > 0
+                else "fixed_kernel_no_adaptation"
+            ),
             "chain_execution_mode": "tf_function",
             "parallel_iterations": 1,
             "sample_chain_partition": (
                 "single_call_tfp_sample_chain_v3"
             ),
-            "use_xla": False,
+            "use_xla": True,
+            "jit_compile": True,
         }
 
 
@@ -351,6 +383,7 @@ def reviewed_independent_chain_target_fn(
         raise ValueError("chain_count must be at least two and parameter_dim positive")
     if not hasattr(adapter, "log_prob_and_grad"):
         raise TypeError("adapter must expose log_prob_and_grad")
+    batch_native = getattr(adapter, "batch_rank_policy", None) == "rank2_required"
 
     def target_value(theta: Any) -> tf.Tensor:
         positions = tf.ensure_shape(
@@ -362,39 +395,52 @@ def reviewed_independent_chain_target_fn(
         def value_with_row_scores(
             values: tf.Tensor,
         ) -> tuple[tf.Tensor, Any]:
-            value_rows = tf.TensorArray(
-                dtype=values.dtype,
-                size=chain_count,
-                element_shape=tf.TensorShape([]),
-            )
-            score_rows = tf.TensorArray(
-                dtype=values.dtype,
-                size=chain_count,
-                element_shape=tf.TensorShape([parameter_dim]),
-            )
-
-            def body(index: tf.Tensor, value_ta: Any, score_ta: Any):
-                value, score = adapter.log_prob_and_grad(values[index])
-                return (
-                    index + 1,
-                    value_ta.write(index, tf.reshape(tf.cast(value, values.dtype), ())),
-                    score_ta.write(
-                        index,
-                        tf.ensure_shape(
-                            tf.cast(tf.convert_to_tensor(score), values.dtype),
-                            (parameter_dim,),
-                        ),
-                    ),
+            if batch_native:
+                value, score = adapter.log_prob_and_grad(values)
+                target = tf.ensure_shape(
+                    tf.cast(tf.convert_to_tensor(value), values.dtype),
+                    (chain_count,),
+                )
+                scores = tf.ensure_shape(
+                    tf.cast(tf.convert_to_tensor(score), values.dtype),
+                    (chain_count, parameter_dim),
+                )
+            else:
+                value_rows = tf.TensorArray(
+                    dtype=values.dtype,
+                    size=chain_count,
+                    element_shape=tf.TensorShape([]),
+                )
+                score_rows = tf.TensorArray(
+                    dtype=values.dtype,
+                    size=chain_count,
+                    element_shape=tf.TensorShape([parameter_dim]),
                 )
 
-            _, value_rows, score_rows = tf.while_loop(
-                lambda index, *_: index < chain_count,
-                body,
-                (tf.constant(0, tf.int32), value_rows, score_rows),
-                parallel_iterations=1,
-            )
-            target = value_rows.stack()
-            scores = score_rows.stack()
+                def body(index: tf.Tensor, value_ta: Any, score_ta: Any):
+                    value, score = adapter.log_prob_and_grad(values[index])
+                    return (
+                        index + 1,
+                        value_ta.write(
+                            index, tf.reshape(tf.cast(value, values.dtype), ())
+                        ),
+                        score_ta.write(
+                            index,
+                            tf.ensure_shape(
+                                tf.cast(tf.convert_to_tensor(score), values.dtype),
+                                (parameter_dim,),
+                            ),
+                        ),
+                    )
+
+                _, value_rows, score_rows = tf.while_loop(
+                    lambda index, *_: index < chain_count,
+                    body,
+                    (tf.constant(0, tf.int32), value_rows, score_rows),
+                    parallel_iterations=1,
+                )
+                target = value_rows.stack()
+                scores = score_rows.stack()
 
             def grad(upstream: Any) -> tf.Tensor:
                 weights = tf.ensure_shape(
@@ -424,6 +470,10 @@ def run_native_tfp_independent_chains(
         raise ValueError(
             "native TFP HMC requires reviewed graph value/score authority; got "
             f"{capability.value_score_authority!r}"
+        )
+    if not capability.xla_hmc_ready or not capability.full_chain_xla_diagnostic_ready:
+        raise ValueError(
+            "native independent-chain HMC requires full-chain XLA-ready capability"
         )
     if capability.target_scope != config.target_scope:
         raise ValueError("value/score target_scope mismatch")
@@ -456,23 +506,59 @@ def run_native_tfp_independent_chains(
         step_size=tf.constant(config.step_size, state.dtype),
         num_leapfrog_steps=config.num_leapfrog_steps,
     )
-
-    @tf.function(input_signature=(), autograph=False, reduce_retracing=True)
-    def run_chain() -> tuple[tf.Tensor, Mapping[str, Any]]:
-        return tfm.sample_chain(
-            num_results=config.num_results,
-            num_burnin_steps=config.num_burnin_steps,
-            current_state=state,
-            kernel=kernel,
-            trace_fn=trace_fn,
-            parallel_iterations=1,
-            seed=tf.constant(config.seed, tf.int32),
+    if config.num_adaptation_steps > 0:
+        kernel = tfm.DualAveragingStepSizeAdaptation(
+            inner_kernel=kernel,
+            num_adaptation_steps=config.num_adaptation_steps,
+            target_accept_prob=tf.constant(
+                config.target_accept_prob, dtype=state.dtype
+            ),
         )
+
+    visible_gpus = tf.config.list_logical_devices("GPU")
+    selected_device = "/GPU:0" if visible_gpus else "/CPU:0"
+
+    @tf.function(
+        input_signature=(),
+        autograph=False,
+        jit_compile=True,
+        reduce_retracing=True,
+    )
+    def run_chain() -> tuple[tf.Tensor, Mapping[str, Any]]:
+        with tf.device(selected_device):
+            return tfm.sample_chain(
+                num_results=config.num_results,
+                num_burnin_steps=config.num_burnin_steps,
+                current_state=state,
+                kernel=kernel,
+                trace_fn=trace_fn,
+                parallel_iterations=1,
+                seed=tf.constant(config.seed, tf.int32),
+            )
 
     started = time.perf_counter()
     samples, trace = run_chain()
     elapsed = time.perf_counter() - started
     diagnostics = dict(_diagnostics(samples, trace))
+    diagnostics.update(
+        {
+            "target_accept_prob": (
+                tf.constant(config.target_accept_prob, state.dtype)
+                if config.target_accept_prob is not None
+                else None
+            ),
+            "num_adaptation_steps": tf.constant(
+                config.num_adaptation_steps, tf.int32
+            ),
+        }
+    )
+    if "adapted_step_size" in trace:
+        diagnostics["final_step_size"] = tf.cast(
+            tf.reshape(trace["adapted_step_size"], [-1])[-1], tf.float64
+        )
+        diagnostics["final_step_size_finite"] = tf.math.is_finite(
+            diagnostics["final_step_size"]
+        )
     displacement = samples[1:] - samples[:-1]
     movement = tf.reduce_any(
         tf.linalg.norm(displacement, axis=-1) > tf.constant(0.0, samples.dtype),
@@ -502,14 +588,22 @@ def run_native_tfp_independent_chains(
         "kernel": "tfp.mcmc.HamiltonianMonteCarlo",
         "implementation_module": "bayesfilter.inference.native_tfp_hmc",
         "implementation_backend": "tensorflow_tensorflow_probability_only",
-        "target_batching": "scalar_rows_tf_while_loop",
-        "adaptation_policy": "fixed_kernel_no_adaptation",
+        "target_batching": _target_batching(adapter),
+        "adaptation_policy": (
+            "fixed_mass_dual_averaging"
+            if config.num_adaptation_steps > 0
+            else "fixed_kernel_no_adaptation"
+        ),
+        "target_accept_prob": config.target_accept_prob,
+        "num_adaptation_steps": config.num_adaptation_steps,
         "chain_execution_mode": "tf_function",
         "tf_function_input_signature": (),
         "parallel_iterations": 1,
         "sample_chain_partition": "single_call_tfp_sample_chain_v3",
-        "use_xla": False,
-        "jit_compile": False,
+        "use_xla": True,
+        "jit_compile": True,
+        "device_policy": "prefer_visible_gpu_else_cpu",
+        "selected_device": selected_device,
         "sample_chain_invocation_count": 1,
         "sample_chain_call_s": elapsed,
         "sample_chain_timing_role": "explanatory_only_compile_plus_execute",
@@ -1051,6 +1145,7 @@ def probe_native_tfp_independent_chain_segment_graph(
     )
     execute_seconds = time.perf_counter() - execute_started
     memory_after_execute = _memory_snapshot()
+    target_status = _target_status_diagnostics(trace["target_status_telemetry"])
 
     return {
         "schema": "bayesfilter.native_tfp_segment_graph_probe.v1",
@@ -1069,6 +1164,8 @@ def probe_native_tfp_independent_chain_segment_graph(
         "state_all_finite": tf.reduce_all(tf.math.is_finite(next_state)),
         "trace_all_numeric_finite": _all_numeric_finite(trace),
         "target_status_all_valid": _trace_status_all_valid(trace),
+        "target_status_telemetry": target_status,
+        "target_batching": _target_batching(adapter),
         "logical_state_bytes": _tensor_bytes(next_state),
         "logical_trace_bytes": _tensor_bytes(trace),
         "logical_kernel_result_bytes": _tensor_bytes(final_kernel_results),
@@ -1302,29 +1399,33 @@ def load_native_tfp_retained_artifact(
 
 def _independent_chain_trace_fn(adapter: Any, *, chain_count: int):
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
+        inner_results = getattr(kernel_results, "inner_results", kernel_results)
         trace = {
-            "is_accepted": kernel_results.is_accepted,
-            "log_accept_ratio": kernel_results.log_accept_ratio,
-            "target_log_prob": kernel_results.accepted_results.target_log_prob,
+            "is_accepted": inner_results.is_accepted,
+            "log_accept_ratio": inner_results.log_accept_ratio,
+            "target_log_prob": inner_results.accepted_results.target_log_prob,
             "proposed_target_log_prob": (
-                kernel_results.proposed_results.target_log_prob
+                inner_results.proposed_results.target_log_prob
             ),
         }
         correction = getattr(
-            kernel_results.proposed_results,
+            inner_results.proposed_results,
             "log_acceptance_correction",
             None,
         )
         if correction is not None:
             trace["log_acceptance_correction"] = correction
-        divergence = _native_divergence_tensor(kernel_results)
+        divergence = _native_divergence_tensor(inner_results)
         if divergence is not None:
             trace["divergence"] = divergence
+        adapted_step_size = getattr(kernel_results, "new_step_size", None)
+        if adapted_step_size is not None:
+            trace["adapted_step_size"] = tf.convert_to_tensor(adapted_step_size)
         trace["target_status_telemetry"] = (
             _independent_chain_trace_status_telemetry(
                 adapter,
                 state,
-                kernel_results.accepted_results.target_log_prob,
+                inner_results.accepted_results.target_log_prob,
                 chain_count=chain_count,
             )
         )
@@ -1379,6 +1480,30 @@ def _independent_chain_status_telemetry(
     *,
     chain_count: int,
 ) -> Mapping[str, tf.Tensor]:
+    if getattr(adapter, "batch_rank_policy", None) == "rank2_required":
+        telemetry = _required_target_status_fields(
+            adapter.target_status_telemetry(state)
+        )
+        return {
+            "status_code": tf.ensure_shape(
+                tf.cast(telemetry["status_code"], tf.int32), (chain_count,)
+            ),
+            "valid_pre_regularized_score": tf.ensure_shape(
+                tf.cast(telemetry["valid_pre_regularized_score"], tf.bool),
+                (chain_count,),
+            ),
+            "floor_count_value": tf.ensure_shape(
+                tf.cast(telemetry["floor_count_value"], tf.int32), (chain_count,)
+            ),
+            "min_innovation_eigenvalue": tf.ensure_shape(
+                tf.cast(telemetry["min_innovation_eigenvalue"], tf.float64),
+                (chain_count,),
+            ),
+            "innovation_condition_estimate": tf.ensure_shape(
+                tf.cast(telemetry["innovation_condition_estimate"], tf.float64),
+                (chain_count,),
+            ),
+        }
     status_codes = tf.TensorArray(tf.int32, chain_count, element_shape=())
     valid_scores = tf.TensorArray(tf.bool, chain_count, element_shape=())
     floor_counts = tf.TensorArray(tf.int32, chain_count, element_shape=())
@@ -1535,6 +1660,12 @@ def _target_status_trace_source(adapter: Any) -> str:
     if callable(getattr(adapter, "retained_target_status_telemetry", None)):
         return "retained_accepted_target_log_prob"
     return "adapter_state_re_evaluation"
+
+
+def _target_batching(adapter: Any) -> str:
+    if getattr(adapter, "batch_rank_policy", None) == "rank2_required":
+        return "native_rank2_single_adapter_call"
+    return "scalar_rows_tf_while_loop"
 
 
 def _standard_trace_fn(adapter: Any):

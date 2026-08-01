@@ -119,6 +119,9 @@ class BGSConstrainedLikelihoodResult(NamedTuple):
     numerical_state_space_success: Any = True
     likelihood_value_finite: Any = True
     likelihood_score_finite: Any = True
+    floor_count_value: Any = 0
+    min_innovation_eigenvalue: Any = float("nan")
+    innovation_condition_estimate: Any = float("nan")
 
 
 class BGSPosteriorComponents(NamedTuple):
@@ -176,9 +179,11 @@ def log_abs_det_jacobian(u: Any) -> tf.Tensor:
 def _constrained_log_prior_terms(
     theta: Any,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    values = tf.ensure_shape(
-        tf.cast(tf.convert_to_tensor(theta), DTYPE), (PARAMETER_DIMENSION,)
-    )
+    values = tf.cast(tf.convert_to_tensor(theta), DTYPE)
+    if values.shape.rank not in (1, 2):
+        raise ValueError("BGS prior terms require rank-1 or rank-2 theta")
+    if values.shape[-1] is not None and int(values.shape[-1]) != PARAMETER_DIMENSION:
+        raise ValueError("BGS prior terms require trailing dimension 46")
     # Dynare's omitted generalized-prior bounds mean beta support is [0, 1].
     beta_variance = tf.where(
         _BETA,
@@ -591,9 +596,252 @@ class BGSPosteriorAdapter:
         }
 
 
+class BGSBatchPosteriorAdapter:
+    """Rank-2 BGS posterior adapter for reviewed analytical likelihood batches."""
+
+    def __init__(
+        self,
+        constrained_likelihood_value_score: Callable[[tf.Tensor], Any],
+        *,
+        evidence_path: str,
+        likelihood_signature: str,
+        safe_theta: Any,
+    ) -> None:
+        if not callable(constrained_likelihood_value_score):
+            raise TypeError("constrained_likelihood_value_score must be callable")
+        signature = str(likelihood_signature)
+        if _SHA256_PATTERN.fullmatch(signature) is None:
+            raise ValueError("batch BGS likelihood_signature must be lowercase SHA-256")
+        self._likelihood = constrained_likelihood_value_score
+        self._evidence_path = str(evidence_path)
+        self._likelihood_signature = signature
+        anchor = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(safe_theta), DTYPE),
+            (PARAMETER_DIMENSION,),
+        )
+        if not bool(
+            tf.reduce_all(
+                tf.logical_and(anchor > PRIOR_LOWER, anchor < PRIOR_UPPER)
+            ).numpy()
+        ):
+            raise ValueError("safe_theta must lie inside the open BGS support")
+        self._safe_theta = anchor
+        self.batch_rank_policy = "rank2_required"
+        self.supports_retained_value_score_status = True
+        payload = {
+            "schema": "bayesfilter.bgs.batch_posterior_adapter.v1",
+            "parameter_names": PARAMETER_NAMES,
+            "source_hashes": SOURCE_HASHES,
+            "target_scope": "bgs_d296_synthetic_transformed_target",
+            "prior_kernel_id": PRIOR_KERNEL_ID,
+            "runtime_backend": "tensorflow_tfp_bayesfilter_svd_analytic_batch_xla",
+            "likelihood_signature": signature,
+        }
+        self._signature = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("ascii")
+        ).hexdigest()
+
+    @property
+    def parameter_dim(self) -> int:
+        return PARAMETER_DIMENSION
+
+    @property
+    def parameter_names(self) -> tuple[str, ...]:
+        return PARAMETER_NAMES
+
+    def adapter_signature(self) -> str:
+        return self._signature
+
+    def value_score_capability(self) -> ValueScoreCapability:
+        return ValueScoreCapability(
+            value_score_authority="graph_native",
+            xla_hmc_ready=True,
+            full_chain_xla_diagnostic_ready=True,
+            runtime_backend="tensorflow_tfp_bayesfilter_svd_analytic_batch_xla",
+            evidence_path=self._evidence_path,
+            target_scope="bgs_d296_synthetic_transformed_target",
+            nonclaims=BGS_POSTERIOR_XLA_NONCLAIMS,
+        )
+
+    def log_prob_and_grad(self, u: Any) -> tuple[tf.Tensor, tf.Tensor]:
+        value, score, _status = self.log_prob_and_grad_status(u)
+        return value, score
+
+    def log_prob_and_grad_status(
+        self, u: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
+        values = tf.ensure_shape(
+            tf.cast(tf.convert_to_tensor(u), DTYPE), (None, PARAMETER_DIMENSION)
+        )
+        sigmoid = tf.math.sigmoid(values)
+        theta = PRIOR_LOWER[tf.newaxis, :] + (
+            PRIOR_UPPER - PRIOR_LOWER
+        )[tf.newaxis, :] * sigmoid
+        contributions, prior_score = _constrained_log_prior_terms(theta)
+        prior_value = tf.reduce_sum(contributions, axis=1)
+        jacobian = tf.reduce_sum(
+            tf.math.log(PRIOR_UPPER - PRIOR_LOWER)[tf.newaxis, :]
+            + tf.math.log_sigmoid(values)
+            + tf.math.log_sigmoid(-values),
+            axis=1,
+        )
+        finite_unconstrained = tf.reduce_all(tf.math.is_finite(values), axis=1)
+        transform_in_open_support = tf.reduce_all(
+            tf.logical_and(
+                tf.math.is_finite(theta),
+                tf.logical_and(
+                    theta > PRIOR_LOWER[tf.newaxis, :],
+                    theta < PRIOR_UPPER[tf.newaxis, :],
+                ),
+            ),
+            axis=1,
+        )
+        prior_and_jacobian_finite = tf.logical_and(
+            tf.math.is_finite(prior_value),
+            tf.logical_and(
+                tf.reduce_all(tf.math.is_finite(prior_score), axis=1),
+                tf.math.is_finite(jacobian),
+            ),
+        )
+        safe_for_likelihood = tf.logical_and(
+            finite_unconstrained,
+            tf.logical_and(transform_in_open_support, prior_and_jacobian_finite),
+        )
+        evaluated_theta = tf.where(
+            safe_for_likelihood[:, tf.newaxis],
+            theta,
+            self._safe_theta[tf.newaxis, :],
+        )
+        likelihood = self._likelihood(evaluated_theta)
+        likelihood_value = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.signed_log_likelihood, DTYPE), (None,)
+        )
+        likelihood_score = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.signed_score, DTYPE),
+            (None, PARAMETER_DIMENSION),
+        )
+        descriptor_success = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.descriptor_success, tf.bool), (None,)
+        )
+        state_space_success = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.numerical_state_space_success, tf.bool),
+            (None,),
+        )
+        likelihood_value_finite = tf.logical_and(
+            tf.ensure_shape(
+                tf.convert_to_tensor(likelihood.likelihood_value_finite, tf.bool),
+                (None,),
+            ),
+            tf.math.is_finite(likelihood_value),
+        )
+        likelihood_score_finite = tf.logical_and(
+            tf.ensure_shape(
+                tf.convert_to_tensor(likelihood.likelihood_score_finite, tf.bool),
+                (None,),
+            ),
+            tf.reduce_all(tf.math.is_finite(likelihood_score), axis=1),
+        )
+        dtheta_du = (
+            (PRIOR_UPPER - PRIOR_LOWER)[tf.newaxis, :]
+            * sigmoid
+            * (1.0 - sigmoid)
+        )
+        raw_score = (
+            (likelihood_score + prior_score) * dtheta_du + 1.0 - 2.0 * sigmoid
+        )
+        raw_value = likelihood_value + prior_value + jacobian
+        composed_finite = tf.logical_and(
+            tf.math.is_finite(raw_value),
+            tf.reduce_all(tf.math.is_finite(raw_score), axis=1),
+        )
+        status_code = (
+            tf.where(finite_unconstrained, 0, BGS_STATUS_NONFINITE_UNCONSTRAINED)
+            + tf.where(
+                transform_in_open_support,
+                0,
+                BGS_STATUS_TRANSFORM_OUTSIDE_OPEN_SUPPORT,
+            )
+            + tf.where(
+                prior_and_jacobian_finite,
+                0,
+                BGS_STATUS_PRIOR_OR_JACOBIAN_NONFINITE,
+            )
+            + tf.where(descriptor_success, 0, BGS_STATUS_DESCRIPTOR_FAILURE)
+            + tf.where(state_space_success, 0, BGS_STATUS_STATE_SPACE_FAILURE)
+            + tf.where(
+                likelihood_value_finite, 0, BGS_STATUS_LIKELIHOOD_VALUE_NONFINITE
+            )
+            + tf.where(
+                likelihood_score_finite, 0, BGS_STATUS_LIKELIHOOD_SCORE_NONFINITE
+            )
+            + tf.where(composed_finite, 0, BGS_STATUS_POSTERIOR_NONFINITE)
+        )
+        valid = status_code == 0
+        value = tf.where(valid, raw_value, tf.constant(float("-inf"), DTYPE))
+        score = tf.where(valid[:, tf.newaxis], raw_score, tf.zeros_like(raw_score))
+        floor_count = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.floor_count_value, tf.int32), (None,)
+        )
+        minimum_eigenvalue = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.min_innovation_eigenvalue, DTYPE),
+            (None,),
+        )
+        condition_estimate = tf.ensure_shape(
+            tf.convert_to_tensor(likelihood.innovation_condition_estimate, DTYPE),
+            (None,),
+        )
+        return value, score, {
+            "status_code": status_code,
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": floor_count,
+            "min_innovation_eigenvalue": minimum_eigenvalue,
+            "innovation_condition_estimate": condition_estimate,
+            "innovation_metrics_available": tf.ones(tf.shape(valid), tf.bool),
+            "finite_unconstrained": finite_unconstrained,
+            "transform_in_open_support": transform_in_open_support,
+            "prior_and_jacobian_finite": prior_and_jacobian_finite,
+            "descriptor_success": descriptor_success,
+            "numerical_state_space_success": state_space_success,
+            "likelihood_value_finite": likelihood_value_finite,
+            "likelihood_score_finite": likelihood_score_finite,
+            "composed_posterior_finite": composed_finite,
+        }
+
+    def target_status_telemetry(self, u: Any) -> dict[str, tf.Tensor]:
+        _value, _score, status = self.log_prob_and_grad_status(u)
+        return status
+
+    def retained_target_status_telemetry(
+        self, target_log_prob: Any
+    ) -> dict[str, tf.Tensor]:
+        """Recover the batch validity veto from finite retained target values."""
+
+        value = tf.cast(tf.convert_to_tensor(target_log_prob), DTYPE)
+        valid = tf.math.is_finite(value)
+        zero = tf.zeros_like(value)
+        unavailable = tf.fill(tf.shape(value), tf.constant(float("nan"), DTYPE))
+        innovation_sentinel = tf.where(valid, zero, unavailable)
+        return {
+            "status_code": tf.where(
+                valid,
+                tf.zeros(tf.shape(value), tf.int32),
+                tf.fill(
+                    tf.shape(value),
+                    tf.constant(BGS_STATUS_POSTERIOR_NONFINITE, tf.int32),
+                ),
+            ),
+            "valid_pre_regularized_score": valid,
+            "floor_count_value": tf.zeros(tf.shape(value), tf.int32),
+            "min_innovation_eigenvalue": innovation_sentinel,
+            "innovation_condition_estimate": innovation_sentinel,
+            "innovation_metrics_available": tf.zeros(tf.shape(value), tf.bool),
+        }
+
+
 __all__ = [
     "BGSConstrainedLikelihoodResult",
     "BGSPosteriorAdapter",
+    "BGSBatchPosteriorAdapter",
     "BGSPosteriorComponents",
     "BGS_POSTERIOR_NONCLAIMS",
     "BGS_POSTERIOR_DEBUG_NONCLAIMS",

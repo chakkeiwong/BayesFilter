@@ -266,3 +266,52 @@ def test_algorithmic_source_has_no_mapping_python_loop_numpy_or_callback() -> No
     assert "tf.py_function" not in source
     assert "tf.numpy_function" not in source
     assert not any(isinstance(node, (ast.For, ast.AsyncFor, ast.While)) for node in ast.walk(tree))
+
+
+def test_single_row_python_body_preserves_batch_shapes() -> None:
+    contract, raw, observations, kwargs = _inputs()
+    single = {name: value[:1] for name, value in kwargs.items()}
+    actual = (
+        kernel.tf_batched_svd_linear_gaussian_score_first_order_graph_status.python_function(
+            observations,
+            **single,
+            jitter=tf.constant(1.0e-9, tf.float64),
+            singular_floor=tf.constant(1.0e-12, tf.float64),
+        )
+    )
+    expected = _scalar_result(raw[0], contract, observations)
+    assert actual.log_likelihood.shape == (1,)
+    assert actual.score.shape == (1, 18)
+    np.testing.assert_allclose(actual.log_likelihood[0], expected.log_likelihood, rtol=2e-13, atol=2e-13)
+    np.testing.assert_allclose(actual.score[0], expected.score, rtol=2e-12, atol=2e-12)
+
+
+def test_explicit_eigendecomposition_backend_receives_one_full_batch_per_step() -> None:
+    _contract, _raw, observations, kwargs = _inputs()
+    calls = []
+
+    def recorded_eigh(value):
+        calls.append(value.shape)
+        return tf.linalg.eigh(value)
+
+    expected = (
+        kernel.tf_batched_svd_linear_gaussian_score_first_order_graph_status.python_function(
+            observations,
+            **kwargs,
+            jitter=tf.constant(1.0e-9, tf.float64),
+            singular_floor=tf.constant(1.0e-12, tf.float64),
+        )
+    )
+    actual = (
+        kernel.tf_batched_svd_linear_gaussian_score_first_order_graph_status.python_function(
+            observations,
+            **kwargs,
+            jitter=tf.constant(1.0e-9, tf.float64),
+            singular_floor=tf.constant(1.0e-12, tf.float64),
+            eigendecomposition=recorded_eigh,
+        )
+    )
+    assert len(calls) == int(observations.shape[0])
+    assert set(calls) == {kwargs["observation_covariance"].shape}
+    np.testing.assert_allclose(actual.log_likelihood, expected.log_likelihood, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(actual.score, expected.score, rtol=0.0, atol=0.0)
