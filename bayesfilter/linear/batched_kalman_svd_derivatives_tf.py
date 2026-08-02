@@ -50,6 +50,7 @@ def tf_batched_svd_linear_gaussian_score_first_order_graph_status(
     d_observation_covariance: Any,
     jitter: Any = 0.0,
     singular_floor: Any = 1.0e-12,
+    eigendecomposition: Any = None,
 ) -> BatchedSVDLinearGaussianScoreResult:
     """Evaluate independent LGSSM rows with one time-axis TensorFlow loop."""
 
@@ -211,7 +212,8 @@ def tf_batched_svd_linear_gaussian_score_first_order_graph_status(
             innovation_covariance,
             benign_scale * identity_observation,
         )
-        eigenvalues, eigenvectors = tf.linalg.eigh(safe_covariance)
+        eigh = tf.linalg.eigh if eigendecomposition is None else eigendecomposition
+        eigenvalues, eigenvectors = eigh(safe_covariance)
         safe_floor = tf.where(
             tf.math.is_finite(singular_floor), singular_floor, tf.constant(1.0, tf.float64)
         )
@@ -227,7 +229,7 @@ def tf_batched_svd_linear_gaussian_score_first_order_graph_status(
         step_projection_residual = tf.where(
             row_input_valid,
             step_projection_residual,
-            tf.fill((batch_size,), tf.constant(float("nan"), tf.float64)),
+            tf.fill(tf.shape(row_input_valid), tf.constant(float("nan"), tf.float64)),
         )
         innovation_solve = _eigh_solve(eigenvectors, floored, innovation)
         innovation_precision = _eigh_solve(
