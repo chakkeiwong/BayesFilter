@@ -454,6 +454,7 @@ def run_neutra_frozen_transport_broad_grid_cell(
             root_seed=config.root_seed,
             screen_results=config.screen_results,
             use_xla=config.jit_compile,
+            evidence_path=spec.plan_path,
         ),
         output_dir=root / "broad-grid-tuning",
     )
@@ -499,10 +500,12 @@ def run_neutra_frozen_transport_broad_grid_cell(
             "target_signature": spec.target_signature,
             "git_commit": commit,
             "command": tuple(sys.argv),
+            "environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
             "python_executable": sys.executable,
             "python_version": platform.python_version(),
             "tensorflow_version": tf.__version__,
             "gpu_memory_policy": memory_policy,
+            "device": "/GPU:0" if config.require_gpu else "explicit_cpu_exception",
             "jit_compile": config.jit_compile,
             "tf32_execution_enabled": True,
             "root_seed": config.root_seed,
@@ -511,10 +514,7 @@ def run_neutra_frozen_transport_broad_grid_cell(
             "output_root": str(root),
             "wall_time_seconds": time.monotonic() - started,
             "frozen_transport_input": transport_input,
-            "plan_path": (
-                "docs/plans/bayesfilter-neutra-remaining-models-broad-grid-"
-                "continuation-plan-2026-07-30.md"
-            ),
+            "plan_path": spec.plan_path,
             "result_path": str(root / "result.json"),
             "private_tuning_result_path": broad["private_result_path"],
             "public_tuning_result_path": broad["public_result_path"],
