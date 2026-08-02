@@ -1,0 +1,34 @@
+{
+  "command": [
+    "scripts/claim_zhao_cui_austria_sir_lane_b_t2.py",
+    "--selection",
+    "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/pilot-final-01/selection.json",
+    "--parent-t1-dir",
+    "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p05_r4_b5_lr3e4_l1_1e9/artifact",
+    "--untouched-dir",
+    "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-11-untouched-tail-certified-broadcast-repair",
+    "--output-dir",
+    "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-12-selected-untouched-value-claim"
+  ],
+  "error": "in user code:\n\n    File \"/home/chakwong/BayesFilter/scripts/claim_zhao_cui_austria_sir_lane_b_t2.py\", line 140, in compiled_scalars  *\n        increment = tf.math.log(density.normalizer()) - artifact.shift_constant\n    File \"/home/chakwong/BayesFilter/bayesfilter/highdim/squared_tt.py\", line 181, in normalizer  *\n        if not bool(tf.math.is_finite(z).numpy()):\n\n    AttributeError: 'SymbolicTensor' object has no attribute 'numpy'\n",
+  "error_type": "AttributeError",
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_t2_claim_failure.v1",
+  "status": "INFRASTRUCTURE_OR_IMPLEMENTATION_FAILURE",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/scripts/claim_zhao_cui_austria_sir_lane_b_t2.py\", line 288, in main\n    result = run_claim(\n             ^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/scripts/claim_zhao_cui_austria_sir_lane_b_t2.py\", line 144, in run_claim\n    xla_increment, xla_value, xla_audit_increment = compiled_scalars(\n                                                    ^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/tmp/__autograph_generated_fileew_shkmr.py\", line 15, in tf__compiled_scalars\n    increment = ag__.converted_call(ag__.ld(tf).math.log, (ag__.converted_call(ag__.ld(density).normalizer, (), None, fscope),), None, fscope) - ag__.ld(artifact).shift_constant\n                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/__autograph_generated_file4gu4yrgp.py\", line 26, in tf__normalizer\n    ag__.if_stmt(ag__.not_(ag__.converted_call(ag__.ld(bool), (ag__.converted_call(ag__.converted_call(ag__.ld(tf).math.is_finite, (ag__.ld(z),), None, fscope).numpy, (), None, fscope),), None, fscope)), if_body, else_body, get_state, set_state, (), 0)\n                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: in user code:\n\n    File \"/home/chakwong/BayesFilter/scripts/claim_zhao_cui_austria_sir_lane_b_t2.py\", line 140, in compiled_scalars  *\n        increment = tf.math.log(density.normalizer()) - artifact.shift_constant\n    File \"/home/chakwong/BayesFilter/bayesfilter/highdim/squared_tt.py\", line 181, in normalizer  *\n        if not bool(tf.math.is_finite(z).numpy()):\n\n    AttributeError: 'SymbolicTensor' object has no attribute 'numpy'\n\n"
+}

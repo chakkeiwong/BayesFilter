@@ -1,0 +1,379 @@
+{
+  "batch_size": 128,
+  "cell_id": "SIR-UKF",
+  "decision": "PASS_TRAINING_THROUGHPUT_MEASUREMENT",
+  "device": "/GPU:0",
+  "elapsed_seconds": 269.7014221099962,
+  "geometry_reference": {
+    "center_role": "exact_independent_normal_prior_origin",
+    "cross_target_geometry_used": false,
+    "factor_role": "exact_independent_normal_prior_scale_baseline",
+    "file_sha256": null,
+    "path": null
+  },
+  "gpu_allocator_bytes": {
+    "current": 86016,
+    "peak": 3494942464
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "hmc_sampling_launched": false,
+  "hmc_tuning_launched": false,
+  "jit_compile": true,
+  "nonclaims": [
+    "throughput and engineering hard gates only",
+    "training loss is descriptive and not recipe promotion evidence",
+    "no HMC tuning, convergence, posterior, or default-readiness claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF",
+  "passed": true,
+  "recipe_id": "compact_shallow",
+  "rung_rows": [
+    {
+      "artifacts": {
+        "frozen_transport": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/compile_plus_first/training/frozen_transport.json",
+        "training_state": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/compile_plus_first/training/checkpoint_step_000001.json"
+      },
+      "end_to_end_seconds": 133.6626326330006,
+      "frozen_trainable_parity": {
+        "jit_compile": true,
+        "logdet_max_abs": 0.0,
+        "logdet_score_max_abs": 4.235164736271502e-22,
+        "passed": true,
+        "pullback_score_max_abs": 0.0,
+        "transport_max_abs": 0.0
+      },
+      "heldout_reverse_kl": 4.8828125e+97,
+      "rung_id": "compile_plus_first",
+      "runtime_metadata": {
+        "adam_moment_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "batch_native_target": {
+          "adapter_signature": "51d854b09393d5879ea9395fc313dcd950c4ca615608aaae07131aa5b882a5ab",
+          "backend_id": "tensorflow_batched_principal_sqrt_ukf_parameterized_sir",
+          "callable_module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+          "callable_qualname": "SIRUKFNeuTraAdapter.neutra_batch_log_prob_and_grad_status",
+          "callable_source_sha256": "b56397e4007e7f9f20c723bc5f788e6bcd08e5b51ab9b7d0a5f26b9647bae639",
+          "dependency_callable_sources": [
+            {
+              "global_name": "sir_prior_value_score",
+              "module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+              "qualname": "sir_prior_value_score",
+              "source_sha256": "3a6819747d578620c160423f3b65e819d8bfc14d88f5aa45e26f5db1c777b8ac"
+            },
+            {
+              "global_name": "sir_ukf_likelihood_value_score_status",
+              "module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+              "qualname": "sir_ukf_likelihood_value_score_status",
+              "source_sha256": "c9c449013e50f60087b82460bf398cba79da7cde1a3d82ad32add77d772673ca"
+            }
+          ],
+          "dependency_closure_sha256": "5cef05d007b49b493691452fe77b4d1916528b5e5de0e7235fb6cc01244036c1",
+          "dependency_module_sources": [
+            {
+              "module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+              "source_sha256": "64ac011c4d0604804650dc0613b15036312789e0279bd3e0006a3cf39a01836f"
+            }
+          ],
+          "evidence_path": "bayesfilter/testing/sir_filter_neutra_target_design_tf.py",
+          "jit_compile_required": true,
+          "method_name": "neutra_batch_log_prob_and_grad_status",
+          "minimum_batch_size": 2,
+          "row_mapped_scalar_target_used": false,
+          "sample_axis_python_loop_used": false,
+          "scalar_fallback_used": false,
+          "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+          "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+          "status_telemetry_required": true,
+          "target_scope": "SIR-UKF-three-log-scale-y1-y20-v1",
+          "target_signature": "31bc2c569933523b7bda5e337ae5b7a307a7ed90656a1d6791523c69fb6b5998"
+        },
+        "checkpoint_policy": "terminal_only_graph_native_v1",
+        "compiled_output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "compiled_training_control_flow": "tf_while_loop",
+        "compiled_training_program_invocations": 1,
+        "graph_operation_types": [
+          "ConcatV2",
+          "Const",
+          "Equal",
+          "FloorMod",
+          "GatherV2",
+          "Identity",
+          "LogicalOr",
+          "NoOp",
+          "Pack",
+          "Placeholder",
+          "Prod",
+          "Range",
+          "Reshape",
+          "Squeeze",
+          "StridedSlice",
+          "TensorListReserve",
+          "TensorListStack",
+          "Where",
+          "While"
+        ],
+        "jit_compile": true,
+        "logical_gpus": [
+          "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+        ],
+        "physical_gpus": [
+          "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+        ],
+        "program_step_count": 1,
+        "requested_device": "/GPU:0",
+        "require_gpu": true,
+        "row_mapped_scalar_target_used": false,
+        "sample_axis_python_loop_used": false,
+        "scalar_fallback_used": false,
+        "trainable_variable_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "training_batch_size": 128
+      },
+      "seed": [
+        20260730,
+        3001
+      ],
+      "steps": 1,
+      "training_program_seconds": 6.415961015009088
+    },
+    {
+      "artifacts": {
+        "frozen_transport": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/repeated/training/frozen_transport.json",
+        "training_state": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/repeated/training/checkpoint_step_000010.json"
+      },
+      "end_to_end_seconds": 135.36536228499608,
+      "frozen_trainable_parity": {
+        "jit_compile": true,
+        "logdet_max_abs": 0.0,
+        "logdet_score_max_abs": 5.421010862427522e-20,
+        "passed": true,
+        "pullback_score_max_abs": 0.0,
+        "transport_max_abs": 0.0
+      },
+      "heldout_reverse_kl": 3.90625e+97,
+      "rung_id": "repeated",
+      "runtime_metadata": {
+        "adam_moment_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "batch_native_target": {
+          "adapter_signature": "51d854b09393d5879ea9395fc313dcd950c4ca615608aaae07131aa5b882a5ab",
+          "backend_id": "tensorflow_batched_principal_sqrt_ukf_parameterized_sir",
+          "callable_module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+          "callable_qualname": "SIRUKFNeuTraAdapter.neutra_batch_log_prob_and_grad_status",
+          "callable_source_sha256": "b56397e4007e7f9f20c723bc5f788e6bcd08e5b51ab9b7d0a5f26b9647bae639",
+          "dependency_callable_sources": [
+            {
+              "global_name": "sir_prior_value_score",
+              "module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+              "qualname": "sir_prior_value_score",
+              "source_sha256": "3a6819747d578620c160423f3b65e819d8bfc14d88f5aa45e26f5db1c777b8ac"
+            },
+            {
+              "global_name": "sir_ukf_likelihood_value_score_status",
+              "module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+              "qualname": "sir_ukf_likelihood_value_score_status",
+              "source_sha256": "c9c449013e50f60087b82460bf398cba79da7cde1a3d82ad32add77d772673ca"
+            }
+          ],
+          "dependency_closure_sha256": "5cef05d007b49b493691452fe77b4d1916528b5e5de0e7235fb6cc01244036c1",
+          "dependency_module_sources": [
+            {
+              "module": "bayesfilter.testing.sir_filter_neutra_target_design_tf",
+              "source_sha256": "64ac011c4d0604804650dc0613b15036312789e0279bd3e0006a3cf39a01836f"
+            }
+          ],
+          "evidence_path": "bayesfilter/testing/sir_filter_neutra_target_design_tf.py",
+          "jit_compile_required": true,
+          "method_name": "neutra_batch_log_prob_and_grad_status",
+          "minimum_batch_size": 2,
+          "row_mapped_scalar_target_used": false,
+          "sample_axis_python_loop_used": false,
+          "scalar_fallback_used": false,
+          "schema": "bayesfilter.neutra.batch_native_target_binding.v2",
+          "source_audit_scope": "bound_adapter_method_direct_source_plus_repository_module_closure_v2",
+          "status_telemetry_required": true,
+          "target_scope": "SIR-UKF-three-log-scale-y1-y20-v1",
+          "target_signature": "31bc2c569933523b7bda5e337ae5b7a307a7ed90656a1d6791523c69fb6b5998"
+        },
+        "checkpoint_policy": "terminal_only_graph_native_v1",
+        "compiled_output_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "compiled_training_control_flow": "tf_while_loop",
+        "compiled_training_program_invocations": 1,
+        "graph_operation_types": [
+          "ConcatV2",
+          "Const",
+          "Equal",
+          "FloorMod",
+          "GatherV2",
+          "Identity",
+          "LogicalOr",
+          "NoOp",
+          "Pack",
+          "Placeholder",
+          "Prod",
+          "Range",
+          "Reshape",
+          "Squeeze",
+          "StridedSlice",
+          "TensorListReserve",
+          "TensorListStack",
+          "Where",
+          "While"
+        ],
+        "jit_compile": true,
+        "logical_gpus": [
+          "LogicalDevice(name='/device:GPU:0', device_type='GPU')"
+        ],
+        "physical_gpus": [
+          "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+        ],
+        "program_step_count": 10,
+        "requested_device": "/GPU:0",
+        "require_gpu": true,
+        "row_mapped_scalar_target_used": false,
+        "sample_axis_python_loop_used": false,
+        "scalar_fallback_used": false,
+        "trainable_variable_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0",
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "training_batch_size": 128
+      },
+      "seed": [
+        20260730,
+        3001
+      ],
+      "steps": 10,
+      "training_program_seconds": 20.84147335300804
+    }
+  ],
+  "schema": "bayesfilter.neutra.training_throughput_result.v1",
+  "target_signature": "31bc2c569933523b7bda5e337ae5b7a307a7ed90656a1d6791523c69fb6b5998",
+  "timing": {
+    "compile_plus_first_end_to_end_seconds": 133.6626326330006,
+    "compile_plus_first_program_seconds": 6.415961015009088,
+    "conservative_additional_step_seconds": 13.536536228499608,
+    "end_to_end_difference_step_seconds": 0.1891921835550521,
+    "method": "one_step_plus_repeated_graph_difference_v1",
+    "program_difference_step_seconds": 1.6028347042221058,
+    "projection_formula": "jobs * compile_plus_first_end_to_end_seconds + sum(max(steps_per_job - 1, 0)) * conservative_additional_step_seconds",
+    "repeated_end_to_end_seconds": 135.36536228499608,
+    "repeated_program_seconds": 20.84147335300804,
+    "repeated_steps": 10
+  }
+}

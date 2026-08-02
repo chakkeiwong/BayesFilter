@@ -1,0 +1,117 @@
+{
+  "broad_grid": {
+    "completed_guard_count": 1,
+    "completed_primary_count": 6,
+    "disposition": "viable_pair_set",
+    "epsilon_values_exposed": false,
+    "execution": {
+      "cuda_visible_devices": null,
+      "guard_max_workers": 1,
+      "guard_worker_factory_locator": null,
+      "mode": "serial",
+      "primary_max_workers": 1,
+      "primary_worker_factory_locator": null,
+      "start_method": "spawn",
+      "tf_force_gpu_allow_growth": null,
+      "worker_environment_keys": []
+    },
+    "execution_config": {
+      "chain_count": 4,
+      "evidence_path": "docs/plans/bayesfilter-neutra-remaining-models-broad-grid-continuation-plan-2026-07-30.md",
+      "primary_l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "replication_count": 3,
+      "root_seed": [
+        20260802,
+        2861
+      ],
+      "screen_burnin": 1,
+      "screen_results": 65,
+      "tune_burnin": 64,
+      "tune_results": 1,
+      "use_xla": true
+    },
+    "mass_handoff_ready": true,
+    "metric_arrays_exposed": false,
+    "next_round_candidate_count": 1,
+    "next_round_l_values": [
+      25
+    ],
+    "next_round_roles": [
+      {
+        "epsilon_policy": "independently_tuned",
+        "num_leapfrog_steps": 25,
+        "parent_l_values": [],
+        "role": "independently_tuned_primary"
+      }
+    ],
+    "nonclaims": [
+      "discarded fixed-mass HMC tuning evidence only",
+      "no stochastic candidate ranking",
+      "no posterior convergence claim",
+      "no retained-sampling readiness claim",
+      "no sampler superiority or default-readiness claim",
+      "no identification or scientific claim"
+    ],
+    "planned_guard_count": 1,
+    "planned_primary_count": 6,
+    "raw_samples_exposed": false,
+    "raw_states_exposed": false,
+    "retained_sampling_authorized": false,
+    "route": "operational_broad_fixed_mass_l_epsilon_grid_v1",
+    "schema": "bayesfilter.operational_broad_grid.public.v2",
+    "stochastic_ranking_performed": false,
+    "viable_coverage_count": 0,
+    "viable_guard_count": 0,
+    "viable_primary_count": 1
+  },
+  "cell_id": "SVX-ZC",
+  "decision": "BROAD_GRID_TUNING_VIABLE_PAIR_SET",
+  "elapsed_seconds": 895.5578257869929,
+  "frozen_transport_input": {
+    "path": "docs/plans/artifacts/bayesfilter-svx-zc-value-validation-neutra-hmc-20260802/neutra-hmc-attempt01/SVX-ZC/final/segments/steps-004001-005000/frozen_transport.json",
+    "retrained": false,
+    "sha256": "c816de3d7101444bdeead2e9d43b0ca49de8d426ebd650c0efcf73068d9decff",
+    "target_signature": "deccdda78028706d0987322d30b9798f0f4d8b518c6773451338e83bf14d1cab",
+    "training_state_hash": "sha256:832a52960d7274a130d9cceb5a3ae11eae8e9b3f2e95c58ffcefe7c3b04fcc23"
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "nonclaims": [
+    "discarded broad-grid tuning evidence only",
+    "complete candidate set is unranked",
+    "no convergence, posterior, or default-readiness claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-svx-zc-value-validation-neutra-hmc-20260802/broad-grid-attempt02/SVX-ZC",
+  "parameter_names": [
+    "gamma_source_probit",
+    "beta_source_probit"
+  ],
+  "passed": true,
+  "private_tuning_result_path": "docs/plans/artifacts/bayesfilter-svx-zc-value-validation-neutra-hmc-20260802/broad-grid-attempt02/SVX-ZC/broad-grid-tuning/private_result.json",
+  "public_tuning_result_path": "docs/plans/artifacts/bayesfilter-svx-zc-value-validation-neutra-hmc-20260802/broad-grid-attempt02/SVX-ZC/broad-grid-tuning/public_result.json",
+  "retained_sampling_authorized": false,
+  "sampling_launched": false,
+  "schema": "bayesfilter.neutra.all_models.cell_result.v1",
+  "target_signature": "deccdda78028706d0987322d30b9798f0f4d8b518c6773451338e83bf14d1cab"
+}

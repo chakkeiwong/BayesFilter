@@ -60,6 +60,11 @@ class CellSpec:
     selection_mcse_multiplier: float = 2.0
     initial_step_size: float = 0.1
     leapfrog_grid: tuple[int, ...] = (6, 10)
+    screen_seeds: tuple[tuple[int, int], ...] = ()
+    plan_path: str = (
+        "docs/plans/bayesfilter-neutra-all-executable-models-end-to-end-python-"
+        "plan-2026-07-18.md"
+    )
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -75,6 +80,8 @@ class CellSpec:
             "selection_mcse_multiplier": self.selection_mcse_multiplier,
             "initial_step_size": self.initial_step_size,
             "leapfrog_grid": self.leapfrog_grid,
+            "screen_seeds": self.screen_seeds or (self.initial_seed,),
+            "plan_path": self.plan_path,
             "geometry_factory": getattr(self.geometry_factory, "__qualname__", str(self.geometry_factory)),
             "adapter_factory": getattr(self.adapter_factory, "__qualname__", str(self.adapter_factory)),
         }
@@ -207,6 +214,14 @@ def _structural_ukf_adapter() -> Any:
     return make_structural_ukf_neutra_adapter(observations=observations)
 
 
+def _sv_zc_adapter() -> Any:
+    from bayesfilter.testing.zhao_cui_actual_sv_neutra_target_tf import (
+        make_actual_sv_zc_neutra_adapter,
+    )
+
+    return make_actual_sv_zc_neutra_adapter()
+
+
 def _lgssm_physical(tf: Any, values: Any) -> Any:
     return tf.concat(
         (
@@ -250,6 +265,18 @@ def _structural_physical(tf: Any, values: Any) -> Any:
     return tf.reshape(physical, shape)
 
 
+def _sv_zc_physical(tf: Any, values: Any) -> Any:
+    from bayesfilter.highdim.zhao_cui_actual_sv_batched_tt_tf import (
+        source_chart_physical_parameters,
+    )
+
+    shape = tf.shape(values)
+    flat = tf.reshape(tf.convert_to_tensor(values, tf.float64), (-1, 2))
+    gamma, beta = source_chart_physical_parameters(flat)
+    physical = tf.stack((gamma, beta), axis=-1)
+    return tf.reshape(physical, shape)
+
+
 def _constant_truth(tf: Any, values: tuple[float, ...]) -> Any:
     return tf.constant(values, tf.float64)
 
@@ -260,6 +287,7 @@ PP_UKF_SIGNATURE = "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673f
 PP_SGQF_SIGNATURE = "373326607b8cb06f274f03e0a523a47b24b83e35c8b37c8d264b500a6234fbac"
 SIR_SGQF_SIGNATURE = "43968c975409021dcabe931081f0d1efaaae431b5b9245929a5786fe566e545d"
 STR_UKF_SIGNATURE = "79cc70634f828b185fe0a01ed88a4dc15a52a4494432f87401340aa3c8199b06"
+SVX_ZC_SIGNATURE = "deccdda78028706d0987322d30b9798f0f4d8b518c6773451338e83bf14d1cab"
 
 
 def _truth_from_module(tf: Any, module: str, name: str) -> Any:
@@ -382,17 +410,55 @@ EXECUTABLE_CELLS: tuple[CellSpec, ...] = (
         initial_step_size=0.025,
         leapfrog_grid=(8, 12),
     ),
+    CellSpec(
+        cell_id="SVX-ZC", parameter_dim=2,
+        parameter_names=("gamma", "beta"),
+        target_signature=SVX_ZC_SIGNATURE, adapter_factory=_sv_zc_adapter,
+        geometry_factory=lambda tf: _identity_geometry(tf, 2),
+        physical_transform=_sv_zc_physical,
+        truth_factory=lambda tf: _constant_truth(tf, (0.6, 0.4)),
+        recipes=(
+            RecipeSpec("svx_zc_narrow_lr1e3", (8, 8), 1.0e-3),
+            RecipeSpec("svx_zc_narrow_lr5e3", (8, 8), 5.0e-3),
+            RecipeSpec("svx_zc_wide_lr1e3", (16, 16), 1.0e-3),
+            RecipeSpec("svx_zc_wide_lr5e3", (16, 16), 5.0e-3),
+        ),
+        initial_seed=(20260802, 1861),
+        target_description=(
+            "SVX-ZC T10 degree-10 rank-2 order-25 fixed adjacent-state "
+            "squared-TT posterior with center-frozen UKF cores"
+        ),
+        initial_step_size=0.1,
+        leapfrog_grid=(6, 10),
+        plan_path=(
+            "docs/plans/bayesfilter-svx-zc-value-validation-neutra-hmc-"
+            "continuation-plan-2026-08-02.md"
+        ),
+    ),
 )
 
 
 BLOCKED_CELLS: tuple[BlockedCellSpec, ...] = (
     BlockedCellSpec("SVX-SGQF", "TARGET_BLOCKED_FILTER_ADMISSION", "no frozen SGQF level passed filter admission", "filter admission"),
-    BlockedCellSpec("SVX-ZC", "TARGET_BLOCKED_SOURCE_ROUTE_MISMATCH", "current wrapper is not the production source route", "source-route design"),
     BlockedCellSpec("KSC-UKF", "TARGET_BLOCKED_FILTER_ADMISSION", "dense-reference value/score admission failed", "filter admission"),
-    BlockedCellSpec("PP-ZC", "TARGET_BLOCKED_SOURCE_ROUTE_MISMATCH", "generic retained-grid route is production-ineligible", "source-route design"),
+    BlockedCellSpec(
+        "PP-ZC",
+        "TARGET_BLOCKED_NEUTRA_TARGET_CONTRACT",
+        "sealed fixed-branch implementation passes, but no batch-native posterior adapter or frozen HMC chart/Jacobian is registered",
+        "batch-native target adapter and chart admission",
+    ),
     BlockedCellSpec("STR-ZC", "TARGET_BLOCKED_EXTENSION_ROUTE_NOT_DESIGNED", "extension target is absent", "extension-target design"),
-    BlockedCellSpec("SIR-UKF", "IMPLEMENTATION_BLOCKED_GPU_SCORE_PARITY", "preserved GPU/CPU score-parity blocker", "GPU score parity"),
     BlockedCellSpec("SIR-ZC", "TARGET_BLOCKED_MISSING_OBSERVED_DATA_SCORE_ROUTE", "observed-data parameter-score closure is absent", "observed-data score route"),
+)
+
+
+OWNER_EXCLUDED_CELLS: tuple[BlockedCellSpec, ...] = (
+    BlockedCellSpec(
+        "SIR-UKF",
+        "OWNER_EXCLUDED_METHOD_NOT_APPLICABLE",
+        "owner determination: UKF does not work for SIR; remove it from testing",
+        "none; reentry requires a new owner direction",
+    ),
 )
 
 
@@ -401,9 +467,11 @@ def registry_payload() -> Mapping[str, Any]:
         "schema": "bayesfilter.neutra.all_models.registry.v1",
         "executable": tuple(spec.payload() for spec in EXECUTABLE_CELLS),
         "blocked": tuple(spec.payload() for spec in BLOCKED_CELLS),
+        "owner_excluded": tuple(spec.payload() for spec in OWNER_EXCLUDED_CELLS),
         "nonclaims": (
             "registry construction is not training or HMC evidence",
             "blocked cells are not failed NeuTra candidates",
+            "owner-excluded cells are not active testing or repair candidates",
         ),
     }
 
@@ -411,7 +479,9 @@ def registry_payload() -> Mapping[str, Any]:
 def validate_registry() -> Mapping[str, Any]:
     executable_ids = tuple(spec.cell_id for spec in EXECUTABLE_CELLS)
     blocked_ids = tuple(spec.cell_id for spec in BLOCKED_CELLS)
-    if len(set(executable_ids + blocked_ids)) != len(executable_ids) + len(blocked_ids):
+    excluded_ids = tuple(spec.cell_id for spec in OWNER_EXCLUDED_CELLS)
+    all_ids = executable_ids + blocked_ids + excluded_ids
+    if len(set(all_ids)) != len(all_ids):
         raise ValueError("registry cell IDs must be unique")
     for spec in EXECUTABLE_CELLS:
         if len(spec.parameter_names) != spec.parameter_dim:

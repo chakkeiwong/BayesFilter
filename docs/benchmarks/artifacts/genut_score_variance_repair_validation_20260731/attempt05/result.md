@@ -1,0 +1,10 @@
+# GenUT Score-Variance Repair Validation
+
+- hard_valid: `True`
+- whitening_identity_pass: `True`
+
+| Arm | Hard valid | Mean finite-time growth | Range | Score SD |
+|---|---:|---:|---|---|
+| lgssm_diagonal | True | -0.825348 | [-0.884597, -0.788503] | `[0.3255618460815388, 0.27217162950420315, 0.24723761338730849, 1.377973191041812, 1.018909856027468]` |
+| austria_diagonal | True | 0.272372 | [0.226388, 0.329196] | `[74.74585764032535, 27.099027067310846, 41.5860370979261]` |
+| austria_pairwise | True | 0.239384 | [0.183937, 0.295332] | `[35.479458214689146, 5.239076136222256, 3.647641274439514]` |

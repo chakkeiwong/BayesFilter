@@ -155,12 +155,6 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
     if args.mode == "cpu" and args.run_comparators:
         from bayesfilter.testing.sir_filter_neutra_target_design_tf import (
             sir_bootstrap_pf_log_likelihood_tf,
-            sir_ukf_likelihood_value_score_status,
-        )
-
-        theta = tf.zeros([1, 3], dtype=tf.float64)
-        ukf_value, _ukf_score, ukf_status = sir_ukf_likelihood_value_score_status(
-            theta, observations=route.observations
         )
 
         @tf.function(jit_compile=True)
@@ -180,13 +174,6 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
         )
         comparator_payload = {
             "role": "explanatory_value_diagnostics_only",
-            "ukf": {
-                "value": float(ukf_value[0].numpy()),
-                "status": _json_safe(ukf_status),
-                "absolute_gap_from_sgqf": float(
-                    tf.abs(ukf_value[0] - cpu_value_float).numpy()
-                ),
-            },
             "bootstrap_pf": {
                 "particle_count": args.pf_particles,
                 "replicate_count": args.pf_replicates,
@@ -204,7 +191,7 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
         }
 
     payload: dict[str, object] = {
-        "schema_version": "bayesfilter.fixed_sir_sgqf_validation.v1",
+        "schema_version": "bayesfilter.fixed_sir_sgqf_validation.v2",
         "status": "PASS" if not hard_vetoes else "BLOCKED",
         "mode": args.mode,
         "row_id": route.manifest["row_id"],
@@ -242,8 +229,12 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
             "no statistically supported method ranking",
             "no SGQF superiority claim",
             "no score because the fixed source row has no free theta",
-            "PF and UKF differences are descriptive only",
+            "PF differences are descriptive only",
+            "SIR-UKF is owner-excluded and was not evaluated",
         ],
+        "owner_exclusions": {
+            "SIR-UKF": "OWNER_EXCLUDED_METHOD_NOT_APPLICABLE",
+        },
         "memory_policy": memory_policy,
         "physical_gpus": [device.name for device in physical],
         "logical_gpus": [device.name for device in logical],

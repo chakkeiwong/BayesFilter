@@ -218,6 +218,41 @@ def test_repository_candidate_identity_supports_predator_prey_adapter():
     )
 
 
+@pytest.mark.parametrize(
+    ("adapter_id", "model_id", "state_dimension", "parameter_count", "design_family"),
+    (
+        ("ksc_mixture_sv_v1", "ksc_sv", 1, 2, "genut"),
+        ("generalized_sv_prior_mean_v1", "generalized_sv", 1, 3, "genut"),
+        ("parameterized_austria_sir_v1", "austria_sir", 18, 3, "cubature"),
+    ),
+)
+def test_repository_candidate_identity_supports_new_leaderboard_adapters(
+    adapter_id, model_id, state_dimension, parameter_count, design_family
+):
+    scope = CandidateRouteScope(
+        model_id=model_id,
+        target_id=f"{model_id}_leaderboard_target",
+        horizon=20,
+        particle_count=1008,
+        state_dimension=state_dimension,
+        parameter_count=parameter_count,
+        dtype="float32",
+        tf32_enabled=True,
+        jit_compile=True,
+        design_family=design_family,
+        control_family_id="higher_moment_contract_e_candidate_v1",
+    )
+    identity = issue_repository_candidate_route_identity(
+        scope,
+        prepared_data_id=f"sha256:{model_id}",
+        residual_design_id=f"fixed_{design_family}_candidate_n1008",
+        controls={"epsilon": "2", "sinkhorn_steps": "8"},
+        adapter_id=adapter_id,
+    )
+    validate_repository_candidate_route_identity(identity)
+    assert dict(identity.controls)["adapter_id"] == adapter_id
+
+
 def test_repository_candidate_identity_binds_chapter18b_structural_primitives():
     scope = CandidateRouteScope(
         model_id="chapter18b_quadratic_structural",

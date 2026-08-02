@@ -1,0 +1,32 @@
+{
+  "command": [
+    "scripts/run_zhao_cui_austria_sir_lane_b_t1.py",
+    "--pilot-arm",
+    "p05_r4_b5_lr3e4_l1_1e9",
+    "--output-dir",
+    "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-01/p05_r4_b5_lr3e4_l1_1e9",
+    "--max-seconds",
+    "600"
+  ],
+  "error": "{{function_node __wrapped__MatrixSolve_device_/job:localhost/replica:0/task:0/device:GPU:0}} Input matrix is not invertible. [Op:MatrixSolve] name: ",
+  "error_type": "InvalidArgumentError",
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_failure.v1",
+  "status": "INFRASTRUCTURE_OR_IMPLEMENTATION_FAILURE",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/scripts/run_zhao_cui_austria_sir_lane_b_t1.py\", line 479, in main\n    result = _pilot(args.pilot_arm, output_dir, args.max_seconds)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/scripts/run_zhao_cui_austria_sir_lane_b_t1.py\", line 254, in _pilot\n    initial_square_mass = trainer.sqrt_square_normalizer()\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/highdim/stochastic_density_training.py\", line 368, in sqrt_square_normalizer\n    mass = self.config.product_basis.bases[axis].mass_matrix(active_measure)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/highdim/bases.py\", line 392, in mass_matrix\n    reference_lebesgue_mass, _ = _lagrangep_reference_mass_and_integral(\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/highdim/bases.py\", line 768, in _lagrangep_reference_mass_and_integral\n    local_mass, local_integral = _lagrange_ref_mass_and_integral(local_dim)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter/bayesfilter/highdim/bases.py\", line 797, in _lagrange_ref_mass_and_integral\n    coefficients = tf.linalg.solve(\n                   ^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/ops/gen_linalg_ops.py\", line 1727, in matrix_solve\n    _ops.raise_from_not_ok_status(e, name)\n  File \"/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py\", line 6006, in raise_from_not_ok_status\n    raise core._status_to_exception(e) from None  # pylint: disable=protected-access\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntensorflow.python.framework.errors_impl.InvalidArgumentError: {{function_node __wrapped__MatrixSolve_device_/job:localhost/replica:0/task:0/device:GPU:0}} Input matrix is not invertible. [Op:MatrixSolve] name: \n"
+}

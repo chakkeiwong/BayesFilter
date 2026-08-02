@@ -467,6 +467,7 @@ def compile_source_order_ttsirt_proposal_branch(
     target_observation_sha256: str,
     tuning_artifact_id: str = "not_applicable_generic_compiler",
     online_dtype: tf.dtypes.DType = tf.float32,
+    inverse_microbatch_size: int | None = None,
 ) -> SourceOrderTTSIRTCompilation:
     """Compile `(x_previous, x_current)` TTSIRT conditionals for `y1:yT`.
 
@@ -511,6 +512,13 @@ def compile_source_order_ttsirt_proposal_branch(
         raise ValueError("TTSIRT branch requires state >= 1 and particles >= 2")
     if initial_transport.dimension != state_dimension:
         raise ValueError("initial transport dimension must equal state dimension")
+    microbatch_size = (
+        particle_count
+        if inverse_microbatch_size is None
+        else int(inverse_microbatch_size)
+    )
+    if microbatch_size < 1 or microbatch_size > particle_count:
+        raise ValueError("inverse_microbatch_size must be in [1, particle_count]")
     expected_shape = (transition_count, particle_count)
     if ancestor_u.shape != expected_shape or auxiliary_log.shape != expected_shape:
         raise ValueError("ancestor uniforms and auxiliary laws require [T, particle]")
@@ -568,7 +576,11 @@ def compile_source_order_ttsirt_proposal_branch(
 
     # The initial map is the previous-state map used by the first joint target.
     initial_map = previous_maps[0]
-    initial_local = initial_transport.inverse_transport(initial_reference)
+    initial_local = _inverse_transport_microbatched(
+        initial_transport,
+        initial_reference,
+        microbatch_size=microbatch_size,
+    )
     initial_physical, initial_forward_log_det = initial_map.forward(
         tf.transpose(initial_local)
     )
@@ -591,8 +603,11 @@ def compile_source_order_ttsirt_proposal_branch(
         )
         parent_physical = tf.gather(states[-1], ancestor)
         parent_local, _ = previous_maps[time_index].inverse(parent_physical)
-        current_local = transport.conditional_inverse_transport(
-            tf.transpose(parent_local), transition_reference[time_index]
+        current_local = _conditional_inverse_transport_microbatched(
+            transport,
+            tf.transpose(parent_local),
+            transition_reference[time_index],
+            microbatch_size=microbatch_size,
         )
         current_physical, current_forward_log_det = current_maps[time_index].forward(
             tf.transpose(current_local)
@@ -617,6 +632,7 @@ def compile_source_order_ttsirt_proposal_branch(
         "target_observation_sha256": target_observation_sha256,
         "tuning_artifact_id": str(tuning_artifact_id),
         "online_dtype": online_dtype.name,
+        "inverse_microbatch_size": microbatch_size,
         "initial_transport": {
             "transport": initial_transport.manifest_payload(),
             "density": initial_transport.density.manifest_payload(),
@@ -673,6 +689,8 @@ def compile_source_order_ttsirt_proposal_branch(
         "source_order": EVENT_ORDER,
         "branch_id": branch.branch_id,
         "online_dtype": online_dtype.name,
+        "inverse_microbatch_size": microbatch_size,
+        "inverse_microbatching": "deterministic_contiguous_particle_slices",
         "operation_classifications": {
             "squared_tt_defensive_density": {
                 "classification": "source_faithful",
@@ -765,6 +783,7 @@ def compile_predator_prey_source_order_ttsirt_proposal_branch(
     transition_reference_points: tf.Tensor,
     tuning_artifact_id: str,
     online_dtype: tf.dtypes.DType = tf.float32,
+    inverse_microbatch_size: int | None = None,
 ) -> SourceOrderTTSIRTCompilation:
     """Compile and seal the T20 predator-prey proposal branch."""
 
@@ -790,9 +809,52 @@ def compile_predator_prey_source_order_ttsirt_proposal_branch(
         target_observation_sha256=TARGET_OBSERVATION_SHA256,
         tuning_artifact_id=tuning_id,
         online_dtype=online_dtype,
+        inverse_microbatch_size=inverse_microbatch_size,
     )
     _require_sealed_predator_prey_branch(compilation.branch)
     return compilation
+
+
+def _inverse_transport_microbatched(
+    transport: FixedTTSIRTTransport,
+    reference_points: tf.Tensor,
+    *,
+    microbatch_size: int,
+) -> tf.Tensor:
+    sample_count = int(reference_points.shape[1])
+    batches = []
+    for start in range(0, sample_count, int(microbatch_size)):
+        stop = min(start + int(microbatch_size), sample_count)
+        batches.append(transport.inverse_transport(reference_points[:, start:stop]))
+    return tf.concat(batches, axis=1)
+
+
+def _conditional_inverse_transport_microbatched(
+    transport: FixedTTSIRTTransport,
+    conditioning_points: tf.Tensor,
+    reference_points: tf.Tensor,
+    *,
+    microbatch_size: int,
+) -> tf.Tensor:
+    sample_count = int(reference_points.shape[1])
+    condition_count = int(conditioning_points.shape[1])
+    if condition_count not in (1, sample_count):
+        raise ValueError("conditioning point count must be one or particle_count")
+    batches = []
+    for start in range(0, sample_count, int(microbatch_size)):
+        stop = min(start + int(microbatch_size), sample_count)
+        condition = (
+            conditioning_points
+            if condition_count == 1
+            else conditioning_points[:, start:stop]
+        )
+        batches.append(
+            transport.conditional_inverse_transport(
+                condition,
+                reference_points[:, start:stop],
+            )
+        )
+    return tf.concat(batches, axis=1)
 
 
 def _evaluate_source_order_core(

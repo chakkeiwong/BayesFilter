@@ -1,0 +1,102 @@
+{
+  "artifact_paths": {
+    "manifest": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/run_manifest.json",
+    "result": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/result.json"
+  },
+  "batch_size": 128,
+  "cell_id": "SIR-UKF",
+  "command": [
+    "docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py",
+    "--action",
+    "training-throughput",
+    "--output-root",
+    "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02",
+    "--cell",
+    "SIR-UKF",
+    "--recipe",
+    "compact_shallow",
+    "--throughput-steps",
+    "10"
+  ],
+  "data_version": "bound_by_target_signature",
+  "decision": "PASS_TRAINING_THROUGHPUT_MEASUREMENT",
+  "device": "/GPU:0",
+  "environment": "tf-gpu",
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "gpu_allocator_bytes": {
+    "current": 86016,
+    "peak": 3494942464
+  },
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "hmc_sampling_launched": false,
+  "hmc_tuning_launched": false,
+  "jit_compile": true,
+  "nonclaims": [
+    "throughput and engineering hard gates only",
+    "no recipe ranking, HMC, posterior, or default-readiness claim"
+  ],
+  "output_root": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF",
+  "passed": true,
+  "plan_path": "docs/plans/bayesfilter-sir-ukf-neutra-target-specific-campaign-plan-2026-07-30.md",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "recipe": {
+    "activation": "elu",
+    "batch_size": 128,
+    "clip_norm": 10.0,
+    "final_learning_rate_fraction": 1.0,
+    "hidden_layers": [
+      9,
+      9
+    ],
+    "init_scale": 0.02,
+    "learning_rate": 0.001,
+    "optimizer": "manual_adam_linear_decay",
+    "recipe_id": "compact_shallow",
+    "s_max": 1.0,
+    "stage_count": 2
+  },
+  "result_file": "docs/plans/artifacts/bayesfilter-sir-ukf-neutra-target-specific-20260730/throughput-attempt-02/SIR-UKF/result.json",
+  "rung_steps": [
+    1,
+    10
+  ],
+  "sample_axis_python_loop_used": false,
+  "scalar_fallback_used": false,
+  "schema": "bayesfilter.neutra.training_throughput_manifest.v1",
+  "target_signature": "31bc2c569933523b7bda5e337ae5b7a307a7ed90656a1d6791523c69fb6b5998",
+  "tensorflow_version": "2.19.1",
+  "tf32_execution_enabled": true,
+  "timing": {
+    "compile_plus_first_end_to_end_seconds": 133.6626326330006,
+    "compile_plus_first_program_seconds": 6.415961015009088,
+    "conservative_additional_step_seconds": 13.536536228499608,
+    "end_to_end_difference_step_seconds": 0.1891921835550521,
+    "method": "one_step_plus_repeated_graph_difference_v1",
+    "program_difference_step_seconds": 1.6028347042221058,
+    "projection_formula": "jobs * compile_plus_first_end_to_end_seconds + sum(max(steps_per_job - 1, 0)) * conservative_additional_step_seconds",
+    "repeated_end_to_end_seconds": 135.36536228499608,
+    "repeated_program_seconds": 20.84147335300804,
+    "repeated_steps": 10
+  },
+  "training_seed": [
+    20260730,
+    3001
+  ],
+  "wall_time_seconds": 269.7041230180039
+}

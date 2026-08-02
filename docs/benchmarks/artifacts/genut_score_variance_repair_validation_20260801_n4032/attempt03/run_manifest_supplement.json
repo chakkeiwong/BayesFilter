@@ -1,0 +1,57 @@
+{
+  "schema": "bayesfilter.genut_score_variance_repair_n4032_manifest_supplement.v1",
+  "campaign_id": "genut-score-growth-n4032-comparison-20260801",
+  "plan": "docs/plans/bayesfilter-genut-score-growth-n4032-comparison-plan-2026-08-01.md",
+  "terminal_result": "docs/plans/bayesfilter-genut-score-growth-n4032-comparison-result-2026-08-01.md",
+  "comparison": {
+    "requested_particle_count": 4000,
+    "requested_count_status": "rejected_exact_design_divisibility",
+    "executed_particle_count": 4032,
+    "design_divisor": 36,
+    "same_route_controls": true,
+    "retuned": false,
+    "growth_only": true,
+    "probe_columns": 8,
+    "probe_batch_size": 1,
+    "particle_seeds": [98201, 98202, 98203]
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "tensorflow": "2.19.1",
+    "host": "DESKTOP-RF1Q5IJ",
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+    "logical_devices": ["/device:GPU:0"],
+    "tf32": true,
+    "xla_jit_compile": true,
+    "memory_growth": true,
+    "wall_time_seconds": 952.6534048979811
+  },
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "attempt_history": [
+    {
+      "attempt": "attempt01",
+      "status": "failed_before_numerical_route",
+      "failure": "N=4032 evaluator shape versus reused N=1008 noise helper",
+      "artifact": "docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260801_n4032/attempt01/repair_note.json"
+    },
+    {
+      "attempt": "attempt02",
+      "status": "failed_during_diagnostic",
+      "failure": "GPU RESOURCE_EXHAUSTED in dense Sinkhorn/JVP workspace",
+      "artifact": "docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260801_n4032/attempt02/repair_note.json"
+    },
+    {
+      "attempt": "attempt03",
+      "status": "successful_terminal_scope",
+      "result_sha256": "03379d6f82ad14edee3971bf9d1e21a082b10cc4c7b1d648bd961b45bbe05986"
+    }
+  ],
+  "nonclaims": [
+    "not an N=4000 run",
+    "not an asymptotic Lyapunov estimate",
+    "not a common-dimensional operator-norm comparison",
+    "not a value or score-bias comparison",
+    "not a statistical ranking or promotion result"
+  ]
+}

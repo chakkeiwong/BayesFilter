@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from bayesfilter.highdim.cubature_genut_adapters import (
     exact_transformed_sv_candidate_adapter,
+    parameterized_austria_sir_candidate_adapter,
 )
 from bayesfilter.highdim.cubature_genut_candidate import cubature_design
 from bayesfilter.highdim.cubature_genut_filter import (
@@ -98,4 +99,72 @@ def test_exact_transformed_sv_pilot_has_finite_same_scalar_score():
 def test_exact_transformed_sv_adapter_has_no_runtime_autodiff_or_fd():
     source = inspect.getsource(exact_transformed_sv_candidate_adapter)
     assert "GradientTape" not in source
+    assert "finite_difference" not in source
+
+
+def test_parameterized_austria_sir_manual_transition_and_observation_tangents():
+    adapter = parameterized_austria_sir_candidate_adapter()
+    theta = tf.constant([0.03, -0.02, 0.04], tf.float32)
+    noise = tf.zeros([2, 18], tf.float32)
+    particles = adapter.initial_value(theta, noise)
+    tangent = adapter.initial_tangent(theta, noise)
+    process = tf.zeros_like(particles)
+    transitioned = adapter.transition_value(
+        theta, particles, process, tf.constant(0, tf.int32)
+    )
+    manual_transition = adapter.transition_tangent(
+        theta, particles, process, tangent, tf.constant(0, tf.int32)
+    )
+    observation = transitioned[0, 1::2] + tf.linspace(-0.2, 0.2, 9)
+    manual_observation = adapter.observation_tangent(
+        theta,
+        transitioned,
+        manual_transition,
+        observation,
+        tf.constant(0, tf.int32),
+    )
+
+    transition_fd = []
+    observation_fd = []
+    step = tf.constant(2.0e-3, tf.float32)
+    for index in range(3):
+        direction = tf.one_hot(index, 3, dtype=tf.float32)
+        plus_state = adapter.transition_value(
+            theta + step * direction, particles, process, tf.constant(0, tf.int32)
+        )
+        minus_state = adapter.transition_value(
+            theta - step * direction, particles, process, tf.constant(0, tf.int32)
+        )
+        transition_fd.append((plus_state - minus_state) / (2.0 * step))
+        plus_value = adapter.observation_value(
+            theta + step * direction,
+            plus_state,
+            observation,
+            tf.constant(0, tf.int32),
+        )
+        minus_value = adapter.observation_value(
+            theta - step * direction,
+            minus_state,
+            observation,
+            tf.constant(0, tf.int32),
+        )
+        observation_fd.append((plus_value - minus_value) / (2.0 * step))
+    tf.debugging.assert_near(
+        manual_transition,
+        tf.stack(transition_fd, axis=-1),
+        atol=2.0e-2,
+        rtol=2.0e-3,
+    )
+    tf.debugging.assert_near(
+        manual_observation,
+        tf.stack(observation_fd, axis=-1),
+        atol=2.0e-2,
+        rtol=2.0e-3,
+    )
+
+
+def test_parameterized_austria_sir_adapter_has_no_runtime_autodiff_or_fd():
+    source = inspect.getsource(parameterized_austria_sir_candidate_adapter)
+    assert "GradientTape" not in source
+    assert "ForwardAccumulator" not in source
     assert "finite_difference" not in source

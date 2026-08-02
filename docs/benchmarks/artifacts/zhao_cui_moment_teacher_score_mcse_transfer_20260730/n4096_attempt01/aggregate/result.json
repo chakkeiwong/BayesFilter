@@ -1,0 +1,151 @@
+{
+  "classification": "canonical_lgssm_transfer_evidence_not_moment_teacher_score_evidence",
+  "criterion": {
+    "all_coordinates_must_pass": true,
+    "maximum_allowed": 0.1,
+    "ratio": "abs(mean(tf32-reference))/mcse(reference mean)"
+  },
+  "identity_checks": {
+    "arm_labels": true,
+    "campaign": true,
+    "current_git_commit": true,
+    "dtype": true,
+    "prepared_inputs": true,
+    "scope": true,
+    "seed_count_at_least_eight": true,
+    "seeds": true,
+    "source_sha256": true,
+    "tf32_modes": true
+  },
+  "inputs": {
+    "reference_result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/n4096_attempt01/fp32_no_tf32/result.json",
+    "reference_sha256": "d379cc0233b77de391583a5daa1f079a982db2b606f4399ef34878de6cdfc7cc",
+    "tf32_result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/n4096_attempt01/tf32/result.json",
+    "tf32_sha256": "6048c2a093114d742610a9830074d9302b6d40a041ef97e60ec08c51773b3e80"
+  },
+  "interpretable": true,
+  "maximum_ratio": 0.7585069135760166,
+  "moment_teacher_final_score_tested": false,
+  "nonclaims": [
+    "the Zhao-Cui moment-teacher final score is not implemented or tested",
+    "no long-horizon, nonlinear, HMC, or default-readiness conclusion",
+    "no claim that every intermediate near-zero derivative can be ignored"
+  ],
+  "passed": false,
+  "practical_half_mcse_screen": {
+    "all_coordinates_passed": false,
+    "maximum_allowed": 0.5
+  },
+  "question": "Is paired TF32 final-score drift at most 0.1 reference MCSE in every coordinate?",
+  "rows": [
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.16822538914997148,
+      "exact_two_sided_sign_test_p": 0.0078125,
+      "maximum_absolute_per_seed_difference": 0.0035772323608398438,
+      "mean_paired_numerical_difference": 0.003025233745574951,
+      "negative_difference_count": 0,
+      "paired_difference_mcse": 9.949872104735395e-05,
+      "parameter": "phi1",
+      "passed": false,
+      "passed_practical_half_mcse_screen": true,
+      "positive_difference_count": 8,
+      "reference_mean_mcse": 0.017983217401732275,
+      "reference_mean_score": 3.8093290627002716,
+      "reference_score_sd": 0.05086421988926727,
+      "systematic_displacement_supported": true,
+      "tf32_mean_score": 3.8123542964458466,
+      "zero_difference_count": 0
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.15953698222197107,
+      "exact_two_sided_sign_test_p": 0.0078125,
+      "maximum_absolute_per_seed_difference": 0.0013203024864196777,
+      "mean_paired_numerical_difference": 0.0012105777859687805,
+      "negative_difference_count": 0,
+      "paired_difference_mcse": 3.079416742788471e-05,
+      "parameter": "phi2",
+      "passed": false,
+      "passed_practical_half_mcse_screen": true,
+      "positive_difference_count": 8,
+      "reference_mean_mcse": 0.007588069982948834,
+      "reference_mean_score": -0.3869175761938095,
+      "reference_score_sd": 0.021462302964244843,
+      "systematic_displacement_supported": true,
+      "tf32_mean_score": -0.38570699840784073,
+      "zero_difference_count": 0
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.0035617942002383494,
+      "exact_two_sided_sign_test_p": 0.0703125,
+      "maximum_absolute_per_seed_difference": 0.00015881657600402832,
+      "mean_paired_numerical_difference": 4.3876469135284424e-05,
+      "negative_difference_count": 1,
+      "paired_difference_mcse": 3.057926488303813e-05,
+      "parameter": "phi3",
+      "passed": true,
+      "passed_practical_half_mcse_screen": true,
+      "positive_difference_count": 7,
+      "reference_mean_mcse": 0.012318642422503884,
+      "reference_mean_score": -0.09184727817773819,
+      "reference_score_sd": 0.0348423823678591,
+      "systematic_displacement_supported": false,
+      "tf32_mean_score": -0.0918034017086029,
+      "zero_difference_count": 0
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.7585069135760166,
+      "exact_two_sided_sign_test_p": 0.0078125,
+      "maximum_absolute_per_seed_difference": 0.023981094360351562,
+      "mean_paired_numerical_difference": -0.022910118103027344,
+      "negative_difference_count": 8,
+      "paired_difference_mcse": 0.00029774362527396807,
+      "parameter": "q_scale",
+      "passed": false,
+      "passed_practical_half_mcse_screen": false,
+      "positive_difference_count": 0,
+      "reference_mean_mcse": 0.030204231092656113,
+      "reference_mean_score": 4.4310272336006165,
+      "reference_score_sd": 0.08543046650457081,
+      "systematic_displacement_supported": true,
+      "tf32_mean_score": 4.408117115497589,
+      "zero_difference_count": 0
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.26717118085012215,
+      "exact_two_sided_sign_test_p": 0.0078125,
+      "maximum_absolute_per_seed_difference": 0.011292457580566406,
+      "mean_paired_numerical_difference": -0.010345697402954102,
+      "negative_difference_count": 8,
+      "paired_difference_mcse": 0.0002687832523031381,
+      "parameter": "r_scale",
+      "passed": false,
+      "passed_practical_half_mcse_screen": true,
+      "positive_difference_count": 0,
+      "reference_mean_mcse": 0.038723103929228946,
+      "reference_mean_score": 11.237262964248657,
+      "reference_score_sd": 0.10952547750779694,
+      "systematic_displacement_supported": true,
+      "tf32_mean_score": 11.226917266845703,
+      "zero_difference_count": 0
+    }
+  ],
+  "schema": "bayesfilter.zhao_cui_moment_teacher_score_mcse_transfer_result.v1",
+  "validity_checks": {
+    "reference_finite": true,
+    "reference_hard_valid": true,
+    "tf32_finite": true,
+    "tf32_hard_valid": true
+  },
+  "value_diagnostic": {
+    "absolute_mean_difference_over_reference_mcse": 0.5547043591926486,
+    "maximum_absolute_per_seed_difference": 0.0055370330810546875,
+    "mean_paired_numerical_difference": 0.00526881217956543,
+    "paired_difference_mcse": 6.179852407717373e-05,
+    "reference_mean_mcse": 0.009498414952487462,
+    "reference_mean_value": -8.884773969650269,
+    "reference_value_sd": 0.026865574493710333,
+    "role": "explanatory_only_not_part_of_score_promotion_criterion",
+    "tf32_mean_value": -8.879505157470703
+  },
+  "verdict": "fail_score_drift_not_small_relative_to_mcse"
+}

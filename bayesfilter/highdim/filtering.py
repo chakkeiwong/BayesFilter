@@ -154,6 +154,7 @@ class FixedBranchFilterConfig:
     product_basis: ProductBasis | None = None
     initial_cores: tuple[TTCore, ...] | None = None
     fit_quadrature_order: int = 48
+    initialization_rule: str = "supplied_initial_cores"
 
     def __post_init__(self) -> None:
         if self.dtype != tf.float64:
@@ -183,6 +184,10 @@ class FixedBranchFilterConfig:
         if int(self.fit_quadrature_order) < 2:
             raise ValueError("fit_quadrature_order must be at least 2")
         object.__setattr__(self, "fit_quadrature_order", int(self.fit_quadrature_order))
+        initialization_rule = str(self.initialization_rule).strip()
+        if not initialization_rule:
+            raise ValueError("initialization_rule must be nonempty")
+        object.__setattr__(self, "initialization_rule", initialization_rule)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -198,6 +203,7 @@ class FixedBranchFilterConfig:
             "product_basis": _product_basis_payload(self.product_basis),
             "initial_cores_hash": _core_values_hash(self.initial_cores),
             "fit_quadrature_order": int(self.fit_quadrature_order),
+            "initialization_rule": self.initialization_rule,
         }
 
 

@@ -1,0 +1,124 @@
+{
+  "command": "docs/benchmarks/run_zhao_cui_moment_teacher_score_mcse_transfer.py --no-tf32 --output docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/attempt01/fp32_no_tf32",
+  "data_version": {
+    "axis_convention": {
+      "initial_noise": "[batch, particle, state]",
+      "residual_design": "[batch, time, particle, state]",
+      "transition_noise": "[batch, time, particle, state]"
+    },
+    "balance_steps": 2,
+    "col_chunk_size": 1024,
+    "domain_tags": {
+      "initial": 101,
+      "residual": "2000 + zero_based_time",
+      "transition": "1000 + zero_based_time"
+    },
+    "final_dtype": "float32",
+    "key_dtype": "int32",
+    "key_encoding": "[root_seed, domain_tag]",
+    "marginal_policy_id": "contract_e_probability_marginals_tvcol_erow_v1",
+    "maximum_row_error_tolerance": 0.01,
+    "num_particles": 1024,
+    "preparation_id": "contract_e_lgssm_philox_prepared_inputs_v1",
+    "raw_draw_dtype": "float64",
+    "residual_design_id": "contract_e_residual_centered_population_scaled_v1",
+    "rng_algorithm": "philox",
+    "root_seeds_in_order": [
+      81700,
+      81701,
+      81702,
+      81703,
+      81704,
+      81705,
+      81706,
+      81707,
+      81708,
+      81709,
+      81710,
+      81711,
+      81712,
+      81713,
+      81714,
+      81715
+    ],
+    "row_chunk_size": 1024,
+    "sinkhorn_steps": 20,
+    "tensor_sha256": {
+      "epsilon": "46dab5155af5541748b0c9e9e773e7be1870600a11547ebf1ed5f5a09037664a",
+      "fixed_reset_mask": "2cde42a35f1c6e3cb484b5d0071b3b8eee0b1f67bebe15aeb58984a70678157e",
+      "initial_noise": "444c762bc1815d8f64b0a1a9d543ddeb647c5a539f8064d1644a9cf439374b01",
+      "observations": "c3c9498673d15f61bbf5be894c2c44cb2fca82fe1ab6089abfba16bc48b8f7f1",
+      "prepared_ridge": "d26ed44511c746a89c4de828e9325b96c3e5e5a3c9dde904d155ba4b4891ed51",
+      "residual_design": "76b74fa1256efd03ef78e3e1dc2f622ac3c59f04d4773590343b0cc8268c6d88",
+      "scaling": "5a73b81715933c2397b3a8302a9fc471670338524ca582c7ea15c9e9681199cf",
+      "transition_noise": "1ed4a9bcd2534e71f3066cf349a9f221a66e269194a64cfa87827ab9a1ec385e"
+    },
+    "tensorflow_version": "2.19.1",
+    "time_steps": 2,
+    "transport_block_grid": [
+      1,
+      1
+    ],
+    "transport_chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "tv_column_tolerance": 0.0001
+  },
+  "device": {
+    "dtype": "float32",
+    "jit_compile": true,
+    "logical_devices": [
+      "/device:GPU:0"
+    ],
+    "memory_growth": true,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "physical_devices": [
+      "/physical_device:GPU:0"
+    ],
+    "tf32_enabled": false,
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "environment": {
+    "conda_env": "tf-gpu",
+    "python": "3.11.14 (main, Oct 21 2025, 18:31:21) [GCC 11.2.0]",
+    "tensorflow": "2.19.1"
+  },
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "output_artifact": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/attempt01/fp32_no_tf32",
+  "plan": "docs/plans/bayesfilter-zhao-cui-moment-teacher-score-mcse-transfer-plan-2026-07-30.md",
+  "result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/attempt01/fp32_no_tf32/result.json",
+  "result_sha256": "e596fd98e076260c109f9286074267e05b660d672dacd3472f7d88710701fe95",
+  "schema": "bayesfilter.run_manifest.v1",
+  "seeds": [
+    81700,
+    81701,
+    81702,
+    81703,
+    81704,
+    81705,
+    81706,
+    81707,
+    81708,
+    81709,
+    81710,
+    81711,
+    81712,
+    81713,
+    81714,
+    81715
+  ],
+  "wall_time_seconds": 17.989738414995372
+}

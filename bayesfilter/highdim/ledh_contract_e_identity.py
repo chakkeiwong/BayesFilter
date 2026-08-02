@@ -370,6 +370,7 @@ class _RouteSpecification:
     callable_roles: tuple[_CallableRoleSpec, ...]
     owned_dependency_symbols: tuple[str, ...] = ()
     allowed_external_roots: tuple[str, ...] = ()
+    auto_discover_owned_dependencies: bool = False
 
     def __post_init__(self) -> None:
         text_fields = (
@@ -636,6 +637,39 @@ class _ContractERouteIdentityFactory:
             "wrapper": _wrapper_payload(value, effective_role_spec),
         }
 
+    def _dependency_binding_record(self, symbol: str) -> Mapping[str, Any]:
+        """Bind an owned function or a transparent repository dataclass."""
+
+        value = _resolve_symbol(symbol)
+        if isinstance(value, type) and is_dataclass(value):
+            source_path_text = inspect.getsourcefile(value)
+            if not source_path_text:
+                raise ValueError("owned dataclass dependency has no source file")
+            source_path = Path(source_path_text).resolve()
+            try:
+                relative_path = source_path.relative_to(_REPOSITORY_ROOT).as_posix()
+            except ValueError as error:
+                raise ValueError(
+                    "owned dataclass dependency source is outside the repository"
+                ) from error
+            source_bytes = source_path.read_bytes()
+            source_segment = inspect.getsource(value).encode("utf-8")
+            return {
+                "role": "dependency",
+                "symbol": symbol,
+                "module": value.__module__,
+                "qualname": value.__qualname__,
+                "source_file": relative_path,
+                "source_file_sha256": _sha256(source_bytes),
+                "source_segment_sha256": _sha256(source_segment),
+                "loaded_code_sha256": _sha256(source_segment),
+                "function_auxiliary": {
+                    "dataclass_fields": [item.name for item in fields(value)]
+                },
+                "wrapper": {"wrapper_kind": "repository_dataclass"},
+            }
+        return self._binding_record("dependency", symbol, value)
+
     def _scan_dependencies(
         self,
         root_functions: Mapping[str, types.FunctionType],
@@ -677,7 +711,8 @@ class _ContractERouteIdentityFactory:
                     if _owned_module(module_name, self._owned_module_roots):
                         raise ValueError(
                             "owned module globals are ambiguous dependencies; "
-                            "import and register the exact symbol"
+                            f"import and register the exact symbol: {_symbol_for(function)} "
+                            f"loads global {name!r} from module {module_name!r}"
                         )
                     external_symbols.setdefault(module_name, set()).add(role)
                     continue
@@ -698,6 +733,8 @@ class _ContractERouteIdentityFactory:
                 if _owned_module(module_name, self._owned_module_roots):
                     symbol = _symbol_for(dependency)
                     owned_symbols.setdefault(symbol, set()).add(role)
+                    if isinstance(dependency, type) and is_dataclass(dependency):
+                        continue
                     pending.append((role, _underlying_python_function(dependency)))
                 elif module_name != "builtins":
                     external_symbols.setdefault(_symbol_for(dependency), set()).add(role)
@@ -831,7 +868,11 @@ class _ContractERouteIdentityFactory:
                 discovered_external.setdefault(wrapper_symbol, set()).add(
                     role_spec.role
                 )
-        declared_owned = set(specification.owned_dependency_symbols)
+        declared_owned = (
+            set(discovered_owned)
+            if specification.auto_discover_owned_dependencies
+            else set(specification.owned_dependency_symbols)
+        )
         if set(discovered_owned) != declared_owned:
             raise ValueError(
                 "owned dependency closure mismatch: "
@@ -840,9 +881,7 @@ class _ContractERouteIdentityFactory:
             )
         dependency_records = tuple(
             {
-                **self._binding_record(
-                    "dependency", symbol, _resolve_symbol(symbol)
-                ),
+                **self._dependency_binding_record(symbol),
                 "used_by_roles": sorted(discovered_owned[symbol]),
             }
             for symbol in sorted(declared_owned)
@@ -955,6 +994,7 @@ _LATENT_SIR_OWNED_DEPENDENCY_SYMBOLS = (
     "bayesfilter.highdim.ledh_contract_e_reset_tf:_cholesky_jvp",
     "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_forward_core",
     "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_core",
+    "bayesfilter.highdim.ledh_contract_e_reset_tf:_contract_e_chol_cloud_jvp_from_forward_core",
     "bayesfilter.highdim.ledh_contract_e_reset_tf:_factor_condition_proxy",
     "bayesfilter.highdim.ledh_contract_e_reset_tf:_right_triangular_solve",
     "bayesfilter.highdim.ledh_contract_e_reset_tf:_sym",
@@ -975,9 +1015,15 @@ _LATENT_SIR_OWNED_DEPENDENCY_SYMBOLS = (
     "bayesfilter.highdim.ledh_contract_e_streaming_tf:_streaming_marginal_diagnostics_core",
     "bayesfilter.highdim.ledh_contract_e_streaming_tf:_streaming_row_quotient_forward_core",
     "bayesfilter.highdim.ledh_contract_e_streaming_tf:_streaming_row_quotient_jvp_core",
+    "bayesfilter.highdim.transport_chunk_policy:TransportChunkSelection",
+    "bayesfilter.highdim.transport_chunk_policy:_require_plain_integer",
+    "bayesfilter.highdim.transport_chunk_policy:select_transport_chunk_size",
+    "bayesfilter.highdim.transport_chunk_policy:select_transport_chunks",
+    "bayesfilter.highdim.transport_chunk_policy:validate_transport_chunks",
     "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_epsilon_per_batch",
     "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_filterflow_streaming_column_log_normalizer",
     "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_filterflow_streaming_column_log_normalizer_jvp",
+    "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_filterflow_cached_same_cloud_softmin_jvp",
     "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_filterflow_streaming_finite_sinkhorn_potentials_jvp_total",
     "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_filterflow_streaming_finite_sinkhorn_potentials_total_vjp",
     "experiments.dpf_implementation.tf_tfp.resampling.annealed_transport_tf:_filterflow_streaming_softmin",
@@ -1088,10 +1134,239 @@ _LATENT_SIR_TWO_NODE_ROUTE_SPECIFICATION = replace(
     ),
 )
 
+_MOMENT_TEACHER_LGSSM_ROUTE_SPECIFICATION_ID = (
+    "contract_e_chol_zhao_cui_moment_teacher_lgssm_v1"
+)
+_MOMENT_TEACHER_LGSSM_VALUE_SCORE_SYMBOL = (
+    "bayesfilter.highdim.zhao_cui_moment_teacher_lgssm_tf:"
+    "moment_teacher_lgssm_value_and_score_core"
+)
+_MOMENT_TEACHER_LGSSM_ROUTE_SPECIFICATION = _RouteSpecification(
+    route_specification_id=_MOMENT_TEACHER_LGSSM_ROUTE_SPECIFICATION_ID,
+    row_id="canonical_lgssm_m3_zhao_cui_moment_teacher",
+    target_scalar="finite_particle_observed_data_log_likelihood",
+    target_output_tensor_field="objective",
+    theta_coordinate_system="phi1_phi2_phi3_q_scale_r_scale",
+    parameter_names=("phi1", "phi2", "phi3", "q_scale", "r_scale"),
+    residual_design_id="contract_e_residual_centered_population_scaled_v1",
+    ridge_policy_id="prepared_particle_ridge_plus_fixed_tt_ridge_v1",
+    prepared_fields=(
+        _PreparedFieldSpec("observations", "fixed observed LGSSM data", ("float32", "float64"), ("T", 3)),
+        _PreparedFieldSpec("initial_noise", "fixed initial particle noise", ("float32", "float64"), (1, "N", 3)),
+        _PreparedFieldSpec("transition_noise", "fixed transition particle noise", ("float32", "float64"), (1, "T", "N", 3)),
+        _PreparedFieldSpec("fixed_reset_mask", "fixed all-active Contract E reset schedule", ("bool",), (1, "T"), finite_required=False),
+        _PreparedFieldSpec("residual_design", "fixed centered residual design", ("float32", "float64"), (1, "T", "N", 3)),
+        _PreparedFieldSpec("prepared_ridge", "fixed particle reset ridge", ("float32", "float64"), (1, "T"), strictly_positive=True),
+        _PreparedFieldSpec("epsilon", "fixed transport epsilon", ("float32", "float64"), (), strictly_positive=True),
+        _PreparedFieldSpec("scaling", "fixed annealing scale", ("float32", "float64"), (), strictly_positive=True),
+        _PreparedFieldSpec("teacher_observations", "teacher copy of observed data", ("float32", "float64"), ("T", 3)),
+        _PreparedFieldSpec("reference_points", "fixed adjacent TT fit rows", ("float32", "float64"), ("M", 6)),
+        _PreparedFieldSpec("basis_values", "fixed TT basis design", ("float32", "float64"), (6, "M", "Q")),
+        _PreparedFieldSpec("active_mask", "fixed padded TT rank mask", ("float32", "float64"), (6, "R", "Q", "R")),
+        _PreparedFieldSpec("schedule", "fixed ALS update schedule", ("int32",), ("U",)),
+        _PreparedFieldSpec("weights", "fixed TT fit row weights", ("float32", "float64"), ("M",), strictly_positive=True),
+        _PreparedFieldSpec("initial_cores", "fixed initial padded TT cores", ("float32", "float64"), (6, "R", "Q", "R")),
+        _PreparedFieldSpec("scale_shift_indices", "fixed local scale-shift branches", ("int32",), ("T",)),
+        _PreparedFieldSpec("defensive_weights", "fixed unscaled defensive weights", ("float32", "float64"), ("T",)),
+        _PreparedFieldSpec("query_basis_values", "fixed carried-marginal query basis", ("float32", "float64"), (6, "M", "Q")),
+        _PreparedFieldSpec("keep_mask", "fixed current-state retained axes", ("bool",), (6,), finite_required=False),
+        _PreparedFieldSpec("mass_operators", "fixed marginal mass operators", ("float32", "float64"), (6, "Q", "Q")),
+        _PreparedFieldSpec("defensive_marginal_values", "fixed defensive retained marginal", ("float32", "float64"), ("T", "M")),
+        _PreparedFieldSpec("defensive_mass", "fixed defensive density mass", ("float32", "float64"), (), strictly_positive=True),
+        _PreparedFieldSpec("operator_powers", "fixed degree-zero-to-four moment operators", ("float32", "float64"), (6, 5, "Q", "Q")),
+        _PreparedFieldSpec("defensive_power_moments", "fixed defensive power moments", ("float32", "float64"), (6, 5)),
+        _PreparedFieldSpec("state_offset", "fixed physical current-state chart offset", ("float32", "float64"), (3,)),
+        _PreparedFieldSpec("state_matrix", "fixed physical current-state chart matrix", ("float32", "float64"), (3, 6)),
+        _PreparedFieldSpec("pair_indices", "fixed ordered co-moment pairs", ("int32",), ("P", 2)),
+        _PreparedFieldSpec("chart_scale", "fixed adjacent affine chart scale", ("float32", "float64"), (), strictly_positive=True),
+        _PreparedFieldSpec("center_theta", "tuning-center parameter used to freeze scale branches", ("float32", "float64"), (5,)),
+        _PreparedFieldSpec("sinkhorn_steps", "fixed Sinkhorn iteration count", ("int64",), (), strictly_positive=True),
+        _PreparedFieldSpec("balance_steps", "fixed terminal balance count", ("int64",), (), strictly_positive=True),
+        _PreparedFieldSpec("correction_steps", "fixed diagonal correction count", ("int64",), ()),
+        _PreparedFieldSpec("correction_strength", "fixed diagonal correction strength", ("float64",), ()),
+        _PreparedFieldSpec("correction_floor", "fixed diagonal correction floor", ("float64",), (), strictly_positive=True),
+        _PreparedFieldSpec("pairwise_correction_steps", "fixed pairwise correction count", ("int64",), ()),
+        _PreparedFieldSpec("pairwise_strength", "fixed pairwise correction strength", ("float64",), ()),
+        _PreparedFieldSpec("pairwise_floor", "fixed pairwise correction floor", ("float64",), (), strictly_positive=True),
+        _PreparedFieldSpec("tt_ridge", "fixed TT ALS ridge", ("float64",), (), strictly_positive=True),
+        _PreparedFieldSpec("column_scale_floor", "fixed TT design scaling floor", ("float64",), (), strictly_positive=True),
+        _PreparedFieldSpec("condition_number_veto", "fixed TT condition veto", ("float64",), (), strictly_positive=True),
+        _PreparedFieldSpec("fit_residual_veto", "fixed TT solve residual veto", ("float64",), (), strictly_positive=True),
+        _PreparedFieldSpec("row_chunk_size", "policy-issued transport row chunk", ("int64",), (), strictly_positive=True),
+        _PreparedFieldSpec("col_chunk_size", "policy-issued transport column chunk", ("int64",), (), strictly_positive=True),
+    ),
+    callable_roles=(
+        _CallableRoleSpec(
+            "reset", _LATENT_SIR_RESET_SYMBOL,
+            wrapper_kind="tensorflow_function", jit_compile=True,
+        ),
+        _CallableRoleSpec("value", _MOMENT_TEACHER_LGSSM_VALUE_SCORE_SYMBOL),
+        _CallableRoleSpec("gradient", _MOMENT_TEACHER_LGSSM_VALUE_SCORE_SYMBOL),
+    ),
+    allowed_external_roots=("tensorflow",),
+    auto_discover_owned_dependencies=True,
+)
+
+_MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION_ID = (
+    "contract_e_chol_zhao_cui_moment_teacher_predator_prey_v1"
+)
+_MOMENT_TEACHER_AUSTRIA_SIR_ROUTE_SPECIFICATION_ID = (
+    "contract_e_chol_zhao_cui_moment_teacher_austria_sir_v1"
+)
+_MOMENT_TEACHER_ACTUAL_SV_ROUTE_SPECIFICATION_ID = (
+    "contract_e_chol_zhao_cui_moment_teacher_actual_sv_v1"
+)
+_MOMENT_TEACHER_PREDATOR_PREY_VALUE_SCORE_SYMBOL = (
+    "bayesfilter.highdim.zhao_cui_moment_teacher_nonlinear_tf:"
+    "predator_prey_moment_teacher_value_and_score_core"
+)
+_MOMENT_TEACHER_AUSTRIA_SIR_VALUE_SCORE_SYMBOL = (
+    "bayesfilter.highdim.zhao_cui_moment_teacher_nonlinear_tf:"
+    "austria_sir_moment_teacher_value_and_score_core"
+)
+_MOMENT_TEACHER_ACTUAL_SV_VALUE_SCORE_SYMBOL = (
+    "bayesfilter.highdim.zhao_cui_moment_teacher_nonlinear_tf:"
+    "actual_sv_moment_teacher_value_and_score_core"
+)
+_MOMENT_TEACHER_NONLINEAR_PREPARED_FIELDS = (
+    _PreparedFieldSpec("observations", "fixed source-order observations", ("float32",), ("T", "O")),
+    _PreparedFieldSpec("initial_noise", "fixed initial standard-normal particle innovations", ("float32",), ("N", "D")),
+    _PreparedFieldSpec("process_noise", "fixed transition standard-normal particle innovations", ("float32",), ("T", "N", "D")),
+    _PreparedFieldSpec("residual_design", "fixed centered Contract E residual design", ("float32",), ("T", "N", "D")),
+    _PreparedFieldSpec("prepared_ridge", "fixed particle reset ridge", ("float32",), ("T",), strictly_positive=True),
+    _PreparedFieldSpec("epsilon", "fixed transport epsilon", ("float32",), (), strictly_positive=True),
+    _PreparedFieldSpec("scaling", "fixed annealing scaling", ("float32",), (), strictly_positive=True),
+    _PreparedFieldSpec("event_order_code", "source order x0 then transition then observation", ("int64",), (), strictly_positive=True),
+    _PreparedFieldSpec("teacher_observations", "teacher copy of fixed observations", ("float32",), ("T", "O")),
+    _PreparedFieldSpec("reference_points", "fixed transition-coupled adjacent TT fit rows", ("float32",), ("M", "A")),
+    _PreparedFieldSpec("basis_values", "fixed TT basis design", ("float32",), ("A", "M", "Q")),
+    _PreparedFieldSpec("active_mask", "fixed padded TT rank mask", ("float32",), ("A", "R", "Q", "R")),
+    _PreparedFieldSpec("schedule", "fixed ALS update schedule", ("int32",), ("U",)),
+    _PreparedFieldSpec("weights", "fixed TT fit row weights", ("float32",), ("M",), strictly_positive=True),
+    _PreparedFieldSpec("initial_cores", "fixed initial padded TT cores", ("float32",), ("A", "R", "Q", "R")),
+    _PreparedFieldSpec("scale_shift_indices", "fixed local scale-shift branches", ("int32",), ("T",)),
+    _PreparedFieldSpec("defensive_weights", "fixed unscaled defensive weights", ("float32",), ("T",)),
+    _PreparedFieldSpec("query_basis_values", "fixed carried-marginal query basis", ("float32",), ("A", "M", "Q")),
+    _PreparedFieldSpec("keep_mask", "fixed current-state retained axes", ("bool",), ("A",), finite_required=False),
+    _PreparedFieldSpec("mass_operators", "fixed marginal mass operators", ("float32",), ("A", "Q", "Q")),
+    _PreparedFieldSpec("defensive_marginal_values", "fixed defensive retained marginal", ("float32",), ("T", "M")),
+    _PreparedFieldSpec("defensive_mass", "fixed defensive density mass", ("float32",), (), strictly_positive=True),
+    _PreparedFieldSpec("operator_powers", "fixed degree-zero-to-four moment operators", ("float32",), ("A", 5, "Q", "Q")),
+    _PreparedFieldSpec("defensive_power_moments", "fixed defensive power moments", ("float32",), ("A", 5)),
+    _PreparedFieldSpec("state_offset", "fixed nonlinear affine chart offset", ("float32",), ("D",)),
+    _PreparedFieldSpec("state_matrix", "fixed nonlinear current-state chart matrix", ("float32",), ("D", "A")),
+    _PreparedFieldSpec("state_scale", "fixed nonlinear affine chart scale", ("float32",), ("D",), strictly_positive=True),
+    _PreparedFieldSpec("pair_indices", "fixed ordered sparse co-moment pairs", ("int32",), ("P", 2)),
+    _PreparedFieldSpec("center_theta", "tuning-center parameter used to freeze TT branches", ("float32",), ("K",)),
+    _PreparedFieldSpec("sinkhorn_steps", "fixed Sinkhorn iteration count", ("int64",), (), strictly_positive=True),
+    _PreparedFieldSpec("balance_steps", "fixed terminal balance count", ("int64",), (), strictly_positive=True),
+    _PreparedFieldSpec("correction_steps", "fixed diagonal correction count", ("int64",), ()),
+    _PreparedFieldSpec("correction_strength", "fixed diagonal correction strength", ("float64",), ()),
+    _PreparedFieldSpec("correction_floor", "fixed diagonal correction floor", ("float64",), (), strictly_positive=True),
+    _PreparedFieldSpec("pairwise_correction_steps", "fixed pairwise correction count", ("int64",), ()),
+    _PreparedFieldSpec("pairwise_strength", "fixed pairwise correction strength", ("float64",), ()),
+    _PreparedFieldSpec("pairwise_floor", "fixed pairwise correction floor", ("float64",), (), strictly_positive=True),
+    _PreparedFieldSpec("tt_ridge", "fixed TT ALS ridge", ("float64",), (), strictly_positive=True),
+    _PreparedFieldSpec("column_scale_floor", "fixed TT design scaling floor", ("float64",), (), strictly_positive=True),
+    _PreparedFieldSpec("condition_number_veto", "fixed TT condition veto", ("float64",), (), strictly_positive=True),
+    _PreparedFieldSpec("fit_residual_veto", "fixed TT solve residual veto", ("float64",), (), strictly_positive=True),
+    _PreparedFieldSpec("row_chunk_size", "policy-issued transport row chunk", ("int64",), (), strictly_positive=True),
+    _PreparedFieldSpec("col_chunk_size", "policy-issued transport column chunk", ("int64",), (), strictly_positive=True),
+)
+
+
+def _fixed_nonlinear_prepared_fields(
+    *, state_dimension: int, observation_dimension: int, parameter_count: int
+) -> tuple[_PreparedFieldSpec, ...]:
+    dimensions = {
+        "D": state_dimension,
+        "O": observation_dimension,
+        "A": 2 * state_dimension,
+        "K": parameter_count,
+    }
+    return tuple(
+        replace(
+            item,
+            shape=tuple(dimensions.get(axis, axis) for axis in item.shape),
+        )
+        for item in _MOMENT_TEACHER_NONLINEAR_PREPARED_FIELDS
+    )
+
+
+_MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION = _RouteSpecification(
+    route_specification_id=_MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION_ID,
+    row_id="zhao_cui_predator_prey_T20_moment_teacher",
+    target_scalar="finite_particle_observed_data_log_likelihood",
+    target_output_tensor_field="objective",
+    theta_coordinate_system="r_K_a_s_u_v_physical",
+    parameter_names=("r", "K", "a", "s", "u", "v"),
+    residual_design_id="contract_e_residual_centered_population_scaled_v1",
+    ridge_policy_id="prepared_particle_ridge_plus_fixed_tt_ridge_v1",
+    prepared_fields=_fixed_nonlinear_prepared_fields(
+        state_dimension=2, observation_dimension=2, parameter_count=6
+    ),
+    callable_roles=(
+        _CallableRoleSpec(
+            "reset", _LATENT_SIR_RESET_SYMBOL,
+            wrapper_kind="tensorflow_function", jit_compile=True,
+        ),
+        _CallableRoleSpec("value", _MOMENT_TEACHER_PREDATOR_PREY_VALUE_SCORE_SYMBOL),
+        _CallableRoleSpec("gradient", _MOMENT_TEACHER_PREDATOR_PREY_VALUE_SCORE_SYMBOL),
+    ),
+    allowed_external_roots=("tensorflow",),
+    auto_discover_owned_dependencies=True,
+)
+_MOMENT_TEACHER_AUSTRIA_SIR_ROUTE_SPECIFICATION = replace(
+    _MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION,
+    route_specification_id=_MOMENT_TEACHER_AUSTRIA_SIR_ROUTE_SPECIFICATION_ID,
+    row_id="zhao_cui_sir_austria_latent_preclip_moment_teacher",
+    theta_coordinate_system=(
+        "log_kappa_scale_log_nu_scale_log_observation_noise_scale"
+    ),
+    parameter_names=(
+        "log_kappa_scale",
+        "log_nu_scale",
+        "log_observation_noise_scale",
+    ),
+    prepared_fields=_fixed_nonlinear_prepared_fields(
+        state_dimension=18, observation_dimension=9, parameter_count=3
+    ),
+    callable_roles=(
+        _CallableRoleSpec(
+            "reset", _LATENT_SIR_RESET_SYMBOL,
+            wrapper_kind="tensorflow_function", jit_compile=True,
+        ),
+        _CallableRoleSpec("value", _MOMENT_TEACHER_AUSTRIA_SIR_VALUE_SCORE_SYMBOL),
+        _CallableRoleSpec("gradient", _MOMENT_TEACHER_AUSTRIA_SIR_VALUE_SCORE_SYMBOL),
+    ),
+)
+_MOMENT_TEACHER_ACTUAL_SV_ROUTE_SPECIFICATION = replace(
+    _MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION,
+    route_specification_id=_MOMENT_TEACHER_ACTUAL_SV_ROUTE_SPECIFICATION_ID,
+    row_id="zhao_cui_actual_transformed_sv_T20_moment_teacher",
+    theta_coordinate_system="normal_cdf_gamma_log_beta",
+    parameter_names=("z_gamma", "log_beta"),
+    prepared_fields=_fixed_nonlinear_prepared_fields(
+        state_dimension=1, observation_dimension=1, parameter_count=2
+    ),
+    callable_roles=(
+        _CallableRoleSpec(
+            "reset", _LATENT_SIR_RESET_SYMBOL,
+            wrapper_kind="tensorflow_function", jit_compile=True,
+        ),
+        _CallableRoleSpec("value", _MOMENT_TEACHER_ACTUAL_SV_VALUE_SCORE_SYMBOL),
+        _CallableRoleSpec("gradient", _MOMENT_TEACHER_ACTUAL_SV_VALUE_SCORE_SYMBOL),
+    ),
+)
+
 _PRODUCTION_FACTORY = _ContractERouteIdentityFactory(
     route_specifications=(
         _LATENT_SIR_ROUTE_SPECIFICATION,
         _LATENT_SIR_TWO_NODE_ROUTE_SPECIFICATION,
+        _MOMENT_TEACHER_LGSSM_ROUTE_SPECIFICATION,
+        _MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION,
+        _MOMENT_TEACHER_AUSTRIA_SIR_ROUTE_SPECIFICATION,
+        _MOMENT_TEACHER_ACTUAL_SV_ROUTE_SPECIFICATION,
     ),
     owned_module_roots=("bayesfilter.", "experiments."),
     external_primitive_specs=_REVIEWED_EXTERNAL_PRIMITIVES,
@@ -1111,6 +1386,82 @@ def issue_contract_e_route_identity(
     return _PRODUCTION_FACTORY.issue(
         route_specification_id=route_specification_id,
         callables=callables,
+        prepared_inputs=prepared_inputs,
+    )
+
+
+def issue_moment_teacher_lgssm_contract_e_route_identity(
+    *, prepared_inputs: Mapping[str, Any]
+) -> _FactoryIssuedRouteIdentity:
+    """Issue canonical identity for the exact LGSSM moment-teacher core."""
+
+    from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+    from bayesfilter.highdim import zhao_cui_moment_teacher_lgssm_tf as candidate
+
+    return issue_contract_e_route_identity(
+        route_specification_id=_MOMENT_TEACHER_LGSSM_ROUTE_SPECIFICATION_ID,
+        callables={
+            "reset": reset.contract_e_chol_cloud_forward_tf,
+            "value": candidate.moment_teacher_lgssm_value_and_score_core,
+            "gradient": candidate.moment_teacher_lgssm_value_and_score_core,
+        },
+        prepared_inputs=prepared_inputs,
+    )
+
+
+def issue_moment_teacher_predator_prey_contract_e_route_identity(
+    *, prepared_inputs: Mapping[str, Any]
+) -> _FactoryIssuedRouteIdentity:
+    """Issue canonical identity for the exact predator-prey hybrid core."""
+
+    from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+    from bayesfilter.highdim import zhao_cui_moment_teacher_nonlinear_tf as candidate
+
+    return issue_contract_e_route_identity(
+        route_specification_id=_MOMENT_TEACHER_PREDATOR_PREY_ROUTE_SPECIFICATION_ID,
+        callables={
+            "reset": reset.contract_e_chol_cloud_forward_tf,
+            "value": candidate.predator_prey_moment_teacher_value_and_score_core,
+            "gradient": candidate.predator_prey_moment_teacher_value_and_score_core,
+        },
+        prepared_inputs=prepared_inputs,
+    )
+
+
+def issue_moment_teacher_austria_sir_contract_e_route_identity(
+    *, prepared_inputs: Mapping[str, Any]
+) -> _FactoryIssuedRouteIdentity:
+    """Issue canonical identity for the exact Austria SIR hybrid core."""
+
+    from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+    from bayesfilter.highdim import zhao_cui_moment_teacher_nonlinear_tf as candidate
+
+    return issue_contract_e_route_identity(
+        route_specification_id=_MOMENT_TEACHER_AUSTRIA_SIR_ROUTE_SPECIFICATION_ID,
+        callables={
+            "reset": reset.contract_e_chol_cloud_forward_tf,
+            "value": candidate.austria_sir_moment_teacher_value_and_score_core,
+            "gradient": candidate.austria_sir_moment_teacher_value_and_score_core,
+        },
+        prepared_inputs=prepared_inputs,
+    )
+
+
+def issue_moment_teacher_actual_sv_contract_e_route_identity(
+    *, prepared_inputs: Mapping[str, Any]
+) -> _FactoryIssuedRouteIdentity:
+    """Issue canonical identity for the exact transformed-SV hybrid core."""
+
+    from bayesfilter.highdim import ledh_contract_e_reset_tf as reset
+    from bayesfilter.highdim import zhao_cui_moment_teacher_nonlinear_tf as candidate
+
+    return issue_contract_e_route_identity(
+        route_specification_id=_MOMENT_TEACHER_ACTUAL_SV_ROUTE_SPECIFICATION_ID,
+        callables={
+            "reset": reset.contract_e_chol_cloud_forward_tf,
+            "value": candidate.actual_sv_moment_teacher_value_and_score_core,
+            "gradient": candidate.actual_sv_moment_teacher_value_and_score_core,
+        },
         prepared_inputs=prepared_inputs,
     )
 

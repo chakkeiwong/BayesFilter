@@ -7,7 +7,11 @@ from typing import Any
 
 import tensorflow as tf
 
-from bayesfilter.highdim import ledh_contract_e_streaming_tf as streaming
+from bayesfilter.highdim.ledh_contract_e_streaming_tf import (
+    _contract_e_streaming_forward_core,
+    _contract_e_streaming_forward_jvp_core,
+    _contract_e_streaming_jvp_core,
+)
 from bayesfilter.highdim.transport_chunk_policy import validate_transport_chunks
 
 
@@ -815,7 +819,7 @@ def _canonical_primal_core(
         )
         increment_history.append(normalization["increment"])
         geometry = _geometry_forward_core(flow["particles"])
-        contract_e = streaming._contract_e_streaming_forward_core(
+        contract_e = _contract_e_streaming_forward_core(
             geometry["scaled_geometry"],
             flow["particles"],
             normalization["normalized_log_weights"],
@@ -1191,7 +1195,7 @@ def _canonical_manual_jvp_core(
         normalization = _normalize_log_weights_jvp_core(logits, logits_tangent)
         per_batch_score = per_batch_score + normalization["increment_tangent"]
         geometry = _geometry_jvp_core(flow["particles"], flow_tangent["particles"])
-        contract_e = streaming._contract_e_streaming_forward_core(
+        contract_e = _contract_e_streaming_forward_core(
             geometry["scaled_geometry"],
             flow["particles"],
             normalization["normalized_log_weights"],
@@ -1206,7 +1210,7 @@ def _canonical_manual_jvp_core(
             row_chunk_size=row_chunk_size,
             col_chunk_size=col_chunk_size,
         )
-        contract_e_tangent = streaming._contract_e_streaming_jvp_core(
+        contract_e_tangent = _contract_e_streaming_jvp_core(
             geometry["scaled_geometry"],
             flow["particles"],
             normalization["normalized_log_weights"],
@@ -1361,7 +1365,7 @@ def _canonical_fused_step_core(
             [batch_size, particle_count, STATE_DIMENSION, PARAMETER_COUNT], dtype
         )
         zero_ridge_tangent = tf.zeros([batch_size, PARAMETER_COUNT], dtype)
-        contract_e = streaming._contract_e_streaming_forward_jvp_core(
+        contract_e = _contract_e_streaming_forward_jvp_core(
             geometry["scaled_geometry"],
             flow["particles"],
             normalization["normalized_log_weights"],
@@ -1451,6 +1455,10 @@ def _canonical_fused_step_core(
     return {
         "particles": next_particles,
         "particles_tangent": next_particles_tangent,
+        "weighted_source_particles": flow["particles"],
+        "weighted_source_particles_tangent": flow_tangent["particles"],
+        "normalized_weights": normalization["normalized_weights"],
+        "normalized_weights_tangent": normalization["normalized_weights_tangent"],
         "log_weights": next_log_weights,
         "log_weights_tangent": next_log_weights_tangent,
         "increment": normalization["increment"],

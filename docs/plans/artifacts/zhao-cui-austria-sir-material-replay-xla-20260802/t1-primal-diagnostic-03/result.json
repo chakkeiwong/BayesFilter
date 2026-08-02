@@ -1,0 +1,63 @@
+{
+  "material_core_atol": 5e-12,
+  "material_core_replay": false,
+  "material_core_rtol": 5e-06,
+  "material_replay_policy_id": "elementwise_atol5e12_rtol5e6_v1",
+  "maximum_core_residual": 0.6784189955366102,
+  "maximum_normalized_core_residual": 30561929.08607359,
+  "nonclaims": [
+    "diagnostic primal only",
+    "no JVP or finite-difference admission",
+    "no T1 issuer admission",
+    "no bitwise replay claim",
+    "no T2 or HMC"
+  ],
+  "packed_xla_policy_id": "packed_rank4_tf_while_loop_xla_v1",
+  "parent_identity": "e4b56526205eb50c3d2aa3b8a8ce6ce27539aa5ab50ad286380136db28ed2b59",
+  "parent_value": -31.1290512231882,
+  "replay_value": -31.129051223188206,
+  "run_manifest": {
+    "command": [
+      "scripts/diagnose_zhao_cui_austria_sir_t1_material_replay_xla.py",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-material-replay-xla-20260802/t1-primal-diagnostic-03"
+    ],
+    "device": [
+      "/device:GPU:0"
+    ],
+    "dtype": "float64",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "full_program_control_flow": "tensorflow_while_loop",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "gpu_allocator": {
+      "current": 29395968,
+      "peak": 100191232
+    },
+    "gpu_memory_policy": {
+      "aggregate_visible_gpu_limit_mib": 6144,
+      "configured_before_logical_device_initialization": true,
+      "hard_allocator_cap": true,
+      "memory_growth": false,
+      "memory_limit_mib_per_physical_device": 6144,
+      "mode": "fixed_logical_device_limit",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "memory_limit_mib": 6144
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "false"
+    },
+    "host": "DESKTOP-RF1Q5IJ",
+    "jit_compile": true,
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-material-replay-xla-repair-plan-2026-08-02.md",
+    "python": "3.11.14",
+    "python_numerical_loops": false,
+    "tensorflow": "2.19.1",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+    "wall_time_seconds": 8.882010372995865
+  },
+  "schema": "bayesfilter.zhao_cui_austria_sir_t1_material_replay_xla_diagnostic.v1",
+  "status": "FAIL_T1_MATERIAL_REPLAY_XLA_DIAGNOSTIC"
+}
