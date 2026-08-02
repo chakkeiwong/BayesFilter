@@ -1,0 +1,81 @@
+{
+  "completed_guard_count": 1,
+  "completed_primary_count": 6,
+  "disposition": "viable_pair_set",
+  "epsilon_values_exposed": false,
+  "execution": {
+    "cuda_visible_devices": null,
+    "guard_max_workers": 1,
+    "guard_worker_factory_locator": null,
+    "mode": "serial",
+    "primary_max_workers": 1,
+    "primary_worker_factory_locator": null,
+    "start_method": "spawn",
+    "tf_force_gpu_allow_growth": null,
+    "worker_environment_keys": []
+  },
+  "execution_config": {
+    "chain_count": 4,
+    "evidence_path": "docs/plans/bayesfilter-ksc-ukf-neutra-hmc-continuation-plan-2026-08-02.md",
+    "primary_l_grid": [
+      3,
+      5,
+      9,
+      13,
+      18,
+      25
+    ],
+    "replication_count": 3,
+    "root_seed": [
+      20260803,
+      2881
+    ],
+    "screen_burnin": 1,
+    "screen_results": 65,
+    "tune_burnin": 64,
+    "tune_results": 1,
+    "use_xla": true
+  },
+  "mass_handoff_ready": true,
+  "metric_arrays_exposed": false,
+  "next_round_candidate_count": 2,
+  "next_round_l_values": [
+    24,
+    25
+  ],
+  "next_round_roles": [
+    {
+      "epsilon_policy": "inherit_exact_primary_epsilon_no_retuning",
+      "num_leapfrog_steps": 24,
+      "parent_l_values": [
+        25
+      ],
+      "role": "same_epsilon_neighbor_coverage"
+    },
+    {
+      "epsilon_policy": "independently_tuned",
+      "num_leapfrog_steps": 25,
+      "parent_l_values": [],
+      "role": "independently_tuned_primary"
+    }
+  ],
+  "nonclaims": [
+    "discarded fixed-mass HMC tuning evidence only",
+    "no stochastic candidate ranking",
+    "no posterior convergence claim",
+    "no retained-sampling readiness claim",
+    "no sampler superiority or default-readiness claim",
+    "no identification or scientific claim"
+  ],
+  "planned_guard_count": 1,
+  "planned_primary_count": 6,
+  "raw_samples_exposed": false,
+  "raw_states_exposed": false,
+  "retained_sampling_authorized": false,
+  "route": "operational_broad_fixed_mass_l_epsilon_grid_v1",
+  "schema": "bayesfilter.operational_broad_grid.public.v2",
+  "stochastic_ranking_performed": false,
+  "viable_coverage_count": 1,
+  "viable_guard_count": 1,
+  "viable_primary_count": 1
+}

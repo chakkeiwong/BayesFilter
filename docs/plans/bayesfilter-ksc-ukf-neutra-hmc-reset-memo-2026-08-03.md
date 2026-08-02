@@ -1,16 +1,24 @@
 # KSC-UKF NeuTra/HMC Reset Memo
 
-Date: 2026-08-03
+Date: 2026-08-03 (updated after broad-grid attempt04)
 
 ## Restart Point
 
 Resume from
-`docs/plans/bayesfilter-ksc-ukf-neutra-hmc-terminal-result-2026-08-02.md`.
-The repaired KSC route and its target signature are ready; do not use the old
-`KSC-UKF` registry entry, which remains the historical `T=1000` single-Gaussian
-route.
+`docs/plans/bayesfilter-ksc-ukf-broad-grid-result-2026-08-03.md`.
+Broad-grid attempt04 completed successfully (`BROAD_GRID_TUNING_VIABLE_PAIR_SET`,
+159 s, commit `efce62b5`): exactly one viable primary `(L=25, eps~0.9896)`, but
+its compatible `L=24` same-epsilon coverage probe makes the unranked
+primary-plus-coverage union size two, so the implemented sequential handoff
+gate (exactly one union entry) is not satisfied. Sequential HMC was not
+launched. The next step is an owner decision among the three options in the
+result note (role-based gate amendment, follow-up grid round, or stop).
 
-## First Restart Action
+The repaired KSC route and its target signature remain ready; do not use the
+old `KSC-UKF` registry entry, which remains the historical `T=1000`
+single-Gaussian route.
+
+## Completed Restart Action (2026-08-03)
 
 Relaunch the unchanged trusted GPU broad-grid command with a fresh output root:
 
@@ -27,14 +35,21 @@ docs/benchmarks/run_neutra_ksc_gaussian_sum_ukf_end_to_end_20260802.py \
 
 The previous three broad-grid attempts were blocked before process creation by
 platform permission-review timeouts. They are not candidate failures and must
-not be overwritten or interpreted as tuning results.
+not be overwritten or interpreted as tuning results. Attempt04 above is the
+first and only execution of this command; its output root is now claim
+evidence and must not be overwritten.
 
 ## Handoff Rules
 
 - Require the public broad-grid artifact to report a complete viable pair set;
   preserve all viable pairs without stochastic ranking.
-- Launch sequential HMC only when exactly one primary pair survives, using the
-  same frozen transport and broad-grid SHA-256.
+- Launch sequential HMC only when the implemented gate is satisfied: the
+  unranked primary-plus-coverage union (`next_round_candidates` in the private
+  tuning result) contains exactly one entry and that entry is an independently
+  tuned primary. Use the same frozen transport and the private broad-grid
+  result SHA-256. Note: "exactly one viable primary" is **not** sufficient
+  under the implemented union semantics; a compatible coverage probe also
+  occupies the union (this fired on attempt04).
 - If zero or more than one viable pair survives, record the terminal broad-grid
   result and stop before sequential HMC. This outcome is a handoff gate, not a
   research-direction rejection; the narrowing or repair step needs a new plan
