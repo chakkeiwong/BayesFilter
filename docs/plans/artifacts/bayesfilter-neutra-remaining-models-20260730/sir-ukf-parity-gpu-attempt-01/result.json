@@ -1,0 +1,98 @@
+{
+  "audit_point_policy": "sir_ukf_frozen_zero_and_positive_half_axis_v1",
+  "cpu_reference_path": "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-cpu-attempt-01/result.json",
+  "cpu_reference_sha256": "aa78023fab2b8d3942d031e0763b46e67bb9f2119f7b6f5d4d28822569cf1bc0",
+  "decision": "SIR_UKF_GPU_SCORE_PARITY_BLOCKED",
+  "elapsed_seconds": 9.394463916003588,
+  "finite": true,
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_resident": true,
+  "jit_compile": true,
+  "logical_gpus": [
+    "/device:GPU:0"
+  ],
+  "mode": "gpu-canary",
+  "nonclaims": [
+    "target execution admission only",
+    "no training, HMC, posterior, or filter-correctness claim"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "passed": false,
+  "schema": "bayesfilter.sir_ukf.current_parity_gpu_canary.v1",
+  "score": [
+    [
+      29.18416089175085,
+      -106.96313910429889,
+      9.326973415798191
+    ],
+    [
+      -5721.658746600919,
+      1849.4597849997929,
+      1567.0152278245102
+    ]
+  ],
+  "score_cpu_parity": {
+    "maximum_absolute_gap": 1.5729013284726534e-05,
+    "maximum_scale_normalized_gap": 5.966165369939377e-07
+  },
+  "score_parity_limit": 1e-07,
+  "score_parity_passed": false,
+  "source_sha256": {
+    "adapter_method": "3fda241d54e5c3f883c0239f31fc05811413dff915e4dc0bccb51e597f291c79",
+    "sir_rk4_transition_value_state_source_jacobians": "ed018996d58b99a238a20183360935ac41f36f3474b507f0af2d1737fc80db51",
+    "sir_ukf_likelihood_value_score_status": "96f80b0638ad4dea7eed36af238ff6f2a6b2e64471fe2f8df065247e30602218"
+  },
+  "status_code": [
+    0,
+    0
+  ],
+  "status_cpu_equal": true,
+  "status_valid": true,
+  "target_signature": "a21376e7c8d3d0b036cd4a65f6ee56cee65dc8ddf4cb195b1a385156d6fbbd08",
+  "tf32_enabled": true,
+  "theta": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.5,
+      0.0,
+      0.0
+    ]
+  ],
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "valid_pre_regularized_score": [
+    true,
+    true
+  ],
+  "value": [
+    -681.6886338790135,
+    -2118.4034770958874
+  ],
+  "value_cpu_parity": {
+    "maximum_absolute_gap": 1.4791210105613573e-06,
+    "maximum_scale_normalized_gap": 2.1697897501161396e-09
+  },
+  "value_parity_limit": 1e-08,
+  "value_parity_passed": true
+}

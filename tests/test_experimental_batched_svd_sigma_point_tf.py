@@ -913,6 +913,36 @@ def test_principal_sqrt_helper_classifies_invalid_covariance_cpu_xla(
     np.testing.assert_array_equal(invalid_count.numpy(), np.asarray([1], dtype=np.int32))
 
 
+def test_principal_sqrt_nonfinite_covariance_never_reaches_eigensolver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    covariance = tf.constant(
+        [[[2.0, 0.1], [0.1, 1.5]], [[1.0, 0.0], [0.0, np.nan]]],
+        tf.float64,
+    )
+    d_covariance = tf.zeros([2, 1, 2, 2], tf.float64)
+    original = svd_tf._batched_psd_eigh
+
+    def finite_only_eigh(values: tf.Tensor, floor: tf.Tensor):
+        tf.debugging.assert_all_finite(values, "unsafe covariance reached eigensolver")
+        return original(values, floor)
+
+    monkeypatch.setattr(svd_tf, "_batched_psd_eigh", finite_only_eigh)
+    placement = _checked_batched_principal_sqrt_factor_first_derivatives(
+        covariance,
+        d_covariance,
+        singular_floor=tf.constant(0.0, tf.float64),
+        fixed_null_tolerance=tf.constant(1.0e-10, tf.float64),
+        label="test pre-eigensolver nonfinite classification",
+        factor_backend="tensorflow_newton_schulz",
+    )
+
+    np.testing.assert_array_equal(
+        placement.classified_invalid_count.numpy(), np.asarray([0, 1], np.int32)
+    )
+    assert np.isfinite(placement.factor.numpy()).all()
+
+
 def test_principal_sqrt_helper_classifies_nonfinite_derivative_rhs_cpu_xla() -> None:
     covariance = tf.constant([[[2.0, 0.1], [0.1, 1.5]]], dtype=tf.float64)
     d_covariance = tf.constant(
@@ -1118,6 +1148,35 @@ def test_principal_sqrt_helper_uses_compiled_factor_and_sylvester_derivative() -
         and isinstance(node.value, ast.Attribute)
         and node.value.attr == "linalg"
         for node in ast.walk(tree)
+    )
+
+
+def test_newton_schulz_principal_root_matches_eigh_and_reconstructs_cpu_xla() -> None:
+    covariance = tf.constant(
+        [
+            [[4.0, 0.2, 0.0], [0.2, 2.0, 0.1], [0.0, 0.1, 1.0]],
+            [[3.0, -0.1, 0.2], [-0.1, 5.0, 0.0], [0.2, 0.0, 2.0]],
+        ],
+        tf.float64,
+    )
+    expected = svd_tf._tensorflow_native_principal_sqrt(covariance)
+    eager = svd_tf._tensorflow_newton_schulz_principal_sqrt(covariance)
+
+    @tf.function(
+        input_signature=[tf.TensorSpec([2, 3, 3], tf.float64)],
+        jit_compile=True,
+    )
+    def compiled(values: tf.Tensor) -> tf.Tensor:
+        return svd_tf._tensorflow_newton_schulz_principal_sqrt(values)
+
+    xla = compiled(covariance)
+    np.testing.assert_allclose(eager.numpy(), expected.numpy(), rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(xla.numpy(), eager.numpy(), rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(
+        (xla @ tf.linalg.matrix_transpose(xla)).numpy(),
+        covariance.numpy(),
+        rtol=1e-12,
+        atol=1e-12,
     )
 
 

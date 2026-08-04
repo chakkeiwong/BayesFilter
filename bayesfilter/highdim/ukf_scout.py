@@ -1,4 +1,4 @@
-"""UKF scout metadata for fixed-rank high-dimensional filtering design."""
+"""UKF scout metadata and adapters for fixed-rank filtering design."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ class UKFScoutConfig:
 
 @dataclass(frozen=True)
 class UKFScoutResult:
-    """Finite UKF scout paths and summaries for one spatial SIR dimension."""
+    """Finite UKF scout paths and summaries for one state-space target."""
 
     dimension: int
     compartments: int
@@ -135,6 +135,78 @@ class UKFScoutResult:
             ),
             "nonclaims": self.nonclaims,
         }
+
+
+def ukf_scout_result_from_paths(
+    mean_path: tf.Tensor,
+    covariance_path: tf.Tensor,
+    *,
+    sigma_point_count: int,
+    source: str,
+) -> UKFScoutResult:
+    """Package moments from an existing UKF route as scout metadata.
+
+    This adapter does not implement another filter. It preserves the scout-only
+    claim class while making target-specific UKF paths reusable by initializers.
+    """
+
+    means = tf.convert_to_tensor(mean_path, dtype=tf.float64)
+    covariances = tf.convert_to_tensor(covariance_path, dtype=tf.float64)
+    if means.shape.rank != 2 or covariances.shape.rank != 3:
+        raise ValueError("UKF paths must have shapes [time, state] and [time, state, state]")
+    time_count = int(means.shape[0])
+    state_dim = int(means.shape[1])
+    if covariances.shape != (time_count, state_dim, state_dim):
+        raise ValueError("UKF covariance path shape does not match mean path")
+    if time_count < 1 or int(sigma_point_count) < 1:
+        raise ValueError("UKF paths require at least one time point and sigma point")
+    if not bool(
+        tf.reduce_all(tf.math.is_finite(means)).numpy()
+        and tf.reduce_all(tf.math.is_finite(covariances)).numpy()
+    ):
+        raise ValueError("UKF paths must be finite")
+    covariances = 0.5 * (covariances + tf.linalg.matrix_transpose(covariances))
+    eigenvalues = tf.linalg.eigvalsh(covariances)
+    scales = tf.sqrt(tf.maximum(tf.linalg.diag_part(covariances), 1e-15))
+    max_eigen = tf.reduce_max(eigenvalues, axis=1)
+    effective_dimension = tf.reduce_sum(
+        tf.cast(eigenvalues > tf.maximum(1e-12, max_eigen[:, tf.newaxis] * 1e-8), tf.int32),
+        axis=1,
+    )
+    correlations = covariances / (
+        scales[:, :, tf.newaxis] * scales[:, tf.newaxis, :]
+    )
+    off_diagonal = correlations - tf.eye(state_dim, dtype=tf.float64)[tf.newaxis, :, :]
+    return UKFScoutResult(
+        dimension=state_dim,
+        compartments=1,
+        horizon=time_count - 1,
+        sigma_point_count=int(sigma_point_count),
+        mean_path=means,
+        covariance_path=covariances,
+        scale_path=scales,
+        covariance_eigenvalues=eigenvalues,
+        effective_dimension_path=effective_dimension,
+        max_abs_correlation_path=tf.reduce_max(tf.abs(off_diagonal), axis=[1, 2]),
+        process_covariance_shape=(state_dim, state_dim),
+        process_covariance_diagonal_range=(0.0, 0.0),
+        observation_covariance_shape=(1, 1),
+        observation_covariance_diagonal_range=(0.0, 0.0),
+        initial_covariance_shape=(state_dim, state_dim),
+        initial_covariance_diagonal_range=(
+            float(tf.reduce_min(tf.linalg.diag_part(covariances[0])).numpy()),
+            float(tf.reduce_max(tf.linalg.diag_part(covariances[0])).numpy()),
+        ),
+        status="PASS_P52_UKF_SCOUT",
+        claim_class=P52_UKF_SCOUT_CLAIM,
+        nonclaims=(
+            "scout_not_truth",
+            "no filtering correctness",
+            "no exact likelihood",
+            "no HMC readiness",
+            f"source_route={source}",
+        ),
+    )
 
 
 def spatial_sir_ukf_scout(

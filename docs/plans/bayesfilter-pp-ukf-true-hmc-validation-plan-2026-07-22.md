@@ -2,7 +2,13 @@
 
 Date: 2026-07-22
 
-Status: `PARTIAL_RESULT_EXECUTION_BOUNDARY_BLOCKED`
+Status: `COMPLETED`
+
+Terminal HMC artifact:
+`docs/plans/artifacts/bayesfilter-pp-ukf-true-hmc-validation-20260722/attempt-11/public_result.json`
+
+Terminal posterior-validation result:
+`docs/plans/bayesfilter-pp-ukf-posterior-validation-result-2026-07-30.md`
 
 ## Objective
 
@@ -215,3 +221,24 @@ compute budget, exact ESS/reference thresholds, and a user-authorized launch.
   yet a reliable resumable campaign harness. Further GPU execution is blocked
   until chunk-level checkpoint/resume is implemented and tested; the three
   preserved candidate rows remain valid evidence and are not rerun.
+
+## Terminal Closure (2026-07-30)
+
+The partial execution boundary above was subsequently repaired. The terminal
+attempt completed the declared ten-candidate HMC campaign with no identity,
+archive, finiteness, health, movement, convergence, or ESS veto. All ten
+candidate archives are HMC-valid under the repaired protocol.
+
+A separate frozen-sample posterior validation compared every candidate with
+the archived same-mathematical-target affine plain-HMC reference using
+chain-aware block-bootstrap uncertainty intervals. `L=12` and `L=17`
+established equivalence on all 30 declared mean, population-SD, q05, q50, and
+q95 checks. The other eight candidates remain inconclusive rather than
+rejected, and no candidate showed statistically supported material
+disagreement.
+
+This closes the PP-UKF tuning, HMC-execution, convergence, and declared
+same-target posterior-compatibility scope. Retain `L=12` and `L=17` as an
+unranked compatible set; do not rerun PP-UKF by default. This closure does not
+establish exact-posterior correctness, sampler superiority, cross-target
+robustness, or default/production readiness.

@@ -1,0 +1,42 @@
+{
+  "schema": "bayesfilter.genut_score_variance_repair_n4032_score_manifest_supplement.v1",
+  "campaign_id": "genut-score-growth-n4032-comparison-20260801",
+  "plan": "docs/plans/bayesfilter-genut-score-variance-repair-validation-plan-2026-07-31.md",
+  "terminal_result": "docs/plans/bayesfilter-genut-score-growth-n4032-comparison-result-2026-08-01.md",
+  "command": "TF_FORCE_GPU_ALLOW_GROWTH=true python docs/benchmarks/run_genut_score_variance_repair_validation.py --particles 4032 --arms austria_diagonal austria_pairwise --score-only --output-root docs/benchmarks/artifacts/genut_score_variance_repair_validation_20260801_n4032/attempt06",
+  "comparison": {
+    "requested_particle_count": 4000,
+    "executed_particle_count": 4032,
+    "design_divisor": 36,
+    "same_route_controls": true,
+    "retuned": false,
+    "score_only": true,
+    "particle_seeds": [98201, 98202, 98203]
+  },
+  "environment": {
+    "conda_environment": "tf-gpu",
+    "tensorflow": "2.19.1",
+    "host": "DESKTOP-RF1Q5IJ",
+    "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+    "logical_devices": ["/device:GPU:0"],
+    "tf32": true,
+    "xla_jit_compile": true,
+    "memory_growth": true,
+    "wall_time_seconds": 35.90051285797381
+  },
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "outcome": {
+    "hard_valid": false,
+    "pairwise_arm_hard_valid": true,
+    "diagonal_arm_hard_valid": false,
+    "diagonal_failure": "seed 98202 returned a non-finite value and score; the same failure occurred in attempt05",
+    "pairwise_score_sd": [34.24761031892724, 20.8837186030802, 5.490614211928842]
+  },
+  "nonclaims": [
+    "not an absolute nonlinear Austria score error estimate",
+    "not a statistical ranking or promotion result",
+    "not a proof of pairwise superiority at larger N",
+    "not HMC or default-readiness evidence"
+  ]
+}

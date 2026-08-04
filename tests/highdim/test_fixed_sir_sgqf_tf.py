@@ -113,3 +113,12 @@ def test_json_safe_serializes_tensor_vectors_without_scalar_coercion() -> None:
     spec.loader.exec_module(module)
 
     assert module._json_safe(tf.constant([1.0, 2.0], tf.float64)) == [1.0, 2.0]
+
+
+def test_validation_runner_does_not_execute_owner_excluded_sir_ukf() -> None:
+    source = (
+        ROOT / "docs/benchmarks/run_fixed_sir_sgqf_validation.py"
+    ).read_text(encoding="utf-8")
+
+    assert "sir_ukf_likelihood_value_score_status" not in source
+    assert '"SIR-UKF": "OWNER_EXCLUDED_METHOD_NOT_APPLICABLE"' in source

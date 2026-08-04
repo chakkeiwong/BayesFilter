@@ -181,6 +181,145 @@ def test_sequential_controller_health_veto_stops_before_retained(monkeypatch) ->
     assert result["retained_results_per_chain"] == 0
 
 
+def test_retained_continuation_uses_real_chunk_config_and_checkpoints(
+    monkeypatch,
+) -> None:
+    builds, calls = _fake_programs(monkeypatch)
+    diagnostics = iter(
+        (
+            {"passed": False, "hard_vetoes": ()},
+            {"passed": True, "hard_vetoes": ()},
+        )
+    )
+    archives = []
+    checkpoints = []
+
+    def archive(**kwargs):
+        archives.append(kwargs)
+        return {
+            "stage": kwargs["stage"],
+            "chunk_index": kwargs["chunk_index"],
+            "cumulative": kwargs["cumulative"],
+            "shape": tuple(kwargs["model_samples"].shape),
+        }
+
+    result = neutra_hmc.run_retained_neutra_hmc_continuation(
+        adapter=object(),
+        prefix_latent=tf.zeros((4, 4, 2), tf.float64),
+        prefix_model=tf.zeros((4, 4, 2), tf.float64),
+        model_transform=lambda values: values + 2.0,
+        parameter_names=("x", "y"),
+        config=_config(retained_max_results=12),
+        next_chunk_index=1,
+        retained_diagnostic_fn=lambda _draws: next(diagnostics),
+        archive_callback=archive,
+        checkpoint_callback=checkpoints.append,
+    )
+
+    assert result["passed"] is True
+    assert result["completion_status"] == "passed"
+    assert result["retained_results_per_chain"] == 12
+    assert result["retained_checks"][0]["health"]["elapsed_seconds"] >= 0.0
+    assert result["retained_checks"][0]["chunk_index"] == 1
+    assert result["retained_checks"][1]["chunk_index"] == 2
+    assert builds == [4]
+    assert calls == [(20260715, 2219), (20260715, 3228)]
+    assert len(checkpoints) == 2
+    assert checkpoints[0]["terminal"] is False
+    assert checkpoints[1]["terminal"] is True
+    assert len([row for row in archives if row["cumulative"]]) == 1
+
+
+def test_retained_continuation_propagates_diagnostic_veto(monkeypatch) -> None:
+    _fake_programs(monkeypatch)
+    result = neutra_hmc.run_retained_neutra_hmc_continuation(
+        adapter=object(),
+        prefix_latent=tf.zeros((4, 4, 2), tf.float64),
+        prefix_model=tf.zeros((4, 4, 2), tf.float64),
+        parameter_names=("x", "y"),
+        config=_config(retained_max_results=8),
+        next_chunk_index=1,
+        retained_diagnostic_fn=lambda _draws: {
+            "passed": False,
+            "hard_vetoes": ("nonfinite_convergence_diagnostic",),
+        },
+    )
+
+    assert result["passed"] is False
+    assert result["completion_status"] == "hard_veto"
+    assert result["hard_vetoes"] == ("nonfinite_convergence_diagnostic",)
+
+
+def test_retained_continuation_stop_is_incomplete_not_rejected(monkeypatch) -> None:
+    builds, _ = _fake_programs(monkeypatch)
+    result = neutra_hmc.run_retained_neutra_hmc_continuation(
+        adapter=object(),
+        prefix_latent=tf.zeros((4, 4, 2), tf.float64),
+        prefix_model=tf.zeros((4, 4, 2), tf.float64),
+        parameter_names=("x", "y"),
+        config=_config(retained_max_results=8),
+        next_chunk_index=1,
+        retained_diagnostic_fn=lambda _draws: {"passed": False},
+        stop_requested_fn=lambda: True,
+    )
+
+    assert builds == []
+    assert result["completion_status"] == "stopped_before_chunk"
+    assert result["decision"] == "INCOMPLETE_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
+    assert result["retained_results_per_chain"] == 4
+    assert result["hard_vetoes"] == ()
+
+
+def test_retained_continuation_cap_checkpoint_is_terminal(monkeypatch) -> None:
+    _fake_programs(monkeypatch)
+    checkpoints = []
+    result = neutra_hmc.run_retained_neutra_hmc_continuation(
+        adapter=object(),
+        prefix_latent=tf.zeros((4, 4, 2), tf.float64),
+        prefix_model=tf.zeros((4, 4, 2), tf.float64),
+        parameter_names=("x", "y"),
+        config=_config(retained_max_results=8),
+        next_chunk_index=1,
+        retained_diagnostic_fn=lambda _draws: {
+            "passed": False,
+            "hard_vetoes": (),
+        },
+        checkpoint_callback=checkpoints.append,
+    )
+
+    assert result["completion_status"] == "retained_cap_reached"
+    assert result["retained_cap_hit"] is True
+    assert checkpoints[-1]["terminal"] is True
+    assert checkpoints[-1]["completion_status"] == "retained_cap_reached"
+
+
+def test_retained_continuation_nonfinite_model_transform_is_veto(monkeypatch) -> None:
+    _fake_programs(monkeypatch)
+    diagnostic_called = False
+
+    def diagnostic(_draws):
+        nonlocal diagnostic_called
+        diagnostic_called = True
+        return {"passed": True}
+
+    result = neutra_hmc.run_retained_neutra_hmc_continuation(
+        adapter=object(),
+        prefix_latent=tf.zeros((4, 4, 2), tf.float64),
+        prefix_model=tf.zeros((4, 4, 2), tf.float64),
+        model_transform=lambda values: tf.fill(tf.shape(values), tf.constant(float("nan"), tf.float64)),
+        parameter_names=("x", "y"),
+        config=_config(retained_max_results=8),
+        next_chunk_index=1,
+        retained_diagnostic_fn=diagnostic,
+    )
+
+    assert diagnostic_called is False
+    assert result["completion_status"] == "hard_veto"
+    assert result["hard_vetoes"] == (
+        "retained_continuation_model_samples_nonfinite",
+    )
+
+
 def test_finite_extreme_log_acceptance_is_explanatory_not_health_veto() -> None:
     initial = tf.zeros((4, 2), tf.float64)
     samples = tf.ones((3, 4, 2), tf.float64)

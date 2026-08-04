@@ -45,6 +45,7 @@ class ScalarAdjacentTTConfig:
     adjacent: FixedBranchFilterConfig
     scalar_coordinate_map: HighDimCoordinateMap
     transition_before_first_observation: bool = False
+    initializer_id: str = INITIALIZER_ID
 
     def __post_init__(self) -> None:
         if self.initial.product_basis is None or self.initial.fit_config is None:
@@ -63,6 +64,10 @@ class ScalarAdjacentTTConfig:
             raise TypeError("scalar_coordinate_map must implement manifest_payload")
         if not isinstance(self.transition_before_first_observation, bool):
             raise TypeError("transition_before_first_observation must be bool")
+        initializer_id = str(self.initializer_id).strip()
+        if not initializer_id:
+            raise ValueError("initializer_id must be nonempty")
+        object.__setattr__(self, "initializer_id", initializer_id)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -70,7 +75,7 @@ class ScalarAdjacentTTConfig:
             "route_classification": ROUTE_CLASSIFICATION,
             "route_subtype": ROUTE_SUBTYPE,
             "axis_order": AXIS_ORDER,
-            "initializer_id": INITIALIZER_ID,
+            "initializer_id": self.initializer_id,
             "transition_before_first_observation": self.transition_before_first_observation,
             "initial": self.initial.manifest_payload(),
             "adjacent": self.adjacent.manifest_payload(),
@@ -249,6 +254,16 @@ def scalar_adjacent_state_fixed_tt_value(
                     previous_reference,
                 )
             )
+            # The carried marginal is already a density under the one-axis
+            # reference measure.  The adjacent target therefore removes only
+            # the current-axis reference density, obtained from the active
+            # adjacent basis rather than the initial-config basis.
+            current_reference_density = _log_reference_density(
+                ProductBasis(
+                    [basis.bases[0]],
+                    basis.convention,
+                )
+            )
             log_target = (
                 previous_log_density
                 + model.transition_log_density(
@@ -264,7 +279,7 @@ def scalar_adjacent_state_fixed_tt_value(
                     t=time_index,
                 )
                 + current_log_abs_det
-                - _log_reference_density(config.initial.product_basis)
+                - current_reference_density
             )
             active_config = config.adjacent
             initial_cores = (
@@ -289,6 +304,7 @@ def scalar_adjacent_state_fixed_tt_value(
             initial_cores=initial_cores,
             branch_seed=f"{branch_seed_prefix}:t{time_index}:fit",
             measure_convention=active_config.measure_convention,
+            initialization_rule=active_config.initialization_rule,
         )
         if fit_result.status is not HighDimStatus.OK:
             raise ValueError(fit_result.status.value)
@@ -714,7 +730,7 @@ def _compatibility_config_payload(
         "route_classification": ROUTE_CLASSIFICATION,
         "route_subtype": ROUTE_SUBTYPE,
         "axis_order": AXIS_ORDER,
-        "initializer_id": INITIALIZER_ID,
+        "initializer_id": config.initializer_id,
         "transition_before_first_observation": config.transition_before_first_observation,
         "initial": _fixed_filter_compatibility_payload(config.initial),
         "adjacent": _fixed_filter_compatibility_payload(config.adjacent),
@@ -747,6 +763,7 @@ def _fixed_filter_compatibility_payload(
             core.values for core in _required_initial_cores(config)
         ),
         "fit_quadrature_order": config.fit_quadrature_order,
+        "initialization_rule": config.initialization_rule,
         "fit": {
             "ranks": fit.ranks,
             "ridge": fit.ridge,

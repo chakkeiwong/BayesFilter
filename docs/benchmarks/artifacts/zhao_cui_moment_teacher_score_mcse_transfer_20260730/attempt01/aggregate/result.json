@@ -1,0 +1,106 @@
+{
+  "classification": "canonical_lgssm_transfer_evidence_not_moment_teacher_score_evidence",
+  "criterion": {
+    "all_coordinates_must_pass": true,
+    "maximum_allowed": 0.1,
+    "ratio": "abs(mean(tf32-reference))/mcse(reference mean)"
+  },
+  "identity_checks": {
+    "arm_labels": true,
+    "campaign": true,
+    "current_git_commit": true,
+    "dtype": true,
+    "prepared_inputs": true,
+    "scope": true,
+    "seed_count_at_least_eight": true,
+    "seeds": true,
+    "source_sha256": true,
+    "tf32_modes": true
+  },
+  "inputs": {
+    "reference_result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/attempt01/fp32_no_tf32/result.json",
+    "reference_sha256": "e596fd98e076260c109f9286074267e05b660d672dacd3472f7d88710701fe95",
+    "tf32_result": "docs/benchmarks/artifacts/zhao_cui_moment_teacher_score_mcse_transfer_20260730/attempt01/tf32/result.json",
+    "tf32_sha256": "9966639e54682005d76731368ac60328ed8cf1beeeb4952595f608d816ae9802"
+  },
+  "interpretable": true,
+  "maximum_ratio": 0.48279143352788595,
+  "moment_teacher_final_score_tested": false,
+  "nonclaims": [
+    "the Zhao-Cui moment-teacher final score is not implemented or tested",
+    "no long-horizon, nonlinear, HMC, or default-readiness conclusion",
+    "no claim that every intermediate near-zero derivative can be ignored"
+  ],
+  "passed": false,
+  "question": "Is paired TF32 final-score drift at most 0.1 reference MCSE in every coordinate?",
+  "rows": [
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.1589513859997679,
+      "maximum_absolute_per_seed_difference": 0.004384040832519531,
+      "mean_paired_numerical_difference": 0.003113687038421631,
+      "paired_difference_mcse": 0.00023545325358799226,
+      "parameter": "phi1",
+      "passed": false,
+      "reference_mean_mcse": 0.019588926632109878,
+      "reference_mean_score": 3.7985907047986984,
+      "reference_score_sd": 0.07835570652843951,
+      "tf32_mean_score": 3.80170439183712
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.09954583568315269,
+      "maximum_absolute_per_seed_difference": 0.0013598501682281494,
+      "mean_paired_numerical_difference": 0.00112815760076046,
+      "paired_difference_mcse": 3.6279418126429425e-05,
+      "parameter": "phi2",
+      "passed": true,
+      "reference_mean_mcse": 0.011333046661553029,
+      "reference_mean_score": -0.3827698100358248,
+      "reference_score_sd": 0.045332186646212115,
+      "tf32_mean_score": -0.3816416524350643
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.007534549816917235,
+      "maximum_absolute_per_seed_difference": 0.0005073845386505127,
+      "mean_paired_numerical_difference": 9.636953473091125e-05,
+      "paired_difference_mcse": 5.1835911960953606e-05,
+      "parameter": "phi3",
+      "passed": true,
+      "reference_mean_mcse": 0.012790350727329971,
+      "reference_mean_score": -0.08324609324336052,
+      "reference_score_sd": 0.051161402909319885,
+      "tf32_mean_score": -0.08314972370862961
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.48279143352788595,
+      "maximum_absolute_per_seed_difference": 0.02537250518798828,
+      "mean_paired_numerical_difference": -0.022727370262145996,
+      "paired_difference_mcse": 0.00032563415314098697,
+      "parameter": "q_scale",
+      "passed": false,
+      "reference_mean_mcse": 0.04707492445769187,
+      "reference_mean_score": 4.455195099115372,
+      "reference_score_sd": 0.18829969783076747,
+      "tf32_mean_score": 4.432467728853226
+    },
+    {
+      "absolute_mean_difference_over_reference_mcse": 0.24516883989925858,
+      "maximum_absolute_per_seed_difference": 0.012001991271972656,
+      "mean_paired_numerical_difference": -0.01024097204208374,
+      "paired_difference_mcse": 0.0002521637941568937,
+      "parameter": "r_scale",
+      "passed": false,
+      "reference_mean_mcse": 0.04177109964827431,
+      "reference_mean_score": 11.228617787361145,
+      "reference_score_sd": 0.16708439859309723,
+      "tf32_mean_score": 11.218376815319061
+    }
+  ],
+  "schema": "bayesfilter.zhao_cui_moment_teacher_score_mcse_transfer_result.v1",
+  "validity_checks": {
+    "reference_finite": true,
+    "reference_hard_valid": true,
+    "tf32_finite": true,
+    "tf32_hard_valid": true
+  },
+  "verdict": "fail_score_drift_not_small_relative_to_mcse"
+}

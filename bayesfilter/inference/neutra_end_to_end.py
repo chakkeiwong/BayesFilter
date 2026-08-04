@@ -42,6 +42,7 @@ from bayesfilter.inference.neutra_batching import (
 )
 from bayesfilter.inference.neutra_hmc import run_sequential_neutra_hmc
 from bayesfilter.inference.neutra_training import (
+    NeuTraTrainingError,
     PlainDenseIAFTrainingConfig,
     restore_plain_dense_iaf_flow,
     train_plain_dense_iaf,
@@ -172,11 +173,20 @@ class BatchNativeBoundAdapter:
     def target_status_telemetry(self, theta: Any) -> Mapping[str, tf.Tensor]:
         values = tf.convert_to_tensor(theta, tf.float64)
         if values.shape.rank == 1:
-            _value, _score, status = self.binding.invoke(values[tf.newaxis, :])
-            return {
+            value, _score, status = self.binding.invoke(values[tf.newaxis, :])
+            normalized = {
                 str(name): tf.convert_to_tensor(item)[0]
                 for name, item in status.items()
             }
+            condition_available = "innovation_condition_estimate" in status
+            if not condition_available:
+                normalized["innovation_condition_estimate"] = tf.ones_like(
+                    tf.convert_to_tensor(value, tf.float64)[0]
+                )
+            normalized["innovation_condition_estimate_available"] = tf.constant(
+                condition_available
+            )
+            return normalized
         if values.shape.rank != 2:
             raise ValueError("end-to-end target telemetry requires rank-1 or rank-2 positions")
         _value, status = self._value_status_target(values)
@@ -223,6 +233,8 @@ class EndToEndConfig:
     final_steps: int = FINAL_STEPS
     final_segment_steps: int = FINAL_SEGMENT_STEPS
     screen_only: bool = False
+    screen_result_path: Path | None = None
+    expected_screen_result_sha256: str | None = None
     require_gpu: bool = True
     jit_compile: bool = True
     seed_offset: int = 0
@@ -234,7 +246,25 @@ class EndToEndConfig:
             raise ValueError("final_segment_steps must be positive")
         if bool(self.require_gpu) and not bool(self.jit_compile):
             raise ValueError("GPU NeuTra training requires XLA")
+        if (self.screen_result_path is None) != (
+            self.expected_screen_result_sha256 is None
+        ):
+            raise ValueError(
+                "screen_result_path and expected_screen_result_sha256 are required together"
+            )
+        if self.screen_result_path is not None and bool(self.screen_only):
+            raise ValueError("a preserved screen handoff cannot be screen-only")
         object.__setattr__(self, "output_root", Path(self.output_root))
+        if self.screen_result_path is not None:
+            digest = str(self.expected_screen_result_sha256).lower()
+            if len(digest) != 64 or any(
+                character not in "0123456789abcdef" for character in digest
+            ):
+                raise ValueError("expected_screen_result_sha256 must be SHA-256 hex")
+            object.__setattr__(
+                self, "screen_result_path", Path(self.screen_result_path)
+            )
+            object.__setattr__(self, "expected_screen_result_sha256", digest)
 
 
 @dataclass(frozen=True)
@@ -273,6 +303,408 @@ class FrozenTransportValidationConfig:
         object.__setattr__(self, "seed_offset", int(self.seed_offset))
 
 
+@dataclass(frozen=True)
+class FrozenTransportBroadGridConfig:
+    """Broad-grid tuning inputs for one preserved transport."""
+
+    output_root: Path
+    frozen_transport_path: Path
+    expected_frozen_transport_sha256: str
+    root_seed: tuple[int, int]
+    initial_step_size: float | None = None
+    screen_results: int = 128
+    require_gpu: bool = True
+    jit_compile: bool = True
+
+    def __post_init__(self) -> None:
+        digest = str(self.expected_frozen_transport_sha256).lower()
+        if len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+            raise ValueError("expected_frozen_transport_sha256 must be SHA-256 hex")
+        seed = tuple(int(item) for item in self.root_seed)
+        if len(seed) != 2 or any(item < 0 for item in seed):
+            raise ValueError("root_seed must contain two nonnegative integers")
+        step = self.initial_step_size
+        if step is not None and (not math.isfinite(float(step)) or float(step) <= 0.0):
+            raise ValueError("initial_step_size must be positive and finite")
+        if bool(self.require_gpu) and not bool(self.jit_compile):
+            raise ValueError("serious broad-grid tuning requires GPU/XLA")
+        if int(self.screen_results) <= 64:
+            raise ValueError("broad-grid screen_results must exceed 64")
+        object.__setattr__(self, "output_root", Path(self.output_root))
+        object.__setattr__(self, "frozen_transport_path", Path(self.frozen_transport_path))
+        object.__setattr__(self, "expected_frozen_transport_sha256", digest)
+        object.__setattr__(self, "root_seed", seed)
+        object.__setattr__(
+            self,
+            "initial_step_size",
+            None if step is None else float(step),
+        )
+        object.__setattr__(self, "screen_results", int(self.screen_results))
+
+
+@dataclass(frozen=True)
+class BroadGridSequentialConfig:
+    """Inputs for sequential HMC from one unique broad-grid survivor."""
+
+    output_root: Path
+    frozen_transport_path: Path
+    expected_frozen_transport_sha256: str
+    broad_grid_result_path: Path
+    expected_broad_grid_result_sha256: str
+    chunk_results: int = 65
+    require_gpu: bool = True
+    jit_compile: bool = True
+
+    def __post_init__(self) -> None:
+        for name in (
+            "expected_frozen_transport_sha256",
+            "expected_broad_grid_result_sha256",
+        ):
+            digest = str(getattr(self, name)).lower()
+            if len(digest) != 64 or any(
+                character not in "0123456789abcdef" for character in digest
+            ):
+                raise ValueError(f"{name} must be SHA-256 hex")
+            object.__setattr__(self, name, digest)
+        if int(self.chunk_results) <= 1:
+            raise ValueError("sequential HMC chunk_results must exceed one")
+        if bool(self.require_gpu) and not bool(self.jit_compile):
+            raise ValueError("serious sequential HMC requires GPU/XLA")
+        object.__setattr__(self, "output_root", Path(self.output_root))
+        object.__setattr__(
+            self, "frozen_transport_path", Path(self.frozen_transport_path)
+        )
+        object.__setattr__(
+            self, "broad_grid_result_path", Path(self.broad_grid_result_path)
+        )
+        object.__setattr__(self, "chunk_results", int(self.chunk_results))
+
+
+def run_neutra_frozen_transport_broad_grid_cell(
+    *,
+    spec: CellSpec,
+    config: FrozenTransportBroadGridConfig,
+) -> Mapping[str, Any]:
+    """Tune the approved primary and one-hop grid without retained sampling."""
+
+    root = config.output_root / spec.cell_id
+    if root.exists():
+        raise NeuTraEndToEndError(f"cell output root must be fresh: {root}")
+    root.mkdir(parents=True)
+    run_state = _RunState(root, cell_id=spec.cell_id, output_root=config.output_root)
+    run_state.update("launch", status="started")
+    started = time.monotonic()
+    memory_policy = configure_tensorflow_gpu_memory_growth(
+        tf, require_gpu=config.require_gpu
+    )
+    tf.config.set_soft_device_placement(False)
+    tf.config.experimental.enable_tensor_float_32_execution(True)
+
+    frozen_path = config.frozen_transport_path
+    if not frozen_path.is_file():
+        raise NeuTraEndToEndError(f"frozen transport does not exist: {frozen_path}")
+    observed_sha256 = _file_sha256(frozen_path)
+    if observed_sha256 != config.expected_frozen_transport_sha256:
+        raise NeuTraEndToEndError(
+            "frozen transport SHA-256 mismatch: "
+            f"{observed_sha256} != {config.expected_frozen_transport_sha256}"
+        )
+    adapter = spec.adapter_factory()
+    observed_signature = _target_signature(adapter)
+    if observed_signature != spec.target_signature:
+        raise NeuTraEndToEndError(
+            f"target signature mismatch for {spec.cell_id}: "
+            f"{observed_signature} != {spec.target_signature}"
+        )
+    bound_adapter = BatchNativeBoundAdapter(
+        adapter, target_signature=spec.target_signature
+    )
+    loaded = load_frozen_neutra_artifact(
+        _read_mapping(frozen_path),
+        expected_target_signature=spec.target_signature,
+    )
+    transport_input = {
+        "path": str(frozen_path),
+        "sha256": observed_sha256,
+        "target_signature": loaded.manifest.target_signature,
+        "training_state_hash": loaded.manifest.training_state_hash,
+        "retrained": False,
+    }
+    atomic_write_json(root / "frozen_transport_input.json", transport_input)
+    tuned_adapter = _fixed_transport_adapter(
+        bound_adapter,
+        loaded.transport,
+        f"{spec.cell_id}:operational_broad_fixed_identity_grid",
+    )
+    from bayesfilter.inference.neutra_broad_grid import (
+        NeuTraBroadGridTuningConfig,
+        run_neutra_operational_broad_grid_tuning,
+    )
+
+    run_state.update("operational_broad_grid_tuning")
+    broad = run_neutra_operational_broad_grid_tuning(
+        adapter=tuned_adapter,
+        target_signature=spec.target_signature,
+        config=NeuTraBroadGridTuningConfig(
+            initial_step_size=(
+                spec.initial_step_size
+                if config.initial_step_size is None
+                else config.initial_step_size
+            ),
+            root_seed=config.root_seed,
+            screen_results=config.screen_results,
+            use_xla=config.jit_compile,
+        ),
+        output_dir=root / "broad-grid-tuning",
+    )
+    public = broad["public"]
+    passed = public.get("disposition") == "viable_pair_set"
+    result = _base_result(
+        spec,
+        root,
+        {
+            "passed": passed,
+            "decision": (
+                "BROAD_GRID_TUNING_VIABLE_PAIR_SET"
+                if passed
+                else "BROAD_GRID_TUNING_NO_HANDOFF"
+            ),
+            "frozen_transport_input": transport_input,
+            "broad_grid": public,
+            "private_tuning_result_path": broad["private_result_path"],
+            "public_tuning_result_path": broad["public_result_path"],
+            "sampling_launched": False,
+            "retained_sampling_authorized": False,
+            "nonclaims": (
+                "discarded broad-grid tuning evidence only",
+                "complete candidate set is unranked",
+                "no convergence, posterior, or default-readiness claim",
+            ),
+        },
+        memory_policy,
+        started,
+    )
+    atomic_write_json(root / "result.json", result)
+    commit = subprocess.run(
+        ("git", "rev-parse", "HEAD"),
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    atomic_write_json(
+        root / "run_manifest.json",
+        {
+            "schema": "bayesfilter.neutra.broad_grid_tuning_manifest.v1",
+            "cell_id": spec.cell_id,
+            "target_signature": spec.target_signature,
+            "git_commit": commit,
+            "command": tuple(sys.argv),
+            "python_executable": sys.executable,
+            "python_version": platform.python_version(),
+            "tensorflow_version": tf.__version__,
+            "gpu_memory_policy": memory_policy,
+            "jit_compile": config.jit_compile,
+            "tf32_execution_enabled": True,
+            "root_seed": config.root_seed,
+            "initial_step_size_role": "target_specific_warm_start_hypothesis",
+            "screen_results": config.screen_results,
+            "output_root": str(root),
+            "wall_time_seconds": time.monotonic() - started,
+            "frozen_transport_input": transport_input,
+            "plan_path": (
+                "docs/plans/bayesfilter-neutra-remaining-models-broad-grid-"
+                "continuation-plan-2026-07-30.md"
+            ),
+            "result_path": str(root / "result.json"),
+            "private_tuning_result_path": broad["private_result_path"],
+            "public_tuning_result_path": broad["public_result_path"],
+            "sampling_launched": False,
+        },
+    )
+    run_state.complete(result)
+    return result
+
+
+def run_neutra_broad_grid_sequential_cell(
+    *, spec: CellSpec, config: BroadGridSequentialConfig
+) -> Mapping[str, Any]:
+    """Run shared sequential HMC for the unique broad-grid survivor."""
+
+    root = config.output_root / spec.cell_id
+    if root.exists():
+        raise NeuTraEndToEndError(f"cell output root must be fresh: {root}")
+    root.mkdir(parents=True)
+    run_state = _RunState(root, cell_id=spec.cell_id, output_root=config.output_root)
+    started = time.monotonic()
+    memory_policy = configure_tensorflow_gpu_memory_growth(
+        tf, require_gpu=config.require_gpu
+    )
+    tf.config.set_soft_device_placement(False)
+    tf.config.experimental.enable_tensor_float_32_execution(True)
+
+    for path, expected, label in (
+        (
+            config.frozen_transport_path,
+            config.expected_frozen_transport_sha256,
+            "frozen transport",
+        ),
+        (
+            config.broad_grid_result_path,
+            config.expected_broad_grid_result_sha256,
+            "broad-grid result",
+        ),
+    ):
+        if not path.is_file() or _file_sha256(path) != expected:
+            raise NeuTraEndToEndError(f"{label} identity mismatch")
+
+    adapter = spec.adapter_factory()
+    if _target_signature(adapter) != spec.target_signature:
+        raise NeuTraEndToEndError("broad-grid sampling target signature mismatch")
+    bound = BatchNativeBoundAdapter(adapter, target_signature=spec.target_signature)
+    loaded = load_frozen_neutra_artifact(
+        _read_mapping(config.frozen_transport_path),
+        expected_target_signature=spec.target_signature,
+    )
+    grid = _read_mapping(config.broad_grid_result_path)
+    if (
+        grid.get("route") != "operational_broad_fixed_mass_l_epsilon_grid_v1"
+        or grid.get("disposition") != "viable_pair_set"
+        or grid.get("stochastic_ranking_performed") is not False
+        or grid.get("all_viable_pairs_preserved") is not True
+    ):
+        raise NeuTraEndToEndError("broad-grid result is not a complete viable set")
+    candidates = grid.get("next_round_candidates")
+    if not isinstance(candidates, Sequence) or len(candidates) != 1:
+        raise NeuTraEndToEndError(
+            "sequential handoff requires exactly one unranked viable pair"
+        )
+    candidate = candidates[0]
+    evidence = candidate.get("evidence", {})
+    if candidate.get("viable") is not True or evidence.get("disposition") != "provisional_viable":
+        raise NeuTraEndToEndError("broad-grid candidate is not viable")
+    request = candidate.get("request", {})
+    if request.get("role") != "independently_tuned_primary":
+        raise NeuTraEndToEndError("unique survivor is not an independently tuned primary")
+    step_size = float(candidate.get("tuned_step_size"))
+    leapfrog = int(request.get("num_leapfrog_steps"))
+    if not math.isfinite(step_size) or step_size <= 0.0 or leapfrog <= 0:
+        raise NeuTraEndToEndError("broad-grid kernel mechanics are invalid")
+
+    target_scope = f"{spec.cell_id}:fixed_neutra_broad_grid_unique_pair"
+    tuned_adapter = _fixed_transport_adapter(bound, loaded.transport, target_scope)
+    sequential_config = _sequential_config_from_pair(
+        step_size=step_size,
+        num_leapfrog_steps=leapfrog,
+        spec=spec,
+        chunk_results=config.chunk_results,
+    )
+    initial = _initial_state(tf, spec, spec.initial_seed)
+    thresholds = RankNormalizedHMCThresholds(1.01, 1000.0, 400.0)
+    archive = TensorArchive(root / "samples", spec.target_signature)
+
+    def retained_diagnostic(draws: tf.Tensor) -> Mapping[str, Any]:
+        return rank_normalized_hmc_diagnostics(
+            draws, parameter_names=spec.parameter_names, thresholds=thresholds
+        )
+
+    def model_transform(samples: tf.Tensor) -> tf.Tensor:
+        shape = tf.shape(samples)
+        flat = tf.reshape(samples, (-1, spec.parameter_dim))
+        raw = loaded.transport.forward_batch(flat)
+        physical = spec.physical_transform(tf, raw)
+        return tf.reshape(physical, shape)
+
+    run_state.update("sequential_sampling")
+    sequential = run_sequential_neutra_hmc(
+        adapter=tuned_adapter,
+        initial_state=initial,
+        model_transform=model_transform,
+        parameter_names=spec.parameter_names,
+        config=sequential_config,
+        archive_callback=archive,
+        retained_diagnostic_fn=retained_diagnostic,
+    )
+    truth_tail = (
+        _truth_tail(spec, sequential["private_retained_raw"])
+        if sequential.get("passed") is True
+        else {
+            "status": "NOT_EVALUATED_INVALID_SAMPLER",
+            "minimum_p_truth": None,
+            "parameter_rows": (),
+            "reason": "sampler health or convergence gate failed",
+        }
+    )
+    result = _base_result(
+        spec,
+        root,
+        {
+            "passed": bool(
+                sequential.get("passed") is True and truth_tail["status"] == "PASS"
+            ),
+            "decision": _decision(sequential, truth_tail),
+            "frozen_transport_input": {
+                "path": str(config.frozen_transport_path),
+                "sha256": config.expected_frozen_transport_sha256,
+                "retrained": False,
+            },
+            "broad_grid_handoff": {
+                "path": str(config.broad_grid_result_path),
+                "sha256": config.expected_broad_grid_result_sha256,
+                "unique_viable_pair": candidate,
+                "stochastic_ranking_performed": False,
+            },
+            "sequential": {
+                key: value
+                for key, value in sequential.items()
+                if not key.startswith("private_")
+            },
+            "truth_tail": truth_tail,
+            "nonclaims": (
+                "unique viable pair is not a statistically best pair",
+                "one-seed truth-tail diagnostic only",
+                "no exact-filter, superiority, or default-readiness claim",
+            ),
+        },
+        memory_policy,
+        started,
+    )
+    atomic_write_json(root / "result.json", result)
+    atomic_write_json(
+        root / "run_manifest.json",
+        {
+            "schema": "bayesfilter.neutra.broad_grid_sequential_manifest.v1",
+            "cell_id": spec.cell_id,
+            "target_signature": spec.target_signature,
+            "git_commit": subprocess.run(
+                ("git", "rev-parse", "HEAD"),
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            "command": tuple(sys.argv),
+            "environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
+            "python_executable": sys.executable,
+            "python_version": platform.python_version(),
+            "tensorflow_version": tf.__version__,
+            "gpu_memory_policy": memory_policy,
+            "device": "/GPU:0",
+            "jit_compile": config.jit_compile,
+            "tf32_execution_enabled": True,
+            "chunk_results": config.chunk_results,
+            "warmup_root_seed": sequential_config.warmup_seed,
+            "retained_root_seed": sequential_config.retained_seed,
+            "data_version": "bound_by_target_signature",
+            "frozen_transport_sha256": config.expected_frozen_transport_sha256,
+            "broad_grid_result_sha256": config.expected_broad_grid_result_sha256,
+            "wall_time_seconds": time.monotonic() - started,
+            "plan_path": spec.plan_path,
+            "result_path": str(root / "result.json"),
+        },
+    )
+    run_state.complete(result)
+    return result
+
+
 def run_neutra_end_to_end_cell(
     *,
     spec: CellSpec,
@@ -292,6 +724,7 @@ def run_neutra_end_to_end_cell(
     )
     tf.config.set_soft_device_placement(False)
     tf.config.experimental.enable_tensor_float_32_execution(True)
+    _write_manifest(root, spec, config, memory_policy, started)
 
     adapter = spec.adapter_factory()
     run_state.update("target_validation")
@@ -317,19 +750,55 @@ def run_neutra_end_to_end_cell(
     atomic_write_json(root / "geometry.json", geometry_payload)
     run_state.update("geometry_validated", artifact_path=str(root / "geometry.json"))
 
-    run_state.update("recipe_screen")
-    selection = _screen_recipes(
-        spec=spec,
-        adapter=adapter,
-        bound_adapter=bound_adapter,
-        center=center,
-        factor=factor,
-        root=root,
-        config=config,
-        memory_policy=memory_policy,
-    )
+    if config.screen_result_path is None:
+        run_state.update("recipe_screen")
+        selection = _screen_recipes(
+            spec=spec,
+            adapter=adapter,
+            bound_adapter=bound_adapter,
+            center=center,
+            factor=factor,
+            root=root,
+            config=config,
+            memory_policy=memory_policy,
+        )
+    else:
+        run_state.update("recipe_screen_handoff")
+        selection = _load_preserved_screen_selection(spec=spec, config=config)
+        atomic_write_json(
+            root / "screen_handoff.json",
+            {
+                "schema": "bayesfilter.neutra.screen_handoff.v1",
+                "cell_id": spec.cell_id,
+                "target_signature": spec.target_signature,
+                "screen_result_path": str(config.screen_result_path),
+                "screen_result_sha256": config.expected_screen_result_sha256,
+                "selected_recipe_id": selection["selected_recipe_id"],
+                "screen_steps": config.screen_steps,
+            },
+        )
     if not selection["passed"]:
         result = _base_result(spec, root, selection, memory_policy, started)
+        atomic_write_json(root / "result.json", result)
+        _write_manifest(root, spec, config, memory_policy, started)
+        run_state.complete(result)
+        return result
+
+    if config.screen_only:
+        result = _base_result(
+            spec,
+            root,
+            {
+                "passed": True,
+                "decision": "SCREEN_COMPLETED_REPRESENTATIVE_NOMINATED",
+                "selection": selection,
+                "final_training_launched": False,
+                "hmc_tuning_launched": False,
+                "hmc_sampling_launched": False,
+            },
+            memory_policy,
+            started,
+        )
         atomic_write_json(root / "result.json", result)
         _write_manifest(root, spec, config, memory_policy, started)
         run_state.complete(result)
@@ -348,13 +817,6 @@ def run_neutra_end_to_end_cell(
         config=config,
         memory_policy=memory_policy,
     )
-    if config.screen_only:
-        result = _base_result(spec, root, {"passed": True, "selection": selection, "final": final}, memory_policy, started)
-        atomic_write_json(root / "result.json", result)
-        _write_manifest(root, spec, config, memory_policy, started)
-        run_state.complete(result)
-        return result
-
     loaded = load_frozen_neutra_artifact(
         _read_mapping(Path(final["payload"]["path"])),
         expected_target_signature=spec.target_signature,
@@ -831,9 +1293,13 @@ def run_neutra_preflight_cell(
     )
     if tiny_tuning.geometry is None:
         raise NeuTraEndToEndError("preflight public tuner did not emit geometry")
-    if tiny_tuning.final_status == "hard_veto":
+    tuning_payload = _read_mapping(root / "tuning" / "hmc_kernel_tuning_result.json")
+    bootstrap_mechanics_passed = _preflight_bootstrap_mechanics_passed(
+        tuning_payload
+    )
+    if not bootstrap_mechanics_passed:
         raise NeuTraEndToEndError(
-            "preflight public tuner hard-vetoed: "
+            "preflight public tuner did not prove real HMC mechanics: "
             f"{tiny_tuning.hard_vetoes} / {tiny_tuning.repair_triggers}"
         )
     successful_rows = (tiny_tuning,)
@@ -849,13 +1315,18 @@ def run_neutra_preflight_cell(
         "training": training,
         "native_tuning_route_executed": True,
         "native_hmc_runner_executed": True,
+        "bootstrap_hmc_mechanics_passed": bootstrap_mechanics_passed,
+        "candidate_tuning_passed": tiny_tuning.passed is True,
+        "candidate_tuning_final_status": tiny_tuning.final_status,
+        "candidate_rejection_is_engineering_preflight_compatible": True,
         "successful_real_tuning_run_count": len(successful_rows),
         "native_tuning_scientific_pass_required": False,
-        "tiny_tuning": tiny_tuning.payload(),
+        "tiny_tuning": tuning_payload,
         "gpu_memory_policy": memory_policy,
         "elapsed_seconds": time.monotonic() - started,
         "nonclaims": (
             "one-step engineering smoke only",
+            "the one-step transport may be rejected by scientific tuning gates",
             "tiny tuning budgets are not kernel admission evidence",
             "no convergence, truth recovery, or scientific claim",
         ),
@@ -871,38 +1342,386 @@ def run_neutra_preflight_cell(
     return result
 
 
+def run_neutra_training_throughput_cell(
+    *,
+    spec: CellSpec,
+    recipe_id: str,
+    output_root: Path,
+    repeated_steps: int = 25,
+) -> Mapping[str, Any]:
+    """Measure target-specific training throughput without entering HMC."""
+
+    if int(repeated_steps) < 2:
+        raise ValueError("training throughput requires at least two repeated steps")
+    root = Path(output_root) / spec.cell_id
+    if root.exists():
+        raise NeuTraEndToEndError(f"throughput output must be fresh: {root}")
+    root.mkdir(parents=True)
+    started = time.monotonic()
+    memory_policy = configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)
+    tf.config.set_soft_device_placement(False)
+    tf.config.experimental.enable_tensor_float_32_execution(True)
+    adapter = spec.adapter_factory()
+    if _target_signature(adapter) != spec.target_signature:
+        raise NeuTraEndToEndError("throughput target signature mismatch")
+    bound = BatchNativeBoundAdapter(adapter, target_signature=spec.target_signature)
+    center, factor, geometry_reference = spec.geometry_factory(tf)
+    _validate_geometry(center, factor, spec.parameter_dim)
+    recipe = _recipe_by_id(spec.recipes, recipe_id)
+
+    rung_rows = []
+    for rung_id, steps in (("compile_plus_first", 1), ("repeated", int(repeated_steps))):
+        rung_started = time.monotonic()
+        try:
+            training = _train_and_score(
+                spec=spec,
+                adapter=adapter,
+                bound_adapter=bound,
+                center=center,
+                factor=factor,
+                recipe=recipe,
+                output_root=root / rung_id,
+                steps=steps,
+                seed=spec.initial_seed,
+                memory_policy=memory_policy,
+            )
+        except NeuTraTrainingError as exc:
+            failed_rung_elapsed = time.monotonic() - rung_started
+            failure = {
+                "schema": "bayesfilter.neutra.training_throughput_failure.v1",
+                "cell_id": spec.cell_id,
+                "passed": False,
+                "decision": "TRAINING_CANDIDATE_HARD_VETO",
+                "classification": "target_status_or_training_numerics_failure",
+                "target_signature": spec.target_signature,
+                "recipe_id": recipe_id,
+                "failed_rung": rung_id,
+                "failed_rung_steps": steps,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "failed_rung_end_to_end_seconds": failed_rung_elapsed,
+                "completed_rung_rows": tuple(rung_rows),
+                "gpu_memory_policy": memory_policy,
+                "hmc_tuning_launched": False,
+                "hmc_sampling_launched": False,
+                "elapsed_seconds": time.monotonic() - started,
+                "output_root": str(root),
+                "nonclaims": (
+                    "candidate rejection is not a GPU or throughput-harness failure",
+                    "no recipe-family, HMC, posterior, or default-readiness conclusion",
+                ),
+            }
+            atomic_write_json(root / "failure.json", failure)
+            _write_training_throughput_manifest(
+                root=root,
+                spec=spec,
+                recipe=recipe,
+                repeated_steps=int(repeated_steps),
+                memory_policy=memory_policy,
+                allocator={},
+                timing=None,
+                started=started,
+                passed=False,
+                decision=failure["decision"],
+                result_path=root / "failure.json",
+            )
+            return failure
+        rung_rows.append(
+            {
+                "rung_id": rung_id,
+                "steps": steps,
+                "seed": spec.initial_seed,
+                "training_program_seconds": training[
+                    "training_program_elapsed_seconds"
+                ],
+                "end_to_end_seconds": time.monotonic() - rung_started,
+                "heldout_reverse_kl": training["mean_reverse_kl"],
+                "candidate_passed": training["passed"],
+                "hard_vetoes": training["hard_vetoes"],
+                "heldout_target_status": training["heldout_target_status"],
+                "frozen_trainable_parity": training[
+                    "frozen_trainable_parity"
+                ],
+                "runtime_metadata": training["runtime_metadata"],
+                "artifacts": {
+                    "frozen_transport": training["payload"]["path"],
+                    "training_state": training["state_path"],
+                },
+            }
+        )
+
+    timing = _throughput_timing_summary(rung_rows)
+    allocator = {
+        key: int(value)
+        for key, value in tf.config.experimental.get_memory_info("GPU:0").items()
+    }
+    candidate_passed = all(row["candidate_passed"] is True for row in rung_rows)
+    result = {
+        "schema": "bayesfilter.neutra.training_throughput_result.v1",
+        "cell_id": spec.cell_id,
+        "passed": True,
+        "decision": (
+            "PASS_TRAINING_THROUGHPUT_MEASUREMENT"
+            if candidate_passed
+            else "PASS_THROUGHPUT_MEASUREMENT_WITH_CANDIDATE_HARD_VETO"
+        ),
+        "target_signature": spec.target_signature,
+        "recipe_id": recipe_id,
+        "batch_size": TRAINING_BATCH_SIZE,
+        "jit_compile": True,
+        "device": "/GPU:0",
+        "geometry_reference": geometry_reference,
+        "rung_rows": tuple(rung_rows),
+        "candidate_passed": candidate_passed,
+        "timing": timing,
+        "gpu_allocator_bytes": allocator,
+        "gpu_memory_policy": memory_policy,
+        "hmc_tuning_launched": False,
+        "hmc_sampling_launched": False,
+        "elapsed_seconds": time.monotonic() - started,
+        "output_root": str(root),
+        "nonclaims": (
+            "throughput and engineering hard gates only",
+            "training loss is descriptive and not recipe promotion evidence",
+            "no HMC tuning, convergence, posterior, or default-readiness claim",
+        ),
+    }
+    atomic_write_json(root / "result.json", result)
+    _write_training_throughput_manifest(
+        root=root,
+        spec=spec,
+        recipe=recipe,
+        repeated_steps=int(repeated_steps),
+        memory_policy=memory_policy,
+        allocator=allocator,
+        timing=timing,
+        started=started,
+        passed=True,
+        decision=result["decision"],
+        result_path=root / "result.json",
+    )
+    return result
+
+
+def _throughput_timing_summary(
+    rung_rows: Sequence[Mapping[str, Any]],
+) -> Mapping[str, Any]:
+    if len(rung_rows) != 2:
+        raise ValueError("throughput timing requires exactly two rungs")
+    first, repeated = rung_rows
+    repeated_steps = int(repeated["steps"])
+    if int(first["steps"]) != 1 or repeated_steps < 2:
+        raise ValueError("invalid throughput timing rung step counts")
+    first_program = float(first["training_program_seconds"])
+    repeated_program = float(repeated["training_program_seconds"])
+    first_wall = float(first["end_to_end_seconds"])
+    repeated_wall = float(repeated["end_to_end_seconds"])
+    if not all(
+        math.isfinite(value) and value > 0.0
+        for value in (first_program, repeated_program, first_wall, repeated_wall)
+    ):
+        raise ValueError("throughput timing values must be positive and finite")
+    program_slope = max(0.0, (repeated_program - first_program) / (repeated_steps - 1))
+    wall_slope = max(0.0, (repeated_wall - first_wall) / (repeated_steps - 1))
+    # Fixed compile/scoring/parity cost is already charged once per projected
+    # job. Retaining repeated program average is conservative without counting
+    # that fixed end-to-end overhead again for every additional step.
+    conservative_step = max(
+        repeated_program / repeated_steps,
+        program_slope,
+        wall_slope,
+    )
+    return {
+        "method": "one_step_plus_repeated_graph_difference_v1",
+        "compile_plus_first_program_seconds": first_program,
+        "compile_plus_first_end_to_end_seconds": first_wall,
+        "repeated_program_seconds": repeated_program,
+        "repeated_end_to_end_seconds": repeated_wall,
+        "repeated_steps": repeated_steps,
+        "program_difference_step_seconds": program_slope,
+        "end_to_end_difference_step_seconds": wall_slope,
+        "conservative_additional_step_seconds": conservative_step,
+        "projection_formula": (
+            "jobs * compile_plus_first_end_to_end_seconds + "
+            "sum(max(steps_per_job - 1, 0)) * "
+            "conservative_additional_step_seconds"
+        ),
+    }
+
+
+def _preflight_bootstrap_mechanics_passed(
+    tuning_payload: Mapping[str, Any],
+) -> bool:
+    if tuning_payload.get("schema") != "bayesfilter.hmc_kernel_tuning_public_artifact.v1":
+        return False
+    bootstrap = tuning_payload.get("bootstrap_public_summary")
+    return bool(
+        isinstance(bootstrap, Mapping)
+        and bootstrap.get("preflight_passed") is True
+        and bootstrap.get("round_timing_available") is True
+        and int(bootstrap.get("round_count", 0)) > 0
+        and math.isfinite(float(bootstrap.get("max_round_runtime_s", float("nan"))))
+        and bool(bootstrap.get("observed_acceptance_relations"))
+    )
+
+
+def _load_preserved_screen_selection(
+    *, spec: CellSpec, config: EndToEndConfig
+) -> Mapping[str, Any]:
+    path = config.screen_result_path
+    expected_sha256 = config.expected_screen_result_sha256
+    if path is None or expected_sha256 is None or not path.is_file():
+        raise NeuTraEndToEndError("preserved screen result is unavailable")
+    observed_sha256 = _file_sha256(path)
+    if observed_sha256 != expected_sha256:
+        raise NeuTraEndToEndError("preserved screen result SHA-256 mismatch")
+    result = _read_mapping(path)
+    if (
+        result.get("cell_id") != spec.cell_id
+        or result.get("target_signature") != spec.target_signature
+        or result.get("passed") is not True
+        or result.get("decision")
+        != "SCREEN_COMPLETED_REPRESENTATIVE_NOMINATED"
+        or result.get("final_training_launched") is not False
+    ):
+        raise NeuTraEndToEndError("preserved screen result contract mismatch")
+    selection = result.get("selection")
+    if not isinstance(selection, Mapping) or selection.get("passed") is not True:
+        raise NeuTraEndToEndError("preserved screen lacks a passing selection")
+    rows = selection.get("rows")
+    if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)):
+        raise NeuTraEndToEndError("preserved screen recipe rows are malformed")
+    expected_recipe_ids = {recipe.recipe_id for recipe in spec.recipes}
+    observed_recipe_ids = {str(row.get("recipe_id")) for row in rows}
+    if observed_recipe_ids != expected_recipe_ids:
+        raise NeuTraEndToEndError("preserved screen recipe inventory mismatch")
+    for row in rows:
+        replicates = row.get("replicate_rows")
+        if row.get("passed") is not True or not isinstance(replicates, Sequence):
+            raise NeuTraEndToEndError("preserved screen contains a failed recipe")
+        for replicate in replicates:
+            runtime = replicate.get("runtime_metadata", {})
+            if (
+                replicate.get("passed") is not True
+                or int(runtime.get("program_step_count", -1)) != config.screen_steps
+                or int(runtime.get("training_batch_size", -1)) != TRAINING_BATCH_SIZE
+                or runtime.get("jit_compile") is not True
+                or runtime.get("sample_axis_python_loop_used") is not False
+                or runtime.get("scalar_fallback_used") is not False
+                or runtime.get("row_mapped_scalar_target_used") is not False
+            ):
+                raise NeuTraEndToEndError(
+                    "preserved screen recipe runtime contract mismatch"
+                )
+    selected_recipe_id = str(selection.get("selected_recipe_id"))
+    if selected_recipe_id not in expected_recipe_ids:
+        raise NeuTraEndToEndError("preserved screen selected recipe is unknown")
+    return selection
+
+
 def _screen_recipes(*, spec: CellSpec, adapter: Any, bound_adapter: Any,
                     center: Any, factor: Any, root: Path,
                     config: EndToEndConfig,
                     memory_policy: Mapping[str, Any]) -> Mapping[str, Any]:
     rows = []
-    for index, recipe in enumerate(spec.recipes):
+    screen_seeds = tuple(spec.screen_seeds or (spec.initial_seed,))
+    for recipe in spec.recipes:
         recipe_root = root / "screen" / recipe.recipe_id
-        result = _train_and_score(
-            spec=spec, adapter=adapter, bound_adapter=bound_adapter,
-            center=center, factor=factor,
-            recipe=recipe, output_root=recipe_root,
-            steps=config.screen_steps, seed=(spec.initial_seed[0], spec.initial_seed[1] + index),
-            memory_policy=memory_policy,
+        replicate_rows = []
+        for replicate_index, seed in enumerate(screen_seeds):
+            output_root = (
+                recipe_root
+                if len(screen_seeds) == 1
+                else recipe_root / f"replicate-{replicate_index + 1:02d}"
+            )
+            try:
+                replicate = _train_and_score(
+                    spec=spec,
+                    adapter=adapter,
+                    bound_adapter=bound_adapter,
+                    center=center,
+                    factor=factor,
+                    recipe=recipe,
+                    output_root=output_root,
+                    steps=config.screen_steps,
+                    seed=seed,
+                    memory_policy=memory_policy,
+                )
+            except NeuTraTrainingError as exc:
+                replicate = {
+                    "recipe_id": recipe.recipe_id,
+                    "passed": False,
+                    "decision": "TRAINING_CANDIDATE_HARD_VETO",
+                    "hard_vetoes": (str(exc),),
+                    "training_seed": seed,
+                    "mean_reverse_kl": None,
+                    "affine_nonworse": False,
+                    "output_root": str(output_root),
+                }
+                atomic_write_json(
+                    output_root / "candidate_failure.json",
+                    {
+                        "schema": "bayesfilter.neutra.screen_candidate_failure.v1",
+                        **replicate,
+                    },
+                )
+            replicate_rows.append(replicate)
+        recipe_passed = all(row["passed"] is True for row in replicate_rows)
+        replication_means = (
+            tuple(float(row["mean_reverse_kl"]) for row in replicate_rows)
+            if recipe_passed
+            else ()
         )
-        rows.append(result)
+        rows.append(
+            {
+                "recipe_id": recipe.recipe_id,
+                "passed": recipe_passed,
+                "mean_reverse_kl": (
+                    _mean(replication_means) if recipe_passed else None
+                ),
+                "reverse_kl_mcse": (
+                    _mcse(replication_means) if recipe_passed else None
+                ),
+                "reverse_kl_replication_means": replication_means,
+                "screen_seeds": screen_seeds,
+                "replicate_rows": tuple(replicate_rows),
+                "affine_nonworse": all(
+                    row["affine_nonworse"] is True for row in replicate_rows
+                ),
+                "statistical_unit": "independent_training_seed",
+            }
+        )
     survivors = [row for row in rows if row["passed"]]
     if not survivors:
-        return {"passed": False, "selected_recipe_id": None, "rows": rows, "decision": "NO_SURVIVING_RECIPE"}
+        selection = {
+            "passed": False,
+            "selected_recipe_id": None,
+            "rows": rows,
+            "decision": "NO_SURVIVING_RECIPE",
+            "selection_role": "hard_gate_rejection_only",
+        }
+        atomic_write_json(root / "screen" / "selection.json", selection)
+        return selection
     means = {row["recipe_id"]: float(row["mean_reverse_kl"]) for row in survivors}
     nominal = min(means, key=means.get)
     viable = []
+    nominal_row = next(item for item in survivors if item["recipe_id"] == nominal)
     for row in survivors:
-        nominal_row = next(item for item in survivors if item["recipe_id"] == nominal)
+        if len(screen_seeds) == 1:
+            # One stochastic fit cannot support a recipe ranking.
+            viable.append(row["recipe_id"])
+            continue
         differences = tuple(
-            left - right for left, right in zip(
-                row["reverse_kl_batch_means"],
-                nominal_row["reverse_kl_batch_means"], strict=True,
+            left - right
+            for left, right in zip(
+                row["reverse_kl_replication_means"],
+                nominal_row["reverse_kl_replication_means"],
+                strict=True,
             )
         )
-        delta = _mean(differences)
-        mcse = _mcse(differences)
-        if delta <= float(spec.selection_mcse_multiplier) * mcse:
+        if _mean(differences) <= float(spec.selection_mcse_multiplier) * _mcse(
+            differences
+        ):
             viable.append(row["recipe_id"])
     if spec.require_affine_nonworse:
         viable = [item for item in viable if next(row for row in survivors if row["recipe_id"] == item)["affine_nonworse"]]
@@ -930,6 +1749,8 @@ def _screen_recipes(*, spec: CellSpec, adapter: Any, bound_adapter: Any,
         "passed": True, "selected_recipe_id": selected, "nominal_lowest_mean_recipe": nominal,
         "rows": rows, "selection_role": "proxy_nomination_only",
         "statistically_supported_ranking": False,
+        "statistical_unit": "independent_training_seed",
+        "screen_seeds_paired_across_recipes": True,
     }
     atomic_write_json(root / "screen" / "selection.json", selection)
     return selection
@@ -992,28 +1813,68 @@ def _score_training(*, spec: CellSpec, bound_adapter: Any, center: Any,
     if training.frozen_payload_path is None:
         raise NeuTraEndToEndError("training did not emit frozen transport")
     loaded = load_frozen_neutra_artifact(_read_mapping(training.frozen_payload_path), expected_target_signature=spec.target_signature)
-    heldout_seed = (spec.initial_seed[0], spec.initial_seed[1] + 500)
+    heldout_seed = (int(seed[0]), int(seed[1]) + 500)
     values = tf.random.stateless_normal(
         (8, TRAINING_BATCH_SIZE, spec.parameter_dim),
         seed=heldout_seed,
         dtype=tf.float64,
     )
-    flat = tf.reshape(values, (-1, spec.parameter_dim))
     transformed = FixedTransportValueScoreAdapter(base_adapter=bound_adapter, transport=loaded.transport, target_scope=f"{spec.cell_id}:heldout", evidence_path=__file__, xla_hmc_ready=True, full_chain_xla_diagnostic_ready=True, require_batch_native=True)
     @tf.function(jit_compile=True, reduce_retracing=True)
     def heldout_program(z_batch: tf.Tensor):
-        value, _score = transformed.log_prob_and_grad_batch(z_batch)
-        return -value
+        value, _score, status = transformed.log_prob_and_grad_status(z_batch)
+        return (
+            -value,
+            tf.convert_to_tensor(status["status_code"], tf.int32),
+            tf.convert_to_tensor(status["valid_pre_regularized_score"], tf.bool),
+            tf.convert_to_tensor(status["floor_count_value"], tf.int32),
+            tf.convert_to_tensor(status["min_innovation_eigenvalue"], tf.float64),
+        )
 
+    heldout_rows = []
     with tf.device("/GPU:0"):
-        objective = heldout_program(flat)
-    batches = tf.reshape(objective, (8, TRAINING_BATCH_SIZE))
+        # Preserve the eight independent diagnostic batches.  Flattening them
+        # into one 1,024-row target call is unnecessary and exceeds memory for
+        # expensive batch-native targets such as SVX-ZC.
+        for heldout_batch in tf.unstack(values, axis=0):
+            heldout_rows.append(heldout_program(heldout_batch))
+    objective, status_code, status_valid, floor_count, min_eigenvalue = tuple(
+        tf.stack(items, axis=0) for items in zip(*heldout_rows, strict=True)
+    )
+    invalid = tf.logical_or(tf.not_equal(status_code, 0), tf.logical_not(status_valid))
+    invalid_count = int(tf.reduce_sum(tf.cast(invalid, tf.int32)).numpy())
+    heldout_status = {
+        "all_valid": invalid_count == 0,
+        "row_count": 8 * TRAINING_BATCH_SIZE,
+        "invalid_row_count": invalid_count,
+        "nonzero_status_code_count": int(
+            tf.reduce_sum(tf.cast(tf.not_equal(status_code, 0), tf.int32)).numpy()
+        ),
+        "invalid_pre_regularized_score_count": int(
+            tf.reduce_sum(tf.cast(tf.logical_not(status_valid), tf.int32)).numpy()
+        ),
+        "floor_count_total": int(tf.reduce_sum(floor_count).numpy()),
+        "minimum_innovation_eigenvalue": float(
+            tf.reduce_min(min_eigenvalue).numpy()
+        ),
+    }
+    batches = objective
     means = tuple(float(item) for item in tf.reduce_mean(batches, axis=1).numpy().tolist())
     affine_means = _affine_reverse_kl_batches(bound_adapter, center, factor, values)
     affine_differences = tuple(left - right for left, right in zip(means, affine_means, strict=True))
     flow = restore_plain_dense_iaf_flow(config=training_config, state_path=training.state_path)
     parity = _frozen_trainable_parity(flow, loaded, spec, seed)
-    return {"recipe_id": recipe.recipe_id, "passed": True,
+    program_elapsed = float(training.records[-1]["program_elapsed_seconds"])
+    if not math.isfinite(program_elapsed) or program_elapsed <= 0.0:
+        raise NeuTraEndToEndError("training program timing is unavailable")
+    hard_vetoes = (
+        ()
+        if heldout_status["all_valid"]
+        else ("heldout_target_status_nonvalid",)
+    )
+    return {"recipe_id": recipe.recipe_id, "passed": not hard_vetoes,
+            "decision": ("PASS_TRAINING_HARD_GATES" if not hard_vetoes else "TRAINING_CANDIDATE_HARD_VETO"),
+            "hard_vetoes": hard_vetoes,
             "mean_reverse_kl": _mean(means), "reverse_kl_mcse": _mcse(means),
             "reverse_kl_batch_means": means, "affine_reverse_kl_batch_means": affine_means,
             "affine_nonworse": bool(_mean(affine_differences) <= 2.0 * _mcse(affine_differences)),
@@ -1021,7 +1882,12 @@ def _score_training(*, spec: CellSpec, bound_adapter: Any, center: Any,
             "payload": {"path": str(training.frozen_payload_path)},
             "state_path": str(training.state_path),
             "training_seed": seed, "heldout_seed": heldout_seed,
+            "heldout_target_status": heldout_status,
             "frozen_trainable_parity": parity,
+            "training_program_elapsed_seconds": program_elapsed,
+            "training_program_step_count": int(
+                training.runtime_metadata["program_step_count"]
+            ),
             "runtime_metadata": training.runtime_metadata}
 
 
@@ -1136,6 +2002,34 @@ def _sequential_config(
     )
 
 
+def _sequential_config_from_pair(
+    *,
+    step_size: float,
+    num_leapfrog_steps: int,
+    spec: CellSpec,
+    chunk_results: int,
+) -> Any:
+    from bayesfilter.inference.neutra_hmc import SequentialNeuTraHMCConfig
+
+    return SequentialNeuTraHMCConfig(
+        step_size=float(step_size),
+        num_leapfrog_steps=int(num_leapfrog_steps),
+        warmup_seed=(20260802, spec.initial_seed[1] + 200),
+        retained_seed=(20260802, spec.initial_seed[1] + 201),
+        warmup_chunk_results=int(chunk_results),
+        warmup_min_results=2000,
+        warmup_check_window_results=1000,
+        warmup_max_results=10000,
+        warmup_rhat_max=1.05,
+        retained_chunk_results=int(chunk_results),
+        retained_min_results=1000,
+        retained_max_results=10000,
+        retained_rhat_max=1.01,
+        minimum_chain_count=4,
+        jit_compile=True,
+    )
+
+
 def _initial_state(tf_module: Any, spec: CellSpec, seed: tuple[int, int]) -> Any:
     del seed
     offsets = tf_module.constant((0.0, 0.1, -0.1, 0.16), tf_module.float64)[:, None]
@@ -1171,17 +2065,16 @@ def _affine_reverse_kl_batches(
 ) -> tuple[float, ...]:
     center_tensor = tf.convert_to_tensor(center, tf.float64)
     factor_tensor = tf.convert_to_tensor(factor, tf.float64)
-    flat = tf.reshape(base_values, (-1, int(center_tensor.shape[0])))
-    raw = center_tensor + tf.matmul(flat, factor_tensor, transpose_b=True)
-    value, _score = adapter.log_prob_and_grad(raw)
     _sign, logdet = tf.linalg.slogdet(factor_tensor)
-    objective = tf.reshape(
-        -(tf.convert_to_tensor(value, tf.float64) + logdet),
-        tf.shape(base_values)[:2],
-    )
-    return tuple(
-        float(item) for item in tf.reduce_mean(objective, axis=1).numpy().tolist()
-    )
+    batch_means = []
+    for base_batch in tf.unstack(base_values, axis=0):
+        raw = center_tensor + tf.matmul(
+            base_batch, factor_tensor, transpose_b=True
+        )
+        value, _score = adapter.log_prob_and_grad(raw)
+        objective = -(tf.convert_to_tensor(value, tf.float64) + logdet)
+        batch_means.append(tf.reduce_mean(objective))
+    return tuple(float(item) for item in tf.stack(batch_means).numpy().tolist())
 
 
 def _frozen_trainable_parity(
@@ -1290,7 +2183,73 @@ def _base_result(spec: CellSpec, root: Path, payload: Mapping[str, Any], memory_
 
 def _write_manifest(root: Path, spec: CellSpec, config: EndToEndConfig, memory_policy: Mapping[str, Any], started: float) -> None:
     commit = subprocess.run(("git", "rev-parse", "HEAD"), check=True, capture_output=True, text=True).stdout.strip()
-    atomic_write_json(root / "run_manifest.json", {"schema": "bayesfilter.neutra.all_models.run_manifest.v1", "cell_id": spec.cell_id, "target_signature": spec.target_signature, "git_commit": commit, "command": tuple(sys.argv), "python_executable": sys.executable, "python_version": platform.python_version(), "tensorflow_version": tf.__version__, "gpu_memory_policy": memory_policy, "jit_compile": config.jit_compile, "tf32_execution_enabled": True, "output_root": str(root), "wall_time_seconds": time.monotonic() - started, "plan_path": "docs/plans/bayesfilter-public-tuner-fixed-identity-mass-phase5-completion-plan-2026-07-20.md", "nonclaims": ("one-seed diagnostic only", "no sampler superiority or default-readiness claim")})
+    terminal = (root / "result.json").is_file()
+    atomic_write_json(root / "run_manifest.json", {"schema": "bayesfilter.neutra.all_models.run_manifest.v1", "status": "terminal" if terminal else "started", "cell_id": spec.cell_id, "target_signature": spec.target_signature, "data_version": "bound_by_target_signature", "git_commit": commit, "command": tuple(sys.argv), "environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"), "python_executable": sys.executable, "python_version": platform.python_version(), "tensorflow_version": tf.__version__, "gpu_memory_policy": memory_policy, "device": "/GPU:0" if config.require_gpu else "explicit_cpu_exception", "training_batch_size": TRAINING_BATCH_SIZE, "jit_compile": config.jit_compile, "tf32_execution_enabled": True, "screen_only": config.screen_only, "screen_steps": config.screen_steps, "final_steps": config.final_steps, "final_segment_steps": config.final_segment_steps, "output_root": str(root), "wall_time_seconds": time.monotonic() - started, "plan_path": spec.plan_path, "result_file": str(root / "result.json"), "screen_seeds": spec.screen_seeds or (spec.initial_seed,), "random_seed_policy": "paired_common_training_seeds_across_recipes", "nonclaims": ("screen ranking is not statistically supported", "no sampler superiority or default-readiness claim")})
+
+
+def _write_training_throughput_manifest(
+    *,
+    root: Path,
+    spec: CellSpec,
+    recipe: RecipeSpec,
+    repeated_steps: int,
+    memory_policy: Mapping[str, Any],
+    allocator: Mapping[str, int],
+    timing: Mapping[str, Any] | None,
+    started: float,
+    passed: bool,
+    decision: str,
+    result_path: Path,
+) -> None:
+    commit = subprocess.run(
+        ("git", "rev-parse", "HEAD"),
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    atomic_write_json(
+        root / "run_manifest.json",
+        {
+            "schema": "bayesfilter.neutra.training_throughput_manifest.v1",
+            "cell_id": spec.cell_id,
+            "target_signature": spec.target_signature,
+            "passed": bool(passed),
+            "decision": str(decision),
+            "data_version": "bound_by_target_signature",
+            "git_commit": commit,
+            "command": tuple(sys.argv),
+            "environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
+            "python_executable": sys.executable,
+            "python_version": platform.python_version(),
+            "tensorflow_version": tf.__version__,
+            "recipe": recipe.payload(),
+            "training_seed": spec.initial_seed,
+            "batch_size": TRAINING_BATCH_SIZE,
+            "rung_steps": (1, repeated_steps),
+            "device": "/GPU:0",
+            "gpu_memory_policy": memory_policy,
+            "gpu_allocator_bytes": allocator,
+            "jit_compile": True,
+            "tf32_execution_enabled": True,
+            "scalar_fallback_used": False,
+            "sample_axis_python_loop_used": False,
+            "timing": timing,
+            "wall_time_seconds": time.monotonic() - started,
+            "output_root": str(root),
+            "artifact_paths": {
+                "result": str(result_path),
+                "manifest": str(root / "run_manifest.json"),
+            },
+            "plan_path": spec.plan_path,
+            "result_file": str(result_path),
+            "hmc_tuning_launched": False,
+            "hmc_sampling_launched": False,
+            "nonclaims": (
+                "throughput and engineering hard gates only",
+                "no recipe ranking, HMC, posterior, or default-readiness claim",
+            ),
+        },
+    )
 
 
 def _write_frozen_validation_manifest(

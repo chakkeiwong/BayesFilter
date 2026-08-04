@@ -95,6 +95,19 @@ def test_p57_m4_conditional_inverse_matches_joint_inverse_suffix() -> None:
     tf.debugging.assert_near(suffix, 2.0 * suffix_reference - 1.0, atol=2e-4)
 
 
+def test_p57_m4_upper_suffix_conditional_roundtrip() -> None:
+    transport = _transport(2)
+    conditioning = tf.constant([[0.25, -0.5]], dtype=tf.float64)
+    generated = tf.constant([[-0.75, 0.6]], dtype=tf.float64)
+    uniforms = transport.conditional_forward_transport_suffix(
+        conditioning, generated
+    )
+    reconstructed = transport.conditional_inverse_transport_suffix(
+        conditioning, uniforms
+    )
+    tf.debugging.assert_near(reconstructed, generated, atol=2e-3)
+
+
 def test_p57_m4_density_jacobian_tieout_for_source_map() -> None:
     transport = _transport(2)
     local = tf.constant([[-0.5, 0.5], [0.25, -0.25]], dtype=tf.float64)
@@ -109,4 +122,61 @@ def test_p57_m4_density_jacobian_tieout_for_source_map() -> None:
         log_density,
         tf.fill([2], tf.math.log(tf.constant(0.25, dtype=tf.float64))),
         atol=1e-12,
+    )
+
+
+def test_algebraic_source_map_uses_finite_reference_cdf_and_physical_density() -> None:
+    product = highdim.ProductBasis(
+        [highdim.LagrangePiecewiseBasis1D(highdim.AlgebraicMap(1.0), 1, 1)],
+        _convention(),
+    )
+    ftt = highdim.FunctionalTT(
+        [highdim.TTCore(tf.ones([1, 2, 1], dtype=tf.float64))],
+        product,
+        _convention(),
+    )
+    defensive = highdim.TensorProductReferenceDensity(product, _convention())
+    identity = highdim.SquaredTTDensity.expected_branch_identity(
+        sqrt_tt=ftt,
+        defensive_density=defensive,
+        tau=tf.constant(0.0, dtype=tf.float64),
+        normalizer_floor=tf.constant(1e-12, dtype=tf.float64),
+        denominator_floor=tf.constant(1e-12, dtype=tf.float64),
+        measure_convention=_convention(),
+    )
+    density = highdim.SquaredTTDensity(
+        sqrt_tt=ftt,
+        defensive_density=defensive,
+        tau=tf.constant(0.0, dtype=tf.float64),
+        normalizer_floor=tf.constant(1e-12, dtype=tf.float64),
+        denominator_floor=tf.constant(1e-12, dtype=tf.float64),
+        measure_convention=_convention(),
+        branch_identity=identity,
+    )
+    transport = highdim.FixedTTSIRTTransport(
+        density=density,
+        cdf_config=highdim.KRCDFConfig(
+            grid_size=257,
+            bisection_steps=32,
+            monotonicity_tolerance=1e-12,
+            bracket_tolerance=1e-12,
+            denominator_floor=1e-12,
+            max_floor_count=0,
+        ),
+    )
+    local = tf.constant([[-2.0, 0.0, 2.0]], dtype=tf.float64)
+    reference_coordinate = local / tf.sqrt(1.0 + tf.square(local))
+    expected_uniform = 0.5 * (reference_coordinate + 1.0)
+    expected_density = 0.5 * tf.pow(1.0 + tf.square(local[0]), -1.5)
+
+    uniform = transport.forward_transport(local)
+    reconstructed = transport.inverse_transport(uniform)
+
+    tf.debugging.assert_near(uniform, expected_uniform, atol=2e-4)
+    tf.debugging.assert_near(reconstructed, local, atol=2e-3)
+    tf.debugging.assert_near(transport.eval_pdf(local), expected_density, atol=1e-12)
+    tf.debugging.assert_near(
+        transport.forward_log_jacobian(local),
+        tf.math.log(expected_density),
+        atol=2e-4,
     )

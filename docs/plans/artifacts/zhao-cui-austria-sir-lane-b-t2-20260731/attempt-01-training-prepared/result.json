@@ -1,0 +1,151 @@
+{
+  "calibrated_estimate": null,
+  "calibrated_shift": null,
+  "cloud_manifest": {
+    "joint_axis_order": [
+      "z2",
+      "z1"
+    ],
+    "joint_points_sha256": "8c5d6443ddea55badd28761510873bb2448b306b8aa30cd82ef82621c0458684",
+    "log_importance_weight_sha256": "bc48cd95c86fcbf70cc58664b6857182977905bb4fe17d08847ba4ab5273572c",
+    "log_likelihood_sha256": "6182c4b907356c1d58be46196692d57dcf4a7011873234027a6548df884e8784",
+    "previous_correction_sha256": "943007a218477c55fd82f49eb4f3edfdc76c3414792a36f9958441990bc8a67c",
+    "previous_log_proposal_sha256": "7d26735bbd447c105757c725c17e88e763d504b65f79f747a9209f9c54f199eb",
+    "previous_log_target_sha256": "9ab79a0506a3a8662f5adfbb7a5eac4154ee5942517f749a3909cbe733ee57d8",
+    "proposal_law": "q_grid_T1(z1) f(z2|z1,theta=0)",
+    "reference_seed": 73801,
+    "reference_uniforms_sha256": "828aef28b44400a0a2d8a53fd13a751d6a0d5ae7f166e517336e22f039f9781a",
+    "role": "training",
+    "sample_count": 4096,
+    "target_law": "p1_TT(z1) f(z2|z1,theta=0) g(y2|z2,theta=0)",
+    "transition_log_density_sha256": "fdf9933b6dbdcdf80be121166c8c5f1154245bf5437ccb0c60d357cefafe324e",
+    "transition_seed": 73811
+  },
+  "diagnostics": {
+    "correction_effective_sample_size": 120.10420387257979,
+    "correction_log_weight_max": -30.25614976348647,
+    "correction_log_weight_min": -4.833774784594896e+18,
+    "cpu_process_cap_bytes": 12884901888,
+    "cpu_process_peak_rss_bytes": 744992768,
+    "minimum_effective_sample_size": 100.0
+  },
+  "gates": {
+    "b2_admission_hash": "1649792818cdcf2e7621ea9497dce26cc557fac3582dc6e568133ef94a2906df",
+    "effective_sample_size": true,
+    "finite": true,
+    "memory": true,
+    "sample_count": true
+  },
+  "nonclaims": [
+    "prepared data only",
+    "no T2 candidate selection or value admission",
+    "no score, T20, HMC, production KR, or scientific claim"
+  ],
+  "role": "training",
+  "run_manifest": {
+    "chunk_size": 64,
+    "command": [
+      "scripts/prepare_zhao_cui_austria_sir_lane_b_t2.py",
+      "--artifact-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p05_r4_b5_lr3e4_l1_1e9/artifact",
+      "--role",
+      "training",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-01-training-prepared"
+    ],
+    "cuda_visible_devices": "-1",
+    "device": "explicit_cpu_hidden_sample_generation",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "host": "DESKTOP-RF1Q5IJ",
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md",
+    "python": "3.11.14",
+    "random_seeds": {
+      "reference": 73801,
+      "transition_base": 73811
+    },
+    "source_sha256": {
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py": "ce6f16a2628d234fd2ad4a9f8de2ce98437b35aa5266d0b5c965aa8704e47c4d",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tf.py": "9a6fd65f25c83f255169efbdec02907db9dd3a6b3d1ec70f95d0effcaf497aeb",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md": "25f5f99c80dc0673765d6d69419cc97111f79a844a110e852e3e0d18a3c05d9d",
+      "scripts/prepare_zhao_cui_austria_sir_lane_b_t2.py": "7824be8a041fdcf661b8fe8bd5b5a6aeaaa57d90cc8667227e7cece08b639d26"
+    },
+    "tensorflow": "2.19.1",
+    "wall_time_seconds": 738.5169466480002,
+    "worker_count": 1
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_t2_prepared_cloud.v1",
+  "status": "PREPARED_T2_CLOUD",
+  "tensors": {
+    "joint_points": {
+      "dtype": "float64",
+      "path": "joint_points.tensor",
+      "sha256": "8c5d6443ddea55badd28761510873bb2448b306b8aa30cd82ef82621c0458684",
+      "shape": [
+        4096,
+        36
+      ]
+    },
+    "log_likelihood": {
+      "dtype": "float64",
+      "path": "log_likelihood.tensor",
+      "sha256": "6182c4b907356c1d58be46196692d57dcf4a7011873234027a6548df884e8784",
+      "shape": [
+        4096
+      ]
+    },
+    "previous_correction": {
+      "dtype": "float64",
+      "path": "previous_correction.tensor",
+      "sha256": "943007a218477c55fd82f49eb4f3edfdc76c3414792a36f9958441990bc8a67c",
+      "shape": [
+        4096
+      ]
+    },
+    "previous_log_proposal": {
+      "dtype": "float64",
+      "path": "previous_log_proposal.tensor",
+      "sha256": "7d26735bbd447c105757c725c17e88e763d504b65f79f747a9209f9c54f199eb",
+      "shape": [
+        4096
+      ]
+    },
+    "previous_log_target": {
+      "dtype": "float64",
+      "path": "previous_log_target.tensor",
+      "sha256": "9ab79a0506a3a8662f5adfbb7a5eac4154ee5942517f749a3909cbe733ee57d8",
+      "shape": [
+        4096
+      ]
+    },
+    "reference_uniforms": {
+      "dtype": "float64",
+      "path": "reference_uniforms.tensor",
+      "sha256": "828aef28b44400a0a2d8a53fd13a751d6a0d5ae7f166e517336e22f039f9781a",
+      "shape": [
+        18,
+        4096
+      ]
+    },
+    "transition_log_density": {
+      "dtype": "float64",
+      "path": "transition_log_density.tensor",
+      "sha256": "fdf9933b6dbdcdf80be121166c8c5f1154245bf5437ccb0c60d357cefafe324e",
+      "shape": [
+        4096
+      ]
+    }
+  },
+  "zero_shift_estimate": {
+    "log_importance_weight_sha256": "bc48cd95c86fcbf70cc58664b6857182977905bb4fe17d08847ba4ab5273572c",
+    "log_increment": -35.206099349223706,
+    "log_shifted_normalizer": -35.206099349223706,
+    "log_standard_error": 0.08991071250917124,
+    "reference_seed": 73801,
+    "role": "training",
+    "sample_count": 4096,
+    "shift_constant": 0.0,
+    "transition_seed": 73811,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "calibrated_estimate": {
+    "log_importance_weight_sha256": "8aa2f18b7718d960525afdee329a9ab83aaec2e22395c9043557581a74114c25",
+    "log_increment": -35.15475228241306,
+    "log_shifted_normalizer": 0.0,
+    "log_standard_error": 0.0621959835101852,
+    "reference_seed": 73803,
+    "role": "calibration",
+    "sample_count": 12288,
+    "shift_constant": 35.15475228241306,
+    "transition_seed": 73813,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  },
+  "calibrated_shift": 35.15475228241306,
+  "cloud_manifest": {
+    "joint_axis_order": [
+      "z2",
+      "z1"
+    ],
+    "joint_points_sha256": "5d6668141b7d71f506d258bf95c31fca8596a8db773008182650864795f63c99",
+    "log_importance_weight_sha256": "8aa2f18b7718d960525afdee329a9ab83aaec2e22395c9043557581a74114c25",
+    "log_likelihood_sha256": "ac3a26d25eb216b601145f4fd542854afc3fbef01d25453086143f1d9c011d7d",
+    "previous_correction_sha256": "8e126a21e73d670eeac57cf13908d17b4589b1fa49c6a6efa0f6626ddcba1218",
+    "previous_log_proposal_sha256": "563ccff8dacf7414064190183d8b358dd157e76e88b6cbb683eafde57ba06324",
+    "previous_log_target_sha256": "84dd13f35c42f2e695103f06db2b318785929df0bd8c7353d8db75a5dbae7e9a",
+    "proposal_law": "q_grid_T1(z1) f(z2|z1,theta=0)",
+    "reference_seed": 73803,
+    "reference_uniforms_sha256": "096b0be8fe029f876e84b7f83ce6b888cb2419fd6bbc4f5916c89dadf29f3095",
+    "role": "calibration",
+    "sample_count": 12288,
+    "target_law": "p1_TT(z1) f(z2|z1,theta=0) g(y2|z2,theta=0)",
+    "transition_log_density_sha256": "3504f1ca90a2a234ea10da8c58af7a98faad2f22f280a4c50cf2877e2e1f15dc",
+    "transition_seed": 73813,
+    "zero_target_count": 0,
+    "zero_target_mask_sha256": "df859d9e14b3bc6bf630d037aab7f117ba3670b57215c4f96817bfc530ed3533"
+  },
+  "diagnostics": {
+    "correction_effective_sample_size": 253.20264846155453,
+    "correction_log_weight_max": -29.599746160491698,
+    "cpu_process_cap_bytes": 12884901888,
+    "cpu_process_peak_rss_bytes": 755642368,
+    "finite_correction_log_weight_min": -5.425490940217528e+305,
+    "minimum_effective_sample_size": 200.0,
+    "zero_target_count": 0
+  },
+  "gates": {
+    "b2_admission_hash": "1649792818cdcf2e7621ea9497dce26cc557fac3582dc6e568133ef94a2906df",
+    "effective_sample_size": true,
+    "finite": true,
+    "memory": true,
+    "sample_count": true
+  },
+  "nonclaims": [
+    "prepared data only",
+    "no T2 candidate selection or value admission",
+    "no score, T20, HMC, production KR, or scientific claim"
+  ],
+  "role": "calibration",
+  "run_manifest": {
+    "chunk_size": 64,
+    "command": [
+      "scripts/prepare_zhao_cui_austria_sir_lane_b_t2.py",
+      "--artifact-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t1-20260730/pilot-final-02/p05_r4_b5_lr3e4_l1_1e9/artifact",
+      "--role",
+      "calibration",
+      "--output-dir",
+      "docs/plans/artifacts/zhao-cui-austria-sir-lane-b-t2-20260731/attempt-05-calibration-prepared-n12288"
+    ],
+    "cuda_visible_devices": "-1",
+    "device": "explicit_cpu_hidden_sample_generation",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu",
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "host": "DESKTOP-RF1Q5IJ",
+    "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md",
+    "python": "3.11.14",
+    "random_seeds": {
+      "reference": 73803,
+      "transition_base": 73813
+    },
+    "source_sha256": {
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py": "ce6f16a2628d234fd2ad4a9f8de2ce98437b35aa5266d0b5c965aa8704e47c4d",
+      "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tf.py": "e5b06a8ee047e415af943c03c4d281e02e0a67f0ce62d6a569f431e398c9d452",
+      "docs/plans/bayesfilter-zhao-cui-austria-sir-lane-b-t2-plan-2026-07-31.md": "4b6672e11914fac86d5db6d7d85a147b76309f679d06e3c63ac3bf504af62654",
+      "scripts/prepare_zhao_cui_austria_sir_lane_b_t2.py": "5300bb23e0bf78ab80c2f36dd3e2eb0c5a03334d266dcdb0b5ed43dbe90880f8"
+    },
+    "tensorflow": "2.19.1",
+    "wall_time_seconds": 2202.9669541499898,
+    "worker_count": 1
+  },
+  "schema_version": "bayesfilter.zhao_cui_austria_sir_lane_b_t2_prepared_cloud.v1",
+  "status": "PREPARED_T2_CLOUD",
+  "tensors": {
+    "joint_points": {
+      "dtype": "float64",
+      "path": "joint_points.tensor",
+      "sha256": "5d6668141b7d71f506d258bf95c31fca8596a8db773008182650864795f63c99",
+      "shape": [
+        12288,
+        36
+      ]
+    },
+    "log_likelihood": {
+      "dtype": "float64",
+      "path": "log_likelihood.tensor",
+      "sha256": "ac3a26d25eb216b601145f4fd542854afc3fbef01d25453086143f1d9c011d7d",
+      "shape": [
+        12288
+      ]
+    },
+    "previous_correction": {
+      "dtype": "float64",
+      "path": "previous_correction.tensor",
+      "sha256": "8e126a21e73d670eeac57cf13908d17b4589b1fa49c6a6efa0f6626ddcba1218",
+      "shape": [
+        12288
+      ]
+    },
+    "previous_log_proposal": {
+      "dtype": "float64",
+      "path": "previous_log_proposal.tensor",
+      "sha256": "563ccff8dacf7414064190183d8b358dd157e76e88b6cbb683eafde57ba06324",
+      "shape": [
+        12288
+      ]
+    },
+    "previous_log_target": {
+      "dtype": "float64",
+      "path": "previous_log_target.tensor",
+      "sha256": "84dd13f35c42f2e695103f06db2b318785929df0bd8c7353d8db75a5dbae7e9a",
+      "shape": [
+        12288
+      ]
+    },
+    "reference_uniforms": {
+      "dtype": "float64",
+      "path": "reference_uniforms.tensor",
+      "sha256": "096b0be8fe029f876e84b7f83ce6b888cb2419fd6bbc4f5916c89dadf29f3095",
+      "shape": [
+        18,
+        12288
+      ]
+    },
+    "transition_log_density": {
+      "dtype": "float64",
+      "path": "transition_log_density.tensor",
+      "sha256": "3504f1ca90a2a234ea10da8c58af7a98faad2f22f280a4c50cf2877e2e1f15dc",
+      "shape": [
+        12288
+      ]
+    }
+  },
+  "zero_shift_estimate": {
+    "log_importance_weight_sha256": "8aa2f18b7718d960525afdee329a9ab83aaec2e22395c9043557581a74114c25",
+    "log_increment": -35.15475228241306,
+    "log_shifted_normalizer": -35.15475228241306,
+    "log_standard_error": 0.0621959835101852,
+    "reference_seed": 73803,
+    "role": "calibration",
+    "sample_count": 12288,
+    "shift_constant": 0.0,
+    "transition_seed": 73813,
+    "uncertainty_method": "iid_sample_mean_delta_method_v1"
+  }
+}

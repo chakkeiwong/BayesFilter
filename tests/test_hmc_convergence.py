@@ -4,10 +4,12 @@ import numpy as np
 import pytest
 import scipy.stats
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from bayesfilter.inference.hmc_convergence import (
     RankNormalizedHMCThresholds,
     _rank_normalize,
+    _real_fft_cross_chain_ess,
     rank_normalized_hmc_diagnostics,
     rank_normalized_split_rhat_summary,
 )
@@ -151,6 +153,53 @@ def test_threshold_validation() -> None:
         RankNormalizedHMCThresholds(rhat_max=1.0)
     with pytest.raises(ValueError, match="bulk_ess_min"):
         RankNormalizedHMCThresholds(bulk_ess_min=0.0)
+
+
+@pytest.mark.parametrize("seed_pair", [(20260730, 11), (20260730, 12)])
+def test_real_fft_ess_matches_tfp_reference(seed_pair: tuple[int, int]) -> None:
+    draws = tf.random.stateless_normal([257, 4, 3], seed=seed_pair, dtype=tf.float64)
+    expected = tfp.mcmc.effective_sample_size(
+        draws,
+        filter_beyond_positive_pairs=True,
+        cross_chain_dims=1,
+    )
+
+    observed = _real_fft_cross_chain_ess(draws)
+
+    np.testing.assert_allclose(observed.numpy(), expected.numpy(), rtol=1.0e-10, atol=1.0e-10)
+
+
+@pytest.mark.parametrize("fixture", ["correlated", "tied_indicator"])
+def test_real_fft_ess_matches_tfp_on_non_iid_fixtures(fixture: str) -> None:
+    innovations = tf.random.stateless_normal(
+        [257, 4, 3], seed=(20260730, 14), dtype=tf.float64
+    )
+    if fixture == "correlated":
+        draws = tf.cumsum(innovations, axis=0)
+    else:
+        draws = tf.cast(innovations > 0.25, tf.float64)
+    expected = tfp.mcmc.effective_sample_size(
+        draws,
+        filter_beyond_positive_pairs=True,
+        cross_chain_dims=1,
+    )
+
+    observed = _real_fft_cross_chain_ess(draws)
+
+    np.testing.assert_allclose(observed.numpy(), expected.numpy(), rtol=1.0e-10, atol=1.0e-10)
+
+
+def test_hmc_diagnostics_uses_real_fft_ess_without_complex_cast(caplog) -> None:
+    draws = tf.random.stateless_normal([257, 4, 2], seed=(20260730, 13), dtype=tf.float64)
+    with caplog.at_level("WARNING"):
+        payload = rank_normalized_hmc_diagnostics(
+            draws,
+            parameter_names=("a", "b"),
+            thresholds=_thresholds(rhat=2.0, bulk=1.0, tail=1.0),
+        )
+
+    assert payload["diagnostics_all_finite"] is True
+    assert "complex128 to an incompatible dtype float64" not in caplog.text
 
 
 def test_rank_normalization_matches_independent_scipy_reference_with_ties() -> None:

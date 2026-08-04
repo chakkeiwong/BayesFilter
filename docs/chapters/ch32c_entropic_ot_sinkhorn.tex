@@ -2379,4 +2379,654 @@ posterior score, superiority over Contract~E, HMC readiness, or a default
 change.  The model campaign below can reject this candidate or keep it viable;
 it cannot by itself prove broad nonlinear-model validity.
 
+\section{A Zhao--Cui squared-TT moment teacher for Contract E}
+\label{sec:bf-eot-zhao-cui-moment-teacher}
+
+The empirical targets in
+\eqref{eq:bf-eot-hm-target-moments} preserve higher moments already present in
+the weighted particle cloud.  They cannot correct Monte Carlo error in those
+same empirical moments.  This section defines a different, opt-in
+construction: run a deterministic squared tensor-train (TT) density recursion
+in parallel with the particle filter, use the TT density only to compute
+standardized shape moments, and give those moments to the higher-moment
+Contract~E correction.  The construction avoids a dense tensor grid.
+
+The source-grounded operations are the adjacent-density recursion, squared-TT
+nonnegative representation, and paired-core marginal contractions in
+Algorithms~1--2 and Proposition~2 of \citet{zhao2024ttsequential}.  The author
+implementation constructs the adjacent approximation in
+\code{third\_party/audit/zhao\_cui\_tensor\_ssm\_p10/source/models/full\_sol.m},
+lines 21--136, and performs squared-TT marginal recursions in
+\code{third\_party/audit/zhao\_cui\_tensor\_ssm\_p10/source/deep-tensor.dev/src/@TTSIRT/marginalise.m},
+lines 25--85.  Using the resulting moments as Contract~E targets is not an
+operation claimed by Zhao and Cui.  The assembled route is therefore
+\code{extension\_or\_invention}; it must not be called a source-faithful
+Zhao--Cui filter.
+
+\subsection{Parallel TT filtering recursion}
+
+The teacher is evaluated conditionally at the current HMC parameter
+\(\theta\).  The parameter is not an additional random coordinate and is never
+integrated out.  Only latent/static variables explicitly belonging to the
+filtering state enter the TT chart.  In the state-only case the adjacent order
+is \((x_t,x_{t-1})\).  If \(\vartheta\) denotes a genuine carried latent
+variable, its coordinate order and marginalization must be declared by the
+model.  Given the previous conditional approximation
+\(\widehat\pi_{t-1}^{\rm TT}(x_{t-1},\vartheta;\theta)\), define
+\begin{equation}
+ q_t(x_t,\vartheta,x_{t-1})
+ =\widehat\pi_{t-1}^{\rm TT}(x_{t-1},\vartheta)
+   p_\theta(x_t\mid x_{t-1},\vartheta)
+   p_\theta(y_t\mid x_t,\vartheta).
+ \label{eq:bf-eot-tt-teacher-adjacent-target}
+\end{equation}
+Here \(\vartheta\) must not be identified with the HMC parameter \(\theta\).
+Every factor in \(q_t\) is evaluated at the fixed \(\theta\) supplied by the
+outer likelihood program.
+On a declared product-measure coordinate chart
+\(r=(r_1,\ldots,r_m)\), first pull the target back to the reference measure.
+If \(x=\Psi_t(r)\) is the complete chart, define
+\begin{equation}
+ \bar q_t(r)=\frac{q_t(\Psi_t(r))\left|\det D\Psi_t(r)\right|}
+ {\omega_\nu(r)},\qquad
+ \omega_\nu(r)=\frac{d\nu}{dr}.
+ \label{eq:bf-eot-tt-teacher-chart-pullback}
+\end{equation}
+The Jacobian factor and, when \(\nu\) is not Lebesgue measure, the inverse
+reference density belong to the Radon--Nikodym target and its tangent; omitting
+either computes moments under the wrong measure.  Define
+\begin{equation}
+ c_t=\max_{\text{fit rows}}\log\bar q_t(r),\qquad
+ s_t(r)=\exp\!\left\{\tfrac12[\log\bar q_t(r)-c_t]\right\}.
+ \label{eq:bf-eot-tt-teacher-square-root-target}
+\end{equation}
+The fixed-branch fitter minimizes its declared weighted ridge objective
+against \(s_t\), not against \(\bar q_t\).  If \(h_t\) denotes the fitted
+square-root TT, form
+\begin{equation}
+ \lambda_t\geq0,\qquad
+ \tau_t=e^{-c_t}\lambda_t,\qquad
+ \widetilde q_t(r)=h_t(r)^2+\tau_tq_{0,t}(r),\qquad
+ Z_t^{\rm TT}=\int\widetilde q_t(r)\,d\nu(r),
+ \quad \nu=\bigotimes_{k=1}^m\nu_k.
+ \label{eq:bf-eot-tt-teacher-squared-density}
+\end{equation}
+Here \(q_{0,t}\geq0\), \(\lambda_t\) is the defensive weight in the
+unscaled pulled-back target, and \(\tau_t\) is its coefficient in scaled TT
+units.  Thus an exact fit gives
+\(\widetilde q_t=e^{-c_t}(\bar q_t+\lambda_tq_{0,t})\).  If instead a route
+declares \(\tau_t\) directly and keeps it fixed, it defines a different
+scale-shift-dependent defensive mixture and must carry that semantics in its
+route identity.  The normalized teacher density is
+\(\widehat q_t^{\rm TT}=\widetilde q_t/Z_t^{\rm TT}\).  Marginalizing the
+coordinates for \(\vartheta\) and \(x_{t-1}\) gives
+\begin{equation}
+ \widehat\pi_t^{\rm TT}(x_t)
+ =\int\widehat q_t^{\rm TT}(x_t,\vartheta,x_{t-1})
+       \,d\vartheta\,dx_{t-1}.
+ \label{eq:bf-eot-tt-teacher-filter-marginal}
+\end{equation}
+The recursion also carries the \((x_t,\vartheta)\) marginal needed at the next
+time.  It is therefore a parallel approximate density filter, not a one-time
+fit to current particle moments.  Fitting it to empirical particle moments
+ would destroy the intended independence of the teacher.  Fitting \(h_t\) to
+ \(\bar q_t\), rather than to
+ \eqref{eq:bf-eot-tt-teacher-square-root-target}, would approximately represent
+ \(\bar q_t^2\) and is wrong relative to this density target.
+
+All ranks, bases, coordinate order, fitting designs, sweep counts, ridge and
+floor controls, and discrete solver branches are fixed for one score-bearing
+program.  ``Fixed branch'' means these choices do not change with \(\theta\);
+ it does not mean that the fitted cores are numerically constant in \(\theta\).
+
+\begin{proposition}[Square-root fit target and conditional parameter semantics]
+\label{prop:bf-eot-tt-teacher-square-root-target}
+Assume \(\bar q_t(r)>0\) on the declared fit rows and let \(c_t\) be independent
+of the fit-row index.  If \(h_t(r)=s_t(r)\) exactly, then
+\(h_t(r)^2=\exp(-c_t)\bar q_t(r)\).  Thus, with \(\tau_t=0\), normalization
+of \(h_t^2\) gives the normalized conditional target.  Treating \(\theta\) as
+a chart coordinate and integrating it instead changes the probability measure
+and defines a different algorithm.
+\end{proposition}
+
+\begin{proof}
+Squaring \eqref{eq:bf-eot-tt-teacher-square-root-target} gives
+\(s_t(r)^2=\exp(-c_t)\bar q_t(r)\).  The positive scalar
+\(\exp(-c_t)\) cancels from the normalizing quotient.  The conditional
+statement follows because \(\theta\) is fixed in every factor of \(q_t\);
+integrating a variable requires specifying a measure for it and therefore
+defines a different joint target.  For the unscaled defensive weight in
+\eqref{eq:bf-eot-tt-teacher-squared-density}, both components have the common
+factor \(e^{-c_t}\), which cancels.  A coefficient \(\tau_t\) held fixed while
+\(c_t\) changes does not share this factor and therefore changes the
+normalized density.
+\end{proof}
+
+\subsection{Exact fixed-ALS fit and its forward derivative}
+
+Let the frozen fit rows be \(r^{(n)}\), with positive weights \(w_n\), and
+write \(s_n=s_t(r^{(n)})\).  A realized sweep schedule is a fixed sequence of
+active axes \(k_1,\ldots,k_U\).  Immediately before update \(u\), contract all
+non-active cores at the fit rows to obtain the design
+\(A_u\in\mathbb R^{M\times p_u}\).  Vectorizing the active core as \(c_u\),
+the declared ridge update is
+\begin{align}
+ H_u&=A_u^\top W A_u+\rho I,
+ &b_u&=A_u^\top W s,
+ &H_uc_u&=b_u,
+ \label{eq:bf-eot-tt-teacher-als-update}
+\end{align}
+where \(W=\operatorname{diag}(w_1,\ldots,w_M)\).  The implementation may use
+objective-preserving column scaling and an augmented least-squares solve, but
+the returned unscaled coefficient vector must solve
+\eqref{eq:bf-eot-tt-teacher-als-update}.  Any condition-number or floor branch
+is part of the frozen finite route.
+
+For one parameter direction, let dots denote total directional derivatives of
+the state immediately before update \(u\).  Because \(A_u\) depends on every
+non-active core, its derivative must be built from their current tangents.  The
+exact update JVP is
+\begin{align}
+ \dot H_u
+ &=\dot A_u^\top W A_u+A_u^\top W\dot A_u
+   +A_u^\top\dot W A_u+\dot\rho I,\\
+ \dot b_u
+ &=\dot A_u^\top Ws+A_u^\top\dot W s+A_u^\top W\dot s,\\
+ H_u\dot c_u
+ &=\dot b_u-\dot H_uc_u.
+ \label{eq:bf-eot-tt-teacher-als-jvp}
+\end{align}
+After each value update, both \(c_u\) and \(\dot c_u\) replace the active
+core and its tangent before constructing update \(u+1\).  Recomputing every
+\(\dot c_u\) from only the terminal fitted cores, or setting
+\(\dot A_u=0\) after another core has acquired a tangent, is a partial
+derivative and is wrong relative to the fixed-ALS program.
+
+On a locally fixed maximizing row \(n_t^*\), the scale and target tangents are
+\begin{equation}
+ \dot c_t=\dot{\log\bar q}_t(r^{(n_t^*)}),
+ \qquad
+ \dot s_n=\tfrac12s_n
+ [\dot{\log\bar q}_t(r^{(n)})-\dot c_t].
+ \label{eq:bf-eot-tt-teacher-square-root-jvp}
+\end{equation}
+The derivative of \(\log\bar q_t\) includes the analytical model score, any
+moving-chart/Jacobian term, and, for \(t>0\), the tangent of the normalized
+previous TT marginal.  Fixed reference rows and weights have
+\(\dot W=0\); a parameter-dependent design or ridge must instead include the
+corresponding terms above.  The current reference replay fixes the reference
+rows, basis, weights, and ridge, hence uses \(\dot W=0\) and \(\dot\rho=0\),
+while retaining \(\dot A_u\) through all non-active core tangents.  It cannot
+be reused for a moving-basis, moving-row, or parameter-dependent-ridge route
+without adding those missing derivatives.
+For the scale-consistent defensive convention in
+\eqref{eq:bf-eot-tt-teacher-squared-density},
+\begin{equation}
+ \dot\tau_t=e^{-c_t}(\dot\lambda_t-\lambda_t\dot c_t)
+ \label{eq:bf-eot-tt-teacher-defensive-scale-jvp}
+\end{equation}
+including the zero-weight case.  Omitting the
+\(-\tau_t\dot c_t\) contribution changes the derivative of the represented
+defensive mixture.
+
+The scale shift is a numerical conditioning device, not a likelihood
+increment in the hybrid particle route.  In particular, its tangent must enter
+the square-root fit target through
+\eqref{eq:bf-eot-tt-teacher-square-root-jvp}, but neither \(c_t\) nor
+\(\log Z_t^{\rm TT}\) is added to the particle likelihood.  The latter is the
+normalizer of an auxiliary approximate density, whereas the particle
+increment is defined by the normalized particle weights before the reset.
+
+\begin{proposition}[Sequential fixed-ALS JVP]
+\label{prop:bf-eot-tt-teacher-als-jvp}
+Assume the update schedule and all discrete branches are locally fixed and
+every \(H_u\) is nonsingular.  Starting from the derivative of the declared
+initial cores, sequential application of
+\eqref{eq:bf-eot-tt-teacher-als-jvp} returns the total directional derivative
+of every terminal fitted core produced by
+\eqref{eq:bf-eot-tt-teacher-als-update}.
+\end{proposition}
+
+\begin{proof}
+At the first update, differentiating \(H_1c_1=b_1\) gives
+\(H_1\dot c_1=\dot b_1-\dot H_1c_1\), hence the stated formula.  Suppose all
+core values and tangents before update \(u\) equal those of the finite value
+program.  Product-rule contraction of the non-active cores gives the total
+\(\dot A_u\); differentiating \(H_uc_u=b_u\) gives the stated
+\(\dot c_u\) by a linear solve with the same \(H_u\).  Replacing the active
+core and tangent establishes the induction
+hypothesis for update \(u+1\).  Induction over the finite schedule proves the
+claim.
+\end{proof}
+
+\subsection{Exact observable contractions for a fixed squared TT}
+
+Write the square-root TT in a basis \(\phi_{k\ell}\) as
+\begin{equation}
+ h(r)=G_1(r_1)\cdots G_m(r_m),\qquad
+ G_k(r_k)=\sum_{\ell=1}^{n_k}C_{k\ell}\phi_{k\ell}(r_k),
+ \label{eq:bf-eot-tt-teacher-functional-tt}
+\end{equation}
+where \(C_{k\ell}\in\mathbb R^{R_{k-1}\times R_k}\) and
+\(R_0=R_m=1\).  For a separable observable
+\(g(r)=\prod_kg_k(r_k)\), define
+\begin{equation}
+ M_k[g_k]_{\ell s}
+ =\int\phi_{k\ell}(u)\phi_{ks}(u)g_k(u)\,d\nu_k(u)
+ \label{eq:bf-eot-tt-teacher-operator-matrix}
+\end{equation}
+and the paired-core transfer
+\begin{equation}
+ A_k[g_k]_{(a,A),(b,B)}
+ =\sum_{\ell,s}C_k[a,\ell,b]C_k[A,s,B]M_k[g_k]_{\ell s}.
+ \label{eq:bf-eot-tt-teacher-paired-transfer}
+\end{equation}
+
+\begin{proposition}[Squared-TT observable contraction]
+\label{prop:bf-eot-tt-teacher-observable-contraction}
+For \eqref{eq:bf-eot-tt-teacher-functional-tt} and any integrable separable
+\(g\),
+\begin{equation}
+ \int g(r)h(r)^2\,d\nu(r)
+ =e_1^\top A_1[g_1]\cdots A_m[g_m]e_1.
+ \label{eq:bf-eot-tt-teacher-observable-contraction}
+\end{equation}
+Consequently
+\begin{equation}
+ \mathbb E_{\widehat q^{\rm TT}}[g]
+ =\frac{e_1^\top A_1[g_1]\cdots A_m[g_m]e_1
+       +\tau\int gq_0\,d\nu}
+      {e_1^\top A_1[1]\cdots A_m[1]e_1
+       +\tau\int q_0\,d\nu}.
+ \label{eq:bf-eot-tt-teacher-normalized-observable}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Expand both copies of \(h\) in their basis and TT-rank indices.  Product
+measure and separability allow Fubini's theorem to split every basis-pair
+integral by coordinate.  The integral at coordinate \(k\) is exactly
+\(M_k[g_k]\); summing the two TT rank paths gives
+\eqref{eq:bf-eot-tt-teacher-paired-transfer}.  Left-to-right contraction proves
+\eqref{eq:bf-eot-tt-teacher-observable-contraction}.  Linearity adds the
+defensive term, and division by the same expression with \(g=1\) proves
+\eqref{eq:bf-eot-tt-teacher-normalized-observable}.
+\end{proof}
+
+It is wrong to contract unsquared TT cores with integral vectors: moments of
+\(h^2\) require paired cores and
+\eqref{eq:bf-eot-tt-teacher-operator-matrix}.  It is also wrong to omit the
+\(\tau q_0\) numerator term when \(\tau>0\).
+
+For coordinate monomials choose \(g_k(u)=u^{\alpha_k}\).  For an affine
+current-state chart
+\begin{equation}
+ x_t=a_t+B_tr_t,
+ \label{eq:bf-eot-tt-teacher-affine-chart}
+\end{equation}
+the contracted reference mean \(m_r\) and covariance \(P_r\) give
+\begin{equation}
+ \mu_t^{\rm TT}=a_t+B_tm_r,\qquad
+ P_t^{\rm TT}=B_tP_rB_t^\top.
+ \label{eq:bf-eot-tt-teacher-affine-moments}
+\end{equation}
+
+\begin{proposition}[Mean and covariance of the TT teacher]
+\label{prop:bf-eot-tt-teacher-affine-moments}
+If \(Z_t^{\rm TT}>0\), the monomial contractions and
+\eqref{eq:bf-eot-tt-teacher-affine-moments} equal the mean and covariance of
+the normalized finite density \(\widehat q_t^{\rm TT}\) under the declared
+affine chart.
+\end{proposition}
+
+\begin{proof}
+Apply Proposition~\ref{prop:bf-eot-tt-teacher-observable-contraction} with
+\(g=r_i\) and \(g=r_ir_j\).  These give \(m_r\) and
+\(P_r=\mathbb E[rr^\top]-m_rm_r^\top\).  Standard affine moment identities
+then give \eqref{eq:bf-eot-tt-teacher-affine-moments}.
+\end{proof}
+\subsection{Low-rank contractions for whitened higher moments}
+
+Let \(L_t^{\rm TT}(L_t^{\rm TT})^\top=P_t^{\rm TT}\) and define
+\begin{equation}
+ z=(L_t^{\rm TT})^{-1}(x_t-\mu_t^{\rm TT}).
+ \label{eq:bf-eot-tt-teacher-whitening}
+\end{equation}
+Each component is an affine form in the reference coordinates,
+\(z_i=c_i+\sum_ka_{ik}r_k\).  Directly forming every raw third- and
+fourth-order tensor would require \(O(d^3)\) and \(O(d^4)\) outputs.  That is
+not the proposed high-dimensional algorithm.
+
+For nonnegative integers \(p,q\), maintain a bivariate polynomial state
+\(v_{ab}=S^aT^b\), \(0\leq a\leq p\), \(0\leq b\leq q\).  When coordinate
+\(r_k\) adds \(\alpha_kr_k\) to \(S\) and \(\beta_kr_k\) to \(T\), the exact
+local update is
+\begin{equation}
+ (S+\alpha_kr_k)^a(T+\beta_kr_k)^b
+ =\sum_{u=0}^a\sum_{v=0}^b
+   {a\choose u}{b\choose v}S^uT^v
+   \alpha_k^{a-u}\beta_k^{b-v}r_k^{a-u+b-v}.
+ \label{eq:bf-eot-tt-teacher-polynomial-automaton}
+\end{equation}
+Initialize with \(S=c_i,T=c_j\), apply
+\eqref{eq:bf-eot-tt-teacher-polynomial-automaton} over the coordinates, and
+select state \((p,q)\).  Replacing each \(r_k^s\) by the operator matrix
+\(M_k[r_k^s]\) couples this fixed-size automaton to the paired-core
+contraction.  Its auxiliary dimension is at most \((p+1)(q+1)\), hence at most
+9 for the pairwise moments below.
+
+\begin{proposition}[Affine-form mixed moments without a dense moment tensor]
+\label{prop:bf-eot-tt-teacher-affine-form-moments}
+Assume \(M_k[r_k^s]\) is exact for \(0\leq s\leq p+q\).  The coupled
+paired-core/polynomial-automaton contraction returns
+\begin{equation}
+ \int (c_i+a_i^\top r)^p(c_j+a_j^\top r)^q h(r)^2\,d\nu(r)
+ \label{eq:bf-eot-tt-teacher-affine-form-integral}
+\end{equation}
+exactly for the represented TT \(h\), without constructing a dense third- or
+fourth-order moment tensor.
+\end{proposition}
+
+\begin{proof}
+Equation~\eqref{eq:bf-eot-tt-teacher-polynomial-automaton} is the binomial
+theorem in the two accumulated affine forms.  Induction over \(k\) shows that
+the selected final state is exactly the product in
+\eqref{eq:bf-eot-tt-teacher-affine-form-integral}.  Expanding that automaton
+path and the two copies of the TT, then applying Fubini coordinate by
+coordinate, replaces each local monomial by its exact operator matrix.  The
+remaining rank contractions are precisely the stated integral.
+\end{proof}
+
+The teacher supplies
+\begin{equation}
+ \gamma_i^{\rm TT}=\mathbb E[z_i^3],\quad
+ \kappa_i^{\rm TT}=\mathbb E[z_i^4],\quad
+ C_{ij}^{(3),\rm TT}=\mathbb E[z_i^2z_j],\quad
+ C_{ij}^{(4),\rm TT}=\mathbb E[z_i^2z_j^2].
+ \label{eq:bf-eot-tt-teacher-shape-targets}
+\end{equation}
+The two pairwise quantities have different index semantics.  The co-skew term
+\(C_{ij}^{(3),\rm TT}=\mathbb E[z_i^2z_j]\) is ordered: requesting \((i,j)\)
+does not request \((j,i)\), which would instead be
+\(\mathbb E[z_j^2z_i]\).  The co-kurtosis term is symmetric, so one requested
+unordered pair \(\{i,j\}\) supplies both matrix entries
+\(C_{ij}^{(4),\rm TT}=C_{ji}^{(4),\rm TT}\).  The implementation therefore
+maintains separate structural masks for ordered co-skew and symmetric
+co-kurtosis entries; uncomputed entries are never silently interpreted as zero
+targets.  Only declared pairs \((i,j)\in\mathcal E\) need be contracted.  All pairs
+give \(O(d^2)\) outputs and at least \(O(d^2)\) work even though no dense
+fourth-order tensor is formed.  For a sparse interaction graph or other
+predeclared structural set with \(|\mathcal E|=O(d)\), the number of requested
+shape moments remains linear in \(d\).  Pair selection is fixed outside HMC
+and cannot be tuned on the claim path.
+
+\subsection{Composition with Contract E}
+
+The default composition is deliberately hybrid.  Let \(\mu_t^w,P_t^w\) be
+the likelihood-weighted particle moments from
+\eqref{eq:bf-eot-hm-target-moments}.  Contract~E and the final affine map keep
+\(\mu_t^w,P_t^w\) as their first-two-moment targets.  Only the standardized
+shape targets in \eqref{eq:bf-eot-tt-teacher-shape-targets} replace their
+empirical counterparts in the bounded correction
+\eqref{eq:bf-eot-hm-coefficients}--\eqref{eq:bf-eot-hm-map-back}.  This keeps
+the current Contract~E mean/covariance claim intact while giving the shape
+correction information not computed from the same particle cloud.
+
+Using \(\mu_t^{\rm TT},P_t^{\rm TT}\) themselves as reset targets is a
+different algorithm.  It may be tested as an ablation, but it does not
+preserve the particle weighted covariance and must not be silently substituted
+for the hybrid route.
+
+\begin{proposition}[Hybrid first-two-moment preservation]
+\label{prop:bf-eot-tt-teacher-hybrid-preservation}
+Assume \(P_t^w\) and every correction covariance are positive definite.  If
+the bounded correction is rewhitened after each iteration and mapped back with
+the Cholesky factor of \(P_t^w\), the final equally weighted cloud has mean
+\(\mu_t^w\) and covariance \(P_t^w\), irrespective of the TT shape targets.
+\end{proposition}
+
+\begin{proof}
+The TT targets affect only the finite correction directions and coefficients.
+After the final correction, Proposition~\ref{prop:bf-eot-hm-rewhitening}
+gives zero mean and identity covariance in standardized coordinates.  Mapping
+back by \(\mu_t^w\) and the Cholesky factor of \(P_t^w\) proves the result.
+\end{proof}
+
+The higher moments are not guaranteed to match
+\eqref{eq:bf-eot-tt-teacher-shape-targets}: the correction uses damped finite
+steps, moment constraints can conflict, and rewhitening changes higher
+moments.  Post-correction residuals are mandatory diagnostics.
+
+\subsection{Likelihood, score, and derivative statements}
+
+The particle likelihood increment \(\widehat\ell_t^N\) is computed before the
+TT-driven reset.  Adding the teacher after that increment leaves the already
+computed scalar at time \(t\) unchanged.  The reset changes the cloud carried
+to \(t+1\), so it can and generally will change future approximate increments.
+There is no theorem that it preserves the full filtering distribution, the
+complete finite-horizon particle likelihood, or the exact model likelihood.
+
+For a core direction \(\dot C_k\), operator direction \(\dot M_k\), and
+transfer \(A_k=A_k(C_k,M_k)\), the product rule gives
+\begin{equation}
+ \dot A_k
+ =A_k(\dot C_k,C_k,M_k)+A_k(C_k,\dot C_k,M_k)
+  +A_k(C_k,C_k,\dot M_k),
+ \label{eq:bf-eot-tt-teacher-transfer-jvp}
+\end{equation}
+and, for \(H_g=e_1^\top\prod_kA_k e_1\),
+\begin{equation}
+ \dot H_g
+ =\sum_{j=1}^m e_1^\top
+   A_1\cdots A_{j-1}\dot A_jA_{j+1}\cdots A_m e_1.
+ \label{eq:bf-eot-tt-teacher-contraction-jvp}
+\end{equation}
+If \(N_g=H_g+\tau Q_{0,g}\), \(Z=N_1\), then
+\begin{equation}
+ \frac{d}{d\theta}\mathbb E_{\widehat q^{\rm TT}}[g]
+ =\frac{\dot N_gZ-N_g\dot Z}{Z^2},\qquad
+ \dot N_g=\dot H_g+\dot\tau Q_{0,g}+\tau\dot Q_{0,g}.
+ \label{eq:bf-eot-tt-teacher-normalized-jvp}
+\end{equation}
+The same product rule applies to polynomial-automaton transfers, including
+chart Jacobian, Cholesky, and affine-form coefficient derivatives.  For a
+non-affine chart, a whitened state component is not generally a polynomial in
+the reference coordinates.  The polynomial automaton is then valid only when
+the transformed observable is represented in a declared finite basis;
+otherwise fixed quadrature must construct the operator matrices, and its error
+is an additional approximation that must be measured.
+
+\begin{proposition}[Total score of the fixed TT-teacher finite program]
+\label{prop:bf-eot-tt-teacher-total-score}
+Fix the TT bases, ranks, fitting designs, sweep counts, regularization,
+coordinate ordering, pair set \(\mathcal E\), particle innovations, OT
+controls, and all discrete branches.  Assume every finite fit solve and
+Cholesky factor is nonsingular near \(\theta\).  If the recursive tangent
+includes (i) every fitted-core tangent, including dependence through the
+previous TT marginal; (ii) every observable, normalizer, chart, whitening, and
+defensive-density term in
+\eqref{eq:bf-eot-tt-teacher-transfer-jvp}--\eqref{eq:bf-eot-tt-teacher-normalized-jvp};
+and (iii) the complete particle, OT, Contract~E, and correction tangent, then
+the accumulated score equals the total derivative of the same executed finite
+likelihood program.
+\end{proposition}
+
+\begin{proof}
+On the fixed branch, each TT fit is a finite composition of smooth target
+evaluations and nonsingular fixed-design solves.  Equations
+\eqref{eq:bf-eot-tt-teacher-transfer-jvp}--\eqref{eq:bf-eot-tt-teacher-normalized-jvp}
+are the product and quotient rules for the exact finite contractions.
+Cholesky and triangular-solve JVPs differentiate whitening, and
+Proposition~\ref{prop:bf-eot-hm-score} differentiates the particle/OT/reset
+composition.  Induction over time includes the dependence of the next TT fit
+on the previous TT marginal and of the next particle increment on the reset
+cloud.  The chain rule gives the derivative of the same finite scalar returned
+by the value program.
+\end{proof}
+
+A tangent through only the final TT contraction, treating fitted cores as
+constants, is a partial derivative and is wrong relative to this total-score
+claim.  A pre-fitted teacher frozen across \(\theta\) defines a different
+finite approximation; a zero target tangent can be correct for that explicitly
+frozen approximation but is not the score of the recursively refitted teacher.
+Runtime rank selection, stochastic fitting choices, finite-difference
+production scores, and an autodiff-only score route are ineligible for the
+intended HMC path.
+
+\subsection{Complete algorithm and complexity boundary}
+
+Before the first observation, freeze the basis family, ranks, fit and holdout
+rows, fit weights, coordinate charts, ALS sweep schedule, ridge and
+conditioning policy, defensive density, ordered co-skew mask, symmetric
+co-kurtosis mask, particle innovations, OT controls, Contract~E controls, and
+bounded-correction controls.  These are part of the finite-program identity;
+none may be reselected as \(\theta\) changes.  Initialize the TT teacher from
+the declared initial-state density and initialize the particle cloud by the
+ordinary fixed particle route.
+
+For each observation time \(t\), execute the following ordered program:
+\begin{enumerate}[label=(\arabic*)]
+ \item Hold the outer HMC parameter \(\theta\) fixed.  Evaluate the conditional
+       adjacent log target from
+       \eqref{eq:bf-eot-tt-teacher-adjacent-target}.  At \(t=0\), replace the
+       previous TT marginal by the declared initial density.  At \(t>0\),
+       evaluate the normalized carried TT marginal and its quotient-rule
+       tangent.  Never add \(\theta\) as a TT integration coordinate.
+ \item Pull the target back through the complete chart using
+       \eqref{eq:bf-eot-tt-teacher-chart-pullback}.  Include the chart Jacobian,
+       inverse reference density, and all their tangents.  Select the fixed
+       local maximizing row and construct \(s_t,\dot s_t\) using
+       \eqref{eq:bf-eot-tt-teacher-square-root-target} and
+       \eqref{eq:bf-eot-tt-teacher-square-root-jvp}.
+ \item Starting from the declared value and tangent cores, replay every ALS
+       update in its frozen order.  At update \(u\), rebuild \(A_u\) and
+       \(\dot A_u\) from the current cores, solve
+       \eqref{eq:bf-eot-tt-teacher-als-update}, solve
+       \eqref{eq:bf-eot-tt-teacher-als-jvp}, then immediately replace both the
+       active core and its tangent.  Veto a non-finite value, branch change,
+       excessive condition number, or failed primal/JVP algebraic residual.
+ \item Form \(\widetilde q_t=h_t^2+\tau_tq_{0,t}\), its normalizer, and their
+       tangents.  Contract the previous-state coordinates and any genuine
+       carried latent coordinates, retaining the normalized
+       \((x_t,\vartheta)\) TT marginal and its tangent for time \(t+1\).
+ \item By paired-core contractions, compute the teacher mean and covariance.
+       Differentiate the covariance, Cholesky factor, and triangular solves to
+       obtain the whitening coefficients and their tangents.  Contract
+       diagonal skew/kurtosis and only the declared ordered co-skew and
+       symmetric co-kurtosis entries, including the defensive numerator,
+       normalizer, and quotient tangents.
+ \item Independently propagate the particle rows with the frozen innovations,
+       evaluate their observation weights, and record
+       \(\widehat\ell_t^N\), the normalized weights, and their analytical
+       tangents.  This particle scalar, not \(c_t+\log Z_t^{\rm TT}\), is the
+       hybrid likelihood increment.
+ \item Execute the declared OT quotient and canonical Contract~E--Chol reset.
+       This produces an equally weighted cloud with the particle weighted mean
+       and covariance; propagate the total particle/weight/transport tangent.
+ \item Apply the fixed number of bounded higher-moment correction steps using
+       the TT shape values and tangents.  Rewhiten after every step, map back
+       with the particle weighted mean and covariance, and record every
+       post-correction target residual.  The residuals are diagnostics; the
+       method does not claim exact higher-moment matching.
+ \item Carry the corrected equal-weight particle cloud and tangent, together
+       with the normalized TT \((x_t,\vartheta)\) marginal and tangent, to
+       time \(t+1\).  After the final observation return
+       \(\sum_t\widehat\ell_t^N\) and the sum of its analytically propagated
+       tangents.
+\end{enumerate}
+
+This order makes the two probability calculations explicit.  The particle
+lane owns the finite likelihood value and score.  The TT lane owns only an
+auxiliary normalized filtering approximation used to define shape targets.
+The two lanes meet at the reset after the current particle increment has been
+recorded; therefore the TT normalizer cannot be substituted for the particle
+increment without changing the algorithm.
+
+For maximum basis size \(n\), maximum TT rank \(R\), and observable-automaton
+dimension \(\rho\leq9\), the density stores \(O(mnR^2)\) coefficients and a
+contraction has working state \(O(\rho R^2)\).  A conservative dense local
+contraction costs up to \(O(m\rho^2n^2R^4)\), with lower cost available from
+contraction ordering and orthogonal bases.  Mean/covariance output costs
+\(O(d^2)\).  Selected moments cost at least \(O(|\mathcal E|)\) outputs.  These
+costs do not depend on particle count \(N\), but the per-step TT fit can
+dominate them and TT rank can grow sharply with nonlinear coupling.  No
+dimension-independent rank bound is claimed for the models of interest.
+
+\paragraph{Correctness and promotion boundary.}
+The propositions prove exact moments and their JVPs for a fixed represented
+squared-TT density, and exact first-two particle moments after the hybrid
+reset.  They do not prove that the TT density approximates the true filter,
+that its rank stays bounded, that the correction reaches its TT targets, that
+likelihood or score bias decreases, or that one TT fit per step is affordable
+inside a high-dimensional nonlinear HMC evaluation.  Dense-quadrature parity,
+fixed-branch derivative parity, LGSSM/Kalman checks, nonlinear value/score
+no-regression, and GPU/XLA memory/runtime evidence remain separate gates.
+
+The current variable-rank TT containers and the reference fixed-ALS replay in
+\code{bayesfilter/highdim/zhao\_cui\_moment\_teacher\_als.py} store cores as a
+Python tuple, so a
+straight implementation of the products above uses a setup-static Python loop
+that TensorFlow traces into an unrolled graph.  That is sufficient for an
+independent TensorFlow mechanics reference, but it is ineligible for the
+BayesFilter XLA runtime under the no-Python-loop policy.  Candidate runtime
+promotion additionally requires a padded/masked or otherwise batch-native core
+representation whose contraction loop is a TensorFlow control-flow operation.
+The reference modules implement the conditional square-root target, sequential
+fixed-ALS value/JVP equations, normalized carried marginal, and TT shape-target
+JVP in a setup-static recursion.  A separate setup-static composition accepts
+the particle likelihood increment and tangent, runs the existing OT and
+Contract~E--Chol JVP, and applies the TT shape targets while returning the
+particle scalar unchanged.  These references are not a model-scale filter and
+do not yet implement the graph-native form.
+
+For the padded candidate, let every core be embedded in
+\(\widetilde G_k\in\mathbb R^{R\times B\times R}\), and let a fixed mask
+\(P_k\) select the entries of the variable-rank core.  All inactive entries of
+\(\widetilde G_k\) and \(\dot{\widetilde G}_k\) are zero.  At an update of
+axis \(k\), the padded design \(\widetilde A_k\) has zero columns outside
+\(P_k\).  More precisely, for \(M\) prepared rows and
+\(p=R^2B\), let
+\(\widetilde A_k\in\mathbb R^{M\times p}\),
+\(W=\operatorname{diag}(w_1,\ldots,w_M)\in\mathbb R^{M\times M}\),
+\(s\in\mathbb R^M\), and let
+\(P_k\in\mathbb R^{p\times p}\) be the diagonal zero--one projector
+onto the active core entries.  Then
+\(\widetilde A_k=\widetilde A_kP_k\).  For a fixed \(\rho>0\), the
+padded ridge equations split as
+\begin{equation}
+ \left(\widetilde A_k^\top W\widetilde A_k+\rho I\right)
+ \widetilde g_k=\widetilde A_k^\top Ws,
+ \qquad
+ \widetilde g_k=P_k\widetilde g_k\in\mathbb R^p,
+ \label{eq:bf-eot-tt-teacher-padded-als}
+\end{equation}
+because every inactive equation is \(\rho\widetilde g_{k,j}=0\), while the
+active block is exactly equation~\eqref{eq:bf-eot-tt-teacher-als-update}.
+Thus padding does not alter the represented update when the ridge is strictly
+positive.  The zero-ridge case is not part of this candidate: choosing a
+pseudoinverse convention for the inactive block would define a different
+finite numerical program.
+
+Let \(S_k\) be the fixed-branch positive diagonal column scale computed from
+the primal padded design.  The candidate solves
+\begin{equation}
+ \left[S_k^{-1}\left(\widetilde A_k^\top W\widetilde A_k+\rho I\right)
+ S_k^{-1}\right]z_k
+ =S_k^{-1}\widetilde A_k^\top Ws,
+ \qquad \widetilde g_k=S_k^{-1}z_k .
+ \label{eq:bf-eot-tt-teacher-padded-scaled-solve}
+\end{equation}
+This is an invertible change of coordinates, not a changed objective.  The JVP
+is still equation~\eqref{eq:bf-eot-tt-teacher-als-jvp} embedded in the padded
+space; differentiating the auxiliary scale is unnecessary because the claimed
+coefficient is characterized by the unscaled normal equations.  The graph
+propagates the left and right environments and their tangents with TensorFlow
+control flow and consumes a fixed update schedule.  It separately gates the
+condition of the scaled primal system and the unscaled derivative system, and
+records both algebraic residuals.  Masks, ranks, bases, rows, schedule, ridge,
+and fit count are fixed before tracing.  Hence this construction removes the
+Python core/sweep loops without introducing parameter-dependent branch or rank
+selection; it does not by itself establish that the fitted TT is an accurate
+filtering approximation.
+
 \FloatBarrier

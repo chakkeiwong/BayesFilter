@@ -19,6 +19,8 @@ TransitionTangent = Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor]
 ObservationValue = Callable[[Tensor, Tensor, Tensor, Tensor], Tensor]
 ObservationTangent = Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor]
 TransitionResidual = Callable[[Tensor, Tensor, Tensor, Tensor], Tensor]
+InitialLogDensity = Callable[[Tensor, Tensor], Tensor]
+InitialLogDensityTangent = Callable[[Tensor, Tensor], Tensor]
 
 
 @dataclass(frozen=True)
@@ -34,10 +36,18 @@ class CandidateModelAdapter:
     observation_value: ObservationValue
     observation_tangent: ObservationTangent
     transition_residual: TransitionResidual | None = None
+    initial_log_density: InitialLogDensity | None = None
+    initial_log_density_tangent: InitialLogDensityTangent | None = None
 
     def __post_init__(self) -> None:
         if self.state_dimension < 1 or self.parameter_count < 1:
             raise ValueError("adapter dimensions must be positive")
+        if (self.initial_log_density is None) != (
+            self.initial_log_density_tangent is None
+        ):
+            raise ValueError(
+                "initial log-density value and tangent must be supplied together"
+            )
 
 
 def _sinkhorn_barycentric_jvp(
@@ -404,6 +414,72 @@ def _restore_cloud_jvp_core(
     }
 
 
+def _projected_cumulant_mode_score(
+    source: Tensor,
+    weights: Tensor,
+    current: Tensor,
+    sketch_directions: Tensor,
+) -> Tensor:
+    """Return a diagnostic mode-one higher-moment residual score."""
+
+    source_mean = tf.reduce_sum(weights[:, None] * source, axis=0)
+    source_centered = source - source_mean[None, :]
+    source_covariance = tf.einsum(
+        "n,ni,nj->ij", weights, source_centered, source_centered
+    )
+    source_standardized = tf.transpose(
+        tf.linalg.triangular_solve(
+            tf.linalg.cholesky(source_covariance),
+            tf.transpose(source_centered),
+            lower=True,
+        )
+    )
+    current_centered = current - tf.reduce_mean(current, axis=0, keepdims=True)
+    current_covariance = tf.einsum(
+        "ni,nj->ij", current_centered, current_centered
+    ) / tf.cast(tf.shape(current)[0], current.dtype)
+    current_standardized = tf.transpose(
+        tf.linalg.triangular_solve(
+            tf.linalg.cholesky(current_covariance),
+            tf.transpose(current_centered),
+            lower=True,
+        )
+    )
+    source_projection = tf.linalg.matmul(source_standardized, sketch_directions)
+    current_projection = tf.linalg.matmul(current_standardized, sketch_directions)
+    source_sketch3 = tf.einsum(
+        "n,nd,ns->ds",
+        weights,
+        source_standardized,
+        tf.square(source_projection),
+    )
+    current_sketch3 = tf.reduce_mean(
+        current_standardized[:, :, None] * tf.square(current_projection)[:, None, :],
+        axis=0,
+    )
+    source_sketch4 = tf.einsum(
+        "n,nd,ns->ds",
+        weights,
+        source_standardized,
+        tf.pow(source_projection, 3.0),
+    )
+    current_sketch4 = tf.reduce_mean(
+        current_standardized[:, :, None] * tf.pow(current_projection, 3.0)[:, None, :],
+        axis=0,
+    )
+    # Conservative Gaussian component scales prevent fourth-order sampling
+    # noise from dominating the calibration eigenspace by construction.
+    sketch3 = (source_sketch3 - current_sketch3) / tf.sqrt(
+        tf.cast(15.0, source.dtype)
+    )
+    sketch4 = (source_sketch4 - current_sketch4) / tf.sqrt(
+        tf.cast(96.0, source.dtype)
+    )
+    return tf.linalg.matmul(sketch3, sketch3, transpose_b=True) + tf.linalg.matmul(
+        sketch4, sketch4, transpose_b=True
+    )
+
+
 def finite_value_score(
     adapter: CandidateModelAdapter,
     theta: Tensor,
@@ -420,6 +496,24 @@ def finite_value_score(
     higher_moment_correction_steps: int = 0,
     higher_moment_strength: float = 0.0,
     higher_moment_floor: float = 1.0e-6,
+    pairwise_moment_correction_steps: int = 0,
+    pairwise_moment_strength: float = 0.0,
+    pairwise_moment_floor: float = 1.0e-6,
+    projected_cumulant_basis: Tensor | None = None,
+    projected_cumulant_correction_steps: int = 0,
+    projected_cumulant_strength: float = 0.0,
+    projected_cumulant_floor: float = 1.0e-6,
+    projected_cumulant_sketch_directions: Tensor | None = None,
+    explicit_target_skew: Tensor | None = None,
+    explicit_target_kurtosis: Tensor | None = None,
+    explicit_target_skew_tangent: Tensor | None = None,
+    explicit_target_kurtosis_tangent: Tensor | None = None,
+    explicit_target_pairwise_co_skew: Tensor | None = None,
+    explicit_target_pairwise_co_kurtosis: Tensor | None = None,
+    explicit_target_pairwise_co_skew_tangent: Tensor | None = None,
+    explicit_target_pairwise_co_kurtosis_tangent: Tensor | None = None,
+    pairwise_co_skew_target_mask: Tensor | None = None,
+    pairwise_co_kurtosis_target_mask: Tensor | None = None,
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
     """Evaluate the finite candidate scalar and its complete forward JVP."""
 
@@ -448,10 +542,41 @@ def finite_value_score(
     minimum_gap_eigenvalue = tf.constant(float("inf"), theta.dtype)
     maximum_skew_residual = tf.zeros([], theta.dtype)
     maximum_kurtosis_residual = tf.zeros([], theta.dtype)
+    maximum_pairwise_co_skew_residual = tf.zeros([], theta.dtype)
+    maximum_pairwise_co_kurtosis_residual = tf.zeros([], theta.dtype)
+    maximum_shape_displacement = tf.zeros([], theta.dtype)
+    maximum_normalized_shape_displacement = tf.zeros([], theta.dtype)
+    shape_objective_sum = tf.zeros([], theta.dtype)
+    pairwise_shape_objective_sum = tf.zeros([], theta.dtype)
     horizon = tf.shape(observations)[0]
     increments = tf.TensorArray(theta.dtype, size=horizon, element_shape=())
     score_increments = tf.TensorArray(
         theta.dtype, size=horizon, element_shape=(parameter_count,)
+    )
+    state_dimension = adapter.state_dimension
+    if projected_cumulant_basis is None:
+        projected_basis = None
+    else:
+        projected_basis = tf.convert_to_tensor(projected_cumulant_basis, dtype=theta.dtype)
+        if projected_basis.shape.rank not in (2, 3):
+            raise ValueError("projected_cumulant_basis must have rank 2 or 3")
+        if projected_basis.shape.rank == 2:
+            projected_basis = tf.ensure_shape(projected_basis, [state_dimension, None])
+        else:
+            projected_basis = tf.ensure_shape(projected_basis, [None, state_dimension, None])
+    if projected_cumulant_sketch_directions is None:
+        sketch_directions = tf.zeros([state_dimension, 1], theta.dtype)
+        collect_mode_score = False
+    else:
+        sketch_directions = tf.ensure_shape(
+            tf.convert_to_tensor(projected_cumulant_sketch_directions, dtype=theta.dtype),
+            [state_dimension, None],
+        )
+        collect_mode_score = True
+    mode_scores = tf.TensorArray(
+        theta.dtype,
+        size=horizon,
+        element_shape=(state_dimension, state_dimension),
     )
 
     def time_body(
@@ -471,8 +596,18 @@ def finite_value_score(
         minimum_gap_eigenvalue_value: Tensor,
         maximum_skew_residual_value: Tensor,
         maximum_kurtosis_residual_value: Tensor,
+        maximum_pairwise_co_skew_residual_value: Tensor,
+        maximum_pairwise_co_kurtosis_residual_value: Tensor,
+        maximum_shape_displacement_value: Tensor,
+        maximum_normalized_shape_displacement_value: Tensor,
+        shape_objective_sum_value: Tensor,
+        pairwise_shape_objective_sum_value: Tensor,
+        maximum_projected_residual_value: Tensor,
+        maximum_projected_third_residual_value: Tensor,
+        maximum_projected_fourth_residual_value: Tensor,
         increments_value: tf.TensorArray,
         score_increments_value: tf.TensorArray,
+        mode_scores_value: tf.TensorArray,
     ):
         noise = process_noise[time_index]
         time_tensor = time_index
@@ -557,6 +692,12 @@ def finite_value_score(
                 ridge=ridge,
                 parameter_count=parameter_count,
         )
+        if projected_basis is None:
+            basis_for_step = None
+        elif projected_basis.shape.rank == 2:
+            basis_for_step = projected_basis
+        else:
+            basis_for_step = projected_basis[time_index]
         higher = higher_moment_shape_jvp(
             particles_next,
             normalized_weights,
@@ -567,8 +708,81 @@ def finite_value_score(
             correction_steps=higher_moment_correction_steps,
             strength=higher_moment_strength,
             floor=higher_moment_floor,
+            pairwise_correction_steps=pairwise_moment_correction_steps,
+            pairwise_strength=pairwise_moment_strength,
+            pairwise_floor=pairwise_moment_floor,
+            projected_cumulant_basis=basis_for_step,
+            projected_cumulant_correction_steps=projected_cumulant_correction_steps,
+            projected_cumulant_strength=projected_cumulant_strength,
+            projected_cumulant_floor=projected_cumulant_floor,
+            explicit_target_skew=explicit_target_skew,
+            explicit_target_kurtosis=explicit_target_kurtosis,
+            explicit_target_skew_tangent=explicit_target_skew_tangent,
+            explicit_target_kurtosis_tangent=explicit_target_kurtosis_tangent,
+            explicit_target_pairwise_co_skew=explicit_target_pairwise_co_skew,
+            explicit_target_pairwise_co_kurtosis=explicit_target_pairwise_co_kurtosis,
+            explicit_target_pairwise_co_skew_tangent=explicit_target_pairwise_co_skew_tangent,
+            explicit_target_pairwise_co_kurtosis_tangent=explicit_target_pairwise_co_kurtosis_tangent,
+            pairwise_co_skew_target_mask=pairwise_co_skew_target_mask,
+            pairwise_co_kurtosis_target_mask=pairwise_co_kurtosis_target_mask,
         )
         step_valid = stage_valid & restored["reset_valid"] & higher["valid"]
+        shape_displacement = tf.reduce_max(
+            tf.abs(higher["particles"] - restored["particles"])
+        )
+        restored_centered = restored["particles"] - tf.reduce_mean(
+            restored["particles"], axis=0, keepdims=True
+        )
+        normalized_shape_displacement = tf.sqrt(
+            tf.reduce_mean(tf.square(higher["particles"] - restored["particles"]))
+        ) / tf.maximum(
+            tf.sqrt(tf.reduce_mean(tf.square(restored_centered))),
+            tf.cast(1.0e-6, theta.dtype),
+        )
+        normalized_skew_residual = higher["skew_residual"] / tf.maximum(
+            tf.ones_like(higher["target_skew"]), tf.abs(higher["target_skew"])
+        )
+        normalized_kurtosis_residual = higher["kurtosis_residual"] / tf.maximum(
+            tf.ones_like(higher["target_kurtosis"]),
+            tf.abs(higher["target_kurtosis"]),
+        )
+        shape_objective = tf.reduce_mean(tf.square(normalized_skew_residual))
+        shape_objective += tf.reduce_mean(tf.square(normalized_kurtosis_residual))
+        pair_mask = 1.0 - tf.eye(
+            tf.shape(higher["target_pairwise_co_skew"])[0], dtype=theta.dtype
+        )
+        pair_count = tf.maximum(tf.reduce_sum(pair_mask), tf.cast(1.0, theta.dtype))
+        normalized_pairwise_co_skew_residual = (
+            higher["pairwise_co_skew_residual"]
+            / tf.maximum(
+                tf.ones_like(higher["target_pairwise_co_skew"]),
+                tf.abs(higher["target_pairwise_co_skew"]),
+            )
+        )
+        normalized_pairwise_co_kurtosis_residual = (
+            higher["pairwise_co_kurtosis_residual"]
+            / tf.maximum(
+                tf.ones_like(higher["target_pairwise_co_kurtosis"]),
+                tf.abs(higher["target_pairwise_co_kurtosis"]),
+            )
+        )
+        pairwise_shape_objective = tf.reduce_sum(
+            pair_mask * tf.square(normalized_pairwise_co_skew_residual)
+        ) / pair_count
+        pairwise_shape_objective += tf.reduce_sum(
+            pair_mask * tf.square(normalized_pairwise_co_kurtosis_residual)
+        ) / pair_count
+        if collect_mode_score:
+            mode_score = _projected_cumulant_mode_score(
+                particles_next,
+                normalized_weights,
+                higher["particles"],
+                sketch_directions,
+            )
+        else:
+            mode_score = tf.zeros(
+                [state_dimension, state_dimension], theta.dtype
+            )
         restored_particles = tf.where(step_valid, higher["particles"], particles_value)
         restored_tangent = tf.where(
             step_valid,
@@ -615,8 +829,36 @@ def finite_value_score(
                 maximum_kurtosis_residual_value,
                 tf.reduce_max(tf.abs(higher["kurtosis_residual"])),
             ),
+            tf.maximum(
+                maximum_pairwise_co_skew_residual_value,
+                tf.reduce_max(tf.abs(higher["pairwise_co_skew_residual"])),
+            ),
+            tf.maximum(
+                maximum_pairwise_co_kurtosis_residual_value,
+                tf.reduce_max(tf.abs(higher["pairwise_co_kurtosis_residual"])),
+            ),
+            tf.maximum(maximum_shape_displacement_value, shape_displacement),
+            tf.maximum(
+                maximum_normalized_shape_displacement_value,
+                normalized_shape_displacement,
+            ),
+            shape_objective_sum_value + shape_objective,
+            pairwise_shape_objective_sum_value + pairwise_shape_objective,
+            tf.maximum(
+                maximum_projected_residual_value,
+                higher["projected_cumulant_residual_norm"],
+            ),
+            tf.maximum(
+                maximum_projected_third_residual_value,
+                higher["projected_cumulant_third_residual_norm"],
+            ),
+            tf.maximum(
+                maximum_projected_fourth_residual_value,
+                higher["projected_cumulant_fourth_residual_norm"],
+            ),
             increments_value.write(time_index, increment),
             score_increments_value.write(time_index, increment_tangent),
+            mode_scores_value.write(time_index, mode_score),
         )
 
     (
@@ -636,8 +878,18 @@ def finite_value_score(
         minimum_gap_eigenvalue,
         maximum_skew_residual,
         maximum_kurtosis_residual,
+        maximum_pairwise_co_skew_residual,
+        maximum_pairwise_co_kurtosis_residual,
+        maximum_shape_displacement,
+        maximum_normalized_shape_displacement,
+        shape_objective_sum,
+        pairwise_shape_objective_sum,
+        maximum_projected_residual,
+        maximum_projected_third_residual,
+        maximum_projected_fourth_residual,
         increments,
         score_increments,
+        mode_scores,
     ) = tf.while_loop(
         lambda time_index, *_: time_index < horizon,
         time_body,
@@ -658,8 +910,18 @@ def finite_value_score(
             minimum_gap_eigenvalue,
             maximum_skew_residual,
             maximum_kurtosis_residual,
+            maximum_pairwise_co_skew_residual,
+            maximum_pairwise_co_kurtosis_residual,
+            maximum_shape_displacement,
+            maximum_normalized_shape_displacement,
+            shape_objective_sum,
+            pairwise_shape_objective_sum,
+            tf.zeros([], theta.dtype),
+            tf.zeros([], theta.dtype),
+            tf.zeros([], theta.dtype),
             increments,
             score_increments,
+            mode_scores,
         ),
         parallel_iterations=1,
     )
@@ -674,6 +936,30 @@ def finite_value_score(
         "minimum_covariance_gap_eigenvalue": minimum_gap_eigenvalue,
         "maximum_skew_residual": maximum_skew_residual,
         "maximum_kurtosis_residual": maximum_kurtosis_residual,
+        "maximum_pairwise_co_skew_residual": (
+            maximum_pairwise_co_skew_residual
+        ),
+        "maximum_pairwise_co_kurtosis_residual": (
+            maximum_pairwise_co_kurtosis_residual
+        ),
+        "maximum_shape_displacement": maximum_shape_displacement,
+        "maximum_normalized_shape_displacement": (
+            maximum_normalized_shape_displacement
+        ),
+        "mean_normalized_shape_residual_objective": (
+            shape_objective_sum / tf.cast(horizon, theta.dtype)
+        ),
+        "mean_normalized_pairwise_shape_residual_objective": (
+            pairwise_shape_objective_sum / tf.cast(horizon, theta.dtype)
+        ),
+        "maximum_projected_cumulant_residual": maximum_projected_residual,
+        "maximum_projected_cumulant_third_residual": (
+            maximum_projected_third_residual
+        ),
+        "maximum_projected_cumulant_fourth_residual": (
+            maximum_projected_fourth_residual
+        ),
+        "projected_cumulant_mode_score": mode_scores.stack(),
         "value_increments": increments.stack(),
         "score_increments": score_increments.stack(),
     }

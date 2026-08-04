@@ -4,6 +4,8 @@ import ast
 import copy
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -11,13 +13,21 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_registry_has_five_executable_and_seven_blocked_cells() -> None:
+def test_registry_has_six_executable_five_blocked_and_one_owner_excluded_cell() -> None:
     from bayesfilter.testing.neutra_model_registry_tf import validate_registry
 
     payload = validate_registry()
-    assert len(payload["executable"]) == 5
-    assert len(payload["blocked"]) == 7
-    ids = [row["cell_id"] for row in payload["executable"] + payload["blocked"]]
+    assert len(payload["executable"]) == 6
+    assert len(payload["blocked"]) == 5
+    assert len(payload["owner_excluded"]) == 1
+    ids = [
+        row["cell_id"]
+        for row in (
+            payload["executable"]
+            + payload["blocked"]
+            + payload["owner_excluded"]
+        )
+    ]
     assert len(ids) == len(set(ids)) == 12
 
 
@@ -32,6 +42,124 @@ def test_current_direct_signatures_are_not_historical_typed_hashes() -> None:
     }
     declared = {spec.target_signature for spec in EXECUTABLE_CELLS}
     assert not historical & declared
+
+
+def test_sir_ukf_is_owner_excluded_and_not_master_executable() -> None:
+    from bayesfilter.testing.neutra_model_registry_tf import (
+        EXECUTABLE_CELLS,
+        OWNER_EXCLUDED_CELLS,
+    )
+
+    assert "SIR-UKF" not in {spec.cell_id for spec in EXECUTABLE_CELLS}
+    excluded = next(
+        item for item in OWNER_EXCLUDED_CELLS if item.cell_id == "SIR-UKF"
+    )
+    assert excluded.state == "OWNER_EXCLUDED_METHOD_NOT_APPLICABLE"
+    assert excluded.reentry_rung == "none; reentry requires a new owner direction"
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    (
+        "scripts/p76_bounded_ukf_minibatch_pilot.py",
+        "scripts/p76_generated_corrected_metric_diagnostic.py",
+        "scripts/p77_budgeted_corrected_metric_training.py",
+    ),
+)
+def test_historical_sir_ukf_p76_p77_chain_is_fail_closed_before_tensorflow(
+    relative_path: str, tmp_path: Path
+) -> None:
+    script = ROOT / relative_path
+    source = script.read_text(encoding="utf-8")
+    output = tmp_path / "forbidden.json"
+
+    assert "tensorflow" not in source.lower()
+    completed = subprocess.run(
+        [sys.executable, str(script), "--output", str(output)],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "retired:" in completed.stderr
+    assert "SIR-UKF" in completed.stderr
+    assert not output.exists()
+
+
+def test_model_actions_resolve_registry_eligibility_before_inference_import() -> None:
+    path = ROOT / "docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py"
+    text = path.read_text(encoding="utf-8")
+    for function_name, next_name in (
+        ("_run_cell", "_run_preflight"),
+        ("_run_preflight", "_run_training_throughput"),
+        ("_run_training_throughput", "_run_frozen_validation"),
+        ("_run_frozen_validation", "_run_frozen_broad_grid"),
+        ("_run_frozen_broad_grid", "_run_broad_grid_sequential"),
+        ("_run_broad_grid_sequential", "_run_campaign"),
+    ):
+        source = text.split(f"def {function_name}", 1)[1].split(
+            f"def {next_name}", 1
+        )[0]
+        assert source.index("spec = _spec(args.cell)") < source.index(
+            "from bayesfilter.inference.neutra_end_to_end import"
+        )
+
+
+def test_screen_pairing_uses_common_training_seeds_and_replication_means(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from dataclasses import replace
+
+    import bayesfilter.inference.neutra_end_to_end as campaign
+    from bayesfilter.testing.neutra_model_registry_tf import EXECUTABLE_CELLS
+
+    base = next(item for item in EXECUTABLE_CELLS if item.cell_id == "SIR-SGQF")
+    spec = replace(
+        base,
+        recipes=base.recipes[:2],
+        screen_seeds=((20260730, 3001), (20260730, 3002), (20260730, 3003)),
+    )
+    calls = []
+
+    def fake_train_and_score(**kwargs):
+        recipe = kwargs["recipe"]
+        seed = tuple(kwargs["seed"])
+        calls.append((recipe.recipe_id, seed, Path(kwargs["output_root"])))
+        recipe_offset = 0.0 if recipe == spec.recipes[0] else 0.1
+        seed_offset = float(spec.screen_seeds.index(seed))
+        return {
+            "recipe_id": recipe.recipe_id,
+            "passed": True,
+            "mean_reverse_kl": seed_offset + recipe_offset,
+            "affine_nonworse": True,
+        }
+
+    monkeypatch.setattr(campaign, "_train_and_score", fake_train_and_score)
+    selection = campaign._screen_recipes(
+        spec=spec,
+        adapter=object(),
+        bound_adapter=object(),
+        center=object(),
+        factor=object(),
+        root=tmp_path,
+        config=campaign.EndToEndConfig(
+            output_root=tmp_path, screen_steps=1, final_steps=1, require_gpu=False
+        ),
+        memory_policy={},
+    )
+
+    for recipe in spec.recipes:
+        assert tuple(seed for name, seed, _path in calls if name == recipe.recipe_id) == (
+            spec.screen_seeds
+        )
+    assert selection["statistical_unit"] == "independent_training_seed"
+    assert selection["screen_seeds_paired_across_recipes"] is True
+    assert all(
+        len(row["reverse_kl_replication_means"]) == len(spec.screen_seeds)
+        for row in selection["rows"]
+    )
 
 
 def test_new_runner_does_not_duplicate_sampler_or_diagnostics() -> None:
@@ -78,6 +206,39 @@ def test_final_training_uses_core_recoverable_segment_api() -> None:
     assert "train_plain_dense_iaf_infrastructure_segments(" in text
     assert "FINAL_SEGMENT_STEPS = 1000" in text
     assert '"terminal_only_freeze": True' in text
+
+
+def test_screen_only_stops_before_final_training_and_hmc() -> None:
+    path = ROOT / "bayesfilter/inference/neutra_end_to_end.py"
+    text = path.read_text(encoding="utf-8")
+    screen_branch = text.index("if config.screen_only:")
+    final_call = text.index("final = _train_final(")
+    assert screen_branch < final_call
+    assert '"final_training_launched": False' in text
+    assert '"hmc_tuning_launched": False' in text
+    assert '"hmc_sampling_launched": False' in text
+    assert '"status": "terminal" if terminal else "started"' in text
+    assert '"result_file": str(root / "result.json")' in text
+
+
+def test_heldout_score_uses_combined_status_and_hard_veto() -> None:
+    path = ROOT / "bayesfilter/inference/neutra_end_to_end.py"
+    text = path.read_text(encoding="utf-8")
+    score_source = text.split("def _score_training", 1)[1].split(
+        "def _train_final", 1
+    )[0]
+    assert "transformed.log_prob_and_grad_status(z_batch)" in score_source
+    assert '"heldout_target_status_nonvalid"' in score_source
+    assert '"invalid_row_count"' in score_source
+
+
+def test_training_hard_gates_aggregate_every_compiled_step() -> None:
+    path = ROOT / "bayesfilter/inference/neutra_training_legacy.py"
+    text = path.read_text(encoding="utf-8")
+    assert '"all_steps_hard_gates_aggregated": True' in text
+    assert '"all_steps_target_status_valid"' in text
+    assert '"all_steps_target_status_nonvalid_count"' in text
+    assert "if not all_steps_target_status_valid:" in text
 
 
 def test_preflight_uses_real_hmc_runner_and_complete_status_telemetry() -> None:
@@ -189,6 +350,64 @@ def test_pp_ukf_bound_adapter_advertises_retained_flat_and_combined_status() -> 
     assert "status_code" in status
 
 
+def test_preflight_accepts_structured_candidate_rejection_only_after_real_hmc() -> None:
+    text = (ROOT / "bayesfilter/inference/neutra_end_to_end.py").read_text(
+        encoding="utf-8"
+    )
+    for required in (
+        'tuning_payload.get("schema") != "bayesfilter.hmc_kernel_tuning_public_artifact.v1"',
+        'bootstrap.get("preflight_passed") is True',
+        'bootstrap.get("round_timing_available") is True',
+        'bootstrap.get("observed_acceptance_relations")',
+        '"candidate_tuning_passed": tiny_tuning.passed is True',
+        '"native_tuning_scientific_pass_required": False',
+    ):
+        assert required in text
+
+
+def test_runner_exposes_training_throughput_without_hmc() -> None:
+    runner = (
+        ROOT / "docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py"
+    ).read_text(encoding="utf-8")
+    implementation = (
+        ROOT / "bayesfilter/inference/neutra_end_to_end.py"
+    ).read_text(encoding="utf-8")
+    assert '"training-throughput"' in runner
+    assert 'parser.add_argument("--throughput-steps", type=int, default=25)' in runner
+    assert "run_neutra_training_throughput_cell" in implementation
+    assert '"hmc_tuning_launched": False' in implementation
+    assert '"hmc_sampling_launched": False' in implementation
+    throughput_source = implementation.split(
+        "def run_neutra_training_throughput_cell", 1
+    )[1].split("def _preflight_bootstrap_mechanics_passed", 1)[0]
+    assert "tune_hmc_kernel(" not in throughput_source
+    assert "run_sequential_neutra_hmc(" not in throughput_source
+    assert '"TRAINING_CANDIDATE_HARD_VETO"' in throughput_source
+    assert 'atomic_write_json(root / "failure.json", failure)' in throughput_source
+
+
+def test_training_throughput_projection_is_conservative() -> None:
+    from bayesfilter.inference.neutra_end_to_end import _throughput_timing_summary
+
+    summary = _throughput_timing_summary(
+        (
+            {
+                "steps": 1,
+                "training_program_seconds": 8.0,
+                "end_to_end_seconds": 10.0,
+            },
+            {
+                "steps": 25,
+                "training_program_seconds": 20.0,
+                "end_to_end_seconds": 25.0,
+            },
+        )
+    )
+    assert summary["program_difference_step_seconds"] == 0.5
+    assert summary["end_to_end_difference_step_seconds"] == 0.625
+    assert summary["conservative_additional_step_seconds"] == 0.8
+
+
 def test_manifest_dependency_and_segmented_api_are_available() -> None:
     import bayesfilter
     import bayesfilter.inference as inference
@@ -258,6 +477,57 @@ def test_runner_supports_admitted_kernel_replay_validation() -> None:
     assert "tune_hmc_kernel(" in implementation
     assert "run_sequential_neutra_hmc(" in implementation
     assert implementation.count("adapter=replay.adapter") == 2
+
+
+def test_runner_exposes_broad_grid_as_explicit_tuning_only_action() -> None:
+    runner = (
+        ROOT / "docs/benchmarks/run_neutra_all_models_end_to_end_2026_07_18.py"
+    ).read_text(encoding="utf-8")
+    implementation = (
+        ROOT / "bayesfilter/inference/neutra_end_to_end.py"
+    ).read_text(encoding="utf-8")
+    broad = (ROOT / "bayesfilter/inference/neutra_broad_grid.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"broad-grid-frozen"' in runner
+    assert 'parser.add_argument("--broad-grid-root-seed", nargs=2, type=int)' in runner
+    assert "run_neutra_frozen_transport_broad_grid_cell" in implementation
+    assert "run_neutra_operational_broad_grid_tuning" in implementation
+    assert '"sampling_launched": False' in implementation
+    assert '"retained_sampling_authorized": False' in implementation
+    assert "run_operational_broad_grid(" in broad
+    assert "tune_hmc_kernel(" not in broad
+    assert "run_sequential_neutra_hmc(" not in broad
+
+
+def test_broad_grid_config_rejects_bad_hash_seed_and_cpu_claim() -> None:
+    from bayesfilter.inference.neutra_end_to_end import (
+        FrozenTransportBroadGridConfig,
+    )
+
+    with pytest.raises(ValueError, match="SHA-256"):
+        FrozenTransportBroadGridConfig(
+            output_root=ROOT / "unused",
+            frozen_transport_path=ROOT / "unused.json",
+            expected_frozen_transport_sha256="bad",
+            root_seed=(1, 2),
+        )
+    with pytest.raises(ValueError, match="root_seed"):
+        FrozenTransportBroadGridConfig(
+            output_root=ROOT / "unused",
+            frozen_transport_path=ROOT / "unused.json",
+            expected_frozen_transport_sha256="a" * 64,
+            root_seed=(-1, 2),
+        )
+    with pytest.raises(ValueError, match="GPU/XLA"):
+        FrozenTransportBroadGridConfig(
+            output_root=ROOT / "unused",
+            frozen_transport_path=ROOT / "unused.json",
+            expected_frozen_transport_sha256="a" * 64,
+            root_seed=(1, 2),
+            require_gpu=True,
+            jit_compile=False,
+        )
 
 
 def test_frozen_transport_validation_config_rejects_bad_hashes() -> None:
@@ -582,7 +852,13 @@ def test_plan_requires_native_tuning_and_explicit_caps() -> None:
 
 @pytest.mark.parametrize(
     "cell_id",
-    ("LGSSM-EXACT", "PP-UKF", "PP-SGQF", "SIR-SGQF", "STR-UKF"),
+    (
+        "LGSSM-EXACT",
+        "PP-UKF",
+        "PP-SGQF",
+        "SIR-SGQF",
+        "STR-UKF",
+    ),
 )
 def test_current_target_factories_bind_batch_native_surface(cell_id: str) -> None:
     import os

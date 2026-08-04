@@ -806,12 +806,43 @@ def train_plain_dense_iaf(
             ),
             tf.equal(step_numbers, terminal_step),
         )
+        all_diagnostics = tuple(array.stack() for array in final[1:])
+        diagnostic_by_name = {
+            name: value
+            for (name, _dtype), value in zip(
+                diagnostic_specs, all_diagnostics, strict=True
+            )
+        }
+        numeric_finite = tf.reduce_all(
+            tf.stack(
+                [
+                    tf.reduce_all(tf.math.is_finite(diagnostic_by_name[name]))
+                    for name in (
+                        "loss",
+                        "raw_gradient_norm",
+                        "clipped_gradient_norm",
+                        "learning_rate",
+                        "mean_log_abs_det_jacobian",
+                    )
+                ]
+            )
+        )
+        target_values_finite = tf.reduce_all(
+            diagnostic_by_name["target_values_finite"]
+        )
+        target_status_valid = tf.reduce_all(
+            tf.logical_or(
+                tf.logical_not(diagnostic_by_name["target_status_available"]),
+                diagnostic_by_name["target_status_all_valid"],
+            )
+        )
         return (
             tf.boolean_mask(step_numbers, record_mask),
-            *(
-                tf.boolean_mask(array.stack(), record_mask)
-                for array in final[1:]
-            ),
+            *(tf.boolean_mask(value, record_mask) for value in all_diagnostics),
+            numeric_finite,
+            target_values_finite,
+            target_status_valid,
+            tf.reduce_sum(diagnostic_by_name["target_status_nonvalid_count"]),
         )
 
     compiled_program = tf.function(
@@ -842,30 +873,42 @@ def train_plain_dense_iaf(
             "program_step_count": program_step_count,
         }
     )
+    diagnostic_end = 1 + len(diagnostic_specs)
     step_numbers = tuple(int(value) for value in program_outputs[0].numpy().tolist())
     diagnostic_values = {
         name: tuple(tensor.numpy().tolist())
-        for (name, _dtype), tensor in zip(diagnostic_specs, program_outputs[1:])
-    }
-    numeric_names = (
-        "loss",
-        "raw_gradient_norm",
-        "clipped_gradient_norm",
-        "learning_rate",
-        "mean_log_abs_det_jacobian",
-    )
-    for name in numeric_names:
-        if not all(math.isfinite(float(value)) for value in diagnostic_values[name]):
-            raise NeuTraTrainingError(f"nonfinite training diagnostic: {name}")
-    if not all(bool(value) for value in diagnostic_values["target_values_finite"]):
-        raise NeuTraTrainingError("nonfinite exact target value")
-    if any(
-        bool(available) and not bool(valid)
-        for available, valid in zip(
-            diagnostic_values["target_status_available"],
-            diagnostic_values["target_status_all_valid"],
+        for (name, _dtype), tensor in zip(
+            diagnostic_specs,
+            program_outputs[1:diagnostic_end],
+            strict=True,
         )
-    ):
+    }
+    all_steps_numeric_finite = bool(program_outputs[diagnostic_end].numpy())
+    all_steps_target_values_finite = bool(
+        program_outputs[diagnostic_end + 1].numpy()
+    )
+    all_steps_target_status_valid = bool(
+        program_outputs[diagnostic_end + 2].numpy()
+    )
+    all_steps_target_status_nonvalid_count = int(
+        program_outputs[diagnostic_end + 3].numpy()
+    )
+    runtime_metadata.update(
+        {
+            "all_steps_hard_gates_aggregated": True,
+            "all_steps_numeric_finite": all_steps_numeric_finite,
+            "all_steps_target_values_finite": all_steps_target_values_finite,
+            "all_steps_target_status_valid": all_steps_target_status_valid,
+            "all_steps_target_status_nonvalid_count": (
+                all_steps_target_status_nonvalid_count
+            ),
+        }
+    )
+    if not all_steps_numeric_finite:
+        raise NeuTraTrainingError("nonfinite training diagnostic")
+    if not all_steps_target_values_finite:
+        raise NeuTraTrainingError("nonfinite exact target value")
+    if not all_steps_target_status_valid:
         raise NeuTraTrainingError("invalid exact target status")
     new_records = []
     for index, step_number in enumerate(step_numbers):

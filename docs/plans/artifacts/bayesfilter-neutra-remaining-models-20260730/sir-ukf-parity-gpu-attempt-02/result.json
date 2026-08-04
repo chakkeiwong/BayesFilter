@@ -1,0 +1,100 @@
+{
+  "audit_point_policy": "sir_ukf_frozen_zero_and_positive_half_axis_v1",
+  "cpu_reference_path": "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-cpu-attempt-02/result.json",
+  "cpu_reference_sha256": "96e3306e3a6f3a681cac885882444ad01f26353ca88d55107db3d0ce42f16064",
+  "decision": "SIR_UKF_TARGET_EXECUTION_ADMITTED",
+  "elapsed_seconds": 9.695356483003707,
+  "finite": true,
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_resident": true,
+  "jit_compile": true,
+  "logical_gpus": [
+    "/device:GPU:0"
+  ],
+  "mode": "gpu-canary",
+  "nonclaims": [
+    "target execution admission only",
+    "no training, HMC, posterior, or filter-correctness claim"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "passed": true,
+  "schema": "bayesfilter.sir_ukf.current_parity_gpu_canary.v1",
+  "score": [
+    [
+      29.1841623270942,
+      -106.96313605890231,
+      9.326967862217952
+    ],
+    [
+      -5721.658757449043,
+      1849.459800346694,
+      1567.0152326355894
+    ]
+  ],
+  "score_cpu_parity": {
+    "maximum_absolute_gap": 5.6527196647948585e-06,
+    "maximum_scale_normalized_gap": 1.184323487686088e-09
+  },
+  "score_parity_limit": 1e-07,
+  "score_parity_passed": true,
+  "source_sha256": {
+    "adapter_method": "3fda241d54e5c3f883c0239f31fc05811413dff915e4dc0bccb51e597f291c79",
+    "sir_rk4_transition_value_state_source_jacobians": "ed018996d58b99a238a20183360935ac41f36f3474b507f0af2d1737fc80db51",
+    "sir_ukf_likelihood_value_score_status": "c9c449013e50f60087b82460bf398cba79da7cde1a3d82ad32add77d772673ca",
+    "tensorflow_newton_schulz_principal_sqrt": "0dcb94f36460c2fa34b93ef00e08c49ef6c0d50538e0f5cd698de0b95144c522",
+    "tf_batched_svd_sigma_point_value_and_score_with_rule": "5db54a365aabd5d4a446530fd3acc6de0eb6e2f975e09868e585405134cbda20"
+  },
+  "status_code": [
+    0,
+    0
+  ],
+  "status_cpu_equal": true,
+  "status_valid": true,
+  "target_signature": "31bc2c569933523b7bda5e337ae5b7a307a7ed90656a1d6791523c69fb6b5998",
+  "tf32_enabled": true,
+  "theta": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.5,
+      0.0,
+      0.0
+    ]
+  ],
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "valid_pre_regularized_score": [
+    true,
+    true
+  ],
+  "value": [
+    -681.6886323998925,
+    -2118.4034780517636
+  ],
+  "value_cpu_parity": {
+    "maximum_absolute_gap": 5.9117155615240335e-12,
+    "maximum_scale_normalized_gap": 2.790646646294622e-15
+  },
+  "value_parity_limit": 1e-08,
+  "value_parity_passed": true
+}

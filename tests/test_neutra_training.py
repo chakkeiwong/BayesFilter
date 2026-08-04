@@ -346,6 +346,11 @@ def test_training_uses_one_graph_native_program_and_terminal_checkpoint(tmp_path
     assert any(
         "While" in item for item in result.runtime_metadata["graph_operation_types"]
     )
+    assert result.runtime_metadata["all_steps_hard_gates_aggregated"] is True
+    assert result.runtime_metadata["all_steps_numeric_finite"] is True
+    assert result.runtime_metadata["all_steps_target_values_finite"] is True
+    assert result.runtime_metadata["all_steps_target_status_valid"] is True
+    assert result.runtime_metadata["all_steps_target_status_nonvalid_count"] == 0
     assert tuple(path.name for path in config.output_dir.glob("checkpoint_step_*.json")) == (
         "checkpoint_step_000006.json",
     )

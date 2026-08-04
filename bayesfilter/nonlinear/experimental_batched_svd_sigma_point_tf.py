@@ -54,6 +54,7 @@ TFPrincipalSqrtBackend = Literal[
     "compiled_custom_op",
     "tensorflow_eigh",
     "tensorflow_eigh_strict",
+    "tensorflow_newton_schulz",
 ]
 
 _PRINCIPAL_SQRT_ROUNDOFF_TOLERANCE = 1.0e-14
@@ -61,6 +62,7 @@ _PRINCIPAL_SQRT_MAX_ABS_ENTRY_FOR_REPAIR = 1.0e8
 _PRINCIPAL_SQRT_CLASSIFIED_INVALID_LOG_PROB = -1.0e100
 _PRINCIPAL_SQRT_DIAGNOSTIC_LARGE = 1.0e100
 _PRINCIPAL_SQRT_RECONSTRUCTION_RELATIVE_TOLERANCE = 1.0e-10
+_PRINCIPAL_SQRT_NEWTON_SCHULZ_ITERATIONS = 24
 
 
 @dataclass(frozen=True)
@@ -586,6 +588,26 @@ def _tensorflow_strict_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor:
     return factor
 
 
+def _tensorflow_newton_schulz_principal_sqrt(covariance: tf.Tensor) -> tf.Tensor:
+    """Return an XLA-native SPD principal root with fixed graph structure."""
+
+    matrix = _symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
+    dimension = int(matrix.shape[-1])
+    identity = tf.eye(
+        dimension,
+        batch_shape=tf.shape(matrix)[:-2],
+        dtype=tf.float64,
+    )
+    scale = tf.linalg.norm(matrix, axis=[-2, -1], keepdims=True)
+    normalized = matrix / scale
+    inverse_root = identity
+    for _ in range(_PRINCIPAL_SQRT_NEWTON_SCHULZ_ITERATIONS):
+        correction = 0.5 * (3.0 * identity - inverse_root @ normalized)
+        normalized = normalized @ correction
+        inverse_root = correction @ inverse_root
+    return _symmetrize(normalized * tf.sqrt(scale))
+
+
 def _tensorflow_native_symmetric_sylvester_solve(
     symmetric_factor: tf.Tensor,
     rhs: tf.Tensor,
@@ -626,6 +648,8 @@ def _principal_sqrt_factor(
         return _tensorflow_native_principal_sqrt(covariance)
     if factor_backend == "tensorflow_eigh_strict":
         return _tensorflow_strict_principal_sqrt(covariance)
+    if factor_backend == "tensorflow_newton_schulz":
+        return _tensorflow_newton_schulz_principal_sqrt(covariance)
     raise ValueError(f"unknown principal sqrt backend: {factor_backend!r}")
 
 
@@ -637,7 +661,7 @@ def _symmetric_sylvester_factor_solve(
 ) -> tf.Tensor:
     if factor_backend == "compiled_custom_op":
         return _symmetrize(symmetric_sylvester_solve(factor, rhs))
-    if factor_backend == "tensorflow_eigh":
+    if factor_backend in ("tensorflow_eigh", "tensorflow_newton_schulz"):
         return _tensorflow_native_symmetric_sylvester_solve(factor, rhs)
     if factor_backend == "tensorflow_eigh_strict":
         return _tensorflow_strict_symmetric_sylvester_solve(factor, rhs)
@@ -869,13 +893,40 @@ def _checked_batched_principal_sqrt_factor_first_derivatives(
 ) -> TFBatchedSmoothEighFactorFirstDerivatives:
     covariance = _symmetrize(covariance)
     d_covariance = _symmetrize(d_covariance)
+    finite_covariance = tf.reduce_all(
+        tf.math.is_finite(covariance), axis=[-2, -1]
+    )
+    eigensolver_covariance = tf.where(
+        finite_covariance[:, tf.newaxis, tf.newaxis],
+        covariance,
+        tf.eye(
+            int(covariance.shape[-1]),
+            batch_shape=[tf.shape(covariance)[0]],
+            dtype=tf.float64,
+        ),
+    )
     (
         eigenvalues,
         floored,
         eigenvectors,
         _implemented_covariance,
         psd_projection_residual,
-    ) = _batched_psd_eigh(covariance, singular_floor)
+    ) = _batched_psd_eigh(eigensolver_covariance, singular_floor)
+    # GPU heevd may abort on NaN/Inf input before the target can classify it.
+    # Restore nonfinite evidence after the safe solve so the row still fails closed.
+    eigenvalues = tf.where(
+        finite_covariance[:, tf.newaxis],
+        eigenvalues,
+        tf.fill(tf.shape(eigenvalues), tf.constant(float("nan"), tf.float64)),
+    )
+    psd_projection_residual = tf.where(
+        finite_covariance,
+        psd_projection_residual,
+        tf.fill(
+            tf.shape(psd_projection_residual),
+            tf.constant(_PRINCIPAL_SQRT_DIAGNOSTIC_LARGE, tf.float64),
+        ),
+    )
     min_eigenvalue = tf.reduce_min(
         tf.where(
             tf.math.is_finite(eigenvalues),

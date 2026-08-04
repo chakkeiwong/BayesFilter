@@ -91,6 +91,18 @@ class BoundedInterval:
         values = tf.convert_to_tensor(points, dtype=self.dtype)
         return 2.0 * (values - self.left) / self.length - 1.0
 
+    def from_reference(self, reference_points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(reference_points, dtype=self.dtype)
+        return self.left + 0.5 * (values + 1.0) * self.length
+
+    def domain_to_reference_log_density(self, points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(points, dtype=self.dtype)
+        return tf.zeros_like(values) + tf.math.log(2.0 / self.length)
+
+    def reference_to_domain_log_density(self, reference_points: tf.Tensor) -> tf.Tensor:
+        values = tf.convert_to_tensor(reference_points, dtype=self.dtype)
+        return tf.zeros_like(values) + tf.math.log(self.length / 2.0)
+
     def manifest_payload(self) -> Mapping[str, object]:
         return {
             "family": "bounded_interval",

@@ -1,0 +1,46 @@
+{
+  "audit_point_policy": "sir_ukf_frozen_zero_and_positive_half_axis_v1",
+  "command": [
+    "docs/benchmarks/run_sir_ukf_neutra_parity_20260730.py",
+    "--mode",
+    "gpu-canary",
+    "--cpu-reference",
+    "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-cpu-attempt-02/result.json",
+    "--output-root",
+    "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-gpu-attempt-02"
+  ],
+  "conda_environment": "tf-gpu",
+  "cpu_reference_path": "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-cpu-attempt-02/result.json",
+  "cpu_reference_sha256": "96e3306e3a6f3a681cac885882444ad01f26353ca88d55107db3d0ce42f16064",
+  "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+  "gpu_memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "mode": "gpu-canary",
+  "output_root": "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-gpu-attempt-02",
+  "plan_path": "docs/plans/bayesfilter-neutra-remaining-models-broad-grid-continuation-plan-2026-07-30.md",
+  "python_executable": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.14",
+  "result_path": "docs/plans/artifacts/bayesfilter-neutra-remaining-models-20260730/sir-ukf-parity-gpu-attempt-02/result.json",
+  "schema": "bayesfilter.sir_ukf.current_parity_manifest.v1",
+  "score_parity_limit": 1e-07,
+  "tensorflow_version": "2.19.1",
+  "tf32_enabled": true,
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "value_parity_limit": 1e-08,
+  "wall_time_seconds": 9.698940029004007
+}

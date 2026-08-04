@@ -1,0 +1,110 @@
+{
+  "schema": "bayesfilter.zhao_cui.austria_sir.p88_recovery_result.v1",
+  "status": "BLOCK_EXACT_P88_RECOVERY_EXHAUSTED",
+  "decision": "stop_without_replay_or_replacement",
+  "plan": "docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-baseline-recovery-plan-2026-07-30.md",
+  "execution_note": "docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-baseline-recovery-execution-note-2026-07-30.md",
+  "inventory": {
+    "path": "docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/recovery-attempt-02/inventory.json",
+    "sha256": "1f62577fab6e6c96fc74b59df342a09fa9144f540df16e496b44e328b73c0ac0",
+    "wall_time_seconds": 19.437566852997406,
+    "workspace_files_scanned": 42615,
+    "workspace_matches": 185,
+    "main_git_blobs_scanned_under_cap": 15200,
+    "main_git_matches": 66,
+    "main_git_unreachable_objects_covered": 562,
+    "snapshot_git_blobs_scanned_under_cap": 10747,
+    "snapshot_git_matches": 68,
+    "snapshot_git_unreachable_objects_covered": 553
+  },
+  "oversize_blob_review": {
+    "git_oid": "757504de197fd78b649473932e53d18e4c086fce",
+    "size_bytes": 555637037,
+    "path": "experiments/dpf_implementation/reports/outputs/batched_annealed_transport_teacher_data_expanded_2026-06-20.json",
+    "repositories": ["main", "complete_source_snapshot_20260711"],
+    "stream_anchor_match_count": 0,
+    "classification": "unrelated_dpf_teacher_data"
+  },
+  "exact_p88_copies": [
+    {
+      "path": "docs/plans/bayesfilter-highdim-zhao-cui-p88-phase2-degree-order3-rank4-lr3e-4-l1-0-fit-2026-06-27.json",
+      "sha256": "ea5fc7434f328b95e3c2c53bca3e1a7bee6b35a452a81acce8230407ea11ef8e",
+      "identity_groups_bound": []
+    },
+    {
+      "path": ".complete-highdim-source-snapshot-complete-highdim-leaderboard-20260711-221500/docs/plans/bayesfilter-highdim-zhao-cui-p88-phase2-degree-order3-rank4-lr3e-4-l1-0-fit-2026-06-27.json",
+      "sha256": "ea5fc7434f328b95e3c2c53bca3e1a7bee6b35a452a81acce8230407ea11ef8e",
+      "identity_groups_bound": []
+    }
+  ],
+  "manual_admission": {
+    "syntactic_lead_count": 2,
+    "admitted_candidate_count": 0,
+    "leads": [
+      {
+        "path": "docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-phase0-result-2026-07-30.json",
+        "sha256": "ffed63f8caf20b6eac1945ea194583ecf83ada01af7d438d5b49a711aca0cd51",
+        "verdict": "reject_false_positive",
+        "reason": "Field names occur in missing_identity_fields; source closure and observation binding are literal absent-in-artifact markers. No identity arrays or values are serialized."
+      },
+      {
+        "path": "docs/plans/bayesfilter-zhao-cui-austria-sir-fixed-variant-phase0-result-attempt02-2026-07-30.json",
+        "sha256": "4cb674e902646372527c9b0847cf95c2582efab7c70a7aabff3c50c90ada916a",
+        "verdict": "reject_false_positive",
+        "reason": "Field names occur in missing_identity_fields; source closure and observation binding are literal absent-in-artifact markers. No identity arrays or values are serialized."
+      }
+    ]
+  },
+  "required_identity_groups": {
+    "coordinate_frame_mu": "missing",
+    "coordinate_frame_matrix": "missing",
+    "transport_cdf_config": "missing",
+    "frozen_reference_samples": "missing",
+    "retained_branch_identity": "missing",
+    "observation_or_target_input_identity": "missing",
+    "source_dependency_closure": "missing"
+  },
+  "provenance_check": {
+    "p88_introducing_commit": "c815edc52162779e969b2982723b2f52770fd849",
+    "p88_payload_sha256_at_introducing_commit": "ea5fc7434f328b95e3c2c53bca3e1a7bee6b35a452a81acce8230407ea11ef8e",
+    "named_fit_script_present_at_introducing_commit": false,
+    "named_fit_script_first_repository_commit": "9bc5a658bfaac29987438a50aea4bf7e9036719f"
+  },
+  "replay": {
+    "executed": false,
+    "reason": "No candidate passed exact admission; recomputation would not prove historical identity."
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "classification": "inventory_harness_failure",
+      "artifact": "docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/recovery-attempt-01/failure.json"
+    },
+    {
+      "attempt": 2,
+      "classification": "terminal_inventory_and_manual_admission",
+      "artifact": "docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/recovery-attempt-02/inventory.json"
+    }
+  ],
+  "run_manifest": {
+    "git_commit": "fb9a0679adb7c731ff2ac42551f39bdcc15222a1",
+    "environment": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "cpu_gpu_status": "CPU-only inventory; CUDA_VISIBLE_DEVICES=-1; TensorFlow not imported; GPU not attempted",
+    "data_version": "P88 artifact SHA-256 ea5fc7434f328b95e3c2c53bca3e1a7bee6b35a452a81acce8230407ea11ef8e",
+    "random_seeds": "N/A; deterministic read-only inventory",
+    "output_artifacts": [
+      "docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/recovery-attempt-01/failure.json",
+      "docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/recovery-attempt-02/inventory.json",
+      "docs/plans/artifacts/zhao-cui-austria-sir-fixed-variant-baseline-recovery-20260730/recovery-attempt-02/result.json"
+    ]
+  },
+  "phase1_authorized": false,
+  "lane_b_authorized": false,
+  "hmc_authorized": false,
+  "next_decision": "Owner approval is required to change the target to newly named baseline zhao_cui_austria_sir_fixed_variant_training_base_v1 and execute Lane B.",
+  "nonclaims": [
+    "P88 remains an exact T1 squared-TT density artifact only.",
+    "No complete P88 retained filter was recovered.",
+    "No value, total score, T2/T20, GPU, HMC, correctness, or production claim."
+  ]
+}
