@@ -38,6 +38,9 @@ FREE_NAMES = (
 PRIOR_CENTER = tf.constant((0.35, -0.08, 0.65, 0.05), tf.float64)
 PRIOR_STANDARD_DEVIATION = 4.0
 HORIZON = 30
+STATIC_DATA_CONSTRUCTION_POLICY = (
+    "explicit_cpu_device_hardware_invariant_target_identity_v1"
+)
 Q1_FULL_FIXTURE = tf.constant(
     (
         0.09, -0.07, 0.05, 0.04, 0.03, -0.02, 0.06, -0.05,
@@ -156,7 +159,8 @@ class ComplexityTargetConfig:
 
     def signature_payload(self) -> dict[str, Any]:
         return {
-            "schema": "bayesfilter.ssl_lstm.complexity_target.v1",
+            "schema": "bayesfilter.ssl_lstm.complexity_target.v2",
+            "static_data_construction_policy": STATIC_DATA_CONSTRUCTION_POLICY,
             "horizon": self.static_config.horizon,
             "latent_dim": self.static_config.latent_dim,
             "hidden_dim": self.static_config.hidden_dim,
@@ -182,9 +186,11 @@ class SSLLSTMComplexityPosteriorTarget:
     """Graph-native four-coordinate value/score target for one q rung."""
 
     def __init__(self, q: int, *, jit_compile: bool = True) -> None:
-        config = make_complexity_config(q)
-        fixture = make_full_fixture(config)
-        observations = make_synthetic_observations(config, fixture)
+        # Target identity must not depend on CPU/GPU rounding during fixture setup.
+        with tf.device("/CPU:0"):
+            config = make_complexity_config(q)
+            fixture = make_full_fixture(config)
+            observations = make_synthetic_observations(config, fixture)
         free_indices = _free_indices(config)
         self.config = ComplexityTargetConfig(config, fixture, observations, free_indices)
         self.q = int(q)

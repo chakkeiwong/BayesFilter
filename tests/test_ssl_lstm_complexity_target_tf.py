@@ -6,6 +6,7 @@ import tensorflow as tf
 from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import (
     FREE_NAMES,
     PRIOR_CENTER,
+    STATIC_DATA_CONSTRUCTION_POLICY,
     complexity_posterior_target,
     make_complexity_config,
     make_full_fixture,
@@ -107,6 +108,11 @@ def test_target_chart_contract_is_four_dimensional_and_identity_oriented() -> No
     }
     assert target.config.signature_payload()["filter_backend"] == "tf_principal_sqrt_ukf"
     assert target.config.signature_payload()["score_backend"] == "tf_principal_sqrt_ukf_score"
+    assert target.config.signature_payload()["static_data_construction_policy"] == (
+        STATIC_DATA_CONSTRUCTION_POLICY
+    )
+    assert "CPU:0" in target.config.fixture.device
+    assert "CPU:0" in target.config.observations.device
     assert len(target.target_signature()) == 64
     assert len(target.adapter_signature()) == 64
 

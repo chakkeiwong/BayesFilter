@@ -13,6 +13,7 @@ from typing import Any, Mapping
 
 import tensorflow as tf
 
+from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 from bayesfilter.nonlinear.batched_svd_sigma_point_tf import (
     tf_batched_svd_sigma_point_value_and_score_custom_gradient,
 )
@@ -33,7 +34,7 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
 
 _EVIDENCE_PATH = (
     "docs/plans/"
-    "bayesfilter-ssl-lstm-q20-strict-cpu-training-plan-2026-07-22.md"
+    "bayesfilter-ssl-lstm-q20-direct-batch-native-gpu-xla-training-plan-2026-07-30.md"
 )
 
 
@@ -54,7 +55,7 @@ def _stable_hash(payload: Mapping[str, Any]) -> str:
 class BatchNativeSSLLSTMComplexityPosteriorTarget:
     """Rank-2 TensorFlow value/score target for one complexity rung."""
 
-    evaluation_policy = "batch_native_tensorflow_no_row_mapping_v1"
+    evaluation_policy = "batch_native_tensorflow_status_no_row_mapping_v2"
 
     def __init__(
         self,
@@ -79,6 +80,8 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
             }
         )
         self._compiled_batches: dict[int, Any] = {}
+        self.supports_retained_flat_batch = True
+        self.supports_retained_value_score_status = True
         self._fixed = unpack_ssl_lstm_parameters(
             self.config.fixture,
             self.config.static_config,
@@ -103,9 +106,26 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
     def adapter_signature(self) -> str:
         return self._adapter_signature
 
+    def value_score_capability(self) -> ValueScoreCapability:
+        return ValueScoreCapability(
+            value_score_authority="graph_native",
+            xla_hmc_ready=bool(self._jit_compile),
+            runtime_backend=(
+                "bayesfilter.nonlinear."
+                "ssl_lstm_complexity_batched_target_tf"
+            ),
+            target_scope=self.target_scope,
+            evidence_path=_EVIDENCE_PATH,
+            nonclaims=(
+                "controlled synthetic target only",
+                "training target status does not establish HMC readiness",
+                "no posterior oracle or model adequacy claim",
+            ),
+        )
+
     def signature_payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.ssl_lstm.complexity_batch_native_target.v1",
+            "schema": "bayesfilter.ssl_lstm.complexity_batch_native_target.v2",
             "target_signature": self._target_signature,
             "adapter_signature": self._adapter_signature,
             "q": self.q,
@@ -138,28 +158,22 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
             self._compiled_batches[size] = compiled
         return compiled(values)
 
+    def neutra_batch_log_prob_and_grad_status(
+        self, theta: Any
+    ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+        return _batch_native_neutra_value_score_status(self, theta)
+
     def _batch_value_score_impl(
         self, free: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
-        model, derivatives = self._batched_components(free)
-        likelihood, likelihood_score, _diagnostics = (
-            tf_batched_svd_sigma_point_value_and_score_custom_gradient(
-                free,
-                self.config.observations,
-                model,
-                derivatives,
-                backend="tf_principal_sqrt_ukf",
-                placement_floor=tf.constant(0.0, tf.float64),
-                innovation_floor=tf.constant(1.0e-12, tf.float64),
-                principal_sqrt_backend=self._principal_sqrt_backend,
-            )
+        value, score, status = _batch_native_neutra_value_score_status(self, free)
+        valid = tf.convert_to_tensor(
+            status["valid_pre_regularized_score"], tf.bool
         )
-        delta = free - PRIOR_CENTER[tf.newaxis, :]
-        variance = tf.constant(16.0, tf.float64)
-        value = likelihood - 0.5 * tf.reduce_sum(tf.square(delta) / variance, axis=1)
-        score = likelihood_score - delta / variance
-        return tf.ensure_shape(value, [free.shape[0]]), tf.ensure_shape(
-            score, [free.shape[0], 4]
+        invalid_value = tf.fill(tf.shape(value), tf.constant(float("nan"), tf.float64))
+        invalid_score = tf.fill(tf.shape(score), tf.constant(float("nan"), tf.float64))
+        return tf.where(valid, value, invalid_value), tf.where(
+            valid[:, tf.newaxis], score, invalid_score
         )
 
     def _batched_components(
@@ -434,6 +448,77 @@ class BatchNativeSSLLSTMComplexityPosteriorTarget:
         return model, derivatives
 
 
+def _batch_native_neutra_value_score_status(
+    target: BatchNativeSSLLSTMComplexityPosteriorTarget,
+    free: Any,
+) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
+    values = tf.convert_to_tensor(free, tf.float64)
+    if values.shape.rank != 2 or values.shape[-1] != 4:
+        raise ValueError("batch-native target requires shape [batch,4]")
+    if values.shape[0] is None:
+        raise ValueError("batch-native target requires a static batch size")
+
+    model, derivatives = target._batched_components(values)
+    likelihood, likelihood_score, diagnostics = (
+        tf_batched_svd_sigma_point_value_and_score_custom_gradient(
+            values,
+            target.config.observations,
+            model,
+            derivatives,
+            backend="tf_principal_sqrt_ukf",
+            placement_floor=tf.constant(0.0, tf.float64),
+            innovation_floor=tf.constant(1.0e-12, tf.float64),
+            principal_sqrt_backend=target._principal_sqrt_backend,
+        )
+    )
+    delta = values - PRIOR_CENTER[tf.newaxis, :]
+    variance = tf.constant(16.0, tf.float64)
+    value = likelihood - 0.5 * tf.reduce_sum(tf.square(delta) / variance, axis=1)
+    score = likelihood_score - delta / variance
+
+    placement_floors = tf.convert_to_tensor(
+        diagnostics["placement_floor_count"], tf.int32
+    )
+    innovation_floors = tf.convert_to_tensor(
+        diagnostics["innovation_floor_count"], tf.int32
+    )
+    floor_count = placement_floors + innovation_floors
+    row_class = tf.convert_to_tensor(
+        diagnostics["principal_sqrt_target_row_class_code"], tf.int32
+    )
+    valid_count = tf.convert_to_tensor(
+        diagnostics["principal_sqrt_target_valid_count"], tf.int32
+    )
+    min_eigenvalue = tf.convert_to_tensor(
+        diagnostics["min_innovation_eigenvalue"], tf.float64
+    )
+    finite = tf.logical_and(
+        tf.math.is_finite(value),
+        tf.reduce_all(tf.math.is_finite(score), axis=1),
+    )
+    valid = tf.logical_and(
+        finite,
+        tf.logical_and(
+            tf.equal(floor_count, 0),
+            tf.logical_and(
+                tf.logical_and(tf.equal(row_class, 0), tf.equal(valid_count, 1)),
+                tf.logical_and(tf.math.is_finite(min_eigenvalue), min_eigenvalue > 0.0),
+            ),
+        ),
+    )
+    status = {
+        "status_code": tf.where(valid, 0, 1),
+        "valid_pre_regularized_score": valid,
+        "floor_count_value": floor_count,
+        "min_innovation_eigenvalue": min_eigenvalue,
+    }
+    return (
+        tf.ensure_shape(value, [values.shape[0]]),
+        tf.ensure_shape(score, [values.shape[0], 4]),
+        status,
+    )
+
+
 def batch_native_complexity_posterior_target(
     q: int,
     *,
@@ -454,7 +539,7 @@ def batch_native_complexity_target_worker_factory(
         raise ValueError("batch-native worker config requires q")
     return batch_native_complexity_posterior_target(
         int(config["q"]),
-        jit_compile=False,
+        jit_compile=bool(config.get("jit_compile", False)),
         principal_sqrt_backend=str(
             config.get("principal_sqrt_backend", "tensorflow_eigh")
         ),

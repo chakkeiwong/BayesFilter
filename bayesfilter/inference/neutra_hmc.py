@@ -772,6 +772,8 @@ class _ArchivedSequentialNeuTraHMCConfig:
     bulk_ess_min: float = 400.0
     tail_ess_min: float = 400.0
     delta_h_abs_max: float = 1000.0
+    acceptance_min: float = 0.35
+    acceptance_max: float = 0.95
     chain_count: int = 4
     use_xla: bool = True
     target_status_required: bool = True
@@ -795,6 +797,8 @@ class _ArchivedSequentialNeuTraHMCConfig:
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
             object.__setattr__(self, name, value)
+        if self.num_leapfrog_steps < 2:
+            raise ValueError("num_leapfrog_steps must be greater than or equal to 2")
         if self.chain_count < 2:
             raise ValueError("sequential HMC requires at least two chains")
         if self.warmup_window_results > self.warmup_min_results:
@@ -829,6 +833,13 @@ class _ArchivedSequentialNeuTraHMCConfig:
             object.__setattr__(self, name, value)
         if self.warmup_rhat_max <= 1.0 or self.retained_rhat_max <= 1.0:
             raise ValueError("R-hat thresholds must exceed one")
+        for name in ("acceptance_min", "acceptance_max"):
+            value = float(getattr(self, name))
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+            object.__setattr__(self, name, value)
+        if self.acceptance_min >= self.acceptance_max:
+            raise ValueError("acceptance_min must be less than acceptance_max")
         seed = tuple(int(item) for item in self.seed)
         if len(seed) != 2:
             raise ValueError("seed must contain two integers")
@@ -856,7 +867,7 @@ class _ArchivedSequentialNeuTraHMCResult:
     metadata: Mapping[str, Any]
 
     def payload(self) -> Mapping[str, Any]:
-        return {"schema": SEQUENTIAL_NEUTRA_HMC_SCHEMA, **asdict(self)}
+        return {"schema": _ARCHIVED_SEQUENTIAL_NEUTRA_HMC_SCHEMA, **asdict(self)}
 
 
 def _archived_sequential_chunk_seed(
@@ -1051,7 +1062,6 @@ def _target_status(adapter: Any, samples: tf.Tensor) -> Mapping[str, Any]:
         "valid_pre_regularized_score",
         "floor_count_value",
         "min_innovation_eigenvalue",
-        "innovation_condition_estimate",
     )
     if any(key not in status_by_batch for key in required):
         raise NeuTraHMCError("target status telemetry schema mismatch")
@@ -1068,17 +1078,23 @@ def _target_status(adapter: Any, samples: tf.Tensor) -> Mapping[str, Any]:
     min_eigen = tf.convert_to_tensor(
         combined_status["min_innovation_eigenvalue"], tf.float64
     )
-    condition = tf.convert_to_tensor(
-        combined_status["innovation_condition_estimate"], tf.float64
+    condition_raw = combined_status.get("innovation_condition_estimate")
+    condition = (
+        None
+        if condition_raw is None
+        else tf.convert_to_tensor(condition_raw, tf.float64)
     )
     target_finite = tf.logical_and(
         tf.reduce_all(tf.math.is_finite(combined_values)),
         tf.reduce_all(tf.math.is_finite(combined_scores)),
     )
     status_valid = tf.reduce_all(tf.logical_and(tf.equal(code, 0), valid))
-    diagnostics_finite = tf.reduce_all(
-        tf.math.is_finite(tf.concat((min_eigen, condition), axis=0))
-    )
+    diagnostics_finite = tf.reduce_all(tf.math.is_finite(min_eigen))
+    if condition is not None:
+        diagnostics_finite = tf.logical_and(
+            diagnostics_finite,
+            tf.reduce_all(tf.math.is_finite(condition)),
+        )
     passed = tf.logical_and(target_finite, tf.logical_and(status_valid, diagnostics_finite))
     return {
         "passed": bool(passed.numpy()),
@@ -1088,7 +1104,14 @@ def _target_status(adapter: Any, samples: tf.Tensor) -> Mapping[str, Any]:
         ),
         "floor_count_total": int(tf.reduce_sum(floors).numpy()),
         "minimum_innovation_eigenvalue": float(tf.reduce_min(min_eigen).numpy()),
-        "maximum_innovation_condition_estimate": float(tf.reduce_max(condition).numpy()),
+        "maximum_innovation_condition_estimate": (
+            None
+            if condition is None
+            else float(tf.reduce_max(condition).numpy())
+        ),
+        "innovation_condition_estimate_status": (
+            "not_exposed_by_target" if condition is None else "available"
+        ),
         "audit_batch_size": audit_rows,
         "audit_batch_count": len(audit_batches),
         "audited_state_count": int(samples.shape[0]) * int(samples.shape[1]),
@@ -1111,14 +1134,50 @@ class _ChunkRunner:
             )
 
             def trace_fn(_state: Any, results: Any) -> Mapping[str, tf.Tensor]:
-                return {
+                target_log_prob = results.accepted_results.target_log_prob
+                target_score = results.accepted_results.grads_target_log_prob[0]
+                trace = {
                     "is_accepted": results.is_accepted,
                     "log_accept_ratio": results.log_accept_ratio,
-                    "target_log_prob": results.accepted_results.target_log_prob,
+                    "target_log_prob": target_log_prob,
                     "proposed_target_log_prob": results.proposed_results.target_log_prob,
+                    "target_score": target_score,
                     # For identity-mass TFP HMC, log(alpha ratio) = -Delta H.
                     "delta_h": -results.log_accept_ratio,
                 }
+                telemetry = getattr(adapter, "target_status_telemetry", None)
+                if config.target_status_required and bool(
+                    getattr(adapter, "target_status_invalid_rows_become_nonfinite", False)
+                ):
+                    valid = tf.logical_and(
+                        tf.math.is_finite(target_log_prob),
+                        tf.reduce_all(tf.math.is_finite(target_score), axis=-1),
+                    )
+                    trace["target_status_code"] = tf.where(valid, 0, 1)
+                    trace["target_valid_pre_regularized_score"] = valid
+                elif config.target_status_required and callable(telemetry):
+                    status = telemetry(_state)
+                    required = ("status_code", "valid_pre_regularized_score")
+                    missing = tuple(key for key in required if key not in status)
+                    if missing:
+                        raise NeuTraHMCError(
+                            "target status telemetry missing: " + ", ".join(missing)
+                        )
+                    trace["target_status_code"] = tf.cast(
+                        status["status_code"], tf.int32
+                    )
+                    trace["target_valid_pre_regularized_score"] = tf.cast(
+                        status["valid_pre_regularized_score"], tf.bool
+                    )
+                    if "floor_count_value" in status:
+                        trace["target_floor_count_value"] = tf.cast(
+                            status["floor_count_value"], tf.int32
+                        )
+                    if "min_innovation_eigenvalue" in status:
+                        trace["target_min_innovation_eigenvalue"] = tf.cast(
+                            status["min_innovation_eigenvalue"], tf.float64
+                        )
+                return trace
 
             return tfp.mcmc.sample_chain(
                 num_results=config.warmup_chunk_size,
@@ -1145,6 +1204,103 @@ def _chain_moved(pre_chunk_state: tf.Tensor, samples: tf.Tensor) -> tf.Tensor:
     return tf.reduce_any(tf.not_equal(sequence[1:], sequence[:-1]), axis=(0, 2))
 
 
+def _target_status_from_trace(trace: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    if not all(
+        key in trace
+        for key in ("target_status_code", "target_valid_pre_regularized_score")
+    ):
+        return None
+    code = tf.cast(tf.convert_to_tensor(trace["target_status_code"]), tf.int32)
+    valid = tf.cast(
+        tf.convert_to_tensor(trace["target_valid_pre_regularized_score"]), tf.bool
+    )
+    nonvalid = tf.logical_or(tf.not_equal(code, 0), tf.logical_not(valid))
+    floors = tf.cast(
+        tf.convert_to_tensor(
+            trace.get("target_floor_count_value", tf.zeros_like(code))
+        ),
+        tf.int32,
+    )
+    eigen_raw = trace.get("target_min_innovation_eigenvalue")
+    eigen = (
+        None
+        if eigen_raw is None
+        else tf.cast(tf.convert_to_tensor(eigen_raw), tf.float64)
+    )
+    eigen_valid = (
+        tf.constant(True)
+        if eigen is None
+        else tf.reduce_all(tf.logical_and(tf.math.is_finite(eigen), eigen > 0.0))
+    )
+    passed = tf.logical_and(
+        tf.reduce_all(tf.logical_not(nonvalid)),
+        tf.logical_and(tf.reduce_all(tf.equal(floors, 0)), eigen_valid),
+    )
+    return {
+        "passed": bool(passed.numpy()),
+        "source": "per_transition_hmc_trace",
+        "status_nonvalid_count": int(
+            tf.reduce_sum(tf.cast(nonvalid, tf.int32)).numpy()
+        ),
+        "floor_count_total": int(tf.reduce_sum(floors).numpy()),
+        "minimum_innovation_eigenvalue": (
+            None if eigen is None else float(tf.reduce_min(eigen).numpy())
+        ),
+        "audited_state_count": int(tf.size(code).numpy()),
+        "target_value_score_all_finite": None,
+    }
+
+
+def _chunk_policy_vetoes(
+    *,
+    samples_finite: bool,
+    log_accept_finite: bool,
+    target_finite: bool,
+    proposed_finite: bool,
+    target_score_finite: bool,
+    delta_h_finite: bool,
+    target_status_passed: bool,
+    acceptance_probability_by_chain: Any,
+    acceptance_min: float,
+    acceptance_max: float,
+    native_divergence_status: str,
+    native_divergence_count: int | None,
+) -> tuple[str, ...]:
+    """Classify only the declared sequential mechanics gates."""
+
+    vetoes = []
+    if not samples_finite:
+        vetoes.append("nonfinite_state")
+    if not log_accept_finite:
+        vetoes.append("nonfinite_log_accept_ratio")
+    if not target_finite or not proposed_finite:
+        vetoes.append("nonfinite_target_log_prob")
+    if not target_score_finite:
+        vetoes.append("nonfinite_target_score")
+    if not delta_h_finite:
+        vetoes.append("nonfinite_delta_h")
+    if not target_status_passed:
+        vetoes.append("target_status_veto")
+    acceptance = tf.convert_to_tensor(
+        acceptance_probability_by_chain, dtype=tf.float64
+    )
+    acceptance_in_bounds = tf.reduce_all(
+        tf.logical_and(
+            acceptance >= tf.constant(acceptance_min, tf.float64),
+            acceptance <= tf.constant(acceptance_max, tf.float64),
+        )
+    )
+    if not bool(acceptance_in_bounds.numpy()):
+        vetoes.append("acceptance_probability_outside_declared_bounds")
+    if (
+        str(native_divergence_status) == "available"
+        and native_divergence_count is not None
+        and int(native_divergence_count) > 0
+    ):
+        vetoes.append("positive_native_divergence")
+    return tuple(dict.fromkeys(vetoes))
+
+
 def _run_archived_sequential_neutra_hmc(
     adapter: Any,
     initial_state: Any,
@@ -1153,6 +1309,11 @@ def _run_archived_sequential_neutra_hmc(
     archive_root: str | Path,
     archive_label: str,
     budget_check: Callable[[int], bool | None] | None = None,
+    run_chunk: Callable[
+        [tf.Tensor, tuple[int, int], _ArchivedSequentialNeuTraHMCConfig],
+        tuple[Any, Mapping[str, Any]],
+    ]
+    | None = None,
 ) -> _ArchivedSequentialNeuTraHMCResult:
     """Run fixed-kernel sequential warm-up and retained HMC."""
 
@@ -1167,7 +1328,7 @@ def _run_archived_sequential_neutra_hmc(
     if root.exists() and any(root.iterdir()):
         raise NeuTraHMCError("archive_root must be new or empty")
     root.mkdir(parents=True, exist_ok=True)
-    runner = _ChunkRunner(adapter, state, config)
+    runner = None if run_chunk is not None else _ChunkRunner(adapter, state, config)
     started = time.perf_counter()
     phase_rows: dict[str, list[Mapping[str, Any]]] = {"warmup": [], "retained": []}
     phase_samples: dict[str, list[tf.Tensor]] = {"warmup": [], "retained": []}
@@ -1200,7 +1361,12 @@ def _run_archived_sequential_neutra_hmc(
             )
             pre_chunk_state = state
             chunk_started = time.perf_counter()
-            samples, trace = runner.run(state, tf.constant(seed, tf.int32))
+            if run_chunk is None:
+                if runner is None:
+                    raise NeuTraHMCError("internal chunk runner is unavailable")
+                samples, trace = runner.run(state, tf.constant(seed, tf.int32))
+            else:
+                samples, trace = run_chunk(state, seed, config)
             chunk_seconds = time.perf_counter() - chunk_started
             samples = tf.convert_to_tensor(samples, tf.float64)
             state = samples[-1]
@@ -1218,27 +1384,61 @@ def _run_archived_sequential_neutra_hmc(
                     tf.convert_to_tensor(trace["proposed_target_log_prob"], tf.float64)
                 )
             )
+            target_score_finite = tf.reduce_all(
+                tf.math.is_finite(
+                    tf.convert_to_tensor(trace["target_score"], tf.float64)
+                )
+            )
             delta_h = tf.convert_to_tensor(trace["delta_h"], tf.float64)
             delta_h_finite = tf.reduce_all(tf.math.is_finite(delta_h))
             delta_h_within_limit = tf.reduce_all(
                 tf.abs(delta_h) <= tf.constant(config.delta_h_abs_max, tf.float64)
             )
-            status = _target_status(adapter, samples) if config.target_status_required else {"passed": True}
-            chunk_hard = []
-            if not bool(samples_finite.numpy()):
-                chunk_hard.append("nonfinite_state")
-            if not bool(log_accept_finite.numpy()):
-                chunk_hard.append("nonfinite_log_accept_ratio")
-            if not bool(target_finite.numpy()) or not bool(proposed_finite.numpy()):
-                chunk_hard.append("nonfinite_target_log_prob")
-            if not bool(delta_h_finite.numpy()):
-                chunk_hard.append("nonfinite_delta_h")
-            elif not bool(delta_h_within_limit.numpy()):
-                chunk_hard.append("absolute_delta_h_above_hard_limit")
-            if not bool(tf.reduce_all(moved).numpy()):
-                chunk_hard.append("unmoved_chain")
-            if not bool(status["passed"]):
-                chunk_hard.append("target_status_veto")
+            acceptance_probability_by_chain = tf.reduce_mean(
+                tf.exp(
+                    tf.minimum(
+                        tf.convert_to_tensor(trace["log_accept_ratio"], tf.float64),
+                        0.0,
+                    )
+                ),
+                axis=0,
+            )
+            native_divergence = trace.get("divergence")
+            native_divergence_status = (
+                "available" if native_divergence is not None else "not_exposed_by_kernel"
+            )
+            native_divergence_count = (
+                None
+                if native_divergence is None
+                else int(
+                    tf.reduce_sum(
+                        tf.cast(tf.convert_to_tensor(native_divergence), tf.int32)
+                    ).numpy()
+                )
+            )
+            status = (
+                _target_status_from_trace(trace)
+                if config.target_status_required
+                else {"passed": True, "source": "not_required"}
+            )
+            if config.target_status_required and status is None:
+                status = _target_status(adapter, samples)
+            chunk_hard = list(
+                _chunk_policy_vetoes(
+                    samples_finite=bool(samples_finite.numpy()),
+                    log_accept_finite=bool(log_accept_finite.numpy()),
+                    target_finite=bool(target_finite.numpy()),
+                    proposed_finite=bool(proposed_finite.numpy()),
+                    target_score_finite=bool(target_score_finite.numpy()),
+                    delta_h_finite=bool(delta_h_finite.numpy()),
+                    target_status_passed=bool(status["passed"]),
+                    acceptance_probability_by_chain=acceptance_probability_by_chain,
+                    acceptance_min=config.acceptance_min,
+                    acceptance_max=config.acceptance_max,
+                    native_divergence_status=native_divergence_status,
+                    native_divergence_count=native_divergence_count,
+                )
+            )
             checkpoint_diagnostics: Mapping[str, Any] = {}
             if not chunk_hard:
                 phase_samples[phase].append(samples)
@@ -1287,25 +1487,31 @@ def _run_archived_sequential_neutra_hmc(
                 "trace_receipts": trace_receipts,
                 "chunk_seconds": chunk_seconds,
                 "acceptance_probability_by_chain": _tensor_tree_python(
-                    tf.reduce_mean(
-                        tf.exp(tf.minimum(tf.convert_to_tensor(trace["log_accept_ratio"], tf.float64), 0.0)),
-                        axis=0,
-                    )
+                    acceptance_probability_by_chain
                 ),
+                "acceptance_bounds": [config.acceptance_min, config.acceptance_max],
                 "chain_moved": _tensor_tree_python(moved),
+                "chain_movement_role": "explanatory_only",
                 "target_status": status,
                 "energy_error": {
                     "identity": "delta_h_equals_negative_log_accept_ratio",
                     "maximum_absolute_delta_h": float(
                         tf.reduce_max(tf.abs(delta_h)).numpy()
                     ),
-                    "absolute_delta_h_hard_limit": config.delta_h_abs_max,
+                    "finite_tail_alert_threshold": config.delta_h_abs_max,
+                    "finite_tail_role": "explanatory_alert_only",
                     "all_finite": bool(delta_h_finite.numpy()),
-                    "within_hard_limit": bool(delta_h_within_limit.numpy()),
+                    "within_alert_threshold": bool(delta_h_within_limit.numpy()),
                 },
                 "checkpoint_diagnostics": checkpoint_diagnostics,
                 "hard_vetoes": chunk_hard,
-                "native_divergence_status": "not_exposed_by_kernel",
+                "native_divergence_status": native_divergence_status,
+                "native_divergence_count": native_divergence_count,
+                "native_divergence_interpretation": (
+                    "available native boolean/count"
+                    if native_divergence_status == "available"
+                    else "unavailable is not zero divergences"
+                ),
             }
             _write_json(root / phase / f"{prefix}-receipt.json", row)
             phase_rows[phase].append(row)
@@ -1354,7 +1560,10 @@ def _run_archived_sequential_neutra_hmc(
             "warmup": last_warmup_diagnostics,
             "retained": last_retained_diagnostics,
             "hard_vetoes": list(dict.fromkeys(hard_vetoes)),
-            "acceptance_role": "explanatory_only",
+            "acceptance_role": "per_chain_declared_bound_gate",
+            "acceptance_bounds": [config.acceptance_min, config.acceptance_max],
+            "finite_delta_h_tail_role": "explanatory_alert_only",
+            "movement_role": "explanatory_only",
             "native_divergence_status": "not_exposed_by_kernel",
         },
         archive={
