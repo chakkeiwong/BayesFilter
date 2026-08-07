@@ -235,6 +235,94 @@ def test_pairwise_moment_manual_jvp_matches_independent_forward_accumulator():
     tf.debugging.assert_near(automatic, manual, atol=2e-10, rtol=2e-10)
 
 
+def test_dual_cap_bounds_pairwise_direction_and_restores_affine_moments():
+    n = 96
+    source, weights, points, source_tangent, weights_tangent, points_tangent = (
+        _fixture(n=n, d=3)
+    )
+    result = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=2,
+        strength=0.02,
+        floor=1e-6,
+        pairwise_correction_steps=3,
+        pairwise_strength=0.02,
+        pairwise_particle_rms_cap=0.75,
+        coordinatewise_standardized_cap=0.98,
+    )
+    assert float(result["maximum_pairwise_post_cap_particle_rms"].numpy()) < 0.75
+    assert float(result["maximum_coordinatewise_post_cap_absolute"].numpy()) < 0.98
+    assert float(result["minimum_pairwise_particle_cap_scale"].numpy()) < 1.0
+
+    output_mean = tf.reduce_mean(result["particles"], axis=0)
+    output_centered = result["particles"] - output_mean[None, :]
+    output_covariance = tf.einsum(
+        "ni,nj->ij", output_centered, output_centered
+    ) / tf.cast(n, tf.float64)
+    target_mean = tf.reduce_sum(weights[:, None] * source, axis=0)
+    target_centered = source - target_mean[None, :]
+    target_covariance = tf.einsum(
+        "n,ni,nj->ij", weights, target_centered, target_centered
+    )
+    tf.debugging.assert_near(output_mean, target_mean, atol=2e-10, rtol=2e-10)
+    tf.debugging.assert_near(
+        output_covariance, target_covariance, atol=2e-10, rtol=2e-10
+    )
+
+
+def test_dual_cap_manual_jvp_matches_forward_accumulator():
+    source, weights, points, source_tangent, weights_tangent, points_tangent = (
+        _fixture(n=32, d=3)
+    )
+
+    def forward(source_value, weights_value, points_value):
+        zeros_source = tf.zeros([32, 3, 1], tf.float64)
+        zeros_weights = tf.zeros([32, 1], tf.float64)
+        return higher_moment_shape_jvp(
+            source_value,
+            weights_value,
+            zeros_source,
+            zeros_weights,
+            points_value,
+            zeros_source,
+            correction_steps=2,
+            strength=0.02,
+            floor=1e-6,
+            pairwise_correction_steps=2,
+            pairwise_strength=0.01,
+            pairwise_particle_rms_cap=0.8,
+            coordinatewise_standardized_cap=0.98,
+        )["particles"]
+
+    with tf.autodiff.ForwardAccumulator(
+        (source, weights, points),
+        (source_tangent, weights_tangent, points_tangent),
+    ) as accumulator:
+        output = forward(source, weights, points)
+    automatic = accumulator.jvp(output)
+    manual = higher_moment_shape_jvp(
+        source,
+        weights,
+        source_tangent[:, :, None],
+        weights_tangent[:, None],
+        points,
+        points_tangent[:, :, None],
+        correction_steps=2,
+        strength=0.02,
+        floor=1e-6,
+        pairwise_correction_steps=2,
+        pairwise_strength=0.01,
+        pairwise_particle_rms_cap=0.8,
+        coordinatewise_standardized_cap=0.98,
+    )["particles_tangent"][:, :, 0]
+    tf.debugging.assert_near(automatic, manual, atol=1e-8, rtol=1e-8)
+
+
 def test_projected_cumulant_reduces_complete_tensor_residual_and_restores_affine_moments():
     n = 96
     d = 4

@@ -146,6 +146,15 @@ def _make_evaluator(
                 pairwise_moment_floor=float(
                     controls.get("pairwise_moment_floor", 1.0e-5)
                 ),
+                pairwise_particle_rms_cap=float(
+                    controls.get("pairwise_particle_rms_cap", 0.0)
+                ),
+                coordinatewise_standardized_cap=float(
+                    controls.get("coordinatewise_standardized_cap", 0.0)
+                ),
+                coordinatewise_standardized_cap_power=int(
+                    controls.get("coordinatewise_standardized_cap_power", 8)
+                ),
             )
 
     return evaluate
@@ -184,6 +193,30 @@ def _evaluate(evaluate: Any, theta: tf.Tensor, observations: tf.Tensor, seed: in
         ),
         "maximum_pairwise_co_kurtosis_residual": float(
             diagnostics["maximum_pairwise_co_kurtosis_residual"].numpy()
+        ),
+        "maximum_pairwise_pre_cap_particle_rms": float(
+            diagnostics["maximum_pairwise_pre_cap_particle_rms"].numpy()
+        ),
+        "maximum_pairwise_post_cap_particle_rms": float(
+            diagnostics["maximum_pairwise_post_cap_particle_rms"].numpy()
+        ),
+        "minimum_pairwise_particle_cap_scale": float(
+            diagnostics["minimum_pairwise_particle_cap_scale"].numpy()
+        ),
+        "maximum_coordinatewise_pre_cap_absolute": float(
+            diagnostics["maximum_coordinatewise_pre_cap_absolute"].numpy()
+        ),
+        "maximum_coordinatewise_post_cap_absolute": float(
+            diagnostics["maximum_coordinatewise_post_cap_absolute"].numpy()
+        ),
+        "mean_coordinatewise_cap_displacement": float(
+            diagnostics["mean_coordinatewise_cap_displacement"].numpy()
+        ),
+        "fraction_coordinatewise_cap_active": float(
+            diagnostics["fraction_coordinatewise_cap_active"].numpy()
+        ),
+        "minimum_coordinatewise_cap_derivative": float(
+            diagnostics["minimum_coordinatewise_cap_derivative"].numpy()
         ),
         "device": str(value.device),
         "particle_seed": seed,

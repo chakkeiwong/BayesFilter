@@ -104,6 +104,53 @@ def _uniform_moments_jvp(
     return mean, _sym(covariance), mean_tangent, _sym_tangent(covariance_tangent)
 
 
+def affine_restore_cloud_jvp(
+    source: tf.Tensor,
+    weights: tf.Tensor,
+    source_tangent: tf.Tensor,
+    weights_tangent: tf.Tensor,
+    points: tf.Tensor,
+    points_tangent: tf.Tensor,
+) -> dict[str, tf.Tensor]:
+    """Restore a uniform cloud to the weighted source mean and covariance."""
+
+    target_mean, target_cov, target_mean_tangent, target_cov_tangent = (
+        _weighted_moments_jvp(
+            source, weights, source_tangent, weights_tangent
+        )
+    )
+    current_mean, current_cov, current_mean_tangent, current_cov_tangent = (
+        _uniform_moments_jvp(points, points_tangent)
+    )
+    target_chol = tf.linalg.cholesky(target_cov)
+    current_chol = tf.linalg.cholesky(current_cov)
+    target_chol_tangent = _cholesky_jvp(target_chol, target_cov_tangent)
+    current_chol_tangent = _cholesky_jvp(current_chol, current_cov_tangent)
+    centered = points - current_mean[None, :]
+    centered_tangent = points_tangent - current_mean_tangent[None, :, :]
+    standardized = _right_solve(current_chol, centered)
+    standardized_tangent = _right_solve_jvp(
+        current_chol,
+        current_chol_tangent,
+        centered,
+        centered_tangent,
+    )
+    output = target_mean[None, :] + tf.linalg.matmul(
+        standardized, target_chol, transpose_b=True
+    )
+    output_tangent = (
+        target_mean_tangent[None, :, :]
+        + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)
+        + tf.einsum("ni,jip->njp", standardized, target_chol_tangent)
+    )
+    return {
+        "particles": output,
+        "particles_tangent": output_tangent,
+        "valid": tf.reduce_all(tf.math.is_finite(output))
+        & tf.reduce_all(tf.math.is_finite(output_tangent)),
+    }
+
+
 def _weighted_diag_moments_jvp(
     source: tf.Tensor,
     weights: tf.Tensor,
@@ -441,7 +488,8 @@ def _pairwise_shape_iteration_jvp(
     *,
     strength: float,
     floor: float,
-) -> tuple[tf.Tensor, tf.Tensor]:
+    particle_rms_cap: float,
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     """Take one bounded residual-gradient step over all coordinate pairs."""
 
     co_skew, co_kurtosis, co_skew_tangent, co_kurtosis_tangent = (
@@ -544,12 +592,51 @@ def _pairwise_shape_iteration_jvp(
         projected_tangent / rms
         - projected[:, :, None] * rms_tangent[None, None, :] / tf.square(rms)
     )
+    pre_cap_particle_rms = tf.sqrt(
+        tf.reduce_mean(tf.square(normalized_direction), axis=1)
+    )
+    if particle_rms_cap > 0.0:
+        cap = tf.cast(particle_rms_cap, standardized.dtype)
+        row_mean_square = tf.reduce_mean(
+            tf.square(normalized_direction), axis=1
+        )
+        row_mean_square_tangent = 2.0 * tf.reduce_mean(
+            normalized_direction[:, :, None] * normalized_direction_tangent,
+            axis=1,
+        )
+        scale_base = 1.0 + row_mean_square / tf.square(cap)
+        row_scale = tf.math.rsqrt(scale_base)
+        row_scale_tangent = (
+            -0.5
+            * tf.pow(scale_base[:, None], -1.5)
+            * row_mean_square_tangent
+            / tf.square(cap)
+        )
+        normalized_direction_tangent = (
+            normalized_direction_tangent * row_scale[:, None, None]
+            + normalized_direction[:, :, None] * row_scale_tangent[:, None, :]
+        )
+        normalized_direction *= row_scale[:, None]
+    else:
+        row_scale = tf.ones_like(pre_cap_particle_rms)
+    post_cap_particle_rms = tf.sqrt(
+        tf.reduce_mean(tf.square(normalized_direction), axis=1)
+    )
     corrected = standardized + tf.cast(strength, standardized.dtype) * normalized_direction
     corrected_tangent = (
         standardized_tangent
         + tf.cast(strength, standardized.dtype) * normalized_direction_tangent
     )
-    return _standardize_uniform_jvp(corrected, corrected_tangent)
+    output, output_tangent = _standardize_uniform_jvp(
+        corrected, corrected_tangent
+    )
+    return (
+        output,
+        output_tangent,
+        tf.reduce_max(pre_cap_particle_rms),
+        tf.reduce_max(post_cap_particle_rms),
+        tf.reduce_min(row_scale),
+    )
 
 
 def _shape_iteration_jvp(
@@ -712,6 +799,9 @@ def higher_moment_shape_jvp(
     pairwise_correction_steps: int = 0,
     pairwise_strength: float = 0.0,
     pairwise_floor: float = 1.0e-6,
+    pairwise_particle_rms_cap: float = 0.0,
+    coordinatewise_standardized_cap: float = 0.0,
+    coordinatewise_standardized_cap_power: int = 8,
     projected_cumulant_basis: tf.Tensor | None = None,
     projected_cumulant_correction_steps: int = 0,
     projected_cumulant_strength: float = 0.0,
@@ -741,6 +831,11 @@ def higher_moment_shape_jvp(
         or pairwise_correction_steps < 0
         or pairwise_strength < 0.0
         or pairwise_floor <= 0.0
+        or pairwise_particle_rms_cap < 0.0
+        or coordinatewise_standardized_cap < 0.0
+        or coordinatewise_standardized_cap >= 1.0
+        or coordinatewise_standardized_cap_power < 2
+        or coordinatewise_standardized_cap_power % 2 != 0
         or projected_cumulant_correction_steps < 0
         or projected_cumulant_strength < 0.0
         or projected_cumulant_floor <= 0.0
@@ -945,6 +1040,18 @@ def higher_moment_shape_jvp(
             "pairwise_co_skew_target_mask": target_co_skew_mask,
             "pairwise_co_kurtosis_target_mask": target_co_kurtosis_mask,
             "target_source_id": target_source_id,
+            "maximum_pairwise_pre_cap_particle_rms": tf.zeros([], source.dtype),
+            "maximum_pairwise_post_cap_particle_rms": tf.zeros([], source.dtype),
+            "minimum_pairwise_particle_cap_scale": tf.ones([], source.dtype),
+            "maximum_coordinatewise_pre_cap_absolute": tf.reduce_max(
+                tf.abs(output_standardized)
+            ),
+            "maximum_coordinatewise_post_cap_absolute": tf.reduce_max(
+                tf.abs(output_standardized)
+            ),
+            "mean_coordinatewise_cap_displacement": tf.zeros([], source.dtype),
+            "fraction_coordinatewise_cap_active": tf.zeros([], source.dtype),
+            "minimum_coordinatewise_cap_derivative": tf.ones([], source.dtype),
             "projected_cumulant_residual_norm": tf.zeros([], source.dtype),
             "projected_cumulant_third_residual_norm": tf.zeros([], source.dtype),
             "projected_cumulant_fourth_residual_norm": tf.zeros([], source.dtype),
@@ -986,8 +1093,21 @@ def higher_moment_shape_jvp(
         tf.zeros([], tf.int32),
     )
 
-    def pairwise_body(index, current, current_tangent):
-        next_points, next_tangent = _pairwise_shape_iteration_jvp(
+    def pairwise_body(
+        index,
+        current,
+        current_tangent,
+        maximum_pre_cap_rms,
+        maximum_post_cap_rms,
+        minimum_cap_scale,
+    ):
+        (
+            next_points,
+            next_tangent,
+            next_pre_cap_rms,
+            next_post_cap_rms,
+            next_minimum_cap_scale,
+        ) = _pairwise_shape_iteration_jvp(
             current,
             current_tangent,
             target_co_skew,
@@ -998,13 +1118,35 @@ def higher_moment_shape_jvp(
             target_co_kurtosis_mask,
             strength=pairwise_strength,
             floor=pairwise_floor,
+            particle_rms_cap=pairwise_particle_rms_cap,
         )
-        return index + 1, next_points, next_tangent
+        return (
+            index + 1,
+            next_points,
+            next_tangent,
+            tf.maximum(maximum_pre_cap_rms, next_pre_cap_rms),
+            tf.maximum(maximum_post_cap_rms, next_post_cap_rms),
+            tf.minimum(minimum_cap_scale, next_minimum_cap_scale),
+        )
 
-    _, standardized, standardized_tangent = tf.while_loop(
+    (
+        _,
+        standardized,
+        standardized_tangent,
+        maximum_pairwise_pre_cap_particle_rms,
+        maximum_pairwise_post_cap_particle_rms,
+        minimum_pairwise_particle_cap_scale,
+    ) = tf.while_loop(
         lambda index, *_: index < pairwise_steps,
         pairwise_body,
-        (tf.zeros([], tf.int32), standardized, standardized_tangent),
+        (
+            tf.zeros([], tf.int32),
+            standardized,
+            standardized_tangent,
+            tf.zeros([], source.dtype),
+            tf.zeros([], source.dtype),
+            tf.ones([], source.dtype),
+        ),
         parallel_iterations=1,
     )
     projected_steps = tf.constant(projected_cumulant_correction_steps, tf.int32)
@@ -1030,16 +1172,52 @@ def higher_moment_shape_jvp(
             (tf.zeros([], tf.int32), standardized, standardized_tangent),
             parallel_iterations=1,
         )
-    output = mean[None, :] + tf.linalg.matmul(standardized, target_chol, transpose_b=True)
+    standardized_pre_cap = standardized
+    standardized_pre_cap_tangent = standardized_tangent
+    if coordinatewise_standardized_cap > 0.0:
+        cap = tf.cast(coordinatewise_standardized_cap, source.dtype)
+        power = tf.cast(coordinatewise_standardized_cap_power, source.dtype)
+        scaled_power = tf.pow(standardized_pre_cap / cap, power)
+        denominator = tf.pow(1.0 + scaled_power, 1.0 / power)
+        standardized = standardized_pre_cap / denominator
+        standardized_derivative = tf.pow(
+            1.0 + scaled_power, -1.0 / power - 1.0
+        )
+        standardized_tangent = (
+            standardized_derivative[:, :, None]
+            * standardized_pre_cap_tangent
+        )
+    else:
+        standardized_derivative = tf.ones_like(standardized_pre_cap)
+    output = mean[None, :] + tf.linalg.matmul(
+        standardized, target_chol, transpose_b=True
+    )
     output_tangent = (
         mean_tangent[None, :, :]
         + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)
         + tf.einsum("ni,jip->njp", standardized, target_chol_tangent)
     )
-    output_skew = tf.reduce_mean(tf.pow(standardized, 3.0), axis=0)
-    output_kurt = tf.reduce_mean(tf.pow(standardized, 4.0), axis=0)
+    if coordinatewise_standardized_cap > 0.0:
+        restored = affine_restore_cloud_jvp(
+            source,
+            weights,
+            source_tangent,
+            weights_tangent,
+            output,
+            output_tangent,
+        )
+        output = restored["particles"]
+        output_tangent = restored["particles_tangent"]
+        restore_valid = restored["valid"]
+    else:
+        restore_valid = tf.constant(True)
+    output_standardized, output_standardized_tangent = _standardize_uniform_jvp(
+        output, output_tangent
+    )
+    output_skew = tf.reduce_mean(tf.pow(output_standardized, 3.0), axis=0)
+    output_kurt = tf.reduce_mean(tf.pow(output_standardized, 4.0), axis=0)
     output_co_skew, output_co_kurtosis, _, _ = _uniform_pair_moments_jvp(
-        standardized, standardized_tangent
+        output_standardized, output_standardized_tangent
     )
     if projected_basis is None:
         projected_residual3 = tf.zeros([1, 1, 1], source.dtype)
@@ -1057,11 +1235,15 @@ def higher_moment_shape_jvp(
             weights,
             source_standardized_tangent,
             weights_tangent,
-            standardized,
-            standardized_tangent,
+            output_standardized,
+            output_standardized_tangent,
             projected_basis,
         )
-    valid = tf.reduce_all(tf.math.is_finite(output)) & tf.reduce_all(tf.math.is_finite(output_tangent))
+    valid = (
+        tf.reduce_all(tf.math.is_finite(output))
+        & tf.reduce_all(tf.math.is_finite(output_tangent))
+        & restore_valid
+    )
     return {
         "particles": output,
         "particles_tangent": output_tangent,
@@ -1081,6 +1263,34 @@ def higher_moment_shape_jvp(
         "pairwise_co_skew_target_mask": target_co_skew_mask,
         "pairwise_co_kurtosis_target_mask": target_co_kurtosis_mask,
         "target_source_id": target_source_id,
+        "maximum_pairwise_pre_cap_particle_rms": (
+            maximum_pairwise_pre_cap_particle_rms
+        ),
+        "maximum_pairwise_post_cap_particle_rms": (
+            maximum_pairwise_post_cap_particle_rms
+        ),
+        "minimum_pairwise_particle_cap_scale": (
+            minimum_pairwise_particle_cap_scale
+        ),
+        "maximum_coordinatewise_pre_cap_absolute": tf.reduce_max(
+            tf.abs(standardized_pre_cap)
+        ),
+        "maximum_coordinatewise_post_cap_absolute": tf.reduce_max(
+            tf.abs(standardized)
+        ),
+        "mean_coordinatewise_cap_displacement": tf.reduce_mean(
+            tf.abs(standardized - standardized_pre_cap)
+        ),
+        "fraction_coordinatewise_cap_active": tf.reduce_mean(
+            tf.cast(
+                tf.abs(standardized - standardized_pre_cap)
+                > tf.cast(1.0e-7, source.dtype),
+                source.dtype,
+            )
+        ),
+        "minimum_coordinatewise_cap_derivative": tf.reduce_min(
+            standardized_derivative
+        ),
         "projected_cumulant_residual_norm": tf.sqrt(
             tf.reduce_sum(tf.square(projected_residual3))
             + tf.reduce_sum(tf.square(projected_residual4))
@@ -1109,4 +1319,4 @@ def _explicit_target(
     return tf.ensure_shape(tensor, expected_shape)
 
 
-__all__ = ["higher_moment_shape_jvp"]
+__all__ = ["affine_restore_cloud_jvp", "higher_moment_shape_jvp"]

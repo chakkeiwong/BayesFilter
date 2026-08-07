@@ -499,6 +499,9 @@ def finite_value_score(
     pairwise_moment_correction_steps: int = 0,
     pairwise_moment_strength: float = 0.0,
     pairwise_moment_floor: float = 1.0e-6,
+    pairwise_particle_rms_cap: float = 0.0,
+    coordinatewise_standardized_cap: float = 0.0,
+    coordinatewise_standardized_cap_power: int = 8,
     projected_cumulant_basis: Tensor | None = None,
     projected_cumulant_correction_steps: int = 0,
     projected_cumulant_strength: float = 0.0,
@@ -544,6 +547,14 @@ def finite_value_score(
     maximum_kurtosis_residual = tf.zeros([], theta.dtype)
     maximum_pairwise_co_skew_residual = tf.zeros([], theta.dtype)
     maximum_pairwise_co_kurtosis_residual = tf.zeros([], theta.dtype)
+    maximum_pairwise_pre_cap_particle_rms = tf.zeros([], theta.dtype)
+    maximum_pairwise_post_cap_particle_rms = tf.zeros([], theta.dtype)
+    minimum_pairwise_particle_cap_scale = tf.ones([], theta.dtype)
+    maximum_coordinatewise_pre_cap_absolute = tf.zeros([], theta.dtype)
+    maximum_coordinatewise_post_cap_absolute = tf.zeros([], theta.dtype)
+    coordinatewise_cap_displacement_sum = tf.zeros([], theta.dtype)
+    maximum_coordinatewise_cap_active_fraction = tf.zeros([], theta.dtype)
+    minimum_coordinatewise_cap_derivative = tf.ones([], theta.dtype)
     maximum_shape_displacement = tf.zeros([], theta.dtype)
     maximum_normalized_shape_displacement = tf.zeros([], theta.dtype)
     shape_objective_sum = tf.zeros([], theta.dtype)
@@ -598,6 +609,14 @@ def finite_value_score(
         maximum_kurtosis_residual_value: Tensor,
         maximum_pairwise_co_skew_residual_value: Tensor,
         maximum_pairwise_co_kurtosis_residual_value: Tensor,
+        maximum_pairwise_pre_cap_particle_rms_value: Tensor,
+        maximum_pairwise_post_cap_particle_rms_value: Tensor,
+        minimum_pairwise_particle_cap_scale_value: Tensor,
+        maximum_coordinatewise_pre_cap_absolute_value: Tensor,
+        maximum_coordinatewise_post_cap_absolute_value: Tensor,
+        coordinatewise_cap_displacement_sum_value: Tensor,
+        maximum_coordinatewise_cap_active_fraction_value: Tensor,
+        minimum_coordinatewise_cap_derivative_value: Tensor,
         maximum_shape_displacement_value: Tensor,
         maximum_normalized_shape_displacement_value: Tensor,
         shape_objective_sum_value: Tensor,
@@ -711,6 +730,11 @@ def finite_value_score(
             pairwise_correction_steps=pairwise_moment_correction_steps,
             pairwise_strength=pairwise_moment_strength,
             pairwise_floor=pairwise_moment_floor,
+            pairwise_particle_rms_cap=pairwise_particle_rms_cap,
+            coordinatewise_standardized_cap=coordinatewise_standardized_cap,
+            coordinatewise_standardized_cap_power=(
+                coordinatewise_standardized_cap_power
+            ),
             projected_cumulant_basis=basis_for_step,
             projected_cumulant_correction_steps=projected_cumulant_correction_steps,
             projected_cumulant_strength=projected_cumulant_strength,
@@ -837,6 +861,36 @@ def finite_value_score(
                 maximum_pairwise_co_kurtosis_residual_value,
                 tf.reduce_max(tf.abs(higher["pairwise_co_kurtosis_residual"])),
             ),
+            tf.maximum(
+                maximum_pairwise_pre_cap_particle_rms_value,
+                higher["maximum_pairwise_pre_cap_particle_rms"],
+            ),
+            tf.maximum(
+                maximum_pairwise_post_cap_particle_rms_value,
+                higher["maximum_pairwise_post_cap_particle_rms"],
+            ),
+            tf.minimum(
+                minimum_pairwise_particle_cap_scale_value,
+                higher["minimum_pairwise_particle_cap_scale"],
+            ),
+            tf.maximum(
+                maximum_coordinatewise_pre_cap_absolute_value,
+                higher["maximum_coordinatewise_pre_cap_absolute"],
+            ),
+            tf.maximum(
+                maximum_coordinatewise_post_cap_absolute_value,
+                higher["maximum_coordinatewise_post_cap_absolute"],
+            ),
+            coordinatewise_cap_displacement_sum_value
+            + higher["mean_coordinatewise_cap_displacement"],
+            tf.maximum(
+                maximum_coordinatewise_cap_active_fraction_value,
+                higher["fraction_coordinatewise_cap_active"],
+            ),
+            tf.minimum(
+                minimum_coordinatewise_cap_derivative_value,
+                higher["minimum_coordinatewise_cap_derivative"],
+            ),
             tf.maximum(maximum_shape_displacement_value, shape_displacement),
             tf.maximum(
                 maximum_normalized_shape_displacement_value,
@@ -880,6 +934,14 @@ def finite_value_score(
         maximum_kurtosis_residual,
         maximum_pairwise_co_skew_residual,
         maximum_pairwise_co_kurtosis_residual,
+        maximum_pairwise_pre_cap_particle_rms,
+        maximum_pairwise_post_cap_particle_rms,
+        minimum_pairwise_particle_cap_scale,
+        maximum_coordinatewise_pre_cap_absolute,
+        maximum_coordinatewise_post_cap_absolute,
+        coordinatewise_cap_displacement_sum,
+        maximum_coordinatewise_cap_active_fraction,
+        minimum_coordinatewise_cap_derivative,
         maximum_shape_displacement,
         maximum_normalized_shape_displacement,
         shape_objective_sum,
@@ -912,6 +974,14 @@ def finite_value_score(
             maximum_kurtosis_residual,
             maximum_pairwise_co_skew_residual,
             maximum_pairwise_co_kurtosis_residual,
+            maximum_pairwise_pre_cap_particle_rms,
+            maximum_pairwise_post_cap_particle_rms,
+            minimum_pairwise_particle_cap_scale,
+            maximum_coordinatewise_pre_cap_absolute,
+            maximum_coordinatewise_post_cap_absolute,
+            coordinatewise_cap_displacement_sum,
+            maximum_coordinatewise_cap_active_fraction,
+            minimum_coordinatewise_cap_derivative,
             maximum_shape_displacement,
             maximum_normalized_shape_displacement,
             shape_objective_sum,
@@ -941,6 +1011,30 @@ def finite_value_score(
         ),
         "maximum_pairwise_co_kurtosis_residual": (
             maximum_pairwise_co_kurtosis_residual
+        ),
+        "maximum_pairwise_pre_cap_particle_rms": (
+            maximum_pairwise_pre_cap_particle_rms
+        ),
+        "maximum_pairwise_post_cap_particle_rms": (
+            maximum_pairwise_post_cap_particle_rms
+        ),
+        "minimum_pairwise_particle_cap_scale": (
+            minimum_pairwise_particle_cap_scale
+        ),
+        "maximum_coordinatewise_pre_cap_absolute": (
+            maximum_coordinatewise_pre_cap_absolute
+        ),
+        "maximum_coordinatewise_post_cap_absolute": (
+            maximum_coordinatewise_post_cap_absolute
+        ),
+        "mean_coordinatewise_cap_displacement": (
+            coordinatewise_cap_displacement_sum / tf.cast(horizon, theta.dtype)
+        ),
+        "fraction_coordinatewise_cap_active": (
+            maximum_coordinatewise_cap_active_fraction
+        ),
+        "minimum_coordinatewise_cap_derivative": (
+            minimum_coordinatewise_cap_derivative
         ),
         "maximum_shape_displacement": maximum_shape_displacement,
         "maximum_normalized_shape_displacement": (

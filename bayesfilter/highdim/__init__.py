@@ -66,6 +66,12 @@ from bayesfilter.highdim.derivatives import (
     squared_tt_normalizer_derivative,
     tt_evaluation_derivative,
 )
+from bayesfilter.highdim.genut_algorithm import (
+    GENUT_ALGORITHMS,
+    GENUT_DEFAULT_ALGORITHM,
+    GenUTAlgorithmSelection,
+    resolve_genut_algorithm,
+)
 from bayesfilter.highdim.fixed_branch import BranchHash, BranchIdentity, BranchManifest
 from bayesfilter.highdim.fitting import (
     FixedTTFitConfig,
@@ -571,6 +577,9 @@ __all__ = [
     "FixedTTFitter",
     "FixedTTSIRTTransport",
     "FunctionalTT",
+    "GENUT_ALGORITHMS",
+    "GENUT_DEFAULT_ALGORITHM",
+    "GenUTAlgorithmSelection",
     "GradientLaneEvidenceContract",
     "HighDimBatchedScoreAPIResult",
     "HighDimScoreAPIResult",
@@ -855,6 +864,7 @@ __all__ = [
     "fixed_design_lsq_derivative",
     "gauss_hermite_nodes_weights",
     "gaussian_retained_filter",
+    "resolve_genut_algorithm",
     "independent_panel_sv_mixture_cut4_filter",
     "independent_panel_sv_mixture_fixed_sgqf_filter",
     "independent_panel_sv_mixture_fixed_sgqf_score",

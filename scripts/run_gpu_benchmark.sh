@@ -45,6 +45,13 @@ case "${mode}" in
       --output docs/plans/ledh-phase7-ksc-sv-forward-scalar-artifact-2026-07-07.json \
       --markdown-output docs/plans/ledh-phase7-ksc-sv-forward-scalar-artifact-2026-07-07.md
     ;;
+  genut_dual_cap_production_leaderboard)
+    TF_FORCE_GPU_ALLOW_GROWTH=true \
+      /home/chakwong/anaconda3/envs/tf-gpu/bin/python \
+      docs/benchmarks/run_genut_dual_cap_production_leaderboard.py \
+      --output-root \
+      docs/benchmarks/artifacts/genut_dual_cap_production_leaderboard_20260807/attempt02
+    ;;
   *)
     echo "unknown run_gpu_benchmark.sh mode: ${mode}" >&2
     exit 2
